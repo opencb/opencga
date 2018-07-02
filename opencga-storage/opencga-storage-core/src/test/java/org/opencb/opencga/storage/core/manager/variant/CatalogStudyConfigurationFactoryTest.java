@@ -33,7 +33,9 @@ import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.manager.variant.metadata.CatalogStudyConfigurationFactory;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.variant.dummy.DummyProjectMetadataAdaptor;
 import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationAdaptor;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantFileMetadataDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,8 +59,9 @@ public class CatalogStudyConfigurationFactoryTest {
 
     static private CatalogManager catalogManager;
     static private String sessionId;
-    static private long projectId;
-    static private long studyId;
+    static private String projectId;
+    static private String studyId;
+    static private long studyUid;
     static private FileMetadataReader fileMetadataReader;
     static private FileUtils catalogFileUtils;
     static private long outputId;
@@ -83,23 +86,26 @@ public class CatalogStudyConfigurationFactoryTest {
         sessionId = catalogManager.getUserManager().login(userId, "user");
         projectId = catalogManager.getProjectManager().create("p1", "p1", "Project 1", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionId).first().getId();
-        studyId = catalogManager.getStudyManager().create(String.valueOf(projectId), "s1", "s1", Study.Type.CASE_CONTROL, null, "Study " +
-                "1", null, null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore("mongodb", DB_NAME)), null,
-                null, null, sessionId).first().getId();
-        outputId = catalogManager.getFileManager().createFolder(Long.toString(studyId), Paths.get("data", "index").toString(), null,
-                true, null, QueryOptions.empty(), sessionId).first().getId();
+        Study study = catalogManager.getStudyManager().create(projectId, "s1", null, "s1", Study.Type.CASE_CONTROL, null, "Study " +
+                        "1", null, null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore("mongodb", DB_NAME)), null,
+                null, null, sessionId).first();
+        studyId = study.getId();
+        studyUid = study.getUid();
+        outputId = catalogManager.getFileManager().createFolder(studyId, Paths.get("data", "index").toString(), null,
+                true, null, QueryOptions.empty(), sessionId).first().getUid();
 //        files.add(create("1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"));
 //        files.add(create("1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", true));
 //        files.add(create("1000g_batches/1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"));
 //        files.add(create("1000g_batches/1501-2000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", true));
 //        files.add(create("1000g_batches/2001-2504.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"));
-        cohortId = catalogManager.getCohortManager().create(studyId, "ALL", null, null, Collections.emptyList(), null, null, sessionId).first().getId();
+        String cohortName = "ALL";
+        cohortId = catalogManager.getCohortManager().create(studyId, cohortName, null, null, Collections.emptyList(), null, null, sessionId).first().getUid();
         files.add(create("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"));
         files.add(create("platinum/1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz", true));
         files.add(create("platinum/1K.end.platinum-genomes-vcf-NA12879_S1.genome.vcf.gz"));
         files.add(create("platinum/1K.end.platinum-genomes-vcf-NA12880_S1.genome.vcf.gz", true));
         files.add(create("platinum/1K.end.platinum-genomes-vcf-NA12881_S1.genome.vcf.gz"));
-        catalogManager.getCohortManager().setStatus(cohortId+"", "READY", "", sessionId);
+        catalogManager.getCohortManager().setStatus(study.getFqn(), cohortName, "READY", "", sessionId);
     }
 
     @After
@@ -119,27 +125,26 @@ public class CatalogStudyConfigurationFactoryTest {
         if (indexed) {
             FileIndex fileIndex = new FileIndex("user", "today", new FileIndex.IndexStatus(FileIndex.IndexStatus.READY), 1234,
                     Collections.emptyMap());
-            catalogManager.getFileManager().setFileIndex(file.getId(), fileIndex, sessionId);
-            indexedFiles.add((int) file.getId());
-            List<Long> samples = catalogManager.getCohortManager().getSamples(studyId + "", cohortId + "", null, sessionId).getResult().stream().map(Sample::getId).collect(Collectors.toList());
-            samples.addAll(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
-            catalogManager.getCohortManager().update(studyId + "", cohortId + "", new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(), samples), null, sessionId);
+            catalogManager.getFileManager().setFileIndex(studyId, file.getPath(), fileIndex, sessionId);
+            indexedFiles.add((int) file.getUid());
+            List<Long> samples = catalogManager.getCohortManager().getSamples(studyId, cohortId + "", null, sessionId).getResult().stream().map(Sample::getUid).collect(Collectors.toList());
+            samples.addAll(file.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()));
+            catalogManager.getCohortManager().update(studyId, cohortId + "", new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(), samples), null, sessionId);
         }
-        return catalogManager.getFileManager().get(file.getId(), null, sessionId).first();
+        return catalogManager.getFileManager().get(studyId, file.getId(), null, sessionId).first();
     }
 
     @Test
     public void getNewStudyConfiguration() throws Exception {
         CatalogStudyConfigurationFactory studyConfigurationFactory = new CatalogStudyConfigurationFactory(catalogManager);
 
-        Study study = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), null, sessionId).first();
+        Study study = catalogManager.getStudyManager().get(studyId, null, sessionId).first();
 
         DummyStudyConfigurationAdaptor scAdaptor = spy(new DummyStudyConfigurationAdaptor());
         doReturn(new QueryResult<StudyConfiguration>("", 0, 0, 0, "", "", Collections.emptyList()))
                 .when(scAdaptor).getStudyConfiguration(anyInt(), any(), any());
-
-        StudyConfigurationManager scm = new StudyConfigurationManager(scAdaptor);
-        StudyConfiguration studyConfiguration = studyConfigurationFactory.getStudyConfiguration(studyId, null, scm, new QueryOptions(), sessionId);
+        StudyConfigurationManager scm = new StudyConfigurationManager(new DummyProjectMetadataAdaptor(), scAdaptor, new DummyVariantFileMetadataDBAdaptor());
+        StudyConfiguration studyConfiguration = studyConfigurationFactory.getStudyConfiguration(studyUid, null, scm, new QueryOptions(), sessionId);
 
         checkStudyConfiguration(study, studyConfiguration);
     }
@@ -148,8 +153,8 @@ public class CatalogStudyConfigurationFactoryTest {
     public void getNewStudyConfigurationNullManager() throws Exception {
         CatalogStudyConfigurationFactory studyConfigurationManager = new CatalogStudyConfigurationFactory(catalogManager);
 
-        Study study = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), null, sessionId).first();
-        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, null, null, new QueryOptions(), sessionId);
+        Study study = catalogManager.getStudyManager().get(studyId, null, sessionId).first();
+        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyUid, null, null, new QueryOptions(), sessionId);
 
         checkStudyConfiguration(study, studyConfiguration);
     }
@@ -158,33 +163,34 @@ public class CatalogStudyConfigurationFactoryTest {
     public void getStudyConfiguration() throws Exception {
         CatalogStudyConfigurationFactory studyConfigurationManager = new CatalogStudyConfigurationFactory(catalogManager);
 
-        Study study = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), null, sessionId).first();
+        Study study = catalogManager.getStudyManager().get(studyId, null, sessionId).first();
 
         DummyStudyConfigurationAdaptor scAdaptor = spy(new DummyStudyConfigurationAdaptor());
-        StudyConfiguration studyConfigurationToReturn = new StudyConfiguration((int) study.getId(), "user@p1:s1");
+        StudyConfiguration studyConfigurationToReturn = new StudyConfiguration((int) study.getUid(), "user@p1:s1");
         studyConfigurationToReturn.setIndexedFiles(indexedFiles);
         doReturn(new QueryResult<>("", 0, 1, 1, "", "", Collections.singletonList(studyConfigurationToReturn)))
                 .when(scAdaptor).getStudyConfiguration(anyInt(), any(), any());
 
 
-        StudyConfigurationManager scm = new StudyConfigurationManager(scAdaptor);
-        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, null, scm, new QueryOptions(), sessionId);
+        StudyConfigurationManager scm = new StudyConfigurationManager(new DummyProjectMetadataAdaptor(), scAdaptor, new DummyVariantFileMetadataDBAdaptor());
+        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyUid, null, scm, new QueryOptions(), sessionId);
 
         checkStudyConfiguration(study, studyConfiguration);
     }
 
     private void checkStudyConfiguration(Study study, StudyConfiguration studyConfiguration) throws CatalogException {
         assertEquals("user@p1:s1", studyConfiguration.getStudyName());
-        assertEquals(study.getId(), studyConfiguration.getStudyId());
+        assertEquals(study.getUid(), studyConfiguration.getStudyId());
 
         assertTrue(studyConfiguration.getInvalidStats().isEmpty());
 
         for (Map.Entry<String, Integer> entry : studyConfiguration.getFileIds().entrySet()) {
-            File file = catalogManager.getFileManager().get((long) entry.getValue(), null, sessionId).first();
+            File file = catalogManager.getFileManager().get(studyConfiguration.getStudyName(),
+                    studyConfiguration.getFileIds().inverse().get(entry.getValue()), null, sessionId).first();
 
             assertEquals(file.getName(), entry.getKey());
-            int id = (int) file.getId();
-            assertEquals(file.getSamples().stream().map(Sample::getId).map(Long::intValue).collect(Collectors.toSet()),
+            int id = (int) file.getUid();
+            assertEquals(file.getSamples().stream().map(Sample::getUid).map(Long::intValue).collect(Collectors.toSet()),
                     studyConfiguration.getSamplesInFiles().get((id)));
             if (file.getIndex() == null || file.getIndex().getStatus() == null || file.getIndex().getStatus().getName() == null
                     || !file.getIndex().getStatus().getName().equals(FileIndex.IndexStatus.READY)) {
@@ -203,27 +209,27 @@ public class CatalogStudyConfigurationFactoryTest {
     public void updateCatalogFromStudyConfigurationTest() throws Exception {
         CatalogStudyConfigurationFactory studyConfigurationFactory = new CatalogStudyConfigurationFactory(catalogManager);
 
-        Study study = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), null, sessionId).first();
+        Study study = catalogManager.getStudyManager().get(studyId, null, sessionId).first();
 
         DummyStudyConfigurationAdaptor scAdaptor = spy(new DummyStudyConfigurationAdaptor());
-        StudyConfiguration studyConfigurationToReturn = new StudyConfiguration((int) study.getId(), "user@p1:s1");
+        StudyConfiguration studyConfigurationToReturn = new StudyConfiguration((int) study.getUid(), "user@p1:s1");
         studyConfigurationToReturn.setIndexedFiles(indexedFiles);
         doReturn(new QueryResult<>("", 0, 1, 1, "", "", Collections.singletonList(studyConfigurationToReturn)))
                 .when(scAdaptor).getStudyConfiguration(anyInt(), any(), any());
 
-        StudyConfigurationManager scm = new StudyConfigurationManager(scAdaptor);
-        StudyConfiguration sc = studyConfigurationFactory.getStudyConfiguration(studyId, null, scm, new QueryOptions(), sessionId);
+        StudyConfigurationManager scm = new StudyConfigurationManager(new DummyProjectMetadataAdaptor(), scAdaptor, new DummyVariantFileMetadataDBAdaptor());
+        StudyConfiguration sc = studyConfigurationFactory.getStudyConfiguration(studyUid, null, scm, new QueryOptions(), sessionId);
 
-        List<Long> samples = catalogManager.getCohortManager().getSamples(String.valueOf(studyId), String.valueOf(cohortId), null, sessionId)
+        List<Long> samples = catalogManager.getCohortManager().getSamples(studyId, String.valueOf(cohortId), null, sessionId)
                 .getResult()
                 .stream()
-                .map(Sample::getId)
+                .map(Sample::getUid)
                 .collect(Collectors.toList());
-        samples.add(files.get(0).getSamples().get(0).getId());
+        samples.add(files.get(0).getSamples().get(0).getUid());
 
         sc.getCohorts().put((int) cohortId, samples.stream().map(Long::intValue).collect(Collectors.toSet()));
 
-        catalogManager.getCohortManager().setStatus(String.valueOf(cohortId), Cohort.CohortStatus.CALCULATING, "", sessionId);
+        catalogManager.getCohortManager().setStatus(studyId, String.valueOf(cohortId), Cohort.CohortStatus.CALCULATING, "", sessionId);
 
         studyConfigurationFactory.updateCatalogFromStudyConfiguration(sc, sessionId);
     }

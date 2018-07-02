@@ -23,6 +23,7 @@ import io.grpc.internal.ManagedChannelImpl;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.common.protobuf.service.ServiceTypesModel;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.commons.datastore.core.*;
@@ -35,6 +36,7 @@ import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.server.grpc.AdminServiceGrpc;
 import org.opencb.opencga.server.grpc.GenericServiceModel;
 import org.opencb.opencga.server.grpc.VariantServiceGrpc;
+import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.manager.variant.operations.VariantFileIndexerStorageOperation;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -47,6 +49,8 @@ import java.io.PrintStream;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.QueryAnnotationCommandOptions.QUERY_ANNOTATION_COMMAND;
 
 /**
  * Created by pfurio on 15/08/16.
@@ -74,6 +78,9 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "query":
                 queryResponse = query();
+                break;
+            case QUERY_ANNOTATION_COMMAND:
+                queryResponse = queryAnnotation();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -106,6 +113,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         o.putIfNotNull(VariantStorageEngine.Options.ANNOTATE.key(), variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.annotate);
         o.putIfNotNull(VariantStorageEngine.Options.RESUME.key(), variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.resume);
         o.putIfNotNull(VariantStorageEngine.Options.LOAD_SPLIT_DATA.key(), variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.loadSplitData);
+        o.putIfNotNull(VariantStorageEngine.Options.POST_LOAD_CHECK_SKIP.key(), variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.skipPostLoadCheck);
         o.putIfNotNull(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.overwriteAnnotations);
         o.putAll(variantCommandOptions.commonCommandOptions.params);
 
@@ -362,4 +370,23 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         return study;
     }
 
+    public QueryResponse<VariantAnnotation> queryAnnotation() throws IOException {
+        VariantCommandOptions.QueryAnnotationCommandOptions cliOptions = variantCommandOptions.queryAnnotationCommandOptions;
+
+
+        QueryOptions options = new QueryOptions();
+        options.put(QueryOptions.LIMIT, cliOptions.limit);
+        options.put(QueryOptions.SKIP, cliOptions.skip);
+        options.put(QueryOptions.INCLUDE, cliOptions.dataModelOptions.include);
+        options.put(QueryOptions.EXCLUDE, cliOptions.dataModelOptions.exclude);
+        options.put(QueryOptions.SKIP, cliOptions.skip);
+        options.putAll(cliOptions.commonOptions.params);
+
+        Query query = new Query();
+        query.put(VariantCatalogQueryUtils.PROJECT.key(), cliOptions.project);
+        query.put(VariantQueryParam.REGION.key(), cliOptions.region);
+        query.put(VariantQueryParam.ID.key(), cliOptions.id);
+
+        return openCGAClient.getVariantClient().queryAnnotation(cliOptions.name, query, options);
+    }
 }

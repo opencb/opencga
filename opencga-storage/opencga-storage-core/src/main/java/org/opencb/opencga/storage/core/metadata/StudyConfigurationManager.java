@@ -23,12 +23,18 @@ import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.metadata.adaptors.ProjectMetadataAdaptor;
+import org.opencb.opencga.storage.core.metadata.adaptors.StudyConfigurationAdaptor;
+import org.opencb.opencga.storage.core.metadata.adaptors.VariantFileMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.metadata.adaptors.VariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +45,7 @@ import java.util.function.Predicate;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.isNegated;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.removeNegation;
+import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName;
 
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
@@ -48,13 +55,24 @@ public class StudyConfigurationManager implements AutoCloseable {
     public static final String READ_ONLY = "ro";
     protected static Logger logger = LoggerFactory.getLogger(StudyConfigurationManager.class);
 
-    protected StudyConfigurationAdaptor adaptor;
+    private final ProjectMetadataAdaptor projectDBAdaptor;
+    private final StudyConfigurationAdaptor studyDBAdaptor;
+    private VariantFileMetadataDBAdaptor fileDBAdaptor;
 
     private final Map<String, StudyConfiguration> stringStudyConfigurationMap = new HashMap<>();
     private final Map<Integer, StudyConfiguration> intStudyConfigurationMap = new HashMap<>();
 
-    public StudyConfigurationManager(StudyConfigurationAdaptor adaptor) {
-        this.adaptor = adaptor;
+    public StudyConfigurationManager(ProjectMetadataAdaptor projectDBAdaptor, StudyConfigurationAdaptor studyDBAdaptor,
+                                     VariantFileMetadataDBAdaptor fileDBAdaptor) {
+        this.projectDBAdaptor = projectDBAdaptor;
+        this.studyDBAdaptor = studyDBAdaptor;
+        this.fileDBAdaptor = fileDBAdaptor;
+    }
+
+    public StudyConfigurationManager(VariantStorageMetadataDBAdaptorFactory dbAdaptorFactory) {
+        this.projectDBAdaptor = dbAdaptorFactory.buildProjectMetadataDBAdaptor();
+        this.studyDBAdaptor = dbAdaptorFactory.buildStudyConfigurationDBAdaptor();
+        this.fileDBAdaptor = dbAdaptorFactory.buildVariantFileMetadataDBAdaptor();
     }
 
     public long lockStudy(int studyId) throws StorageEngineException {
@@ -69,32 +87,32 @@ public class StudyConfigurationManager implements AutoCloseable {
     }
 
     public long lockStudy(int studyId, long lockDuration, long timeout) throws InterruptedException, TimeoutException {
-        return adaptor.lockStudy(studyId, lockDuration, timeout, null);
+        return studyDBAdaptor.lockStudy(studyId, lockDuration, timeout, null);
     }
 
     public long lockStudy(int studyId, long lockDuration, long timeout, String lockName) throws InterruptedException, TimeoutException {
-        return adaptor.lockStudy(studyId, lockDuration, timeout, lockName);
+        return studyDBAdaptor.lockStudy(studyId, lockDuration, timeout, lockName);
     }
 
     public void unLockStudy(int studyId, long lockId) {
-        adaptor.unLockStudy(studyId, lockId, null);
+        studyDBAdaptor.unLockStudy(studyId, lockId, null);
     }
 
     public void unLockStudy(int studyId, long lockId, String lockName) {
-        adaptor.unLockStudy(studyId, lockId, lockName);
+        studyDBAdaptor.unLockStudy(studyId, lockId, lockName);
     }
 
-    public interface UpdateStudyConfiguration<E extends Exception> {
-        StudyConfiguration update(StudyConfiguration studyConfiguration) throws E;
+    public interface UpdateFunction<T, E extends Exception> {
+        T update(T t) throws E;
     }
 
-    public <E extends Exception> StudyConfiguration lockAndUpdate(String studyName, UpdateStudyConfiguration<E> updater)
+    public <E extends Exception> StudyConfiguration lockAndUpdate(String studyName, UpdateFunction<StudyConfiguration, E> updater)
             throws StorageEngineException, E {
         Integer studyId = getStudyId(studyName, null);
         return lockAndUpdate(studyId, updater);
     }
 
-    public <E extends Exception> StudyConfiguration lockAndUpdate(int studyId, UpdateStudyConfiguration<E> updater)
+    public <E extends Exception> StudyConfiguration lockAndUpdate(int studyId, UpdateFunction<StudyConfiguration, E> updater)
             throws StorageEngineException, E {
         long lock = lockStudy(studyId);
         try {
@@ -124,7 +142,7 @@ public class StudyConfigurationManager implements AutoCloseable {
                 }
                 return new QueryResult<>(studyConfiguration.getStudyName(), 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
             }
-            result = adaptor.getStudyConfiguration(studyName, stringStudyConfigurationMap.get(studyName).getTimeStamp(), options);
+            result = studyDBAdaptor.getStudyConfiguration(studyName, stringStudyConfigurationMap.get(studyName).getTimeStamp(), options);
             if (result.getNumTotalResults() == 0) { //No changes. Return old value
                 StudyConfiguration studyConfiguration = stringStudyConfigurationMap.get(studyName);
                 if (!readOnly) {
@@ -133,7 +151,7 @@ public class StudyConfigurationManager implements AutoCloseable {
                 return new QueryResult<>(studyName, 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
             }
         } else {
-            result = adaptor.getStudyConfiguration(studyName, null, options);
+            result = studyDBAdaptor.getStudyConfiguration(studyName, null, options);
         }
 
         StudyConfiguration studyConfiguration = result.first();
@@ -163,7 +181,7 @@ public class StudyConfigurationManager implements AutoCloseable {
                 }
                 return new QueryResult<>(studyConfiguration.getStudyName(), 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
             }
-            result = adaptor.getStudyConfiguration(studyId, intStudyConfigurationMap.get(studyId).getTimeStamp(), options);
+            result = studyDBAdaptor.getStudyConfiguration(studyId, intStudyConfigurationMap.get(studyId).getTimeStamp(), options);
             if (result.getNumTotalResults() == 0) { //No changes. Return old value
                 StudyConfiguration studyConfiguration = intStudyConfigurationMap.get(studyId);
                 if (!readOnly) {
@@ -172,7 +190,7 @@ public class StudyConfigurationManager implements AutoCloseable {
                 return new QueryResult<>(studyConfiguration.getStudyName(), 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
             }
         } else {
-            result = adaptor.getStudyConfiguration(studyId, null, options);
+            result = studyDBAdaptor.getStudyConfiguration(studyId, null, options);
         }
 
         StudyConfiguration studyConfiguration = result.first();
@@ -204,15 +222,15 @@ public class StudyConfigurationManager implements AutoCloseable {
     }
 
     public List<String> getStudyNames(QueryOptions options) {
-        return adaptor.getStudyNames(options);
+        return studyDBAdaptor.getStudyNames(options);
     }
 
     public List<Integer> getStudyIds(QueryOptions options) {
-        return adaptor.getStudyIds(options);
+        return studyDBAdaptor.getStudyIds(options);
     }
 
     public Map<String, Integer> getStudies(QueryOptions options) {
-        return adaptor.getStudies(options);
+        return studyDBAdaptor.getStudies(options);
     }
 
     public final QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
@@ -231,9 +249,8 @@ public class StudyConfigurationManager implements AutoCloseable {
         StudyConfiguration copy = studyConfiguration.newInstance();
         stringStudyConfigurationMap.put(copy.getStudyName(), copy);
         intStudyConfigurationMap.put(copy.getStudyId(), copy);
-        return adaptor.updateStudyConfiguration(copy, options);
+        return studyDBAdaptor.updateStudyConfiguration(copy, options);
     }
-
 
     /**
      * Get studyIds from a list of studies.
@@ -353,6 +370,99 @@ public class StudyConfigurationManager implements AutoCloseable {
             }
         }
         return studyConfiguration;
+    }
+
+    public <E extends Exception> ProjectMetadata lockAndUpdateProject(UpdateFunction<ProjectMetadata, E> function)
+            throws StorageEngineException, E {
+        Objects.requireNonNull(function);
+        long lock;
+        try {
+            lock = projectDBAdaptor.lockProject(1000, 10000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new StorageEngineException("Unable to lock the Project", e);
+        } catch (TimeoutException e) {
+            throw new StorageEngineException("Unable to lock the Project", e);
+        }
+        try {
+            ProjectMetadata projectMetadata = getProjectMetadata().first();
+            projectMetadata = function.update(projectMetadata);
+            projectDBAdaptor.updateProjectMetadata(projectMetadata);
+            return projectMetadata;
+        } finally {
+            projectDBAdaptor.unLockProject(lock);
+        }
+    }
+
+    public QueryResult<ProjectMetadata> getProjectMetadata() {
+        return projectDBAdaptor.getProjectMetadata();
+    }
+
+    public QueryResult<ProjectMetadata> getProjectMetadata(ObjectMap options) throws StorageEngineException {
+        QueryResult<ProjectMetadata> queryResult = getProjectMetadata();
+        ProjectMetadata projectMetadata = queryResult.first();
+        if (options != null && (projectMetadata == null
+                || StringUtils.isEmpty(projectMetadata.getSpecies()) && options.containsKey(VariantAnnotationManager.SPECIES)
+                || StringUtils.isEmpty(projectMetadata.getAssembly()) && options.containsKey(VariantAnnotationManager.ASSEMBLY))) {
+
+            projectMetadata = lockAndUpdateProject(pm -> {
+                if (pm == null) {
+                    pm = new ProjectMetadata();
+                }
+                if (pm.getRelease() <= 0) {
+                    pm.setRelease(options.getInt(VariantStorageEngine.Options.RELEASE.key(),
+                            VariantStorageEngine.Options.RELEASE.defaultValue()));
+                }
+                if (StringUtils.isEmpty(pm.getSpecies())) {
+                    pm.setSpecies(toCellBaseSpeciesName(options.getString(VariantAnnotationManager.SPECIES)));
+                }
+                if (StringUtils.isEmpty(pm.getAssembly())) {
+                    pm.setAssembly(options.getString(VariantAnnotationManager.ASSEMBLY));
+                }
+
+                return pm;
+            });
+            queryResult.setResult(Collections.singletonList(projectMetadata));
+            queryResult.setNumResults(1);
+            queryResult.setNumTotalResults(1);
+        }
+        return queryResult;
+    }
+
+
+    public QueryResult<Long> countVariantFileMetadata(Query query) {
+        return fileDBAdaptor.count(query);
+    }
+
+    public QueryResult<VariantFileMetadata> getVariantFileMetadata(int studyId, int fileId, QueryOptions options)
+            throws StorageEngineException {
+        return fileDBAdaptor.get(studyId, fileId, options);
+    }
+
+    public Iterator<VariantFileMetadata> variantFileMetadataIterator(Query query, QueryOptions options)
+            throws StorageEngineException {
+        try {
+            return fileDBAdaptor.iterator(query, options);
+        } catch (IOException e) {
+            throw new StorageEngineException("Error reading VariantFileMetadata", e);
+        }
+    }
+
+    public void updateVariantFileMetadata(int studyId, VariantFileMetadata metadata) throws StorageEngineException {
+        fileDBAdaptor.updateVariantFileMetadata(studyId, metadata);
+    }
+
+    public void updateVariantFileMetadata(String study, VariantFileMetadata metadata) throws StorageEngineException {
+        Integer studyId = getStudyId(study, null);
+        fileDBAdaptor.updateVariantFileMetadata(studyId, metadata);
+    }
+
+    public void deleteVariantFileMetadata(int studyId, int fileId) throws StorageEngineException {
+        try {
+            fileDBAdaptor.delete(studyId, fileId);
+        } catch (IOException e) {
+            throw new StorageEngineException("Error deleting VariantFileMetadata for file " + fileId, e);
+        }
     }
 
     /**
@@ -674,14 +784,14 @@ public class StudyConfigurationManager implements AutoCloseable {
 
     /*
      * Before load file, the StudyConfiguration has to be updated with the new sample names.
-     * Will read param SAMPLE_IDS like [<sampleName>:<sampleId>,]*
-     * If SAMPLE_IDS is missing, will auto-generate sampleIds
+     * Will read param SAMPLE_UIDS like [<sampleName>:<sampleId>,]*
+     * If SAMPLE_UIDS is missing, will auto-generate sampleIds
      * Will fail if:
-     * param SAMPLE_IDS is malformed
+     * param SAMPLE_UIDS is malformed
      * any given sampleId is not an integer
      * any given sampleName is not in the input file
      * any given sampleName was already in the StudyConfiguration (so, was already loaded)
-     * some sample was missing in the given SAMPLE_IDS param
+     * some sample was missing in the given SAMPLE_UIDS param
      *
      */
     public static void checkAndUpdateStudyConfiguration(StudyConfiguration studyConfiguration, int fileId, VariantFileMetadata fileMetadata,
@@ -1005,6 +1115,6 @@ public class StudyConfigurationManager implements AutoCloseable {
 
     @Override
     public void close() throws IOException {
-        adaptor.close();
+        studyDBAdaptor.close();
     }
 }

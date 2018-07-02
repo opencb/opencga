@@ -16,10 +16,8 @@
 
 package org.opencb.opencga.storage.hadoop.variant.metadata;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.TableName;
@@ -30,14 +28,11 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationAdaptor;
+import org.opencb.opencga.storage.core.metadata.adaptors.StudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.hadoop.utils.HBaseLock;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
-import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +41,6 @@ import java.io.UncheckedIOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.zip.DataFormatException;
@@ -58,40 +52,24 @@ import static org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantMet
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor {
+public class HBaseStudyConfigurationDBAdaptor extends AbstractHBaseDBAdaptor implements StudyConfigurationAdaptor {
 
     private static Logger logger = LoggerFactory.getLogger(HBaseStudyConfigurationDBAdaptor.class);
 
-    private final Configuration configuration;
-    private final GenomeHelper genomeHelper;
-    private final HBaseManager hBaseManager;
-    private final ObjectMapper objectMapper;
-    private final String tableName;
     private final HBaseLock lock;
-    private Boolean tableExists = null; // unknown
-
 
     public HBaseStudyConfigurationDBAdaptor(VariantTableHelper helper) {
-        this(helper.getMetaTableAsString(), helper.getConf(), null);
+        this(null, helper.getMetaTableAsString(), helper.getConf());
     }
 
-    public HBaseStudyConfigurationDBAdaptor(String metaTableName, Configuration configuration, HBaseManager hBaseManager) {
-        this.configuration = Objects.requireNonNull(configuration);
-        this.tableName = Objects.requireNonNull(metaTableName);
-        HBaseVariantTableNameGenerator.checkValidMetaTableName(metaTableName);
-        this.genomeHelper = new GenomeHelper(configuration);
-        this.objectMapper = new ObjectMapper().addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
-        if (hBaseManager == null) {
-            this.hBaseManager = new HBaseManager(configuration);
-        } else {
-            // Create a new instance of HBaseManager to close only if needed
-            this.hBaseManager = new HBaseManager(hBaseManager);
-        }
-        lock = new HBaseLock(this.hBaseManager, this.tableName, genomeHelper.getColumnFamily(), null);
+    public HBaseStudyConfigurationDBAdaptor(HBaseManager hBaseManager, String metaTableName, Configuration configuration) {
+        super(hBaseManager, metaTableName, configuration);
+        lock = new HBaseLock(this.hBaseManager, this.tableName, family, null);
     }
+
 
     @Override
-    protected QueryResult<StudyConfiguration> getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
+    public QueryResult<StudyConfiguration> getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
         logger.debug("Get StudyConfiguration " + studyName + " from DB " + tableName);
         BiMap<String, Integer> studies = getStudies(options);
         Integer studyId = studies.get(studyName);
@@ -131,17 +109,13 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
         }
     }
 
-    public GenomeHelper getGenomeHelper() {
-        return this.genomeHelper;
-    }
-
     @Override
-    protected QueryResult<StudyConfiguration> getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
+    public QueryResult<StudyConfiguration> getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
         StopWatch watch = new StopWatch().start();
         String error = null;
         List<StudyConfiguration> studyConfigurationList = Collections.emptyList();
         Get get = new Get(getStudyConfigurationRowKey(studyId));
-        get.addColumn(genomeHelper.getColumnFamily(), getValueColumn());
+        get.addColumn(family, getValueColumn());
         logger.debug("Get StudyConfiguration {} from DB {}", studyId, tableName);
 
         if (timeStamp != null) {
@@ -160,7 +134,7 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
                     if (result.isEmpty()) {
                         return Collections.emptyList();
                     } else {
-                        byte[] value = result.getValue(genomeHelper.getColumnFamily(), getValueColumn());
+                        byte[] value = result.getValue(family, getValueColumn());
                         // Try to decompress value.
                         try {
                             value = CompressionUtils.decompress(value);
@@ -185,7 +159,7 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
     }
 
     @Override
-    protected QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
+    public QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
         long startTime = System.currentTimeMillis();
         String error = "";
         logger.info("Update StudyConfiguration {}", studyConfiguration.getStudyName());
@@ -200,8 +174,8 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
                 // Avoid "java.lang.IllegalArgumentException: KeyValue size too large"
                 bytes = CompressionUtils.compress(bytes);
                 Put put = new Put(getStudyConfigurationRowKey(studyConfiguration));
-                put.addColumn(genomeHelper.getColumnFamily(), getValueColumn(), studyConfiguration.getTimeStamp(), bytes);
-                put.addColumn(genomeHelper.getColumnFamily(), getTypeColumn(), studyConfiguration.getTimeStamp(),
+                put.addColumn(family, getValueColumn(), studyConfiguration.getTimeStamp(), bytes);
+                put.addColumn(family, getTypeColumn(), studyConfiguration.getTimeStamp(),
                         Type.STUDY_CONFIGURATION.bytes());
                 table.put(put);
             });
@@ -226,7 +200,7 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
                     logger.debug("Get StudyConfiguration summary EMPTY");
                     return HashBiMap.create();
                 } else {
-                    byte[] value = result.getValue(genomeHelper.getColumnFamily(), getValueColumn());
+                    byte[] value = result.getValue(family, getValueColumn());
                     Map<String, Integer> map = objectMapper.readValue(value, Map.class);
                     logger.debug("Get StudyConfiguration summary {}", map);
 
@@ -260,8 +234,8 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
             try (Table table = connection.getTable(TableName.valueOf(tableName))) {
                 byte[] bytes = objectMapper.writeValueAsBytes(studies);
                 Put put = new Put(getStudiesSummaryRowKey());
-                put.addColumn(genomeHelper.getColumnFamily(), getValueColumn(), bytes);
-                put.addColumn(genomeHelper.getColumnFamily(), getTypeColumn(), Type.STUDIES.bytes());
+                put.addColumn(family, getValueColumn(), bytes);
+                put.addColumn(family, getTypeColumn(), Type.STUDIES.bytes());
                 table.put(put);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
@@ -280,12 +254,4 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
         }
     }
 
-    private void ensureTableExists() throws IOException {
-        if (tableExists == null || !tableExists) {
-            if (createMetaTableIfNeeded(hBaseManager, tableName, genomeHelper)) {
-                logger.info("Create table '{}' in hbase!", tableName);
-            }
-            tableExists = true;
-        }
-    }
 }

@@ -30,7 +30,6 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -82,7 +81,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
             ObjectMap parameters = new ObjectMap(jsonObjectMapper.writeValueAsString(params.toClinicalAnalysis()));
 
             // We remove the following parameters that are always going to appear because of Jackson
-            parameters.remove(ClinicalAnalysisDBAdaptor.QueryParams.ID.key());
+            parameters.remove(ClinicalAnalysisDBAdaptor.QueryParams.UID.key());
             parameters.remove(ClinicalAnalysisDBAdaptor.QueryParams.RELEASE.key());
 
             System.out.println(parameters.safeToString());
@@ -167,7 +166,8 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("") @QueryParam("fields") String fields,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
-            @ApiParam(value = "Comma separated list of names.") @QueryParam("name") String name,
+            @ApiParam(value = "Comma separated list of ids.") @QueryParam("id") String id,
+            @ApiParam(value = "DEPRECATED: Comma separated list of names.") @QueryParam("name") String name,
             @ApiParam(value = "Clinical analysis type") @QueryParam("type") ClinicalAnalysis.Type type,
             @ApiParam(value = "Clinical analysis status") @QueryParam("status") String status,
             @ApiParam(value = "Germline") @QueryParam("germline") String germline,
@@ -177,6 +177,9 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Sample") @QueryParam("sample") String sample,
             @ApiParam(value = "Release value (Current release from the moment the families were first created)") @QueryParam("release") String release) {
         try {
+            query.remove("study");
+            query.remove("fields");
+
             QueryResult result = clinicalManager.groupBy(studyStr, query, fields, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
@@ -204,6 +207,8 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
     }
 
     private static class ClinicalAnalysisParameters {
+        public String id;
+        @Deprecated
         public String name;
         public String description;
         public ClinicalAnalysis.Type type;
@@ -228,7 +233,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
                     Individual individual = new Individual().setName(subject.name);
                     if (subject.samples != null) {
                         List<Sample> sampleList = subject.samples.stream()
-                                .map(sample -> new Sample().setName(sample.name))
+                                .map(sample -> new Sample().setId(sample.name))
                                 .collect(Collectors.toList());
                         individual.setSamples(sampleList);
                     }
@@ -249,8 +254,9 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
                             ? interpretations.stream()
                             .map(ClinicalInterpretationParameters::toClinicalInterpretation).collect(Collectors.toList())
                             : new ArrayList<>();
-            return new ClinicalAnalysis(-1, name, description, type, disease, germlineFile, somaticFile, individuals, f, interpretationList,
-                    null, null, 1, attributes);
+            String clinicalId = StringUtils.isEmpty(id) ? name : id;
+            return new ClinicalAnalysis(clinicalId, description, type, disease, germlineFile, somaticFile, individuals, f,
+                    interpretationList, null, null, 1, attributes).setName(name);
         }
     }
 

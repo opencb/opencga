@@ -78,52 +78,53 @@ public class IbsAnalysis extends OpenCGAAnalysis {
 
     @Override
     public int run(Map<String, Path> input, Path outdir, ObjectMap params) throws Exception {
-        CatalogManager catalogManager = getCatalogManager();
-        String sessionId = getSessionId();
-        long studyId = getStudyId();
-
-        IdentityByStateClustering ibsc = new IdentityByStateClustering();
-        List<String> samples;
-        Query query = new Query(VariantQueryParam.STUDY.key(), studyId);
-        QueryOptions options = new QueryOptions(QueryOptions.EXCLUDE, VariantField.ANNOTATION);
-
-        Query samplesQuery = new Query();
-        if (StringUtils.isNotEmpty(params.getString(SAMPLES))) {
-            String userId = catalogManager.getUserManager().getUserId(sessionId);
-            List<Long> sampleIds = catalogManager.getSampleManager().getIds(params.getAsStringList(SAMPLES), String.valueOf(studyId),
-                    userId)
-                    .getResourceIds();
-            samplesQuery.append(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
-            query.append(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleIds);
-        }
-        samples = catalogManager.getSampleManager().get(studyId, samplesQuery, new QueryOptions(), sessionId)
-                .getResult()
-                .stream()
-                .map(Sample::getName)
-                .collect(Collectors.toList());
-
-
-        List<IdentityByState> identityByStateList;
-        try (VariantDBIterator iterator = getVariantStorageManager().iterable(sessionId).iterator(query, options)) {
-            identityByStateList = ibsc.countIBS(iterator, samples);
-        }
-        if ("-".equals(outdir.getFileName().toString())) {
-            ibsc.write(System.out, identityByStateList, samples);
-        } else {
-            Path outfile;
-            if (outdir.toAbsolutePath().toFile().isDirectory()) {
-                String alias = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), null, sessionId).first().getAlias();
-                outfile = outdir.resolve(alias + ".genome.gz");
-            } else {
-                outfile = outdir;
-            }
-
-            try (OutputStream outputStream = new GZIPOutputStream(new FileOutputStream(outfile.toFile()))) {
-                ibsc.write(outputStream, identityByStateList, samples);
-            }
-        }
-
         return 0;
+//        CatalogManager catalogManager = getCatalogManager();
+//        String sessionId = getSessionId();
+//        long studyId = getStudyId();
+//
+//        IdentityByStateClustering ibsc = new IdentityByStateClustering();
+//        List<String> samples;
+//        Query query = new Query(VariantQueryParam.STUDY.key(), studyId);
+//        QueryOptions options = new QueryOptions(QueryOptions.EXCLUDE, VariantField.ANNOTATION);
+//
+//        Query samplesQuery = new Query();
+//        if (StringUtils.isNotEmpty(params.getString(SAMPLES))) {
+//            String userId = catalogManager.getUserManager().getUserId(sessionId);
+//            List<Long> sampleIds = catalogManager.getSampleManager().getIds(params.getAsStringList(SAMPLES), String.valueOf(studyId),
+//                    userId)
+//                    .getResourceIds();
+//            samplesQuery.append(SampleDBAdaptor.QueryParams.UID.key(), sampleIds);
+//            query.append(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleIds);
+//        }
+//        samples = catalogManager.getSampleManager().get(studyId, samplesQuery, new QueryOptions(), sessionId)
+//                .getResult()
+//                .stream()
+//                .map(Sample::getId)
+//                .collect(Collectors.toList());
+//
+//
+//        List<IdentityByState> identityByStateList;
+//        try (VariantDBIterator iterator = getVariantStorageManager().iterable(sessionId).iterator(query, options)) {
+//            identityByStateList = ibsc.countIBS(iterator, samples);
+//        }
+//        if ("-".equals(outdir.getFileName().toString())) {
+//            ibsc.write(System.out, identityByStateList, samples);
+//        } else {
+//            Path outfile;
+//            if (outdir.toAbsolutePath().toFile().isDirectory()) {
+//                String alias = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), null, sessionId).first().getId();
+//                outfile = outdir.resolve(alias + ".genome.gz");
+//            } else {
+//                outfile = outdir;
+//            }
+//
+//            try (OutputStream outputStream = new GZIPOutputStream(new FileOutputStream(outfile.toFile()))) {
+//                ibsc.write(outputStream, identityByStateList, samples);
+//            }
+//        }
+//
+//        return 0;
     }
 
 }

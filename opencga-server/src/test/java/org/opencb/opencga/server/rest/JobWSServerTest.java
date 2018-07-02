@@ -41,7 +41,7 @@ public class JobWSServerTest {
 
     private static WSServerTestUtils serverTestUtils;
     private WebTarget webTarget;
-    private long studyId;
+    private String studyId = "user@1000G:phase1";
     private String sessionId;
 
     @Rule
@@ -64,7 +64,6 @@ public class JobWSServerTest {
 //        serverTestUtils.setUp();
         webTarget = serverTestUtils.getWebTarget();
         sessionId = OpenCGAWSServer.catalogManager.getUserManager().login("user", CatalogManagerTest.PASSWORD);
-        studyId = OpenCGAWSServer.catalogManager.getStudyManager().getId("user", "1000G:phase1");
     }
 
     @After
@@ -75,18 +74,18 @@ public class JobWSServerTest {
 
     @Test
     public void createReadyJobPostTest() throws CatalogException, IOException {
-        File folder = OpenCGAWSServer.catalogManager.getFileManager().get(studyId, new Query(FileDBAdaptor.QueryParams.TYPE.key(), File
-                .Type.DIRECTORY), new QueryOptions(), sessionId).first();
+        File folder = OpenCGAWSServer.catalogManager.getFileManager().get(String.valueOf(studyId), new Query(FileDBAdaptor.QueryParams
+                .TYPE.key(), File.Type.DIRECTORY), new QueryOptions(), sessionId).first();
         String jobName = "MyJob";
         String toolName = "samtools";
         String description = "A job";
         String commandLine = "samtools --do-magic";
         JobWSServer.InputJob.Status status = JobWSServer.InputJob.Status.READY;
-        long outDirId = folder.getId();
+        long outDirId = folder.getUid();
         String json = webTarget.path("jobs").path("create")
                 .queryParam("studyId", studyId)
                 .queryParam("sid", sessionId)
-                .request().post(Entity.json(new JobWSServer.InputJob(jobName, toolName, description, 10, 20, commandLine,
+                .request().post(Entity.json(new JobWSServer.InputJob(jobName, jobName, toolName, description, 10, 20, commandLine,
                         status, Long.toString(outDirId), Collections.emptyList(), null, null)), String.class);
 
         QueryResponse<Job> response = WSServerTestUtils.parseResult(json, Job.class);
@@ -97,23 +96,23 @@ public class JobWSServerTest {
         assertEquals(description, job.getDescription());
         assertEquals(commandLine, job.getCommandLine());
         assertEquals(status.toString(), job.getStatus().getName());
-        assertEquals(outDirId, job.getOutDir().getId());
+        assertEquals(outDirId, job.getOutDir().getUid());
     }
 
     @Test
     public void createErrorJobPostTest() throws CatalogException, IOException {
-        File folder = OpenCGAWSServer.catalogManager.getFileManager().get(studyId, new Query(FileDBAdaptor.QueryParams.TYPE.key(), File
-                .Type.DIRECTORY), new QueryOptions(), sessionId).first();
+        File folder = OpenCGAWSServer.catalogManager.getFileManager().get(String.valueOf(studyId), new Query(FileDBAdaptor.QueryParams
+                .TYPE.key(), File.Type.DIRECTORY), new QueryOptions(), sessionId).first();
         String jobName = "MyJob";
         String toolName = "samtools";
         String description = "A job";
         String commandLine = "samtools --do-magic";
         JobWSServer.InputJob.Status status = JobWSServer.InputJob.Status.ERROR;
-        long outDirId = folder.getId();
+        long outDirId = folder.getUid();
         String json = webTarget.path("jobs").path("create")
                 .queryParam("studyId", studyId)
                 .queryParam("sid", sessionId)
-                .request().post(Entity.json(new JobWSServer.InputJob(jobName, toolName, description, 10, 20, commandLine,
+                .request().post(Entity.json(new JobWSServer.InputJob(jobName, jobName, toolName, description, 10, 20, commandLine,
                         status, Long.toString(outDirId), Collections.emptyList(), null, null)), String.class);
 
         QueryResponse<Job> response = WSServerTestUtils.parseResult(json, Job.class);
@@ -126,24 +125,24 @@ public class JobWSServerTest {
         assertEquals(20, job.getEndTime());
         assertEquals(commandLine, job.getCommandLine());
         assertEquals(status.toString(), job.getStatus().getName());
-        assertEquals(outDirId, job.getOutDir().getId());
+        assertEquals(outDirId, job.getOutDir().getUid());
     }
 
     @Test
     public void createBadJobPostTest() throws CatalogException, IOException {
-        File folder = OpenCGAWSServer.catalogManager.getFileManager().get(studyId, new Query(FileDBAdaptor.QueryParams.TYPE.key(), File
-                .Type.DIRECTORY), new QueryOptions(), sessionId).first();
+        File folder = OpenCGAWSServer.catalogManager.getFileManager().get(String.valueOf(studyId), new Query(FileDBAdaptor.QueryParams
+                .TYPE.key(), File.Type.DIRECTORY), new QueryOptions(), sessionId).first();
         String toolName = "samtools";
         String description = "A job";
         String commandLine = "samtools --do-magic";
         JobWSServer.InputJob.Status status = JobWSServer.InputJob.Status.READY;
-        long outDirId = folder.getId();
+        long outDirId = folder.getUid();
 
         thrown.expect(Exception.class);
         webTarget.path("jobs").path("create")
                 .queryParam("studyId", studyId)
                 .queryParam("sid", sessionId)
-                .request().post(Entity.json(new JobWSServer.InputJob(null, toolName, description, 10, 20, commandLine,
+                .request().post(Entity.json(new JobWSServer.InputJob(null, null, toolName, description, 10, 20, commandLine,
                         status, Long.toString(outDirId), Collections.emptyList(), null, null)), String.class);
     }
 

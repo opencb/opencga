@@ -35,17 +35,6 @@ import java.util.List;
 public interface AnnotationSetDBAdaptor<T> extends DBAdaptor<T> {
 
     /**
-     * Insert an annotation set object in the database to annotate the entity with id "id".
-     *
-     * @param id id of the entity that will be annotated.
-     * @param variableSet variable set annotated by the annotationset.
-     * @param annotationSet annotation set to be inserted.
-     * @return a queryResult object containing the annotation set inserted.
-     * @throws CatalogDBException when the annotation set could not be inserted.
-     */
-    QueryResult<AnnotationSet> createAnnotationSet(long id, VariableSet variableSet, AnnotationSet annotationSet) throws CatalogDBException;
-
-    /**
      * Obtains all the annotation sets from id or just the one matching with the annotationSetName if provided.
      *
      * @param id id of the entity where the annotations are stored.

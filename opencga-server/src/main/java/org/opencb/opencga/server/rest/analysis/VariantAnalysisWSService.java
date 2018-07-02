@@ -21,6 +21,7 @@ import io.swagger.annotations.*;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -130,7 +131,8 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                           @ApiParam("Annotate indexed variants after the load step") @DefaultValue("false") @QueryParam("annotate") boolean annotate,
                           @ApiParam("Overwrite annotations already present in variants") @DefaultValue("false") @QueryParam("overwrite") boolean overwriteAnnotations,
                           @ApiParam("Resume a previously failed indexation") @DefaultValue("false") @QueryParam("resume") boolean resume,
-                          @ApiParam("Indicate that the variants from a sample (or group of samples) split into different files (by chromosome, by type, ...)") @DefaultValue("false") @QueryParam("loadSplitData") boolean loadSplitData) {
+                          @ApiParam("Indicate that the variants from a sample (or group of samples) split into different files (by chromosome, by type, ...)") @DefaultValue("false") @QueryParam("loadSplitData") boolean loadSplitData,
+                          @ApiParam("Do not execute post load checks over the database") @DefaultValue("false") @QueryParam("skipPostLoadCheck") boolean skipPostLoadCheck) {
 
         if (StringUtils.isNotEmpty(fileIdStrOld)) {
             fileIdStr = fileIdStrOld;
@@ -152,6 +154,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         addParamIfTrue(params, ANNOTATE.key(), annotate);
         addParamIfTrue(params, VariantAnnotationManager.OVERWRITE_ANNOTATIONS, overwriteAnnotations);
         addParamIfTrue(params, LOAD_SPLIT_DATA.key(), loadSplitData);
+        addParamIfTrue(params, POST_LOAD_CHECK_SKIP.key(), skipPostLoadCheck);
 
         Set<String> knownParams = new HashSet<>();
         knownParams.add("study");
@@ -169,6 +172,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         knownParams.add("include");
         knownParams.add("exclude");
         knownParams.add("loadSplitData");
+        knownParams.add("skipPostLoadCheck");
 
         // Add other params
         query.forEach((key, value) -> {
@@ -182,7 +186,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 
         try {
             List<String> idList = getIdList(fileIdStr);
-            QueryResult queryResult = catalogManager.getFileManager().index(idList, studyStr, "VCF", params, sessionId);
+            QueryResult queryResult = catalogManager.getFileManager().index(studyStr, idList, "VCF", params, sessionId);
             return createOkResponse(queryResult);
         } catch(Exception e) {
             return createErrorResponse(e);
@@ -466,6 +470,38 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     }
 
     @GET
+    @Path("/annotation/{name}/query")
+    @ApiOperation(value = "", position = 15, response = VariantAnnotation[].class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.LIMIT, value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.SKIP, value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
+//            @ApiImplicitParam(name = QueryOptions.COUNT, value = "Total number of results", dataType = "boolean", paramType = "query")
+
+            @ApiImplicitParam(name = "region", value = REGION_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "id", value = ID_DESCR, dataType = "string", paramType = "query"),
+
+    })
+    public Response getAnnotation(@ApiParam(value = "") @DefaultValue(VariantAnnotationManager.LATEST) @PathParam("name") String name) {
+        logger.info("limit {} , skip {}", count, limit, skip);
+        try {
+            // Get all query options
+            QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
+            Query query = getVariantQuery(queryOptions);
+
+            logger.info("query " + query.toJson());
+            logger.info("queryOptions " + queryOptions.toJson());
+
+            QueryResult<VariantAnnotation> result = variantManager.getAnnotation(name, query, queryOptions, sessionId);
+
+            return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
     @Path("/samples")
     @ApiOperation(value = "Get samples given a set of variants", position = 14, response = Sample.class)
     @ApiImplicitParams({
@@ -479,7 +515,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "chromosome", value = DEPRECATED + CHROMOSOME_DESCR, dataType = "string", paramType = "query")
     })
     public Response samples(
-            @ApiParam(value = "Study where all the samples belong to") @QueryParam("study") String study,
+            @ApiParam(value = "Study where all the samples belong to") @QueryParam("study") String studyStr,
             @ApiParam(value = "List of samples to check. By default, all samples") @QueryParam("samples") String samples,
             @ApiParam(value = "Genotypes that the sample must have to be selected") @QueryParam("genotypes") @DefaultValue("0/1,1/1") String genotypesStr,
             @ApiParam(value = "Samples must be present in ALL variants or in ANY variant.") @QueryParam("all") @DefaultValue("false") boolean all
@@ -495,12 +531,10 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                 query.append(INCLUDE_SAMPLE.key(), Arrays.asList(samples.split(",")));
                 query.remove(SAMPLE.key());
             }
-            if (StringUtils.isNotEmpty(study)) {
-                query.append(STUDY.key(), study);
+            if (StringUtils.isNotEmpty(studyStr)) {
+                query.append(STUDY.key(), studyStr);
             }
 
-            String userId = catalogManager.getUserManager().getUserId(sessionId);
-            long studyId = catalogManager.getStudyManager().getId(userId, study);
             Collection<String> sampleNames;
             if (all) {
                 sampleNames = variantSampleFilter.getSamplesInAllVariants(query, genotypes);
@@ -508,8 +542,9 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                 Map<String, Set<Variant>> samplesInAnyVariants = variantSampleFilter.getSamplesInAnyVariants(query, genotypes);
                 sampleNames = samplesInAnyVariants.keySet();
             }
-            Query sampleQuery = new Query(SampleDBAdaptor.QueryParams.NAME.key(), String.join(",", sampleNames));
-            QueryResult<Sample> allSamples = catalogManager.getSampleManager().get(studyId, sampleQuery, queryOptions, sessionId);
+            Query sampleQuery = new Query(SampleDBAdaptor.QueryParams.ID.key(), String.join(",", sampleNames));
+            QueryResult<Sample> allSamples = catalogManager.getSampleManager().get(studyStr, sampleQuery, queryOptions,
+                    sessionId);
             return createOkResponse(allSamples);
         } catch (Exception e) {
             return createErrorResponse(e);

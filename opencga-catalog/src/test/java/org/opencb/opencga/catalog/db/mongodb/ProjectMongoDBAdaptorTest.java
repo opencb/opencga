@@ -35,11 +35,11 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void createProjectTest() throws CatalogException, JsonProcessingException {
-        Project p = new Project("Project about some genomes", "1000G", "Today", "Cool", new Status(), "", 1000, "", null, 1);
+        Project p = new Project("1000G", "Project about some genomes", "Today", "Cool", new Status(), "", 1000, "", null, 1);
         System.out.println(catalogProjectDBAdaptor.insert(p, user1.getId(), null));
-        p = new Project("Project about some more genomes", "2000G", "Tomorrow", "Cool", new Status(), "", 3000, "", null, 1);
+        p = new Project("2000G", "Project about some more genomes", "Tomorrow", "Cool", new Status(), "", 3000, "", null, 1);
         System.out.println(catalogProjectDBAdaptor.insert(p, user1.getId(), null));
-        p = new Project("Project management project", "pmp", "yesterday", "it is a system", new Status(), "", 2000, "", null, 1);
+        p = new Project("pmp", "Project management project", "yesterday", "it is a system", new Status(), "", 2000, "", null, 1);
         System.out.println(catalogProjectDBAdaptor.insert(p, user2.getId(), null));
         System.out.println(catalogProjectDBAdaptor.insert(p, user1.getId(), null));
 
@@ -53,13 +53,13 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void getProjectIdTest() throws CatalogDBException {
-        assertTrue(catalogProjectDBAdaptor.getId(user3.getId(), user3.getProjects().get(0).getAlias()) != -1);
+        assertTrue(catalogProjectDBAdaptor.getId(user3.getId(), user3.getProjects().get(0).getId()) != -1);
         assertTrue(catalogProjectDBAdaptor.getId(user3.getId(), "nonExistingProject") == -1);
     }
 
     @Test
     public void incrementCurrentRelease() throws CatalogDBException {
-        long projectId = catalogProjectDBAdaptor.getId(user3.getId(), user3.getProjects().get(0).getAlias());
+        long projectId = catalogProjectDBAdaptor.getId(user3.getId(), user3.getProjects().get(0).getId());
         QueryResult<Project> projectQueryResult = catalogProjectDBAdaptor.get(projectId, new QueryOptions(QueryOptions.INCLUDE,
                 ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key()));
         assertEquals(1, projectQueryResult.first().getCurrentRelease());
@@ -71,7 +71,7 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void getProjectTest() throws CatalogDBException {
-        long projectId = catalogProjectDBAdaptor.getId(user3.getId(), user3.getProjects().get(0).getAlias());
+        long projectId = catalogProjectDBAdaptor.getId(user3.getId(), user3.getProjects().get(0).getId());
         System.out.println("projectId = " + projectId);
         QueryResult<Project> project = catalogProjectDBAdaptor.get(projectId, null);
         System.out.println(project);
@@ -83,11 +83,11 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void deleteProjectTest() throws CatalogException {
-        Project p = new Project("Project about some more genomes", "2000G", "Tomorrow", "Cool", new Status(), "", 3000, "", null, 1);
+        Project p = new Project("2000G", "Project about some more genomes", "Tomorrow", "Cool", new Status(), "", 3000, "", null, 1);
         QueryResult<Project> result = catalogProjectDBAdaptor.insert(p, user1.getId(), null);
         System.out.println(result.first().getStatus());
         p = result.first();
-        QueryResult<Project> queryResult = catalogProjectDBAdaptor.delete(p.getId(), new QueryOptions());
+        QueryResult<Project> queryResult = catalogProjectDBAdaptor.delete(p.getUid(), new QueryOptions());
         System.out.println(queryResult.first().getStatus());
         assertTrue(queryResult.getNumResults() == 1);
 
@@ -116,31 +116,24 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
      */
     @Test
     public void renameProjectTest() throws CatalogException {
-        Project p1 = catalogProjectDBAdaptor.insert(new Project("project1", "p1", "Tomorrow", "Cool", new Status(),
-                "", 3000, "", null, 1), user1.getId(), null).first();
-        Project p2 = catalogProjectDBAdaptor.insert(new Project("project2", "p2", "Tomorrow", "Cool", new Status(),
-                "", 3000, "", null, 1), user1.getId(), null).first();
-        System.out.println(catalogProjectDBAdaptor.renameAlias(p1.getId(), "newpmp"));
+        Project p1 = catalogProjectDBAdaptor.insert(new Project("p1", "project1", null, "Cool", new Status(), "", 3000, "", null, 1),
+                user1.getId(), null).first();
+        Project p2 = catalogProjectDBAdaptor.insert(new Project("p2", "project2", null, "Cool", new Status(), "", 3000, "", null, 1),
+                user1.getId(), null).first();
+        catalogProjectDBAdaptor.editId(p1.getUid(), "newpmp");
 
         try {
-            System.out.println(catalogProjectDBAdaptor.renameAlias(-1, "falseProject"));
+            catalogProjectDBAdaptor.editId(-1, "falseProject");
             fail("renamed project with projectId=-1");
         } catch (CatalogDBException e) {
             System.out.println("correct exception: " + e);
         }
         try {
-            System.out.println(catalogProjectDBAdaptor.renameAlias(p1.getId(), p2.getAlias().split("@")[1]));
+            catalogProjectDBAdaptor.editId(p1.getUid(), p2.getId());
             fail("renamed project with name collision");
         } catch (CatalogDBException e) {
             System.out.println("correct exception: " + e);
         }
-
-//        try {
-//            System.out.println(catalogUserDBAdaptor.renameProjectAlias(p1.getId(), p1.getAlias()));
-//            fail("renamed project to its old name");
-//        } catch (CatalogDBException e) {
-//            System.out.println("correct exception: " + e);
-//        }
     }
 
 }

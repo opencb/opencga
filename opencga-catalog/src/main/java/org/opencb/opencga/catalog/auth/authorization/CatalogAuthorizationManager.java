@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -273,6 +274,17 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
     }
 
+    @Override
+    public Boolean checkIsOwnerOrAdmin(long studyId, String userId) throws CatalogException {
+        String ownerId = studyDBAdaptor.getOwnerId(studyId);
+
+        if (!ownerId.equals(userId) && !isAdministrativeUser(studyId, userId)) {
+            return false;
+        }
+
+        return true;
+    }
+
 
     private boolean isAdministrativeUser(long studyId, String user) throws CatalogException {
         QueryResult<Group> groupBelonging = getGroupBelonging(studyId, user);
@@ -288,8 +300,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public void checkFilePermission(long studyId, long fileId, String userId, FileAclEntry.FilePermissions permission)
             throws CatalogException {
         Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.ID.key(), fileId)
-                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                .append(FileDBAdaptor.QueryParams.UID.key(), fileId)
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
         StudyAclEntry.StudyPermissions studyPermission;
         switch (permission) {
             case VIEW_HEADER:
@@ -341,8 +353,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public void checkSamplePermission(long studyId, long sampleId, String userId, SampleAclEntry.SamplePermissions permission)
             throws CatalogException {
         Query query = new Query()
-                .append(SampleDBAdaptor.QueryParams.ID.key(), sampleId)
-                .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                .append(SampleDBAdaptor.QueryParams.UID.key(), sampleId)
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
         StudyAclEntry.StudyPermissions studyPermission;
         switch (permission) {
             case VIEW:
@@ -377,8 +389,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public void checkIndividualPermission(long studyId, long individualId, String userId,
                                           IndividualAclEntry.IndividualPermissions permission) throws CatalogException {
         Query query = new Query()
-                .append(IndividualDBAdaptor.QueryParams.ID.key(), individualId)
-                .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                .append(IndividualDBAdaptor.QueryParams.UID.key(), individualId)
+                .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
         StudyAclEntry.StudyPermissions studyPermission;
         switch (permission) {
             case VIEW:
@@ -412,8 +424,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public void checkJobPermission(long studyId, long jobId, String userId, JobAclEntry.JobPermissions permission) throws CatalogException {
         Query query = new Query()
-                .append(JobDBAdaptor.QueryParams.ID.key(), jobId)
-                .append(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                .append(JobDBAdaptor.QueryParams.UID.key(), jobId)
+                .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
         StudyAclEntry.StudyPermissions studyPermission;
         switch (permission) {
             case VIEW:
@@ -439,8 +451,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public void checkCohortPermission(long studyId, long cohortId, String userId, CohortAclEntry.CohortPermissions permission)
             throws CatalogException {
         Query query = new Query()
-                .append(CohortDBAdaptor.QueryParams.ID.key(), cohortId)
-                .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                .append(CohortDBAdaptor.QueryParams.UID.key(), cohortId)
+                .append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
         StudyAclEntry.StudyPermissions studyPermission;
         switch (permission) {
             case VIEW:
@@ -503,8 +515,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public void checkFamilyPermission(long studyId, long familyId, String userId, FamilyAclEntry.FamilyPermissions permission)
             throws CatalogException {
         Query query = new Query()
-                .append(FamilyDBAdaptor.QueryParams.ID.key(), familyId)
-                .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                .append(FamilyDBAdaptor.QueryParams.UID.key(), familyId)
+                .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
         StudyAclEntry.StudyPermissions studyPermission;
         switch (permission) {
             case VIEW:
@@ -540,8 +552,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public void checkClinicalAnalysisPermission(long studyId, long analysisId, String userId,
                                                 ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions permission) throws CatalogException {
         Query query = new Query()
-                .append(ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), analysisId)
-                .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.UID.key(), analysisId)
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
         StudyAclEntry.StudyPermissions studyPermission;
         switch (permission) {
             case VIEW:
@@ -795,7 +807,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             }
         }
 
-        aclDBAdaptor.setToMembers(studyIds, members, permissions, Entity.STUDY);
+        // Todo: Remove this in 1.4
+        List<String> allStudyPermissions = EnumSet.allOf(StudyAclEntry.StudyPermissions.class)
+                .stream()
+                .map(String::valueOf)
+                .collect(Collectors.toList());
+
+        aclDBAdaptor.setToMembers(studyIds, members, permissions, allStudyPermissions, Entity.STUDY);
         return aclDBAdaptor.get(studyIds, members, Entity.STUDY);
     }
 
@@ -829,7 +847,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     public <E extends AbstractAclEntry> List<QueryResult<E>> setAcls(long studyId, List<Long> ids, List<String> members,
-                                                                     List<String> permissions, Entity entity) throws CatalogException {
+                                                                     List<String> permissions, List<String> allPermissions, Entity entity)
+            throws CatalogException {
         if (ids == null || ids.isEmpty()) {
             logger.warn("Missing identifiers to set acls");
             return Collections.emptyList();
@@ -845,7 +864,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         long startTime = System.currentTimeMillis();
-        aclDBAdaptor.setToMembers(ids, members, permissions, entity);
+        aclDBAdaptor.setToMembers(ids, members, permissions, allPermissions, entity);
         int dbTime = (int) (System.currentTimeMillis() - startTime);
 
         List<QueryResult<E>> aclResultList = getAcls(ids, members, entity);
@@ -931,7 +950,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void applyPermissionRule(long studyId, PermissionRule permissionRule, Study.Entry entry) throws CatalogException {
+    public void applyPermissionRule(long studyId, PermissionRule permissionRule, Study.Entity entry) throws CatalogException {
         // 1. We obtain which of those members are actually users to add them to the @members group automatically
         List<String> userList = permissionRule.getMembers().stream()
                 .filter(member -> !member.startsWith("@"))
@@ -946,7 +965,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void removePermissionRuleAndRemovePermissions(Study study, String permissionRuleId, Study.Entry entry)
+    public void removePermissionRuleAndRemovePermissions(Study study, String permissionRuleId, Study.Entity entry)
             throws CatalogException {
         ParamUtils.checkObj(permissionRuleId, "PermissionRule id");
         ParamUtils.checkObj(entry, "Entity");
@@ -955,7 +974,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void removePermissionRuleAndRestorePermissions(Study study, String permissionRuleId, Study.Entry entry)
+    public void removePermissionRuleAndRestorePermissions(Study study, String permissionRuleId, Study.Entity entry)
             throws CatalogException {
         ParamUtils.checkObj(permissionRuleId, "PermissionRule id");
         ParamUtils.checkObj(entry, "Entity");
@@ -964,7 +983,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void removePermissionRule(long studyId, String permissionRuleId, Study.Entry entry) throws CatalogException {
+    public void removePermissionRule(long studyId, String permissionRuleId, Study.Entity entry) throws CatalogException {
         ParamUtils.checkObj(permissionRuleId, "PermissionRule id");
         ParamUtils.checkObj(entry, "Entity");
 

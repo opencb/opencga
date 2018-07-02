@@ -37,8 +37,9 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 public interface FileDBAdaptor extends DBAdaptor<File> {
 
     enum QueryParams implements QueryParam {
-        DELETE_DATE("deleteDate", TEXT_ARRAY, ""),
-        ID("id", INTEGER_ARRAY, ""),
+        ID("id", TEXT, ""),
+        UID("uid", INTEGER_ARRAY, ""),
+        UUID("uuid", TEXT, ""),
         NAME("name", TEXT_ARRAY, ""),
         TYPE("type", TEXT_ARRAY, ""),
         FORMAT("format", TEXT_ARRAY, ""),
@@ -58,11 +59,15 @@ public interface FileDBAdaptor extends DBAdaptor<File> {
         RELATED_FILES("relatedFiles", TEXT_ARRAY, ""),
         RELATED_FILES_RELATION("relatedFiles.relation", TEXT, ""),
         SIZE("size", INTEGER_ARRAY, ""),
-        EXPERIMENT_ID("experiment.id", INTEGER_ARRAY, ""),
+        EXPERIMENT_UID("experiment.uid", INTEGER_ARRAY, ""),
+        SOFTWARE("software", TEXT_ARRAY, ""),
+        SOFTWARE_NAME("software.name", TEXT, ""),
+        SOFTWARE_VERSION("software.version", TEXT, ""),
+        SOFTWARE_COMMIT("software.commit", TEXT, ""),
         SAMPLES("samples", TEXT_ARRAY, ""),
-        SAMPLE_IDS("samples.id", INTEGER_ARRAY, ""),
+        SAMPLE_UIDS("samples.uid", INTEGER_ARRAY, ""),
 
-        JOB_ID("job.id", INTEGER_ARRAY, ""),
+        JOB_UID("job.uid", INTEGER_ARRAY, ""),
 
         INDEX("index", TEXT_ARRAY, ""),
         INDEX_USER_ID("index.userId", TEXT, ""),
@@ -80,7 +85,7 @@ public interface FileDBAdaptor extends DBAdaptor<File> {
         NSTATS("nstats", DECIMAL, ""),
 
         DIRECTORY("directory", TEXT, ""),
-        STUDY_ID("studyId", INTEGER_ARRAY, ""),
+        STUDY_UID("studyUid", INTEGER_ARRAY, ""),
         STUDY("study", INTEGER_ARRAY, ""); // Alias to studyId in the database. Only for the webservices.
 
         // Fixme: Index attributes
@@ -128,7 +133,7 @@ public interface FileDBAdaptor extends DBAdaptor<File> {
     }
 
     default boolean exists(long fileId) throws CatalogDBException {
-        return count(new Query(QueryParams.ID.key(), fileId)).first() > 0;
+        return count(new Query(QueryParams.UID.key(), fileId)).first() > 0;
     }
 
     default void checkId(long fileId) throws CatalogDBException {
@@ -136,7 +141,7 @@ public interface FileDBAdaptor extends DBAdaptor<File> {
             throw CatalogDBException.newInstance("File id '{}' is not valid: ", fileId);
         }
 
-        long count = count(new Query(QueryParams.ID.key(), fileId)).first();
+        long count = count(new Query(QueryParams.UID.key(), fileId)).first();
         if (count <= 0) {
             throw CatalogDBException.newInstance("File id '{}' does not exist", fileId);
         } else if (count > 1) {

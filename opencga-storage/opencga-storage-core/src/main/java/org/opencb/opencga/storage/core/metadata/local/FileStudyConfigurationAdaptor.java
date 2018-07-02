@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.core.metadata;
+package org.opencb.opencga.storage.core.metadata.local;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.avro.generic.GenericRecord;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.adaptors.StudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +37,7 @@ import java.util.Map;
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
-public class FileStudyConfigurationAdaptor extends StudyConfigurationAdaptor {
+public class FileStudyConfigurationAdaptor implements StudyConfigurationAdaptor {
     public static final String STUDY_CONFIGURATION_PATH = "studyConfigurationPath";
     protected static Logger logger = LoggerFactory.getLogger(FileStudyConfigurationAdaptor.class);
 
@@ -44,7 +46,7 @@ public class FileStudyConfigurationAdaptor extends StudyConfigurationAdaptor {
             .addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
 
     @Override
-    protected QueryResult<StudyConfiguration> getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
+    public QueryResult<StudyConfiguration> getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
         Path path = getPath(studyName, options);
         QueryResult<StudyConfiguration> result = readStudyConfiguration(path);
         result.first().setStudyName(studyName);
@@ -75,7 +77,7 @@ public class FileStudyConfigurationAdaptor extends StudyConfigurationAdaptor {
     }
 
     @Override
-    protected QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
+    public QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
 
         Path path = getPath(studyConfiguration.getStudyId(), options);
         try {

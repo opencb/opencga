@@ -16,21 +16,23 @@
 
 package org.opencb.opencga.core.models;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.Collections;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Created by imedina on 25/11/14.
  */
 public class AnnotationSet {
 
+    private String id;
+    @Deprecated
     private String name;
-    private long variableSetId;
+    private String variableSetId;
     private Map<String, Object> annotations;
     @Deprecated
     private String creationDate;
@@ -43,17 +45,18 @@ public class AnnotationSet {
     public AnnotationSet() {
     }
 
-    public AnnotationSet(String name, long variableSetId, Map<String, Object> annotations) {
-        this(name, variableSetId, annotations, TimeUtils.getTime(), 1, Collections.emptyMap());
+    public AnnotationSet(String id, String variableSetId, Map<String, Object> annotations) {
+        this(id, variableSetId, annotations, TimeUtils.getTime(), 1, Collections.emptyMap());
     }
 
-    public AnnotationSet(String name, long variableSetId, Map<String, Object> annotations, Map<String, Object> attributes) {
-        this(name, variableSetId, annotations, TimeUtils.getTime(), 1, attributes);
+    public AnnotationSet(String id, String variableSetId, Map<String, Object> annotations, Map<String, Object> attributes) {
+        this(id, variableSetId, annotations, TimeUtils.getTime(), 1, attributes);
     }
 
-    public AnnotationSet(String name, long variableSetId, Map<String, Object> annotations, String creationDate, int release,
+    public AnnotationSet(String id, String variableSetId, Map<String, Object> annotations, String creationDate, int release,
                          Map<String, Object> attributes) {
-        this.name = name;
+        this.id = id;
+        this.name = id;
         this.variableSetId = variableSetId;
         this.annotations = annotations;
         this.creationDate = creationDate;
@@ -64,7 +67,7 @@ public class AnnotationSet {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("AnnotationSet{");
-        sb.append("name='").append(name).append('\'');
+        sb.append("id='").append(id).append('\'');
         sb.append(", variableSetId=").append(variableSetId);
         sb.append(", annotations=").append(annotations);
         sb.append(", creationDate='").append(creationDate).append('\'');
@@ -85,15 +88,25 @@ public class AnnotationSet {
         }
 
         AnnotationSet that = (AnnotationSet) o;
-        return new EqualsBuilder().append(variableSetId, that.variableSetId).append(release, that.release).append(name, that.name)
+        return new EqualsBuilder().append(variableSetId, that.variableSetId).append(release, that.release).append(id, that.id)
                 .append(annotations, that.annotations).append(creationDate, that.creationDate).append(attributes, that.attributes)
                 .isEquals();
     }
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37).append(name).append(variableSetId).append(annotations).append(creationDate).append(release)
+        return new HashCodeBuilder(17, 37).append(id).append(variableSetId).append(annotations).append(creationDate).append(release)
                 .append(attributes).toHashCode();
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public AnnotationSet setId(String id) {
+        this.id = id;
+        this.name = StringUtils.isEmpty(this.name) ? this.id : this.name;
+        return this;
     }
 
     public String getName() {
@@ -102,14 +115,15 @@ public class AnnotationSet {
 
     public AnnotationSet setName(String name) {
         this.name = name;
+        this.id = StringUtils.isEmpty(this.id) ? this.name : this.id;
         return this;
     }
 
-    public long getVariableSetId() {
+    public String getVariableSetId() {
         return variableSetId;
     }
 
-    public AnnotationSet setVariableSetId(long variableSetId) {
+    public AnnotationSet setVariableSetId(String variableSetId) {
         this.variableSetId = variableSetId;
         return this;
     }

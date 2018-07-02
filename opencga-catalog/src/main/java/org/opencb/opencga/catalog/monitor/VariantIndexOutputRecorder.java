@@ -66,12 +66,12 @@ public class VariantIndexOutputRecorder {
                 storageETLresults = objectReader.readValue(tmpOutdirPath.resolve("storageETLresults").toFile());
                 params .putIfNotNull("storageETLResult", storageETLresults);
                 ObjectMap attributes = new ObjectMap(JobDBAdaptor.QueryParams.ATTRIBUTES.key(), params);
-                catalogManager.getJobManager().update(job.getId(), attributes, new QueryOptions(), sessionId);
+                catalogManager.getJobManager().update(job.getUid(), attributes, new QueryOptions(), sessionId);
                 job.setAttributes(params);
             } catch (IOException e) {
                 logger.error("Error reading the storageResults from {}", fileResults);
             } catch (CatalogException e) {
-                logger.error("Could not update job {} with params {}", job.getId(), params.safeToString());
+                logger.error("Could not update job {} with params {}", job.getUid(), params.safeToString());
             } finally {
                 try {
                     catalogIOManager.deleteFile(fileResults.toURI());

@@ -37,17 +37,14 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.Family;
-import org.opencb.opencga.core.models.Individual;
+import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.server.WebServiceException;
-import org.opencb.opencga.server.rest.json.mixin.FamilyMixin;
-import org.opencb.opencga.server.rest.json.mixin.IndividualMixin;
+import org.opencb.opencga.server.rest.json.mixin.PrivateUidMixin;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
@@ -90,7 +87,7 @@ public class OpenCGAWSServer {
 
     @DefaultValue("")
     @QueryParam("sid")
-    @ApiParam("Session id")
+    @ApiParam(value = "Session id", hidden = true)
     protected String dummySessionId;
 
     @HeaderParam("Authorization")
@@ -101,6 +98,7 @@ public class OpenCGAWSServer {
     protected UriInfo uriInfo;
     protected HttpServletRequest httpServletRequest;
     protected MultivaluedMap<String, String> params;
+    private String requestDescription;
 
     protected String sessionIp;
 
@@ -135,6 +133,18 @@ public class OpenCGAWSServer {
         jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
         jsonObjectMapper.addMixIn(Genotype.class, GenotypeJsonMixin.class);
         jsonObjectMapper.addMixIn(Alignment.AlignmentDifference.class, AlignmentDifferenceJsonMixin.class);
+
+        jsonObjectMapper.addMixIn(Project.class, PrivateUidMixin.class);
+        jsonObjectMapper.addMixIn(Study.class, PrivateUidMixin.class);
+        jsonObjectMapper.addMixIn(Sample.class, PrivateUidMixin.class);
+        jsonObjectMapper.addMixIn(Individual.class, PrivateUidMixin.class);
+        jsonObjectMapper.addMixIn(org.opencb.opencga.core.models.File.class, PrivateUidMixin.class);
+        jsonObjectMapper.addMixIn(Cohort.class, PrivateUidMixin.class);
+        jsonObjectMapper.addMixIn(Job.class, PrivateUidMixin.class);
+        jsonObjectMapper.addMixIn(VariableSet.class, PrivateUidMixin.class);
+        jsonObjectMapper.addMixIn(Family.class, PrivateUidMixin.class);
+        jsonObjectMapper.addMixIn(ClinicalAnalysis.class, PrivateUidMixin.class);
+
         jsonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         jsonObjectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         jsonObjectWriter = jsonObjectMapper.writer();
@@ -150,7 +160,8 @@ public class OpenCGAWSServer {
         this(uriInfo.getPathParameters().getFirst("apiVersion"), uriInfo, httpServletRequest, httpHeaders);
     }
 
-    public OpenCGAWSServer(@PathParam("apiVersion") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
+    public OpenCGAWSServer(@PathParam("apiVersion") String version, @Context UriInfo uriInfo,
+                           @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws VersionException {
         this.apiVersion = version;
         this.uriInfo = uriInfo;
@@ -325,9 +336,15 @@ public class OpenCGAWSServer {
                 case Constants.REFRESH:
                     queryOptions.put(Constants.REFRESH, Boolean.parseBoolean(value));
                     break;
-                case "count":
+                case QueryOptions.COUNT:
                     count = Boolean.parseBoolean(value);
                     queryOptions.put(entry.getKey(), count);
+                    break;
+                case Constants.SILENT:
+                    queryOptions.put(entry.getKey(), Boolean.parseBoolean(value));
+                    break;
+                case Constants.FORCE:
+                    queryOptions.put(entry.getKey(), Boolean.parseBoolean(value));
                     break;
                 case Constants.FLATTENED_ANNOTATIONS:
                     queryOptions.put(Constants.FLATTENED_ANNOTATIONS, Boolean.parseBoolean(value));
@@ -361,25 +378,19 @@ public class OpenCGAWSServer {
             query.remove("status");
         }
 
-        if (query.containsKey("variableSet")) {
-            query.put("variableSetId", query.get("variableSet"));
-            query.remove("variableSet");
-        }
-        if (query.containsKey("variableSetId")) {
-            try {
-                AbstractManager.MyResourceId resource = catalogManager.getStudyManager().getVariableSetId(query.getString
-                        ("variableSetId"), query.getString("study"), sessionId);
-                query.put("variableSetId", resource.getResourceId());
-            } catch (CatalogException e) {
-                logger.warn("VariableSetId parameter found, but proper id could not be found: {}", e.getMessage(), e);
-            }
-        }
+        // Remove deprecated fields
+        query.remove("variableSet");
+        query.remove("annotationsetName");
 
         try {
-            logger.info("URL: {}, query = {}, queryOptions = {}", uriInfo.getAbsolutePath().toString(),
-                    jsonObjectWriter.writeValueAsString(query), jsonObjectWriter.writeValueAsString(queryOptions));
+            requestDescription = httpServletRequest.getMethod() + ": " + uriInfo.getAbsolutePath().toString()
+                    + ", " + jsonObjectWriter.writeValueAsString(query)
+                    + ", " + jsonObjectWriter.writeValueAsString(queryOptions);
+            logger.info(requestDescription);
         } catch (JsonProcessingException e) {
-            e.printStackTrace();
+            requestDescription = httpServletRequest.getMethod() + ": " + uriInfo.getRequestUri();
+            logger.info(requestDescription);
+            logger.error("Error writing as Json", e);
         }
     }
 
@@ -408,9 +419,9 @@ public class OpenCGAWSServer {
 
     // Temporal method used by deprecated methods. This will be removed at some point.
     protected AclParams getAclParams(
-            @ApiParam(value = "Comma separated list of permissions to add", required = false) @QueryParam("add") String addPermissions,
-            @ApiParam(value = "Comma separated list of permissions to remove", required = false) @QueryParam("remove") String removePermissions,
-            @ApiParam(value = "Comma separated list of permissions to set", required = false) @QueryParam("set") String setPermissions)
+            @ApiParam(value = "Comma separated list of permissions to add") @QueryParam("add") String addPermissions,
+            @ApiParam(value = "Comma separated list of permissions to remove") @QueryParam("remove") String removePermissions,
+            @ApiParam(value = "Comma separated list of permissions to set") @QueryParam("set") String setPermissions)
             throws CatalogException {
         int count = 0;
         count += StringUtils.isNotEmpty(setPermissions) ? 1 : 0;
@@ -474,7 +485,9 @@ public class OpenCGAWSServer {
             errorStatus = Response.Status.UNAUTHORIZED;
         }
 
-        return Response.fromResponse(createJsonResponse(queryResponse)).status(errorStatus).build();
+        Response response = Response.fromResponse(createJsonResponse(queryResponse)).status(errorStatus).build();
+        logResponse(response.getStatusInfo(), queryResponse);
+        return response;
     }
 
 //    protected Response createErrorResponse(String o) {
@@ -485,7 +498,8 @@ public class OpenCGAWSServer {
 
     protected Response createErrorResponse(String method, String errorMessage) {
         try {
-            return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(new ObjectMap("error", errorMessage)), MediaType.APPLICATION_JSON_TYPE));
+            return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(new ObjectMap("error", errorMessage)),
+                    MediaType.APPLICATION_JSON_TYPE));
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
@@ -515,7 +529,9 @@ public class OpenCGAWSServer {
         }
         queryResponse.setResponse(list);
 
-        return createJsonResponse(queryResponse);
+        Response response = createJsonResponse(queryResponse);
+        logResponse(response.getStatusInfo(), queryResponse);
+        return response;
     }
 
     //Response methods
@@ -527,6 +543,37 @@ public class OpenCGAWSServer {
         return buildResponse(Response.ok(o1, o2).header("content-disposition", "attachment; filename =" + fileName));
     }
 
+    private void logResponse(Response.StatusType statusInfo, QueryResponse<?> queryResponse) {
+        StringBuilder sb = new StringBuilder();
+        try {
+            if (statusInfo.getFamily().equals(Response.Status.Family.SUCCESSFUL)) {
+                sb.append("OK");
+            } else {
+                sb.append("ERROR");
+            }
+            sb.append(" [").append(statusInfo.getStatusCode()).append(']');
+
+            if (queryResponse == null) {
+                sb.append(", ").append(System.currentTimeMillis() - startTime).append("ms");
+            } else {
+                sb.append(", ").append(queryResponse.getTime()).append("ms");
+                if (queryResponse.getResponse().size() == 1) {
+                    QueryResult<?> result = queryResponse.getResponse().get(0);
+                    if (result != null) {
+                        sb.append(", num: ").append(result.getNumResults());
+                        if (result.getNumTotalResults() >= 0) {
+                            sb.append(", total: ").append(result.getNumTotalResults());
+                        }
+                    }
+                }
+            }
+            sb.append(", ").append(requestDescription);
+            logger.info(sb.toString());
+        } catch (RuntimeException e) {
+            logger.warn("Error logging response", e);
+            logger.info(sb.toString()); // Print incomplete response
+        }
+    }
 
     protected Response createJsonResponse(QueryResponse queryResponse) {
         try {
@@ -606,4 +653,5 @@ public class OpenCGAWSServer {
             isSingleId(id);
         }
     }
+
 }

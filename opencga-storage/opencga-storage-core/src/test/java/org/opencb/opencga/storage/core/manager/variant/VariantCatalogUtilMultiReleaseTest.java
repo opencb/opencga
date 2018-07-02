@@ -43,20 +43,20 @@ public class VariantCatalogUtilMultiReleaseTest {
         User user = catalog.getUserManager().create("user", "user", "my@email.org", "1234", "ACME", 1000L, null, null, null).first();
         sessionId = catalog.getUserManager().login("user", "1234");
         catalog.getProjectManager().create("p1", "p1", "", null, "hsapiens", "Homo Sapiens", null, "GRCh38", null, sessionId);
-        catalog.getStudyManager().create("p1", "s1", "s1", Study.Type.CONTROL_SET, null, null, null, null, null, null, null, null, null, null, sessionId);
+        catalog.getStudyManager().create("p1", "s1", null, "s1", Study.Type.CONTROL_SET, null, null, null, null, null, null, null, null, null, null, sessionId);
         createFile("file1.vcf");
         createFile("file2.vcf");
         createSample("sample1");
         createSample("sample2");
-        catalog.getCohortManager().create("s1", new Cohort().setName("c1").setSamples(Collections.emptyList()), null, sessionId);
+        catalog.getCohortManager().create("s1", new Cohort().setId("c1").setSamples(Collections.emptyList()), null, sessionId);
 
         catalog.getProjectManager().incrementRelease("p1", sessionId);
         createFile("file3.vcf");
         createFile("file4.vcf");
         createSample("sample3");
         createSample("sample4");
-        catalog.getCohortManager().create("s1", new Cohort().setName("c2").setSamples(Collections.emptyList()), null, sessionId);
-        catalog.getCohortManager().create("s1", new Cohort().setName(StudyEntry.DEFAULT_COHORT).setSamples(samples), null, sessionId);
+        catalog.getCohortManager().create("s1", new Cohort().setId("c2").setSamples(Collections.emptyList()), null, sessionId);
+        catalog.getCohortManager().create("s1", new Cohort().setId(StudyEntry.DEFAULT_COHORT).setSamples(samples), null, sessionId);
         queryUtils = new VariantCatalogQueryUtils(catalog);
     }
 

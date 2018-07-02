@@ -84,7 +84,7 @@ public class ProjectCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap params = new ObjectMap();
         // First we populate the organism information using the client configuration
         params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.NAME.key(), projectsCommandOptions.createCommandOptions.name);
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ALIAS.key(), projectsCommandOptions.createCommandOptions.alias);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ID.key(), projectsCommandOptions.createCommandOptions.alias);
 
         ProjectCommandOptions.CreateCommandOptions commandOptions = projectsCommandOptions.createCommandOptions;
         Project.Organism organism = clientConfiguration.getOrganism();
@@ -120,7 +120,7 @@ public class ProjectCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotEmpty("owner", commandOptions.owner);
         query.putIfNotEmpty(ProjectDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
         query.putIfNotEmpty(ProjectDBAdaptor.QueryParams.NAME.key(), commandOptions.name);
-        query.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ALIAS.key(), commandOptions.alias);
+        query.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ID.key(), commandOptions.alias);
         query.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANIZATION.key(), commandOptions.organization);
         query.putIfNotEmpty(ProjectDBAdaptor.QueryParams.DESCRIPTION.key(), commandOptions.description);
         query.putIfNotEmpty(ProjectDBAdaptor.QueryParams.CREATION_DATE.key(), commandOptions.creationDate);

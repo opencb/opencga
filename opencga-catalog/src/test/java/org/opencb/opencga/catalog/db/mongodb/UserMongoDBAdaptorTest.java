@@ -70,7 +70,7 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
         QueryResult<User> deleteUser = catalogUserDBAdaptor.delete(deletable1.getId(), new QueryOptions());
         assertFalse(deleteUser.getResult().isEmpty());
         assertNotNull(deleteUser.first());
-        assertEquals(Status.TRASHED, deleteUser.first().getStatus().getName());
+        assertEquals(Status.DELETED, deleteUser.first().getStatus().getName());
 
 
         /*

@@ -66,7 +66,8 @@ public interface AuthorizationDBAdaptor {
      */
     void removeFromStudy(long studyId, String member, Entity entry) throws CatalogException;
 
-    void setToMembers(List<Long> resourceIds, List<String> members, List<String> permissions, Entity entry) throws CatalogDBException;
+    void setToMembers(List<Long> resourceIds, List<String> members, List<String> permissions, List<String> allPermissions, Entity entity)
+            throws CatalogDBException;
 
     void addToMembers(List<Long> resourceIds, List<String> members, List<String> permissions, Entity entry) throws CatalogDBException;
 
@@ -76,12 +77,12 @@ public interface AuthorizationDBAdaptor {
 
     <E extends AbstractAclEntry> void setAcls(List<Long> resourceIds, List<E> acls, Entity entity) throws CatalogDBException;
 
-    void applyPermissionRules(long studyId, PermissionRule permissionRule, Study.Entry entry) throws CatalogException;
+    void applyPermissionRules(long studyId, PermissionRule permissionRule, Study.Entity entry) throws CatalogException;
 
-    void removePermissionRuleAndRemovePermissions(Study study, String permissionRuleId, Study.Entry entry) throws CatalogException;
+    void removePermissionRuleAndRemovePermissions(Study study, String permissionRuleId, Study.Entity entry) throws CatalogException;
 
-    void removePermissionRuleAndRestorePermissions(Study study, String permissionRuleToDeleteId, Study.Entry entity)
+    void removePermissionRuleAndRestorePermissions(Study study, String permissionRuleToDeleteId, Study.Entity entity)
             throws CatalogException;
 
-    void removePermissionRule(long studyId, String permissionRuleToDelete, Study.Entry entry) throws CatalogException;
+    void removePermissionRule(long studyId, String permissionRuleToDelete, Study.Entity entry) throws CatalogException;
 }

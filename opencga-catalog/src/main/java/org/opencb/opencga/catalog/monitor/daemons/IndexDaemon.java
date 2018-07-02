@@ -157,17 +157,17 @@ public class IndexDaemon extends MonitorParentDaemon {
     }
 
     private void checkRunningJob(Job job) throws CatalogIOException {
-        Path tmpOutdirPath = getJobTemporaryFolder(job.getId(), tempJobFolder);
+        Path tmpOutdirPath = getJobTemporaryFolder(job.getUid(), tempJobFolder);
         Job.JobStatus jobStatus;
 
         ExecutionOutputRecorder outputRecorder = new ExecutionOutputRecorder(catalogManager, this.sessionId);
         if (!tmpOutdirPath.toFile().exists()) {
             jobStatus = new Job.JobStatus(Job.JobStatus.ERROR, "Temporal output directory not found");
             try {
-                logger.info("Updating job {} from {} to {}", job.getId(), Job.JobStatus.RUNNING, jobStatus.getName());
+                logger.info("Updating job {} from {} to {}", job.getUid(), Job.JobStatus.RUNNING, jobStatus.getName());
                 outputRecorder.updateJobStatus(job, jobStatus);
             } catch (CatalogException e) {
-                logger.warn("Could not update job {} to status error", job.getId(), e);
+                logger.warn("Could not update job {} to status error", job.getUid(), e);
             } finally {
                 closeSessionId(job);
             }
@@ -176,7 +176,7 @@ public class IndexDaemon extends MonitorParentDaemon {
             if (!status.equalsIgnoreCase(Job.JobStatus.UNKNOWN) && !status.equalsIgnoreCase(Job.JobStatus.RUNNING)) {
                 ObjectMap parameters = new ObjectMap(JobDBAdaptor.QueryParams.END_TIME.key(), System.currentTimeMillis());
 //                variantIndexOutputRecorder.registerStorageETLResults(job, tmpOutdirPath);
-                logger.info("Updating job {} from {} to {}", job.getId(), Job.JobStatus.RUNNING, status);
+                logger.info("Updating job {} from {} to {}", job.getUid(), Job.JobStatus.RUNNING, status);
                 try {
                     if (ALIGNMENT_TYPE.equals(String.valueOf(job.getAttributes().get(INDEX_TYPE)))) {
                         String userToken = catalogManager.getUserManager().getSystemTokenForUser(job.getUserId(), sessionId);
@@ -202,9 +202,9 @@ public class IndexDaemon extends MonitorParentDaemon {
                 }
 
                 try {
-                    jobDBAdaptor.update(job.getId(), parameters, QueryOptions.empty());
+                    jobDBAdaptor.update(job.getUid(), parameters, QueryOptions.empty());
                 } catch (CatalogException e) {
-                    logger.error("Error updating job {} with {}", job.getId(), parameters.toJson(), e);
+                    logger.error("Error updating job {} with {}", job.getUid(), parameters.toJson(), e);
                 }
             }
 
@@ -238,7 +238,7 @@ public class IndexDaemon extends MonitorParentDaemon {
 
     private void queuePreparedIndex(Job job) {
         // Create the temporal output directory.
-        Path path = getJobTemporaryFolder(job.getId(), tempJobFolder);
+        Path path = getJobTemporaryFolder(job.getUid(), tempJobFolder);
         try {
             catalogIOManager.createDirectory(path.toUri());
         } catch (CatalogIOException e) {
@@ -248,8 +248,8 @@ public class IndexDaemon extends MonitorParentDaemon {
         }
 
         // Define where the stdout and stderr will be stored
-        String stderr = path.resolve(job.getName() + '_' + job.getId() + ".err").toString();
-        String stdout = path.resolve(job.getName() + '_' + job.getId() + ".out").toString();
+        String stderr = path.resolve(job.getName() + '_' + job.getUid() + ".err").toString();
+        String stdout = path.resolve(job.getName() + '_' + job.getUid() + ".out").toString();
 
         // Obtain a new session id for the user so we can guarantee the session will be open during execution.
         String userId = job.getUserId();
@@ -268,7 +268,7 @@ public class IndexDaemon extends MonitorParentDaemon {
         job.getParams().put("outdir", path.toString());
 
         if (job.getAttributes().get(INDEX_TYPE).toString().equalsIgnoreCase(VARIANT_TYPE)) {
-            job.getParams().put("path", Long.toString(job.getOutDir().getId()));
+            job.getParams().put("path", Long.toString(job.getOutDir().getUid()));
 
             commandLine.append(" variant index");
             Set<String> knownParams = new HashSet<>(Arrays.asList(
@@ -291,7 +291,7 @@ public class IndexDaemon extends MonitorParentDaemon {
         logger.info("Updating job CLI '{}' from '{}' to '{}'", commandLine.toString(), Job.JobStatus.PREPARED, Job.JobStatus.QUEUED);
 
         try {
-            setNewStatus(job.getId(), Job.JobStatus.QUEUED, "The job is in the queue waiting to be executed");
+            setNewStatus(job.getUid(), Job.JobStatus.QUEUED, "The job is in the queue waiting to be executed");
 //            Job.JobStatus jobStatus = new Job.JobStatus(Job.JobStatus.QUEUED, "The job is in the queue waiting to be executed");
 //            updateObjectMap.put(JobDBAdaptor.QueryParams.STATUS.key(), jobStatus);
             ObjectMap updateObjectMap = new ObjectMap();
@@ -306,15 +306,15 @@ public class IndexDaemon extends MonitorParentDaemon {
             job.getResourceManagerAttributes().put(AbstractExecutor.OUTDIR, path.toString());
             updateObjectMap.put(JobDBAdaptor.QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key(), job.getResourceManagerAttributes());
 
-            QueryResult<Job> update = jobDBAdaptor.update(job.getId(), updateObjectMap, QueryOptions.empty());
+            QueryResult<Job> update = jobDBAdaptor.update(job.getUid(), updateObjectMap, QueryOptions.empty());
             if (update.getNumResults() == 1) {
                 job = update.first();
                 executeJob(job, userSessionId);
             } else {
-                logger.error("Could not update nor run job {}" + job.getId());
+                logger.error("Could not update nor run job {}" + job.getUid());
             }
         } catch (CatalogException e) {
-            logger.error("Could not update job {}.", job.getId(), e);
+            logger.error("Could not update job {}.", job.getUid(), e);
         }
 
     }
@@ -332,9 +332,9 @@ public class IndexDaemon extends MonitorParentDaemon {
         job.getAttributes().remove("sessionId");
         ObjectMap params = new ObjectMap(JobDBAdaptor.QueryParams.ATTRIBUTES.key(), job.getAttributes());
         try {
-            jobDBAdaptor.update(job.getId(), params, QueryOptions.empty());
+            jobDBAdaptor.update(job.getUid(), params, QueryOptions.empty());
         } catch (CatalogException e) {
-            logger.error("Could not remove session id from attributes of job {}. ", job.getId(), e);
+            logger.error("Could not remove session id from attributes of job {}. ", job.getUid(), e);
         }
     }
 }

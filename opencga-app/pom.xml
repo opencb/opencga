@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>1.4.0-dev</version>
+        <version>1.4.0-rc-dev</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -79,6 +79,13 @@
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-core</artifactId>
+            <version>${opencga.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-catalog</artifactId>
             <version>${opencga.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
@@ -148,7 +155,6 @@
                     <configurationDirectory>conf</configurationDirectory>
                     <!--Do we need to include the configuration folder in the classpath?-->
                     <includeConfigurationDirectoryInClasspath>false</includeConfigurationDirectoryInClasspath>
-                    <extraJvmArguments>-Xms256m -Xmx2048m -Dfile.encoding=UTF-8</extraJvmArguments>
                     <environmentSetupFileName>${opencga.env.file}</environmentSetupFileName>
                     <programs>
                         <program>
@@ -157,6 +163,13 @@
                             <platforms>
                                 <platform>unix</platform>
                             </platforms>
+                            <jvmSettings>
+                                <initialMemorySize>256m</initialMemorySize>
+                                <maxMemorySize>2048m</maxMemorySize>
+                                <systemProperties>
+                                    <systemProperty>file.encoding=UTF-8</systemProperty>
+                                </systemProperties>
+                            </jvmSettings>
                         </program>
                         <program>
                             <id>opencga-admin.sh</id>
@@ -164,6 +177,13 @@
                             <platforms>
                                 <platform>unix</platform>
                             </platforms>
+                            <jvmSettings>
+                                <initialMemorySize>256m</initialMemorySize>
+                                <maxMemorySize>8192m</maxMemorySize>
+                                <systemProperties>
+                                    <systemProperty>file.encoding=UTF-8</systemProperty>
+                                </systemProperties>
+                            </jvmSettings>
                         </program>
                         <program>
                             <id>opencga-analysis.sh</id>
@@ -173,7 +193,10 @@
                             </platforms>
                             <jvmSettings>
                                 <initialMemorySize>256m</initialMemorySize>
-                                <maxMemorySize>4096m</maxMemorySize>
+                                <maxMemorySize>8192m</maxMemorySize>
+                                <systemProperties>
+                                    <systemProperty>file.encoding=UTF-8</systemProperty>
+                                </systemProperties>
                             </jvmSettings>
                         </program>
                         <program>

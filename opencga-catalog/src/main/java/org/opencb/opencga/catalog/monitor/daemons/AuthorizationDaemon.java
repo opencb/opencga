@@ -34,8 +34,8 @@ public class AuthorizationDaemon extends MonitorParentDaemon {
 
         Query allStudies = new Query();
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
-                        Arrays.asList(StudyDBAdaptor.QueryParams.PERMISSION_RULES.key(), StudyDBAdaptor.QueryParams.ALIAS.key(),
-                                StudyDBAdaptor.QueryParams.ID.key()));
+                        Arrays.asList(StudyDBAdaptor.QueryParams.PERMISSION_RULES.key(), StudyDBAdaptor.QueryParams.ID.key(),
+                                StudyDBAdaptor.QueryParams.UID.key()));
 
         while (!exit) {
             try {
@@ -62,17 +62,17 @@ public class AuthorizationDaemon extends MonitorParentDaemon {
             return;
         }
 
-        logger.info("Analysing study {} ({})", study.getAlias(), study.getId());
+        logger.info("Analysing study {} ({})", study.getId(), study.getUid());
 
-        for (Map.Entry<Study.Entry, List<PermissionRule>> myMap : study.getPermissionRules().entrySet()) {
-            Study.Entry entry = myMap.getKey();
+        for (Map.Entry<Study.Entity, List<PermissionRule>> myMap : study.getPermissionRules().entrySet()) {
+            Study.Entity entry = myMap.getKey();
             for (PermissionRule permissionRule : myMap.getValue()) {
                 try {
                     String[] split = permissionRule.getId().split(INTERNAL_DELIMITER, 2);
                     if (split.length == 1) {
                         // Apply rules
                         logger.info("Attempting to apply permission rule {} in {}", permissionRule.getId(), entry);
-                        authorizationManager.applyPermissionRule(study.getId(), permissionRule, entry);
+                        authorizationManager.applyPermissionRule(study.getUid(), permissionRule, entry);
                     } else {
                         // Remove permission rule
                         PermissionRule.DeleteAction deleteAction = PermissionRule.DeleteAction.valueOf(split[1].split("_")[1]);
@@ -80,7 +80,7 @@ public class AuthorizationDaemon extends MonitorParentDaemon {
                             case NONE:
                                 logger.info("Removing permission rule {}", permissionRule.getId().split(INTERNAL_DELIMITER)[0],
                                         entry);
-                                authorizationManager.removePermissionRule(study.getId(), permissionRule.getId(), entry);
+                                authorizationManager.removePermissionRule(study.getUid(), permissionRule.getId(), entry);
                                 break;
                             case REVERT:
                                 logger.info("Removing permission rule {} and reverting applied permissions for {}",

@@ -26,14 +26,15 @@ import java.nio.file.Path;
 public class FileInfo {
 
     private String name;
-    private Path path; // Physical path to the file or folder (equivalent to URI in catalog)
-    private long fileId;
+    private String path;
+    private Path filePath; // Physical path to the file or folder (equivalent to URI in catalog)
+    private long fileUid;
     private File.Bioformat bioformat;
     private File.Format format;
 
 
     public FileInfo() {
-        this.fileId = -1;
+        this.fileUid = -1;
     }
 
     public String getName() {
@@ -45,21 +46,32 @@ public class FileInfo {
         return this;
     }
 
-    public Path getPath() {
+    public String getPath() {
         return path;
     }
 
-    public FileInfo setPath(Path path) {
+    public FileInfo setPath(String path) {
         this.path = path;
         return this;
     }
 
-    public long getFileId() {
-        return fileId;
+    public Path getPhysicalFilePath() {
+        return filePath;
     }
 
-    public FileInfo setFileId(long fileId) {
-        this.fileId = fileId;
+    public FileInfo setFilePath(Path filePath) {
+        this.filePath = filePath;
+        return this;
+    }
+
+    @Deprecated
+    public long getFileUid() {
+        return fileUid;
+    }
+
+    @Deprecated
+    public FileInfo setFileUid(long fileUid) {
+        this.fileUid = fileUid;
         return this;
     }
 

@@ -56,7 +56,7 @@ public class VariantTraitAssociationToEvidenceEntryConverter implements Converte
         }
     }
 
-    protected EvidenceEntry fromClinVar(ClinVar clinVar) {
+    public EvidenceEntry fromClinVar(ClinVar clinVar) {
         EvidenceSource evidenceSource = new EvidenceSource(CLINVAR, null, null);
         String url = clinVar.getAccession().startsWith("RCV")
                 ? "https://www.ncbi.nlm.nih.gov/clinvar/" + clinVar.getAccession()
@@ -98,7 +98,7 @@ public class VariantTraitAssociationToEvidenceEntryConverter implements Converte
                 additionalProperties, Collections.emptyList());
     }
 
-    protected EvidenceEntry fromCosmic(Cosmic cosmic) {
+    public EvidenceEntry fromCosmic(Cosmic cosmic) {
         EvidenceSource evidenceSource = new EvidenceSource(COSMIC, null, null);
         List<GenomicFeature> genomicFeatures;
         if (cosmic.getGeneName() != null) {

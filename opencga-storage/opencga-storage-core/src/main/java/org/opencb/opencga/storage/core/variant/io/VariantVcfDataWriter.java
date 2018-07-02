@@ -37,7 +37,6 @@ import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
 import org.slf4j.Logger;
@@ -76,7 +75,6 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
     private static final String ALL_ANNOTATIONS = "allele|gene|ensemblGene|ensemblTranscript|biotype|consequenceType|phastCons|phylop"
             + "|populationFrequency|cDnaPosition|cdsPosition|proteinPosition|sift|polyphen|clinvar|cosmic|gwas|drugInteraction";
     private final StudyConfiguration studyConfiguration;
-    private final VariantFileMetadataDBAdaptor fileMetadataDBAdaptor;
     private final OutputStream outputStream;
     private final Query query;
     private final QueryOptions queryOptions;
@@ -90,10 +88,9 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
     private final AtomicReference<BiConsumer<Variant, RuntimeException>> converterErrorListener = new AtomicReference<>((v, r) -> { });
     private final AtomicBoolean exportGenotype = new AtomicBoolean(true);
 
-    public VariantVcfDataWriter(StudyConfiguration studyConfiguration, VariantFileMetadataDBAdaptor fileMetadataDBAdaptor,
+    public VariantVcfDataWriter(StudyConfiguration studyConfiguration,
                                 OutputStream outputStream, Query query, QueryOptions queryOptions) {
         this.studyConfiguration = studyConfiguration;
-        this.fileMetadataDBAdaptor = fileMetadataDBAdaptor;
         this.outputStream = outputStream;
         this.query = query == null ? new Query() : query;
         this.queryOptions = queryOptions == null ? new QueryOptions() : queryOptions;
@@ -163,10 +160,9 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
 
     @Deprecated
     public static int htsExport(VariantDBIterator iterator, StudyConfiguration studyConfiguration,
-                                VariantFileMetadataDBAdaptor fileMetadataDBAdaptor,
                                 OutputStream outputStream, Query query, QueryOptions queryOptions) {
 
-        VariantVcfDataWriter exporter = new VariantVcfDataWriter(studyConfiguration, fileMetadataDBAdaptor, outputStream, query,
+        VariantVcfDataWriter exporter = new VariantVcfDataWriter(studyConfiguration, outputStream, query,
                 queryOptions);
 
         exporter.open();
@@ -192,7 +188,7 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
         logger.info("Samples mapped: {} ... ", names.size());
 
 //        Iterator<VariantSource> iterator = sourceDBAdaptor.iterator(
-//                new Query(VariantStorageEngine.Options.STUDY_ID.key(), studyConfiguration.getStudyId()),
+//                new Query(VariantStorageEngine.Options.STUDY_UID.key(), studyConfiguration.getStudyId()),
 //                new QueryOptions());
 //        if (iterator.hasNext()) {
 //            VariantSource source = iterator.next();
@@ -327,7 +323,7 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
 //        String fileHeader;
 //        if (headers.isEmpty()) {
 //            Iterator<VariantSource> iterator = sourceDBAdaptor.iterator(
-//                    new Query(VariantStorageEngine.Options.STUDY_ID.key(), studyConfiguration.getStudyId()),
+//                    new Query(VariantStorageEngine.Options.STUDY_UID.key(), studyConfiguration.getStudyId()),
 //                    new QueryOptions());
 //            if (iterator.hasNext()) {
 //                VariantSource source = iterator.next();

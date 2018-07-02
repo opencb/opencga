@@ -17,7 +17,6 @@
 
 package org.opencb.opencga.core.models;
 
-import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.FieldUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.acls.AclParams;
@@ -28,10 +27,11 @@ import java.util.*;
 /**
  * Created by jacobo on 11/09/14.
  */
-public class Study {
+public class Study extends PrivateFields {
 
-    private long id;
+    private String id;
     private String name;
+    private String uuid;
     private String alias;
     private Type type;
     private String creationDate;
@@ -41,6 +41,7 @@ public class Study {
     private long size;
     // TODO: Pending !!!
     private String cipher;
+    private String fqn;
 
     private List<Group> groups;
 
@@ -58,7 +59,7 @@ public class Study {
 
     private List<VariableSet> variableSets;
 
-    private Map<Entry, List<PermissionRule>> permissionRules;
+    private Map<Entity, List<PermissionRule>> permissionRules;
 
     private URI uri;
 
@@ -73,17 +74,17 @@ public class Study {
     }
 
     public Study(String name, String alias, Type type, String description, Status status, URI uri, int release) {
-        this(-1, name, alias, type, TimeUtils.getTime(), description, status, null, 0, "",
+        this(alias, name, alias, type, TimeUtils.getTime(), description, status, null, 0, "",
                 new ArrayList<>(), new ArrayList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
                 new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), new HashMap<>(),
                 uri, new HashMap<>(), release, new HashMap<>(), new HashMap<>()
         );
     }
 
-    public Study(long id, String name, String alias, Type type, String creationDate, String description, Status status, String lastModified,
-                 long size, String cipher, List<Group> groups, List<Experiment> experiments, List<File> files, List<Job> jobs,
-                 List<Individual> individuals, List<Sample> samples, List<Dataset> datasets, List<Cohort> cohorts,
-                 List<DiseasePanel> panels, List<VariableSet> variableSets, Map<Entry, List<PermissionRule>> permissionRules,
+    public Study(String id, String name, String alias, Type type, String creationDate, String description, Status status,
+                 String lastModified, long size, String cipher, List<Group> groups, List<Experiment> experiments, List<File> files,
+                 List<Job> jobs, List<Individual> individuals, List<Sample> samples, List<Dataset> datasets, List<Cohort> cohorts,
+                 List<DiseasePanel> panels, List<VariableSet> variableSets, Map<Entity, List<PermissionRule>> permissionRules,
                  URI uri, Map<File.Bioformat, DataStore> dataStores, int release, Map<String, Object> stats,
                  Map<String, Object> attributes) {
         this.id = id;
@@ -127,22 +128,22 @@ public class Study {
         COLLECTION
     }
 
-    public enum Entry {
-        SAMPLES(Entity.SAMPLE),
-        FILES(Entity.FILE),
-        COHORTS(Entity.COHORT),
-        INDIVIDUALS(Entity.INDIVIDUAL),
-        FAMILIES(Entity.FAMILY),
-        JOBS(Entity.JOB),
-        CLINICAL_ANALYSES(Entity.CLINICAL_ANALYSIS);
+    public enum Entity {
+        SAMPLES(org.opencb.opencga.core.common.Entity.SAMPLE),
+        FILES(org.opencb.opencga.core.common.Entity.FILE),
+        COHORTS(org.opencb.opencga.core.common.Entity.COHORT),
+        INDIVIDUALS(org.opencb.opencga.core.common.Entity.INDIVIDUAL),
+        FAMILIES(org.opencb.opencga.core.common.Entity.FAMILY),
+        JOBS(org.opencb.opencga.core.common.Entity.JOB),
+        CLINICAL_ANALYSES(org.opencb.opencga.core.common.Entity.CLINICAL_ANALYSIS);
 
-        private final Entity entity;
+        private final org.opencb.opencga.core.common.Entity entity;
 
-        Entry(Entity entity) {
+        Entity(org.opencb.opencga.core.common.Entity entity) {
             this.entity = entity;
         }
 
-        public Entity getEntity() {
+        public org.opencb.opencga.core.common.Entity getEntity() {
             return entity;
         }
     }
@@ -150,7 +151,8 @@ public class Study {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Study{");
-        sb.append("id=").append(id);
+        sb.append("uuid='").append(uuid).append('\'');
+        sb.append(", id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", alias='").append(alias).append('\'');
         sb.append(", type=").append(type);
@@ -160,6 +162,7 @@ public class Study {
         sb.append(", lastModified='").append(lastModified).append('\'');
         sb.append(", size=").append(size);
         sb.append(", cipher='").append(cipher).append('\'');
+        sb.append(", fqn='").append(fqn).append('\'');
         sb.append(", groups=").append(groups);
         sb.append(", experiments=").append(experiments);
         sb.append(", files=").append(files);
@@ -180,12 +183,27 @@ public class Study {
         return sb.toString();
     }
 
-    public long getId() {
+    public String getUuid() {
+        return uuid;
+    }
+
+    public Study setUuid(String uuid) {
+        this.uuid = uuid;
+        return this;
+    }
+
+    public String getId() {
         return id;
     }
 
-    public Study setId(long id) {
+    public Study setId(String id) {
         this.id = id;
+        return this;
+    }
+
+    @Override
+    public Study setUid(long uid) {
+        super.setUid(uid);
         return this;
     }
 
@@ -360,11 +378,11 @@ public class Study {
         return this;
     }
 
-    public Map<Entry, List<PermissionRule>> getPermissionRules() {
+    public Map<Entity, List<PermissionRule>> getPermissionRules() {
         return permissionRules;
     }
 
-    public Study setPermissionRules(Map<Entry, List<PermissionRule>> permissionRules) {
+    public Study setPermissionRules(Map<Entity, List<PermissionRule>> permissionRules) {
         this.permissionRules = permissionRules;
         return this;
     }
@@ -384,6 +402,15 @@ public class Study {
 
     public Study setRelease(int release) {
         this.release = release;
+        return this;
+    }
+
+    public String getFqn() {
+        return fqn;
+    }
+
+    public Study setFqn(String fqn) {
+        this.fqn = fqn;
         return this;
     }
 

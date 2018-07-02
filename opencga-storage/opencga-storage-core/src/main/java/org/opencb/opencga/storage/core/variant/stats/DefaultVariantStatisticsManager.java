@@ -461,7 +461,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
 
         // TODO if variantSourceStats doesn't have studyId and fileId, create another with variantSource.getStudyId() and variantSource
         // .getFileId()
-        variantDBAdaptor.getVariantFileMetadataDBAdaptor().updateStats(variantSourceStats, studyConfiguration, options);
+//        variantDBAdaptor.getVariantFileMetadataDBAdaptor().updateStats(variantSourceStats, studyConfiguration, options);
 
     }
 

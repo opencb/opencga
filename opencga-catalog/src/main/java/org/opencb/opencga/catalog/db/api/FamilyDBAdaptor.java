@@ -23,7 +23,7 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.core.models.Family;
 import org.opencb.opencga.core.models.VariableSet;
 
@@ -39,13 +39,17 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
 
     enum QueryParams implements QueryParam {
-        ID("id", INTEGER, ""),
+        ID("id", TEXT, ""),
+        UID("uid", INTEGER, ""),
+        UUID("uuid", TEXT, ""),
         NAME("name", TEXT, ""),
         MEMBERS("members", TEXT_ARRAY, ""),
-        MEMBERS_ID("members.id", INTEGER, ""),
+        MEMBER_UID("members.uid", INTEGER, ""),
+        MEMBER_VERSION("members.version", INTEGER, ""),
         MEMBERS_PARENTAL_CONSANGUINITY("members.parentalConsanguinity", BOOLEAN, ""),
         CREATION_DATE("creationDate", DATE, ""),
         DESCRIPTION("description", TEXT, ""),
+        EXPECTED_SIZE("expectedSize", INTEGER, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
@@ -62,7 +66,7 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
         PHENOTYPES_NAME("phenotypes.name", TEXT, ""),
         PHENOTYPES_SOURCE("phenotypes.source", TEXT, ""),
 
-        STUDY_ID("studyId", INTEGER_ARRAY, ""),
+        STUDY_UID("studyUid", INTEGER_ARRAY, ""),
         STUDY("study", INTEGER_ARRAY, ""), // Alias to studyId in the database. Only for the webservices.
 
         ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
@@ -111,14 +115,15 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
     }
 
     enum UpdateParams {
+        ID(QueryParams.ID.key()),
         NAME(QueryParams.NAME.key()),
         PHENOTYPES(QueryParams.PHENOTYPES.key()),
         MEMBERS(QueryParams.MEMBERS.key()),
         DESCRIPTION(QueryParams.DESCRIPTION.key()),
+        EXPECTED_SIZE(QueryParams.EXPECTED_SIZE.key()),
         ATTRIBUTES(QueryParams.ATTRIBUTES.key()),
         ANNOTATION_SETS(QueryParams.ANNOTATION_SETS.key()),
-        DELETE_ANNOTATION(Constants.DELETE_ANNOTATION),
-        DELETE_ANNOTATION_SET(Constants.DELETE_ANNOTATION_SET);
+        ANNOTATIONS(AnnotationSetManager.ANNOTATIONS);
 
         private static Map<String, UpdateParams> map;
         static {
@@ -144,7 +149,7 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
     }
 
     default boolean exists(long familyId) throws CatalogDBException {
-        return count(new Query(QueryParams.ID.key(), familyId)).first() > 0;
+        return count(new Query(QueryParams.UID.key(), familyId)).first() > 0;
     }
 
     default void checkId(long familyId) throws CatalogDBException {

@@ -138,14 +138,14 @@ public class ClinicalInterpretationManager extends StorageManager {
 
         // Get userId from token and Study numeric IDs from the query
         String userId = catalogManager.getUserManager().getUserId(token);
-        List<Long> studyIds = getStudyLongIds(userId, query);
+        List<String> studyIds = getStudyIds(userId, query);
 
         // If one specific clinical analysis, sample or individual is provided we expect a single valid study as well
         if (isCaseProvided(query)) {
             if (studyIds.size() == 1) {
                 // This checks that the user has permission to the clinical analysis, family, sample or individual
                 QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager()
-                        .get(String.valueOf(studyIds.get(0)), query, QueryOptions.empty(), token);
+                        .get(studyIds.get(0), query, QueryOptions.empty(), token);
 
                 if (clinicalAnalysisQueryResult.getResult().isEmpty()) {
                     throw new ClinicalVariantException("Either the ID does not exist or the user does not have permissions to view it");
@@ -167,8 +167,8 @@ public class ClinicalInterpretationManager extends StorageManager {
         } else {
             // Get the owner of all the studies
             Set<String> users = new HashSet<>();
-            for (Long studyId : studyIds) {
-                users.add(catalogManager.getStudyManager().getUserId(studyId));
+            for (String studyFqn : studyIds) {
+                users.add(StringUtils.split(studyFqn, "@")[0]);
             }
 
             // There must be one single owner for all the studies, we do nt allow to query multiple databases
@@ -209,12 +209,12 @@ public class ClinicalInterpretationManager extends StorageManager {
             throws CatalogException, ClinicalVariantException {
         // Get user ID from token and study numeric ID
         String userId = catalogManager.getUserManager().getUserId(token);
-        long studyId = catalogManager.getStudyManager().getId(userId, study);
+        String studyId = catalogManager.getStudyManager().resolveId(study, userId).getFqn();
 
         // This checks that the user has permission to this interpretation
         Query query = new Query(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS_ID.key(), interpretationId);
         QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager()
-                .get(String.valueOf(studyId), query, QueryOptions.empty(), token);
+                .get(studyId, query, QueryOptions.empty(), token);
 
         if (clinicalAnalysisQueryResult.getResult().isEmpty()) {
             throw new ClinicalVariantException("Either the interpretation ID (" + interpretationId + ") does not exist or the user does"
@@ -222,13 +222,16 @@ public class ClinicalInterpretationManager extends StorageManager {
         }
     }
 
-    private List<Long> getStudyLongIds(String userId, Query query) throws CatalogException {
-        List<Long> studyIds = new ArrayList<>();
+    private List<String> getStudyIds(String userId, Query query) throws CatalogException {
+        List<String> studyIds = new ArrayList<>();
 
         if (query != null && query.containsKey(ClinicalVariantEngine.QueryParams.STUDY.key())) {
             String study = query.getString(ClinicalVariantEngine.QueryParams.STUDY.key());
             List<String> studies = Arrays.asList(study.split(","));
-            studyIds = catalogManager.getStudyManager().getIds(userId, studies);
+            studyIds = catalogManager.getStudyManager().resolveIds(studies, userId)
+                    .stream()
+                    .map(Study::getFqn)
+                    .collect(Collectors.toList());
         }
         return studyIds;
     }

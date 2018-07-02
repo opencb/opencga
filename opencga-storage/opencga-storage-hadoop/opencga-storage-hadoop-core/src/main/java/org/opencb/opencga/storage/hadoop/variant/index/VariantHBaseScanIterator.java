@@ -109,7 +109,9 @@ public class VariantHBaseScanIterator extends VariantDBIterator {
         super.close();
         logger.debug("Close variant iterator. Fetch = {}ms, Convert = {}ms",
                 getTimeFetching() / 1000000.0, getTimeConverting() / 1000000.0);
-        currentResultScanner.close();
+        if (currentResultScanner != null) {
+            currentResultScanner.close();
+        }
     }
 
     public long getLimit() {

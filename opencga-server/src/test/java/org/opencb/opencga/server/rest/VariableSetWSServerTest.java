@@ -20,7 +20,6 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.opencga.catalog.managers.CatalogManagerTest;
 import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.Variable;
@@ -41,7 +40,7 @@ public class VariableSetWSServerTest {
     private WebTarget webTarget;
     private static WSServerTestUtils serverTestUtils;
     private String sessionId;
-    private long studyId;
+    private String studyId = "user@1000G:phase1";
     private long variableSetId;
     private ObjectMapper objectMapper;
 
@@ -71,10 +70,8 @@ public class VariableSetWSServerTest {
     public void init() throws Exception {
 //        serverTestUtils.setUp();
         webTarget = serverTestUtils.getWebTarget();
-        sessionId = OpenCGAWSServer.catalogManager.getUserManager().login("user", CatalogManagerTest.PASSWORD);
-        studyId = OpenCGAWSServer.catalogManager.getStudyManager().getId("user", "1000G:phase1");
-        variableSetId = OpenCGAWSServer.catalogManager.getStudyManager().searchVariableSets(Long.toString(studyId), null,null, sessionId)
-                .first().getId();
+        variableSetId = OpenCGAWSServer.catalogManager.getStudyManager().searchVariableSets(studyId, null,null, sessionId)
+                .first().getUid();
 
     }
 
@@ -98,7 +95,7 @@ public class VariableSetWSServerTest {
         assertTrue("The field of the variableSet was not inserted",
                 variables
                         .stream()
-                        .filter(variable1 -> variable.getName().equals(variable1.getName()))
+                        .filter(variable1 -> variable.getId().equals(variable1.getId()))
                         .findAny()
                         .isPresent());
 
@@ -118,7 +115,7 @@ public class VariableSetWSServerTest {
             for (AnnotationSet annotationSet : sample.getAnnotationSets()) {
                 assertTrue("The field name has not been properly propagated", annotationSet.getAnnotations().entrySet()
                         .stream()
-                        .filter(annotation -> variable.getName().equals(annotation.getKey()))
+                        .filter(annotation -> variable.getId().equals(annotation.getKey()))
                         .findAny()
                         .isPresent());
             }
@@ -128,7 +125,7 @@ public class VariableSetWSServerTest {
         // Now the variable is not mandatory
         objectMapper = new ObjectMapper();
         variable.setRequired(false);
-        variable.setName("OTHER_ID");
+        variable.setId("OTHER_ID");
         variable.setDefaultValue("other default value");
 
         json = webTarget.path("variableSet").path(String.valueOf(variableSetId)).path("field").path("add")
@@ -140,7 +137,7 @@ public class VariableSetWSServerTest {
         assertTrue("The field of the variableSet was not inserted",
                 variables
                         .stream()
-                        .filter(variable1 -> variable.getName().equals(variable1.getName()))
+                        .filter(variable1 -> variable.getId().equals(variable1.getId()))
                         .findAny()
                         .isPresent());
 
@@ -159,7 +156,7 @@ public class VariableSetWSServerTest {
             for (AnnotationSet annotationSet : sample.getAnnotationSets()) {
                 assertFalse("The field name has been unnecessarily propagated", annotationSet.getAnnotations().entrySet()
                         .stream()
-                        .filter(annotation -> variable.getName().equals(annotation.getKey()))
+                        .filter(annotation -> variable.getId().equals(annotation.getKey()))
                         .findAny()
                         .isPresent());
             }
@@ -180,13 +177,13 @@ public class VariableSetWSServerTest {
         assertTrue("The field of the variableSet was not renamed",
                 variables
                         .stream()
-                        .filter(variable -> "PHEN_renamed".equals(variable.getName()))
+                        .filter(variable -> "PHEN_renamed".equals(variable.getId()))
                         .findAny()
                         .isPresent());
         assertFalse("The old field of the variableSet is still present",
                 variables
                         .stream()
-                        .filter(variable -> "PHEN".equals(variable.getName()))
+                        .filter(variable -> "PHEN".equals(variable.getId()))
                         .findAny()
                         .isPresent());
 
@@ -232,7 +229,7 @@ public class VariableSetWSServerTest {
         assertFalse("The field of the variableSet was not removed",
                 variables
                         .stream()
-                        .filter(variable -> "PHEN".equals(variable.getName()))
+                        .filter(variable -> "PHEN".equals(variable.getId()))
                         .findAny()
                         .isPresent());
 

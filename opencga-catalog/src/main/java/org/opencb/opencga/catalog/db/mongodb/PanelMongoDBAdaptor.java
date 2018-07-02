@@ -100,7 +100,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         QueryResult queryResult = nativeGet(new Query(QueryParams.ID.key(), panelId),
                 new QueryOptions(QueryOptions.INCLUDE, PRIVATE_STUDY_ID));
         if (queryResult.getResult().isEmpty()) {
-            throw CatalogDBException.idNotFound("Panel", panelId);
+            throw CatalogDBException.idNotFound("Panel", String.valueOf(panelId));
         } else {
             return ((Document) queryResult.first()).getLong(PRIVATE_STUDY_ID);
         }
@@ -137,15 +137,12 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     @Override
     public QueryResult<Long> count(final Query query, final String user, final StudyAclEntry.StudyPermissions studyPermissions)
             throws CatalogDBException, CatalogAuthorizationException {
-//        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
-//            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
-//        }
 
         StudyAclEntry.StudyPermissions studyPermission = (studyPermissions == null
                 ? StudyAclEntry.StudyPermissions.VIEW_PANELS : studyPermissions);
 
         // Get the study document
-        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.ID.key(), query.getLong(QueryParams.STUDY_ID.key()));
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_ID.key()));
         QueryResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
             throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_ID.key()) + " not found");
@@ -171,9 +168,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     @Override
     public QueryResult<Panel> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-//        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
-//            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
-//        }
+
         QueryResult<Panel> panelQueryResult;
         try {
             Bson queryBson = parseQuery(query, false);
@@ -202,9 +197,6 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
-//        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
-//            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
-//        }
         Bson bson;
         try {
             bson = parseQuery(query, false);

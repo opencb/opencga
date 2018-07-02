@@ -65,7 +65,7 @@ public class ProjectWSServerTest {
         assertEquals("Expected [], actual [" + queryResponse.getError() + "]", "", queryResponse.getError());
         System.out.println("\nOUTPUT PARAMS");
         Project project = queryResponse.getResponse().get(0).first();
-        long projectId = project.getId();
+        long projectId = project.getUid();
         System.out.println("\tprojectId: "+ projectId);
 
         System.out.println("\nJSON RESPONSE");

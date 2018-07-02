@@ -44,6 +44,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.PRIVATE_ID;
+import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.PRIVATE_UID;
 
 /**
  * Created by imedina on 21/11/14.
@@ -106,8 +107,8 @@ class MongoDBUtils {
     }
 
     /*
-    * Helper methods
-    ********************/
+     * Helper methods
+     ********************/
 
     static User parseUser(QueryResult<Document> result) throws CatalogDBException {
         return parseObject(result, User.class);
@@ -329,11 +330,9 @@ class MongoDBUtils {
                     }
                 }
                 if (listName.equals("include")) {
-                    filteredList.add("id");
-                    filteredList.add(PRIVATE_ID);
+                    filteredList.add(PRIVATE_UID);
                 } else if (listName.equals("exclude")) {
-                    filteredList.remove("id");
-                    filteredList.remove(PRIVATE_ID);
+                    filteredList.remove(PRIVATE_UID);
                 }
                 filteredOptions.put(listName, filteredList);
             }
@@ -569,7 +568,7 @@ class MongoDBUtils {
                     }
                     if (variable.getVariableSet() != null) {
                         Map<String, Variable> subVariableMap = variable.getVariableSet().stream()
-                                .collect(Collectors.toMap(Variable::getName, Function.<Variable>identity()));
+                                .collect(Collectors.toMap(Variable::getId, Function.<Variable>identity()));
                         if (subVariableMap.containsKey(r)) {
                             variable = subVariableMap.get(r);
                             variableType = variable.getType();
@@ -637,7 +636,7 @@ class MongoDBUtils {
                         }
                         if (variable.getVariableSet() != null) {
                             Map<String, Variable> subVariableMap = variable.getVariableSet().stream()
-                                    .collect(Collectors.toMap(Variable::getName, Function.<Variable>identity()));
+                                    .collect(Collectors.toMap(Variable::getId, Function.<Variable>identity()));
                             if (subVariableMap.containsKey(r)) {
                                 variable = subVariableMap.get(r);
                                 variableType = variable.getType();
@@ -667,7 +666,7 @@ class MongoDBUtils {
     }
 
     static List<Document> addCompQueryFilter(QueryParam option, String optionKey, String queryKey,
-                                         ObjectMap options, List<Document> andQuery) throws CatalogDBException {
+                                             ObjectMap options, List<Document> andQuery) throws CatalogDBException {
         List<String> optionsList = options.getAsStringList(optionKey);
         if (queryKey == null) {
             queryKey = "";
@@ -684,7 +683,7 @@ class MongoDBUtils {
     }
 
     public static List<Document> addCompQueryFilter(QueryParam.Type type, String queryKey, List<String> optionsList,
-                                                     List<Document> andQuery) throws CatalogDBException {
+                                                    List<Document> andQuery) throws CatalogDBException {
 
         ArrayList<Document> or = new ArrayList<>(optionsList.size());
         for (String option : optionsList) {

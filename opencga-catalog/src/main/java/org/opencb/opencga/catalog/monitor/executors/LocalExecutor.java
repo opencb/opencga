@@ -52,7 +52,7 @@ public class LocalExecutor extends AbstractExecutor {
                 dataOutputStream = new DataOutputStream(new FileOutputStream(executorConfig.getStderr()));
                 com.setErrorOutputStream(dataOutputStream);
 
-                final long jobId = job.getId();
+                final long jobId = job.getUid();
 
                 Thread hook = new Thread(() -> {
                     logger.info("Running ShutdownHook. Job {id: " + jobId + "} has being aborted.");
@@ -62,7 +62,7 @@ public class LocalExecutor extends AbstractExecutor {
                 });
 
                 logger.info("==========================================");
-                logger.info("Executing job {}({})", job.getName(), job.getId());
+                logger.info("Executing job {}({})", job.getName(), job.getUid());
                 logger.debug("Executing commandLine {}", job.getCommandLine());
                 logger.info("==========================================");
                 System.err.println();
@@ -73,7 +73,7 @@ public class LocalExecutor extends AbstractExecutor {
 
                 System.err.println();
                 logger.info("==========================================");
-                logger.info("Finished job {}({})", job.getName(), job.getId());
+                logger.info("Finished job {}({})", job.getName(), job.getUid());
                 logger.info("==========================================");
 
                 closeOutputStreams(com);

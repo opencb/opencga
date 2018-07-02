@@ -82,7 +82,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
 
         try {
             List<String> idList = getIdList(fileIdStr);
-            QueryResult queryResult = catalogManager.getFileManager().index(idList, studyStr, "BAM", params, sessionId);
+            QueryResult queryResult = catalogManager.getFileManager().index(studyStr, idList, "BAM", params, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

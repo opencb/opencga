@@ -36,8 +36,8 @@ public class CommonModels {
         public Map<String, Object> attributes;
 
         public AnnotationSet toAnnotationSet(String studyStr, StudyManager studyManager, String sessionId) throws CatalogException {
-            AbstractManager.MyResourceId resource = studyManager.getVariableSetId(this.variableSet, studyStr, sessionId);
-            return new AnnotationSet(name, resource.getResourceId(), annotations, attributes);
+//            AbstractManager.MyResourceId resource = studyManager.getVariableSetId(this.variableSet, studyStr, sessionId);
+            return new AnnotationSet(name, variableSet, annotations, attributes);
         }
     }
 

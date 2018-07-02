@@ -34,10 +34,7 @@ import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Sample;
 import org.slf4j.Logger;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -45,10 +42,15 @@ import java.util.stream.Collectors;
  */
 public class MongoDBAdaptor extends AbstractDBAdaptor {
 
+    static final String PRIVATE_UID = "uid";
+    static final String PRIVATE_UUID = "uuid";
     static final String PRIVATE_ID = "id";
-    static final String PRIVATE_PROJECT_ID = "_projectId";
+    static final String PRIVATE_PROJECT = "_project";
+    static final String PRIVATE_PROJECT_ID = PRIVATE_PROJECT + '.' + PRIVATE_ID;
+    static final String PRIVATE_PROJECT_UID = PRIVATE_PROJECT + '.' + PRIVATE_UID;
+    static final String PRIVATE_PROJECT_UUID = PRIVATE_PROJECT + '.' + PRIVATE_UUID;
     static final String PRIVATE_OWNER_ID = "_ownerId";
-    static final String PRIVATE_STUDY_ID = "_studyId";
+    static final String PRIVATE_STUDY_ID = "studyUid";
 
     static final String FILTER_ROUTE_PROJECTS = "projects.";
     static final String FILTER_ROUTE_STUDIES = "projects.studies.";
@@ -68,7 +70,11 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
 
     static final String INTERNAL_DELIMITER = "__";
 
+    // Possible update actions
+    static final String SET = "SET";
+
     protected MongoDBAdaptorFactory dbAdaptorFactory;
+    protected Map<Long, String> variableUidIdMap;
 
     public MongoDBAdaptor(Logger logger) {
         super(logger);
@@ -110,7 +116,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
      * @param andBsonList The list where created filter will be added to.
      */
     protected void addOrQuery(String mongoDbField, String queryParam, Query query, QueryParam.Type paramType, List<Bson> andBsonList) {
-        addQueryFilter(mongoDbField, queryParam, query, paramType, MongoDBQueryUtils.ComparisonOperator.EQUALS,
+        addQueryFilter(mongoDbField, queryParam, query, paramType, MongoDBQueryUtils.ComparisonOperator.IN,
                 MongoDBQueryUtils.LogicalOperator.OR, andBsonList);
     }
 
@@ -147,11 +153,11 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     // Auxiliar methods used in family/get and clinicalAnalysis/get to retrieve the whole referenced documents
     protected Individual getIndividual(Individual individual) {
         Individual retIndividual = individual;
-        if (individual != null && individual.getId() > 0) {
+        if (individual != null && individual.getUid() > 0) {
             // Fetch individual information
             QueryResult<Individual> individualQueryResult = null;
             try {
-                individualQueryResult = dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(individual.getId(),
+                individualQueryResult = dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(individual.getUid(),
                         QueryOptions.empty());
             } catch (CatalogDBException e) {
                 logger.error(e.getMessage(), e);
@@ -160,8 +166,8 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
                 retIndividual = individualQueryResult.first();
 
                 // Fetch samples from individual
-                List<Long> samples = individual.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
-                Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), samples);
+                List<Long> samples = individual.getSamples().stream().map(Sample::getUid).collect(Collectors.toList());
+                Query query = new Query(SampleDBAdaptor.QueryParams.UID.key(), samples);
                 try {
                     QueryResult<Sample> sampleQueryResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, QueryOptions.empty());
                     retIndividual.setSamples(sampleQueryResult.getResult());
@@ -175,10 +181,10 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
 
     protected Sample getSample(Sample sample) {
         Sample retSample = sample;
-        if (sample != null && sample.getId() > 0) {
+        if (sample != null && sample.getUid() > 0) {
             QueryResult<Sample> sampleQueryResult = null;
             try {
-                sampleQueryResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(sample.getId(), QueryOptions.empty());
+                sampleQueryResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(sample.getUid(), QueryOptions.empty());
             } catch (CatalogDBException e) {
                 logger.error(e.getMessage(), e);
             }
@@ -191,10 +197,10 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
 
     protected Family getFamily(Family family) {
         Family retFamily = family;
-        if (family != null && family.getId() > 0) {
+        if (family != null && family.getUid() > 0) {
             QueryResult<Family> familyQueryResult = null;
             try {
-                familyQueryResult = dbAdaptorFactory.getCatalogFamilyDBAdaptor().get(family.getId(), QueryOptions.empty());
+                familyQueryResult = dbAdaptorFactory.getCatalogFamilyDBAdaptor().get(family.getUid(), QueryOptions.empty());
             } catch (CatalogDBException e) {
                 logger.error(e.getMessage(), e);
             }
@@ -386,6 +392,106 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         Bson update = Updates.pull(PERMISSION_RULES_APPLIED, permissionRuleId);
 
         collection.update(query, update, new QueryOptions("multi", true));
+    }
+
+    public class UpdateDocument {
+        private Document set;
+        private Document addToSet;
+        private Document push;
+        private Document pull;
+        private Document pullAll;
+
+        public UpdateDocument() {
+            this.set = new Document();
+            this.addToSet = new Document();
+            this.push = new Document();
+            this.pull = new Document();
+            this.pullAll = new Document();
+        }
+
+        public Document toFinalUpdateDocument() {
+            Document update = new Document();
+            if (!set.isEmpty()) {
+                update.put("$set", set);
+            }
+            if (!addToSet.isEmpty()) {
+                for (Map.Entry<String, Object> entry : addToSet.entrySet()) {
+                    if (entry.getValue() instanceof Collection) {
+                        // We need to add all the elements of the array
+                        entry.setValue(new Document("$each", entry.getValue()));
+                    }
+                }
+                update.put("$addToSet", addToSet);
+            }
+            if (!push.isEmpty()) {
+                for (Map.Entry<String, Object> entry : push.entrySet()) {
+                    if (entry.getValue() instanceof Collection) {
+                        // We need to add all the elements of the array
+                        entry.setValue(new Document("$each", entry.getValue()));
+                    }
+                }
+                update.put("$push", push);
+            }
+            if (!pull.isEmpty()) {
+                for (Map.Entry<String, Object> entry : pull.entrySet()) {
+                    if (entry.getValue() instanceof Collection) {
+                        // We need to pull all the elements of the array
+                        entry.setValue(new Document("$in", entry.getValue()));
+                    }
+                }
+                update.put("$pull", pull);
+            }
+            if (!pullAll.isEmpty()) {
+                update.put("$pullAll", pullAll);
+            }
+
+            return update;
+        }
+
+        public Document getSet() {
+            return set;
+        }
+
+        public UpdateDocument setSet(Document set) {
+            this.set = set;
+            return this;
+        }
+
+        public Document getAddToSet() {
+            return addToSet;
+        }
+
+        public UpdateDocument setAddToSet(Document addToSet) {
+            this.addToSet = addToSet;
+            return this;
+        }
+
+        public Document getPush() {
+            return push;
+        }
+
+        public UpdateDocument setPush(Document push) {
+            this.push = push;
+            return this;
+        }
+
+        public Document getPull() {
+            return pull;
+        }
+
+        public UpdateDocument setPull(Document pull) {
+            this.pull = pull;
+            return this;
+        }
+
+        public Document getPullAll() {
+            return pullAll;
+        }
+
+        public UpdateDocument setPullAll(Document pullAll) {
+            this.pullAll = pullAll;
+            return this;
+        }
     }
 
 }

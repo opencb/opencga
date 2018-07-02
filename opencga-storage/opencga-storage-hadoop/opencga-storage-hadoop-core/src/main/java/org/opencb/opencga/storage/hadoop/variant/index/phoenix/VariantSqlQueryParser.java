@@ -31,11 +31,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
@@ -120,9 +116,18 @@ public class VariantSqlQueryParser {
             List<String> regionFilters = getRegionFilters(query);
             List<String> filters = getOtherFilters(query, options, dynamicColumns);
 
+            List<HintNode.Hint> hints = new ArrayList<>();
             if (DEFAULT_TABLE_TYPE != PTableType.VIEW && filters.isEmpty()) {
                 // Only region filters. Hint no index usage
-                sb.append("/*+ ").append(HintNode.Hint.NO_INDEX.toString()).append(" */ ");
+                hints.add(HintNode.Hint.NO_INDEX);
+            }
+            if (options.containsKey("HINT")) {
+                for (String hint : options.getAsStringList("HINT")) {
+                    hints.add(HintNode.Hint.valueOf(hint));
+                }
+            }
+            if (!hints.isEmpty()) {
+                sb.append("/*+ ").append(hints.stream().map(Object::toString).collect(Collectors.joining(","))).append(" */ ");
             }
 
             appendProjectedColumns(sb, query, options, phoenixSQLQuery);
@@ -231,15 +236,7 @@ public class VariantSqlQueryParser {
             if (returnedFields.contains(VariantField.ANNOTATION)) {
                 sb.append(',').append(VariantColumn.FULL_ANNOTATION);
 
-                int release = 0;
-                if (phoenixSQLQuery.getSelect() != null
-                        && phoenixSQLQuery.getSelect().getStudyConfigurations() != null
-                        && !phoenixSQLQuery.getSelect().getStudyConfigurations().isEmpty()) {
-                    // TODO: Release should be a global attribute, not a study attribute.
-                    for (StudyConfiguration sc : phoenixSQLQuery.getSelect().getStudyConfigurations().values()) {
-                        release = Math.max(release, sc.getAttributes().getInt(VariantStorageEngine.Options.RELEASE.key()));
-                    }
-                }
+                int release = studyConfigurationManager.getProjectMetadata().first().getRelease();
                 for (int i = 1; i <= release; i++) {
                     sb.append(',');
                     VariantPhoenixHelper.buildReleaseColumnKey(i, sb);
@@ -267,25 +264,35 @@ public class VariantSqlQueryParser {
             sb.append(" WHERE");
         }
 
-        appendFilters(sb, regionFilters, "OR");
+        appendFilters(sb, regionFilters, QueryOperation.OR);
 
         if (!filters.isEmpty() && !regionFilters.isEmpty()) {
             sb.append(" AND");
         }
 
-        appendFilters(sb, filters, "AND");
+        appendFilters(sb, filters, QueryOperation.AND);
 
         return sb;
     }
 
-    protected String appendFilters(List<String> filters, String delimiter) {
-        return appendFilters(new StringBuilder(), filters, delimiter).toString();
+    protected String appendFilters(List<String> filters, QueryOperation logicalOperation) {
+        return appendFilters(new StringBuilder(), filters, logicalOperation).toString();
     }
 
-    protected StringBuilder appendFilters(StringBuilder sb, List<String> filters, String delimiter) {
-        delimiter = ' ' + delimiter + ' ';
+    protected StringBuilder appendFilters(StringBuilder sb, List<String> filters, QueryOperation logicalOperation) {
+        String delimiter;
+        switch (logicalOperation) {
+            case AND:
+                delimiter = " ) AND ( ";
+                break;
+            case OR:
+                delimiter = " ) OR ( ";
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown QueryOperation " + logicalOperation);
+        }
         if (!filters.isEmpty()) {
-            sb.append(filters.stream().collect(Collectors.joining(delimiter, " ( ", " )")));
+            sb.append(filters.stream().collect(Collectors.joining(delimiter, " ( ( ", " ) )")));
         }
         return sb;
     }
@@ -393,7 +400,7 @@ public class VariantSqlQueryParser {
         if (region.getEnd() < Integer.MAX_VALUE) {
             subFilters.add(buildFilter(VariantColumn.POSITION, "<=", region.getEnd()));
         }
-        return appendFilters(subFilters, QueryOperation.AND.toString());
+        return appendFilters(subFilters, QueryOperation.AND);
     }
 
     /**
@@ -720,7 +727,33 @@ public class VariantSqlQueryParser {
                 }
                 int studyId = defaultStudyConfiguration.getStudyId();
                 int sampleId = studyConfigurationManager.getSampleId(entry.getKey(), defaultStudyConfiguration);
-                List<String> genotypes = entry.getValue();
+                Set<String> genotypes = new LinkedHashSet<>(entry.getValue().size());
+                // TODO: Read LOADED_GENOTYPES from StudyConfiguration!
+                List<String> loadedGenotypes = Arrays.asList(
+                        ".", "./.",
+                        "0/0", "0|0",
+                        "0/1", "1/0", "1/1",
+                        "0/2", "1/2", "2/2",
+                        "0/3", "1/3", "2/3", "3/3",
+                        ".|.",
+                        "0|1", "1|0", "1|1",
+                        "0|2", "2|0", "2|1", "1|2", "2|2",
+                        "0|3", "1|3", "2|3", "3|3",
+                        "3|0", "3|1", "3|2");
+
+                for (String gt : entry.getValue()) {
+                    GenotypeClass genotypeClass = GenotypeClass.from(gt);
+                    if (genotypeClass == null) {
+                        genotypes.add(gt);
+                    } else {
+                        genotypes.addAll(genotypeClass.filter(loadedGenotypes));
+                    }
+                }
+                // If empty, should find none. Add non-existing genotype
+                // TODO: Fast empty result
+                if (genotypes.isEmpty()) {
+                    genotypes.add("x/x");
+                }
 
                 List<String> gtFilters = new ArrayList<>(genotypes.size());
                 final boolean negated;
@@ -1092,7 +1125,7 @@ public class VariantSqlQueryParser {
                         for (Object o : ((Collection) value)) {
                             subSubFilters.add(buildFilter(column, op, o.toString(), "", extra, arrayIdx, param, rawValue));
                         }
-                        subFilters.add(negatedStr + appendFilters(subSubFilters, QueryOperation.OR.toString()));
+                        subFilters.add(negatedStr + appendFilters(subSubFilters, QueryOperation.OR));
                     } else {
                         subFilters.add(buildFilter(column, op, value.toString(), negatedStr, extra, arrayIdx, param, rawValue));
                     }
@@ -1100,7 +1133,7 @@ public class VariantSqlQueryParser {
                     subFilters.add(buildFilter(column, op, keyOpValue[2], negatedStr, extra, arrayIdx, param, rawValue));
                 }
             }
-            filters.add(appendFilters(subFilters, logicOperation.toString()));
+            filters.add(appendFilters(subFilters, logicOperation));
 //            filters.add(subFilters.stream().collect(Collectors.joining(" ) " + operation.name() + " ( ", " ( ", " ) ")));
         }
     }

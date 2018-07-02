@@ -116,6 +116,8 @@ public interface AuthorizationManager {
 
     void checkCanCreateUpdateDeleteVariableSets(long studyId, String userId) throws CatalogException;
 
+    Boolean checkIsOwnerOrAdmin(long studyId, String userId) throws CatalogException;
+
     void checkFilePermission(long studyId, long fileId, String userId, FileAclEntry.FilePermissions permission) throws CatalogException;
 
     void checkSamplePermission(long studyId, long sampleId, String userId, SampleAclEntry.SamplePermissions permission)
@@ -348,7 +350,7 @@ public interface AuthorizationManager {
 //    <E extends AbstractAclEntry> QueryResult<E> getAcl(long id, List<String> members, String entity) throws CatalogException;
 
     <E extends AbstractAclEntry> List<QueryResult<E>> setAcls(long studyId, List<Long> ids, List<String> members, List<String> permissions,
-                                                              Entity entity) throws CatalogException;
+                                                              List<String> allPermissions, Entity entity) throws CatalogException;
 
     <E extends AbstractAclEntry> List<QueryResult<E>> addAcls(long studyId, List<Long> ids, List<String> members, List<String> permissions,
                                                               Entity entity) throws CatalogException;
@@ -361,11 +363,11 @@ public interface AuthorizationManager {
 
     void resetPermissionsFromAllEntities(long studyId, List<String> members) throws CatalogException;
 
-    void applyPermissionRule(long studyId, PermissionRule permissionRule, Study.Entry entry) throws CatalogException;
+    void applyPermissionRule(long studyId, PermissionRule permissionRule, Study.Entity entry) throws CatalogException;
 
-    void removePermissionRuleAndRemovePermissions(Study study, String permissionRuleId, Study.Entry entry) throws CatalogException;
+    void removePermissionRuleAndRemovePermissions(Study study, String permissionRuleId, Study.Entity entry) throws CatalogException;
 
-    void removePermissionRuleAndRestorePermissions(Study study, String permissionRuleId, Study.Entry entry) throws CatalogException;
+    void removePermissionRuleAndRestorePermissions(Study study, String permissionRuleId, Study.Entity entry) throws CatalogException;
 
-    void removePermissionRule(long studyId, String permissionRuleId, Study.Entry entry) throws CatalogException;
+    void removePermissionRule(long studyId, String permissionRuleId, Study.Entity entry) throws CatalogException;
 }

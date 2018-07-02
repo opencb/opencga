@@ -5,10 +5,9 @@ import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantFileMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.metadata.adaptors.VariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -25,11 +24,9 @@ import java.util.stream.Collectors;
 public class VariantMetadataFactory {
 
     protected final StudyConfigurationManager scm;
-    private final VariantFileMetadataDBAdaptor fileMetadataDBAdaptor;
 
-    public VariantMetadataFactory(StudyConfigurationManager studyConfigurationManager, VariantFileMetadataDBAdaptor fileDBAdaptor) {
+    public VariantMetadataFactory(StudyConfigurationManager studyConfigurationManager) {
         scm = studyConfigurationManager;
-        this.fileMetadataDBAdaptor = fileDBAdaptor;
     }
 
     public VariantMetadata makeVariantMetadata() throws StorageEngineException {
@@ -41,20 +38,23 @@ public class VariantMetadataFactory {
         Map<Integer, List<Integer>> returnedSamples = selectElements.getSamples();
         Map<Integer, List<Integer>> returnedFiles = selectElements.getFiles();
 
+        ProjectMetadata projectMetadata = scm.getProjectMetadata().first();
+
         List<StudyConfiguration> studyConfigurations = new ArrayList<>(selectElements.getStudies().size());
 
         for (Integer studyId : selectElements.getStudies()) {
             studyConfigurations.add(scm.getStudyConfiguration(studyId, QueryOptions.empty()).first());
         }
 
-        return makeVariantMetadata(studyConfigurations, returnedSamples, returnedFiles, queryOptions);
+        return makeVariantMetadata(studyConfigurations, projectMetadata, returnedSamples, returnedFiles, queryOptions);
     }
 
     protected VariantMetadata makeVariantMetadata(List<StudyConfiguration> studyConfigurations,
-                                                  Map<Integer, List<Integer>> returnedSamples,
+                                                  ProjectMetadata projectMetadata, Map<Integer, List<Integer>> returnedSamples,
                                                   Map<Integer, List<Integer>> returnedFiles, QueryOptions queryOptions)
             throws StorageEngineException {
-        VariantMetadata metadata = new VariantMetadataConverter().toVariantMetadata(studyConfigurations, returnedSamples, returnedFiles);
+        VariantMetadata metadata = new VariantMetadataConverter()
+                .toVariantMetadata(studyConfigurations, projectMetadata, returnedSamples, returnedFiles);
 
         Map<String, StudyConfiguration> studyConfigurationMap = studyConfigurations.stream()
                 .collect(Collectors.toMap(StudyConfiguration::getStudyName, Function.identity()));
@@ -72,14 +72,10 @@ public class VariantMetadataFactory {
             Query query = new Query()
                     .append(VariantFileMetadataDBAdaptor.VariantFileMetadataQueryParam.STUDY_ID.key(), studyConfiguration.getStudyId())
                     .append(VariantFileMetadataDBAdaptor.VariantFileMetadataQueryParam.FILE_ID.key(), fileIds);
-            try {
-                fileMetadataDBAdaptor.iterator(query, new QueryOptions()).forEachRemaining(fileMetadata -> {
-                    studyMetadata.getFiles().removeIf(file -> file.getId().equals(fileMetadata.getId()));
-                    studyMetadata.getFiles().add(fileMetadata.getImpl());
-                });
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            scm.variantFileMetadataIterator(query, new QueryOptions()).forEachRemaining(fileMetadata -> {
+                studyMetadata.getFiles().removeIf(file -> file.getId().equals(fileMetadata.getId()));
+                studyMetadata.getFiles().add(fileMetadata.getImpl());
+            });
         }
 
         return metadata;

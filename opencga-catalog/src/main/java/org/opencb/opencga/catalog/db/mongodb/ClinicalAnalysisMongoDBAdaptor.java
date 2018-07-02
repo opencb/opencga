@@ -88,10 +88,10 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         }
 
         // Get the study document
-        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.ID.key(), query.getLong(QueryParams.STUDY_ID.key()));
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_UID.key()));
         QueryResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
-            throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_ID.key()) + " not found");
+            throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_UID.key()) + " not found");
         }
 
         // Get the document query needed to check the permissions as well
@@ -104,7 +104,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
     private void filterOutDeleted(Query query) {
         if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
-            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
         }
     }
 
@@ -127,15 +127,15 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         String[] acceptedParams = {QueryParams.DESCRIPTION.key()};
         filterStringParams(parameters, analysisParams, acceptedParams);
 
-        if (analysisParams.containsKey(QueryParams.NAME.key())) {
+        if (analysisParams.containsKey(QueryParams.ID.key())) {
             // Check that the new sample name is still unique
             long studyId = getStudyId(id);
 
             QueryResult<Long> count = clinicalCollection.count(
-                    new Document(QueryParams.NAME.key(), analysisParams.get(QueryParams.NAME.key()))
+                    new Document(QueryParams.ID.key(), analysisParams.get(QueryParams.ID.key()))
                             .append(PRIVATE_STUDY_ID, studyId));
             if (count.getResult().get(0) > 0) {
-                throw new CatalogDBException("Clinical analysis { name: '" + analysisParams.get(QueryParams.NAME.key())
+                throw new CatalogDBException("Clinical analysis { name: '" + analysisParams.get(QueryParams.ID.key())
                         + "'} already exists.");
             }
         }
@@ -146,12 +146,12 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         if (!analysisParams.isEmpty()) {
             clinicalConverter.validateDocumentToUpdate(analysisParams);
 
-            Bson query = Filters.eq(PRIVATE_ID, id);
+            Bson query = Filters.eq(PRIVATE_UID, id);
             Bson operation = new Document("$set", analysisParams);
             QueryResult<UpdateResult> update = clinicalCollection.update(query, operation, null);
 
             if (update.getResult().isEmpty() || update.getResult().get(0).getMatchedCount() == 0) {
-                throw CatalogDBException.idNotFound("Clinical Analysis", id);
+                throw CatalogDBException.uidNotFound("Clinical Analysis", id);
             }
         }
 
@@ -177,7 +177,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         clinicalConverter.validateInterpretation(clinicalInterpretation);
 
         Document match = new Document()
-                .append(PRIVATE_ID, clinicalAnalysisId)
+                .append(PRIVATE_UID, clinicalAnalysisId)
                 .append(QueryParams.INTERPRETATIONS_ID.key(), new Document("$ne", interpretation.getId()));
         Document update = new Document("$push", new Document(QueryParams.INTERPRETATIONS.key(), clinicalInterpretation));
 
@@ -191,7 +191,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         long startTime = startQuery();
 
         Document match = new Document()
-                .append(PRIVATE_ID, clinicalAnalysisId)
+                .append(PRIVATE_UID, clinicalAnalysisId)
                 .append(QueryParams.INTERPRETATIONS_ID.key(), interpretationId);
         Document update = new Document("$pull", new Document(QueryParams.INTERPRETATIONS.key(), new Document("id", interpretationId)));
         QueryResult<UpdateResult> updateResult = clinicalCollection.update(match, update, QueryOptions.empty());
@@ -353,10 +353,10 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
     private Document getStudyDocument(Query query) throws CatalogDBException {
         // Get the study document
-        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.ID.key(), query.getLong(QueryParams.STUDY_ID.key()));
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_UID.key()));
         QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
-            throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_ID.key()) + " not found");
+            throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_UID.key()) + " not found");
         }
         return queryResult.first();
     }
@@ -371,14 +371,14 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     public QueryResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false);
-        return groupBy(clinicalCollection, bsonQuery, field, QueryParams.NAME.key(), options);
+        return groupBy(clinicalCollection, bsonQuery, field, QueryParams.ID.key(), options);
     }
 
     @Override
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false);
-        return groupBy(clinicalCollection, bsonQuery, fields, QueryParams.NAME.key(), options);
+        return groupBy(clinicalCollection, bsonQuery, fields, QueryParams.ID.key(), options);
     }
 
     @Override
@@ -390,7 +390,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                 ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.VIEW.name());
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
-        return groupBy(clinicalCollection, bsonQuery, field, QueryParams.NAME.key(), options);
+        return groupBy(clinicalCollection, bsonQuery, field, QueryParams.ID.key(), options);
     }
 
     @Override
@@ -402,7 +402,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                 ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.VIEW.name());
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
-        return groupBy(clinicalCollection, bsonQuery, fields, SampleDBAdaptor.QueryParams.NAME.key(), options);
+        return groupBy(clinicalCollection, bsonQuery, fields, SampleDBAdaptor.QueryParams.ID.key(), options);
     }
 
     @Override
@@ -423,7 +423,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
         List<Bson> filterList = new ArrayList<>();
-        filterList.add(Filters.eq(QueryParams.NAME.key(), clinicalAnalysis.getName()));
+        filterList.add(Filters.eq(QueryParams.ID.key(), clinicalAnalysis.getId()));
         filterList.add(Filters.eq(PRIVATE_STUDY_ID, studyId));
         filterList.add(Filters.eq(QueryParams.STATUS_NAME.key(), Status.READY));
 
@@ -431,15 +431,14 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         QueryResult<Long> count = clinicalCollection.count(bson);
         if (count.getResult().get(0) > 0) {
             throw new CatalogDBException("Cannot create clinical analysis. A clinical analysis with { name: '"
-                    + clinicalAnalysis.getName() + "'} already exists.");
+                    + clinicalAnalysis.getId() + "'} already exists.");
         }
 
         long clinicalAnalysisId = getNewId();
-        clinicalAnalysis.setId(clinicalAnalysisId);
+        clinicalAnalysis.setUid(clinicalAnalysisId);
+        clinicalAnalysis.setStudyUid(studyId);
 
         Document clinicalObject = clinicalConverter.convertToStorageType(clinicalAnalysis);
-        clinicalObject.put(PRIVATE_STUDY_ID, studyId);
-        clinicalObject.put(PRIVATE_ID, clinicalAnalysisId);
         if (StringUtils.isNotEmpty(clinicalAnalysis.getCreationDate())) {
             clinicalObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(clinicalAnalysis.getCreationDate()));
         } else {
@@ -454,7 +453,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     @Override
     public QueryResult<ClinicalAnalysis> get(long clinicalAnalysisId, QueryOptions options) throws CatalogDBException {
         checkId(clinicalAnalysisId);
-        return get(new Query(QueryParams.ID.key(), clinicalAnalysisId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED),
+        return get(new Query(QueryParams.UID.key(), clinicalAnalysisId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED),
                 options);
     }
 
@@ -464,10 +463,10 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         long startTime = startQuery();
 
         // Get the study document
-        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.ID.key(), query.getLong(QueryParams.STUDY_ID.key()));
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_UID.key()));
         QueryResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
-            throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_ID.key()) + " not found");
+            throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_UID.key()) + " not found");
         }
 
         // Get the document query needed to check the permissions as well
@@ -494,7 +493,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
     @Override
     public long getStudyId(long clinicalAnalysisId) throws CatalogDBException {
-        Bson query = new Document(PRIVATE_ID, clinicalAnalysisId);
+        Bson query = new Document(PRIVATE_UID, clinicalAnalysisId);
         Bson projection = Projections.include(PRIVATE_STUDY_ID);
         QueryResult<Document> queryResult = clinicalCollection.find(query, projection, null);
 
@@ -502,7 +501,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             Object studyId = queryResult.getResult().get(0).get(PRIVATE_STUDY_ID);
             return studyId instanceof Number ? ((Number) studyId).longValue() : Long.parseLong(studyId.toString());
         } else {
-            throw CatalogDBException.idNotFound("ClinicalAnalysis", clinicalAnalysisId);
+            throw CatalogDBException.uidNotFound("ClinicalAnalysis", clinicalAnalysisId);
         }
     }
 
@@ -527,14 +526,15 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             QueryParams queryParam = QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
                     : QueryParams.getParam(key);
             if (queryParam == null) {
-                continue;
+                throw new CatalogDBException("Unexpected parameter " + entry.getKey() + ". The parameter does not exist or cannot be "
+                        + "queried for.");
             }
             try {
                 switch (queryParam) {
-                    case ID:
-                        addOrQuery(PRIVATE_ID, queryParam.key(), query, queryParam.type(), andBsonList);
+                    case UID:
+                        addOrQuery(PRIVATE_UID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
-                    case STUDY_ID:
+                    case STUDY_UID:
                         addOrQuery(PRIVATE_STUDY_ID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case ATTRIBUTES:
@@ -552,13 +552,14 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     // Other parameter that can be queried.
-                    case NAME:
+                    case ID:
+                    case UUID:
                     case TYPE:
-                    case SAMPLE_ID:
-                    case SUBJECT_ID:
-                    case FAMILY_ID:
-                    case GERMLINE_ID:
-                    case SOMATIC_ID:
+                    case SAMPLE_UID:
+                    case SUBJECT_UID:
+                    case FAMILY_UID:
+                    case GERMLINE_UID:
+                    case SOMATIC_UID:
                     case DESCRIPTION:
                     case RELEASE:
                     case STATUS:
@@ -571,7 +572,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     default:
-                        break;
+                        throw new CatalogDBException("Cannot query by parameter " + queryParam.key());
                 }
             } catch (Exception e) {
                 logger.error("Error with " + entry.getKey() + " " + entry.getValue());

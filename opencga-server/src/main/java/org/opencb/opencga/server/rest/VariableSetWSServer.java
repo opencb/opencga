@@ -49,6 +49,7 @@ public class VariableSetWSServer extends OpenCGAWSServer {
     private static class VariableSetParameters {
         public Boolean unique;
         public Boolean confidential;
+        public String id;
         public String name;
         public String description;
         public List<Variable> variables;
@@ -64,19 +65,34 @@ public class VariableSetWSServer extends OpenCGAWSServer {
                     String studyStr,
             @ApiParam(value="JSON containing the variableSet information", required = true) VariableSetParameters params) {
         try {
-            ObjectUtils.defaultIfNull(params, new VariableSetParameters());
+            params = ObjectUtils.defaultIfNull(params, new VariableSetParameters());
 
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
-            logger.info("variables: {}", params.variables);
-            String userId = catalogManager.getUserManager().getUserId(sessionId);
-            long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-            QueryResult<VariableSet> queryResult = catalogManager.getStudyManager().createVariableSet(studyId, params.name,
+            logger.debug("variables: {}", params.variables);
+
+            // Fix variable set params to support 1.3.x
+            // TODO: Remove in version 2.0.0
+            params.id = StringUtils.isNotEmpty(params.id) ? params.id : params.name;
+            for (Variable variable : params.variables) {
+                fixVariable(variable);
+            }
+
+            QueryResult<VariableSet> queryResult = catalogManager.getStudyManager().createVariableSet(studyStr, params.id, params.name,
                     params.unique, params.confidential, params.description, null, params.variables, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
+        }
+    }
+
+    private void fixVariable(Variable variable) {
+        variable.setId(StringUtils.isNotEmpty(variable.getId()) ? variable.getId() : variable.getName());
+        if (variable.getVariableSet() != null && variable.getVariableSet().size() > 0) {
+            for (Variable variable1 : variable.getVariableSet()) {
+                fixVariable(variable1);
+            }
         }
     }
 

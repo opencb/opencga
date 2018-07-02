@@ -60,13 +60,15 @@ public class VariantSampleFilter {
         Set<String> samples = new HashSet<>();
 
         Set<String> genotypesSet = new HashSet<>(genotypes);
+        List<GenotypeClass> genotypeClasses = getGenotypeClasses(genotypesSet);
+
         iterate(query, variant -> {
             getSamplesSet(variant, samples);
             for (String sample : samples) {
                 map.put(sample, new HashSet<>());
             }
         }, (variant, sample, gt) -> {
-            if (genotypesSet.contains(gt)) {
+            if (isValidGenotype(genotypesSet, genotypeClasses, gt)) {
                 map.get(sample).add(variant);
             }
             return true;
@@ -93,9 +95,11 @@ public class VariantSampleFilter {
     public Collection<String> getSamplesInAllVariants(Query query, List<String> genotypes) {
         Set<String> samples = new HashSet<>();
         Set<String> genotypesSet = new HashSet<>(genotypes);
+        List<GenotypeClass> genotypeClasses = getGenotypeClasses(genotypesSet);
         iterate(query, variant -> getSamplesSet(variant, samples),
                 (variant, sample, gt) -> {
-                    if (!genotypesSet.contains(gt)) {
+                    // Remove if not a valid genotype
+                    if (!isValidGenotype(genotypesSet, genotypeClasses, gt)) {
                         if (samples.remove(sample)) {
                             logger.debug("variant: {}, sample: {}, gt: {}", variant, sample, gt);
                             if (sample.isEmpty()) {
@@ -159,5 +163,23 @@ public class VariantSampleFilter {
             throw new VariantQueryException("Unable to get samples!");
         }
         return samples;
+    }
+
+    private boolean isValidGenotype(Set<String> genotypesSet, List<GenotypeClass> genotypeClasses, String gt) {
+        return genotypesSet.contains(gt) || !genotypeClasses.isEmpty() && genotypeClasses.stream().anyMatch(gc -> gc.test(gt));
+    }
+
+    private List<GenotypeClass> getGenotypeClasses(Set<String> genotypesSet) {
+        List<GenotypeClass> genotypeClasses = new ArrayList<>();
+        Iterator<String> iterator = genotypesSet.iterator();
+        while (iterator.hasNext()) {
+            String genotype = iterator.next();
+            GenotypeClass genotypeClass = GenotypeClass.from(genotype);
+            if (genotypeClass != null) {
+                genotypeClasses.add(genotypeClass);
+                iterator.remove();
+            }
+        }
+        return genotypeClasses;
     }
 }

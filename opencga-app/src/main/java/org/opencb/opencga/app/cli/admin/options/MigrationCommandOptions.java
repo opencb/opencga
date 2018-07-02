@@ -37,6 +37,9 @@ public class MigrationCommandOptions extends GeneralCliOptions {
         @Parameter(names = {"--file-backup"}, description = "Create a backup for all migrated variant metadata files")
         public boolean createBackup;
 
+        @Parameter(names = {"--skip-disk-files"}, description = "Do not migrate VariantSource files from disk.")
+        public boolean skipDiskFiles;
+
         @Parameter(names = {"--files"}, description = "VariantSource files to migrate into VariantFileMetadata. Don't do any operation in catalog.", variableArity = true)
         public List<String> files;
 
@@ -48,6 +51,17 @@ public class MigrationCommandOptions extends GeneralCliOptions {
         @ParametersDelegate
         public AdminCliOptionsParser.AdminCommonCommandOptions commonOptions = MigrationCommandOptions.this.commonOptions;
 
+        @Parameter(names = {"--what"}, description = "Select which parts will be migrated. Options: ALL, CATALOG, STORAGE, ANNOTATIONS, "
+                + "CATALOG_NO_ANNOTATIONS")
+        public Migrate what = Migrate.ALL;
+    }
+
+    public enum Migrate {
+        ALL,
+        CATALOG,
+        STORAGE,
+        ANNOTATIONS,
+        CATALOG_NO_ANNOTATIONS
     }
 
     public MigrateV1_3_0CommandOptions getMigrateV130CommandOptions() {

@@ -23,12 +23,12 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.DataStore;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.Project;
-import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -38,7 +38,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
-import org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
@@ -87,26 +86,30 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
             final String alias;
             final DataStore dataStore;
             final Project.Organism organism;
+            final int currentRelease;
 
             if (studyInfos == null || studyInfos.isEmpty()) {
                 Project project = catalogManager.getProjectManager().get(projectStr, null, sessionId).first();
                 studyStr = null;
-                alias = project.getAlias();
+                alias = project.getId();
                 organism = project.getOrganism();
-                dataStore = getDataStoreByProjectId(catalogManager, project.getId(), File.Bioformat.VARIANT, sessionId);
+                currentRelease = project.getCurrentRelease();
+                dataStore = getDataStoreByProjectId(catalogManager, projectStr, File.Bioformat.VARIANT, sessionId);
                 studyIds = Collections.emptyList();
             } else {
                 StudyInfo info = studyInfos.get(0);
                 if (studyInfos.size() == 1) {
-                    studyStr = String.valueOf(info.getStudy().getId());
-                    alias = info.getStudyAlias();
+                    studyStr = info.getStudy().getFqn();
+                    alias = info.getStudy().getAlias();
                 } else {
                     studyStr = null;
-                    alias = studyInfos.get(0).getProjectAlias();
+                    alias = studyInfos.get(0).getProjectId();
                 }
                 dataStore = info.getDataStores().get(File.Bioformat.VARIANT);
                 organism = info.getOrganism();
-                studyIds = studyInfos.stream().map(StudyInfo::getStudyId).collect(Collectors.toList());
+                studyIds = studyInfos.stream().map(StudyInfo::getStudyUid).collect(Collectors.toList());
+                Project project = catalogManager.getProjectManager().get(info.getProjectId(), null, sessionId).first();
+                currentRelease = project.getCurrentRelease();
                 for (int i = 1; i < studyInfos.size(); i++) {
                     info = studyInfos.get(i);
                     if (!dataStore.equals(info.getDataStores().get(File.Bioformat.VARIANT))) {
@@ -123,7 +126,7 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
                 outputFileName = buildOutputFileName(alias, query);
             }
 
-            Long catalogOutDirId = getCatalogOutdirId(studyStr, options, sessionId);
+            String catalogOutDirId = getCatalogOutdirId(studyStr, options, sessionId);
 
             Query annotationQuery = new Query(query);
             if (!options.getBoolean(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, false)) {
@@ -137,33 +140,33 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
                     .append(DefaultVariantAnnotationManager.OUT_DIR, outdirUri.getPath());
             annotationOptions.put(DefaultVariantAnnotationManager.FILE_NAME, outputFileName);
 
-            String loadFileStr = options.getString(VariantAnnotationManager.LOAD_FILE);
+            String loadFileStr = annotationOptions.getString(VariantAnnotationManager.LOAD_FILE);
             if (StringUtils.isNotEmpty(loadFileStr)) {
-                if (!Paths.get(UriUtils.createUri(loadFileStr)).toFile().exists()) {
-                    long fileId = catalogManager.getFileManager().getId(loadFileStr, studyStr, sessionId).getResourceId();
-                    if (fileId < 0) {
+                boolean fileExists;
+                try {
+                    URI uri = UriUtils.createUriSafe(loadFileStr);
+                    fileExists = uri != null && Paths.get(uri).toFile().exists();
+                } catch (RuntimeException ignored) {
+                    fileExists = false;
+                }
+                if (!fileExists) {
+                    File loadFile = catalogManager.getFileManager().get(studyStr, loadFileStr, null, sessionId).first();
+                    if (loadFile == null) {
                         throw new CatalogException("File '" + loadFileStr + "' does not exist!");
                     }
-                    File loadFile = catalogManager.getFileManager().get(fileId, null, sessionId).first();
                     annotationOptions.put(VariantAnnotationManager.LOAD_FILE, loadFile.getUri().toString());
                 }
-            }
-            if (organism == null) {
-                annotationOptions.putIfAbsent(VariantAnnotationManager.SPECIES, "hsapiens");
-                annotationOptions.putIfAbsent(VariantAnnotationManager.ASSEMBLY, "GRch37");
-            } else {
-                String scientificName = organism.getScientificName();
-                scientificName = AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName(scientificName);
-                annotationOptions.put(VariantAnnotationManager.SPECIES, scientificName);
-                annotationOptions.put(VariantAnnotationManager.ASSEMBLY, organism.getAssembly());
             }
 
 //            StudyConfiguration studyConfiguration = updateStudyConfiguration(sessionId, studyId, dataStore);
             VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
+
+            updateProjectMetadata(variantStorageEngine.getStudyConfigurationManager(), organism, currentRelease);
+
             variantStorageEngine.annotate(annotationQuery, annotationOptions);
 
             if (catalogOutDirId != null) {
-                newFiles = copyResults(Paths.get(outdirUri), catalogOutDirId, sessionId);
+                newFiles = copyResults(Paths.get(outdirUri), studyStr, catalogOutDirId, sessionId);
             } else {
                 newFiles = Collections.emptyList();
             }

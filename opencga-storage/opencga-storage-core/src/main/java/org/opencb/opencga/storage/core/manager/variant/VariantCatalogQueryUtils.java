@@ -82,9 +82,8 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             // Nothing to do!
             return null;
         }
-        List<Long> studies = getStudies(query, sessionId);
-        long defaultStudyId = getDefaultStudyId(studies);
-        String defaultStudyStr = defaultStudyId > 0 ? String.valueOf(defaultStudyId) : null;
+        List<String> studies = getStudies(query, sessionId);
+        String defaultStudyStr = getDefaultStudyId(studies);
         Integer release = getReleaseFilter(query, sessionId);
 
         studyTransformFilter.processFilter(query, VariantQueryParam.STUDY, release, sessionId, defaultStudyStr);
@@ -105,13 +104,14 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             // If no list of included files is specified:
             if (VariantQueryUtils.isIncludeFilesDefined(query, Collections.singleton(VariantField.STUDIES_FILES))) {
                 List<String> includeFiles = new ArrayList<>();
-                QueryOptions fileOptions = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.ID.key());
+                QueryOptions fileOptions = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.UID.key());
                 Query fileQuery = new Query(FileDBAdaptor.QueryParams.RELEASE.key(), "<=" + release)
                         .append(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY);
 
-                for (Long study : studies) {
-                    for (File file : catalogManager.getFileManager().get(study, fileQuery, fileOptions, sessionId).getResult()) {
-                        includeFiles.add(String.valueOf(file.getId()));
+                for (String study : studies) {
+                    for (File file : catalogManager.getFileManager().get(study, fileQuery, fileOptions, sessionId)
+                            .getResult()) {
+                        includeFiles.add(String.valueOf(file.getUid()));
                     }
                 }
                 query.append(VariantQueryParam.INCLUDE_FILE.key(), includeFiles);
@@ -120,24 +120,26 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             if (!VariantQueryUtils.isIncludeSamplesDefined(query, Collections.singleton(VariantField.STUDIES_SAMPLES_DATA))) {
                 List<String> includeSamples = new ArrayList<>();
                 Query sampleQuery = new Query(SampleDBAdaptor.QueryParams.RELEASE.key(), "<=" + release);
-                QueryOptions sampleOptions = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key());
+                QueryOptions sampleOptions = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.UID.key());
 
-                for (Long study : studies) {
-                    Query cohortQuery = new Query(CohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT);
-                    QueryOptions cohortOptions = new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.SAMPLE_IDS.key());
+                for (String study : studies) {
+                    Query cohortQuery = new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT);
+                    QueryOptions cohortOptions = new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key());
                     // Get default cohort. It contains the list of indexed samples. If it doesn't exist, or is empty, do not include any
                     // sample from this study.
-                    QueryResult<Cohort> result = catalogManager.getCohortManager().get(study, cohortQuery, cohortOptions, sessionId);
+                    QueryResult<Cohort> result = catalogManager.getCohortManager().get(String.valueOf(study), cohortQuery, cohortOptions,
+                            sessionId);
                     if (result.first() != null || result.first().getSamples().isEmpty()) {
                         Set<Long> sampleIds = result
                                 .first()
                                 .getSamples()
                                 .stream()
-                                .map(Sample::getId)
+                                .map(Sample::getUid)
                                 .collect(Collectors.toSet());
-                        for (Sample s : catalogManager.getSampleManager().get(study, sampleQuery, sampleOptions, sessionId).getResult()) {
-                            if (sampleIds.contains(s.getId())) {
-                                includeSamples.add(String.valueOf(s.getId()));
+                        for (Sample s : catalogManager.getSampleManager().get(study, sampleQuery, sampleOptions,
+                                sessionId).getResult()) {
+                            if (sampleIds.contains(s.getUid())) {
+                                includeSamples.add(String.valueOf(s.getUid()));
                             }
                         }
                     }
@@ -149,11 +151,12 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         if (isValidParam(query, SAMPLE_ANNOTATION)) {
             String sampleAnnotation = query.getString(SAMPLE_ANNOTATION.key());
             Query sampleQuery = parseSampleAnnotationQuery(sampleAnnotation, SampleDBAdaptor.QueryParams::getParam);
-            sampleQuery.append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), defaultStudyId);
-            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID);
-            List<Long> sampleIds = catalogManager.getSampleManager().get(defaultStudyId, sampleQuery, options, sessionId).getResult()
+            sampleQuery.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), defaultStudyStr);
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.UID);
+            List<Long> sampleIds = catalogManager.getSampleManager().get(defaultStudyStr, sampleQuery, options, sessionId)
+                    .getResult()
                     .stream()
-                    .map(Sample::getId)
+                    .map(Sample::getUid)
                     .collect(Collectors.toList());
 
             if (sampleIds.isEmpty()) {
@@ -181,12 +184,12 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         return query;
     }
 
-    public long getDefaultStudyId(Collection<Long> studies) throws CatalogException {
-        final long defaultStudyId;
+    public String getDefaultStudyId(Collection<String> studies) throws CatalogException {
+        final String defaultStudyId;
         if (studies.size() == 1) {
             defaultStudyId = studies.iterator().next();
         } else {
-            defaultStudyId = -1;
+            defaultStudyId = null;
         }
         return defaultStudyId;
     }
@@ -286,7 +289,8 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
     public class StudyTransformFilter extends TransformFilter {
         @Override
         protected Long toId(String defaultStudyStr, String value, String sessionId) throws CatalogException {
-            return catalogManager.getStudyManager().getId(catalogManager.getUserManager().getUserId(sessionId), value);
+            return catalogManager.getStudyManager().resolveId(defaultStudyStr, catalogManager.getUserManager().getUserId(sessionId))
+                    .getUid();
         }
 
         @Override
@@ -305,7 +309,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 
         @Override
         protected Long toId(String defaultStudyStr, String value, String sessionId) throws CatalogException {
-            return catalogManager.getFileManager().getId(value, defaultStudyStr, sessionId).getResourceId();
+            return catalogManager.getFileManager().getUid(value, defaultStudyStr, sessionId).getResource().getUid();
         }
 
         @Override
@@ -327,7 +331,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 
         @Override
         protected Long toId(String defaultStudyStr, String value, String sessionId) throws CatalogException {
-            return catalogManager.getSampleManager().getId(value, defaultStudyStr, sessionId).getResourceId();
+            return catalogManager.getSampleManager().getUid(value, defaultStudyStr, sessionId).getResource().getUid();
         }
 
         @Override
@@ -342,7 +346,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
     public class CohortTransformFilter extends TransformFilter {
         @Override
         protected Long toId(String defaultStudyStr, String value, String sessionId) throws CatalogException {
-            return catalogManager.getCohortManager().getId(value, defaultStudyStr, sessionId).getResourceId();
+            return catalogManager.getCohortManager().getUid(value, defaultStudyStr, sessionId).getResource().getUid();
         }
 
         @Override
@@ -352,8 +356,8 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             }
 
             Long studyId = catalogManager.getCohortManager().getStudyId(id);
-            return catalogManager.getCohortManager().get(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), id), OPTIONS, sessionId)
-                    .first().getRelease() <= release;
+            return catalogManager.getCohortManager().get(String.valueOf(studyId), new Query(CohortDBAdaptor.QueryParams.UID.key(), id),
+                    OPTIONS, sessionId).first().getRelease() <= release;
         }
     }
 

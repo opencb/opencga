@@ -37,31 +37,32 @@ public class ClinicalAnalysisConverter extends GenericDocumentComplexConverter<C
     @Override
     public Document convertToStorageType(ClinicalAnalysis object) {
         Document document = super.convertToStorageType(object);
-        document.put("id", document.getInteger("id").longValue());
+        document.put("uid", object.getUid());
+        document.put("studyUid", object.getStudyUid());
 
-        long familyId = object.getFamily() != null ? (object.getFamily().getId() == 0 ? -1L : object.getFamily().getId()) : -1L;
-        document.put("family", new Document("id", familyId));
+        long familyId = object.getFamily() != null ? (object.getFamily().getUid() == 0 ? -1L : object.getFamily().getUid()) : -1L;
+        document.put("family", new Document("uid", familyId));
 
-        long somaticId = object.getSomatic() != null ? (object.getSomatic().getId() == 0 ? -1L : object.getSomatic().getId()) : -1L;
-        document.put("somatic", new Document("id", somaticId));
+        long somaticId = object.getSomatic() != null ? (object.getSomatic().getUid() == 0 ? -1L : object.getSomatic().getUid()) : -1L;
+        document.put("somatic", new Document("uid", somaticId));
 
-        long germlineId = object.getGermline() != null ? (object.getGermline().getId() == 0 ? -1L : object.getGermline().getId()) : -1L;
-        document.put("germline", new Document("id", germlineId));
+        long germlineId = object.getGermline() != null ? (object.getGermline().getUid() == 0 ? -1L : object.getGermline().getUid()) : -1L;
+        document.put("germline", new Document("uid", germlineId));
 
         if (object.getSubjects() != null && !object.getSubjects().isEmpty()) {
             List<Document> subjects = new ArrayList<>(object.getSubjects().size());
 
             for (Individual individual : object.getSubjects()) {
-                long probandId = individual.getId() <= 0 ? -1L : individual.getId();
+                long probandId = individual.getUid() <= 0 ? -1L : individual.getUid();
                 List<Document> sampleList = new ArrayList<>();
                 if (individual.getSamples() != null) {
                     for (Sample sample : individual.getSamples()) {
-                        sampleList.add(new Document("id", sample.getId()));
+                        sampleList.add(new Document("uid", sample.getUid()));
                     }
                 }
 
                 subjects.add(new Document()
-                        .append("id", probandId)
+                        .append("uid", probandId)
                         .append("samples", sampleList)
                 );
             }
@@ -84,9 +85,9 @@ public class ClinicalAnalysisConverter extends GenericDocumentComplexConverter<C
 
         Document family = (Document) document.get("family");
         if (family != null) {
-            long familyId = getLongValue(family, "id");
+            long familyId = getLongValue(family, "uid");
             familyId = familyId <= 0 ? -1L : familyId;
-            document.put("family", new Document("id", familyId));
+            document.put("family", new Document("uid", familyId));
         }
 
         List<Document> subjectList = (List) document.get("subjects");
@@ -94,21 +95,21 @@ public class ClinicalAnalysisConverter extends GenericDocumentComplexConverter<C
             List<Document> finalSubjects = new ArrayList<>(subjectList.size());
 
             for (Document individual : subjectList) {
-                long probandId = getLongValue(individual, "id");
+                long probandId = getLongValue(individual, "uid");
                 probandId = probandId <= 0 ? -1L : probandId;
 
                 List<Document> sampleDocList = (List) individual.get("samples");
                 List<Document> sampleList = new ArrayList<>(sampleDocList.size());
                 if (sampleDocList != null) {
                     for (Document sampleDocument : sampleDocList) {
-                        long sampleId = getLongValue(sampleDocument, "id");
+                        long sampleId = getLongValue(sampleDocument, "uid");
                         sampleId = sampleId <= 0 ? -1L : sampleId;
-                        sampleList.add(new Document("id", sampleId));
+                        sampleList.add(new Document("uid", sampleId));
                     }
                 }
 
                 finalSubjects.add(new Document()
-                        .append("id", probandId)
+                        .append("uid", probandId)
                         .append("samples", sampleList)
                 );
             }
@@ -120,9 +121,9 @@ public class ClinicalAnalysisConverter extends GenericDocumentComplexConverter<C
     public void validateInterpretation(Document interpretation) {
         if (interpretation != null) {
             Document file = (Document) interpretation.get("file");
-            long fileId = file != null ? getLongValue(file, "id") : -1L;
+            long fileId = file != null ? getLongValue(file, "uid") : -1L;
             fileId = fileId <= 0 ? -1L : fileId;
-            interpretation.put("file", fileId > 0 ? new Document("id", fileId) : new Document());
+            interpretation.put("file", fileId > 0 ? new Document("uid", fileId) : new Document());
         }
     }
 }

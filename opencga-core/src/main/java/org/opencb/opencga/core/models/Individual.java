@@ -28,8 +28,9 @@ import static org.opencb.opencga.core.common.FieldUtils.defaultObject;
  */
 public class Individual extends Annotable {
 
-    private long id;
+    private String id;
     private String name;
+    private String uuid;
 
     private Individual father;
     private Individual mother;
@@ -81,23 +82,23 @@ public class Individual extends Annotable {
     public Individual() {
     }
 
-    public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, String ethnicity, Population population,
+    public Individual(String id, String name, long fatherId, long motherId, String family, Sex sex, String ethnicity, Population population,
                       int release, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this(id, name, new Individual(), new Individual(), new Multiples(), fatherId, motherId, family, sex, null, ethnicity, new Species(),
                 population, "", release, 1, TimeUtils.getTime(), new Status(), LifeStatus.UNKNOWN, AffectationStatus.UNKNOWN,
                 Collections.emptyList(), Collections.emptyList(), false, annotationSets, attributes);
     }
 
-    public Individual(long id, String name, Individual father, Individual mother, Multiples multiples, Sex sex, KaryotypicSex karyotypicSex,
-                      String ethnicity, Population population, LifeStatus lifeStatus, AffectationStatus affectationStatus,
-                      String dateOfBirth, List<Sample> samples, boolean parentalConsanguinity, int release,
-                      List<AnnotationSet> annotationSets, List<OntologyTerm> phenotypeList) {
+    public Individual(String id, String name, Individual father, Individual mother, Multiples multiples, Sex sex,
+                      KaryotypicSex karyotypicSex, String ethnicity, Population population, LifeStatus lifeStatus,
+                      AffectationStatus affectationStatus, String dateOfBirth, List<Sample> samples, boolean parentalConsanguinity,
+                      int release, List<AnnotationSet> annotationSets, List<OntologyTerm> phenotypeList) {
         this(id, name, father, mother, multiples, -1, -1, null, sex, karyotypicSex, ethnicity, null, population, dateOfBirth,
                 release, 1, TimeUtils.getTime(), new Status(), lifeStatus, affectationStatus, phenotypeList, samples, parentalConsanguinity,
                 annotationSets, Collections.emptyMap());
     }
 
-    public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, KaryotypicSex karyotypicSex,
+    public Individual(String id, String name, long fatherId, long motherId, String family, Sex sex, KaryotypicSex karyotypicSex,
                       String ethnicity, Population population, LifeStatus lifeStatus, AffectationStatus affectationStatus,
                       String dateOfBirth, boolean parentalConsanguinity, int release, List<AnnotationSet> annotationSets,
                       List<OntologyTerm> phenotypeList) {
@@ -107,7 +108,7 @@ public class Individual extends Annotable {
                 phenotypeList, new ArrayList<>(), parentalConsanguinity, annotationSets, Collections.emptyMap());
     }
 
-    public Individual(long id, String name, Individual father, Individual mother, Multiples multiples, long fatherId, long motherId,
+    public Individual(String id, String name, Individual father, Individual mother, Multiples multiples, long fatherId, long motherId,
                       String family, Sex sex, KaryotypicSex karyotypicSex, String ethnicity, Species species, Population population,
                       String dateOfBirth, int release, int version, String creationDate, Status status, LifeStatus lifeStatus,
                       AffectationStatus affectationStatus, List<OntologyTerm> phenotypes, List<Sample> samples,
@@ -253,7 +254,8 @@ public class Individual extends Annotable {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Individual{");
-        sb.append("id=").append(id);
+        sb.append("uuid='").append(uuid).append('\'');
+        sb.append(", id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", father=").append(father);
         sb.append(", mother=").append(mother);
@@ -282,11 +284,75 @@ public class Individual extends Annotable {
         return sb.toString();
     }
 
-    public long getId() {
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Individual)){
+            return false;
+        }
+        Individual that = (Individual) o;
+        return fatherId == that.fatherId
+                && motherId == that.motherId
+                && release == that.release
+                && version == that.version
+                && parentalConsanguinity == that.parentalConsanguinity
+                && Objects.equals(uuid, that.uuid)
+                && Objects.equals(id, that.id)
+                && Objects.equals(name, that.name)
+                && Objects.equals(father, that.father)
+                && Objects.equals(mother, that.mother)
+                && Objects.equals(multiples, that.multiples)
+                && Objects.equals(family, that.family)
+                && sex == that.sex
+                && karyotypicSex == that.karyotypicSex
+                && Objects.equals(ethnicity, that.ethnicity)
+                && Objects.equals(species, that.species)
+                && Objects.equals(population, that.population)
+                && Objects.equals(dateOfBirth, that.dateOfBirth)
+                && Objects.equals(creationDate, that.creationDate)
+                && Objects.equals(status, that.status)
+                && lifeStatus == that.lifeStatus
+                && affectationStatus == that.affectationStatus
+                && Objects.equals(phenotypes, that.phenotypes)
+                && Objects.equals(samples, that.samples)
+                && Objects.equals(attributes, that.attributes);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(uuid, id, name, father, mother, multiples, fatherId, motherId, family, sex, karyotypicSex, ethnicity, species,
+                population, dateOfBirth, release, version, creationDate, status, lifeStatus, affectationStatus, phenotypes, samples,
+                parentalConsanguinity, attributes);
+    }
+
+    @Override
+    public Individual setUid(long uid) {
+        super.setUid(uid);
+        return this;
+    }
+
+    @Override
+    public Individual setStudyUid(long studyUid) {
+        super.setStudyUid(studyUid);
+        return this;
+    }
+
+    public String getUuid() {
+        return uuid;
+    }
+
+    public Individual setUuid(String uuid) {
+        this.uuid = uuid;
+        return this;
+    }
+
+    public String getId() {
         return id;
     }
 
-    public Individual setId(long id) {
+    public Individual setId(String id) {
         this.id = id;
         return this;
     }

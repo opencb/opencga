@@ -22,7 +22,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.Job;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
@@ -33,7 +32,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 public interface JobDBAdaptor extends DBAdaptor<Job> {
 
     default boolean exists(long jobId) throws CatalogDBException {
-        return count(new Query(QueryParams.ID.key(), jobId)).first() > 0;
+        return count(new Query(QueryParams.UID.key(), jobId)).first() > 0;
     }
 
     default void checkId(long jobId) throws CatalogDBException {
@@ -50,8 +49,6 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
 
     QueryResult<Job> insert(Job job, long studyId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Long> extractFilesFromJobs(Query query, List<Long> fileIds) throws CatalogDBException;
-
     default QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         //return updateStatus(query, new Job.JobStatus(Job.JobStatus.PREPARED));
         throw new CatalogDBException("Non implemented action.");
@@ -66,10 +63,10 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
     }
 
     default QueryResult<Job> get(long jobId, QueryOptions options) throws CatalogDBException {
-        Query query = new Query(QueryParams.ID.key(), jobId);
+        Query query = new Query(QueryParams.UID.key(), jobId);
         QueryResult<Job> jobQueryResult = get(query, options);
         if (jobQueryResult == null || jobQueryResult.getResult().size() == 0) {
-            throw CatalogDBException.idNotFound("Job", jobId);
+            throw CatalogDBException.uidNotFound("Job", jobId);
         }
         return jobQueryResult;
     }
@@ -91,7 +88,9 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
     void unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
 
     enum QueryParams implements QueryParam {
-        ID("id", INTEGER_ARRAY, ""),
+        ID("id", TEXT, ""),
+        UID("uid", INTEGER_ARRAY, ""),
+        UUID("uuid", TEXT, ""),
         NAME("name", TEXT_ARRAY, ""),
         USER_ID("userId", TEXT_ARRAY, ""),
         TOOL_NAME("toolName", TEXT_ARRAY, ""),
@@ -112,12 +111,12 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
         SIZE("size", DECIMAL, ""),
         RELEASE("release", INTEGER, ""),
         OUT_DIR("outDir", TEXT_ARRAY, ""),
-        OUT_DIR_ID("outDir.id", INTEGER, ""),
+        OUT_DIR_UID("outDir.uid", INTEGER, ""),
         TMP_OUT_DIR_URI("tmpOutDirUri", TEXT_ARRAY, ""),
         INPUT("input", TEXT_ARRAY, ""),
         OUTPUT("output", TEXT_ARRAY, ""),
-        INPUT_ID("input.id", INTEGER_ARRAY, ""),
-        OUTPUT_ID("output.id", INTEGER_ARRAY, ""),
+        INPUT_UID("input.uid", INTEGER_ARRAY, ""),
+        OUTPUT_UID("output.uid", INTEGER_ARRAY, ""),
         TAGS("tags", TEXT_ARRAY, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
@@ -126,7 +125,7 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
         ERROR("error", TEXT_ARRAY, ""),
         ERROR_DESCRIPTION("errorDescription", TEXT_ARRAY, ""),
 
-        STUDY_ID("studyId", INTEGER_ARRAY, ""),
+        STUDY_UID("studyUid", INTEGER_ARRAY, ""),
         STUDY("study", INTEGER_ARRAY, ""); // Alias to studyId in the database. Only for the webservices.
 
         private static Map<String, QueryParams> map = new HashMap<>();

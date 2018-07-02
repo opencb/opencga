@@ -58,7 +58,7 @@ public class IndividualWSServerTest {
     private WebTarget webTarget;
     private static ObjectMapper jsonObjectMapper;
     private String sessionId;
-    private long studyId;
+    private String studyId = "user@1000G:phase1";
     private long in1;
     private long in2;
     private long in3;
@@ -93,16 +93,14 @@ public class IndividualWSServerTest {
     public void init() throws Exception {
         webTarget = serverTestUtils.getWebTarget();
         sessionId = OpenCGAWSServer.catalogManager.getUserManager().login("user", CatalogManagerTest.PASSWORD);
-        studyId = OpenCGAWSServer.catalogManager.getStudyManager().getId("user", "1000G:phase1");
-        in1 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, "in1", "f1", (long) -1, (long) -1, null, "", "", "",
-                "", "", Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual.AffectationStatus.UNKNOWN, null,
-                sessionId).first().getId();
-        in2 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, "in2", "f1", (long) -1, (long) -1, null, "", "", "",
-                "", "", Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual.AffectationStatus.UNKNOWN, null, sessionId).first().getId();
-        in3 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, "in3", "f2", (long) -1, (long) -1, null, "", "", "",
-                "", "", Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual.AffectationStatus.UNKNOWN, null, sessionId).first().getId();
-        in4 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, "in4", "f2", (long) -1, (long) -1, null, "", "", "",
-                "", "", Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual.AffectationStatus.UNKNOWN, null, sessionId).first().getId();
+        in1 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, new Individual().setId("in1"), null,
+                sessionId).first().getUid();
+        in2 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, new Individual().setId("in2"), null, sessionId).first()
+                .getUid();
+        in3 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, new Individual().setId("in3"), null, sessionId).first()
+                .getUid();
+        in4 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, new Individual().setId("in4"), null, sessionId).first()
+                .getUid();
     }
 
     @After
@@ -128,7 +126,7 @@ public class IndividualWSServerTest {
         Individual individual = response.getResponse().get(0).first();
         assertEquals(Individual.Sex.FEMALE, individual.getSex());
         assertEquals("new_individual1", individual.getName());
-        assertTrue(individual.getId() > 0);
+        assertTrue(individual.getUid() > 0);
     }
 
     @Test
@@ -145,7 +143,7 @@ public class IndividualWSServerTest {
         Individual individual = response.getResponse().get(0).first();
         assertEquals("f1", individual.getFamily());
         assertEquals(null, individual.getSex());
-        assertTrue(individual.getId() > 0);
+        assertTrue(individual.getUid() > 0);
     }
 
     @Test
@@ -166,7 +164,7 @@ public class IndividualWSServerTest {
         for (Individual individual : result) {
             assertEquals("f1", individual.getFamily());
             assertEquals(null, individual.getSex());
-            assertTrue(individual.getId() > 0);
+            assertTrue(individual.getUid() > 0);
         }
 
         // We look for an individual with father "in2"
@@ -181,7 +179,7 @@ public class IndividualWSServerTest {
 
         // We update to make the individual in1 be the child of in2
         ObjectMap params = new ObjectMap(IndividualDBAdaptor.QueryParams.FATHER.key(),
-                new ObjectMap(IndividualDBAdaptor.QueryParams.NAME.key(), "in2"));
+                new ObjectMap(IndividualDBAdaptor.QueryParams.ID.key(), "in2"));
         OpenCGAWSServer.catalogManager.getIndividualManager().update(String.valueOf(studyId), "in1", params, QueryOptions.empty(),
                 sessionId);
         // and query again. We look for an individual with father "in2"
@@ -213,8 +211,8 @@ public class IndividualWSServerTest {
         QueryResponse<Individual> response = WSServerTestUtils.parseResult(json, Individual.class);
 
         Individual individual = response.getResponse().get(0).first();
-        assertTrue(individual.getFather().getId() > 0);
-        assertTrue(individual.getMother().getId() > 0);
+        assertTrue(individual.getFather().getUid() > 0);
+        assertTrue(individual.getMother().getUid() > 0);
         assertEquals(1, individual.getMultiples().getSiblings().size());
         assertEquals("in4", individual.getMultiples().getSiblings().get(0));
     }
@@ -225,12 +223,12 @@ public class IndividualWSServerTest {
         Individual individual = new Individual()
                 .setName("individual")
                 .setSamples(Arrays.asList(
-                        new Sample().setName("sample1"),
-                        new Sample().setName("sample2")
+                        new Sample().setId("sample1"),
+                        new Sample().setId("sample2")
                 ));
         OpenCGAWSServer.catalogManager.getIndividualManager().create(String.valueOf(studyId), individual, null, sessionId);
 
-        Sample sample = new Sample().setName("sample3");
+        Sample sample = new Sample().setId("sample3");
         OpenCGAWSServer.catalogManager.getSampleManager().create(String.valueOf(studyId), sample, null, sessionId);
 
         // Update the individual information to contain a third sample as well
@@ -247,7 +245,7 @@ public class IndividualWSServerTest {
 
         individual = response.getResponse().get(0).first();
         assertEquals(3, individual.getSamples().size());
-        assertTrue(individual.getSamples().stream().map(Sample::getName).collect(Collectors.toSet())
+        assertTrue(individual.getSamples().stream().map(Sample::getId).collect(Collectors.toSet())
                 .containsAll(Arrays.asList("sample1", "sample2", "sample3")));
     }
 
@@ -264,7 +262,7 @@ public class IndividualWSServerTest {
 
         // FIXME: This will have to return an exception once we improve the delete behaviour
 //        thrown.expect(CatalogException.class);
-        OpenCGAWSServer.catalogManager.getIndividualManager().get(null, String.valueOf((Long) individual.getId()), null, sessionId);
+        OpenCGAWSServer.catalogManager.getIndividualManager().get(null, String.valueOf((Long) individual.getUid()), null, sessionId);
 
     }
 

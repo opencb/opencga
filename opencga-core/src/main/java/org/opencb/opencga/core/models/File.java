@@ -16,8 +16,9 @@
 
 package org.opencb.opencga.core.models;
 
-import org.opencb.opencga.core.models.acls.AclParams;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.acls.AclParams;
 
 import java.net.URI;
 import java.util.Collections;
@@ -28,10 +29,11 @@ import java.util.Objects;
 /**
  * Created by jacobo on 11/09/14.
  */
-public class File {
+public class File extends PrivateStudyUid {
 
-    private long id;
+    private String id;
     private String name;
+    private String uuid;
 
     /**
      * Formats: file, folder, index.
@@ -61,6 +63,7 @@ public class File {
     private boolean external;
 
     private long size;
+    private Software software;
     private Experiment experiment;
     private List<Sample> samples;
     @Deprecated
@@ -70,6 +73,7 @@ public class File {
     /**
      * This field values -1 when file has been uploaded.
      */
+    @Deprecated
     private Job job;
     private List<RelatedFile> relatedFiles;
 
@@ -85,21 +89,23 @@ public class File {
     public File(String name, Type type, Format format, Bioformat bioformat, String path, String description, FileStatus status, long size,
                 int release) {
         this(-1, name, type, format, bioformat, null, path, TimeUtils.getTime(), TimeUtils.getTime(), description, status, false,
-                size, new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(), new FileIndex(),
+                size, null, new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(), new FileIndex(),
                 Collections.emptyMap(), release, Collections.emptyMap());
     }
 
     public File(Type type, Format format, Bioformat bioformat, String path, String description, FileStatus status, long size,
-                List<Sample> samples, long jobId, Map<String, Object> stats, Map<String, Object> attributes) {
+                List<Sample> samples, long jobId, Software software, Map<String, Object> stats, Map<String, Object> attributes) {
         this(-1, "", type, format, bioformat, null, path, TimeUtils.getTime(), TimeUtils.getTime(), description, status, false,
-                size, new Experiment(), samples, new Job().setId(jobId), Collections.emptyList(), new FileIndex(), stats, -1, attributes);
+                size, software, new Experiment(), samples, new Job().setUid(jobId), Collections.emptyList(), new FileIndex(), stats, -1,
+                attributes);
     }
 
-    public File(long id, String name, Type type, Format format, Bioformat bioformat, URI uri, String path, String creationDate,
-                String modificationDate, String description, FileStatus status, boolean external, long size, Experiment experiment,
-                List<Sample> samples, Job job, List<RelatedFile> relatedFiles, FileIndex index, Map<String, Object> stats, int release,
-                Map<String, Object> attributes) {
-        this.id = id;
+    public File(long uid, String name, Type type, Format format, Bioformat bioformat, URI uri, String path, String creationDate,
+                String modificationDate, String description, FileStatus status, boolean external, long size, Software software,
+                Experiment experiment, List<Sample> samples, Job job, List<RelatedFile> relatedFiles, FileIndex index,
+                Map<String, Object> stats, int release, Map<String, Object> attributes) {
+        super(uid);
+        this.id = StringUtils.isNotEmpty(path) ? StringUtils.replace(path, "/", ":") : path;
         this.name = name;
         this.type = type;
         this.format = format;
@@ -113,6 +119,7 @@ public class File {
         this.release = release;
         this.external = external;
         this.size = size;
+        this.software = software;
         this.experiment = experiment;
         this.samples = samples;
         this.job = job;
@@ -123,6 +130,11 @@ public class File {
     }
 
     public static class FileStatus extends Status {
+
+        /**
+         * TRASHED name means that the object is marked as deleted although is still available in the database.
+         */
+        public static final String TRASHED = "TRASHED";
 
         public static final String STAGE = "STAGE";
         public static final String MISSING = "MISSING";
@@ -150,7 +162,8 @@ public class File {
             if (Status.isValid(status)) {
                 return true;
             }
-            if (status != null && (status.equals(STAGE) || status.equals(MISSING))) {
+            if (status != null && (status.equals(STAGE) || status.equals(MISSING) || status.equals(TRASHED)
+                    || status.equals(PENDING_DELETE) || status.equals(DELETING) || status.equals(REMOVED))) {
                 return true;
             }
             return false;
@@ -307,7 +320,8 @@ public class File {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("File{");
-        sb.append(", id=").append(id);
+        sb.append("uuid='").append(uuid).append('\'');
+        sb.append(", id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", type=").append(type);
         sb.append(", format=").append(format);
@@ -321,6 +335,7 @@ public class File {
         sb.append(", status=").append(status);
         sb.append(", external=").append(external);
         sb.append(", size=").append(size);
+        sb.append(", software=").append(software);
         sb.append(", experiment=").append(experiment);
         sb.append(", samples=").append(samples);
         sb.append(", job=").append(job);
@@ -332,11 +347,32 @@ public class File {
         return sb.toString();
     }
 
-    public long getId() {
+    @Override
+    public File setUid(long uid) {
+        super.setUid(uid);
+        return this;
+    }
+
+    @Override
+    public File setStudyUid(long studyUid) {
+        super.setStudyUid(studyUid);
+        return this;
+    }
+
+    public String getUuid() {
+        return uuid;
+    }
+
+    public File setUuid(String uuid) {
+        this.uuid = uuid;
+        return this;
+    }
+
+    public String getId() {
         return id;
     }
 
-    public File setId(long id) {
+    public File setId(String id) {
         this.id = id;
         return this;
     }
@@ -392,6 +428,7 @@ public class File {
 
     public File setPath(String path) {
         this.path = path;
+        this.id = StringUtils.isNotEmpty(this.path) ? StringUtils.replace(this.path, "/", ":") : this.path;
         return this;
     }
 
@@ -466,6 +503,15 @@ public class File {
 
     public File setSamples(List<Sample> samples) {
         this.samples = samples;
+        return this;
+    }
+
+    public Software getSoftware() {
+        return software;
+    }
+
+    public File setSoftware(Software software) {
+        this.software = software;
         return this;
     }
 

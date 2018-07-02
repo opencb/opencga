@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -28,15 +29,17 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.acls.AclParams;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Created by pfurio on 11/05/17.
@@ -63,14 +66,13 @@ public class FamilyManagerTest extends GenericTest {
     }
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
-
         catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.FULL, null, null);
         sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
 
-        long projectId = catalogManager.getProjectManager().create("Project about some genomes", "1000G", "", "ACME", "Homo sapiens",
+        String projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionIdUser).first().getId();
-        catalogManager.getStudyManager().create(String.valueOf(projectId), "Phase 1", "phase1", Study.Type.TRIO, null, "Done", null, null, null, null, null, null, null, null, sessionIdUser);
-
+        catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", Study.Type.TRIO, null, "Done", null, null, null, null,
+                null, null, null, null, sessionIdUser);
     }
 
     @After
@@ -88,10 +90,10 @@ public class FamilyManagerTest extends GenericTest {
         boolean motherIdUpdated = false;
         boolean fatherIdUpdated = false;
         for (Individual relatives : familyQueryResult.first().getMembers()) {
-            if (relatives.getMother().getId() > 0) {
+            if (relatives.getMother().getUid() > 0) {
                 motherIdUpdated = true;
             }
-            if (relatives.getFather().getId() > 0) {
+            if (relatives.getFather().getUid() > 0) {
                 fatherIdUpdated = true;
             }
         }
@@ -109,10 +111,10 @@ public class FamilyManagerTest extends GenericTest {
         motherIdUpdated = false;
         fatherIdUpdated = false;
         for (Individual relatives : familyQueryResult.first().getMembers()) {
-            if (relatives.getMother().getId() > 0) {
+            if (relatives.getMother().getUid() > 0) {
                 motherIdUpdated = true;
             }
-            if (relatives.getFather().getId() > 0) {
+            if (relatives.getFather().getUid() > 0) {
                 fatherIdUpdated = true;
             }
         }
@@ -121,39 +123,108 @@ public class FamilyManagerTest extends GenericTest {
         assertTrue("Father id not associated to any children", fatherIdUpdated);
     }
 
+    @Test
+    public void getFamilyWithOnlyAllowedMembers() throws CatalogException, IOException {
+        createDummyFamily("Martinez-Martinez");
+
+        catalogManager.getUserManager().create("user2", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.GUEST, null, null);
+        String token = catalogManager.getUserManager().login("user2", PASSWORD);
+
+        try {
+            familyManager.get(STUDY, "Martinez-Martinez", QueryOptions.empty(), token);
+            fail("Expected authorization exception. user2 should not be able to see the study");
+        } catch (CatalogAuthorizationException ignored) {
+        }
+
+        familyManager.updateAcl(STUDY, Collections.singletonList("Martinez-Martinez"), "user2", new AclParams("VIEW", AclParams.Action.SET),
+                sessionIdUser);
+        QueryResult<Family> familyQueryResult = familyManager.get(STUDY, "Martinez-Martinez", QueryOptions.empty(), token);
+        assertEquals(1, familyQueryResult.getNumResults());
+        assertEquals(0, familyQueryResult.first().getMembers().size());
+
+        catalogManager.getIndividualManager().updateAcl(STUDY, Collections.singletonList("child2"), "user2",
+                new Individual.IndividualAclParams("VIEW", AclParams.Action.SET, "", false), sessionIdUser);
+        familyQueryResult = familyManager.get(STUDY, "Martinez-Martinez", QueryOptions.empty(), token);
+        assertEquals(1, familyQueryResult.getNumResults());
+        assertEquals(1, familyQueryResult.first().getMembers().size());
+        assertEquals("child2", familyQueryResult.first().getMembers().get(0).getId());
+
+        catalogManager.getIndividualManager().updateAcl(STUDY, Collections.singletonList("child3"), "user2",
+                new Individual.IndividualAclParams("VIEW", AclParams.Action.SET, "", false), sessionIdUser);
+        familyQueryResult = familyManager.get(STUDY, "Martinez-Martinez", QueryOptions.empty(), token);
+        assertEquals(1, familyQueryResult.getNumResults());
+        assertEquals(2, familyQueryResult.first().getMembers().size());
+        assertEquals("child2", familyQueryResult.first().getMembers().get(0).getId());
+        assertEquals("child3", familyQueryResult.first().getMembers().get(1).getId());
+
+        familyQueryResult = familyManager.get(STUDY, "Martinez-Martinez",
+                new QueryOptions(QueryOptions.EXCLUDE, FamilyDBAdaptor.QueryParams.MEMBERS.key()), token);
+        assertEquals(1, familyQueryResult.getNumResults());
+        assertEquals(null, familyQueryResult.first().getMembers());
+
+        familyQueryResult = familyManager.get(STUDY, "Martinez-Martinez",
+                new QueryOptions(QueryOptions.INCLUDE, FamilyDBAdaptor.QueryParams.MEMBERS.key() + "."
+                        + IndividualDBAdaptor.QueryParams.NAME.key()),
+                token);
+        assertEquals(1, familyQueryResult.getNumResults());
+        assertEquals(null, familyQueryResult.first().getId());
+        assertEquals(2, familyQueryResult.first().getMembers().size());
+        assertEquals(null, familyQueryResult.first().getMembers().get(0).getId());
+        assertEquals(null, familyQueryResult.first().getMembers().get(1).getId());
+        assertEquals("child2", familyQueryResult.first().getMembers().get(0).getName());
+        assertEquals("child3", familyQueryResult.first().getMembers().get(1).getName());
+    }
+
+
+    @Test
+    public void includeMemberIdOnly() throws CatalogException {
+        createDummyFamily("family");
+
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FamilyDBAdaptor.QueryParams.MEMBERS.key() + "."
+                + IndividualDBAdaptor.QueryParams.ID.key());
+        QueryResult<Family> family = familyManager.get(STUDY, "family", options, sessionIdUser);
+
+        for (Individual individual : family.first().getMembers()) {
+            assertTrue(StringUtils.isNotEmpty(individual.getId()));
+            assertTrue(StringUtils.isEmpty(individual.getName()));
+            assertTrue(StringUtils.isEmpty(individual.getCreationDate()));
+        }
+    }
+
     private QueryResult<Family> createDummyFamily(String familyName) throws CatalogException {
         OntologyTerm phenotype1 = new OntologyTerm("dis1", "Phenotype 1", "HPO");
         OntologyTerm phenotype2 = new OntologyTerm("dis2", "Phenotype 2", "HPO");
 
-        Individual father = new Individual().setName("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
-        Individual mother = new Individual().setName("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
+        Individual father = new Individual().setId("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
+        Individual mother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
 
         // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
         // ingesting references to exactly the same object and this test would not work exactly the same way.
-        Individual relFather = new Individual().setName("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
-        Individual relMother = new Individual().setName("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
+        Individual relFather = new Individual().setId("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
+        Individual relMother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
 
-        Individual relChild1 = new Individual().setName("child1")
+        Individual relChild1 = new Individual().setId("child1")
                 .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT"), new OntologyTerm("dis2", "dis2", "OT")))
                 .setFather(father)
                 .setMother(mother)
                 .setMultiples(new Multiples("multiples", Arrays.asList("child2", "child3")))
                 .setParentalConsanguinity(true);
-        Individual relChild2 = new Individual().setName("child2")
+        Individual relChild2 = new Individual().setId("child2")
                 .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")))
                 .setFather(father)
                 .setMother(mother)
                 .setMultiples(new Multiples("multiples", Arrays.asList("child1", "child3")))
                 .setParentalConsanguinity(true);
-        Individual relChild3 = new Individual().setName("child3")
+        Individual relChild3 = new Individual().setId("child3")
                 .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")))
                 .setFather(father)
                 .setMother(mother)
                 .setMultiples(new Multiples("multiples", Arrays.asList("child1", "child2")))
                 .setParentalConsanguinity(true);
 
-        Family family = new Family(familyName, Arrays.asList(phenotype1, phenotype2),
-                Arrays.asList(relChild1, relChild2, relChild3, relFather, relMother),"", Collections.emptyList(), Collections.emptyMap());
+        Family family = new Family(familyName, familyName, Arrays.asList(phenotype1, phenotype2),
+                Arrays.asList(relChild1, relChild2, relChild3, relFather, relMother), "", 5, Collections.emptyList(),
+                Collections.emptyMap());
 
         return familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
     }
@@ -163,35 +234,36 @@ public class FamilyManagerTest extends GenericTest {
         OntologyTerm phenotype1 = new OntologyTerm("dis1", "Phenotype 1", "HPO");
         OntologyTerm phenotype2 = new OntologyTerm("dis2", "Phenotype 2", "HPO");
 
-        Individual father = new Individual().setName("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
-        Individual mother = new Individual().setName("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
+        Individual father = new Individual().setId("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
+        Individual mother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
 
         // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
         // ingesting references to exactly the same object and this test would not work exactly the same way.
-        Individual relFather = new Individual().setName("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
-        Individual relMother = new Individual().setName("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
+        Individual relFather = new Individual().setId("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
+        Individual relMother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
 
-        Individual relChild1 = new Individual().setName("child1")
+        Individual relChild1 = new Individual().setId("child1")
                 .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT"), new OntologyTerm("dis2", "dis2", "OT")))
                 .setFather(father)
                 .setMother(mother)
                 .setMultiples(new Multiples("multiples", Arrays.asList("child2", "child3")))
                 .setParentalConsanguinity(true);
-        Individual relChild2 = new Individual().setName("child2")
+        Individual relChild2 = new Individual().setId("child2")
                 .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")))
                 .setFather(father)
                 .setMother(mother)
                 .setMultiples(new Multiples("multiples", Arrays.asList("child1", "child3")))
                 .setParentalConsanguinity(true);
-        Individual relChild3 = new Individual().setName("child3")
+        Individual relChild3 = new Individual().setId("child3")
                 .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")))
                 .setFather(father)
                 .setMother(mother)
                 .setMultiples(new Multiples("multiples", Arrays.asList("child1")))
                 .setParentalConsanguinity(true);
 
-        Family family = new Family("Martinez-Martinez", Arrays.asList(phenotype1, phenotype2),
-                Arrays.asList(relChild1, relChild2, relChild3, relFather, relMother),"", Collections.emptyList(), Collections.emptyMap());
+        Family family = new Family("Martinez-Martinez", "Martinez-Martinez", Arrays.asList(phenotype1, phenotype2),
+                Arrays.asList(relChild1, relChild2, relChild3, relFather, relMother), "", 5, Collections.emptyList(),
+                Collections.emptyMap());
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Incomplete sibling information");
@@ -203,35 +275,36 @@ public class FamilyManagerTest extends GenericTest {
         OntologyTerm phenotype1 = new OntologyTerm("dis1", "Phenotype 1", "HPO");
         OntologyTerm phenotype2 = new OntologyTerm("dis2", "Phenotype 2", "HPO");
 
-        Individual father = new Individual().setName("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
-        Individual mother = new Individual().setName("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
+        Individual father = new Individual().setId("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
+        Individual mother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
 
         // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
         // ingesting references to exactly the same object and this test would not work exactly the same way.
-        Individual relFather = new Individual().setName("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
-        Individual relMother = new Individual().setName("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
+        Individual relFather = new Individual().setId("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
+        Individual relMother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
 
-        Individual relChild1 = new Individual().setName("child1")
+        Individual relChild1 = new Individual().setId("child1")
                 .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT"), new OntologyTerm("dis2", "dis2", "OT")))
                 .setFather(father)
                 .setMother(mother)
                 .setMultiples(new Multiples("multiples", Arrays.asList("child2", "child3")))
                 .setParentalConsanguinity(true);
-        Individual relChild2 = new Individual().setName("child2")
+        Individual relChild2 = new Individual().setId("child2")
                 .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")))
                 .setFather(father)
                 .setMother(mother)
                 .setMultiples(new Multiples("multiples", Arrays.asList("child1", "child3")))
                 .setParentalConsanguinity(true);
-        Individual relChild3 = new Individual().setName("child3")
+        Individual relChild3 = new Individual().setId("child3")
                 .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")))
                 .setFather(father)
                 .setMother(mother)
                 .setMultiples(new Multiples("multiples", Arrays.asList("child1", "child20")))
                 .setParentalConsanguinity(true);
 
-        Family family = new Family("Martinez-Martinez", Arrays.asList(phenotype1, phenotype2),
-                Arrays.asList(relChild1, relChild2, relChild3, relFather, relMother),"", Collections.emptyList(), Collections.emptyMap());
+        Family family = new Family("Martinez-Martinez", "Martinez-Martinez", Arrays.asList(phenotype1, phenotype2),
+                Arrays.asList(relChild1, relChild2, relChild3, relFather, relMother), "", -1, Collections.emptyList(),
+                Collections.emptyMap());
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Incomplete sibling information");
@@ -241,10 +314,10 @@ public class FamilyManagerTest extends GenericTest {
     @Test
     public void createFamilyDuo() throws CatalogException {
         Family family = new Family()
-                .setName("test")
+                .setId("test")
                 .setPhenotypes(Arrays.asList(new OntologyTerm("E00", "blabla", "blabla")))
-                .setMembers(Arrays.asList(new Individual().setName("proband").setSex(Individual.Sex.MALE),
-                        new Individual().setFather(new Individual().setName("proband")).setName("child").setSex(Individual.Sex.FEMALE)));
+                .setMembers(Arrays.asList(new Individual().setId("proband").setSex(Individual.Sex.MALE),
+                        new Individual().setFather(new Individual().setId("proband")).setId("child").setSex(Individual.Sex.FEMALE)));
         QueryResult<Family> familyQueryResult = familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
 
         assertEquals(2, familyQueryResult.first().getMembers().size());
@@ -255,26 +328,26 @@ public class FamilyManagerTest extends GenericTest {
         OntologyTerm phenotype1 = new OntologyTerm("dis1", "Phenotype 1", "HPO");
         OntologyTerm phenotype2 = new OntologyTerm("dis2", "Phenotype 2", "HPO");
 
-        Individual father = new Individual().setName("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
-        Individual mother = new Individual().setName("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
+        Individual father = new Individual().setId("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
+        Individual mother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
 
         // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
         // ingesting references to exactly the same object and this test would not work exactly the same way.
-        Individual relFather = new Individual().setName("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
+        Individual relFather = new Individual().setId("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
 
-        Individual relChild1 = new Individual().setName("child1")
+        Individual relChild1 = new Individual().setId("child1")
                 .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT"), new OntologyTerm("dis2", "dis2", "OT")))
                 .setFather(father)
                 .setMother(mother)
                 .setParentalConsanguinity(true);
-        Individual relChild2 = new Individual().setName("child2")
-                .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")))
+        Individual relChild2 = new Individual().setId("child2")
+                .setPhenotypes(Collections.singletonList(new OntologyTerm("dis1", "dis1", "OT")))
                 .setFather(father)
                 .setMother(mother)
                 .setParentalConsanguinity(true);
 
-        Family family = new Family("Martinez-Martinez", Arrays.asList(phenotype1, phenotype2),
-                Arrays.asList(relFather, relChild1, relChild2),"", Collections.emptyList(), Collections.emptyMap());
+        Family family = new Family("Martinez-Martinez", "Martinez-Martinez", Arrays.asList(phenotype1, phenotype2),
+                Arrays.asList(relFather, relChild1, relChild2), "", 3, Collections.emptyList(), Collections.emptyMap());
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("not present in the members list");
@@ -286,27 +359,27 @@ public class FamilyManagerTest extends GenericTest {
         OntologyTerm phenotype1 = new OntologyTerm("dis1", "Phenotype 1", "HPO");
         OntologyTerm phenotype2 = new OntologyTerm("dis2", "Phenotype 2", "HPO");
 
-        Individual father = new Individual().setName("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
-        Individual mother = new Individual().setName("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
+        Individual father = new Individual().setId("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
+        Individual mother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
 
         // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
         // ingesting references to exactly the same object and this test would not work exactly the same way.
-        Individual relFather = new Individual().setName("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
-        Individual relMother = new Individual().setName("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
+        Individual relFather = new Individual().setId("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
+        Individual relMother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
 
-        Individual relChild1 = new Individual().setName("child1")
+        Individual relChild1 = new Individual().setId("child1")
                 .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT"), new OntologyTerm("dis3", "dis3", "OT")))
                 .setFather(father)
                 .setMother(mother)
                 .setParentalConsanguinity(true);
-        Individual relChild2 = new Individual().setName("child2")
+        Individual relChild2 = new Individual().setId("child2")
                 .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")))
                 .setFather(father)
                 .setMother(mother)
                 .setParentalConsanguinity(true);
 
-        Family family = new Family("Martinez-Martinez", Arrays.asList(phenotype1, phenotype2),
-                Arrays.asList(relFather, relMother, relChild1, relChild2),"", Collections.emptyList(), Collections.emptyMap());
+        Family family = new Family("Martinez-Martinez", "Martinez-Martinez", Arrays.asList(phenotype1, phenotype2),
+                Arrays.asList(relFather, relMother, relChild1, relChild2), "", 4, Collections.emptyList(), Collections.emptyMap());
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("not present in any member of the family");
@@ -318,27 +391,28 @@ public class FamilyManagerTest extends GenericTest {
         OntologyTerm phenotype1 = new OntologyTerm("dis1", "Phenotype 1", "HPO");
         OntologyTerm phenotype2 = new OntologyTerm("dis2", "Phenotype 2", "HPO");
 
-        Individual father = new Individual().setName("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
-        Individual mother = new Individual().setName("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
+        Individual father = new Individual().setId("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
+        Individual mother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
 
         // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
         // ingesting references to exactly the same object and this test would not work exactly the same way.
-        Individual relFather = new Individual().setName("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
-        Individual relMother = new Individual().setName("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
+        Individual relFather = new Individual().setId("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
+        Individual relMother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
 
-        Individual relChild1 = new Individual().setName("child1")
+        Individual relChild1 = new Individual().setId("child1")
                 .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT"), new OntologyTerm("dis2", "dis2", "OT")))
                 .setFather(father)
                 .setMother(mother)
                 .setParentalConsanguinity(true);
-        Individual relChild2 = new Individual().setName("child2")
+        Individual relChild2 = new Individual().setId("child2")
                 .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")))
                 .setFather(father)
                 .setMother(mother)
                 .setParentalConsanguinity(true);
 
-        Family family = new Family("Martinez-Martinez", Arrays.asList(phenotype1, phenotype2),
-                Arrays.asList(relFather, relMother, relChild1, relChild2, relChild1),"", Collections.emptyList(), Collections.emptyMap());
+        Family family = new Family("Martinez-Martinez", "Martinez-Martinez", Arrays.asList(phenotype1, phenotype2),
+                Arrays.asList(relFather, relMother, relChild1, relChild2, relChild1), "", -1, Collections.emptyList(), Collections.emptyMap
+                ());
 
         QueryResult<Family> familyQueryResult = familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
         assertEquals(4, familyQueryResult.first().getMembers().size());
@@ -346,7 +420,7 @@ public class FamilyManagerTest extends GenericTest {
 
     @Test
     public void createEmptyFamily() throws CatalogException {
-        Family family = new Family("xxx", null, null,"", Collections.emptyList(), Collections.emptyMap());
+        Family family = new Family("xxx", "xxx", null, null, "", -1, Collections.emptyList(), Collections.emptyMap());
         QueryResult<Family> familyQueryResult = familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
         assertEquals(1, familyQueryResult.getNumResults());
     }
@@ -403,14 +477,14 @@ public class FamilyManagerTest extends GenericTest {
     public void updateFamilyMissingMember() throws CatalogException, JsonProcessingException {
         QueryResult<Family> originalFamily = createDummyFamily("Martinez-Martinez");
 
-        Individual father = new Individual().setName("father");
-        Individual mother = new Individual().setName("mother2");
+        Individual father = new Individual().setId("father");
+        Individual mother = new Individual().setId("mother2");
 
         // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
         // ingesting references to exactly the same object and this test would not work exactly the same way.
-        Individual relFather = new Individual().setName("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
+        Individual relFather = new Individual().setId("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
 
-        Individual relChild1 = new Individual().setName("child3")
+        Individual relChild1 = new Individual().setId("child3")
                 .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT"), new OntologyTerm("dis2", "dis2", "OT")))
                 .setFather(father)
                 .setMother(mother)
