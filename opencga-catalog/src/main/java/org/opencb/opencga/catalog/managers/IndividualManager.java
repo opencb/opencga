@@ -131,8 +131,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                                           String populationDescription, String dateOfBirth, Individual.KaryotypicSex karyotypicSex,
                                           Individual.LifeStatus lifeStatus, Individual.AffectationStatus affectationStatus,
                                           QueryOptions options, String sessionId) throws CatalogException {
-        Individual individual = new Individual(name, name, null, null, null, fatherId, motherId, family, sex, karyotypicSex, ethnicity,
-                null, new Individual.Population(populationName, populationSubpopulation, populationDescription), dateOfBirth, -1, 1, null,
+        Individual individual = new Individual(name, name, null, null, null, sex, karyotypicSex, ethnicity,
+                new Individual.Population(populationName, populationSubpopulation, populationDescription), dateOfBirth, -1, 1, null,
                 null, lifeStatus, affectationStatus, null, null, false, null, null);
         return create(String.valueOf(studyId), individual, options, sessionId);
     }
@@ -144,9 +144,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
         ParamUtils.checkAlias(individual.getId(), "id");
         individual.setName(StringUtils.isEmpty(individual.getName()) ? individual.getId() : individual.getName());
-        individual.setFamily(ParamUtils.defaultObject(individual.getFamily(), ""));
         individual.setEthnicity(ParamUtils.defaultObject(individual.getEthnicity(), ""));
-        individual.setSpecies(ParamUtils.defaultObject(individual.getSpecies(), Individual.Species::new));
         individual.setPopulation(ParamUtils.defaultObject(individual.getPopulation(), Individual.Population::new));
         individual.setLifeStatus(ParamUtils.defaultObject(individual.getLifeStatus(), Individual.LifeStatus.UNKNOWN));
         individual.setKaryotypicSex(ParamUtils.defaultObject(individual.getKaryotypicSex(), Individual.KaryotypicSex.UNKNOWN));
