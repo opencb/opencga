@@ -1049,7 +1049,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                 // && !options.getBoolean(VariantHadoopDBAdaptor.NATIVE)
                 && (isValidParam(query, SAMPLE) && isSupportedQueryParam(query, SAMPLE)
                 || isValidParam(query, FILE) && isSupportedQueryParam(query, FILE)
-                || isValidParam(query, GENOTYPE) && isSupportedQueryParam(query, GENOTYPE));
+                || isValidParam(query, GENOTYPE) && isSupportedQueryParam(query, GENOTYPE)
+                && parseGenotypeFilter(query.getString(GENOTYPE.key()), new HashMap<>()) != QueryOperation.OR);
     }
 
     /**

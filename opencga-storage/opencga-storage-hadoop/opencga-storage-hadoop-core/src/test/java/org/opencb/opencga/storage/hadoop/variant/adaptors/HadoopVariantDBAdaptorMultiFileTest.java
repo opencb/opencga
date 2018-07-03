@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.hadoop.variant.adaptors;
 
 import org.apache.commons.lang3.time.StopWatch;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.core.Region;
@@ -117,6 +118,7 @@ public class HadoopVariantDBAdaptorMultiFileTest extends VariantDBAdaptorMultiFi
     }
 
     @Test
+    @Ignore("Genotypes union filter not supported in HBaseColumn Intersect")
     public void testGetByGenotypesHBaseColumnIntersect() throws Exception {
         testGetByGenotypes(variantStorageEngine.getStorageEngineId() + " + " + variantStorageEngine.getStorageEngineId(),
                 options.append("hbase_column_intersect", true).append("sample_index_intersect", false));
@@ -139,14 +141,14 @@ public class HadoopVariantDBAdaptorMultiFileTest extends VariantDBAdaptorMultiFi
                 .append(VariantQueryParam.INCLUDE_STUDY.key(), "S_1")
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877,NA12878")
                 .append(VariantQueryParam.INCLUDE_FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz"), options);
-        assertEquals(expectedSource, queryResult.getSource());
-        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", anyOf(
                 allOf(
                         withFileId("12877"),
                         withSampleData("NA12877", "GT", containsString("0/1"))),
                 allOf(
                         withFileId("12878"),
                         withSampleData("NA12878", "GT", containsString("1/1")))))));
+        assertEquals(expectedSource, queryResult.getSource());
     }
 
     @Test

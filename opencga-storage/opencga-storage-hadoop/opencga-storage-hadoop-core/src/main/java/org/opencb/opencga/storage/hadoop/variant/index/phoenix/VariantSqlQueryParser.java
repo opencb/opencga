@@ -282,6 +282,13 @@ public class VariantSqlQueryParser {
 
     protected StringBuilder appendFilters(StringBuilder sb, List<String> filters, QueryOperation logicalOperation) {
         String delimiter;
+        if (logicalOperation == null) {
+            if (filters.size() == 1) {
+                return sb.append(" ( ").append(filters.get(0)).append(" ) ");
+            } else {
+                throw new VariantQueryException("Missing logical operation!");
+            }
+        }
         switch (logicalOperation) {
             case AND:
                 delimiter = " ) AND ( ";
@@ -706,9 +713,10 @@ public class VariantSqlQueryParser {
         }
 
         Map<Object, List<String>> genotypesMap = new HashMap<>();
+        QueryOperation genotypeQueryOperation = QueryOperation.AND;
         if (isValidParam(query, GENOTYPE)) {
             // NA12877_01 :  0/0  ;  NA12878_01 :  0/1  ,  1/1
-            parseGenotypeFilter(query.getString(GENOTYPE.key()), genotypesMap);
+            genotypeQueryOperation = parseGenotypeFilter(query.getString(GENOTYPE.key()), genotypesMap);
         }
         if (isValidParam(query, SAMPLE)) {
             String value = query.getString(SAMPLE.key());
@@ -721,6 +729,7 @@ public class VariantSqlQueryParser {
         }
 
         if (!genotypesMap.isEmpty()) {
+            List<String> gtFilters = new ArrayList<>(genotypesMap.size());
             for (Map.Entry<Object, List<String>> entry : genotypesMap.entrySet()) {
                 if (defaultStudyConfiguration == null) {
                     List<String> studyNames = studyConfigurationManager.getStudyNames(null);
@@ -762,7 +771,7 @@ public class VariantSqlQueryParser {
                     genotypes.add("x/x");
                 }
 
-                List<String> gtFilters = new ArrayList<>(genotypes.size());
+                List<String> sampleGtFilters = new ArrayList<>(genotypes.size());
                 final boolean negated;
                 if (genotypes.stream().allMatch(VariantQueryUtils::isNegated)) {
                     negated = true;
@@ -798,14 +807,15 @@ public class VariantSqlQueryParser {
                             filter = '"' + key + "\"[1] = '" + genotype + '\'';
                         }
                     }
-                    gtFilters.add(filter);
+                    sampleGtFilters.add(filter);
                 }
-                if (!negated) {
-                    filters.add(gtFilters.stream().collect(Collectors.joining(" OR ", " ( ", " ) ")));
+                if (negated) {
+                    gtFilters.add(appendFilters(sampleGtFilters, QueryOperation.AND));
                 } else {
-                    filters.add(gtFilters.stream().collect(Collectors.joining(" AND ", " ( ", " ) ")));
+                    gtFilters.add(appendFilters(sampleGtFilters, QueryOperation.OR));
                 }
             }
+            filters.add(appendFilters(gtFilters, genotypeQueryOperation));
         }
 
         if (isValidParam(query, RELEASE)) {
