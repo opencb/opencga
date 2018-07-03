@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.catalog.db.api;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.collections.map.LinkedMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
@@ -34,18 +34,42 @@ public interface PanelDBAdaptor extends DBAdaptor<Panel> {
 
     enum QueryParams implements QueryParam {
         ID("id", TEXT, ""),
+        UID("uid", INTEGER, ""),
+        UUID("uuid", TEXT, ""),
         NAME("name", TEXT, ""),
-        VERSION("version", INTEGER, ""),
         DESCRIPTION("description", TEXT, ""),
 
+        STATUS("status", TEXT_ARRAY, ""),
+        STATUS_NAME("status.name", TEXT, ""),
+        STATUS_MSG("status.msg", TEXT, ""),
+        STATUS_DATE("status.date", TEXT, ""),
+        RELEASE("release", INTEGER, ""), //  Release where the sample was created
+        SNAPSHOT("snapshot", INTEGER, ""), // Last version of sample at release = snapshot
+        VERSION("version", INTEGER, ""), // Version of the sample
+        CREATION_DATE("creationDate", DATE, ""),
+
+        ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
+        NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
+        BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
+
+        PHENOTYPES("phenotypes", TEXT_ARRAY, ""),
+        PHENOTYPES_ID("phenotypes.id", TEXT, ""),
+        PHENOTYPES_NAME("phenotypes.name", TEXT, ""),
+        PHENOTYPES_SOURCE("phenotypes.source", TEXT, ""),
+
         VARIANTS("variants", TEXT_ARRAY, ""),
+
         GENES("genes", TEXT_ARRAY, ""),
+        GENES_ID("genes.id", TEXT, ""),
+        GENES_NAME("genes.name", TEXT, ""),
+        GENES_CONFIDENCE("genes.confidence", TEXT, ""),
+
         REGIONS("regions", TEXT_ARRAY, ""),
+        REGIONS_LOCATION("regions.location", TEXT, ""),
+        REGIONS_SCORE("regions.score", DOUBLE, ""),
 
         AUTHOR("author", TEXT, ""),
-        STATUS("status", TEXT, ""),
 
-        UID("uid", INTEGER, ""),
         STUDY_ID("studyId", INTEGER_ARRAY, ""),
         STUDY_UID("studyUid", INTEGER_ARRAY, "");
 
@@ -92,17 +116,52 @@ public interface PanelDBAdaptor extends DBAdaptor<Panel> {
         }
     }
 
-    default boolean exists(String id) throws CatalogDBException {
-        return count(new Query(QueryParams.ID.key(), id)).first() > 0;
-    }
+    enum UpdateParams {
+        ID(QueryParams.ID.key()),
+        NAME(QueryParams.NAME.key()),
+        DESCRIPTION(QueryParams.DESCRIPTION.key()),
+        PHENOTYPES(QueryParams.PHENOTYPES.key()),
+        VARIANTS(QueryParams.VARIANTS.key()),
+        GENES(QueryParams.GENES.key()),
+        REGIONS(QueryParams.REGIONS.key()),
+        AUTHOR(QueryParams.AUTHOR.key()),
+        STATUS_NAME(QueryParams.STATUS_NAME.key()),
+        ATTRIBUTES(QueryParams.ATTRIBUTES.key());
 
-    default void checkId(String id) throws CatalogDBException {
-        if (StringUtils.isEmpty(id)) {
-            throw CatalogDBException.newInstance("Panel id '{}' is not valid: ", id);
+        private static Map<String, UpdateParams> map;
+        static {
+            map = new LinkedMap();
+            for (UpdateParams params : UpdateParams.values()) {
+                map.put(params.key(), params);
+            }
         }
 
-        if (!exists(id)) {
-            throw CatalogDBException.newInstance("Panel id '{}' does not exist", id);
+        private final String key;
+
+        UpdateParams(String key) {
+            this.key = key;
+        }
+
+        public String key() {
+            return key;
+        }
+
+        public static UpdateParams getParam(String key) {
+            return map.get(key);
+        }
+    }
+
+    default boolean exists(long panelUid) throws CatalogDBException {
+        return count(new Query(QueryParams.UID.key(), panelUid)).first() > 0;
+    }
+
+    default void checkUid(long panelUid) throws CatalogDBException {
+        if (panelUid < 0) {
+            throw CatalogDBException.newInstance("Panel uid '{}' is not valid: ", panelUid);
+        }
+
+        if (!exists(panelUid)) {
+            throw CatalogDBException.newInstance("Panel uid '{}' does not exist", panelUid);
         }
     }
 

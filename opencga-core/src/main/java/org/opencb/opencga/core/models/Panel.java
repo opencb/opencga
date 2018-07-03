@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.core.models;
 
+import org.opencb.opencga.core.common.TimeUtils;
+
 import java.util.List;
 import java.util.Map;
 
@@ -51,16 +53,16 @@ public class Panel extends PrivateStudyUid {
         this.version = version;
     }
 
-    public Panel(String id, String name, int release, int version, String author, String creationDate, Status status, SourcePanel source,
-                 String description, List<OntologyTerm> phenotypes, List<String> variants, List<GenePanel> genes, List<RegionPanel> regions,
+    public Panel(String id, String name, int release, int version, String author, SourcePanel source, String description,
+                 List<OntologyTerm> phenotypes, List<String> variants, List<GenePanel> genes, List<RegionPanel> regions,
                  Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.release = release;
         this.version = version;
         this.author = author;
-        this.creationDate = creationDate;
-        this.status = status;
+        this.creationDate = TimeUtils.getTime();
+        this.status = new Status();
         this.source = source;
         this.description = description;
         this.phenotypes = phenotypes;

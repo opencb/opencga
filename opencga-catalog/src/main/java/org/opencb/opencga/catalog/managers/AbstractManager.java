@@ -59,8 +59,6 @@ public abstract class AbstractManager {
     protected final FamilyDBAdaptor familyDBAdaptor;
     protected final DatasetDBAdaptor datasetDBAdaptor;
     protected final JobDBAdaptor jobDBAdaptor;
-    @Deprecated
-    protected final DiseasePanelDBAdaptor diseasePanelDBAdaptor;
     protected final PanelDBAdaptor panelDBAdaptor;
     protected final ClinicalAnalysisDBAdaptor clinicalDBAdaptor;
 
@@ -84,7 +82,6 @@ public abstract class AbstractManager {
         this.cohortDBAdaptor = catalogDBAdaptorFactory.getCatalogCohortDBAdaptor();
         this.familyDBAdaptor = catalogDBAdaptorFactory.getCatalogFamilyDBAdaptor();
         this.datasetDBAdaptor = catalogDBAdaptorFactory.getCatalogDatasetDBAdaptor();
-        this.diseasePanelDBAdaptor = catalogDBAdaptorFactory.getCatalogDiseasePanelDBAdaptor();
         this.panelDBAdaptor = catalogDBAdaptorFactory.getCatalogPanelDBAdaptor();
         this.clinicalDBAdaptor = catalogDBAdaptorFactory.getClinicalAnalysisDBAdaptor();
         this.catalogIOManagerFactory = ioManagerFactory;

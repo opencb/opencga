@@ -32,7 +32,8 @@ public class PanelConverter extends GenericDocumentComplexConverter<Panel> {
     @Override
     public Document convertToStorageType(Panel object) {
         Document document = super.convertToStorageType(object);
-        document.put("id", document.getInteger("id").longValue());
+        document.put("uid", object.getUid());
+        document.put("studyUid", object.getStudyUid());
         return document;
     }
 

@@ -107,7 +107,6 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     private CohortMongoDBAdaptor cohortDBAdaptor;
     private FamilyMongoDBAdaptor familyDBAdaptor;
     private DatasetMongoDBAdaptor datasetDBAdaptor;
-    private DiseasePanelMongoDBAdaptor diseasePanelDBAdaptor;
     private PanelMongoDBAdaptor panelDBAdaptor;
     private ClinicalAnalysisMongoDBAdaptor clinicalDBAdaptor;
     private AuditMongoDBAdaptor auditDBAdaptor;
@@ -298,11 +297,6 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     }
 
     @Override
-    public DiseasePanelMongoDBAdaptor getCatalogDiseasePanelDBAdaptor() {
-        return diseasePanelDBAdaptor;
-    }
-
-    @Override
     public PanelMongoDBAdaptor getCatalogPanelDBAdaptor() {
         return panelDBAdaptor;
     }
@@ -371,12 +365,11 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         userDBAdaptor = new UserMongoDBAdaptor(userCollection, this);
         cohortDBAdaptor = new CohortMongoDBAdaptor(cohortCollection, this);
         datasetDBAdaptor = new DatasetMongoDBAdaptor(datasetCollection, this);
-        diseasePanelDBAdaptor = new DiseasePanelMongoDBAdaptor(panelCollection, this);
+        panelDBAdaptor = new PanelMongoDBAdaptor(panelCollection, this);
         familyDBAdaptor = new FamilyMongoDBAdaptor(familyCollection, this);
         clinicalDBAdaptor = new ClinicalAnalysisMongoDBAdaptor(clinicalCollection, this);
         metaDBAdaptor = new MetaMongoDBAdaptor(metaCollection, this);
         auditDBAdaptor = new AuditMongoDBAdaptor(auditCollection);
-
     }
 
 }
