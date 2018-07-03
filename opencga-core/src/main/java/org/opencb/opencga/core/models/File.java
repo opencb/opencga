@@ -66,8 +66,6 @@ public class File extends PrivateStudyUid {
     private Software software;
     private Experiment experiment;
     private List<Sample> samples;
-    @Deprecated
-    private List<Long> sampleIds;
 
 
     /**
@@ -566,17 +564,6 @@ public class File extends PrivateStudyUid {
 
     public File setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
-        return this;
-    }
-
-    @Deprecated
-    public List<Long> getSampleIds() {
-        return sampleIds;
-    }
-
-    @Deprecated
-    public File setSampleIds(List<Long> sampleIds) {
-        this.sampleIds = sampleIds;
         return this;
     }
 

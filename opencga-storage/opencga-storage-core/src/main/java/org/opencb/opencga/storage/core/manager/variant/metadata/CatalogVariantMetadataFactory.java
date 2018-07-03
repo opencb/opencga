@@ -41,10 +41,9 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
                     IndividualDBAdaptor.QueryParams.UID.key(),
                     IndividualDBAdaptor.QueryParams.ID.key(),
                     IndividualDBAdaptor.QueryParams.SEX.key(),
-                    IndividualDBAdaptor.QueryParams.FAMILY.key(),
                     IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(),
-                    IndividualDBAdaptor.QueryParams.MOTHER_UID.key(),
-                    IndividualDBAdaptor.QueryParams.FATHER_UID.key()
+                    IndividualDBAdaptor.QueryParams.MOTHER.key(),
+                    IndividualDBAdaptor.QueryParams.FATHER.key()
             ));
     public static final int CATALOG_QUERY_BATCH_SIZE = 1000;
     public static final String BASIC_METADATA = "basic";
@@ -127,20 +126,20 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
             org.opencb.biodata.models.metadata.Individual individual = individualMap.get(catalogIndividual.getName());
 
             individual.setSex(catalogIndividual.getSex().name());
-            individual.setFamily(catalogIndividual.getFamily());
+//            individual.setFamily(catalogIndividual.getFamily());
             individual.setPhenotype(catalogIndividual.getAffectationStatus().toString());
 
-            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key());
-            if (catalogIndividual.getMotherId() > 0) {
-                String motherName = catalogManager.getIndividualManager().get(String.valueOf(studyId),
-                        String.valueOf(catalogIndividual.getMotherId()), options, sessionId).first().getName();
-                individual.setMother(motherName);
-            }
-            if (catalogIndividual.getFatherId() > 0) {
-                String fatherName = catalogManager.getIndividualManager().get(String.valueOf(studyId),
-                        String.valueOf(catalogIndividual.getFatherId()), options, sessionId).first().getName();
-                individual.setFather(fatherName);
-            }
+//            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key());
+//            if (catalogIndividual.getMotherId() > 0) {
+//                String motherName = catalogManager.getIndividualManager().get(String.valueOf(studyId),
+//                        String.valueOf(catalogIndividual.getMotherId()), options, sessionId).first().getName();
+//                individual.setMother(motherName);
+//            }
+//            if (catalogIndividual.getFatherId() > 0) {
+//                String fatherName = catalogManager.getIndividualManager().get(String.valueOf(studyId),
+//                        String.valueOf(catalogIndividual.getFatherId()), options, sessionId).first().getName();
+//                individual.setFather(fatherName);
+//            }
         }
     }
 
