@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.core.metadata;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -229,8 +230,8 @@ public class StudyConfigurationManager implements AutoCloseable {
         return studyDBAdaptor.getStudyIds(options);
     }
 
-    public Map<String, Integer> getStudies(QueryOptions options) {
-        return studyDBAdaptor.getStudies(options);
+    public BiMap<String, Integer> getStudies(QueryOptions options) {
+        return HashBiMap.create(studyDBAdaptor.getStudies(options));
     }
 
     public final QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {

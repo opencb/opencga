@@ -139,6 +139,27 @@ public class CatalogStudyConfigurationFactory {
                     new QueryOptions(), sessionId)) {
                 while (iterator.hasNext()) {
                     Cohort cohort = iterator.next();
+                    if (cohort.getStatus() != null && cohort.getStatus().getName().equals(Cohort.CohortStatus.INVALID)) {
+                        if (cohort.getSamples().size() != studyConfiguration.getCohorts().get(cohortId).size()) {
+                            // Skip this cohort. This cohort should remain as invalid
+                            System.out.println("Skip " + cohort.getId());
+                            continue;
+                        }
+
+                        Set<String> cohortFromCatalog = cohort.getSamples()
+                                .stream()
+                                .map(Sample::getId)
+                                .collect(Collectors.toSet());
+                        Set<String> cohortFromStorage = studyConfiguration.getCohorts().get(cohortId)
+                                .stream()
+                                .map(studyConfiguration.getSampleIds().inverse()::get)
+                                .collect(Collectors.toSet());
+                        if (!cohortFromCatalog.equals(cohortFromStorage)) {
+                            // Skip this cohort. This cohort should remain as invalid
+                            System.out.println("Skip " + cohort.getId());
+                            continue;
+                        }
+                    }
                     if (cohort.getStatus() == null || !cohort.getStatus().getName().equals(Cohort.CohortStatus.READY)) {
                         logger.debug("Cohort \"{}\" change status from {} to {}",
                                 cohort.getId(), cohort.getStats(), Cohort.CohortStatus.READY);

@@ -175,7 +175,7 @@ public class VariantExportStorageOperation extends StorageOperation {
     public void importData(StudyInfo studyInfo, URI inputUri, String sessionId) throws IOException, StorageEngineException {
 
         VariantMetadataImporter variantMetadataImporter;
-        variantMetadataImporter = new CatalogVariantMetadataImporter(studyInfo.getStudyUid(), inputUri, sessionId);
+        variantMetadataImporter = new CatalogVariantMetadataImporter(studyInfo.getStudyFQN(), inputUri, sessionId);
 
         try {
             DataStore dataStore = studyInfo.getDataStores().get(File.Bioformat.VARIANT);
@@ -210,18 +210,17 @@ public class VariantExportStorageOperation extends StorageOperation {
     private final class CatalogVariantMetadataImporter extends VariantMetadataImporter {
         private final URI inputUri;
         private final String sessionId;
-        private long studyId;
+        private final String studyStr;
 
-        private CatalogVariantMetadataImporter(long studyId, URI inputUri, String sessionId) {
+        private CatalogVariantMetadataImporter(String studyStr, URI inputUri, String sessionId) {
             this.inputUri = inputUri;
             this.sessionId = sessionId;
-            this.studyId = studyId;
+            this.studyStr = studyStr;
         }
 
         @Override
         protected void processStudyConfiguration(StudyConfiguration studyConfiguration) {
-            studyConfiguration.setStudyId((int) studyId);
-            String studyStr = String.valueOf(studyId);
+//            studyConfiguration.setStudyId((int) studyFqn);
 
             try {
                 // Create Samples

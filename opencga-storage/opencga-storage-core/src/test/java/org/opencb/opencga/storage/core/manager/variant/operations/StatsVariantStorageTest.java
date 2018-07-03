@@ -248,7 +248,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
 
         List<String> newCohort = catalogManager.getCohortManager().get(studyId, coh[0], null, sessionId).first().getSamples().stream()
                 .map(Sample::getId)
-                .limit(100)
+                .skip(10).limit(100)
                 .collect(Collectors.toList());
         catalogManager.getCohortManager().update(studyId, coh[0], new ObjectMap("samples", newCohort), new QueryOptions(), sessionId);
         assertEquals(Cohort.CohortStatus.INVALID, catalogManager.getCohortManager().get(studyId, coh[0], null, sessionId).first().getStatus().getName());

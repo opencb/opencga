@@ -73,8 +73,8 @@ public class VariantStatsStorageOperation extends StorageOperation {
         long studyUid = study.getUid();
         String studyFqn = study.getFqn();
 
-        final Long fileId = fileIdStr == null ? null : catalogManager.getFileManager().getUid(fileIdStr, studyStr, sessionId)
-                .getResource().getUid();
+        final String fileName = fileIdStr == null ? null : catalogManager.getFileManager().getUid(fileIdStr, studyStr, sessionId)
+                .getResource().getName();
 
 
         // Outdir must be empty
@@ -103,7 +103,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
                 .append(Options.OVERWRITE_STATS.key(), overwriteStats)
                 .append(Options.UPDATE_STATS.key(), updateStats)
                 .append(Options.RESUME.key(), resume);
-        calculateStatsOptions.putIfNotNull(Options.FILE_ID.key(), fileId);
+        calculateStatsOptions.putIfNotNull(Options.FILE_ID.key(), fileName);
         calculateStatsOptions.putIfNotEmpty(VariantQueryParam.REGION.key(), region);
 
         // if the study is aggregated and a mapping file is provided, pass it to storage
@@ -274,11 +274,16 @@ public class VariantStatsStorageOperation extends StorageOperation {
 
     private List<String> createCohortsIfNeeded(String studyId, Set<String> cohortNames, String sessionId) throws CatalogException {
         List<String> cohorts = new ArrayList<>();
-        Map<String, Long> catalogCohorts = catalogManager.getCohortManager().get(studyId, new Query(),
-                new QueryOptions(QueryOptions.INCLUDE, "name,id"), sessionId).getResult().stream()
-                .collect(Collectors.toMap(Cohort::getId, Cohort::getUid));
+        // Silent query, so it does not fail for missing cohorts
+        Set<String> catalogCohorts = catalogManager.getCohortManager().get(studyId, new ArrayList<>(cohortNames), new Query(),
+                new QueryOptions(QueryOptions.INCLUDE, "name,id"), true, sessionId)
+                .stream()
+                .map(QueryResult::first)
+                .filter(Objects::nonNull)
+                .map(Cohort::getId)
+                .collect(Collectors.toSet());
         for (String cohortName : cohortNames) {
-            if (!catalogCohorts.containsKey(cohortName)) {
+            if (!catalogCohorts.contains(cohortName)) {
                 QueryResult<Cohort> cohort = catalogManager.getCohortManager().create(studyId, cohortName, Study.Type.COLLECTION, "",
                         Collections.emptyList(), null, null, sessionId);
                 logger.info("Creating cohort {}", cohortName);
@@ -378,14 +383,14 @@ public class VariantStatsStorageOperation extends StorageOperation {
 
     static CatalogException unableToCalculateCohortReady(Cohort cohort) {
         return new CatalogException("Unable to calculate stats for cohort "
-                + "{ id: " + cohort.getUid() + " name: \"" + cohort.getId() + "\" }"
+                + "{ uid: " + cohort.getUid() + " id: \"" + cohort.getId() + "\" }"
                 + " with status \"" + cohort.getStatus().getName() + "\". "
                 + "Resume or update stats for continue calculation");
     }
 
     static CatalogException unableToCalculateCohortCalculating(Cohort cohort) {
         return new CatalogException("Unable to calculate stats for cohort "
-                + "{ id: " + cohort.getUid() + " name: \"" + cohort.getId() + "\" }"
+                + "{ uid: " + cohort.getUid() + " id: \"" + cohort.getId() + "\" }"
                 + " with status \"" + cohort.getStatus().getName() + "\". "
                 + "Resume for continue calculation.");
     }

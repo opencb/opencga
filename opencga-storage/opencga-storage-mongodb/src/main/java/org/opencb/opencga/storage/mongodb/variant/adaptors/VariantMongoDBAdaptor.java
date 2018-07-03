@@ -411,7 +411,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
 
         DocumentToVariantConverter converter = getDocumentToVariantConverter(query, options);
-        Map<String, List<String>> samples = getSamplesMetadata(query, options, studyConfigurationManager);
+        Map<String, List<String>> samples = getSamplesMetadataIfRequested(query, options, studyConfigurationManager);
         return new VariantQueryResult<>(variantsCollection.find(mongoQuery, projection, converter, options), samples);
     }
 
@@ -469,7 +469,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     watch.stop();
                     queryResult.setDbTime(((int) watch.getTime()));
                     queryResult.setId("getPhased");
-                    queryResult.setSamples(getSamplesMetadata(query, options, studyConfigurationManager));
+                    queryResult.setSamples(getSamplesMetadataIfRequested(query, options, studyConfigurationManager));
                     return queryResult;
                 }
             }
