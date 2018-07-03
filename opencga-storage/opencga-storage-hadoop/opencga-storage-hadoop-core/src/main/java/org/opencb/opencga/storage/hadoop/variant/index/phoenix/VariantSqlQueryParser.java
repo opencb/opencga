@@ -1280,8 +1280,11 @@ public class VariantSqlQueryParser {
     }
 
     private String checkStringValue(String value) {
+        if (value == null) {
+            throw new VariantQueryException("Unable to query null text field");
+        }
         if (value.contains("'")) {
-            throw new VariantQueryException("Unable to query text field using \"'\"");
+            throw new VariantQueryException("Unable to query text field with \"'\" : " + value);
         }
         return value;
     }

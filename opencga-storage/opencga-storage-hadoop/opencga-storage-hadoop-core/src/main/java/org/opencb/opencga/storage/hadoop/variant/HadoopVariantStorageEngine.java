@@ -70,6 +70,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConsoli
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBLoader;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.iterators.SampleIndexVariantDBIterator;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopDefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopMRVariantStatisticsManager;
@@ -879,18 +880,16 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         if (options.getBoolean("sample_index_intersect", true)) {
             if (isValidParam(query, GENOTYPE)) {
                 HashMap<Object, List<String>> gtMap = new HashMap<>();
-                QueryOperation queryOperation = VariantQueryUtils.parseGenotypeFilter(query.getString(GENOTYPE.key()), gtMap);
-                if (queryOperation == null || queryOperation == QueryOperation.AND) {
-                    for (List<String> gts : gtMap.values()) {
-                        boolean valid = true;
-                        for (String gt : gts) {
-                            valid &= SampleIndexDBLoader.validGenotype(gt);
-                            valid &= !isNegated(gt);
-                        }
-                        if (valid) {
-                            // If any sample is valid, go for it
-                            return true;
-                        }
+                VariantQueryUtils.parseGenotypeFilter(query.getString(GENOTYPE.key()), gtMap);
+                for (List<String> gts : gtMap.values()) {
+                    boolean valid = true;
+                    for (String gt : gts) {
+                        valid &= SampleIndexDBLoader.validGenotype(gt);
+                        valid &= !isNegated(gt);
+                    }
+                    if (valid) {
+                        // If any sample is valid, go for it
+                        return true;
                     }
                 }
             }
@@ -950,31 +949,15 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                 dbAdaptor.getStudyConfigurationManager());
 
         // Extract sample and genotypes to filter
-        String sample = null;
-        List<String> gts = null;
+//        String sample = null;
+//        List<String> gts = null;
+        QueryOperation queryOperation;
+        Map<String, List<String>> samplesMap = new HashMap<>();
         if (isValidParam(query, GENOTYPE)) {
             // Get the genotype sample with fewer genotype filters (i.e., the most strict filter)
 
             HashMap<Object, List<String>> map = new HashMap<>();
-            parseGenotypeFilter(query.getString(GENOTYPE.key()), map);
-
-            TreeMap<List<String>, Object> gtsMap = new TreeMap<>(Comparator.comparingInt(gtsList -> {
-                int s = 0;
-                for (String gt : gtsList) {
-                    switch (gt) {
-                        case "0/1":
-                            s += 100;
-                            break;
-                        case "1/1":
-                            s += 10;
-                            break;
-                        default:
-                            s++;
-                    }
-                }
-                return s;
-            }));
-
+            queryOperation = parseGenotypeFilter(query.getString(GENOTYPE.key()), map);
 
             for (Map.Entry<Object, List<String>> entry : map.entrySet()) {
                 boolean valid = true;
@@ -983,33 +966,33 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                     valid &= !isNegated(gt);
                 }
                 if (valid) {
-                    gtsMap.put(entry.getValue(), entry.getKey());
+                    samplesMap.put(entry.getKey().toString(), entry.getValue());
                 }
             }
-
-
-            Map.Entry<List<String>, Object> currentEntry = gtsMap.firstEntry();
-            sample = currentEntry.getValue().toString();
-            gts = currentEntry.getKey();
 
         } else if (isValidParam(query, SAMPLE)) {
             // At any case, filter only by first sample
             // TODO: Use sample with less variants?
-
+            queryOperation = QueryOperation.AND;
             List<String> samples = query.getAsStringList(SAMPLE.key());
-            sample = samples.stream().filter(s -> !isNegated(s)).findFirst().orElse(null);
-            gts = Collections.emptyList();
-        } /* else if (isValidParam(query, FILE)) {
-            // TODO: Add FILEs filter
-        } */
+            samples.stream().filter(s -> !isNegated(s)).forEach(sample -> samplesMap.put(sample, Collections.emptyList()));
+//            sample = samples.stream().filter(s -> !isNegated(s)).findFirst().orElse(null);
+//            gts = Collections.emptyList();
+
+        //} else if (isValidParam(query, FILE)) { // TODO: Add FILEs filter
+
+        } else {
+            throw new IllegalStateException("Unable to query SamplesIndex");
+        }
 
         if (defaultStudyConfiguration == null) {
+            String sample = samplesMap.keySet().iterator().next();
             throw VariantQueryException.missingStudyForSample(sample, dbAdaptor.getStudyConfigurationManager().getStudyNames(null));
         }
         String study = defaultStudyConfiguration.getStudyName();
 
-        SampleIndexDBAdaptor.SampleIndexVariantDBIterator variants =
-                sampleIndexDBAdaptor.iterator(regions, study, sample, gts);
+        SampleIndexVariantDBIterator variants =
+                sampleIndexDBAdaptor.iterator(regions, study, samplesMap, queryOperation);
 
         int batchSize = options.getInt("multiIteratorBatchSize", 200);
         if (iterator) {
@@ -1027,9 +1010,14 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                     result.setApproximateCount(false);
                     result.setNumTotalResults(result.getNumResults());
                 } else if (variants.hasNext()) {
-//                    Iterators.getLast(variants);
-//                    int totalCount = variants.getCount();
-                    long totalCount = sampleIndexDBAdaptor.count(regions, study, sample, gts);
+                    long totalCount;
+                    if (samplesMap.size() == 1) {
+                        Map.Entry<String, List<String>> entry = samplesMap.entrySet().iterator().next();
+                        totalCount = sampleIndexDBAdaptor.count(regions, study, entry.getKey(), entry.getValue());
+                    } else {
+                        Iterators.getLast(variants);
+                        totalCount = variants.getCount();
+                    }
                     long approxCount = totalCount / sampling * result.getNumResults();
                     logger.info("totalCount = " + totalCount);
                     logger.info("sampling = " + sampling);

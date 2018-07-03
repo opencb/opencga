@@ -5,7 +5,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
-import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.CollectionUtils;
 import org.opencb.biodata.models.core.Region;
@@ -16,9 +15,11 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.QueryOperation;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.iterators.*;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +34,6 @@ import java.util.stream.Collectors;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class SampleIndexDBAdaptor {
-
 
     private final HBaseManager hBaseManager;
     private final HBaseVariantTableNameGenerator tableNameGenerator;
@@ -64,6 +64,28 @@ public class SampleIndexDBAdaptor {
         return studyId;
     }
 
+    public SampleIndexVariantDBIterator iterator(List<Region> regions, String study, Map<String, List<String>> samples,
+                                                 QueryOperation operation) {
+        if (samples.size() == 1) {
+            Map.Entry<String, List<String>> entry = samples.entrySet().iterator().next();
+            return iterator(regions, study, entry.getKey(), entry.getValue());
+        } else if (samples.isEmpty()) {
+            throw new VariantQueryException("At least one sample expected to query SampleIndex!");
+        }
+
+        List<VariantDBIterator> iterators = new ArrayList<>(samples.size());
+
+        for (Map.Entry<String, List<String>> entry : samples.entrySet()) {
+            iterators.add(iterator(regions, study, entry.getKey(), entry.getValue()));
+        }
+        if (operation.equals(QueryOperation.OR)) {
+            return new UnionMultiSampleIndexVariantDBIterator(iterators);
+        } else {
+            return new IntersectMultiSampleIndexVariantDBIterator(iterators);
+        }
+
+    }
+
     public SampleIndexVariantDBIterator iterator(List<Region> regions, String study, String sample, List<String> gts) {
 
         Integer studyId = getStudyId(study);
@@ -72,7 +94,7 @@ public class SampleIndexDBAdaptor {
 
         try {
             return hBaseManager.act(tableName, table -> {
-                return new SampleIndexVariantDBIterator(table, regions, studyId, sample, gts);
+                return new SingleSampleIndexVariantDBIterator(table, regions, studyId, sample, gts, this);
             });
         } catch (IOException e) {
             throw VariantQueryException.internalException(e);
@@ -200,56 +222,7 @@ public class SampleIndexDBAdaptor {
         return region.getEnd() + 1 % SampleIndexDBLoader.BATCH_SIZE == 0;
     }
 
-    public class SampleIndexVariantDBIterator extends VariantDBIterator {
-
-        private final Iterator<Variant> iterator;
-        private int count = 0;
-
-        SampleIndexVariantDBIterator(Table table, List<Region> regions, Integer studyId, String sample, List<String> gts) {
-            if (CollectionUtils.isEmpty(regions)) {
-                // If no regions are defined, get a list of one null element to initialize the stream.
-                regions = Collections.singletonList(null);
-            } else {
-                regions = VariantQueryUtils.mergeRegions(regions);
-            }
-
-            Iterator<Iterator<Variant>> iterators = regions.stream()
-                    .map(region -> {
-                        // One scan per region
-                        Scan scan = parse(region, studyId, sample, gts, false);
-                        SampleIndexConverter converter = new SampleIndexConverter(region);
-                        try {
-                            ResultScanner scanner = table.getScanner(scan);
-                            addCloseable(scanner);
-                            Iterator<Result> resultIterator = scanner.iterator();
-                            Iterator<Iterator<Variant>> transform = Iterators.transform(resultIterator,
-                                    result -> converter.convert(result).iterator());
-                            return Iterators.concat(transform);
-                        } catch (IOException e) {
-                            throw VariantQueryException.internalException(e);
-                        }
-                    }).iterator();
-            iterator = Iterators.concat(iterators);
-        }
-
-        @Override
-        public boolean hasNext() {
-            return fetch(iterator::hasNext);
-        }
-
-        @Override
-        public Variant next() {
-            Variant variant = fetch(iterator::next);
-            count++;
-            return variant;
-        }
-
-        public int getCount() {
-            return count;
-        }
-    }
-
-    private Scan parse(Region region, int study, String sample, List<String> gts, boolean count) {
+    public Scan parse(Region region, int study, String sample, List<String> gts, boolean count) {
 
         Scan scan = new Scan();
         int sampleId = toSampleId(study, sample);

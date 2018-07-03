@@ -44,11 +44,11 @@ public abstract class VariantDBIterator implements Iterator<Variant>, AutoClosea
         return timeConverting;
     }
 
-    public long getTimeConverting(TimeUnit timeUnit) {
+    public final long getTimeConverting(TimeUnit timeUnit) {
         return timeUnit.convert(getTimeConverting(), TimeUnit.NANOSECONDS);
     }
 
-    public void setTimeFetching(long timeFetching) {
+    public final void setTimeFetching(long timeFetching) {
         this.timeFetching = timeFetching;
     }
 
@@ -56,11 +56,11 @@ public abstract class VariantDBIterator implements Iterator<Variant>, AutoClosea
         return timeFetching;
     }
 
-    public long getTimeFetching(TimeUnit timeUnit) {
+    public final long getTimeFetching(TimeUnit timeUnit) {
         return timeUnit.convert(getTimeFetching(), TimeUnit.NANOSECONDS);
     }
 
-    public void setTimeConverting(long timeConverting) {
+    public final void setTimeConverting(long timeConverting) {
         this.timeConverting = timeConverting;
     }
 

@@ -172,7 +172,7 @@ public class SampleIndexConsolidationDrive extends AbstractAnalysisTableDriver {
                     } else {
                         context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "merged_gt").increment(1);
                         // Merge with existing values
-                        TreeSet<Variant> variantsSet = new TreeSet<>(SampleIndexConverter.VARIANT_COMPARATOR);
+                        TreeSet<Variant> variantsSet = new TreeSet<>(SampleIndexConverter.INTRA_CHROMOSOME_VARIANT_COMPARATOR);
                         List<Variant> loadedVariants = SampleIndexConverter.getVariants(cell);
                         variantsSet.addAll(loadedVariants);
                         for (String variant : variants) {

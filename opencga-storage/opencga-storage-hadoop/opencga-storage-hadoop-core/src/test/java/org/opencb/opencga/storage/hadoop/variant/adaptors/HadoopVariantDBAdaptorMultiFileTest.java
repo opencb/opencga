@@ -85,6 +85,71 @@ public class HadoopVariantDBAdaptorMultiFileTest extends VariantDBAdaptorMultiFi
     }
 
     @Test
+    public void testGetBySamplesNameHBaseColumnIntersect() throws Exception {
+        testGetBySamplesName(variantStorageEngine.getStorageEngineId() + " + " + variantStorageEngine.getStorageEngineId(),
+                options.append("hbase_column_intersect", true).append("sample_index_intersect", false));
+    }
+
+    @Test
+    public void testGetBySamplesNameSampleIndexIntersect() throws Exception {
+        testGetBySamplesName(variantStorageEngine.getStorageEngineId() + " + " + "sample_index_table",
+                options.append("hbase_column_intersect", false).append("sample_index_intersect", true));
+    }
+
+    public void testGetBySamplesName(String expectedSource, QueryOptions options) throws Exception {
+        query = new Query()
+                .append(VariantQueryParam.STUDY.key(), "S_1")
+                .append(VariantQueryParam.SAMPLE.key(), "NA12877,NA12878");
+//        queryResult = dbAdaptor.get(query, options);
+        queryResult = variantStorageEngine.get(query, options);
+        VariantQueryResult<Variant> allVariants = dbAdaptor.get(new Query()
+                .append(VariantQueryParam.INCLUDE_STUDY.key(), "S_1")
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877,NA12878")
+                .append(VariantQueryParam.INCLUDE_FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz"), options);
+        assertEquals(expectedSource, queryResult.getSource());
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(
+                allOf(
+                        withFileId("12877"),
+                        withSampleData("NA12877", "GT", containsString("1"))),
+                allOf(
+                        withFileId("12878"),
+                        withSampleData("NA12878", "GT", containsString("1")))))));
+    }
+
+    @Test
+    public void testGetByGenotypesHBaseColumnIntersect() throws Exception {
+        testGetByGenotypes(variantStorageEngine.getStorageEngineId() + " + " + variantStorageEngine.getStorageEngineId(),
+                options.append("hbase_column_intersect", true).append("sample_index_intersect", false));
+    }
+
+    @Test
+    public void testGetByGenotypesSampleIndexIntersect() throws Exception {
+        testGetByGenotypes(variantStorageEngine.getStorageEngineId() + " + " + "sample_index_table",
+                options.append("hbase_column_intersect", false).append("sample_index_intersect", true));
+    }
+
+    public void testGetByGenotypes(String expectedSource, QueryOptions options) throws Exception {
+        query = new Query()
+                .append(VariantQueryParam.STUDY.key(), "S_1")
+                .append(VariantQueryParam.GENOTYPE.key(), "NA12877:0/1,NA12878:1/1")
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877,NA12878");
+//        queryResult = dbAdaptor.get(query, options);
+        queryResult = variantStorageEngine.get(query, options);
+        VariantQueryResult<Variant> allVariants = dbAdaptor.get(new Query()
+                .append(VariantQueryParam.INCLUDE_STUDY.key(), "S_1")
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877,NA12878")
+                .append(VariantQueryParam.INCLUDE_FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz"), options);
+        assertEquals(expectedSource, queryResult.getSource());
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(
+                allOf(
+                        withFileId("12877"),
+                        withSampleData("NA12877", "GT", containsString("0/1"))),
+                allOf(
+                        withFileId("12878"),
+                        withSampleData("NA12878", "GT", containsString("1/1")))))));
+    }
+
+    @Test
     public void testGetBySampleNameMultiRegionHBaseColumnIntersect() throws Exception {
         testGetBySampleNameMultiRegion(variantStorageEngine.getStorageEngineId() + " + " + variantStorageEngine.getStorageEngineId(),
                 options.append("hbase_column_intersect", true).append("sample_index_intersect", false));
