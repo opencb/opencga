@@ -77,8 +77,8 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
         Document panelDocument = diseasePanelConverter.convertToStorageType(panel);
 
-        if (StringUtils.isNotEmpty(panel.getDate())) {
-            panelDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(panel.getDate()));
+        if (StringUtils.isNotEmpty(panel.getCreationDate())) {
+            panelDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(panel.getCreationDate()));
         } else {
             panelDocument.put(PRIVATE_CREATION_DATE, TimeUtils.getDate());
         }

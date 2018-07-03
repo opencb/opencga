@@ -24,11 +24,13 @@ public class Panel extends PrivateStudyUid {
     private String id;
     private String name;
     private String uuid;
+
+    private int release;
     private int version;
 
     private String author;
-    private String date;
-    private String status;
+    private String creationDate;
+    private Status status;
     private SourcePanel source;
     private String description;
 
@@ -49,14 +51,15 @@ public class Panel extends PrivateStudyUid {
         this.version = version;
     }
 
-    public Panel(String id, String name, int version, String author, String date, String status, SourcePanel source, String description,
-                 List<OntologyTerm> phenotypes, List<String> variants, List<GenePanel> genes, List<RegionPanel> regions,
+    public Panel(String id, String name, int release, int version, String author, String creationDate, Status status, SourcePanel source,
+                 String description, List<OntologyTerm> phenotypes, List<String> variants, List<GenePanel> genes, List<RegionPanel> regions,
                  Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
+        this.release = release;
         this.version = version;
         this.author = author;
-        this.date = date;
+        this.creationDate = creationDate;
         this.status = status;
         this.source = source;
         this.description = description;
@@ -220,10 +223,12 @@ public class Panel extends PrivateStudyUid {
         final StringBuilder sb = new StringBuilder("Panel{");
         sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
+        sb.append(", uuid='").append(uuid).append('\'');
+        sb.append(", release=").append(release);
         sb.append(", version=").append(version);
         sb.append(", author='").append(author).append('\'');
-        sb.append(", date='").append(date).append('\'');
-        sb.append(", status='").append(status).append('\'');
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", status=").append(status);
         sb.append(", source=").append(source);
         sb.append(", description='").append(description).append('\'');
         sb.append(", phenotypes=").append(phenotypes);
@@ -271,6 +276,15 @@ public class Panel extends PrivateStudyUid {
         return this;
     }
 
+    public int getRelease() {
+        return release;
+    }
+
+    public Panel setRelease(int release) {
+        this.release = release;
+        return this;
+    }
+
     public String getAuthor() {
         return author;
     }
@@ -280,20 +294,20 @@ public class Panel extends PrivateStudyUid {
         return this;
     }
 
-    public String getDate() {
-        return date;
+    public String getCreationDate() {
+        return creationDate;
     }
 
-    public Panel setDate(String date) {
-        this.date = date;
+    public Panel setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
         return this;
     }
 
-    public String getStatus() {
+    public Status getStatus() {
         return status;
     }
 
-    public Panel setStatus(String status) {
+    public Panel setStatus(Status status) {
         this.status = status;
         return this;
     }
