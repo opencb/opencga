@@ -1,2 +1,2 @@
+|OpenCga.TestsSuits.SuiteSetUp||16:21:25 Mon, Jul 02, 2018|
 |OpenCga.TestsSuits.Cohorts.CohortsTests||15:54:33 Wed, Jun 27, 2018|
-|OpenCga.TestsSuits.SuiteSetUp||15:53:55 Wed, Jun 27, 2018|

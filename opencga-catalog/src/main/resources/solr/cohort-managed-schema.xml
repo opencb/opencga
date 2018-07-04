@@ -71,9 +71,9 @@
     <field name="release" type="int" indexed="true" stored="true" multiValued="false"/>
     <field name="samplesUuid" type="string" indexed="false" stored="true" multiValued="true"/>
 
-    <dynamicField name="annotations_*" type="string" indexed="true" stored="true" multiValued="false"/>
-    <dynamicField name="annotations_*" type="double" indexed="true" stored="true" multiValued="false"/>
-    <dynamicField name="annotations_*" type="int" indexed="true" stored="true" multiValued="false"/>
-    <dynamicField name="annotations_*" type="boolean" indexed="true" stored="true" multiValued="false"/>
+    <dynamicField name="annotations__*" type="string" indexed="true" stored="true" multiValued="false"/>
+    <dynamicField name="annotations__*" type="double" indexed="true" stored="true" multiValued="false"/>
+    <dynamicField name="annotations__*" type="int" indexed="true" stored="true" multiValued="false"/>
+    <dynamicField name="annotations__*" type="boolean" indexed="true" stored="true" multiValued="false"/>
 
 </schema>

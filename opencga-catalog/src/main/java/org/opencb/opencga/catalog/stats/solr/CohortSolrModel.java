@@ -36,7 +36,7 @@ public class CohortSolrModel {
     @Field
     private List<String> samplesUuid;
 
-    @Field("annotations_*")
+    @Field("annotations__*")
     private Map<String, Object> annotations;
 
     public CohortSolrModel() {
@@ -141,4 +141,5 @@ public class CohortSolrModel {
         this.annotations = annotations;
         return this;
     }
+
 }

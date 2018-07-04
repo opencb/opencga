@@ -51,7 +51,7 @@ public class SampleSolrModel {
     @Field
     private List<String> phenotypes;
 
-    @Field("annotations_*")
+    @Field("annotations__*")
     private Map<String, Object> annotations;
 
     public SampleSolrModel() {

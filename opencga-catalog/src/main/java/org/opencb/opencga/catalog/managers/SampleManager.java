@@ -1113,7 +1113,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         return queryResults;
     }
 
-
     // **************************   Private methods  ******************************** //
 
     void checkCanDeleteSamples(MyResourceIds resources) throws CatalogException {

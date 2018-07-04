@@ -74,7 +74,7 @@ public class CatalogManager implements AutoCloseable {
     public CatalogManager(Configuration configuration) throws CatalogException {
         this.configuration = configuration;
         logger.debug("CatalogManager configureDBAdaptorFactory");
-        catalogDBAdaptorFactory = new MongoDBAdaptorFactory(configuration) {};
+        catalogDBAdaptorFactory = new MongoDBAdaptorFactory(configuration);
         logger.debug("CatalogManager configureIOManager");
         configureIOManager(configuration);
         logger.debug("CatalogManager configureManager");

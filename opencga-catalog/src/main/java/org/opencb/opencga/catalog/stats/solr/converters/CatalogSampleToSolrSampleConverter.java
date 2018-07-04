@@ -2,12 +2,7 @@ package org.opencb.opencga.catalog.stats.solr.converters;
 
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.opencga.catalog.stats.solr.SampleSolrModel;
-import org.opencb.opencga.core.models.AnnotationSet;
-import org.opencb.opencga.core.models.OntologyTerm;
 import org.opencb.opencga.core.models.Sample;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Created by wasim on 27/06/18.
@@ -33,11 +28,16 @@ public class CatalogSampleToSolrSampleConverter implements ComplexTypeConverter<
         sampleSolrModel.setUid(sample.getUid());
         sampleSolrModel.setSource(sample.getSource());
 
-        sampleSolrModel.setIndividualUuid(sample.getIndividual().getUuid());
-        sampleSolrModel.setIndividualEthnicity(sample.getIndividual().getEthnicity());
-        sampleSolrModel.setIndividualKaryotypicSex(sample.getIndividual().getKaryotypicSex().name());
-        sampleSolrModel.setIndividualPopulation(sample.getIndividual().getPopulation().getName());
-
+        if (sample.getIndividual() != null) {
+            sampleSolrModel.setIndividualUuid(sample.getIndividual().getUuid());
+            sampleSolrModel.setIndividualEthnicity(sample.getIndividual().getEthnicity());
+            if (sample.getIndividual().getKaryotypicSex() != null) {
+                sampleSolrModel.setIndividualKaryotypicSex(sample.getIndividual().getKaryotypicSex().name());
+            }
+            if (sample.getIndividual().getPopulation() != null) {
+                sampleSolrModel.setIndividualPopulation(sample.getIndividual().getPopulation().getName());
+            }
+        }
         sampleSolrModel.setRelease(sample.getRelease());
         sampleSolrModel.setVersion(sample.getVersion());
         sampleSolrModel.setCreationDate(sample.getCreationDate());
@@ -45,22 +45,16 @@ public class CatalogSampleToSolrSampleConverter implements ComplexTypeConverter<
         sampleSolrModel.setType(sample.getType());
         sampleSolrModel.setSomatic(sample.isSomatic());
 
-        sampleSolrModel.setPhenotypes(populatePhenotypes(sample.getPhenotypes()));
-
-        for (AnnotationSet annotationSet : sample.getAnnotationSets()) {
-            sampleSolrModel.setAnnotations(annotationSet.getAnnotations());
+        if (sample.getPhenotypes() != null) {
+            sampleSolrModel.setPhenotypes(SolrConverterUtil.populatePhenotypes(sample.getPhenotypes()));
         }
+        if (sample.getAnnotationSets() != null) {
+            sampleSolrModel.setAnnotations(SolrConverterUtil.populateAnnotations(sample.getAnnotationSets()));
+        }
+
         return sampleSolrModel;
     }
 
     public CatalogSampleToSolrSampleConverter() {
-    }
-
-    private List<String> populatePhenotypes(List<OntologyTerm> phenotypes) {
-        List<String> phenotypesIds = new ArrayList<>();
-        for (OntologyTerm ontologyTerm : phenotypes) {
-            phenotypesIds.add(ontologyTerm.getId());
-        }
-        return phenotypesIds;
     }
 }
