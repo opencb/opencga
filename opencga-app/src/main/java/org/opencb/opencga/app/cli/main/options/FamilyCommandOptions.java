@@ -144,7 +144,7 @@ public class FamilyCommandOptions {
         public String annotation;
     }
 
-    @Parameters(commandNames = {"group-by"}, commandDescription = "Group samples")
+    @Parameters(commandNames = {"group-by"}, commandDescription = "Group families")
     public class GroupByCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate

@@ -99,7 +99,7 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
 
 
     @GET
-    @Path("/{panels}/search")
+    @Path("/search")
     @ApiOperation(value = "Panel search", response = DiseasePanel[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
