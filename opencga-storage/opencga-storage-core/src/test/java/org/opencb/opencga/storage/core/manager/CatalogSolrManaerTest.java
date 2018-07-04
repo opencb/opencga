@@ -1,3 +1,4 @@
+/*
 package org.opencb.opencga.storage.core.manager;
 
 import org.apache.solr.client.solrj.SolrServerException;
@@ -20,9 +21,11 @@ import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
 import java.io.IOException;
 
 
+*/
 /**
  * Created by wasim on 02/07/18.
- */
+ *//*
+
 public class CatalogSolrManaerTest {
 
 
@@ -61,12 +64,15 @@ public class CatalogSolrManaerTest {
 
         @Test
     public void getSamples() throws CatalogException, SolrServerException, IOException, VariantSearchException {
-    /*    Query query = new Query()
-                .append(SampleDBAdaptor.QueryParams.NAME.key(), "221001350_10002");*/
+    */
+/*    Query query = new Query()
+                .append(SampleDBAdaptor.QueryParams.NAME.key(), "221001350_10002");*//*
+
         //  .append(Constants.ALL_VERSIONS, true);
 
       //  CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalog, null);
-        // catalogSolrManager.insert(this.catalog.getSampleManager().get("phase1", new Query(), null, sessionId).getResult());*/
+        // catalogSolrManager.insert(this.catalog.getSampleManager().get("phase1", new Query(), null, sessionId).getResult());*//*
+
 
         MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(catalog.getConfiguration());
 
@@ -78,12 +84,15 @@ public class CatalogSolrManaerTest {
       //  CohortMongoDBAdaptor cohortMongoDBAdaptor = factory.getCatalogCohortDBAdaptor();
         // QueryOptions queryOptions = new QueryOptions(QueryOptions.EXCLUDE,"samples");
 
-       /* DBIterator<Cohort> iterator= cohortMongoDBAdaptor.iterator(query,null);
+       */
+/* DBIterator<Cohort> iterator= cohortMongoDBAdaptor.iterator(query,null);
         List<Cohort> cohortList = new ArrayList<>();
-        cohortList.add(iterator.next());*/
+        cohortList.add(iterator.next());*//*
+
         //cohortList.add(iterator.next());
         //   catalogSolrManager.insertCohorts(cohortMongoDBAdaptor.get(query,null).getResult());
 
     }
 }
 
+*/

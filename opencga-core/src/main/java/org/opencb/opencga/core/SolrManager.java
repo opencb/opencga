@@ -26,6 +26,7 @@ import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
 import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
+import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,7 +69,7 @@ public class SolrManager {
 
     public void create(String dbName, String configSet) throws SolrException {
         if (StringUtils.isEmpty(dbName)) {
-            throw new SolrException("We cannot create a Solr for the empty database '" + dbName + "'");
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "We cannot create a Solr for the empty database '" + dbName + "'");
         }
 
         if (StringUtils.isEmpty(mode)) {
@@ -122,7 +123,7 @@ public class SolrManager {
             request.setConfigSet(configSet);
             request.process(solrClient);
         } catch (Exception e) {
-            throw new SolrException(e.getMessage(), e);
+            throw new SolrException(SolrException.ErrorCode.CONFLICT, e);
         }
     }
 
@@ -143,13 +144,13 @@ public class SolrManager {
             CollectionAdminRequest request = CollectionAdminRequest.createCollection(collectionName, configSet, 1, 1);
             request.process(solrClient);
         } catch (Exception e) {
-            throw new SolrException(e.getMessage(), e);
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }
     }
 
     public boolean exists(String dbName) throws SolrException {
         if (StringUtils.isEmpty(dbName)) {
-            throw new SolrException("We cannot check if Solr database exists '" + dbName + "'");
+            throw new SolrException(SolrException.ErrorCode.CONFLICT,"We cannot check if Solr database exists '" + dbName + "'");
         }
 
         if (StringUtils.isNotEmpty(mode)) {
@@ -205,7 +206,7 @@ public class SolrManager {
             }
             return false;
         } catch (Exception e) {
-            throw new SolrException(e.getMessage(), e);
+            throw new SolrException(SolrException.ErrorCode.CONFLICT, e);
         }
     }
 

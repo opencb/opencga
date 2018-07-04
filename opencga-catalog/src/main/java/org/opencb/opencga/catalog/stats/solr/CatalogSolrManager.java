@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.stats.solr;
 
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.common.SolrException;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.utils.CollectionUtils;
@@ -26,7 +27,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogFileToSolrFileConverter;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogSampleToSolrSampleConverter;
-import org.opencb.opencga.core.SolrException;
 import org.opencb.opencga.core.SolrManager;
 import org.opencb.opencga.core.config.SearchConfiguration;
 import org.opencb.opencga.core.models.File;
@@ -45,7 +45,7 @@ public class CatalogSolrManager {
 
     private CatalogManager catalogManager;
     private SolrManager solrManager;
-//    private StorageConfiguration storageConfiguration;
+    //    private StorageConfiguration storageConfiguration;
     private CatalogSampleToSolrSampleConverter catalogSampleToSolrSampleConverter;
     private int insertBatchSize;
 
@@ -223,7 +223,7 @@ public class CatalogSolrManager {
                 solrManager.getSolrClient().commit(SAMPLES_SOLR_COLLECTION);
             }
         } catch (SolrServerException e) {
-            throw new SolrException(e.getMessage(), e);
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
         }
     }
 
@@ -242,7 +242,7 @@ public class CatalogSolrManager {
                 solrManager.getSolrClient().commit(FILE_SOLR_COLLECTION);
             }
         } catch (SolrServerException e) {
-            throw new SolrException(e.getMessage(), e);
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
         }
     }
 
@@ -261,7 +261,7 @@ public class CatalogSolrManager {
                 solrManager.getSolrClient().commit(collectionName);
             }
         } catch (SolrServerException e) {
-            throw new SolrException(e.getMessage(), e);
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
         }
     }
 }
