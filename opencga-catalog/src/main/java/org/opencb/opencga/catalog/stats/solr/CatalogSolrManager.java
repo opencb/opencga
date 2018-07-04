@@ -20,17 +20,12 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrException;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.stats.solr.converters.CatalogFileToSolrFileConverter;
-import org.opencb.opencga.catalog.stats.solr.converters.CatalogSampleToSolrSampleConverter;
 import org.opencb.opencga.core.SolrManager;
 import org.opencb.opencga.core.config.SearchConfiguration;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Sample;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,11 +40,9 @@ public class CatalogSolrManager {
 
     private CatalogManager catalogManager;
     private SolrManager solrManager;
-    //    private StorageConfiguration storageConfiguration;
-    private CatalogSampleToSolrSampleConverter catalogSampleToSolrSampleConverter;
     private int insertBatchSize;
 
-    public static final int DEFAULT_INSERT_BATCH_SIZE = 10000;
+    public static final int DEFAULT_INSERT_BATCH_SIZE = 2000;
 
     public static final String COHORT_SOLR_COLLECTION = "Catalog_Cohort_Collection";
     public static final String FILE_SOLR_COLLECTION = "Catalog_FILE_Collection";
@@ -67,11 +60,11 @@ public class CatalogSolrManager {
 
     public CatalogSolrManager(CatalogManager catalogManager) throws SolrException {
         this.catalogManager = catalogManager;
-//        this.storageConfiguration = storageConfiguration;
         SearchConfiguration searchConfiguration = catalogManager.getConfiguration().getCatalog().getSearch();
         this.solrManager = new SolrManager(searchConfiguration.getHost(), searchConfiguration.getMode(), searchConfiguration.getTimeout());
-        this.catalogSampleToSolrSampleConverter = new CatalogSampleToSolrSampleConverter();
-        insertBatchSize = DEFAULT_INSERT_BATCH_SIZE;
+        insertBatchSize = searchConfiguration.getInsertBatchSize() > 0
+                ? searchConfiguration.getInsertBatchSize() : DEFAULT_INSERT_BATCH_SIZE;
+
         if (searchConfiguration.getMode().equals("cloud")) {
             createCatalogSolrCollections();
         } else {
@@ -145,109 +138,28 @@ public class CatalogSolrManager {
         }
     }
 
-    public void indexCatalogSamples(Query query) throws CatalogException, SolrServerException, IOException, SolrException {
-        DBIterator<Sample> iterator = catalogManager.getSampleManager().indexSolr(query);
+    public <T> void insertCatalogCollection(DBIterator<T> iterator, ComplexTypeConverter converter,
+                                            String collectionName) throws CatalogException, IOException, SolrException {
 
         int count = 0;
-        List<Sample> sampleList = new ArrayList<>(insertBatchSize);
+        List<T> records = new ArrayList<>(insertBatchSize);
         while (iterator.hasNext()) {
-            Sample sample = iterator.next();
-            sampleList.add(sample);
+            T record = iterator.next();
+            records.add(record);
             count++;
             if (count % insertBatchSize == 0) {
-                indexSamples(sampleList);
-                sampleList.clear();
+                insertCatalogCollection(records, converter, collectionName);
+                records.clear();
             }
         }
 
-        if (CollectionUtils.isNotEmpty(sampleList)) {
-            indexSamples(sampleList);
+        if (CollectionUtils.isNotEmpty(records)) {
+            insertCatalogCollection(records, converter, collectionName);
         }
     }
 
-
-    public void indexCatalogFiles(Query query) throws CatalogException, SolrServerException, IOException, SolrException {
-
-        DBIterator<File> iterator = catalogManager.getFileManager().indexSolr(query);
-
-        int count = 0;
-        List<File> fileList = new ArrayList<>(insertBatchSize);
-        while (iterator.hasNext()) {
-            File file = iterator.next();
-            fileList.add(file);
-            count++;
-            if (count % insertBatchSize == 0) {
-                indexFiles(fileList);
-                fileList.clear();
-            }
-        }
-
-        if (CollectionUtils.isNotEmpty(fileList)) {
-            indexFiles(fileList);
-        }
-    }
-
- /*   public void indexCatalogCohorts(Query query) throws CatalogException, SolrServerException, IOException, SolrException {
-
-        DBIterator<Cohort> iterator = catalogManager.getCohortManager().indexSolr(query);
-
-        int count = 0;
-        List<Cohort> cohorts = new ArrayList<>(insertBatchSize);
-        while (iterator.hasNext()) {
-            Cohort cohort = iterator.next();
-            cohorts.add(cohort);
-            count++;
-            if (count % insertBatchSize == 0) {
-                indexCohorts(cohorts);
-                cohorts.clear();
-            }
-        }
-
-        if (CollectionUtils.isNotEmpty(cohorts)) {
-            indexCohorts(cohorts);
-        }
-    }*/
-
-    public void indexSamples(List<Sample> samples) throws IOException, SolrServerException, SolrException {
-        CatalogSampleToSolrSampleConverter sampleToSolrSampleConverter = new CatalogSampleToSolrSampleConverter();
-        List<SampleSolrModel> sampleSolrModels = new ArrayList<>();
-
-        for (Sample sample : samples) {
-            sampleSolrModels.add(sampleToSolrSampleConverter.convertToStorageType(sample));
-        }
-
-        UpdateResponse updateResponse;
-        try {
-            updateResponse = solrManager.getSolrClient().addBeans(SAMPLES_SOLR_COLLECTION, sampleSolrModels);
-            if (updateResponse.getStatus() == 0) {
-                solrManager.getSolrClient().commit(SAMPLES_SOLR_COLLECTION);
-            }
-        } catch (SolrServerException e) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
-        }
-    }
-
-    public void indexFiles(List<File> files) throws IOException, SolrServerException, SolrException {
-        CatalogFileToSolrFileConverter fileToSolrFileConverter = new CatalogFileToSolrFileConverter();
-        List<FileSolrModel> fileSolrModels = new ArrayList<>();
-
-        for (File file : files) {
-            fileSolrModels.add(fileToSolrFileConverter.convertToStorageType(file));
-        }
-
-        UpdateResponse updateResponse;
-        try {
-            updateResponse = solrManager.getSolrClient().addBeans(FILE_SOLR_COLLECTION, fileSolrModels);
-            if (updateResponse.getStatus() == 0) {
-                solrManager.getSolrClient().commit(FILE_SOLR_COLLECTION);
-            }
-        } catch (SolrServerException e) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
-        }
-    }
-
-    public <T, M> void indexCatalogCollection(List<T> records, ComplexTypeConverter converter, M solrModelType,
-                                              String collectionName) throws IOException, SolrServerException, SolrException {
+    public <T, M> void insertCatalogCollection(List<T> records, ComplexTypeConverter converter,
+                                               String collectionName) throws IOException, SolrException {
         List<M> solrModels = new ArrayList<>();
 
         for (T record : records) {
