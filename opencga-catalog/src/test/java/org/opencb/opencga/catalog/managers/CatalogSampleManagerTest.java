@@ -840,7 +840,7 @@ public class CatalogSampleManagerTest extends GenericTest {
         assertEquals(1, samples.size());
 
         query.put(SampleDBAdaptor.QueryParams.ANNOTATION.key(), vs1.getId() + ":nestedObject.stringList=lo,lu,LL;" + vs1.getId()
-                        + ":nestedObject.object.string=my value");
+                + ":nestedObject.object.string=my value");
         samples = catalogManager.getSampleManager().get(studyFqn, query, null, sessionIdUser).getResult();
         assertEquals(1, samples.size());
 

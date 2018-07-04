@@ -13,16 +13,22 @@ import java.util.Map;
 public class SampleSolrModel {
 
     @Field
-    private String id;
-
-    @Field
-    private String name;
+    private long uid;
 
     @Field
     private String source;
 
     @Field
-    private String individual;
+    private String individualUuid;
+
+    @Field
+    private String individualKaryotypicSex;
+
+    @Field
+    private String individualEthnicity;
+
+    @Field
+    private String individualPopulation;
 
     @Field
     private int release;
@@ -37,9 +43,6 @@ public class SampleSolrModel {
     private String status;
 
     @Field
-    private String description;
-
-    @Field
     private String type;
 
     @Field
@@ -48,7 +51,7 @@ public class SampleSolrModel {
     @Field
     private List<String> phenotypes;
 
-    @Field("annotations_*")
+    @Field("annotations__*")
     private Map<String, Object> annotations;
 
     public SampleSolrModel() {
@@ -59,15 +62,16 @@ public class SampleSolrModel {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("SampleSolrModel{");
-        sb.append("id='").append(id).append('\'');
-        sb.append(", name='").append(name).append('\'');
+        sb.append("uid=").append(uid);
         sb.append(", source='").append(source).append('\'');
-        sb.append(", individual='").append(individual).append('\'');
+        sb.append(", individualUuid='").append(individualUuid).append('\'');
+        sb.append(", individualKaryotypicSex='").append(individualKaryotypicSex).append('\'');
+        sb.append(", individualEthnicity='").append(individualEthnicity).append('\'');
+        sb.append(", individualPopulation='").append(individualPopulation).append('\'');
         sb.append(", release=").append(release);
         sb.append(", version=").append(version);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", status='").append(status).append('\'');
-        sb.append(", description='").append(description).append('\'');
         sb.append(", type='").append(type).append('\'');
         sb.append(", somatic=").append(somatic);
         sb.append(", phenotypes=").append(phenotypes);
@@ -76,21 +80,12 @@ public class SampleSolrModel {
         return sb.toString();
     }
 
-    public String getId() {
-        return id;
+    public long getUid() {
+        return uid;
     }
 
-    public SampleSolrModel setId(String id) {
-        this.id = id;
-        return this;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public SampleSolrModel setName(String name) {
-        this.name = name;
+    public SampleSolrModel setUid(long uid) {
+        this.uid = uid;
         return this;
     }
 
@@ -103,12 +98,39 @@ public class SampleSolrModel {
         return this;
     }
 
-    public String getIndividual() {
-        return individual;
+    public String getIndividualUuid() {
+        return individualUuid;
     }
 
-    public SampleSolrModel setIndividual(String individual) {
-        this.individual = individual;
+    public SampleSolrModel setIndividualUuid(String individualUuid) {
+        this.individualUuid = individualUuid;
+        return this;
+    }
+
+    public String getIndividualKaryotypicSex() {
+        return individualKaryotypicSex;
+    }
+
+    public SampleSolrModel setIndividualKaryotypicSex(String individualKaryotypicSex) {
+        this.individualKaryotypicSex = individualKaryotypicSex;
+        return this;
+    }
+
+    public String getIndividualEthnicity() {
+        return individualEthnicity;
+    }
+
+    public SampleSolrModel setIndividualEthnicity(String individualEthnicity) {
+        this.individualEthnicity = individualEthnicity;
+        return this;
+    }
+
+    public String getIndividualPopulation() {
+        return individualPopulation;
+    }
+
+    public SampleSolrModel setIndividualPopulation(String individualPopulation) {
+        this.individualPopulation = individualPopulation;
         return this;
     }
 
@@ -148,15 +170,6 @@ public class SampleSolrModel {
         return this;
     }
 
-    public String getDescription() {
-        return description;
-    }
-
-    public SampleSolrModel setDescription(String description) {
-        this.description = description;
-        return this;
-    }
-
     public String getType() {
         return type;
     }
@@ -193,3 +206,4 @@ public class SampleSolrModel {
         return this;
     }
 }
+

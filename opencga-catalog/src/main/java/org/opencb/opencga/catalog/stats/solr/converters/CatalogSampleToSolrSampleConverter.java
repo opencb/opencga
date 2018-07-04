@@ -2,8 +2,6 @@ package org.opencb.opencga.catalog.stats.solr.converters;
 
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.opencga.catalog.stats.solr.SampleSolrModel;
-import org.opencb.opencga.core.models.AnnotationSet;
-import org.opencb.opencga.core.models.OntologyTerm;
 import org.opencb.opencga.core.models.Sample;
 
 /**
@@ -27,27 +25,33 @@ public class CatalogSampleToSolrSampleConverter implements ComplexTypeConverter<
 
         SampleSolrModel sampleSolrModel = new SampleSolrModel();
 
-        sampleSolrModel.setId(sample.getId());
-        sampleSolrModel.setName(sample.getName());
+        sampleSolrModel.setUid(sample.getUid());
         sampleSolrModel.setSource(sample.getSource());
-        sampleSolrModel.setIndividual(sample.getIndividual().getUuid());  // ??? want some trick to store name ?
+
+        if (sample.getIndividual() != null) {
+            sampleSolrModel.setIndividualUuid(sample.getIndividual().getUuid());
+            sampleSolrModel.setIndividualEthnicity(sample.getIndividual().getEthnicity());
+            if (sample.getIndividual().getKaryotypicSex() != null) {
+                sampleSolrModel.setIndividualKaryotypicSex(sample.getIndividual().getKaryotypicSex().name());
+            }
+            if (sample.getIndividual().getPopulation() != null) {
+                sampleSolrModel.setIndividualPopulation(sample.getIndividual().getPopulation().getName());
+            }
+        }
         sampleSolrModel.setRelease(sample.getRelease());
+        sampleSolrModel.setVersion(sample.getVersion());
         sampleSolrModel.setCreationDate(sample.getCreationDate());
         sampleSolrModel.setStatus(sample.getStatus().getName());
-        sampleSolrModel.setDescription(sample.getDescription());
         sampleSolrModel.setType(sample.getType());
         sampleSolrModel.setSomatic(sample.isSomatic());
-        ///TODO ??? what to store here id, name or
 
-        //sampleSolrModel.setPhenotypes(sample
-        for (OntologyTerm phenotype : sample.getPhenotypes()) {
-            // add phenotype
+        if (sample.getPhenotypes() != null) {
+            sampleSolrModel.setPhenotypes(SolrConverterUtil.populatePhenotypes(sample.getPhenotypes()));
         }
-        //TODO ?????????????
-        // what to store from annotations
-        for (AnnotationSet annotationSet : sample.getAnnotationSets()) {
-            sampleSolrModel.setAnnotations(annotationSet.getAnnotations());
+        if (sample.getAnnotationSets() != null) {
+            sampleSolrModel.setAnnotations(SolrConverterUtil.populateAnnotations(sample.getAnnotationSets()));
         }
+
         return sampleSolrModel;
     }
 

@@ -13,10 +13,7 @@ import java.util.Map;
 public class CohortSolrModel {
 
     @Field
-    private String id;
-
-    @Field
-    private String name;
+    private long uid;
 
     @Field
     private String type;
@@ -28,57 +25,48 @@ public class CohortSolrModel {
     private String status;
 
     @Field
-    private String description;
+    private String familyUuid;
 
     @Field
-    private String family;
+    private List<String> familyMembersUuid;
 
     @Field
-    private String release;
+    private int release;
 
     @Field
-    private List<String> samples;
+    private List<String> samplesUuid;
 
-    @Field("annotations_*")
+    @Field("annotations__*")
     private Map<String, Object> annotations;
 
     public CohortSolrModel() {
-        this.samples = new ArrayList<>();
+        this.samplesUuid = new ArrayList<>();
+        this.familyMembersUuid = new ArrayList<>();
         this.annotations = new HashMap<>();
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("CohortSolrModel{");
-        sb.append("id='").append(id).append('\'');
-        sb.append(", name='").append(name).append('\'');
+        sb.append("uid=").append(uid);
         sb.append(", type='").append(type).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", status='").append(status).append('\'');
-        sb.append(", description='").append(description).append('\'');
-        sb.append(", family='").append(family).append('\'');
-        sb.append(", release='").append(release).append('\'');
-        sb.append(", samples=").append(samples);
+        sb.append(", familyUuid='").append(familyUuid).append('\'');
+        sb.append(", familyMembersUuid=").append(familyMembersUuid);
+        sb.append(", release=").append(release);
+        sb.append(", samplesUuid=").append(samplesUuid);
         sb.append(", annotations=").append(annotations);
         sb.append('}');
         return sb.toString();
     }
 
-    public String getId() {
-        return id;
+    public long getUid() {
+        return uid;
     }
 
-    public CohortSolrModel setId(String id) {
-        this.id = id;
-        return this;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public CohortSolrModel setName(String name) {
-        this.name = name;
+    public CohortSolrModel setUid(long uid) {
+        this.uid = uid;
         return this;
     }
 
@@ -109,39 +97,39 @@ public class CohortSolrModel {
         return this;
     }
 
-    public String getDescription() {
-        return description;
+    public String getFamilyUuid() {
+        return familyUuid;
     }
 
-    public CohortSolrModel setDescription(String description) {
-        this.description = description;
+    public CohortSolrModel setFamilyUuid(String familyUuid) {
+        this.familyUuid = familyUuid;
         return this;
     }
 
-    public String getFamily() {
-        return family;
+    public List<String> getFamilyMembersUuid() {
+        return familyMembersUuid;
     }
 
-    public CohortSolrModel setFamily(String family) {
-        this.family = family;
+    public CohortSolrModel setFamilyMembersUuid(List<String> familyMembersUuid) {
+        this.familyMembersUuid = familyMembersUuid;
         return this;
     }
 
-    public String getRelease() {
+    public int getRelease() {
         return release;
     }
 
-    public CohortSolrModel setRelease(String release) {
+    public CohortSolrModel setRelease(int release) {
         this.release = release;
         return this;
     }
 
-    public List<String> getSamples() {
-        return samples;
+    public List<String> getSamplesUuid() {
+        return samplesUuid;
     }
 
-    public CohortSolrModel setSamples(List<String> samples) {
-        this.samples = samples;
+    public CohortSolrModel setSamplesUuid(List<String> samplesUuid) {
+        this.samplesUuid = samplesUuid;
         return this;
     }
 
@@ -153,4 +141,5 @@ public class CohortSolrModel {
         this.annotations = annotations;
         return this;
     }
+
 }

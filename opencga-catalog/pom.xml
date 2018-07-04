@@ -82,7 +82,7 @@
         <dependency>
             <groupId>org.apache.solr</groupId>
             <artifactId>solr-solrj</artifactId>
-            <version>6.2.0</version>
+            <version>6.4.1</version>
         </dependency>
     </dependencies>
 
