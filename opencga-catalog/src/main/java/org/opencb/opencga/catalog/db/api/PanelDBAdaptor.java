@@ -48,6 +48,8 @@ public interface PanelDBAdaptor extends DBAdaptor<Panel> {
         VERSION("version", INTEGER, ""), // Version of the sample
         CREATION_DATE("creationDate", DATE, ""),
 
+        SOURCE("source", TEXT_ARRAY, ""),
+
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
@@ -120,6 +122,7 @@ public interface PanelDBAdaptor extends DBAdaptor<Panel> {
         ID(QueryParams.ID.key()),
         NAME(QueryParams.NAME.key()),
         DESCRIPTION(QueryParams.DESCRIPTION.key()),
+        SOURCE(QueryParams.SOURCE.key()),
         PHENOTYPES(QueryParams.PHENOTYPES.key()),
         VARIANTS(QueryParams.VARIANTS.key()),
         GENES(QueryParams.GENES.key()),

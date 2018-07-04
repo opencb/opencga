@@ -101,13 +101,13 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     @Override
-    public QueryResult<Panel> update(String studyStr, String entryStr, ObjectMap parameters, QueryOptions options, String sessionId)
+    public QueryResult<Panel> update(String studyStr, String panelId, ObjectMap parameters, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkObj(parameters, "parameters");
         parameters = new ObjectMap(parameters);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        MyResource<Panel> resource = getUid(entryStr, studyStr, sessionId);
+        MyResource<Panel> resource = getUid(panelId, studyStr, sessionId);
 
         // Check update permissions
         authorizationManager.checkDiseasePanelPermission(resource.getStudy().getUid(), resource.getResource().getUid(), resource.getUser(),

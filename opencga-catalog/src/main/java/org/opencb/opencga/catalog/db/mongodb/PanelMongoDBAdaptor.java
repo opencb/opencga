@@ -346,7 +346,8 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         final String[] acceptedMapParams = {UpdateParams.ATTRIBUTES.key()};
         filterMapParams(parameters, panelParameters, acceptedMapParams);
 
-        final String[] acceptedObjectParams = {UpdateParams.PHENOTYPES.key(), UpdateParams.REGIONS.key(), UpdateParams.GENES.key()};
+        final String[] acceptedObjectParams = {UpdateParams.PHENOTYPES.key(), UpdateParams.REGIONS.key(), UpdateParams.GENES.key(),
+            UpdateParams.SOURCE.key()};
         filterObjectParams(parameters, panelParameters, acceptedObjectParams);
 
         final String[] acceptedStringListParams = {UpdateParams.VARIANTS.key()};

@@ -72,7 +72,7 @@ public class Panel extends PrivateStudyUid {
         this.attributes = attributes;
     }
 
-    public class SourcePanel {
+    public static class SourcePanel {
 
         private String id;
         private String project;
@@ -125,7 +125,7 @@ public class Panel extends PrivateStudyUid {
         }
     }
 
-    public class GenePanel {
+    public static class GenePanel {
 
         /**
          * Ensembl ID is used as id
@@ -137,6 +137,9 @@ public class Panel extends PrivateStudyUid {
          */
         private String name;
         private String confidence;
+
+        public GenePanel() {
+        }
 
         public GenePanel(String id, String name, String confidence) {
             this.id = id;
@@ -182,10 +185,13 @@ public class Panel extends PrivateStudyUid {
         }
     }
 
-    public class RegionPanel {
+    public static class RegionPanel {
 
         private String location;
         private float score;
+
+        public RegionPanel() {
+        }
 
         public RegionPanel(String location, float score) {
             this.location = location;
