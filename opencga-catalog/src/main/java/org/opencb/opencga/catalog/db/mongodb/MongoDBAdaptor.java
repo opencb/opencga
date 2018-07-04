@@ -43,10 +43,12 @@ import java.util.stream.Collectors;
 public class MongoDBAdaptor extends AbstractDBAdaptor {
 
     static final String PRIVATE_UID = "uid";
+    static final String PRIVATE_UUID = "uuid";
     static final String PRIVATE_ID = "id";
     static final String PRIVATE_PROJECT = "_project";
-    static final String PRIVATE_PROJECT_UID = "_project.uid";
-    static final String PRIVATE_PROJECT_ID = "_project.id";
+    static final String PRIVATE_PROJECT_ID = PRIVATE_PROJECT + '.' + PRIVATE_ID;
+    static final String PRIVATE_PROJECT_UID = PRIVATE_PROJECT + '.' + PRIVATE_UID;
+    static final String PRIVATE_PROJECT_UUID = PRIVATE_PROJECT + '.' + PRIVATE_UUID;
     static final String PRIVATE_OWNER_ID = "_ownerId";
     static final String PRIVATE_STUDY_ID = "studyUid";
 

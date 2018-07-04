@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.storage.core.manager.variant;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.core.Region;
@@ -36,10 +38,7 @@ import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.models.DataStore;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -63,6 +62,8 @@ import java.net.URISyntaxException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
+import static org.opencb.opencga.catalog.db.api.StudyDBAdaptor.QueryParams.FQN;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
 public class VariantStorageManager extends StorageManager {
@@ -148,13 +149,13 @@ public class VariantStorageManager extends StorageManager {
         VariantExportStorageOperation op = new VariantExportStorageOperation(catalogManager, storageConfiguration);
 
         catalogUtils.parseQuery(query, sessionId);
-        Collection<Long> studies = checkSamplesPermissions(query, queryOptions, sessionId).keySet();
+        Collection<String> studies = checkSamplesPermissions(query, queryOptions, sessionId).keySet();
         if (studies.isEmpty()) {
             studies = catalogUtils.getStudies(query, sessionId);
         }
         List<StudyInfo> studyInfos = new ArrayList<>(studies.size());
-        for (Long study : studies) {
-            studyInfos.add(getStudyInfo(String.valueOf(study), Collections.emptyList(), sessionId));
+        for (String study : studies) {
+            studyInfos.add(getStudyInfo(study, Collections.emptyList(), sessionId));
         }
 
         return op.exportData(studyInfos, query, outputFormat, outputFile, sessionId, queryOptions);
@@ -188,8 +189,8 @@ public class VariantStorageManager extends StorageManager {
             IOException, VariantSearchException, IllegalAccessException, InstantiationException, ClassNotFoundException, CatalogException {
 //        String userId = catalogManager.getUserManager().getUserId(sessionId);
 //        long studyId = catalogManager.getStudyManager().getId(userId, study);
-        long studyId = catalogUtils.getAnyStudyId(query, sessionId);
-        DataStore dataStore = getDataStore(studyId, sessionId);
+        String study = catalogUtils.getAnyStudy(query, sessionId);
+        DataStore dataStore = getDataStore(study, sessionId);
         VariantStorageEngine variantStorageEngine =
                 storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
         catalogUtils.parseQuery(query, sessionId);
@@ -294,14 +295,14 @@ public class VariantStorageManager extends StorageManager {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
-        DataStore dataStore = getDataStore(study.getUid(), sessionId);
+        DataStore dataStore = getDataStore(study.getFqn(), sessionId);
         VariantStorageEngine variantStorageEngine =
                 storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
 
         if (samples == null || samples.size() < 2) {
             throw new IllegalArgumentException("Fill gaps operation requires at least two samples!");
         }
-        variantStorageEngine.fillGaps(String.valueOf(study.getUid()), samples, config);
+        variantStorageEngine.fillGaps(study.getFqn(), samples, config);
     }
 
     public void fillMissing(String studyStr, boolean overwrite, ObjectMap config, String sessionId)
@@ -309,11 +310,11 @@ public class VariantStorageManager extends StorageManager {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
-        DataStore dataStore = getDataStore(study.getUid(), sessionId);
+        DataStore dataStore = getDataStore(study.getFqn(), sessionId);
         VariantStorageEngine variantStorageEngine =
                 storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
 
-        variantStorageEngine.fillMissing(String.valueOf(study.getUid()), config, overwrite);
+        variantStorageEngine.fillMissing(study.getFqn(), config, overwrite);
     }
 
     // ---------------------//
@@ -432,9 +433,9 @@ public class VariantStorageManager extends StorageManager {
 
     public VariantDBIterator iterator(Query query, QueryOptions queryOptions, String sessionId)
             throws CatalogException, StorageEngineException {
-        long studyId = catalogUtils.getAnyStudyId(query, sessionId);
+        String study = catalogUtils.getAnyStudy(query, sessionId);
 
-        DataStore dataStore = getDataStore(studyId, sessionId);
+        DataStore dataStore = getDataStore(study, sessionId);
         VariantStorageEngine storageEngine = getVariantStorageEngine(dataStore);
         catalogUtils.parseQuery(query, sessionId);
         checkSamplesPermissions(query, queryOptions, storageEngine.getStudyConfigurationManager(), sessionId);
@@ -452,8 +453,8 @@ public class VariantStorageManager extends StorageManager {
         return get(intersectQuery, queryOptions, sessionId);
     }
 
-    private DataStore getDataStore(long studyId, String sessionId) throws CatalogException {
-        return StorageOperation.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
+    private DataStore getDataStore(String study, String sessionId) throws CatalogException {
+        return StorageOperation.getDataStore(catalogManager, study, File.Bioformat.VARIANT, sessionId);
     }
 
     private DataStore getDataStoreByProjectId(String project, String sessionId) throws CatalogException {
@@ -476,10 +477,10 @@ public class VariantStorageManager extends StorageManager {
 
     private <R> R secure(Query query, QueryOptions queryOptions, String sessionId, VariantReadOperation<R> supplier)
             throws CatalogException, StorageEngineException, IOException {
-        long studyId = catalogUtils.getAnyStudyId(query, sessionId);
+        String study = catalogUtils.getAnyStudy(query, sessionId);
 
         catalogUtils.parseQuery(query, sessionId);
-        DataStore dataStore = getDataStore(studyId, sessionId);
+        DataStore dataStore = getDataStore(study, sessionId);
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
 
         checkSamplesPermissions(query, queryOptions, variantStorageEngine.getStudyConfigurationManager(), sessionId);
@@ -491,28 +492,33 @@ public class VariantStorageManager extends StorageManager {
         return secure(query, queryOptions, sessionId, supplier);
     }
 
-    private Map<Long, List<Sample>> checkSamplesPermissions(Query query, QueryOptions queryOptions, String sessionId)
+    private Map<String, List<Sample>> checkSamplesPermissions(Query query, QueryOptions queryOptions, String sessionId)
             throws CatalogException, StorageEngineException, IOException {
-        long studyId = catalogUtils.getAnyStudyId(query, sessionId);
-        DataStore dataStore = getDataStore(studyId, sessionId);
+        String study = catalogUtils.getAnyStudy(query, sessionId);
+        DataStore dataStore = getDataStore(study, sessionId);
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
         return checkSamplesPermissions(query, queryOptions, variantStorageEngine.getStudyConfigurationManager(), sessionId);
     }
 
     // package protected for test visibility
-    Map<Long, List<Sample>> checkSamplesPermissions(Query query, QueryOptions queryOptions, StudyConfigurationManager scm, String sessionId)
+    Map<String, List<Sample>> checkSamplesPermissions(Query query, QueryOptions queryOptions, StudyConfigurationManager scm,
+                                                      String sessionId)
             throws CatalogException {
-        final Map<Long, List<Sample>> samplesMap = new HashMap<>();
+        final Map<String, List<Sample>> samplesMap = new HashMap<>();
         Set<VariantField> returnedFields = VariantField.getIncludeFields(queryOptions);
         if (!returnedFields.contains(VariantField.STUDIES)) {
+            // FIXME: What if filtering by fields with no permissions?
             return Collections.emptyMap();
         }
 
+        BiMap<Integer, String> studyIdMap = HashBiMap.create(scm.getStudies(null)).inverse();
         if (VariantQueryUtils.isIncludeSamplesDefined(query, returnedFields)) {
             Map<Integer, List<Integer>> samplesToReturn = VariantQueryUtils.getIncludeSamples(query, queryOptions, scm);
             for (Map.Entry<Integer, List<Integer>> entry : samplesToReturn.entrySet()) {
+                int studyId = entry.getKey();
+                String study = studyIdMap.get(studyId);
                 if (!entry.getValue().isEmpty()) {
-                    QueryResult<Sample> samplesQueryResult = catalogManager.getSampleManager().get(String.valueOf((long) entry.getKey()),
+                    QueryResult<Sample> samplesQueryResult = catalogManager.getSampleManager().get(study,
                             new Query(SampleDBAdaptor.QueryParams.UID.key(), entry.getValue()), new QueryOptions("exclude",
                                     Arrays.asList("projects.studies.samples.annotationSets", "projects.studies.samples.attributes")),
                             sessionId);
@@ -520,29 +526,29 @@ public class VariantStorageManager extends StorageManager {
                         throw new CatalogAuthorizationException("Permission denied. User "
                                 + catalogManager.getUserManager().getUserId(sessionId) + " can't read all the requested samples");
                     }
-                    samplesMap.put((long) entry.getKey(), samplesQueryResult.getResult());
+                    samplesMap.put(study, samplesQueryResult.getResult());
                 } else {
-                    samplesMap.put((long) entry.getKey(), Collections.emptyList());
+                    samplesMap.put(study, Collections.emptyList());
                 }
             }
         } else {
             logger.debug("Missing returned samples! Obtaining returned samples from catalog.");
             List<Integer> returnedStudies = VariantQueryUtils.getIncludeStudies(query, queryOptions, scm);
             List<Study> studies = catalogManager.getStudyManager().get(new Query(StudyDBAdaptor.QueryParams.UID.key(), returnedStudies),
-                    new QueryOptions("include", "projects.studies.id"), sessionId).getResult();
+                    new QueryOptions(INCLUDE, FQN.key()), sessionId).getResult();
             if (!returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)) {
                 for (Integer returnedStudy : returnedStudies) {
-                    samplesMap.put(returnedStudy.longValue(), Collections.emptyList());
+                    samplesMap.put(studyIdMap.get(returnedStudy), Collections.emptyList());
                 }
             } else {
                 List<Long> returnedSamples = new LinkedList<>();
                 for (Study study : studies) {
-                    QueryResult<Sample> samplesQueryResult = catalogManager.getSampleManager().get(String.valueOf(study.getUid()),
+                    QueryResult<Sample> samplesQueryResult = catalogManager.getSampleManager().get(study.getFqn(),
                             new Query(), new QueryOptions("exclude",
                                     Arrays.asList("projects.studies.samples.annotationSets", "projects.studies.samples.attributes")),
                             sessionId);
-                    samplesQueryResult.getResult().sort((o1, o2) -> Long.compare(o1.getUid(), o2.getUid()));
-                    samplesMap.put(study.getUid(), samplesQueryResult.getResult());
+                    samplesQueryResult.getResult().sort(Comparator.comparingLong(PrivateFields::getUid));
+                    samplesMap.put(study.getFqn(), samplesQueryResult.getResult());
                     samplesQueryResult.getResult().stream().map(Sample::getUid).forEach(returnedSamples::add);
                 }
                 query.append(VariantQueryParam.INCLUDE_SAMPLE.key(), returnedSamples);

@@ -44,6 +44,7 @@ import org.opencb.opencga.catalog.monitor.daemons.IndexDaemon;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
@@ -561,6 +562,7 @@ public class FileManager extends ResourceManager<File> {
             }
         }
 
+        file.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
         QueryResult<File> queryResult = fileDBAdaptor.insert(file, studyId, options);
         // We obtain the permissions set in the parent folder and set them to the file or folder being created
         QueryResult<FileAclEntry> allFileAcls = authorizationManager.getAllFileAcls(studyId, parentFileId, userId, false);
@@ -576,6 +578,10 @@ public class FileManager extends ResourceManager<File> {
         return queryResult;
     }
 
+    /*
+     * @deprecated This method if broken with multiple studies
+     */
+    @Deprecated
     public QueryResult<File> get(Long fileId, QueryOptions options, String sessionId) throws CatalogException {
         return get(null, String.valueOf(fileId), options, sessionId);
     }
@@ -1977,6 +1983,19 @@ public class FileManager extends ResourceManager<File> {
 
     @Override
     File smartResolutor(long studyUid, String fileName, String user) throws CatalogException {
+        if (UUIDUtils.isOpenCGAUUID(fileName)) {
+            // We search as uuid
+            Query query = new Query()
+                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+                    .append(FileDBAdaptor.QueryParams.UUID.key(), fileName);
+            QueryResult<File> pathQueryResult = fileDBAdaptor.get(query, QueryOptions.empty());
+            if (pathQueryResult.getNumResults() > 1) {
+                throw new CatalogException("Error: More than one file id found based on " + fileName);
+            } else if (pathQueryResult.getNumResults() == 1) {
+                return pathQueryResult.first();
+            }
+        }
+
         fileName = fileName.replace(":", "/");
 
         if (fileName.startsWith("/")) {
@@ -2433,6 +2452,7 @@ public class FileManager extends ResourceManager<File> {
                 stringPath, TimeUtils.getTime(), TimeUtils.getTime(), "", new File.FileStatus(File.FileStatus.READY),
                 false, 0, null, new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(), null, null,
                 catalogManager.getStudyManager().getCurrentRelease(study, userId), null);
+        folder.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
         QueryResult<File> queryResult = fileDBAdaptor.insert(folder, study.getUid(), new QueryOptions());
         // Propagate ACLs
         if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
@@ -2589,6 +2609,7 @@ public class FileManager extends ResourceManager<File> {
                         new File.FileStatus(File.FileStatus.READY), true, size, null, new Experiment(), Collections.emptyList(), new Job(),
                         Collections.emptyList(), null, Collections.emptyMap(),
                         catalogManager.getStudyManager().getCurrentRelease(study, userId), Collections.emptyMap());
+                subfile.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
                 QueryResult<File> queryResult = fileDBAdaptor.insert(subfile, study.getUid(), new QueryOptions());
                 // Propagate ACLs
                 if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
@@ -2660,6 +2681,7 @@ public class FileManager extends ResourceManager<File> {
                                     Collections.emptyList(), new Job(), Collections.emptyList(), null,
                                     Collections.emptyMap(), catalogManager.getStudyManager().getCurrentRelease(study, userId),
                                     Collections.emptyMap());
+                            folder.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
                             QueryResult<File> queryResult = fileDBAdaptor.insert(folder, study.getUid(), new QueryOptions());
 
                             // Propagate ACLs
@@ -2710,6 +2732,7 @@ public class FileManager extends ResourceManager<File> {
                                     Collections.emptyList(), new Job(), Collections.emptyList(), null,
                                     Collections.emptyMap(), catalogManager.getStudyManager().getCurrentRelease(study, userId),
                                     Collections.emptyMap());
+                            subfile.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
                             QueryResult<File> queryResult = fileDBAdaptor.insert(subfile, study.getUid(), new QueryOptions());
 
                             // Propagate ACLs

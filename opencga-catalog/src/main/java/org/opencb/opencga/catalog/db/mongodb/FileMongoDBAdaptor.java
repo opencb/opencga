@@ -802,6 +802,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
                         break;
                     // Other parameter that can be queried.
                     case NAME:
+                    case UUID:
                     case TYPE:
                     case FORMAT:
                     case BIOFORMAT:

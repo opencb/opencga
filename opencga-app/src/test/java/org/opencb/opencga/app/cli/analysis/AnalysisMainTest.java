@@ -61,9 +61,9 @@ public class AnalysisMainTest {
     private final String dbNameVariants = "opencga_variants_test";
     private final String dbNameAlignments = "opencga_alignments_test";
     private String sessionId;
-    private long projectId;
-    private long studyId;
-    private long outdirId;
+    private String projectId;
+    private String studyId;
+    private String outdirId;
     private Logger logger = LoggerFactory.getLogger(AnalysisMainTest.class);
 
 
@@ -79,18 +79,19 @@ public class AnalysisMainTest {
 
         sessionId = catalogManager.getUserManager().login(userId, "user");
         projectId = catalogManager.getProjectManager().create("p1", "p1", "Project 1", "ACME", "Homo sapiens",
-                null, null, "GRCh38", new QueryOptions(), sessionId).first().getUid();
+                null, null, "GRCh38", new QueryOptions(), sessionId).first().getId();
 
         Map<File.Bioformat, DataStore> datastores = new HashMap<>();
         datastores.put(File.Bioformat.VARIANT, new DataStore(STORAGE_ENGINE, dbNameVariants));
         datastores.put(File.Bioformat.ALIGNMENT, new DataStore(STORAGE_ENGINE, dbNameAlignments));
 
-        studyId = catalogManager.getStudyManager().create(String.valueOf(projectId), "s1", "s1", "s1", Study.Type.CASE_CONTROL, null,
+        Study study = catalogManager.getStudyManager().create(projectId, "s1", "s1", "s1", Study.Type.CASE_CONTROL, null,
                 "Study " +
-                "1", null, null, null, null, datastores, null, Collections.singletonMap(VariantStorageEngine.Options.AGGREGATED_TYPE.key(),
-                        Aggregation.NONE), null, sessionId).first().getUid();
-        outdirId = catalogManager.getFileManager().createFolder(Long.toString(studyId), Paths.get("data", "index").toString(), null,
-                true, null, QueryOptions.empty(), sessionId).first().getUid();
+                        "1", null, null, null, null, datastores, null, Collections.singletonMap(VariantStorageEngine.Options.AGGREGATED_TYPE.key(),
+                        Aggregation.NONE), null, sessionId).first();
+        studyId = study.getId();
+        outdirId = catalogManager.getFileManager().createFolder(studyId, Paths.get("data", "index").toString(), null,
+                true, null, QueryOptions.empty(), sessionId).first().getId();
     }
 
     @Test
@@ -109,9 +110,9 @@ public class AnalysisMainTest {
                 "--study", "user@p1:s1",
                 "-o", opencga.createTmpOutdir(studyId, "index_1", sessionId),
                 "--file", file1.getPath());
-        assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(file1.getUid(), null, sessionId).first().getIndex().getStatus().getName());
+        assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(studyId, file1.getId(), null, sessionId).first().getIndex().getStatus().getName());
 
-        assertEquals(Cohort.CohortStatus.NONE, catalogManager.getCohortManager().get(String.valueOf(studyId),
+        assertEquals(Cohort.CohortStatus.NONE, catalogManager.getCohortManager().get(studyId,
                 new Query(CohortDBAdaptor.QueryParams.ID.key(), "ALL"), null, sessionId).first().getStatus().getName());
 
 //        job = catalogManager.getJobManager().get(studyId, new Query(JobDBAdaptor.QueryParams.INPUT.key(), file1.getId()), null, sessionId).first();
@@ -120,19 +121,19 @@ public class AnalysisMainTest {
         // Annotate variants from chr2 (which is not indexed)
         execute("variant", "annotate",
                 "--session-id", sessionId,
-                "--study", String.valueOf(studyId),
+                "--study", studyId,
                 "-o", opencga.createTmpOutdir(studyId, "annot_2", sessionId),
-                "--filter-chromosome", "2");
+                "--filter-region", "2");
 
         // Annotate all variants
         execute("variant", "annotate",
                 "--session-id", sessionId,
-                "--study", String.valueOf(studyId),
+                "--study", studyId,
                 "-o", opencga.createTmpOutdir(studyId, "annot_all", sessionId),
                 "--output-filename", "myAnnot",
-                "--path", String.valueOf(outdirId));
+                "--path", outdirId);
 
-        File outputFile = catalogManager.getFileManager().get(String.valueOf(studyId), new Query(FileDBAdaptor.QueryParams.NAME.key(),
+        File outputFile = catalogManager.getFileManager().get(studyId, new Query(FileDBAdaptor.QueryParams.NAME.key(),
                 "~myAnnot"), null, sessionId).first();
         assertNotNull(outputFile);
 //        job = catalogManager.getJobManager().get(outputFile.getJob().getId(), null, sessionId).first();
@@ -142,13 +143,13 @@ public class AnalysisMainTest {
         // Index file2
         execute("variant", "index",
                 "--session-id", sessionId,
-                "--file", String.valueOf(file2.getUid()),
+                "--file", file2.getId(),
                 "--calculate-stats",
                 "-o", opencga.createTmpOutdir(studyId, "index_2", sessionId));
 
-        assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(file2.getUid(), null, sessionId).first().getIndex()
+        assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(studyId, file2.getId(), null, sessionId).first().getIndex()
                 .getStatus().getName());
-        assertEquals(Cohort.CohortStatus.READY, catalogManager.getCohortManager().get(String.valueOf(studyId),
+        assertEquals(Cohort.CohortStatus.READY, catalogManager.getCohortManager().get(studyId,
                 new Query(CohortDBAdaptor.QueryParams.ID.key(), "ALL"), null, sessionId).first().getStatus().getName());
 
 //        job = catalogManager.getJobManager().get(studyId, new Query(JobDBAdaptor.QueryParams.INPUT.key(), file2.getId()), null, sessionId).first();
@@ -158,16 +159,16 @@ public class AnalysisMainTest {
         // Annotate all variants
         execute("variant", "annotate",
                 "--session-id", sessionId,
-                "--study", String.valueOf(studyId),
+                "--study", studyId,
                 "-o", opencga.createTmpOutdir(studyId, "annot_all_2", sessionId));
 
         // Index file3
         execute("variant", "index",
                 "--session-id", sessionId,
-                "--file", String.valueOf(file3.getUid()),
+                "--file", String.valueOf(file3.getId()),
                 "-o", opencga.createTmpOutdir(studyId, "index_3", sessionId));
-        assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(file3.getUid(), null, sessionId).first().getIndex().getStatus().getName());
-        assertEquals(Cohort.CohortStatus.INVALID, catalogManager.getCohortManager().get(String.valueOf(studyId),
+        assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(studyId, file3.getId(), null, sessionId).first().getIndex().getStatus().getName());
+        assertEquals(Cohort.CohortStatus.INVALID, catalogManager.getCohortManager().get(studyId,
                 new Query(CohortDBAdaptor.QueryParams.ID.key(), "ALL"), null, sessionId).first().getStatus().getName());
 //        job = catalogManager.getJobManager().get(studyId, new Query(JobDBAdaptor.QueryParams.INPUT.key(), file3.getId()), null, sessionId).first();
 //        assertEquals(Job.JobStatus.READY, job.getStatus().getName());
@@ -192,11 +193,11 @@ public class AnalysisMainTest {
         // Index file5 and annotation
         execute("variant", "index",
                 "--session-id", sessionId,
-                "--file", String.valueOf(file5.getUid()),
+                "--file", file5.getId(),
                 "-o", opencga.createTmpOutdir(studyId, "index_5", sessionId),
                 "--annotate");
-        assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(file5.getUid(), null, sessionId).first().getIndex().getStatus().getName());
-        assertEquals(Cohort.CohortStatus.INVALID, catalogManager.getCohortManager().get(String.valueOf(studyId),
+        assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(studyId, file5.getId(), null, sessionId).first().getIndex().getStatus().getName());
+        assertEquals(Cohort.CohortStatus.INVALID, catalogManager.getCohortManager().get(studyId,
                 new Query(CohortDBAdaptor.QueryParams.ID.key(), "ALL"), null, sessionId).first().getStatus().getName());
 
 //        job = catalogManager.getJobManager().get(studyId, new Query(JobDBAdaptor.QueryParams.INPUT.key(), file5.getId()), null, sessionId).first();
@@ -204,10 +205,10 @@ public class AnalysisMainTest {
 
         execute("variant", "stats",
                 "--session-id", sessionId,
-                "--study", String.valueOf(studyId),
+                "--study", studyId,
                 "--cohort-ids", "ALL",
                 "-o", opencga.createTmpOutdir(studyId, "stats_all", sessionId));
-        assertEquals(Cohort.CohortStatus.READY, catalogManager.getCohortManager().get(String.valueOf(studyId),
+        assertEquals(Cohort.CohortStatus.READY, catalogManager.getCohortManager().get(studyId,
                 new Query(CohortDBAdaptor.QueryParams.ID.key(), "ALL"), null, sessionId).first().getStatus().getName());
 
 
@@ -218,15 +219,15 @@ public class AnalysisMainTest {
 
         execute("variant", "stats",
                 "--session-id", sessionId,
-                "--study", String.valueOf(studyId),
+                "--study", studyId,
                 "--cohort-ids", "coh1",
                 "-o", opencga.createTmpOutdir(studyId, "stats_coh1", sessionId));
-        assertEquals(Cohort.CohortStatus.READY, catalogManager.getCohortManager().get(String.valueOf(studyId),
+        assertEquals(Cohort.CohortStatus.READY, catalogManager.getCohortManager().get(studyId,
                 new Query(CohortDBAdaptor.QueryParams.ID.key(), "coh1"), null, sessionId).first().getStatus().getName());
-        assertEquals(Cohort.CohortStatus.NONE, catalogManager.getCohortManager().get(String.valueOf(studyId),
+        assertEquals(Cohort.CohortStatus.NONE, catalogManager.getCohortManager().get(studyId,
                 new Query(CohortDBAdaptor.QueryParams.ID.key(), "coh2"), null, sessionId).first().getStatus().getName());
 
-//        execute(new String[]{"variant", "query", "--session-id", sessionId, "--study", String.valueOf(studyId), "--limit", "10"});
+//        execute(new String[]{"variant", "query", "--session-id", sessionId, "--study", studyId, "--limit", "10"});
     }
 
     @Test
@@ -238,31 +239,31 @@ public class AnalysisMainTest {
 //        File file1 = opencga.createFile(studyId, "100k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", sessionId);
 //        File file1 = opencga.createFile(studyId, "10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", sessionId);
 
-        QueryResult<Sample> allSamples = catalogManager.getSampleManager().get(String.valueOf(studyId), new Query(), new QueryOptions(),
+        QueryResult<Sample> allSamples = catalogManager.getSampleManager().get(studyId, new Query(), new QueryOptions(),
                 sessionId);
-        Long c1 = catalogManager.getCohortManager().create(studyId, "C1", Study.Type.CONTROL_SET, "", allSamples.getResult().subList(0,
-                allSamples.getResult().size() / 2), null, null, sessionId).first().getUid();
-        Long c2 = catalogManager.getCohortManager().create(studyId, "C2", Study.Type.CONTROL_SET, "", allSamples.getResult().subList(allSamples.getResult().size()
-                / 2 + 1, allSamples.getResult().size()), null, null, sessionId).first().getUid();
-        Long c3 = catalogManager.getCohortManager().create(studyId, "C3", Study.Type.CONTROL_SET, "", allSamples.getResult().subList(0, 1), null,
-                null, sessionId).first().getUid();
-        Sample sample = catalogManager.getSampleManager().create(Long.toString(studyId), "Sample", "", "", null, false, null, new
+        String c1 = catalogManager.getCohortManager().create(studyId, "C1", Study.Type.CONTROL_SET, "", allSamples.getResult().subList(0,
+                allSamples.getResult().size() / 2), null, null, sessionId).first().getId();
+        String c2 = catalogManager.getCohortManager().create(studyId, "C2", Study.Type.CONTROL_SET, "", allSamples.getResult().subList(allSamples.getResult().size()
+                / 2 + 1, allSamples.getResult().size()), null, null, sessionId).first().getId();
+        String c3 = catalogManager.getCohortManager().create(studyId, "C3", Study.Type.CONTROL_SET, "", allSamples.getResult().subList(0, 1), null,
+                null, sessionId).first().getId();
+        Sample sample = catalogManager.getSampleManager().create(studyId, "Sample", "", "", null, false, null, new
                         HashMap<>(), null, null,
                 sessionId).first();
-        Long c4 = catalogManager.getCohortManager().create(studyId, "C4", Study.Type.CONTROL_SET, "", Collections.singletonList(sample),
-                null, null, sessionId).first().getUid();
+        String c4 = catalogManager.getCohortManager().create(studyId, "C4", Study.Type.CONTROL_SET, "", Collections.singletonList(sample),
+                null, null, sessionId).first().getId();
 
         // Index file1
         execute("variant", "index",
                 "--session-id", sessionId,
-                "--study", String.valueOf(studyId),
+                "--study", studyId,
                 "--file", file1.getName(),
                 "-o", opencga.createTmpOutdir(studyId, "index", sessionId),
                 "--calculate-stats",
                 "--annotate");
 
-        assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(file1.getUid(), null, sessionId).first().getIndex().getStatus().getName());
-        assertEquals(Cohort.CohortStatus.READY, catalogManager.getCohortManager().get(String.valueOf(studyId),
+        assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(studyId, file1.getId(), null, sessionId).first().getIndex().getStatus().getName());
+        assertEquals(Cohort.CohortStatus.READY, catalogManager.getCohortManager().get(studyId,
                 new Query(CohortDBAdaptor.QueryParams.ID.key(), "ALL"), null, sessionId).first().getStatus().getName());
 
 //        job = catalogManager.getJobManager().get(studyId, new Query(JobDBAdaptor.QueryParams.INPUT.key(), file1.getId()), null, sessionId).first();
@@ -270,7 +271,7 @@ public class AnalysisMainTest {
 
         execute("variant", "stats",
                 "--session-id", sessionId,
-                "--study", "user@p1:s1",
+                "--study", studyId,
                 "--cohort-ids", c1 + "," + c2 + "," + c3 + "," + c4,
                 "-o", opencga.createTmpOutdir(studyId, "stats", sessionId));
 
@@ -334,11 +335,11 @@ public class AnalysisMainTest {
         // Index file1
         execute("alignment", "index",
                 "--session-id", sessionId,
-                "--study", String.valueOf(studyId),
+                "--study", studyId,
                 "--file", bam.getName(),
                 "-o", opencga.createTmpOutdir(studyId, "index", sessionId));
-        assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(bam.getUid(), null, sessionId).first().getIndex().getStatus().getName());
-        job = catalogManager.getJobManager().get(String.valueOf(studyId), new Query(JobDBAdaptor.QueryParams.INPUT.key(), bam.getUid()), null, sessionId).first();
+        assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(studyId, bam.getId(), null, sessionId).first().getIndex().getStatus().getName());
+        job = catalogManager.getJobManager().get(studyId, new Query(JobDBAdaptor.QueryParams.INPUT.key(), bam.getUid()), null, sessionId).first();
         assertEquals(Job.JobStatus.READY, job.getStatus().getName());
 
         execute("alignment", "query", "--session-id", sessionId, "--file", "user@p1:s1:" + bam.getPath(), "--region", "20");

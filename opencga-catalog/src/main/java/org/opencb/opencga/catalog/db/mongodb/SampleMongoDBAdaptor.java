@@ -1041,6 +1041,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case ID:
+                    case UUID:
                     case NAME:
                     case RELEASE:
                     case VERSION:

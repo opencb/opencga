@@ -40,6 +40,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -78,11 +79,16 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     @Override
     Family smartResolutor(long studyUid, String entry, String user) throws CatalogException {
         Query query = new Query()
-                .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                .append(FamilyDBAdaptor.QueryParams.ID.key(), entry);
+                .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+
+        if (UUIDUtils.isOpenCGAUUID(entry)) {
+            query.put(FamilyDBAdaptor.QueryParams.UUID.key(), entry);
+        } else {
+            query.put(FamilyDBAdaptor.QueryParams.ID.key(), entry);
+        }
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                FamilyDBAdaptor.QueryParams.UID.key(), FamilyDBAdaptor.QueryParams.STUDY_UID.key(), FamilyDBAdaptor.QueryParams.ID.key(),
-                FamilyDBAdaptor.QueryParams.RELEASE.key(), FamilyDBAdaptor.QueryParams.VERSION.key(),
+                FamilyDBAdaptor.QueryParams.UUID.key(),  FamilyDBAdaptor.QueryParams.UID.key(), FamilyDBAdaptor.QueryParams.STUDY_UID.key(),
+                FamilyDBAdaptor.QueryParams.ID.key(), FamilyDBAdaptor.QueryParams.RELEASE.key(), FamilyDBAdaptor.QueryParams.VERSION.key(),
                 FamilyDBAdaptor.QueryParams.STATUS.key()));
         QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, options, user);
         if (familyQueryResult.getNumResults() == 0) {
@@ -145,6 +151,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         createMissingMembers(family, study, sessionId);
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
+        family.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FAMILY));
         QueryResult<Family> queryResult = familyDBAdaptor.insert(study.getUid(), family, variableSetList, options);
         auditManager.recordCreation(AuditRecord.Resource.family, queryResult.first().getId(), userId, queryResult.first(), null, null);
 

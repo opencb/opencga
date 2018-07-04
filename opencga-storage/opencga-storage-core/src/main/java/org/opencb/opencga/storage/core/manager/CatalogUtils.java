@@ -20,6 +20,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.models.Project;
@@ -101,31 +102,28 @@ public class CatalogUtils {
      * @return          List of positive studies.
      * @throws CatalogException if there is an error with catalog
      */
-    public List<Long> getStudies(Query query, String sessionId) throws CatalogException {
+    public List<String> getStudies(Query query, String sessionId) throws CatalogException {
         List<String> studies = VariantQueryUtils.getIncludeStudiesList(query, Collections.singleton(VariantField.STUDIES));
         if (studies == null) {
             if (isValidParam(query, VariantCatalogQueryUtils.PROJECT)) {
                 String project = query.getString(VariantCatalogQueryUtils.PROJECT.key());
-                QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE,
-                        Arrays.asList(ProjectDBAdaptor.QueryParams.STUDY_UID.key(), ProjectDBAdaptor.QueryParams.UID.key()));
-                return catalogManager.getProjectManager()
-                        .get(project, queryOptions, sessionId)
-                        .first()
-                        .getStudies()
+                return catalogManager.getStudyManager()
+                        .get(project, new Query(), new QueryOptions(StudyDBAdaptor.QueryParams.FQN.key()), sessionId)
+                        .getResult()
                         .stream()
-                        .map(Study::getUid)
+                        .map(Study::getFqn)
                         .collect(Collectors.toList());
             } else {
                 String userId = catalogManager.getUserManager().getUserId(sessionId);
                 return catalogManager.getStudyManager().resolveIds(Collections.emptyList(), userId)
                         .stream()
-                        .map(Study::getUid)
+                        .map(Study::getFqn)
                         .collect(Collectors.toList());
             }
         } else {
             return catalogManager.getStudyManager().resolveIds(studies, catalogManager.getUserManager().getUserId(sessionId))
                     .stream()
-                    .map(Study::getUid)
+                    .map(Study::getFqn)
                     .collect(Collectors.toList());
         }
     }
@@ -135,9 +133,9 @@ public class CatalogUtils {
             String project = query.getString(VariantCatalogQueryUtils.PROJECT.key());
             return catalogManager.getProjectManager().get(project, options, sessionId).first();
         } else {
-            long studyId = getAnyStudyId(query, sessionId);
-            Long projectId = catalogManager.getStudyManager().getProjectId(studyId);
-            return catalogManager.getProjectManager().get(new Query(ProjectDBAdaptor.QueryParams.UID.key(), projectId), options, sessionId)
+            String studyFqn = getAnyStudy(query, sessionId);
+            String project = catalogManager.getStudyManager().getProjectFqn(studyFqn);
+            return catalogManager.getProjectManager().get(new Query(ProjectDBAdaptor.QueryParams.FQN.key(), project), options, sessionId)
                     .first();
         }
     }
@@ -149,8 +147,8 @@ public class CatalogUtils {
      * @return  Any study id
      * @throws CatalogException if there is a catalog error or the study is missing
      */
-    public long getAnyStudyId(Query query, String sessionId) throws CatalogException {
-        List<Long> studies = getStudies(query, sessionId);
+    public String getAnyStudy(Query query, String sessionId) throws CatalogException {
+        List<String> studies = getStudies(query, sessionId);
         if (studies.isEmpty()) {
             throw new CatalogException("Missing StudyId. Unable to get any variant!");
         } else {

@@ -29,9 +29,9 @@ import java.util.*;
  */
 public class Study extends PrivateFields {
 
-    private String uuid;
     private String id;
     private String name;
+    private String uuid;
     private String alias;
     private Type type;
     private String creationDate;

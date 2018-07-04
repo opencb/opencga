@@ -24,10 +24,10 @@ import java.util.Map;
  */
 public class ClinicalAnalysis extends PrivateStudyUid {
 
-    private String uuid;
     private String id;
     @Deprecated
     private String name;
+    private String uuid;
     private String description;
     private Type type;
 

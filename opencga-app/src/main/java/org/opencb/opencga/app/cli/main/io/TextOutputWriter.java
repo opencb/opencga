@@ -309,7 +309,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
 
             for (Cohort cohort : queryResult.getResult()) {
                 sb.append(String.format("%s\t%s\t%s\t%s\t%s\t%d\t%s\t%s\n", StringUtils.defaultIfEmpty(cohort.getId(), "-"),
-                        StringUtils.defaultIfEmpty(cohort.getName(), "-"), cohort.getType(),
+                        StringUtils.defaultIfEmpty(cohort.getId(), "-"), cohort.getType(),
                         StringUtils.defaultIfEmpty(cohort.getDescription(), "-"),
                         cohort.getStatus() != null ? StringUtils.defaultIfEmpty(cohort.getStatus().getName(), "-") : "-",
                         cohort.getSamples().size(), cohort.getSamples().size() > 0 ? StringUtils.join(cohort.getSamples(), ", ") : "NA",

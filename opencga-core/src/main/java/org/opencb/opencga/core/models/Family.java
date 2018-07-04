@@ -29,9 +29,9 @@ import static org.opencb.opencga.core.common.FieldUtils.defaultObject;
  */
 public class Family extends Annotable {
 
-    private String uuid;
     private String id;
     private String name;
+    private String uuid;
 
     private List<OntologyTerm> phenotypes;
     private List<Individual> members;
