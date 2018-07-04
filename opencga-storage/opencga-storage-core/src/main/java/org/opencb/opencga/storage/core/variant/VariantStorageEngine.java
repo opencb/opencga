@@ -35,6 +35,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.FacetedQueryResult;
+import org.opencb.opencga.core.SolrException;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngine;
@@ -42,7 +43,6 @@ import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
-import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.*;
 import org.opencb.opencga.storage.core.metadata.local.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
@@ -499,11 +499,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         throw new UnsupportedOperationException();
     }
 
-    public void searchIndex() throws StorageEngineException, IOException, VariantSearchException {
+    public void searchIndex() throws StorageEngineException, IOException, SolrException {
         searchIndex(new Query(), new QueryOptions());
     }
 
-    public void searchIndex(Query query, QueryOptions queryOptions) throws StorageEngineException, IOException, VariantSearchException {
+    public void searchIndex(Query query, QueryOptions queryOptions) throws StorageEngineException, IOException, SolrException {
         VariantDBAdaptor dbAdaptor = getDBAdaptor();
 
         VariantSearchManager variantSearchManager = getVariantSearchManager();
@@ -740,7 +740,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 } else {
                     return getVariantSearchManager().query(dbName, query, options);
                 }
-            } catch (IOException | VariantSearchException e) {
+            } catch (IOException | SolrException e) {
                 throw new VariantQueryException("Error querying Solr", e);
             }
         } else {
@@ -926,7 +926,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 long count = getVariantSearchManager().query(dbName, query, new QueryOptions(QueryOptions.LIMIT, 0)).getNumTotalResults();
                 int time = (int) watch.getTime(TimeUnit.MILLISECONDS);
                 return new QueryResult<>("count", time, 1, 1, "", "", Collections.singletonList(count));
-            } catch (IOException | VariantSearchException e) {
+            } catch (IOException | SolrException e) {
                 throw new VariantQueryException("Error querying Solr", e);
             }
         }
@@ -966,7 +966,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                     count = numResults;
                 }
             }
-        } catch (IOException | VariantSearchException e) {
+        } catch (IOException | SolrException e) {
             throw new VariantQueryException("Error querying Solr", e);
         }
         int time = (int) watch.getTime(TimeUnit.MILLISECONDS);
@@ -992,7 +992,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         FacetedQueryResult facetedQueryResult;
         try {
             facetedQueryResult = getVariantSearchManager().facetedQuery(dbName, query, options);
-        } catch (IOException | VariantSearchException | StorageEngineException e) {
+        } catch (IOException | SolrException | StorageEngineException e) {
             throw Throwables.propagate(e);
         }
 
@@ -1033,7 +1033,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 }
                 variantsIterator = Iterators.transform(nativeIterator, VariantSearchModel::getId);
             }
-        } catch (VariantSearchException | IOException e) {
+        } catch (SolrException | IOException e) {
             throw new VariantQueryException("Error querying " + VariantSearchManager.SEARCH_ENGINE_ID, e);
         }
         return variantsIterator;

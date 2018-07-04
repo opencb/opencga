@@ -35,6 +35,7 @@ public class CohortSolrModel {
 
     @Field
     private List<String> samplesUuid;
+//    private int numSmples;
 
     @Field("annotations__*")
     private Map<String, Object> annotations;

@@ -1,4 +1,20 @@
-package org.opencb.opencga.storage.core.variant.search.solr;
+/*
+ * Copyright 2015-2017 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.opencb.opencga.catalog.stats.solr;
 
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -8,14 +24,13 @@ import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.stats.solr.FileSolrModel;
-import org.opencb.opencga.catalog.stats.solr.SampleSolrModel;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogFileToSolrFileConverter;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogSampleToSolrSampleConverter;
+import org.opencb.opencga.core.SolrException;
+import org.opencb.opencga.core.SolrManager;
+import org.opencb.opencga.core.config.SearchConfiguration;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,8 +45,9 @@ public class CatalogSolrManager {
 
     private CatalogManager catalogManager;
     private SolrManager solrManager;
-    private StorageConfiguration storageConfiguration;
+//    private StorageConfiguration storageConfiguration;
     private CatalogSampleToSolrSampleConverter catalogSampleToSolrSampleConverter;
+    private int insertBatchSize;
 
     public static final int DEFAULT_INSERT_BATCH_SIZE = 10000;
 
@@ -46,45 +62,42 @@ public class CatalogSolrManager {
     public static final String SAMPLE_CONF_SET = "OpenCGACatalogSampleConfSet";
     public static final String FAMILY_CONF_SET = "OpenCGACatalogFamilyConfSet";
     public static final String INDIVIDUAL_CONF_SET = "OpenCGACatalogIndividualConfSet";
-    public static final String SEARCH_ENGINE_ID = "solr";
-    private int insertBatchSize;
-
 
     private Logger logger;
 
-    public CatalogSolrManager(CatalogManager catalogManager, StorageConfiguration storageConfiguration) throws VariantSearchException {
+    public CatalogSolrManager(CatalogManager catalogManager) throws SolrException {
         this.catalogManager = catalogManager;
-        this.storageConfiguration = storageConfiguration;
-        this.solrManager = new SolrManager(storageConfiguration.getSearch().getHost(), storageConfiguration.getSearch().getMode(),
-                storageConfiguration.getSearch().getTimeout());
+//        this.storageConfiguration = storageConfiguration;
+        SearchConfiguration searchConfiguration = catalogManager.getConfiguration().getCatalog().getSearch();
+        this.solrManager = new SolrManager(searchConfiguration.getHost(), searchConfiguration.getMode(), searchConfiguration.getTimeout());
         this.catalogSampleToSolrSampleConverter = new CatalogSampleToSolrSampleConverter();
         insertBatchSize = DEFAULT_INSERT_BATCH_SIZE;
-        if (storageConfiguration.getSearch().getMode().equals("cloud")) {
+        if (searchConfiguration.getMode().equals("cloud")) {
             createCatalogSolrCollections();
         } else {
             createCatalogSolrCores();
         }
 
-        logger = LoggerFactory.getLogger(VariantSearchManager.class);
+        logger = LoggerFactory.getLogger(CatalogSolrManager.class);
     }
 
     public boolean isAlive(String collection) {
         return solrManager.isAlive(collection);
     }
 
-    public void create(String dbName, String configSet) throws VariantSearchException {
+    public void create(String dbName, String configSet) throws SolrException {
         solrManager.create(dbName, configSet);
     }
 
-    public void createCore(String coreName, String configSet) throws VariantSearchException {
+    public void createCore(String coreName, String configSet) throws SolrException {
         solrManager.createCore(coreName, configSet);
     }
 
-    public void createCollection(String collectionName, String configSet) throws VariantSearchException {
+    public void createCollection(String collectionName, String configSet) throws SolrException {
         solrManager.createCollection(collectionName, configSet);
     }
 
-    public boolean exists(String dbName) throws VariantSearchException {
+    public boolean exists(String dbName) throws SolrException {
         return solrManager.exists(dbName);
     }
 
@@ -92,12 +105,11 @@ public class CatalogSolrManager {
         return solrManager.existsCore(coreName);
     }
 
-    public boolean existsCollection(String collectionName) throws VariantSearchException {
+    public boolean existsCollection(String collectionName) throws SolrException {
         return solrManager.existsCollection(collectionName);
     }
 
-    public void createCatalogSolrCollections() throws VariantSearchException {
-
+    public void createCatalogSolrCollections() throws SolrException {
         if (!existsCollection(COHORT_SOLR_COLLECTION)) {
             createCollection(COHORT_SOLR_COLLECTION, COHORT_CONF_SET);
         }
@@ -115,8 +127,7 @@ public class CatalogSolrManager {
         }
     }
 
-    public void createCatalogSolrCores() throws VariantSearchException {
-
+    public void createCatalogSolrCores() throws SolrException {
         if (!existsCore(COHORT_SOLR_COLLECTION)) {
             createCore(COHORT_SOLR_COLLECTION, COHORT_CONF_SET);
         }
@@ -134,8 +145,7 @@ public class CatalogSolrManager {
         }
     }
 
-    public void indexCatalogSamples(Query query) throws CatalogException, SolrServerException, IOException, VariantSearchException {
-
+    public void indexCatalogSamples(Query query) throws CatalogException, SolrServerException, IOException, SolrException {
         DBIterator<Sample> iterator = catalogManager.getSampleManager().indexSolr(query);
 
         int count = 0;
@@ -156,7 +166,7 @@ public class CatalogSolrManager {
     }
 
 
-    public void indexCatalogFiles(Query query) throws CatalogException, SolrServerException, IOException, VariantSearchException {
+    public void indexCatalogFiles(Query query) throws CatalogException, SolrServerException, IOException, SolrException {
 
         DBIterator<File> iterator = catalogManager.getFileManager().indexSolr(query);
 
@@ -177,7 +187,7 @@ public class CatalogSolrManager {
         }
     }
 
- /*   public void indexCatalogCohorts(Query query) throws CatalogException, SolrServerException, IOException, VariantSearchException {
+ /*   public void indexCatalogCohorts(Query query) throws CatalogException, SolrServerException, IOException, SolrException {
 
         DBIterator<Cohort> iterator = catalogManager.getCohortManager().indexSolr(query);
 
@@ -198,7 +208,7 @@ public class CatalogSolrManager {
         }
     }*/
 
-    public void indexSamples(List<Sample> samples) throws IOException, SolrServerException, VariantSearchException {
+    public void indexSamples(List<Sample> samples) throws IOException, SolrServerException, SolrException {
         CatalogSampleToSolrSampleConverter sampleToSolrSampleConverter = new CatalogSampleToSolrSampleConverter();
         List<SampleSolrModel> sampleSolrModels = new ArrayList<>();
 
@@ -213,11 +223,11 @@ public class CatalogSolrManager {
                 solrManager.getSolrClient().commit(SAMPLES_SOLR_COLLECTION);
             }
         } catch (SolrServerException e) {
-            throw new VariantSearchException(e.getMessage(), e);
+            throw new SolrException(e.getMessage(), e);
         }
     }
 
-    public void indexFiles(List<File> files) throws IOException, SolrServerException, VariantSearchException {
+    public void indexFiles(List<File> files) throws IOException, SolrServerException, SolrException {
         CatalogFileToSolrFileConverter fileToSolrFileConverter = new CatalogFileToSolrFileConverter();
         List<FileSolrModel> fileSolrModels = new ArrayList<>();
 
@@ -232,12 +242,12 @@ public class CatalogSolrManager {
                 solrManager.getSolrClient().commit(FILE_SOLR_COLLECTION);
             }
         } catch (SolrServerException e) {
-            throw new VariantSearchException(e.getMessage(), e);
+            throw new SolrException(e.getMessage(), e);
         }
     }
 
     public <T, M> void indexCatalogCollection(List<T> records, ComplexTypeConverter converter, M solrModelType,
-                                              String collectionName) throws IOException, SolrServerException, VariantSearchException {
+                                              String collectionName) throws IOException, SolrServerException, SolrException {
         List<M> solrModels = new ArrayList<>();
 
         for (T record : records) {
@@ -251,7 +261,7 @@ public class CatalogSolrManager {
                 solrManager.getSolrClient().commit(collectionName);
             }
         } catch (SolrServerException e) {
-            throw new VariantSearchException(e.getMessage(), e);
+            throw new SolrException(e.getMessage(), e);
         }
     }
 }

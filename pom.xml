@@ -50,7 +50,7 @@
         <grpc>1.9.1</grpc>
         <slf4j.version>1.7.21</slf4j.version>
         <junit.version>4.12</junit.version>
-        <solr.version>6.4.1</solr.version>
+        <solr.version>6.4.2</solr.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <opencga.war.name>opencga</opencga.war.name>
@@ -281,6 +281,11 @@
             </dependency>
 
             <!-- General dependencies -->
+            <dependency>
+                <groupId>org.apache.solr</groupId>
+                <artifactId>solr-solrj</artifactId>
+                <version>${solr.version}</version>
+            </dependency>
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
@@ -524,6 +529,9 @@
                 <OPENCGA.CATALOG.DB.PASSWORD></OPENCGA.CATALOG.DB.PASSWORD>
                 <OPENCGA.CATALOG.DB.AUTHENTICATION_DATABASE></OPENCGA.CATALOG.DB.AUTHENTICATION_DATABASE>
                 <OPENCGA.CATALOG.DB.CONNECTIONS_PER_HOST>20</OPENCGA.CATALOG.DB.CONNECTIONS_PER_HOST>
+                <OPENCGA.CATALOG.SEARCH.HOST>http://localhost:8983/solr/</OPENCGA.CATALOG.SEARCH.HOST>
+                <OPENCGA.CATALOG.SEARCH.TIMEOUT>30000</OPENCGA.CATALOG.SEARCH.TIMEOUT>
+                <OPENCGA.CATALOG.SEARCH.BATCH>2000</OPENCGA.CATALOG.SEARCH.BATCH>
 
                 <!-- Storage -->
                 <OPENCGA.STORAGE.DEFAULT_ENGINE>mongodb</OPENCGA.STORAGE.DEFAULT_ENGINE>

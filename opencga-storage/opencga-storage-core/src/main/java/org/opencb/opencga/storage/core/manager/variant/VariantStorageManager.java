@@ -38,12 +38,12 @@ import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.SolrException;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.manager.StorageManager;
 import org.opencb.opencga.storage.core.manager.models.StudyInfo;
 import org.opencb.opencga.storage.core.manager.variant.metadata.CatalogVariantMetadataFactory;
@@ -180,13 +180,13 @@ public class VariantStorageManager extends StorageManager {
     }
 
 
-    public void searchIndex(String study, String sessionId) throws StorageEngineException, IOException, VariantSearchException,
+    public void searchIndex(String study, String sessionId) throws StorageEngineException, IOException, SolrException,
             IllegalAccessException, ClassNotFoundException, InstantiationException, CatalogException {
         searchIndex(new Query(STUDY.key(), study), new QueryOptions(), sessionId);
     }
 
     public void searchIndex(Query query, QueryOptions queryOptions, String sessionId) throws StorageEngineException,
-            IOException, VariantSearchException, IllegalAccessException, InstantiationException, ClassNotFoundException, CatalogException {
+            IOException, SolrException, IllegalAccessException, InstantiationException, ClassNotFoundException, CatalogException {
 //        String userId = catalogManager.getUserManager().getUserId(sessionId);
 //        long studyId = catalogManager.getStudyManager().getId(userId, study);
         String study = catalogUtils.getAnyStudy(query, sessionId);
