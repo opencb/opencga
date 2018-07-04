@@ -37,6 +37,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.DiseasePanelConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.DiseasePanel;
@@ -562,6 +563,26 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
                 action.accept(catalogDBIterator.next());
             }
         }
+    }
+
+    @Override
+    public void updateProjectRelease(long studyId, int release) throws CatalogDBException {
+        Query query = new Query()
+                .append(QueryParams.STUDY_UID.key(), studyId)
+                .append(QueryParams.SNAPSHOT.key(), release - 1);
+        Bson bson = parseQuery(query, false);
+
+        Document update = new Document()
+                .append("$addToSet", new Document(RELEASE_FROM_VERSION, release));
+
+        QueryOptions queryOptions = new QueryOptions("multi", true);
+
+        panelCollection.update(bson, update, queryOptions);
+    }
+
+    @Override
+    public void unmarkPermissionRule(long studyId, String permissionRuleId) {
+        unmarkPermissionRule(panelCollection, studyId, permissionRuleId);
     }
 
     private Bson parseQuery(Query query, boolean isolated) throws CatalogDBException {

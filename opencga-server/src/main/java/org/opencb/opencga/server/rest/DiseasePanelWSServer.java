@@ -4,13 +4,16 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.*;
+import org.apache.commons.lang3.ObjectUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.managers.DiseasePanelManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.DiseasePanel;
+import org.opencb.opencga.core.models.OntologyTerm;
+import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.server.rest.json.mixin.PanelMixin;
 
 import javax.servlet.http.HttpServletRequest;
@@ -38,8 +41,7 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Create a panel", response = DiseasePanel[].class)
     public Response createPanel(
-            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                @QueryParam("study") String studyStr,
+            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
             @ApiParam(value = "Predefined panel id") @QueryParam("panelId") String panelId,
             @ApiParam(name = "params", value = "Panel parameters") PanelPOST params) {
         try {
@@ -55,9 +57,10 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update a panel", response = DiseasePanel[].class)
     public Response updatePanel(
-            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                @QueryParam("study") String studyStr,
+            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
             @ApiParam(value = "Panel id") @PathParam("panel") String panelId,
+            @ApiParam(value = "Create a new version of panel", defaultValue = "false")
+                @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(name = "params", value = "Panel parameters") PanelPOST panelParams) {
         try {
             return createOkResponse(panelManager.update(studyStr, panelId, panelParams.toObjectMap(), queryOptions, sessionId));
@@ -77,8 +80,7 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
     })
     public Response info(
             @ApiParam(value = "Comma separated list of panel ids up to a maximum of 100") @PathParam(value = "panels") String panelStr,
-            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                @QueryParam("study") String studyStr,
+            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
             @ApiParam(value = "Panel  version") @QueryParam("version") Integer version,
             @ApiParam(value = "Fetch all panel versions", defaultValue = "false") @QueryParam(Constants.ALL_VERSIONS)
                     boolean allVersions,
@@ -109,8 +111,7 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "count", value = "Total number of results", defaultValue = "false", dataType = "boolean", paramType = "query")
     })
     public Response search(
-            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                @QueryParam("study") String studyStr,
+            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
             @ApiParam(value = "Panel name") @QueryParam("name") String name,
             @ApiParam(value = "Panel phenotypes") @QueryParam("phenotypes") String phenotypes,
             @ApiParam(value = "Panel variants") @QueryParam("variants") String variants,
@@ -137,6 +138,102 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
                 queryResult = panelManager.search(studyStr, query, queryOptions, sessionId);
             }
             return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @DELETE
+    @Path("/delete")
+    @ApiOperation(value = "Delete existing panels")
+    public Response delete(
+            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Panel id") @QueryParam("id") String id,
+            @ApiParam(value = "Panel name") @QueryParam("name") String name,
+            @ApiParam(value = "Panel phenotypes") @QueryParam("phenotypes") String phenotypes,
+            @ApiParam(value = "Panel variants") @QueryParam("variants") String variants,
+            @ApiParam(value = "Panel genes") @QueryParam("genes") String genes,
+            @ApiParam(value = "Panel regions") @QueryParam("regions") String regions,
+            @ApiParam(value = "Panel description") @QueryParam("description") String description,
+            @ApiParam(value = "Panel author") @QueryParam("author") String author,
+            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Release") @QueryParam("release") String release) {
+        try {
+            query.remove("study");
+            return createOkResponse(panelManager.delete(studyStr, query, queryOptions, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/groupBy")
+    @ApiOperation(value = "Group panels by several fields", position = 10,
+            notes = "Only group by categorical variables. Grouping by continuous variables might cause unexpected behaviour")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "count", value = "Count the number of elements matching the group", dataType = "boolean",
+                    paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Maximum number of documents (groups) to be returned", dataType = "integer",
+                    paramType = "query", defaultValue = "50")
+    })
+    public Response groupBy(
+            @ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @QueryParam("fields") String fields,
+            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Panel name") @QueryParam("name") String name,
+            @ApiParam(value = "Panel phenotypes") @QueryParam("phenotypes") String phenotypes,
+            @ApiParam(value = "Panel variants") @QueryParam("variants") String variants,
+            @ApiParam(value = "Panel genes") @QueryParam("genes") String genes,
+            @ApiParam(value = "Panel regions") @QueryParam("regions") String regions,
+            @ApiParam(value = "Panel description") @QueryParam("description") String description,
+            @ApiParam(value = "Panel author") @QueryParam("author") String author,
+            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Release value (Current release from the moment the families were first created)") @QueryParam("release") String release,
+            @ApiParam(value = "Snapshot value (Latest version of families in the specified release)") @QueryParam("snapshot") int snapshot) {
+        try {
+            query.remove("study");
+            query.remove("fields");
+
+            QueryResult result = panelManager.groupBy(studyStr, query, fields, queryOptions, sessionId);
+            return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{panels}/acl")
+    @ApiOperation(value = "Returns the acl of the panels. If member is provided, it will only return the acl for the member.", position = 18)
+    public Response getAcls(
+            @ApiParam(value = "Comma separated list of panel ids up to a maximum of 100", required = true) @PathParam("panels")
+                String sampleIdsStr,
+            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
+            @ApiParam(value = "User or group id") @QueryParam("member") String member,
+            @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false")
+                @QueryParam("silent") boolean silent) {
+        try {
+            List<String> idList = getIdList(sampleIdsStr);
+            return createOkResponse(panelManager.getAcls(studyStr, idList, member,silent, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    public static class PanelAcl extends AclParams {
+        public String panel;
+    }
+
+    @POST
+    @Path("/acl/{members}/update")
+    @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
+    public Response updateAcl(
+            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
+            @ApiParam(value = "JSON containing the parameters to update the permissions.", required = true) PanelAcl params) {
+        try {
+            params = ObjectUtils.defaultIfNull(params, new PanelAcl());
+            AclParams panelAclParams = new AclParams(params.getPermissions(), params.getAction());
+            List<String> idList = getIdList(params.panel);
+            return createOkResponse(panelManager.updateAcl(studyStr, idList, memberId, panelAclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

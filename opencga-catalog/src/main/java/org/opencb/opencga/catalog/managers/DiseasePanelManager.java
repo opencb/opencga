@@ -1,9 +1,12 @@
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
@@ -11,6 +14,7 @@ import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.DiseasePanelDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
@@ -18,19 +22,24 @@ import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
+import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.DiseasePanel;
 import org.opencb.opencga.core.models.Status;
 import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.DiseasePanelAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
 
 public class DiseasePanelManager extends ResourceManager<DiseasePanel> {
 
@@ -193,7 +202,86 @@ public class DiseasePanelManager extends ResourceManager<DiseasePanel> {
 
     @Override
     public WriteResult delete(String studyStr, Query query, ObjectMap params, String sessionId) {
-        throw new UnsupportedOperationException("not implemented yet");
+        Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
+        WriteResult writeResult = new WriteResult("delete", -1, -1, -1, null, null, null);
+
+        String userId;
+        Study study;
+
+        StopWatch watch = StopWatch.createStarted();
+
+        // If the user is the owner or the admin, we won't check if he has permissions for every single entry
+        boolean checkPermissions;
+
+        // We try to get an iterator containing all the families to be deleted
+        DBIterator<DiseasePanel> iterator;
+        try {
+            userId = catalogManager.getUserManager().getUserId(sessionId);
+            study = studyManager.resolveId(studyStr, userId);
+
+            finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+
+            iterator = panelDBAdaptor.iterator(finalQuery, QueryOptions.empty(), userId);
+
+            // If the user is the owner or the admin, we won't check if he has permissions for every single entry
+            checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
+        } catch (CatalogException e) {
+            logger.error("Delete panel: {}", e.getMessage(), e);
+            writeResult.setError(new Error(-1, null, e.getMessage()));
+            writeResult.setDbTime((int) watch.getTime(TimeUnit.MILLISECONDS));
+            return writeResult;
+        }
+
+        long numMatches = 0;
+        long numModified = 0;
+        List<WriteResult.Fail> failedList = new ArrayList<>();
+
+        String suffixName = INTERNAL_DELIMITER + "DELETED_" + TimeUtils.getTime();
+
+        while (iterator.hasNext()) {
+            DiseasePanel panel = iterator.next();
+            numMatches += 1;
+
+            try {
+                if (checkPermissions) {
+                    authorizationManager.checkDiseasePanelPermission(study.getUid(), panel.getUid(), userId,
+                            DiseasePanelAclEntry.DiseasePanelPermissions.DELETE);
+                }
+
+                // Check if the panel can be deleted
+                // TODO: Check if the panel is used in an interpretation. At this point, it can be deleted no matter what.
+
+                // Delete the panel
+                Query updateQuery = new Query()
+                        .append(DiseasePanelDBAdaptor.QueryParams.UID.key(), panel.getUid())
+                        .append(DiseasePanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                        .append(Constants.ALL_VERSIONS, true);
+                ObjectMap updateParams = new ObjectMap()
+                        .append(DiseasePanelDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED)
+                        .append(DiseasePanelDBAdaptor.QueryParams.ID.key(), panel.getName() + suffixName);
+                QueryResult<Long> update = panelDBAdaptor.update(updateQuery, updateParams, QueryOptions.empty());
+                if (update.first() > 0) {
+                    numModified += 1;
+                    auditManager.recordDeletion(AuditRecord.Resource.panel, panel.getUid(), userId, null, updateParams, null, null);
+                } else {
+                    failedList.add(new WriteResult.Fail(panel.getId(), "Unknown reason"));
+                }
+            } catch (Exception e) {
+                failedList.add(new WriteResult.Fail(panel.getId(), e.getMessage()));
+                logger.debug("Cannot delete panel {}: {}", panel.getId(), e.getMessage(), e);
+            }
+        }
+
+        writeResult.setDbTime((int) watch.getTime(TimeUnit.MILLISECONDS));
+        writeResult.setNumMatches(numMatches);
+        writeResult.setNumModified(numModified);
+        writeResult.setFailed(failedList);
+
+        if (!failedList.isEmpty()) {
+            writeResult.setWarning(Collections.singletonList(new Error(-1, null, "There are panels that could not be deleted")));
+        }
+
+        return writeResult;
     }
 
     @Override
@@ -237,6 +325,91 @@ public class DiseasePanelManager extends ResourceManager<DiseasePanel> {
 
         QueryResult queryResult = sampleDBAdaptor.groupBy(query, fields, options, userId);
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
+    }
+
+    // **************************   ACLs  ******************************** //
+    public List<QueryResult<DiseasePanelAclEntry>> getAcls(String studyStr, List<String> panelList, String member, boolean silent,
+                                                     String sessionId) throws CatalogException {
+        List<QueryResult<DiseasePanelAclEntry>> panelAclList = new ArrayList<>(panelList.size());
+
+        for (String panel : panelList) {
+            try {
+                MyResource<DiseasePanel> resource = getUid(panel, studyStr, sessionId);
+
+                QueryResult<DiseasePanelAclEntry> allPanelAcls;
+                if (StringUtils.isNotEmpty(member)) {
+                    allPanelAcls =
+                            authorizationManager.getPanelAcl(resource.getStudy().getUid(), resource.getResource().getUid(),
+                                    resource.getUser(), member);
+                } else {
+                    allPanelAcls = authorizationManager.getAllPanelAcls(resource.getStudy().getUid(), resource.getResource().getUid(),
+                            resource.getUser());
+                }
+                allPanelAcls.setId(panel);
+                panelAclList.add(allPanelAcls);
+            } catch (CatalogException e) {
+                if (silent) {
+                    panelAclList.add(new QueryResult<>(panel, 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
+                } else {
+                    throw e;
+                }
+            }
+        }
+        return panelAclList;
+    }
+
+    public List<QueryResult<DiseasePanelAclEntry>> updateAcl(String studyStr, List<String> panelList, String memberIds,
+                                                       AclParams panelAclParams, String sessionId) throws CatalogException {
+        if (panelList == null || panelList.isEmpty()) {
+            throw new CatalogException("Update ACL: Missing panel parameter");
+        }
+
+        if (panelAclParams.getAction() == null) {
+            throw new CatalogException("Invalid action found. Please choose a valid action to be performed.");
+        }
+
+        List<String> permissions = Collections.emptyList();
+        if (StringUtils.isNotEmpty(panelAclParams.getPermissions())) {
+            permissions = Arrays.asList(panelAclParams.getPermissions().trim().replaceAll("\\s", "").split(","));
+            checkPermissions(permissions, DiseasePanelAclEntry.DiseasePanelPermissions::valueOf);
+        }
+
+        MyResources<DiseasePanel> resource = getUids(panelList, studyStr, sessionId);
+        authorizationManager.checkCanAssignOrSeePermissions(resource.getStudy().getUid(), resource.getUser());
+
+        // Validate that the members are actually valid members
+        List<String> members;
+        if (memberIds != null && !memberIds.isEmpty()) {
+            members = Arrays.asList(memberIds.split(","));
+        } else {
+            members = Collections.emptyList();
+        }
+        authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
+        checkMembers(resource.getStudy().getUid(), members);
+
+        switch (panelAclParams.getAction()) {
+            case SET:
+                List<String> allPanelPermissions = EnumSet.allOf(DiseasePanelAclEntry.DiseasePanelPermissions.class)
+                        .stream()
+                        .map(String::valueOf)
+                        .collect(Collectors.toList());
+                return authorizationManager.setAcls(resource.getStudy().getUid(), resource.getResourceList().stream()
+                                .map(DiseasePanel::getUid)
+                                .collect(Collectors.toList()), members, permissions,
+                        allPanelPermissions, Entity.PANEL);
+            case ADD:
+                return authorizationManager.addAcls(resource.getStudy().getUid(), resource.getResourceList().stream()
+                        .map(DiseasePanel::getUid)
+                        .collect(Collectors.toList()), members, permissions, Entity.PANEL);
+            case REMOVE:
+                return authorizationManager.removeAcls(resource.getResourceList().stream().map(DiseasePanel::getUid)
+                                .collect(Collectors.toList()), members, permissions, Entity.PANEL);
+            case RESET:
+                return authorizationManager.removeAcls(resource.getResourceList().stream().map(DiseasePanel::getUid)
+                                .collect(Collectors.toList()), members, null, Entity.PANEL);
+            default:
+                throw new CatalogException("Unexpected error occurred. No valid action found.");
+        }
     }
 
 }

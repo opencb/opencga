@@ -730,6 +730,24 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
+    public QueryResult<DiseasePanelAclEntry> getAllPanelAcls(long studyId, long panelId, String userId) throws CatalogException {
+        checkCanAssignOrSeePermissions(studyId, userId);
+        return aclDBAdaptor.get(panelId, null, Entity.PANEL);
+    }
+
+    @Override
+    public QueryResult<DiseasePanelAclEntry> getPanelAcl(long studyId, long panelId, String userId, String member) throws CatalogException {
+        try {
+            checkCanAssignOrSeePermissions(studyId, userId);
+        } catch (CatalogException e) {
+            // It will be OK if the userId asking for the ACLs wants to see its own permissions
+            checkAskingOwnPermissions(userId, member, studyId);
+        }
+
+        return aclDBAdaptor.get(panelId, Arrays.asList(member), Entity.PANEL);
+    }
+
+    @Override
     public QueryResult<JobAclEntry> getAllJobAcls(long studyId, long jobId, String userId) throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
         return aclDBAdaptor.get(jobId, null, Entity.JOB);

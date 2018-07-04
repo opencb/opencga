@@ -467,6 +467,7 @@ public class ProjectManager extends AbstractManager {
                 sampleDBAdaptor.updateProjectRelease(study.getUid(), integerQueryResult.first());
                 individualDBAdaptor.updateProjectRelease(study.getUid(), integerQueryResult.first());
                 familyDBAdaptor.updateProjectRelease(study.getUid(), integerQueryResult.first());
+                panelDBAdaptor.updateProjectRelease(study.getUid(), integerQueryResult.first());
             }
 
             return integerQueryResult;

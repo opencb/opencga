@@ -22,6 +22,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.DiseasePanel;
 
 import java.util.HashMap;
@@ -173,5 +174,17 @@ public interface DiseasePanelDBAdaptor extends DBAdaptor<DiseasePanel> {
     QueryResult<DiseasePanel> get(long panelId, QueryOptions options) throws CatalogDBException;
 
     long getStudyId(long panelId) throws CatalogDBException;
+
+    void updateProjectRelease(long studyId, int release) throws CatalogDBException;
+
+    /**
+     * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to
+     * be applied.
+     *
+     * @param studyId study id containing the entries affected.
+     * @param permissionRuleId permission rule id to be unmarked.
+     * @throws CatalogException if there is any database error.
+     */
+    void unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
 
 }

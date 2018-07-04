@@ -266,7 +266,7 @@ public interface AuthorizationManager {
      * @param cohortId cohort id.
      * @param userId   user id asking for the ACLs.
      * @return a list of CohortAcls.
-     * @throws CatalogException when the user asking to retrieve all the ACLs defined in the sample does not have proper permissions.
+     * @throws CatalogException when the user asking to retrieve all the ACLs defined in the cohort does not have proper permissions.
      */
     QueryResult<CohortAclEntry> getAllCohortAcls(long studyId, long cohortId, String userId) throws CatalogException;
 
@@ -284,6 +284,35 @@ public interface AuthorizationManager {
     QueryResult<CohortAclEntry> getCohortAcl(long studyId, long cohortId, String userId, String member) throws CatalogException;
 
     //------------------------- End of cohort ACL ----------------------
+
+    //------------------------- Panel ACL -----------------------------
+
+    /**
+     * Return all the ACLs defined for the panel.
+     *
+     *
+     * @param studyId study id.
+     * @param panelId panel id.
+     * @param userId   user id asking for the ACLs.
+     * @return a list of DiseasePanelAcls.
+     * @throws CatalogException when the user asking to retrieve all the ACLs defined in the panel does not have proper permissions.
+     */
+    QueryResult<DiseasePanelAclEntry> getAllPanelAcls(long studyId, long panelId, String userId) throws CatalogException;
+
+    /**
+     * Return the ACL defined for the member.
+     *
+     *
+     * @param studyId study id.
+     * @param panelId panel id.
+     * @param userId   user asking for the ACL.
+     * @param member   member whose permissions will be retrieved.
+     * @return the DiseasePanelAcl for the member.
+     * @throws CatalogException if the user does not have proper permissions to see the member permissions.
+     */
+    QueryResult<DiseasePanelAclEntry> getPanelAcl(long studyId, long panelId, String userId, String member) throws CatalogException;
+
+    //------------------------- End of panel ACL ----------------------
 
     //------------------------- Job ACL -----------------------------
 
