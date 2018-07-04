@@ -144,6 +144,12 @@ public class StudyManager extends AbstractManager {
                         study = studyStr;
                     }
                 }
+
+                if (study.equals("*")) {
+                    // If the user is asking for all the studies...
+                    study = null;
+                }
+
                 query.putIfNotEmpty(StudyDBAdaptor.QueryParams.ID.key(), study);
             }
         }

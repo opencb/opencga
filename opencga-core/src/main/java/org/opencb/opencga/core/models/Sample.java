@@ -43,6 +43,7 @@ public class Sample extends Annotable {
     private boolean somatic;
     private List<OntologyTerm> phenotypes;
 
+    @Deprecated
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
 

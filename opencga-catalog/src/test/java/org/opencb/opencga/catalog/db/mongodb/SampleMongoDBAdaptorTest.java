@@ -323,10 +323,8 @@ public class SampleMongoDBAdaptorTest {
 
         // We create an individual
         String individualName = "individualName";
-        String individualFamily = "Smith";
         Individual individual = new Individual()
                 .setId(individualName)
-                .setFamily(individualFamily)
                 .setSamples(Arrays.asList(new Sample().setUid(sampleId).setVersion(1)));
         dbAdaptorFactory.getCatalogIndividualDBAdaptor().insert(studyId, individual, queryOptions);
 

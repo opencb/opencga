@@ -40,6 +40,7 @@ public class Cohort extends Annotable {
     private List<Sample> samples;
     private Family family;
 
+    @Deprecated
     private Map<String, Object> stats;
     private int release;
     private Map<String, Object> attributes;
