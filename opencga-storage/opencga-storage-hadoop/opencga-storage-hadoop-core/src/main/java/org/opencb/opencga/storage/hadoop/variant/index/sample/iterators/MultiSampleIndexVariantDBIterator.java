@@ -16,6 +16,7 @@ public abstract class MultiSampleIndexVariantDBIterator extends SampleIndexVaria
     protected final List<VariantDBIterator> iterators;
     protected Variant next;
     protected Variant prev;
+    private boolean init = false;
 
     public MultiSampleIndexVariantDBIterator(List<VariantDBIterator> iterators) {
         this.iterators = iterators;
@@ -23,6 +24,17 @@ public abstract class MultiSampleIndexVariantDBIterator extends SampleIndexVaria
         prev = null;
         count = 0;
     }
+
+    protected void checkInit() {
+        if (!init) {
+            init();
+            init = true;
+        }
+    }
+
+    protected abstract void init();
+
+    public abstract void getNext();
 
     @Override
     public long getTimeFetching() {
@@ -34,10 +46,9 @@ public abstract class MultiSampleIndexVariantDBIterator extends SampleIndexVaria
         return iterators.stream().mapToLong(VariantDBIterator::getTimeConverting).sum();
     }
 
-    public abstract void getNext();
-
     @Override
     public boolean hasNext() {
+        checkInit();
         if (next == null) {
             if (prev == null) {
                 return false;
@@ -49,6 +60,7 @@ public abstract class MultiSampleIndexVariantDBIterator extends SampleIndexVaria
 
     @Override
     public Variant next() {
+        checkInit();
         if (next == null) {
             getNext();
         }

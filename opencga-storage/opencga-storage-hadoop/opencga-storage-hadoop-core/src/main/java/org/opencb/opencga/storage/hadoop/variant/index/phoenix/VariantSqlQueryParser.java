@@ -60,6 +60,17 @@ import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPho
  */
 public class VariantSqlQueryParser {
 
+    public static final List<String> DEFAULT_LOADED_GENOTYPES = Collections.unmodifiableList(Arrays.asList(
+            ".", "./.",
+            "0/0", "0|0",
+            "0/1", "1/0", "1/1",
+            "0/2", "1/2", "2/2",
+            "0/3", "1/3", "2/3", "3/3",
+            ".|.",
+            "0|1", "1|0", "1|1",
+            "0|2", "2|0", "2|1", "1|2", "2|2",
+            "0|3", "1|3", "2|3", "3|3",
+            "3|0", "3|1", "3|2"));
     private final GenomeHelper genomeHelper;
     private final String variantTable;
     private final Logger logger = LoggerFactory.getLogger(VariantSqlQueryParser.class);
@@ -743,17 +754,7 @@ public class VariantSqlQueryParser {
                     loadedGenotypes = defaultStudyConfiguration.getAttributes()
                             .getAsStringList(HadoopVariantStorageEngine.LOADED_GENOTYPES);
                 } else {
-                    loadedGenotypes = Arrays.asList(
-                            ".", "./.",
-                            "0/0", "0|0",
-                            "0/1", "1/0", "1/1",
-                            "0/2", "1/2", "2/2",
-                            "0/3", "1/3", "2/3", "3/3",
-                            ".|.",
-                            "0|1", "1|0", "1|1",
-                            "0|2", "2|0", "2|1", "1|2", "2|2",
-                            "0|3", "1|3", "2|3", "3|3",
-                            "3|0", "3|1", "3|2");
+                    loadedGenotypes = DEFAULT_LOADED_GENOTYPES;
                 }
 
                 for (String gt : entry.getValue()) {

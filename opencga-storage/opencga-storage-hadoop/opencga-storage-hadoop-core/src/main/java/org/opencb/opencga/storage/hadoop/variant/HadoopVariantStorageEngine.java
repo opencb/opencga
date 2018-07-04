@@ -884,6 +884,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                 for (List<String> gts : gtMap.values()) {
                     boolean valid = true;
                     for (String gt : gts) {
+                        // Despite invalid genotypes (i.e. genotypes not in the index) can be used to filter within AND queries,
+                        // we require at least one sample where all the genotypes are valid
                         valid &= SampleIndexDBLoader.validGenotype(gt);
                         valid &= !isNegated(gt);
                     }
@@ -962,7 +964,10 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             for (Map.Entry<Object, List<String>> entry : map.entrySet()) {
                 boolean valid = true;
                 for (String gt : entry.getValue()) {
-                    valid &= SampleIndexDBLoader.validGenotype(gt);
+                    if (queryOperation == QueryOperation.OR) {
+                        // Invalid genotypes (i.e. genotypes not in the index) are not allowed in OR queries
+                        valid &= SampleIndexDBLoader.validGenotype(gt);
+                    }
                     valid &= !isNegated(gt);
                 }
                 if (valid) {

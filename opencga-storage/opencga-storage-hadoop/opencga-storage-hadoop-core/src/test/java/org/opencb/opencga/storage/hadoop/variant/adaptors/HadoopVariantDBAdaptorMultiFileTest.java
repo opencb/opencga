@@ -152,6 +152,64 @@ public class HadoopVariantDBAdaptorMultiFileTest extends VariantDBAdaptorMultiFi
     }
 
     @Test
+    public void testGetByGenotypesWithRefSampleIndexIntersect() throws Exception {
+        testGetByGenotypesWithRef(variantStorageEngine.getStorageEngineId() + " + " + "sample_index_table",
+                options.append("hbase_column_intersect", false).append("sample_index_intersect", true));
+    }
+
+    public void testGetByGenotypesWithRef(String expectedSource, QueryOptions options) throws Exception {
+        query = new Query()
+                .append(VariantQueryParam.STUDY.key(), "S_1")
+                .append(VariantQueryParam.GENOTYPE.key(), "NA12877:0/1;NA12878:0/0")
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877,NA12878")
+                .append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "0/0");
+//        queryResult = dbAdaptor.get(query, options);
+        queryResult = variantStorageEngine.get(query, options);
+        VariantQueryResult<Variant> allVariants = dbAdaptor.get(new Query()
+                .append(VariantQueryParam.INCLUDE_STUDY.key(), "S_1")
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877,NA12878")
+                .append(VariantQueryParam.INCLUDE_FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz")
+                .append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "0/0"), options);
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(
+                allOf(
+                        withFileId("12877"),
+                        withSampleData("NA12877", "GT", containsString("0/1"))),
+                withSampleData("NA12878", "GT", containsString("0/0"))))));
+        assertEquals(expectedSource, queryResult.getSource());
+    }
+
+    @Test
+    public void testGetByGenotypesWithRefMixSampleIndexIntersect() throws Exception {
+        testGetByGenotypesWithRefMix(variantStorageEngine.getStorageEngineId() + " + " + "sample_index_table",
+                options.append("hbase_column_intersect", false).append("sample_index_intersect", true));
+    }
+
+    public void testGetByGenotypesWithRefMix(String expectedSource, QueryOptions options) throws Exception {
+        query = new Query()
+                .append(VariantQueryParam.STUDY.key(), "S_1")
+                .append(VariantQueryParam.GENOTYPE.key(), "NA12877:0/1;NA12878:0/0,0/1")
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877,NA12878")
+                .append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "0/0");
+//        queryResult = dbAdaptor.get(query, options);
+        queryResult = variantStorageEngine.get(query, options);
+        VariantQueryResult<Variant> allVariants = dbAdaptor.get(new Query()
+                .append(VariantQueryParam.INCLUDE_STUDY.key(), "S_1")
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877,NA12878")
+                .append(VariantQueryParam.INCLUDE_FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz")
+                .append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "0/0"), options);
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(
+                allOf(
+                        withFileId("12877"),
+                        withSampleData("NA12877", "GT", containsString("0/1"))),
+                anyOf(
+                        withSampleData("NA12878", "GT", containsString("0/0")),
+                        withSampleData("NA12878", "GT", containsString("0/1"))
+                )
+        ))));
+        assertEquals(expectedSource, queryResult.getSource());
+    }
+
+    @Test
     public void testGetBySampleNameMultiRegionHBaseColumnIntersect() throws Exception {
         testGetBySampleNameMultiRegion(variantStorageEngine.getStorageEngineId() + " + " + variantStorageEngine.getStorageEngineId(),
                 options.append("hbase_column_intersect", true).append("sample_index_intersect", false));

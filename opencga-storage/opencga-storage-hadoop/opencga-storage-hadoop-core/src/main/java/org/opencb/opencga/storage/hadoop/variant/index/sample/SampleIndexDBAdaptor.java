@@ -19,7 +19,10 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.QueryO
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.iterators.*;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.iterators.IntersectMultiSampleIndexVariantDBIterator;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.iterators.SampleIndexVariantDBIterator;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.iterators.SingleSampleIndexVariantDBIterator;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.iterators.UnionMultiSampleIndexVariantDBIterator;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +30,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantSqlQueryParser.DEFAULT_LOADED_GENOTYPES;
 
 /**
  * Created on 14/05/18.
@@ -74,16 +79,49 @@ public class SampleIndexDBAdaptor {
         }
 
         List<VariantDBIterator> iterators = new ArrayList<>(samples.size());
+        List<VariantDBIterator> negatedIterators = new ArrayList<>(samples.size());
 
         for (Map.Entry<String, List<String>> entry : samples.entrySet()) {
-            iterators.add(iterator(regions, study, entry.getKey(), entry.getValue()));
+            List<String> gts = entry.getValue();
+            String sample = entry.getKey();
+            if (gts.stream().allMatch(SampleIndexDBLoader::validGenotype)) {
+                iterators.add(iterator(regions, study, sample, gts));
+            } else {
+                if (operation.equals(QueryOperation.OR)) {
+                    throw new IllegalArgumentException("Unable to query by REF or MISS genotypes!");
+                }
+                List<String> allGts = getAllLoadedGenotypes(study);
+                List<String> queryGts = new ArrayList<>(allGts);
+                queryGts.removeAll(gts);
+
+                // Skip if GTs to query is empty!
+                // Otherwise, it will return ALL genotypes instead of none
+                if (!queryGts.isEmpty()) {
+                    negatedIterators.add(iterator(regions, study, sample, queryGts));
+                }
+            }
         }
         if (operation.equals(QueryOperation.OR)) {
+            logger.info("Union of " + iterators.size() + " sample indexes");
             return new UnionMultiSampleIndexVariantDBIterator(iterators);
         } else {
-            return new IntersectMultiSampleIndexVariantDBIterator(iterators);
+            logger.info("Intersection of " + iterators.size() + " sample indexes plus " + negatedIterators.size() + " negated indexes");
+            return new IntersectMultiSampleIndexVariantDBIterator(iterators, negatedIterators);
         }
 
+    }
+
+    protected List<String> getAllLoadedGenotypes(String study) {
+        List<String> allGts = scm.getStudyConfiguration(study,
+                new QueryOptions(StudyConfigurationManager.CACHED, true)
+                        .append(StudyConfigurationManager.READ_ONLY, true))
+                .first()
+                .getAttributes()
+                .getAsStringList(HadoopVariantStorageEngine.LOADED_GENOTYPES);
+        if (allGts == null || allGts.isEmpty()) {
+            allGts = DEFAULT_LOADED_GENOTYPES;
+        }
+        return allGts;
     }
 
     public SampleIndexVariantDBIterator iterator(List<Region> regions, String study, String sample, List<String> gts) {

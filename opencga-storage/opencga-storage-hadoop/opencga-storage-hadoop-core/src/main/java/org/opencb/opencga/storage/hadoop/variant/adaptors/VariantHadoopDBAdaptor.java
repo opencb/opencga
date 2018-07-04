@@ -474,7 +474,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             logger.debug("Table name = " + variantTable);
             VariantSqlQueryParser.VariantPhoenixSQLQuery phoenixQuery = queryParser.parse(query, options);
             String sql = phoenixQuery.getSql();
-            logger.info("Query : " + query.toJson());
+            logger.info("Query : " + VariantQueryUtils.printQuery(query));
             logger.info(sql);
             logger.debug("Creating {} iterator", VariantHBaseResultSetIterator.class);
             try {

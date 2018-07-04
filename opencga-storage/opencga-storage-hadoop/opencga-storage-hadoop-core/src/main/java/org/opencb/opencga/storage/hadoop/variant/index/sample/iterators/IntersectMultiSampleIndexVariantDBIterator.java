@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant.index.sample.iterators;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConverter.VARIANT_COMPARATOR;
@@ -14,16 +15,28 @@ import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndex
  */
 public class IntersectMultiSampleIndexVariantDBIterator extends MultiSampleIndexVariantDBIterator {
 
+    private final List<VariantDBIterator> negatedIterators;
+    private final List<Variant> negatedVariants;
     protected boolean firstVariant = true;
 
-    public IntersectMultiSampleIndexVariantDBIterator(List<VariantDBIterator> iterators) {
+    public IntersectMultiSampleIndexVariantDBIterator(List<VariantDBIterator> iterators, List<VariantDBIterator> negatedIterators) {
         super(iterators);
-        init();
+        this.negatedIterators = negatedIterators;
+        negatedVariants = new ArrayList<>(negatedIterators.size());
     }
 
+    @Override
     protected void init() {
+        for (VariantDBIterator negatedIterator : negatedIterators) {
+            if (negatedIterator.hasNext()) {
+                negatedVariants.add(negatedIterator.next());
+            } else {
+                negatedVariants.add(null);
+            }
+        }
+
         // Get first variant of the first iterator to initialize the loop
-        VariantDBIterator iterator = iterators.get(0);
+        VariantDBIterator iterator = this.iterators.get(0);
         if (iterator.hasNext()) {
             prev = iterator.next();
         }
@@ -31,6 +44,24 @@ public class IntersectMultiSampleIndexVariantDBIterator extends MultiSampleIndex
 
     @Override
     public void getNext() {
+
+        boolean existsInNegatedIterators;
+        Variant target;
+        do {
+            target = nextMatch();
+            existsInNegatedIterators = existsInNegatedIterators(target);
+        } while (target != null && existsInNegatedIterators);
+
+        prev = null;
+        next = target;
+    }
+
+    /**
+     * Finds next variant that is present in all the iterators.
+     *
+     * @return Variant in all iterators, or null
+     */
+    protected Variant nextMatch() {
 
         // Find target variant
         Variant target;
@@ -41,11 +72,10 @@ public class IntersectMultiSampleIndexVariantDBIterator extends MultiSampleIndex
             if (iterators.get(0).hasNext()) {
                 target = iterators.get(0).next();
             } else {
-                prev = null;
-                next = null;
-                return;
+                return null;
             }
         }
+
         // Selected target variant is from the first iterator.
         // Number of iterators with the target variant. Start with one match.
         int numMatches = 1;
@@ -80,9 +110,37 @@ public class IntersectMultiSampleIndexVariantDBIterator extends MultiSampleIndex
 //                System.out.println("Iterator " + i + " does not match with target. New target : " + target);
             }
         }
+        return target;
+    }
 
-        prev = null;
-        next = target;
+    /**
+     * Check against all negatedIterators if any of them contains the target variant.
+     * If so, this variant should be discarded
+     *
+     * @param target Target variant to check
+     * @return  If the variant is valid
+     */
+    protected boolean existsInNegatedIterators(Variant target) {
+        boolean exists = false;
+        if (target != null) {
+            for (int i = 0; i < negatedIterators.size(); i++) {
+                VariantDBIterator negatedIterator = negatedIterators.get(i);
+                Variant variant = negatedVariants.get(i);
+                while (variant != null && VARIANT_COMPARATOR.compare(variant, target) < 0) {
+                    if (negatedIterator.hasNext()) {
+                        variant = negatedIterator.next();
+                    } else {
+                        variant = null;
+                    }
+                    negatedVariants.set(i, variant);
+                }
+                if (variant != null && variant.sameGenomicVariant(target)) {
+                    exists = true;
+                    break;
+                }
+            }
+        }
+        return exists;
     }
 
 

@@ -21,9 +21,9 @@ public class UnionMultiSampleIndexVariantDBIterator extends MultiSampleIndexVari
     public UnionMultiSampleIndexVariantDBIterator(List<VariantDBIterator> iterators) {
         super(iterators);
         variants = new ArrayList<>(iterators.size());
-        init();
     }
 
+    @Override
     protected void init() {
         for (VariantDBIterator iterator : iterators) {
             if (iterator.hasNext()) {
