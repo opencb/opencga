@@ -31,15 +31,15 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
+import org.opencb.opencga.catalog.db.api.DiseasePanelDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
-import org.opencb.opencga.catalog.db.mongodb.converters.PanelConverter;
+import org.opencb.opencga.catalog.db.mongodb.converters.DiseasePanelConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.Panel;
+import org.opencb.opencga.core.models.DiseasePanel;
 import org.opencb.opencga.core.models.Status;
 import org.opencb.opencga.core.models.acls.permissions.DiseasePanelAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
@@ -52,16 +52,16 @@ import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.ge
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 
 
-public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdaptor {
+public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements DiseasePanelDBAdaptor {
 
     private final MongoDBCollection panelCollection;
-    private PanelConverter diseasePanelConverter;
+    private DiseasePanelConverter diseasePanelConverter;
 
-    public PanelMongoDBAdaptor(MongoDBCollection panelCollection, MongoDBAdaptorFactory dbAdaptorFactory) {
+    public DiseasePanelMongoDBAdaptor(MongoDBCollection panelCollection, MongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(JobMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.panelCollection = panelCollection;
-        this.diseasePanelConverter = new PanelConverter();
+        this.diseasePanelConverter = new DiseasePanelConverter();
     }
 
     public MongoDBCollection getCollection() {
@@ -69,7 +69,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     }
 
     @Override
-    public QueryResult<Panel> insert(long studyId, Panel panel, QueryOptions options) throws CatalogDBException {
+    public QueryResult<DiseasePanel> insert(long studyId, DiseasePanel panel, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
@@ -112,19 +112,19 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         return endQuery("Create panel", startTime, get(newPanelId, options));    }
 
     @Override
-    public QueryResult<Panel> get(long panelUid, QueryOptions options) throws CatalogDBException {
+    public QueryResult<DiseasePanel> get(long panelUid, QueryOptions options) throws CatalogDBException {
         checkUid(panelUid);
         Query query = new Query(QueryParams.UID.key(), panelUid).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
         return get(query, options);
     }
 
     @Override
-    public QueryResult<Panel> get(Query query, QueryOptions options, String user)
+    public QueryResult<DiseasePanel> get(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
-        List<Panel> documentList = new ArrayList<>();
-        QueryResult<Panel> queryResult;
-        try (DBIterator<Panel> dbIterator = iterator(query, options, user)) {
+        List<DiseasePanel> documentList = new ArrayList<>();
+        QueryResult<DiseasePanel> queryResult;
+        try (DBIterator<DiseasePanel> dbIterator = iterator(query, options, user)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
             }
@@ -144,15 +144,15 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     }
 
     @Override
-    public QueryResult<Panel> get(Query query, QueryOptions options) throws CatalogDBException {
+    public QueryResult<DiseasePanel> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        List<Panel> documentList = new ArrayList<>();
-        try (DBIterator<Panel> dbIterator = iterator(query, options)) {
+        List<DiseasePanel> documentList = new ArrayList<>();
+        try (DBIterator<DiseasePanel> dbIterator = iterator(query, options)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
             }
         }
-        QueryResult<Panel> queryResult = endQuery("Get", startTime, documentList);
+        QueryResult<DiseasePanel> queryResult = endQuery("Get", startTime, documentList);
 
         if (options != null && options.getBoolean(QueryOptions.SKIP_COUNT, false)) {
             return queryResult;
@@ -245,7 +245,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     }
 
     @Override
-    public QueryResult<Panel> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public QueryResult<DiseasePanel> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
         QueryResult<Long> update = update(new Query(QueryParams.UID.key(), id), parameters, queryOptions);
         if (update.getNumTotalResults() != 1) {
@@ -360,7 +360,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
             // We take out ALL_VERSION from query just in case we get multiple results...
             tmpQuery.remove(Constants.ALL_VERSIONS);
 
-            QueryResult<Panel> panelQueryResult = get(tmpQuery, new QueryOptions());
+            QueryResult<DiseasePanel> panelQueryResult = get(tmpQuery, new QueryOptions());
             if (panelQueryResult.getNumResults() == 0) {
                 throw new CatalogDBException("Update panel: No panel found to be updated");
             }
@@ -403,7 +403,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     }
 
     @Override
-    public QueryResult<Panel> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
+    public QueryResult<DiseasePanel> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
         throw new UnsupportedOperationException("Delete not yet implemented.");
     }
 
@@ -413,7 +413,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     }
 
     @Override
-    public QueryResult<Panel> remove(long id, QueryOptions queryOptions) throws CatalogDBException {
+    public QueryResult<DiseasePanel> remove(long id, QueryOptions queryOptions) throws CatalogDBException {
         throw new UnsupportedOperationException("Remove not yet implemented.");
     }
 
@@ -423,7 +423,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     }
 
     @Override
-    public QueryResult<Panel> restore(long id, QueryOptions queryOptions) throws CatalogDBException {
+    public QueryResult<DiseasePanel> restore(long id, QueryOptions queryOptions) throws CatalogDBException {
         throw new UnsupportedOperationException("Restore not yet implemented.");
     }
 
@@ -433,7 +433,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     }
 
     @Override
-    public DBIterator<Panel> iterator(Query query, QueryOptions options) throws CatalogDBException {
+    public DBIterator<DiseasePanel> iterator(Query query, QueryOptions options) throws CatalogDBException {
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
         return new MongoDBIterator<>(mongoCursor, diseasePanelConverter);
     }
@@ -445,7 +445,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     }
 
     @Override
-    public DBIterator<Panel> iterator(Query query, QueryOptions options, String user)
+    public DBIterator<DiseasePanel> iterator(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         Document studyDocument = getStudyDocument(query);
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options, studyDocument, user);
@@ -557,7 +557,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     @Override
     public void forEach(Query query, Consumer<? super Object> action, QueryOptions options) throws CatalogDBException {
         Objects.requireNonNull(action);
-        try (DBIterator<Panel> catalogDBIterator = iterator(query, options)) {
+        try (DBIterator<DiseasePanel> catalogDBIterator = iterator(query, options)) {
             while (catalogDBIterator.hasNext()) {
                 action.accept(catalogDBIterator.next());
             }

@@ -20,7 +20,7 @@ import org.junit.Test;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.core.models.Panel;
+import org.opencb.opencga.core.models.DiseasePanel;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -36,21 +36,21 @@ public class PanelMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void createPanel() throws CatalogDBException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
 
-        Panel diseasePanel = new Panel("panel1", "Panel 1", 1, 1, "author", null, "description", Collections.emptyList(),
+        DiseasePanel diseasePanel = new DiseasePanel("panel1", "Panel 1", 1, 1, "author", null, "description", Collections.emptyList(),
                 Arrays.asList("variant1","variant2"), Collections.emptyList(), Collections.emptyList(), Collections.emptyMap());
 
-        QueryResult<Panel> panel = catalogPanelDBAdaptor.insert(studyId, diseasePanel, new QueryOptions());
+        QueryResult<DiseasePanel> panel = catalogPanelDBAdaptor.insert(studyId, diseasePanel, new QueryOptions());
         assertEquals(1, panel.getNumResults());
     }
 
     @Test
     public void getPanel() throws CatalogDBException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        Panel diseasePanel = new Panel("panel1", "Panel 1", 1, 1, "author", null, "description", Collections.emptyList(),
+        DiseasePanel diseasePanel = new DiseasePanel("panel1", "Panel 1", 1, 1, "author", null, "description", Collections.emptyList(),
                 Arrays.asList("variant1","variant2"), Collections.emptyList(), Collections.emptyList(), Collections.emptyMap());
-        QueryResult<Panel> panel = catalogPanelDBAdaptor.insert(studyId, diseasePanel, new QueryOptions());
+        QueryResult<DiseasePanel> panel = catalogPanelDBAdaptor.insert(studyId, diseasePanel, new QueryOptions());
 
-        QueryResult<Panel> panel1 = catalogPanelDBAdaptor.get(panel.first().getUid(), new QueryOptions());
+        QueryResult<DiseasePanel> panel1 = catalogPanelDBAdaptor.get(panel.first().getUid(), new QueryOptions());
         assertEquals(1, panel1.getNumResults());
     }
 }

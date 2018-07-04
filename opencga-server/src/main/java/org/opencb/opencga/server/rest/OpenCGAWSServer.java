@@ -140,7 +140,7 @@ public class OpenCGAWSServer {
         jsonObjectMapper.addMixIn(Individual.class, PrivateUidMixin.class);
         jsonObjectMapper.addMixIn(org.opencb.opencga.core.models.File.class, PrivateUidMixin.class);
         jsonObjectMapper.addMixIn(Cohort.class, PrivateUidMixin.class);
-        jsonObjectMapper.addMixIn(Panel.class, PrivateUidMixin.class);
+        jsonObjectMapper.addMixIn(DiseasePanel.class, PrivateUidMixin.class);
         jsonObjectMapper.addMixIn(Job.class, PrivateUidMixin.class);
         jsonObjectMapper.addMixIn(VariableSet.class, PrivateUidMixin.class);
         jsonObjectMapper.addMixIn(Family.class, PrivateUidMixin.class);

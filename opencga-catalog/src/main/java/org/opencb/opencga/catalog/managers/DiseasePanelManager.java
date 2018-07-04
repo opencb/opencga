@@ -10,7 +10,7 @@ import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
+import org.opencb.opencga.catalog.db.api.DiseasePanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
@@ -20,7 +20,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.Panel;
+import org.opencb.opencga.core.models.DiseasePanel;
 import org.opencb.opencga.core.models.Status;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.acls.permissions.DiseasePanelAclEntry;
@@ -32,15 +32,15 @@ import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-public class PanelManager extends ResourceManager<Panel> {
+public class DiseasePanelManager extends ResourceManager<DiseasePanel> {
 
-    protected static Logger logger = LoggerFactory.getLogger(PanelManager.class);
+    protected static Logger logger = LoggerFactory.getLogger(DiseasePanelManager.class);
     private UserManager userManager;
     private StudyManager studyManager;
 
-    PanelManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-               DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-               Configuration configuration) {
+    DiseasePanelManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
+                        DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
+                        Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
 
         this.userManager = catalogManager.getUserManager();
@@ -48,15 +48,15 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     @Override
-    Panel smartResolutor(long studyUid, String entry, String user) throws CatalogException {
-        Query query = new Query(PanelDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+    DiseasePanel smartResolutor(long studyUid, String entry, String user) throws CatalogException {
+        Query query = new Query(DiseasePanelDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
 
         if (UUIDUtils.isOpenCGAUUID(entry)) {
-            query.put(PanelDBAdaptor.QueryParams.UUID.key(), entry);
+            query.put(DiseasePanelDBAdaptor.QueryParams.UUID.key(), entry);
         } else {
-            query.put(PanelDBAdaptor.QueryParams.ID.key(), entry);
+            query.put(DiseasePanelDBAdaptor.QueryParams.ID.key(), entry);
         }
-        QueryResult<Panel> panelQueryResult = panelDBAdaptor.get(query, QueryOptions.empty(), user);
+        QueryResult<DiseasePanel> panelQueryResult = panelDBAdaptor.get(query, QueryOptions.empty(), user);
         if (panelQueryResult.getNumResults() == 0) {
             panelQueryResult = panelDBAdaptor.get(query, QueryOptions.empty());
             if (panelQueryResult.getNumResults() == 0) {
@@ -72,7 +72,8 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     @Override
-    public QueryResult<Panel> create(String studyStr, Panel panel, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<DiseasePanel> create(String studyStr, DiseasePanel panel, QueryOptions options, String sessionId)
+            throws CatalogException {
         String userId = userManager.getUserId(sessionId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
@@ -101,25 +102,27 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     @Override
-    public QueryResult<Panel> update(String studyStr, String panelId, ObjectMap parameters, QueryOptions options, String sessionId)
+    public QueryResult<DiseasePanel> update(String studyStr, String panelId, ObjectMap parameters, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkObj(parameters, "parameters");
         parameters = new ObjectMap(parameters);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        MyResource<Panel> resource = getUid(panelId, studyStr, sessionId);
+        MyResource<DiseasePanel> resource = getUid(panelId, studyStr, sessionId);
 
         // Check update permissions
         authorizationManager.checkDiseasePanelPermission(resource.getStudy().getUid(), resource.getResource().getUid(), resource.getUser(),
                 DiseasePanelAclEntry.DiseasePanelPermissions.UPDATE);
 
         try {
-            ParamUtils.checkAllParametersExist(parameters.keySet().iterator(), (a) -> PanelDBAdaptor.UpdateParams.getParam(a) != null);
+            ParamUtils.checkAllParametersExist(parameters.keySet().iterator(),
+                    (a) -> DiseasePanelDBAdaptor.UpdateParams.getParam(a) != null);
         } catch (CatalogParameterException e) {
             throw new CatalogException("Could not update: " + e.getMessage(), e);
         }
-        if (parameters.containsKey(PanelDBAdaptor.UpdateParams.ID.key())) {
-            ParamUtils.checkAlias(parameters.getString(PanelDBAdaptor.UpdateParams.ID.key()), PanelDBAdaptor.UpdateParams.ID.key());
+        if (parameters.containsKey(DiseasePanelDBAdaptor.UpdateParams.ID.key())) {
+            ParamUtils.checkAlias(parameters.getString(DiseasePanelDBAdaptor.UpdateParams.ID.key()),
+                    DiseasePanelDBAdaptor.UpdateParams.ID.key());
         }
 
         if (options.getBoolean(Constants.INCREMENT_VERSION)) {
@@ -127,20 +130,20 @@ public class PanelManager extends ResourceManager<Panel> {
             options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(resource.getStudy(), resource.getUser()));
         }
 
-        QueryResult<Panel> queryResult = panelDBAdaptor.update(resource.getResource().getUid(), parameters, options);
+        QueryResult<DiseasePanel> queryResult = panelDBAdaptor.update(resource.getResource().getUid(), parameters, options);
         auditManager.recordUpdate(AuditRecord.Resource.panel, resource.getResource().getUid(), resource.getUser(), parameters, null, null);
         return queryResult;
     }
 
     @Override
-    public QueryResult<Panel> get(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<DiseasePanel> get(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
         String userId = userManager.getUserId(sessionId);
         Study study = studyManager.resolveId(studyStr, userId);
 
-        QueryResult<Panel> panelQueryResult = search(studyStr, query, options, sessionId);
+        QueryResult<DiseasePanel> panelQueryResult = search(studyStr, query, options, sessionId);
 
-        if (panelQueryResult.getNumResults() == 0 && query.containsKey(PanelDBAdaptor.QueryParams.UID.key())) {
-            List<Long> panelIds = query.getAsLongList(PanelDBAdaptor.QueryParams.UID.key());
+        if (panelQueryResult.getNumResults() == 0 && query.containsKey(DiseasePanelDBAdaptor.QueryParams.UID.key())) {
+            List<Long> panelIds = query.getAsLongList(DiseasePanelDBAdaptor.QueryParams.UID.key());
             for (Long panelId : panelIds) {
                 authorizationManager.checkDiseasePanelPermission(study.getUid(), panelId, userId,
                         DiseasePanelAclEntry.DiseasePanelPermissions.VIEW);
@@ -151,38 +154,38 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     @Override
-    public DBIterator<Panel> iterator(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
+    public DBIterator<DiseasePanel> iterator(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(sessionId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
-        query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+        query.append(DiseasePanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
         return panelDBAdaptor.iterator(query, options, userId);
     }
 
     @Override
-    public QueryResult<Panel> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<DiseasePanel> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(sessionId);
         Study study = studyManager.resolveId(studyStr, userId);
 
-        query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+        query.append(DiseasePanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         return panelDBAdaptor.get(query, options, userId);
     }
 
     @Override
-    public QueryResult<Panel> count(String studyStr, Query query, String sessionId) throws CatalogException {
+    public QueryResult<DiseasePanel> count(String studyStr, Query query, String sessionId) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
 
         String userId = userManager.getUserId(sessionId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
-        query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+        query.append(DiseasePanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
         QueryResult<Long> queryResultAux = panelDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_PANELS);
         return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
                 queryResultAux.getErrorMsg(), Collections.emptyList());
@@ -207,7 +210,7 @@ public class PanelManager extends ResourceManager<Panel> {
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
-        query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+        query.append(DiseasePanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
         QueryResult queryResult = null;
         if (count) {
             // We do not need to check for permissions when we show the count of files
@@ -230,7 +233,7 @@ public class PanelManager extends ResourceManager<Panel> {
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
         // Add study id to the query
-        query.put(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+        query.put(DiseasePanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         QueryResult queryResult = sampleDBAdaptor.groupBy(query, fields, options, userId);
         return ParamUtils.defaultObject(queryResult, QueryResult::new);

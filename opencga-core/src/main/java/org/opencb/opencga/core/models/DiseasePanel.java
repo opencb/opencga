@@ -21,7 +21,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import java.util.List;
 import java.util.Map;
 
-public class Panel extends PrivateStudyUid {
+public class DiseasePanel extends PrivateStudyUid {
 
     private String id;
     private String name;
@@ -44,18 +44,18 @@ public class Panel extends PrivateStudyUid {
 
     private Map<String, Object> attributes;
 
-    public Panel() {
+    public DiseasePanel() {
     }
 
-    public Panel(String id, String name, int version) {
+    public DiseasePanel(String id, String name, int version) {
         this.id = id;
         this.name = name;
         this.version = version;
     }
 
-    public Panel(String id, String name, int release, int version, String author, SourcePanel source, String description,
-                 List<OntologyTerm> phenotypes, List<String> variants, List<GenePanel> genes, List<RegionPanel> regions,
-                 Map<String, Object> attributes) {
+    public DiseasePanel(String id, String name, int release, int version, String author, SourcePanel source, String description,
+                        List<OntologyTerm> phenotypes, List<String> variants, List<GenePanel> genes, List<RegionPanel> regions,
+                        Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.release = release;
@@ -252,7 +252,7 @@ public class Panel extends PrivateStudyUid {
         return id;
     }
 
-    public Panel setId(String id) {
+    public DiseasePanel setId(String id) {
         this.id = id;
         return this;
     }
@@ -261,7 +261,7 @@ public class Panel extends PrivateStudyUid {
         return uuid;
     }
 
-    public Panel setUuid(String uuid) {
+    public DiseasePanel setUuid(String uuid) {
         this.uuid = uuid;
         return this;
     }
@@ -270,7 +270,7 @@ public class Panel extends PrivateStudyUid {
         return name;
     }
 
-    public Panel setName(String name) {
+    public DiseasePanel setName(String name) {
         this.name = name;
         return this;
     }
@@ -279,7 +279,7 @@ public class Panel extends PrivateStudyUid {
         return version;
     }
 
-    public Panel setVersion(int version) {
+    public DiseasePanel setVersion(int version) {
         this.version = version;
         return this;
     }
@@ -288,7 +288,7 @@ public class Panel extends PrivateStudyUid {
         return release;
     }
 
-    public Panel setRelease(int release) {
+    public DiseasePanel setRelease(int release) {
         this.release = release;
         return this;
     }
@@ -297,7 +297,7 @@ public class Panel extends PrivateStudyUid {
         return author;
     }
 
-    public Panel setAuthor(String author) {
+    public DiseasePanel setAuthor(String author) {
         this.author = author;
         return this;
     }
@@ -306,7 +306,7 @@ public class Panel extends PrivateStudyUid {
         return creationDate;
     }
 
-    public Panel setCreationDate(String creationDate) {
+    public DiseasePanel setCreationDate(String creationDate) {
         this.creationDate = creationDate;
         return this;
     }
@@ -315,7 +315,7 @@ public class Panel extends PrivateStudyUid {
         return status;
     }
 
-    public Panel setStatus(Status status) {
+    public DiseasePanel setStatus(Status status) {
         this.status = status;
         return this;
     }
@@ -324,7 +324,7 @@ public class Panel extends PrivateStudyUid {
         return source;
     }
 
-    public Panel setSource(SourcePanel source) {
+    public DiseasePanel setSource(SourcePanel source) {
         this.source = source;
         return this;
     }
@@ -333,7 +333,7 @@ public class Panel extends PrivateStudyUid {
         return description;
     }
 
-    public Panel setDescription(String description) {
+    public DiseasePanel setDescription(String description) {
         this.description = description;
         return this;
     }
@@ -342,7 +342,7 @@ public class Panel extends PrivateStudyUid {
         return phenotypes;
     }
 
-    public Panel setPhenotypes(List<OntologyTerm> phenotypes) {
+    public DiseasePanel setPhenotypes(List<OntologyTerm> phenotypes) {
         this.phenotypes = phenotypes;
         return this;
     }
@@ -351,7 +351,7 @@ public class Panel extends PrivateStudyUid {
         return variants;
     }
 
-    public Panel setVariants(List<String> variants) {
+    public DiseasePanel setVariants(List<String> variants) {
         this.variants = variants;
         return this;
     }
@@ -360,7 +360,7 @@ public class Panel extends PrivateStudyUid {
         return genes;
     }
 
-    public Panel setGenes(List<GenePanel> genes) {
+    public DiseasePanel setGenes(List<GenePanel> genes) {
         this.genes = genes;
         return this;
     }
@@ -369,7 +369,7 @@ public class Panel extends PrivateStudyUid {
         return regions;
     }
 
-    public Panel setRegions(List<RegionPanel> regions) {
+    public DiseasePanel setRegions(List<RegionPanel> regions) {
         this.regions = regions;
         return this;
     }
@@ -378,7 +378,7 @@ public class Panel extends PrivateStudyUid {
         return attributes;
     }
 
-    public Panel setAttributes(Map<String, Object> attributes) {
+    public DiseasePanel setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
         return this;
     }

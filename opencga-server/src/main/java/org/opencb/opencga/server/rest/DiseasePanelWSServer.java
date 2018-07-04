@@ -7,11 +7,10 @@ import io.swagger.annotations.*;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.managers.PanelManager;
+import org.opencb.opencga.catalog.managers.DiseasePanelManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.*;
-import org.opencb.opencga.server.rest.json.mixin.IndividualMixin;
 import org.opencb.opencga.server.rest.json.mixin.PanelMixin;
 
 import javax.servlet.http.HttpServletRequest;
@@ -24,11 +23,11 @@ import java.util.Map;
 @Path("/{apiVersion}/panels")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Panel", position = 4, description = "Methods for working with 'panels' endpoint")
-public class PanelWSServer extends OpenCGAWSServer {
+public class DiseasePanelWSServer extends OpenCGAWSServer {
 
-    private PanelManager panelManager;
+    private DiseasePanelManager panelManager;
 
-    public PanelWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
+    public DiseasePanelWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
         panelManager = catalogManager.getPanelManager();
@@ -37,7 +36,7 @@ public class PanelWSServer extends OpenCGAWSServer {
     @POST
     @Path("/create")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Create a panel", response = Panel[].class)
+    @ApiOperation(value = "Create a panel", response = DiseasePanel[].class)
     public Response createPanel(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                 @QueryParam("study") String studyStr,
@@ -54,7 +53,7 @@ public class PanelWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{panel}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update a panel", response = Panel[].class)
+    @ApiOperation(value = "Update a panel", response = DiseasePanel[].class)
     public Response updatePanel(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                 @QueryParam("study") String studyStr,
@@ -69,7 +68,7 @@ public class PanelWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{panels}/info")
-    @ApiOperation(value = "Panel info", response = Panel[].class)
+    @ApiOperation(value = "Panel info", response = DiseasePanel[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
                     example = "name,attributes", dataType = "string", paramType = "query"),
@@ -89,7 +88,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             query.remove("study");
 
             List<String> idList = getIdList(panelStr);
-            List<QueryResult<Panel>> panelQueryResult = panelManager.get(studyStr, idList, query, queryOptions, silent, sessionId);
+            List<QueryResult<DiseasePanel>> panelQueryResult = panelManager.get(studyStr, idList, query, queryOptions, silent, sessionId);
             return createOkResponse(panelQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -99,7 +98,7 @@ public class PanelWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{panels}/search")
-    @ApiOperation(value = "Panel search", response = Panel[].class)
+    @ApiOperation(value = "Panel search", response = DiseasePanel[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
                     example = "name,attributes", dataType = "string", paramType = "query"),
@@ -131,7 +130,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             query.remove("study");
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
 
-            QueryResult<Panel> queryResult;
+            QueryResult<DiseasePanel> queryResult;
             if (count) {
                 queryResult = panelManager.count(studyStr, query, sessionId);
             } else {
@@ -148,24 +147,24 @@ public class PanelWSServer extends OpenCGAWSServer {
         public String name;
         public String description;
         public String author;
-        public Panel.SourcePanel source;
+        public DiseasePanel.SourcePanel source;
 
         public List<OntologyTerm> phenotypes;
         public List<String> variants;
-        public List<Panel.GenePanel> genes;
-        public List<Panel.RegionPanel> regions;
+        public List<DiseasePanel.GenePanel> genes;
+        public List<DiseasePanel.RegionPanel> regions;
         public Map<String, Object> attributes;
 
-        Panel toPanel() {
-            return new Panel(id, name, 1, 1, author, source, description, phenotypes, variants, genes, regions, attributes);
+        DiseasePanel toPanel() {
+            return new DiseasePanel(id, name, 1, 1, author, source, description, phenotypes, variants, genes, regions, attributes);
         }
 
         ObjectMap toObjectMap() throws JsonProcessingException {
             ObjectMapper mapper = new ObjectMapper();
-            mapper.addMixIn(Panel.class, PanelMixin.class);
+            mapper.addMixIn(DiseasePanel.class, PanelMixin.class);
             mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
-            Panel panel = new Panel()
+            DiseasePanel panel = new DiseasePanel()
                     .setId(id)
                     .setName(name)
                     .setAuthor(author)

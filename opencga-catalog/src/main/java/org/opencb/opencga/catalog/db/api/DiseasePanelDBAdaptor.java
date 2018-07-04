@@ -22,7 +22,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.core.models.Panel;
+import org.opencb.opencga.core.models.DiseasePanel;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -30,7 +30,7 @@ import java.util.Map;
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
 
-public interface PanelDBAdaptor extends DBAdaptor<Panel> {
+public interface DiseasePanelDBAdaptor extends DBAdaptor<DiseasePanel> {
 
     enum QueryParams implements QueryParam {
         ID("id", TEXT, ""),
@@ -168,9 +168,9 @@ public interface PanelDBAdaptor extends DBAdaptor<Panel> {
         }
     }
 
-    QueryResult<Panel> insert(long studyId, Panel panel, QueryOptions options) throws CatalogDBException;
+    QueryResult<DiseasePanel> insert(long studyId, DiseasePanel panel, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Panel> get(long panelId, QueryOptions options) throws CatalogDBException;
+    QueryResult<DiseasePanel> get(long panelId, QueryOptions options) throws CatalogDBException;
 
     long getStudyId(long panelId) throws CatalogDBException;
 

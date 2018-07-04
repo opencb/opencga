@@ -66,7 +66,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     private final IndividualDBAdaptor individualDBAdaptor;
     private final CohortDBAdaptor cohortDBAdaptor;
     private final DatasetDBAdaptor datasetDBAdaptor;
-    private final PanelDBAdaptor panelDBAdaptor;
+    private final DiseasePanelDBAdaptor panelDBAdaptor;
     private final FamilyDBAdaptor familyDBAdaptor;
     private final ClinicalAnalysisDBAdaptor clinicalAnalysisDBAdaptor;
     private final AuditManager auditManager;
@@ -488,8 +488,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public void checkDiseasePanelPermission(long studyId, long panelId, String userId,
                                             DiseasePanelAclEntry.DiseasePanelPermissions permission) throws CatalogException {
         Query query = new Query()
-                .append(PanelDBAdaptor.QueryParams.UID.key(), panelId)
-                .append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
+                .append(DiseasePanelDBAdaptor.QueryParams.UID.key(), panelId)
+                .append(DiseasePanelDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
         StudyAclEntry.StudyPermissions studyPermission;
         switch (permission) {
             case VIEW:

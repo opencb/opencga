@@ -124,7 +124,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         List<Dataset> datasets = study.getDatasets();
         study.setDatasets(Collections.emptyList());
 
-        List<Panel> panels = study.getPanels();
+        List<DiseasePanel> panels = study.getPanels();
         study.setPanels(Collections.emptyList());
 
         study.setFqn(project.getFqn() + ":" + study.getId());
@@ -181,7 +181,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             }
         }
 
-        for (Panel panel : panels) {
+        for (DiseasePanel panel : panels) {
             String fileErrorMsg = dbAdaptorFactory.getCatalogPanelDBAdaptor().insert(study.getUid(), panel, options).getErrorMsg();
             if (fileErrorMsg != null && !fileErrorMsg.isEmpty()) {
                 errorMsg += panel.getName() + ":" + fileErrorMsg + ", ";
