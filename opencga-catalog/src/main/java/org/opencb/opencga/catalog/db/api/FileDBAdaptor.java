@@ -66,6 +66,7 @@ public interface FileDBAdaptor extends DBAdaptor<File> {
         SOFTWARE_COMMIT("software.commit", TEXT, ""),
         SAMPLES("samples", TEXT_ARRAY, ""),
         SAMPLE_UIDS("samples.uid", INTEGER_ARRAY, ""),
+        TAGS("tags", TEXT_ARRAY, ""),
 
         JOB_UID("job.uid", INTEGER_ARRAY, ""),
 

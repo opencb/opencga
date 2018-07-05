@@ -250,7 +250,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             numTotalResults = variants.size();
         } else {
             if (options.getInt(QueryOptions.LIMIT, -1) > 0) {
-                if (options.getBoolean(QueryOptions.SKIP_COUNT, true)) {
+                if (options.getBoolean(QueryOptions.SKIP_COUNT, DEFAULT_SKIP_COUNT)) {
                     numTotalResults = -1;
                 } else {
                     numTotalResults = count(query).first();

@@ -400,7 +400,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         Document mongoQuery = queryParser.parseQuery(query);
         Document projection = queryParser.createProjection(query, options);
-        options.putIfAbsent(QueryOptions.SKIP_COUNT, true);
+        options.putIfAbsent(QueryOptions.SKIP_COUNT, DEFAULT_SKIP_COUNT);
 
         if (options.getBoolean("explain", false)) {
             Document explain = variantsCollection.nativeQuery()

@@ -76,6 +76,7 @@ public final class VariantQueryUtils {
             UNKNOWN_GENOTYPE,
             SAMPLE_METADATA
     )));
+    public static final boolean DEFAULT_SKIP_COUNT = true;
 
     private static Logger logger = LoggerFactory.getLogger(VariantQueryUtils.class);
 

@@ -247,6 +247,9 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
             document.getSet().put(QueryParams.ID.key(), StringUtils.replace(path, "/", ":"));
         }
 
+        String[] acceptedParamsList = { QueryParams.TAGS.key() };
+        filterStringListParams(parameters, document.getSet(), acceptedParamsList);
+
         Map<String, Class<? extends Enum>> acceptedEnums = new HashMap<>();
         acceptedEnums.put(QueryParams.TYPE.key(), File.Type.class);
         acceptedEnums.put(QueryParams.FORMAT.key(), File.Format.class);
@@ -812,6 +815,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
                     case DESCRIPTION:
                     case EXTERNAL:
                     case RELEASE:
+                    case TAGS:
                     case STATUS:
                     case STATUS_NAME:
                     case STATUS_MSG:

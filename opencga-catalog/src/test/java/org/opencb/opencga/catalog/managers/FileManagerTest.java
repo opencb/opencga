@@ -494,6 +494,15 @@ public class FileManagerTest extends GenericTest {
     }
 
     @Test
+    public void testFileHooks() throws CatalogException, IOException, URISyntaxException {
+        URI uri = getClass().getResource("/biofiles/variant-test-file-dot-names.vcf.gz").toURI();
+        QueryResult<File> link = fileManager.link(studyFqn, uri, ".", new ObjectMap(), sessionIdUser);
+
+        assertEquals(2, link.first().getTags().size());
+        assertTrue(link.first().getTags().containsAll(Arrays.asList("VCF", "FILE")));
+    }
+
+    @Test
     public void stressTestLinkFile() throws Exception {
         URI uri = getClass().getResource("/biofiles/variant-test-file.vcf.gz").toURI();
         AtomicInteger numFailures = new AtomicInteger();

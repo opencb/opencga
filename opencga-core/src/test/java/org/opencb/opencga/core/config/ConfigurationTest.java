@@ -44,6 +44,11 @@ public class ConfigurationTest {
         configuration.setMonitor(new Monitor());
         configuration.setExecution(new Execution());
 
+        configuration.setHooks(Collections.singletonMap("user@project:study", Collections.singletonMap("file",
+                Collections.singletonList(
+                        new HookConfiguration("name", "~*SV*", HookConfiguration.Stage.CREATE, HookConfiguration.Action.ADD, "tags", "SV")
+        ))));
+
         List<AuthenticationOrigin> authenticationOriginList = new ArrayList<>();
         authenticationOriginList.add(new AuthenticationOrigin("opencga", AuthenticationOrigin.AuthenticationType.OPENCGA.toString(),
                 "localhost", Collections.emptyMap()));
