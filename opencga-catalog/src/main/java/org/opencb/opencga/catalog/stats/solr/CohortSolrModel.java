@@ -34,14 +34,12 @@ public class CohortSolrModel {
     private int release;
 
     @Field
-    private List<String> samplesUuid;
-//    private int numSmples;
+    private int samples;
 
     @Field("annotations__*")
     private Map<String, Object> annotations;
 
     public CohortSolrModel() {
-        this.samplesUuid = new ArrayList<>();
         this.familyMembersUuid = new ArrayList<>();
         this.annotations = new HashMap<>();
     }
@@ -56,7 +54,7 @@ public class CohortSolrModel {
         sb.append(", familyUuid='").append(familyUuid).append('\'');
         sb.append(", familyMembersUuid=").append(familyMembersUuid);
         sb.append(", release=").append(release);
-        sb.append(", samplesUuid=").append(samplesUuid);
+        sb.append(", samplesUuid=").append(samples);
         sb.append(", annotations=").append(annotations);
         sb.append('}');
         return sb.toString();
@@ -125,12 +123,12 @@ public class CohortSolrModel {
         return this;
     }
 
-    public List<String> getSamplesUuid() {
-        return samplesUuid;
+    public int getSamples() {
+        return samples;
     }
 
-    public CohortSolrModel setSamplesUuid(List<String> samplesUuid) {
-        this.samplesUuid = samplesUuid;
+    public CohortSolrModel setSamples(int samples) {
+        this.samples = samples;
         return this;
     }
 

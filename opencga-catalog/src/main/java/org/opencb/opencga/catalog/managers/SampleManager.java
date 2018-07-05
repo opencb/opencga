@@ -25,6 +25,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.Error;
+import org.opencb.commons.datastore.core.result.FacetedQueryResult;
 import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
@@ -36,6 +37,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
@@ -51,6 +53,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -1118,6 +1121,15 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         }
 
         return queryResults;
+    }
+
+    public FacetedQueryResult facet(Query query, QueryOptions queryOptions, String sessionId) throws IOException {
+
+        CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);
+        String collection = catalogManager.getConfiguration().getDatabasePrefix() + "_"
+                + CatalogSolrManager.SAMPLES_SOLR_COLLECTION;
+
+        return catalogSolrManager.facetedQuery(collection, query, queryOptions);
     }
 
     // **************************   Private methods  ******************************** //

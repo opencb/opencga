@@ -69,7 +69,7 @@
     <field name="familyUuid" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="familyMembersUuids" type="string" indexed="false" stored="true" multiValued="true"/>
     <field name="release" type="int" indexed="true" stored="true" multiValued="false"/>
-    <field name="samplesUuid" type="string" indexed="false" stored="true" multiValued="true"/>
+    <field name="samples" type="int" indexed="false" stored="true" multiValued="false"/>
 
     <dynamicField name="annotations__*" type="string" indexed="true" stored="true" multiValued="false"/>
     <dynamicField name="annotations__*" type="double" indexed="true" stored="true" multiValued="false"/>

@@ -16,12 +16,14 @@ public class SolrConverterUtil {
 
     public static Map<String, Object> populateAnnotations(List<AnnotationSet> annotationSets) {
         Map<String, Object> result = new HashedMap();
-        for (AnnotationSet annotationSet : annotationSets) {
-            for (String annotationKey : annotationSet.getAnnotations().keySet()) {
-                Object value = annotationSet.getAnnotations().get(annotationKey);
-                if (!type(value).equals("__o__")) {
-                    result.put("annotations" + type(value) + annotationSet.getName() + "__" + annotationSet.getVariableSetId()
-                            + "__" + annotationKey, value);
+        if (annotationSets != null) {
+            for (AnnotationSet annotationSet : annotationSets) {
+                for (String annotationKey : annotationSet.getAnnotations().keySet()) {
+                    Object value = annotationSet.getAnnotations().get(annotationKey);
+                    if (!type(value).equals("__o__")) {
+                        result.put("annotations" + type(value) + annotationSet.getName() + "__" + annotationSet.getVariableSetId()
+                                + "__" + annotationKey, value);
+                    }
                 }
             }
         }
@@ -30,8 +32,10 @@ public class SolrConverterUtil {
 
     public static List<String> populatePhenotypes(List<OntologyTerm> phenotypes) {
         List<String> phenotypesIds = new ArrayList<>();
-        for (OntologyTerm ontologyTerm : phenotypes) {
-            phenotypesIds.add(ontologyTerm.getId());
+        if (phenotypes != null) {
+            for (OntologyTerm ontologyTerm : phenotypes) {
+                phenotypesIds.add(ontologyTerm.getId());
+            }
         }
         return phenotypesIds;
     }

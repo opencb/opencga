@@ -51,6 +51,14 @@ catalog:
     password: ""
     options:
       authenticationDatabase: ""
+  search:   ## Solr configuration, by default is the same than storage
+    host: ${OPENCGA.CATALOG.SEARCH.HOST}
+    mode: "standalone"
+    user: ""
+    password: ""
+    timeout: ${OPENCGA.CATALOG.SEARCH.TIMEOUT}
+    insertBatchSize: ${OPENCGA.CATALOG.SEARCH.BATCH}
+
 authentication:
   expiration: 1000
 #LDAP configuration example

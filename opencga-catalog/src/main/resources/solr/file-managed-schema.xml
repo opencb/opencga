@@ -72,29 +72,23 @@
     <field name="_root_" type="string" docValues="false" indexed="true" stored="false"/>
     <field name="_text_" type="text_general" multiValued="true" indexed="true" stored="false"/>
     <field name="_version_" type="long" indexed="false" stored="false"/>
-
-    <field name="fatherUuid" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="motherUuid" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="multipleTypeName" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="familyUuid" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="sex" type="string" indexed="true" stored="true" multiValued="true"/>
-    <field name="karyotypicSex" type="string" indexed="true" stored="true" multiValued="false"/>
-
-    <field name="ethnicity" type="String" indexed="true" stored="true" multiValued="false"/>
-    <field name="population" type="String" indexed="true" stored="true" multiValued="false"/>
+    <field name="name" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="type" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="format" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="bioformart" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="release" type="int" indexed="true" stored="true" multiValued="false"/>
-    <field name="version" type="int" indexed="true" stored="true" multiValued="false"/>
     <field name="creationDate" type="string" indexed="false" stored="true" multiValued="false"/>
     <field name="status" type="string" indexed="false" stored="true" multiValued="false"/>
-    <field name="lifeStatus" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="affectationStatus" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="phenotypes" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="external" type="boolean" indexed="true" stored="true" multiValued="false"/>
+    <field name="size" type="int" indexed="true" stored="true" multiValued="false"/>
+    <field name="software" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="experiment" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="samplesUuid" type="string" indexed="true" stored="true" multiValued="true"/>
-    <field name="parentalConsanguinity" type="boolean" indexed="true" stored="true" multiValued="false"/>
+    <field name="relatedFiles" type="string" indexed="true" stored="true" multiValued="true"/>
 
-    <dynamicField name="annotations_*" type="string" indexed="true" stored="true" multiValued="false"/>
-    <dynamicField name="annotations_*" type="double" indexed="true" stored="true" multiValued="false"/>
-    <dynamicField name="annotations_*" type="int" indexed="true" stored="true" multiValued="false"/>
-    <dynamicField name="annotations_*" type="boolean" indexed="true" stored="true" multiValued="false"/>
+    <dynamicField name="annotations__*" type="string" indexed="true" stored="true" multiValued="false"/>
+    <dynamicField name="annotations__*" type="double" indexed="true" stored="true" multiValued="false"/>
+    <dynamicField name="annotations__*" type="int" indexed="true" stored="true" multiValued="false"/>
+    <dynamicField name="annotations__*" type="boolean" indexed="true" stored="true" multiValued="false"/>
 
 </schema>

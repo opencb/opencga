@@ -20,6 +20,9 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrException;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.result.FacetedQueryResult;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -31,7 +34,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by wasim on 27/06/18.
@@ -41,9 +46,9 @@ public class CatalogSolrManager {
     private CatalogManager catalogManager;
     private SolrManager solrManager;
     private int insertBatchSize;
+    private String DATABASE_PREFIX = "Solr";
 
-    public static final int DEFAULT_INSERT_BATCH_SIZE = 2000;
-
+    public static final int DEFAULT_INSERT_BATCH_SIZE = 10000;
     public static final String COHORT_SOLR_COLLECTION = "Catalog_Cohort_Collection";
     public static final String FILE_SOLR_COLLECTION = "Catalog_FILE_Collection";
     public static final String FAMILY_SOLR_COLLECTION = "Catalog_Family_Collection";
@@ -52,9 +57,10 @@ public class CatalogSolrManager {
 
     public static final String COHORT_CONF_SET = "OpenCGACatalogCohortConfSet";
     public static final String FILE_CONF_SET = "OpenCGACatalogFileConfSet";
-    public static final String SAMPLE_CONF_SET = "OpenCGACatalogSampleConfSet";
     public static final String FAMILY_CONF_SET = "OpenCGACatalogFamilyConfSet";
     public static final String INDIVIDUAL_CONF_SET = "OpenCGACatalogIndividualConfSet";
+    public static final String SAMPLE_CONF_SET = "OpenCGACatalogSampleConfSet";
+    public static final Map<String, String> CONFIGS_COLLECTION = new HashMap();
 
     private Logger logger;
 
@@ -64,6 +70,10 @@ public class CatalogSolrManager {
         this.solrManager = new SolrManager(searchConfiguration.getHost(), searchConfiguration.getMode(), searchConfiguration.getTimeout());
         insertBatchSize = searchConfiguration.getInsertBatchSize() > 0
                 ? searchConfiguration.getInsertBatchSize() : DEFAULT_INSERT_BATCH_SIZE;
+
+        DATABASE_PREFIX = catalogManager.getConfiguration().getDatabasePrefix() + "_";
+
+        populateConfigCollectionMap();
 
         if (searchConfiguration.getMode().equals("cloud")) {
             createCatalogSolrCollections();
@@ -103,38 +113,20 @@ public class CatalogSolrManager {
     }
 
     public void createCatalogSolrCollections() throws SolrException {
-        if (!existsCollection(COHORT_SOLR_COLLECTION)) {
-            createCollection(COHORT_SOLR_COLLECTION, COHORT_CONF_SET);
-        }
-        if (!existsCollection(FAMILY_SOLR_COLLECTION)) {
-            createCollection(FAMILY_SOLR_COLLECTION, FAMILY_CONF_SET);
-        }
-        if (!existsCollection(FILE_SOLR_COLLECTION)) {
-            createCollection(FILE_SOLR_COLLECTION, FILE_CONF_SET);
-        }
-        if (!existsCollection(INDIVIDUAL_SOLR_COLLECTION)) {
-            createCollection(INDIVIDUAL_SOLR_COLLECTION, INDIVIDUAL_CONF_SET);
-        }
-        if (!existsCollection(SAMPLES_SOLR_COLLECTION)) {
-            createCollection(SAMPLES_SOLR_COLLECTION, SAMPLE_CONF_SET);
+
+        for (String key : CONFIGS_COLLECTION.keySet()) {
+            if (!existsCollection(key)) {
+                createCollection(key, CONFIGS_COLLECTION.get(key));
+            }
         }
     }
 
     public void createCatalogSolrCores() throws SolrException {
-        if (!existsCore(COHORT_SOLR_COLLECTION)) {
-            createCore(COHORT_SOLR_COLLECTION, COHORT_CONF_SET);
-        }
-        if (!existsCore(FAMILY_SOLR_COLLECTION)) {
-            createCore(FAMILY_SOLR_COLLECTION, FAMILY_CONF_SET);
-        }
-        if (!existsCore(FILE_SOLR_COLLECTION)) {
-            createCore(FILE_SOLR_COLLECTION, FILE_CONF_SET);
-        }
-        if (!existsCore(INDIVIDUAL_SOLR_COLLECTION)) {
-            createCore(INDIVIDUAL_SOLR_COLLECTION, INDIVIDUAL_CONF_SET);
-        }
-        if (!existsCore(SAMPLES_SOLR_COLLECTION)) {
-            createCore(SAMPLES_SOLR_COLLECTION, SAMPLE_CONF_SET);
+
+        for (String key : CONFIGS_COLLECTION.keySet()) {
+            if (!existsCore(key)) {
+                createCore(key, CONFIGS_COLLECTION.get(key));
+            }
         }
     }
 
@@ -168,13 +160,49 @@ public class CatalogSolrManager {
 
         UpdateResponse updateResponse;
         try {
-            updateResponse = solrManager.getSolrClient().addBeans(collectionName, solrModels);
+            updateResponse = solrManager.getSolrClient().addBeans(DATABASE_PREFIX + collectionName, solrModels);
             if (updateResponse.getStatus() == 0) {
-                solrManager.getSolrClient().commit(collectionName);
+                solrManager.getSolrClient().commit(DATABASE_PREFIX + collectionName);
             }
         } catch (SolrServerException e) {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
         }
     }
+
+    /**
+     * Return faceted data from a Solr core/collection
+     * according a given query.
+     *
+     * @param collection   Collection name
+     * @param query        Query
+     * @param queryOptions Query options (contains the facet and facetRange options)
+     * @return List of Variant objects
+     * @throws IOException   IOException
+     * @throws SolrException SolrException
+     */
+    public FacetedQueryResult facetedQuery(String collection, Query query, QueryOptions queryOptions)
+            throws IOException, SolrException {
+       /* StopWatch stopWatch = StopWatch.createStarted();
+        try {
+            SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+            QueryResponse response = solrManager.getSolrClient().query(collection, solrQuery);
+            FacetedQueryResultItem item = toFacetedQueryResultItem(queryOptions, response);
+            return new FacetedQueryResult("", (int) stopWatch.getTime(), 1, 1, "Faceted data from Solr", "", item);
+        } catch (SolrServerException e) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
+        }*/
+       return null;
+    }
+
+    //***************** PRIVATE ****************/
+
+    private void populateConfigCollectionMap() {
+        CONFIGS_COLLECTION.put(DATABASE_PREFIX + COHORT_SOLR_COLLECTION, COHORT_CONF_SET);
+        CONFIGS_COLLECTION.put(DATABASE_PREFIX + FILE_SOLR_COLLECTION, FILE_CONF_SET);
+        CONFIGS_COLLECTION.put(DATABASE_PREFIX + FAMILY_SOLR_COLLECTION, FAMILY_CONF_SET);
+        CONFIGS_COLLECTION.put(DATABASE_PREFIX + INDIVIDUAL_SOLR_COLLECTION, INDIVIDUAL_CONF_SET);
+        CONFIGS_COLLECTION.put(DATABASE_PREFIX + SAMPLES_SOLR_COLLECTION, SAMPLE_CONF_SET);
+    }
+
 }
 

@@ -25,7 +25,7 @@ public class FamilySolrModel {
     private List<String> phenotypes;
 
     @Field
-    private List<String> familyMembersUuid;
+    private int familyMembers;
 
     @Field
     private int release;
@@ -39,7 +39,6 @@ public class FamilySolrModel {
     public FamilySolrModel() {
         this.annotations = new HashMap<>();
         this.phenotypes = new ArrayList<>();
-        this.familyMembersUuid = new ArrayList<>();
     }
 
     @Override
@@ -49,7 +48,7 @@ public class FamilySolrModel {
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", status='").append(status).append('\'');
         sb.append(", phenotypes=").append(phenotypes);
-        sb.append(", familyMembersUuid=").append(familyMembersUuid);
+        sb.append(", familyMembersUuid=").append(familyMembers);
         sb.append(", release=").append(release);
         sb.append(", version=").append(version);
         sb.append(", annotations=").append(annotations);
@@ -93,12 +92,12 @@ public class FamilySolrModel {
         return this;
     }
 
-    public List<String> getFamilyMembersUuid() {
-        return familyMembersUuid;
+    public int getFamilyMembers() {
+        return familyMembers;
     }
 
-    public FamilySolrModel setFamilyMembersUuid(List<String> familyMembersUuid) {
-        this.familyMembersUuid = familyMembersUuid;
+    public FamilySolrModel setFamilyMembers(int familyMembers) {
+        this.familyMembers = familyMembers;
         return this;
     }
 

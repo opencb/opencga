@@ -33,6 +33,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
+import org.opencb.opencga.catalog.stats.solr.converters.*;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidator;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
@@ -50,8 +52,11 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import javax.naming.NamingException;
+import java.io.IOException;
 import java.net.URI;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -66,7 +71,7 @@ public class StudyManager extends AbstractManager {
 
     private static final String MEMBERS = "@members";
     private static final String ADMINS = "@admins";
-//[A-Za-z]([-_.]?[A-Za-z0-9]
+    //[A-Za-z]([-_.]?[A-Za-z0-9]
     private static final String USER_PATTERN = "[A-Za-z][[-_.]?[A-Za-z0-9]?]*";
     private static final String PROJECT_PATTERN = "[A-Za-z0-9][[-_.]?[A-Za-z0-9]?]*";
     private static final String STUDY_PATTERN = "[A-Za-z0-9\\-_.]+|\\*";
@@ -1185,8 +1190,62 @@ public class StudyManager extends AbstractManager {
         }
     }
 
+    public boolean indexCatalogIntoSolr(Query query) throws CatalogException, IOException {
+
+        CatalogSolrManager catalogSolrManager = new CatalogSolrManager(this.catalogManager);
+
+        ExecutorService threadPool = Executors.newFixedThreadPool(5);
+        threadPool.submit(() -> indexCohort(catalogSolrManager, query));
+        threadPool.submit(() -> indexFile(catalogSolrManager, query));
+        threadPool.submit(() -> indexFamily(catalogSolrManager, query));
+        threadPool.submit(() -> indexIndividual(catalogSolrManager, query));
+        threadPool.submit(() -> indexSample(catalogSolrManager, query));
+
+        return true;
+    }
 
     // **************************   Private methods  ******************************** //
+
+    private Boolean indexCohort(CatalogSolrManager catalogSolrManager, Query query) throws CatalogException, IOException {
+        catalogSolrManager.insertCatalogCollection(this.cohortDBAdaptor.iterator(query,
+                new QueryOptions(QueryOptions.EXCLUDE, "samples")), new CatalogCohortToSolrCohortConverter(),
+                CatalogSolrManager.COHORT_SOLR_COLLECTION);
+        return true;
+    }
+
+    private Boolean indexFile(CatalogSolrManager catalogSolrManager, Query query) throws CatalogException, IOException {
+        catalogSolrManager.insertCatalogCollection(this.fileDBAdaptor.iterator(query,
+                new QueryOptions(QueryOptions.EXCLUDE, "samples")), new CatalogFileToSolrFileConverter(),
+                CatalogSolrManager.FILE_SOLR_COLLECTION);
+        return true;
+    }
+
+
+    private Boolean indexFamily(CatalogSolrManager catalogSolrManager, Query query) throws CatalogException, IOException {
+        catalogSolrManager.insertCatalogCollection(this.familyDBAdaptor.iterator(query,
+                new QueryOptions(QueryOptions.EXCLUDE, "samples")), new CatalogFamilyToSolrFamilyConverter(),
+                CatalogSolrManager.FAMILY_SOLR_COLLECTION);
+        return true;
+    }
+
+
+    private Boolean indexIndividual(CatalogSolrManager catalogSolrManager, Query query) throws CatalogException, IOException {
+        catalogSolrManager.insertCatalogCollection(this.individualDBAdaptor.iterator(query,
+                new QueryOptions(QueryOptions.EXCLUDE, "samples")), new CatalogIndividualToSolrIndividualConverter(),
+                CatalogSolrManager.INDIVIDUAL_SOLR_COLLECTION);
+        return true;
+
+    }
+
+    private Boolean indexSample(CatalogSolrManager catalogSolrManager, Query query) throws CatalogException, IOException {
+        catalogSolrManager.insertCatalogCollection(this.sampleDBAdaptor.iterator(query,
+                new QueryOptions(QueryOptions.EXCLUDE, "samples")), new CatalogSampleToSolrSampleConverter(),
+                CatalogSolrManager.SAMPLES_SOLR_COLLECTION);
+        return true;
+
+    }
+
+
     private int getProjectCurrentRelease(long projectId) throws CatalogException {
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key());
         QueryResult<Project> projectQueryResult = projectDBAdaptor.get(projectId, options);
