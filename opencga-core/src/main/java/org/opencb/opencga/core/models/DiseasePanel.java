@@ -16,93 +16,253 @@
 
 package org.opencb.opencga.core.models;
 
+import org.opencb.opencga.core.common.TimeUtils;
+
 import java.util.List;
+import java.util.Map;
 
-/**
- * Created by pfurio on 01/06/16.
- */
-@Deprecated
-public class DiseasePanel {
+public class DiseasePanel extends PrivateStudyUid {
 
-    private long id;
+    private String id;
     private String name;
-    private String disease;
+    private String uuid;
+
+    private int release;
+    private int version;
+
+    private String author;
+    private String creationDate;
+    private Status status;
+    private SourcePanel source;
     private String description;
 
-    private List<String> genes;
-    private List<String> regions;
+    private List<OntologyTerm> phenotypes;
+
     private List<String> variants;
+    private List<GenePanel> genes;
+    private List<RegionPanel> regions;
 
-    private PanelStatus status;
-
+    private Map<String, Object> attributes;
 
     public DiseasePanel() {
     }
 
-    public DiseasePanel(long id, String name, String disease, String description, List<String> genes, List<String> regions,
-                        List<String> variants, PanelStatus status) {
+    public DiseasePanel(String id, String name, int version) {
         this.id = id;
         this.name = name;
-        this.disease = disease;
-        this.description = description;
-        this.genes = genes;
-        this.regions = regions;
-        this.variants = variants;
-        this.status = status;
+        this.version = version;
     }
 
-    public static class PanelStatus extends Status {
+    public DiseasePanel(String id, String name, int release, int version, String author, SourcePanel source, String description,
+                        List<OntologyTerm> phenotypes, List<String> variants, List<GenePanel> genes, List<RegionPanel> regions,
+                        Map<String, Object> attributes) {
+        this.id = id;
+        this.name = name;
+        this.release = release;
+        this.version = version;
+        this.author = author;
+        this.creationDate = TimeUtils.getTime();
+        this.status = new Status();
+        this.source = source;
+        this.description = description;
+        this.phenotypes = phenotypes;
+        this.variants = variants;
+        this.genes = genes;
+        this.regions = regions;
+        this.attributes = attributes;
+    }
 
-        public static final String ARCHIVED = "ARCHIVED";
+    public static class SourcePanel {
 
-        public PanelStatus(String status, String message) {
-            if (isValid(status)) {
-                init(status, message);
-            } else {
-                throw new IllegalArgumentException("Unknown status " + status);
-            }
+        private String id;
+        private String project;
+        private String version;
+
+        public SourcePanel() {
         }
 
-        public PanelStatus(String status) {
-            this(status, "");
+        public SourcePanel(String id, String project, String version) {
+            this.id = id;
+            this.project = project;
+            this.version = version;
         }
 
-        public PanelStatus() {
-            this(READY, "");
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("SourcePanel{");
+            sb.append("id='").append(id).append('\'');
+            sb.append(", project='").append(project).append('\'');
+            sb.append(", version='").append(version).append('\'');
+            sb.append('}');
+            return sb.toString();
         }
 
-        public static boolean isValid(String status) {
-            if (Status.isValid(status)) {
-                return true;
-            }
-            if (status != null && (status.equals(ARCHIVED))) {
-                return true;
-            }
-            return false;
+        public String getId() {
+            return id;
+        }
+
+        public SourcePanel setId(String id) {
+            this.id = id;
+            return this;
+        }
+
+        public String getProject() {
+            return project;
+        }
+
+        public SourcePanel setProject(String project) {
+            this.project = project;
+            return this;
+        }
+
+        public String getVersion() {
+            return version;
+        }
+
+        public SourcePanel setVersion(String version) {
+            this.version = version;
+            return this;
+        }
+    }
+
+    public static class GenePanel {
+
+        /**
+         * Ensembl ID is used as id
+         */
+        private String id;
+
+        /**
+         * HGNC Gene Symbol is used as name
+         */
+        private String name;
+        private String confidence;
+
+        public GenePanel() {
+        }
+
+        public GenePanel(String id, String name, String confidence) {
+            this.id = id;
+            this.name = name;
+            this.confidence = confidence;
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("GenePanel{");
+            sb.append("id='").append(id).append('\'');
+            sb.append(", name='").append(name).append('\'');
+            sb.append(", confidence='").append(confidence).append('\'');
+            sb.append('}');
+            return sb.toString();
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public GenePanel setId(String id) {
+            this.id = id;
+            return this;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public GenePanel setName(String name) {
+            this.name = name;
+            return this;
+        }
+
+        public String getConfidence() {
+            return confidence;
+        }
+
+        public GenePanel setConfidence(String confidence) {
+            this.confidence = confidence;
+            return this;
+        }
+    }
+
+    public static class RegionPanel {
+
+        private String location;
+        private float score;
+
+        public RegionPanel() {
+        }
+
+        public RegionPanel(String location, float score) {
+            this.location = location;
+            this.score = score;
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("RegionPanel{");
+            sb.append("location='").append(location).append('\'');
+            sb.append(", score=").append(score);
+            sb.append('}');
+            return sb.toString();
+        }
+
+        public String getLocation() {
+            return location;
+        }
+
+        public RegionPanel setLocation(String location) {
+            this.location = location;
+            return this;
+        }
+
+        public float getScore() {
+            return score;
+        }
+
+        public RegionPanel setScore(float score) {
+            this.score = score;
+            return this;
         }
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("DiseasePanel{");
-        sb.append("id=").append(id);
+        final StringBuilder sb = new StringBuilder("Panel{");
+        sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
-        sb.append(", disease='").append(disease).append('\'');
+        sb.append(", uuid='").append(uuid).append('\'');
+        sb.append(", release=").append(release);
+        sb.append(", version=").append(version);
+        sb.append(", author='").append(author).append('\'');
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", status=").append(status);
+        sb.append(", source=").append(source);
         sb.append(", description='").append(description).append('\'');
+        sb.append(", phenotypes=").append(phenotypes);
+        sb.append(", variants=").append(variants);
         sb.append(", genes=").append(genes);
         sb.append(", regions=").append(regions);
-        sb.append(", variants=").append(variants);
-        sb.append(", status=").append(status);
+        sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
     }
 
-    public long getId() {
+    public String getId() {
         return id;
     }
 
-    public DiseasePanel setId(long id) {
+    public DiseasePanel setId(String id) {
         this.id = id;
+        return this;
+    }
+
+    public String getUuid() {
+        return uuid;
+    }
+
+    public DiseasePanel setUuid(String uuid) {
+        this.uuid = uuid;
         return this;
     }
 
@@ -115,12 +275,57 @@ public class DiseasePanel {
         return this;
     }
 
-    public String getDisease() {
-        return disease;
+    public int getVersion() {
+        return version;
     }
 
-    public DiseasePanel setDisease(String disease) {
-        this.disease = disease;
+    public DiseasePanel setVersion(int version) {
+        this.version = version;
+        return this;
+    }
+
+    public int getRelease() {
+        return release;
+    }
+
+    public DiseasePanel setRelease(int release) {
+        this.release = release;
+        return this;
+    }
+
+    public String getAuthor() {
+        return author;
+    }
+
+    public DiseasePanel setAuthor(String author) {
+        this.author = author;
+        return this;
+    }
+
+    public String getCreationDate() {
+        return creationDate;
+    }
+
+    public DiseasePanel setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
+        return this;
+    }
+
+    public Status getStatus() {
+        return status;
+    }
+
+    public DiseasePanel setStatus(Status status) {
+        this.status = status;
+        return this;
+    }
+
+    public SourcePanel getSource() {
+        return source;
+    }
+
+    public DiseasePanel setSource(SourcePanel source) {
+        this.source = source;
         return this;
     }
 
@@ -133,21 +338,12 @@ public class DiseasePanel {
         return this;
     }
 
-    public List<String> getGenes() {
-        return genes;
+    public List<OntologyTerm> getPhenotypes() {
+        return phenotypes;
     }
 
-    public DiseasePanel setGenes(List<String> genes) {
-        this.genes = genes;
-        return this;
-    }
-
-    public List<String> getRegions() {
-        return regions;
-    }
-
-    public DiseasePanel setRegions(List<String> regions) {
-        this.regions = regions;
+    public DiseasePanel setPhenotypes(List<OntologyTerm> phenotypes) {
+        this.phenotypes = phenotypes;
         return this;
     }
 
@@ -160,13 +356,30 @@ public class DiseasePanel {
         return this;
     }
 
-    public PanelStatus getStatus() {
-        return status;
+    public List<GenePanel> getGenes() {
+        return genes;
     }
 
-    public DiseasePanel setStatus(PanelStatus status) {
-        this.status = status;
+    public DiseasePanel setGenes(List<GenePanel> genes) {
+        this.genes = genes;
         return this;
     }
 
+    public List<RegionPanel> getRegions() {
+        return regions;
+    }
+
+    public DiseasePanel setRegions(List<RegionPanel> regions) {
+        this.regions = regions;
+        return this;
+    }
+
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
+    public DiseasePanel setAttributes(Map<String, Object> attributes) {
+        this.attributes = attributes;
+        return this;
+    }
 }

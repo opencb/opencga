@@ -59,7 +59,7 @@ public abstract class AbstractManager {
     protected final FamilyDBAdaptor familyDBAdaptor;
     protected final DatasetDBAdaptor datasetDBAdaptor;
     protected final JobDBAdaptor jobDBAdaptor;
-    protected final PanelDBAdaptor panelDBAdaptor;
+    protected final DiseasePanelDBAdaptor panelDBAdaptor;
     protected final ClinicalAnalysisDBAdaptor clinicalDBAdaptor;
 
     protected static final String ROOT = "admin";

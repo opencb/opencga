@@ -32,10 +32,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
-import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
-import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.FileConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.FileMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -700,21 +697,21 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     public QueryResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false);
-        return rank(fileCollection, bsonQuery, field, "name", numResults, asc);
+        return rank(fileCollection, bsonQuery, field, QueryParams.ID.key(), numResults, asc);
     }
 
     @Override
     public QueryResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false);
-        return groupBy(fileCollection, bsonQuery, field, "name", options);
+        return groupBy(fileCollection, bsonQuery, field, QueryParams.ID.key(), options);
     }
 
     @Override
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false);
-        return groupBy(fileCollection, bsonQuery, fields, "name", options);
+        return groupBy(fileCollection, bsonQuery, fields, QueryParams.ID.key(), options);
     }
 
     @Override
@@ -725,7 +722,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
                 .name(), FileAclEntry.FilePermissions.VIEW.name());
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
-        return groupBy(fileCollection, bsonQuery, fields, QueryParams.NAME.key(), options);
+        return groupBy(fileCollection, bsonQuery, fields, QueryParams.ID.key(), options);
     }
 
     @Override

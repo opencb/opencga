@@ -175,18 +175,16 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
 
         for (Dataset dataset : datasets) {
-            String fileErrorMsg = dbAdaptorFactory.getCatalogDatasetDBAdaptor().insert(dataset, study.getUid(), options)
-                    .getErrorMsg();
+            String fileErrorMsg = dbAdaptorFactory.getCatalogDatasetDBAdaptor().insert(dataset, study.getUid(), options).getErrorMsg();
             if (fileErrorMsg != null && !fileErrorMsg.isEmpty()) {
                 errorMsg += dataset.getName() + ":" + fileErrorMsg + ", ";
             }
         }
 
-        for (DiseasePanel diseasePanel : panels) {
-            String fileErrorMsg = dbAdaptorFactory.getCatalogPanelDBAdaptor().insert(diseasePanel, study.getUid(), options)
-                    .getErrorMsg();
+        for (DiseasePanel panel : panels) {
+            String fileErrorMsg = dbAdaptorFactory.getCatalogPanelDBAdaptor().insert(study.getUid(), panel, options).getErrorMsg();
             if (fileErrorMsg != null && !fileErrorMsg.isEmpty()) {
-                errorMsg += diseasePanel.getName() + ":" + fileErrorMsg + ", ";
+                errorMsg += panel.getName() + ":" + fileErrorMsg + ", ";
             }
         }
 

@@ -66,7 +66,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     private final IndividualDBAdaptor individualDBAdaptor;
     private final CohortDBAdaptor cohortDBAdaptor;
     private final DatasetDBAdaptor datasetDBAdaptor;
-    private final PanelDBAdaptor panelDBAdaptor;
+    private final DiseasePanelDBAdaptor panelDBAdaptor;
     private final FamilyDBAdaptor familyDBAdaptor;
     private final ClinicalAnalysisDBAdaptor clinicalAnalysisDBAdaptor;
     private final AuditManager auditManager;
@@ -488,8 +488,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public void checkDiseasePanelPermission(long studyId, long panelId, String userId,
                                             DiseasePanelAclEntry.DiseasePanelPermissions permission) throws CatalogException {
         Query query = new Query()
-                .append(PanelDBAdaptor.QueryParams.ID.key(), panelId)
-                .append(PanelDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                .append(DiseasePanelDBAdaptor.QueryParams.UID.key(), panelId)
+                .append(DiseasePanelDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
         StudyAclEntry.StudyPermissions studyPermission;
         switch (permission) {
             case VIEW:
@@ -727,6 +727,24 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 //        }
 
         return aclDBAdaptor.get(cohortId, Arrays.asList(member), Entity.COHORT);
+    }
+
+    @Override
+    public QueryResult<DiseasePanelAclEntry> getAllPanelAcls(long studyId, long panelId, String userId) throws CatalogException {
+        checkCanAssignOrSeePermissions(studyId, userId);
+        return aclDBAdaptor.get(panelId, null, Entity.PANEL);
+    }
+
+    @Override
+    public QueryResult<DiseasePanelAclEntry> getPanelAcl(long studyId, long panelId, String userId, String member) throws CatalogException {
+        try {
+            checkCanAssignOrSeePermissions(studyId, userId);
+        } catch (CatalogException e) {
+            // It will be OK if the userId asking for the ACLs wants to see its own permissions
+            checkAskingOwnPermissions(userId, member, studyId);
+        }
+
+        return aclDBAdaptor.get(panelId, Arrays.asList(member), Entity.PANEL);
     }
 
     @Override

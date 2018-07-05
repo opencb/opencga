@@ -18,13 +18,14 @@ package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.PanelCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
-import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
+import org.opencb.opencga.catalog.db.api.DiseasePanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.DiseasePanel;
 import org.opencb.opencga.core.models.acls.permissions.DiseasePanelAclEntry;
@@ -59,6 +60,9 @@ public class PanelCommandExecutor extends OpencgaCommandExecutor {
             case "info":
                 queryResponse = info();
                 break;
+            case "search":
+                queryResponse = search();
+                break;
             case "acl":
                 queryResponse = aclCommandExecutor.acls(panelsCommandOptions.aclsCommandOptions, openCGAClient.getPanelClient());
                 break;
@@ -81,21 +85,52 @@ public class PanelCommandExecutor extends OpencgaCommandExecutor {
         String disease = panelsCommandOptions.createCommandOptions.disease;
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(PanelDBAdaptor.QueryParams.DESCRIPTION.key(), panelsCommandOptions.createCommandOptions.description);
-        params.putIfNotEmpty(PanelDBAdaptor.QueryParams.GENES.key(), panelsCommandOptions.createCommandOptions.genes);
-        params.putIfNotEmpty(PanelDBAdaptor.QueryParams.REGIONS.key(), panelsCommandOptions.createCommandOptions.regions);
-        params.putIfNotEmpty(PanelDBAdaptor.QueryParams.VARIANTS.key(), panelsCommandOptions.createCommandOptions.variants);
+        params.putIfNotEmpty(DiseasePanelDBAdaptor.QueryParams.DESCRIPTION.key(), panelsCommandOptions.createCommandOptions.description);
+        params.putIfNotEmpty(DiseasePanelDBAdaptor.QueryParams.GENES.key(), panelsCommandOptions.createCommandOptions.genes);
+        params.putIfNotEmpty(DiseasePanelDBAdaptor.QueryParams.REGIONS.key(), panelsCommandOptions.createCommandOptions.regions);
+        params.putIfNotEmpty(DiseasePanelDBAdaptor.QueryParams.VARIANTS.key(), panelsCommandOptions.createCommandOptions.variants);
         return openCGAClient.getPanelClient().create(resolveStudy(panelsCommandOptions.createCommandOptions.studyId), name, disease, params);
     }
 
     private QueryResponse<DiseasePanel> info() throws CatalogException, IOException  {
         logger.debug("Getting panel information");
 
-        QueryOptions options = new QueryOptions();
-        options.putIfNotEmpty(QueryOptions.INCLUDE, panelsCommandOptions.infoCommandOptions.include);
-        options.putIfNotEmpty(QueryOptions.EXCLUDE, panelsCommandOptions.infoCommandOptions.exclude);
-        return openCGAClient.getPanelClient().get(panelsCommandOptions.infoCommandOptions.id, options);
+        ObjectMap params = new ObjectMap();
+        params.putIfNotNull("study", resolveStudy(panelsCommandOptions.infoCommandOptions.study));
+        params.putIfNotEmpty(QueryOptions.INCLUDE, panelsCommandOptions.infoCommandOptions.dataModelOptions.include);
+        params.putIfNotEmpty(QueryOptions.EXCLUDE, panelsCommandOptions.infoCommandOptions.dataModelOptions.exclude);
+        return openCGAClient.getPanelClient().get(panelsCommandOptions.infoCommandOptions.id, params);
     }
+
+    private QueryResponse<DiseasePanel> search() throws CatalogException, IOException  {
+        logger.debug("Searching panels");
+
+        Query query = new Query();
+        query.putIfNotNull("study", resolveStudy(panelsCommandOptions.searchCommandOptions.study));
+        query.putIfNotNull(DiseasePanelDBAdaptor.QueryParams.NAME.key(), panelsCommandOptions.searchCommandOptions.name);
+        query.putIfNotNull(DiseasePanelDBAdaptor.QueryParams.PHENOTYPES.key(), panelsCommandOptions.searchCommandOptions.phenotypes);
+        query.putIfNotNull(DiseasePanelDBAdaptor.QueryParams.VARIANTS.key(), panelsCommandOptions.searchCommandOptions.variants);
+        query.putIfNotNull(DiseasePanelDBAdaptor.QueryParams.REGIONS.key(), panelsCommandOptions.searchCommandOptions.regions);
+        query.putIfNotNull(DiseasePanelDBAdaptor.QueryParams.GENES.key(), panelsCommandOptions.searchCommandOptions.genes);
+        query.putIfNotNull(DiseasePanelDBAdaptor.QueryParams.DESCRIPTION.key(), panelsCommandOptions.searchCommandOptions.description);
+        query.putIfNotNull(DiseasePanelDBAdaptor.QueryParams.AUTHOR.key(), panelsCommandOptions.searchCommandOptions.author);
+        query.putIfNotNull(DiseasePanelDBAdaptor.QueryParams.CREATION_DATE.key(), panelsCommandOptions.searchCommandOptions.creationDate);
+        query.putIfNotNull(DiseasePanelDBAdaptor.QueryParams.RELEASE.key(), panelsCommandOptions.searchCommandOptions.release);
+        query.putIfNotNull(DiseasePanelDBAdaptor.QueryParams.SNAPSHOT.key(), panelsCommandOptions.searchCommandOptions.snapshot);
+
+        if (panelsCommandOptions.searchCommandOptions.numericOptions.count) {
+            return openCGAClient.getPanelClient().count(query);
+        } else {
+            QueryOptions queryOptions = new QueryOptions();
+            queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, panelsCommandOptions.searchCommandOptions.dataModelOptions.include);
+            queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, panelsCommandOptions.searchCommandOptions.dataModelOptions.exclude);
+            queryOptions.put(QueryOptions.LIMIT, panelsCommandOptions.searchCommandOptions.numericOptions.limit);
+            queryOptions.put(QueryOptions.SKIP, panelsCommandOptions.searchCommandOptions.numericOptions.skip);
+
+            return openCGAClient.getPanelClient().search(query, queryOptions);
+        }
+    }
+
 
     private QueryResponse<DiseasePanelAclEntry> updateAcl() throws IOException, CatalogException {
         AclCommandOptions.AclsUpdateCommandOptions commandOptions = panelsCommandOptions.aclsUpdateCommandOptions;
