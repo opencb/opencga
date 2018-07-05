@@ -277,7 +277,7 @@ public class CatalogManager implements AutoCloseable {
         return clinicalAnalysisManager;
     }
 
-    public DiseasePanelManager getPanelManager() {
+    public DiseasePanelManager getDiseasePanelManager() {
         return panelManager;
     }
 

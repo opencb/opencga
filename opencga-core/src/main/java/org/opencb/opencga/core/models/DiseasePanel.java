@@ -16,8 +16,11 @@
 
 package org.opencb.opencga.core.models;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.opencga.core.common.TimeUtils;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
@@ -70,6 +73,12 @@ public class DiseasePanel extends PrivateStudyUid {
         this.genes = genes;
         this.regions = regions;
         this.attributes = attributes;
+    }
+
+    // Json loader
+    public static DiseasePanel load(InputStream diseasePanelInputStream) throws IOException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        return objectMapper.readValue(diseasePanelInputStream, DiseasePanel.class);
     }
 
     public static class SourcePanel {

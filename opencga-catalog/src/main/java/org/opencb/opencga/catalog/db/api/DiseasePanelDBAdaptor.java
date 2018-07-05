@@ -169,6 +169,15 @@ public interface DiseasePanelDBAdaptor extends DBAdaptor<DiseasePanel> {
         }
     }
 
+    /**
+     * Insert the panel as an installation panel.
+     *
+     * @param panel Panel.
+     * @param overwrite Flag to overwrite in case of an ID conflict.
+     * @throws CatalogDBException In case of an ID conflict when overwrite is false.
+     */
+    void insert(DiseasePanel panel, boolean overwrite) throws CatalogDBException;
+
     QueryResult<DiseasePanel> insert(long studyId, DiseasePanel panel, QueryOptions options) throws CatalogDBException;
 
     QueryResult<DiseasePanel> get(long panelId, QueryOptions options) throws CatalogDBException;

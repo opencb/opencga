@@ -33,7 +33,7 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
     public DiseasePanelWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
-        panelManager = catalogManager.getPanelManager();
+        panelManager = catalogManager.getDiseasePanelManager();
     }
 
     @POST

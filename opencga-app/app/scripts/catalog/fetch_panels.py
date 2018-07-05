@@ -52,8 +52,7 @@ for panel in panels['result']:
             'name': panel['Name'],
             'version': 1,
             'author': '',
-            'date': datetime.date.today().isoformat(),
-            'status': 'READY',
+            'creationDate': datetime.date.today().isoformat(),
             'source': {
                 'id': panel['Panel_Id'],
                 'project': 'PanelApp (GEL)',

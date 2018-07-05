@@ -17,6 +17,7 @@
 package org.opencb.opencga.app.cli.admin.executors;
 
 
+import org.apache.commons.io.FileUtils;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.analysis.demo.AnalysisDemo;
@@ -25,6 +26,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.monitor.MonitorService;
 import org.opencb.opencga.catalog.utils.CatalogDemo;
+import org.opencb.opencga.core.models.DiseasePanel;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
 import javax.ws.rs.client.Client;
@@ -33,10 +35,13 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * Created by imedina on 02/03/15.
@@ -78,6 +83,9 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
                 break;
             case "daemon":
                 daemons();
+                break;
+            case "diseasePanel":
+                diseasePanels();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -216,6 +224,50 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
                     .path("stop");
             Response response = target.request().get();
             logger.info(response.toString());
+        }
+    }
+
+    private void diseasePanels() throws CatalogException, IOException {
+        validateConfiguration(catalogCommandOptions.diseasePanelCatalogCommandOptions, catalogCommandOptions.commonOptions);
+
+        CatalogManager catalogManager = new CatalogManager(configuration);
+        String token = catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
+
+        Path path = Paths.get(catalogCommandOptions.diseasePanelCatalogCommandOptions.panelImport);
+
+        if (path.toFile().isDirectory()) {
+            // Load all the json files from the directory
+            try (Stream<Path> paths = Files.walk(path)) {
+                paths
+                        .filter(Files::isRegularFile)
+                        .forEach(filePath -> {
+                            // Import the panel file
+                            DiseasePanel panel;
+                            try {
+                                panel = DiseasePanel.load(FileUtils.openInputStream(filePath.toFile()));
+                            } catch (IOException e) {
+                                logger.error("Could not load file {}", filePath.toString());
+                                return;
+                            }
+                            try {
+                                catalogManager.getDiseasePanelManager().create(panel,
+                                        catalogCommandOptions.diseasePanelCatalogCommandOptions.overwrite, token);
+                                logger.info("Disease panel {} imported", panel.getId());
+                            } catch (CatalogException e) {
+                                logger.error("Could not import {} - {}", panel.getId(), e.getMessage());
+                            }
+                        });
+            }
+        } else {
+            // Import the panel file
+            DiseasePanel panel = DiseasePanel.load(FileUtils.openInputStream(path.toFile()));
+            try {
+                catalogManager.getDiseasePanelManager().create(panel, catalogCommandOptions.diseasePanelCatalogCommandOptions.overwrite,
+                        token);
+                logger.info("Disease panel {} imported", panel.getId());
+            } catch (CatalogException e) {
+                logger.error("Could not import {} - {}", panel.getId(), e.getMessage());
+            }
         }
     }
 

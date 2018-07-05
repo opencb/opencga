@@ -18,9 +18,11 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.DuplicateKeyException;
 import com.mongodb.MongoClient;
+import com.mongodb.MongoWriteException;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
+import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
@@ -54,18 +56,63 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 
 public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements DiseasePanelDBAdaptor {
 
-    private final MongoDBCollection panelCollection;
+    private final MongoDBCollection diseasePanelCollection;
     private DiseasePanelConverter diseasePanelConverter;
 
-    public DiseasePanelMongoDBAdaptor(MongoDBCollection panelCollection, MongoDBAdaptorFactory dbAdaptorFactory) {
+    public DiseasePanelMongoDBAdaptor(MongoDBCollection diseasePanelCollection, MongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(JobMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
-        this.panelCollection = panelCollection;
+        this.diseasePanelCollection = diseasePanelCollection;
         this.diseasePanelConverter = new DiseasePanelConverter();
     }
 
-    public MongoDBCollection getCollection() {
-        return panelCollection;
+    /**
+     * @return MongoDB connection to the disease panel collection.
+     */
+    public MongoDBCollection getDiseasePanelCollection() {
+        return diseasePanelCollection;
+    }
+
+    @Override
+    public void insert(DiseasePanel panel, boolean overwrite) throws CatalogDBException {
+        //new Panel Id
+        long newPanelId = getNewId();
+        panel.setUid(newPanelId);
+        panel.setStudyUid(-1);
+
+        Document panelDocument = diseasePanelConverter.convertToStorageType(panel);
+        // Versioning private parameters
+        panelDocument.put(RELEASE_FROM_VERSION, Arrays.asList(panel.getRelease()));
+        panelDocument.put(LAST_OF_VERSION, true);
+        panelDocument.put(LAST_OF_RELEASE, true);
+
+        if (StringUtils.isNotEmpty(panel.getCreationDate())) {
+            panelDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(panel.getCreationDate()));
+        } else {
+            panelDocument.put(PRIVATE_CREATION_DATE, TimeUtils.getDate());
+        }
+        panelDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
+
+        try {
+            diseasePanelCollection.insert(panelDocument, null);
+        } catch (MongoWriteException e) {
+            if (overwrite) {
+                // Delete the current document
+                Query query = new Query()
+                        .append(QueryParams.STUDY_UID.key(), -1)
+                        .append(QueryParams.ID.key(), panel.getId());
+                try {
+                    delete(query);
+                } catch (CatalogDBException e1) {
+                    throw new CatalogDBException("Could not overwrite disease panel " + panel.getId(), e1);
+                }
+
+                // Insert again
+                diseasePanelCollection.insert(panelDocument, null);
+            } else {
+                throw CatalogDBException.alreadyExists("DiseasePanel", "id", panel.getId());
+            }
+        }
     }
 
     @Override
@@ -79,10 +126,10 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
         filterList.add(Filters.eq(QueryParams.STATUS_NAME.key(), Status.READY));
 
         Bson bson = Filters.and(filterList);
-        QueryResult<Long> count = panelCollection.count(bson);
+        QueryResult<Long> count = diseasePanelCollection.count(bson);
 
         if (count.getResult().get(0) > 0) {
-            throw new CatalogDBException("Panel { id: '" + panel.getId() + "'} already exists.");
+            throw new CatalogDBException("DiseasePanel { id: '" + panel.getId() + "'} already exists.");
         }
 
         //new Panel Id
@@ -104,12 +151,13 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
         panelDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
         try {
-            panelCollection.insert(panelDocument, null);
+            diseasePanelCollection.insert(panelDocument, null);
         } catch (DuplicateKeyException e) {
-            throw CatalogDBException.alreadyExists("Panel", studyId, "name", panel.getName());
+            throw CatalogDBException.alreadyExists("DiseasePanel", studyId, "id", panel.getId());
         }
 
-        return endQuery("Create panel", startTime, get(newPanelId, options));    }
+        return endQuery("Create disease panel", startTime, get(newPanelId, options));
+    }
 
     @Override
     public QueryResult<DiseasePanel> get(long panelUid, QueryOptions options) throws CatalogDBException {
@@ -195,7 +243,7 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
     public long getStudyId(long panelUid) throws CatalogDBException {
         Bson query = new Document(PRIVATE_UID, panelUid);
         Bson projection = Projections.include(PRIVATE_STUDY_ID);
-        QueryResult<Document> queryResult = panelCollection.find(query, projection, null);
+        QueryResult<Document> queryResult = diseasePanelCollection.find(query, projection, null);
 
         if (!queryResult.getResult().isEmpty()) {
             Object studyId = queryResult.getResult().get(0).get(PRIVATE_STUDY_ID);
@@ -208,7 +256,7 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
     @Override
     public QueryResult<Long> count(Query query) throws CatalogDBException {
         Bson bson = parseQuery(query, false);
-        return panelCollection.count(bson);
+        return diseasePanelCollection.count(bson);
     }
 
     @Override
@@ -231,12 +279,12 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
                 studyPermission.name(), studyPermission.getDiseasePanelPermission().name());
         Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
         logger.debug("Panel count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        return panelCollection.count(bson);
+        return diseasePanelCollection.count(bson);
     }
 
     @Override
     public QueryResult distinct(Query query, String field) throws CatalogDBException {
-        return panelCollection.distinct(field, parseQuery(query, false));
+        return diseasePanelCollection.distinct(field, parseQuery(query, false));
     }
 
     @Override
@@ -265,7 +313,7 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
 
         if (panelParameters.containsKey(QueryParams.STATUS_NAME.key())) {
             query.put(Constants.ALL_VERSIONS, true);
-            QueryResult<UpdateResult> update = panelCollection.update(parseQuery(query, false),
+            QueryResult<UpdateResult> update = diseasePanelCollection.update(parseQuery(query, false),
                     new Document("$set", panelParameters), new QueryOptions("multi", true));
 
             return endQuery("Update panel", startTime, Arrays.asList(update.getNumTotalResults()));
@@ -273,7 +321,7 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
 
         if (!queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
             if (!panelParameters.isEmpty()) {
-                QueryResult<UpdateResult> update = panelCollection.update(parseQuery(query, false),
+                QueryResult<UpdateResult> update = diseasePanelCollection.update(parseQuery(query, false),
                         new Document("$set", panelParameters), new QueryOptions("multi", true));
                 return endQuery("Update panel", startTime, Arrays.asList(update.getNumTotalResults()));
             }
@@ -316,7 +364,8 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
                     .append(PRIVATE_STUDY_ID, panelDocument.getLong(PRIVATE_STUDY_ID))
                     .append(QueryParams.VERSION.key(), panelDocument.getInteger(QueryParams.VERSION.key()))
                     .append(PRIVATE_UID, panelDocument.getLong(PRIVATE_UID));
-            QueryResult<UpdateResult> updateResult = panelCollection.update(queryDocument, new Document("$set", updateOldVersion), null);
+            QueryResult<UpdateResult> updateResult = diseasePanelCollection.update(queryDocument, new Document("$set", updateOldVersion),
+                    null);
             if (updateResult.first().getModifiedCount() == 0) {
                 throw new CatalogDBException("Internal error: Could not update panel");
             }
@@ -331,7 +380,7 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
             mergeDocument(panelDocument, panelParameters);
 
             // Insert the new version document
-            panelCollection.insert(panelDocument, QueryOptions.empty());
+            diseasePanelCollection.insert(panelDocument, QueryOptions.empty());
         }
 
         return endQuery("Update panel", startTime, Arrays.asList(queryResult.getNumTotalResults()));
@@ -399,7 +448,11 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
 
     @Override
     public void delete(Query query) throws CatalogDBException {
-        throw new UnsupportedOperationException("Delete not yet implemented.");
+        Bson bson = parseQuery(query, false);
+        QueryResult<DeleteResult> remove = diseasePanelCollection.remove(bson, QueryOptions.empty());
+        if (remove.getNumResults() == 0 || remove.first().getDeletedCount() == 0) {
+            throw new CatalogDBException("Could not delete disease panel(s)");
+        }
     }
 
     @Override
@@ -492,7 +545,7 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
 
         Bson bson = parseQuery(finalQuery, false, queryForAuthorisedEntries);
         logger.debug("Panel query: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        return panelCollection.nativeQuery().find(bson, qOptions).iterator();
+        return diseasePanelCollection.nativeQuery().find(bson, qOptions).iterator();
     }
 
     private Document getStudyDocument(Query query) throws CatalogDBException {
@@ -515,21 +568,21 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
     public QueryResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false);
-        return rank(panelCollection, bsonQuery, field, QueryParams.ID.key(), numResults, asc);
+        return rank(diseasePanelCollection, bsonQuery, field, QueryParams.ID.key(), numResults, asc);
     }
 
     @Override
     public QueryResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false);
-        return groupBy(panelCollection, bsonQuery, field, QueryParams.ID.key(), options);
+        return groupBy(diseasePanelCollection, bsonQuery, field, QueryParams.ID.key(), options);
     }
 
     @Override
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false);
-        return groupBy(panelCollection, bsonQuery, fields, QueryParams.ID.key(), options);
+        return groupBy(diseasePanelCollection, bsonQuery, fields, QueryParams.ID.key(), options);
     }
 
     @Override
@@ -540,7 +593,7 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
                 .name(), DiseasePanelAclEntry.DiseasePanelPermissions.VIEW.name());
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
-        return groupBy(panelCollection, bsonQuery, fields, QueryParams.ID.key(), options);
+        return groupBy(diseasePanelCollection, bsonQuery, fields, QueryParams.ID.key(), options);
     }
 
     @Override
@@ -551,7 +604,7 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
                 .name(), DiseasePanelAclEntry.DiseasePanelPermissions.VIEW.name());
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
-        return groupBy(panelCollection, bsonQuery, field, QueryParams.ID.key(), options);
+        return groupBy(diseasePanelCollection, bsonQuery, field, QueryParams.ID.key(), options);
     }
 
     @Override
@@ -576,12 +629,12 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
 
         QueryOptions queryOptions = new QueryOptions("multi", true);
 
-        panelCollection.update(bson, update, queryOptions);
+        diseasePanelCollection.update(bson, update, queryOptions);
     }
 
     @Override
     public void unmarkPermissionRule(long studyId, String permissionRuleId) {
-        unmarkPermissionRule(panelCollection, studyId, permissionRuleId);
+        unmarkPermissionRule(diseasePanelCollection, studyId, permissionRuleId);
     }
 
     private Bson parseQuery(Query query, boolean isolated) throws CatalogDBException {
