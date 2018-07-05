@@ -1,5 +1,7 @@
 package org.opencb.opencga.storage.mongodb.metadata;
 
+import com.mongodb.ErrorCategory;
+import com.mongodb.MongoWriteException;
 import com.mongodb.ReadPreference;
 import com.mongodb.WriteConcern;
 import com.mongodb.client.model.Updates;
@@ -10,7 +12,9 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.adaptors.ProjectMetadataAdaptor;
 import org.opencb.opencga.storage.mongodb.utils.MongoLock;
 
@@ -28,10 +32,13 @@ import static org.opencb.commons.datastore.mongodb.MongoDBCollection.UPSERT;
 public class MongoDBProjectMetadataDBAdaptor implements ProjectMetadataAdaptor {
 
     public static final String ID = "META";
+    public static final Document QUERY = new Document("_id", ID);
     private final MongoLock mongoLock;
     private final MongoDBCollection collection;
+    private GenericDocumentComplexConverter<ProjectMetadata> converter;
 
     public MongoDBProjectMetadataDBAdaptor(MongoDataStore db, String collectionName) {
+        converter = new GenericDocumentComplexConverter<>(ProjectMetadata.class);
         this.collection = db.getCollection(collectionName)
                 .withReadPreference(ReadPreference.primary())
                 .withWriteConcern(WriteConcern.ACKNOWLEDGED);
@@ -50,8 +57,7 @@ public class MongoDBProjectMetadataDBAdaptor implements ProjectMetadataAdaptor {
 
     @Override
     public QueryResult<ProjectMetadata> getProjectMetadata() {
-        return collection.find(new Document("_id", ID), new Document(), new GenericDocumentComplexConverter<>(ProjectMetadata.class),
-                new QueryOptions());
+        return collection.find(QUERY, new Document(), converter, new QueryOptions());
     }
 
     @Override
@@ -59,11 +65,35 @@ public class MongoDBProjectMetadataDBAdaptor implements ProjectMetadataAdaptor {
         Document mongo = new GenericDocumentComplexConverter<>(ProjectMetadata.class).convertToStorageType(projectMetadata);
 
         // Update field by field, instead of replacing the whole object to preserve existing fields like "_lock"
-        Document query = new Document("_id", ID);
         List<Bson> updates = new ArrayList<>(mongo.size());
         mongo.forEach((s, o) -> updates.add(new Document("$set", new Document(s, o))));
 
-        return collection.update(query, Updates.combine(updates), new QueryOptions(UPSERT, true));
+        return collection.update(QUERY, Updates.combine(updates), new QueryOptions(UPSERT, true));
     }
 
+    @Override
+    public int generateId(StudyConfiguration studyConfiguration, String idType) throws StorageEngineException {
+        // Ignore study configuration. Same ID counter for all studies in the same database
+        String field = "counters." + idType;
+        Document projection = new Document(field, true);
+        Bson inc = Updates.inc(field, 1);
+        QueryOptions queryOptions = new QueryOptions("returnNew", true);
+        QueryResult<Document> result = collection.findAndUpdate(QUERY, projection, null, inc, queryOptions);
+        if (result.first() == null) {
+            try {
+                updateProjectMetadata(new ProjectMetadata());
+            } catch (MongoWriteException e) {
+                if (e.getError().getCategory().equals(ErrorCategory.DUPLICATE_KEY)) {
+                    System.out.println("SKIP!");
+                } else {
+                    throw e;
+                }
+            }
+            return generateId(studyConfiguration, idType);
+        } else {
+            Document document = result.getResult().get(0);
+            Document counters = document.get("counters", Document.class);
+            return counters.getInteger(idType);
+        }
+    }
 }

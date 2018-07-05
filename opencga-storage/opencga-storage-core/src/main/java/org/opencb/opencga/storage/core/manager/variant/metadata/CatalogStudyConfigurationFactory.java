@@ -43,6 +43,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.api.FileDBAdaptor.QueryParams.INDEX;
 import static org.opencb.opencga.catalog.db.api.FileDBAdaptor.QueryParams.NAME;
+import static org.opencb.opencga.catalog.db.api.FileDBAdaptor.QueryParams.PATH;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -197,7 +198,7 @@ public class CatalogStudyConfigurationFactory {
 
             try (DBIterator<File> iterator = catalogManager.getFileManager().iterator(studyConfiguration.getStudyName(),
                     query,
-                    new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(NAME.key(), INDEX.key())), sessionId)) {
+                    new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(NAME.key(), PATH.key(), INDEX.key())), sessionId)) {
                 while (iterator.hasNext()) {
                     File file = iterator.next();
                     String status = file.getIndex() == null || file.getIndex().getStatus() == null

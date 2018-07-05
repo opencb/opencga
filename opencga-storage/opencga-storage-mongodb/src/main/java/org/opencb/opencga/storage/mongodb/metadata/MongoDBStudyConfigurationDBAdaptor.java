@@ -24,6 +24,7 @@ import com.mongodb.client.result.UpdateResult;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
@@ -55,6 +56,7 @@ public class MongoDBStudyConfigurationDBAdaptor implements StudyConfigurationAda
         collection = db.getCollection(collectionName)
                 .withReadPreference(ReadPreference.primary())
                 .withWriteConcern(WriteConcern.ACKNOWLEDGED);
+        collection.createIndex(new Document("studyName", 1), new ObjectMap(MongoDBCollection.UNIQUE, true));
         mongoLock = new MongoLock(collection, "_lock");
     }
 
@@ -96,6 +98,8 @@ public class MongoDBStudyConfigurationDBAdaptor implements StudyConfigurationAda
         }
         if (studyName != null) {
             query.append("studyName", studyName);
+        } else {
+            query.append("studyName", new Document("$exists", true));
         }
         if (timeStamp != null) {
             query.append("timeStamp", new Document("$ne", timeStamp));
@@ -137,7 +141,7 @@ public class MongoDBStudyConfigurationDBAdaptor implements StudyConfigurationAda
 
     @Override
     public List<String> getStudyNames(QueryOptions options) {
-        List<String> studyNames = collection.distinct("studyName", null).getResult();
+        List<String> studyNames = collection.distinct("studyName", new Document("studyName", new Document("$exists", 1))).getResult();
         return studyNames.stream().map(Object::toString).collect(Collectors.toList());
     }
 

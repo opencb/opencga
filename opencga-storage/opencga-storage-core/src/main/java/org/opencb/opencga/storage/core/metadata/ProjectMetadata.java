@@ -5,10 +5,7 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Created on 02/05/18.
@@ -23,6 +20,8 @@ public class ProjectMetadata {
     private int release;
 
     private VariantAnnotationSets annotation;
+
+    private Map<String, Integer> counters;
 
     private ObjectMap attributes;
 
@@ -211,24 +210,27 @@ public class ProjectMetadata {
 
     public ProjectMetadata() {
         release = 1;
-        attributes = new ObjectMap();
         annotation = new VariantAnnotationSets();
+        counters = new HashMap<>();
+        attributes = new ObjectMap();
     }
 
     public ProjectMetadata(String species, String assembly, int release) {
-        this(species, assembly, release, null, null);
+        this(species, assembly, release, null, null, null);
     }
 
-    public ProjectMetadata(String species, String assembly, int release, ObjectMap attributes, VariantAnnotationSets annotation) {
+    public ProjectMetadata(String species, String assembly, int release, ObjectMap attributes, Map<String, Integer> counters,
+                           VariantAnnotationSets annotation) {
         this.species = species;
         this.assembly = assembly;
         this.release = release;
         this.attributes = attributes != null ? attributes : new ObjectMap();
         this.annotation = annotation != null ? annotation : new VariantAnnotationSets();
+        this.counters = counters != null ? counters : new HashMap<>();
     }
 
     public ProjectMetadata copy() {
-        return new ProjectMetadata(species, assembly, release, new ObjectMap(attributes), annotation);
+        return new ProjectMetadata(species, assembly, release, new ObjectMap(attributes), new HashMap<>(counters), annotation);
     }
 
     public String getSpecies() {
@@ -264,6 +266,15 @@ public class ProjectMetadata {
 
     public ProjectMetadata setAnnotation(VariantAnnotationSets annotation) {
         this.annotation = annotation;
+        return this;
+    }
+
+    public Map<String, Integer> getCounters() {
+        return counters;
+    }
+
+    public ProjectMetadata setCounters(Map<String, Integer> counters) {
+        this.counters = counters;
         return this;
     }
 

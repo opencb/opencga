@@ -111,14 +111,18 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 //        COMPRESS_GENOTYPES ("compressGenotypes", true),    //Stores sample information as compressed genotypes
         EXCLUDE_GENOTYPES("exclude.genotypes", false),              //Do not store genotypes from samples
 
+        @Deprecated // Should be a member, not a parameter
         STUDY_CONFIGURATION("studyConfiguration", ""),      //
 
         STUDY_TYPE("studyType", SampleSetType.CASE_CONTROL),
         AGGREGATED_TYPE("aggregatedType", Aggregation.NONE),
         STUDY_NAME("studyName", "default"),
+        @Deprecated // Should be a member, not a parameter
         STUDY_ID("studyId", -1),
+        @Deprecated // Should be a member, not a parameter
         FILE_ID("fileId", -1),
         OVERRIDE_FILE_ID("overrideFileId", false),
+        @Deprecated // Should not be used
         SAMPLE_IDS("sampleIds", ""),
         GVCF("gvcf", false),
         ISOLATE_FILE_FROM_STUDY_CONFIGURATION("isolateStudyConfiguration", false),
@@ -452,10 +456,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 VariantDBAdaptor dbAdaptor = getDBAdaptor();
                 logger.debug("Calculating stats for files: '{}'...", files.toString());
 
-                int studyId = options.getInt(Options.STUDY_ID.key());
+                String studyName = options.getString(Options.STUDY_NAME.key());
                 QueryOptions statsOptions = new QueryOptions(options);
                 StudyConfiguration studyConfiguration =
-                        dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyId, new QueryOptions()).first();
+                        dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyName, new QueryOptions()).first();
 
                 List<Integer> fileIds = new ArrayList<>(files.size());
                 for (URI uri : files) {

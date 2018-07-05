@@ -675,8 +675,8 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     }
 
     private StudyConfiguration preMerge(List<Integer> fileIds) throws StorageEngineException {
-        int studyId = getStudyId();
-        return dbAdaptor.getStudyConfigurationManager().lockAndUpdate(studyId, studyConfiguration -> {
+        return dbAdaptor.getStudyConfigurationManager().lockAndUpdate(getStudyId(), studyConfiguration -> {
+            studyConfiguration = checkExistsStudyConfiguration(studyConfiguration);
             for (Integer fileId : fileIds) {
                 if (studyConfiguration.getIndexedFiles().contains(fileId)) {
                     throw StorageEngineException.alreadyLoaded(fileId, studyConfiguration);

@@ -34,6 +34,7 @@ import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.metadata.local.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
@@ -59,8 +60,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.DB_NAME;
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.RESUME;
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.*;
@@ -406,8 +406,13 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
 
                 }
                 if (doMerge) {
-                    annotateLoadedFiles(outdirUri, inputFiles, results, getOptions());
-                    calculateStatsForLoadedFiles(outdirUri, inputFiles, results, getOptions());
+                    StudyConfiguration studyConfiguration = storageResultMap.get(inputFiles.get(0)).getStudyConfiguration();
+                    ObjectMap options = getOptions();
+                    options.put(STUDY_NAME.key(), studyConfiguration.getStudyName());
+                    options.put(STUDY_ID.key(), studyConfiguration.getStudyId());
+
+                    annotateLoadedFiles(outdirUri, inputFiles, results, options);
+                    calculateStatsForLoadedFiles(outdirUri, inputFiles, results, options);
                 }
             }
 

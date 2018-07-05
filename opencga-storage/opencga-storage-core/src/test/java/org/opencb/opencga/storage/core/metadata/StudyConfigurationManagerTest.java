@@ -17,12 +17,16 @@
 package org.opencb.opencga.storage.core.metadata;
 
 import com.google.common.collect.BiMap;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.variant.dummy.DummyProjectMetadataAdaptor;
+import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationAdaptor;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantFileMetadataDBAdaptor;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -40,6 +44,12 @@ public class StudyConfigurationManagerTest {
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
+    private StudyConfigurationManager scm;
+
+    @Before
+    public void setUp() throws Exception {
+        scm = new StudyConfigurationManager(new DummyProjectMetadataAdaptor(), new DummyStudyConfigurationAdaptor(), new DummyVariantFileMetadataDBAdaptor());
+    }
 
     protected StudyConfiguration newStudyConfiguration() {
         return new StudyConfiguration(1, "Study");
@@ -53,7 +63,7 @@ public class StudyConfigurationManagerTest {
         Integer fileId = 5;
         VariantFileMetadata source = createVariantFileMetadata(studyConfiguration, fileId);
         ObjectMap options = new ObjectMap();
-        StudyConfigurationManager.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
+        scm.registerFileSamples(studyConfiguration, fileId, source, options);
         assertTrue(studyConfiguration.getSampleIds().keySet().containsAll(Arrays.asList("s0", "s1", "s2", "s3", "s4", "s5")));
         assertTrue(studyConfiguration.getSamplesInFiles().get(fileId).stream()
                 .map(s -> studyConfiguration.getSampleIds().inverse().get(s))
@@ -72,7 +82,7 @@ public class StudyConfigurationManagerTest {
         VariantFileMetadata source = createVariantFileMetadata(studyConfiguration, fileId);
         studyConfiguration.getSampleIds().put("s10", 4);
         ObjectMap options = new ObjectMap(SAMPLE_IDS.key(), "s0:20,s1:21,s2:22,s3:23,s4:24,s5:25");
-        StudyConfigurationManager.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
+        scm.registerFileSamples(studyConfiguration, fileId, source, options);
         assertTrue(studyConfiguration.getSampleIds().keySet().containsAll(Arrays.asList("s0", "s1", "s2", "s3", "s4", "s5")));
         assertEquals(Arrays.asList("s0", "s1", "s2", "s3", "s4", "s5"),
                 studyConfiguration.getSamplesInFiles().get(fileId).stream()
@@ -97,7 +107,7 @@ public class StudyConfigurationManagerTest {
         VariantFileMetadata source = createVariantFileMetadata(studyConfiguration, fileId);
         ObjectMap options = new ObjectMap(SAMPLE_IDS.key(), "s0:20,s1:21,s2:22,s3:23,s4:24,s5:25");
         studyConfiguration.getSamplesInFiles().put(fileId, new LinkedHashSet<>(Arrays.asList(20, 21, 22, 23, 24, 25)));
-        StudyConfigurationManager.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
+        scm.registerFileSamples(studyConfiguration, fileId, source, options);
     }
 
     @Test
@@ -110,7 +120,7 @@ public class StudyConfigurationManagerTest {
 
         thrown.expect(StorageEngineException.class);
         thrown.expectMessage("s0:20");   //Already present
-        StudyConfigurationManager.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
+        scm.registerFileSamples(studyConfiguration, fileId, source, options);
     }
 
     @Test
@@ -123,7 +133,7 @@ public class StudyConfigurationManagerTest {
 
         thrown.expect(StorageEngineException.class);
         thrown.expectMessage("UNEXISTING_SAMPLE");   //Not in file
-        StudyConfigurationManager.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
+        scm.registerFileSamples(studyConfiguration, fileId, source, options);
     }
 
     @Test
@@ -135,7 +145,7 @@ public class StudyConfigurationManagerTest {
 
         thrown.expect(StorageEngineException.class);
         thrown.expectMessage("NaN");   //Not a number
-        StudyConfigurationManager.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
+        scm.registerFileSamples(studyConfiguration, fileId, source, options);
     }
 
     @Test
@@ -147,7 +157,7 @@ public class StudyConfigurationManagerTest {
 
         thrown.expect(StorageEngineException.class);
         thrown.expectMessage("s5:");   //Malformed
-        StudyConfigurationManager.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
+        scm.registerFileSamples(studyConfiguration, fileId, source, options);
     }
 
     @Test
@@ -159,7 +169,7 @@ public class StudyConfigurationManagerTest {
 
         thrown.expect(StorageEngineException.class);
         thrown.expectMessage("s3");   //Malformed
-        StudyConfigurationManager.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
+        scm.registerFileSamples(studyConfiguration, fileId, source, options);
     }
 
     @Test
@@ -171,7 +181,7 @@ public class StudyConfigurationManagerTest {
 
         thrown.expect(StorageEngineException.class);
         thrown.expectMessage("[s1, s2, s3, s4, s5]");   //Missing samples
-        StudyConfigurationManager.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
+        scm.registerFileSamples(studyConfiguration, fileId, source, options);
     }
 
     @Test
@@ -183,7 +193,7 @@ public class StudyConfigurationManagerTest {
         studyConfiguration.getSamplesInFiles().put(fileId, new LinkedHashSet<>(Arrays.asList(20, 21, 22, 23, 24)));
         thrown.expect(StorageEngineException.class);
         thrown.expectMessage("s5");
-        StudyConfigurationManager.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
+        scm.registerFileSamples(studyConfiguration, fileId, source, options);
     }
 
     @Test
@@ -195,7 +205,7 @@ public class StudyConfigurationManagerTest {
         studyConfiguration.getSampleIds().put("GhostSample", 0);
         studyConfiguration.getSamplesInFiles().put(fileId, new LinkedHashSet<>(Arrays.asList(20, 21, 22, 23, 24, 25, 0)));
         thrown.expect(StorageEngineException.class);
-        StudyConfigurationManager.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
+        scm.registerFileSamples(studyConfiguration, fileId, source, options);
     }
 
     @Test

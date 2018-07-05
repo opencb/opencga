@@ -65,10 +65,7 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
@@ -132,13 +129,13 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
     @Override
     public URI preTransform(URI input) throws StorageEngineException, IOException, FileFormatException {
         String fileName = VariantReaderUtils.getFileName(input);
-        int fileId = options.getInt(Options.FILE_ID.key(), Options.FILE_ID.defaultValue());
         int studyId = options.getInt(Options.STUDY_ID.key(), Options.STUDY_ID.defaultValue());
+        String studyName = options.getString(Options.STUDY_NAME.key());
 
         boolean isolate = options.getBoolean(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(),
                 Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.defaultValue());
         StudyConfiguration studyConfiguration;
-        if (studyId < 0 && fileId < 0 || isolate) {
+        if (studyId < 0 || isolate) {
             logger.debug("Isolated study configuration");
             studyConfiguration = new StudyConfiguration(Options.STUDY_ID.defaultValue(), "unknown", Options.FILE_ID.defaultValue(),
                     fileName);
@@ -146,19 +143,14 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                     Options.AGGREGATED_TYPE.defaultValue().toString()));
             options.put(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(), true);
         } else {
-            studyConfiguration = dbAdaptor.getStudyConfigurationManager().lockAndUpdate(studyId, existingStudyConfiguration -> {
-                if (existingStudyConfiguration == null) {
-                    logger.info("Creating a new StudyConfiguration");
-                    StudyConfigurationManager.checkStudyId(studyId);
-                    existingStudyConfiguration = new StudyConfiguration(studyId, options.getString(Options.STUDY_NAME.key()));
-                    existingStudyConfiguration.setAggregationStr(options.getString(Options.AGGREGATED_TYPE.key(),
-                            Options.AGGREGATED_TYPE.defaultValue().toString()));
-                }
+            StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
+            studyConfiguration = getOrCreateStudyConfiguration(true);
+            studyConfiguration = scm.lockAndUpdate(studyId, existingStudyConfiguration -> {
                 if (existingStudyConfiguration.getAggregation() == null) {
                     existingStudyConfiguration.setAggregationStr(options.getString(Options.AGGREGATED_TYPE.key(),
                             Options.AGGREGATED_TYPE.defaultValue().toString()));
                 }
-                options.put(Options.FILE_ID.key(), StudyConfigurationManager.checkNewFile(existingStudyConfiguration, fileId, fileName));
+                options.put(Options.FILE_ID.key(), scm.registerFile(existingStudyConfiguration, fileName));
                 return existingStudyConfiguration;
             });
         }
@@ -485,13 +477,12 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
     @Override
     public URI preLoad(URI input, URI output) throws StorageEngineException {
+        getOrCreateStudyConfiguration(false);
         int studyId = options.getInt(Options.STUDY_ID.key(), -1);
-        options.remove(Options.STUDY_CONFIGURATION.key());
 
         VariantFileMetadata fileMetadata = readVariantFileMetadata(input);
         //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
         dbAdaptor.getStudyConfigurationManager().lockAndUpdate(studyId, studyConfiguration -> {
-            studyConfiguration = checkOrCreateStudyConfiguration(studyConfiguration);
             securePreLoad(studyConfiguration, fileMetadata);
             options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
             return studyConfiguration;
@@ -513,39 +504,15 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
         /*
          * Before load file, check and add fileName to the StudyConfiguration.
-         * FileID and FileName is read from the VariantSource
-         * If fileId is -1, read fileId from Options
+         * FileName is read from the VariantFileMetadata
          * Will fail if:
-         *     fileId is not an integer
          *     fileId was already in the studyConfiguration.indexedFiles
-         *     fileId was already in the studyConfiguration.fileIds with a different fileName
-         *     fileName was already in the studyConfiguration.fileIds with a different fileId
          */
 
-        int fileId;
         String fileName = fileMetadata.getPath();
-        try {
-            fileId = Integer.parseInt(fileMetadata.getId());
-        } catch (NumberFormatException e) {
-            throw new StorageEngineException("FileId '" + fileMetadata.getId() + "' from file " + fileName + " is not an integer", e);
-        }
-
-        if (fileId < 0) {
-            fileId = options.getInt(Options.FILE_ID.key(), Options.FILE_ID.defaultValue());
-        } else {
-            int fileIdFromParams = options.getInt(Options.FILE_ID.key(), Options.FILE_ID.defaultValue());
-            if (fileIdFromParams >= 0 && fileIdFromParams != fileId) {
-                if (!options.getBoolean(Options.OVERRIDE_FILE_ID.key(), Options.OVERRIDE_FILE_ID.defaultValue())) {
-                    throw new StorageEngineException("Wrong fileId! Unable to load using fileId: "
-                            + fileIdFromParams + ". "
-                            + "The input file has fileId: " + fileId
-                            + ". Use " + Options.OVERRIDE_FILE_ID.key() + " to ignore original fileId.");
-                } else {
-                    //Override the fileId
-                    fileId = fileIdFromParams;
-                }
-            }
-        }
+        int fileId = getStudyConfigurationManager().registerFile(studyConfiguration, fileName);
+        getStudyConfigurationManager().registerFileSamples(studyConfiguration, fileId, fileMetadata, options);
+        options.put(Options.FILE_ID.key(), fileId);
 
         final boolean excludeGenotypes;
         if (studyConfiguration.getIndexedFiles().isEmpty()) {
@@ -562,14 +529,6 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                     .getBoolean(Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES.defaultValue());
             options.put(Options.EXCLUDE_GENOTYPES.key(), excludeGenotypes);
         }
-
-
-        fileId = StudyConfigurationManager.checkNewFile(studyConfiguration, fileId, fileName);
-        options.put(Options.FILE_ID.key(), fileId);
-        studyConfiguration.getFileIds().put(fileMetadata.getPath(), fileId);
-//        studyConfiguration.getHeaders().put(fileId, source.getMetadata().get(VariantFileUtils.VARIANT_FILE_HEADER).toString());
-
-        StudyConfigurationManager.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, fileMetadata, options);
 
         // Get Extra genotype fields
         Stream<String> stream;
@@ -684,22 +643,6 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         }
     }
 
-    protected StudyConfiguration checkOrCreateStudyConfiguration(boolean forceFetch) throws StorageEngineException {
-        return checkOrCreateStudyConfiguration(getStudyConfiguration(forceFetch));
-    }
-
-    protected StudyConfiguration checkOrCreateStudyConfiguration(StudyConfiguration studyConfiguration) throws StorageEngineException {
-        if (studyConfiguration == null) {
-            logger.info("Creating a new StudyConfiguration");
-            int studyId = options.getInt(Options.STUDY_ID.key(), Options.STUDY_ID.defaultValue());
-            String studyName = options.getString(Options.STUDY_NAME.key(), Options.STUDY_NAME.defaultValue());
-            StudyConfigurationManager.checkStudyId(studyId);
-            studyConfiguration = new StudyConfiguration(studyId, studyName);
-            options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
-        }
-        return studyConfiguration;
-    }
-
     @Override
     public URI postLoad(URI input, URI output) throws StorageEngineException {
 //        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
@@ -732,23 +675,13 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         // Update the cohort ALL. Invalidate if needed
         String defaultCohortName = StudyEntry.DEFAULT_COHORT;
         BiMap<String, Integer> indexedSamples = StudyConfiguration.getIndexedSamples(studyConfiguration);
-        final Integer defaultCohortId;
-        if (studyConfiguration.getCohortIds().containsKey(defaultCohortName)) { //Check if "defaultCohort" exists
-            defaultCohortId = studyConfiguration.getCohortIds().get(defaultCohortName);
-            if (studyConfiguration.getCalculatedStats().contains(defaultCohortId)) { //Check if "defaultCohort" is calculated
-                //Check if the samples number are different
-                if (!indexedSamples.values().equals(studyConfiguration.getCohorts().get(defaultCohortId))) {
-                    logger.debug("Cohort \"{}\":{} was already calculated. Invalidating stats.",
-                            defaultCohortName, defaultCohortId);
-                    studyConfiguration.getCalculatedStats().remove(defaultCohortId);
-                    studyConfiguration.getInvalidStats().add(defaultCohortId);
-                }
-            }
-        } else {
-            // Default cohort does not exist. Create cohort.
-            defaultCohortId = studyConfiguration.getCohortIds().values().stream().max(Integer::compareTo).orElse(1);
-            studyConfiguration.getCohortIds().put(StudyEntry.DEFAULT_COHORT, defaultCohortId);
-        }
+
+        // Register or update default cohort
+        getStudyConfigurationManager()
+                .registerCohorts(studyConfiguration, Collections.singletonMap(defaultCohortName, indexedSamples.keySet()));
+        int defaultCohortId = studyConfiguration.getCohortIds().get(defaultCohortName);
+
+
         logger.info("Add loaded samples to Default Cohort \"" + defaultCohortName + '"');
         studyConfiguration.getCohorts().put(defaultCohortId, indexedSamples.values());
 
@@ -798,6 +731,24 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
     /* --------------------------------------- */
     /*  StudyConfiguration utils methods        */
     /* --------------------------------------- */
+
+    protected StudyConfiguration getOrCreateStudyConfiguration(boolean forceFetch) throws StorageEngineException {
+        return checkExistsStudyConfiguration(getStudyConfiguration(forceFetch));
+    }
+
+    protected StudyConfiguration checkExistsStudyConfiguration(StudyConfiguration studyConfiguration) throws StorageEngineException {
+        if (studyConfiguration == null) {
+            String studyName = options.getString(Options.STUDY_NAME.key(), Options.STUDY_NAME.defaultValue());
+            studyConfiguration = getStudyConfigurationManager().getStudyConfiguration(studyName, null).first();
+            if (studyConfiguration == null) {
+                logger.info("Creating a new StudyConfiguration '{}'", studyName);
+                studyConfiguration = getStudyConfigurationManager().createStudy(studyName);
+            }
+        }
+        options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+        options.put(Options.STUDY_ID.key(), studyConfiguration.getStudyId());
+        return studyConfiguration;
+    }
 
     public final StudyConfiguration getStudyConfiguration() throws StorageEngineException {
         return getStudyConfiguration(false);

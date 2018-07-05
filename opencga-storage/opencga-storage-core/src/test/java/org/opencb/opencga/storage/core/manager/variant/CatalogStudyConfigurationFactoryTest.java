@@ -113,6 +113,7 @@ public class CatalogStudyConfigurationFactoryTest {
 
     @After
     public void tearDown() throws Exception {
+        DummyProjectMetadataAdaptor.writeAndClear(catalogManagerExternalResource.getOpencgaHome());
         DummyStudyConfigurationAdaptor.writeAndClear(catalogManagerExternalResource.getOpencgaHome());
     }
 
@@ -130,9 +131,9 @@ public class CatalogStudyConfigurationFactoryTest {
                     Collections.emptyMap());
             catalogManager.getFileManager().setFileIndex(studyId, file.getPath(), fileIndex, sessionId);
             indexedFiles.add((int) file.getUid());
-            List<Long> samples = catalogManager.getCohortManager().getSamples(studyId, cohortId, null, sessionId).getResult().stream().map(Sample::getUid).collect(Collectors.toList());
-            samples.addAll(file.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()));
-            catalogManager.getCohortManager().update(studyId, cohortId, new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(), samples), null, sessionId);
+            List<String> samples = catalogManager.getCohortManager().getSamples(studyId, cohortId, null, sessionId).getResult().stream().map(Sample::getId).collect(Collectors.toList());
+            samples.addAll(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
+            catalogManager.getCohortManager().update(studyId, cohortId, new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(), samples), true, null, sessionId);
         }
         return catalogManager.getFileManager().get(studyId, file.getId(), null, sessionId).first();
     }
