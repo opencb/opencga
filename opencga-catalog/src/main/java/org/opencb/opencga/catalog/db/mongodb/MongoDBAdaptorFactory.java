@@ -56,7 +56,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
             "individual",
             "cohort",
             "dataset",
-            "panel",
+            "diseasepanel",
             "family",
             "clinical",
             "metadata",
@@ -72,7 +72,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     public static final String COHORT_COLLECTION = "cohort";
     public static final String FAMILY_COLLECTION = "family";
     public static final String DATASET_COLLECTION = "dataset";
-    public static final String PANEL_COLLECTION = "panel";
+    public static final String PANEL_COLLECTION = "diseasepanel";
     public static final String CLINICAL_ANALYSIS_COLLECTION = "clinical";
     public static final String METADATA_COLLECTION = "metadata";
     public static final String AUDIT_COLLECTION = "audit";
