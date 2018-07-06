@@ -698,6 +698,9 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
                     case REGIONS:
                         addAutoOrQuery(QueryParams.REGIONS_LOCATION.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
+                    case VARIANTS:
+                        addAutoOrQuery(QueryParams.VARIANTS_ID.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
                     case ID:
                     case UUID:
                     case NAME:
@@ -705,7 +708,8 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
                     case VERSION:
                     case DESCRIPTION:
                     case AUTHOR:
-                    case VARIANTS:
+                    case VARIANTS_ID:
+                    case VARIANTS_PHENOTYPE:
                     case PHENOTYPES_ID:
                     case PHENOTYPES_NAME:
                     case PHENOTYPES_SOURCE:

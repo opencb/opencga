@@ -61,6 +61,8 @@ public interface DiseasePanelDBAdaptor extends DBAdaptor<DiseasePanel> {
         PHENOTYPES_SOURCE("phenotypes.source", TEXT, ""),
 
         VARIANTS("variants", TEXT_ARRAY, ""),
+        VARIANTS_ID("variants.id", TEXT, ""),
+        VARIANTS_PHENOTYPE("variants.phenotype", TEXT, ""),
 
         GENES("genes", TEXT_ARRAY, ""),
         GENES_ID("genes.id", TEXT, ""),
