@@ -808,12 +808,7 @@ public class StudyConfigurationManager implements AutoCloseable {
 
         //Assign new sampleIds
         for (String sample : fileMetadata.getSampleIds()) {
-            if (!studyConfiguration.getSampleIds().containsKey(sample)) {
-                //If the sample was not in the original studyId, a new SampleId is assigned.
-
-                int sampleId = newSampleId(studyConfiguration);
-                studyConfiguration.getSampleIds().put(sample, sampleId);
-            }
+            registerSample(studyConfiguration, sample);
         }
 
         if (studyConfiguration.getSamplesInFiles().containsKey(fileId)) {
@@ -836,6 +831,15 @@ public class StudyConfigurationManager implements AutoCloseable {
                 sampleIdsInFile.add(studyConfiguration.getSampleIds().get(sample));
             }
             studyConfiguration.getSamplesInFiles().put(fileId, sampleIdsInFile);
+        }
+    }
+
+    protected void registerSample(StudyConfiguration studyConfiguration, String sample) throws StorageEngineException {
+        if (!studyConfiguration.getSampleIds().containsKey(sample)) {
+            //If the sample was not in the original studyId, a new SampleId is assigned.
+
+            int sampleId = newSampleId(studyConfiguration);
+            studyConfiguration.getSampleIds().put(sample, sampleId);
         }
     }
 

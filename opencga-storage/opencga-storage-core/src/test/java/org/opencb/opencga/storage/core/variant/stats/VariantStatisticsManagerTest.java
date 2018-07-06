@@ -76,12 +76,9 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
     @Test
     public void calculateStatsMultiCohortsTest() throws Exception {
         //Calculate stats for 2 cohorts at one time
-        VariantStatisticsManager vsm = variantStorageEngine.newVariantStatisticsManager();
-
         checkCohorts(dbAdaptor, studyConfiguration);
 
-        Integer fileId = studyConfiguration.getFileIds().get(Paths.get(inputUri).getFileName().toString());
-        QueryOptions options = new QueryOptions(VariantStorageEngine.Options.FILE_ID.key(), fileId);
+        QueryOptions options = new QueryOptions();
         options.put(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100);
         Iterator<String> iterator = studyConfiguration.getSampleIds().keySet().iterator();
 
@@ -109,8 +106,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
         //Calculate stats for 2 cohorts separately
 
         String studyName = studyConfiguration.getStudyName();
-        Integer fileId = studyConfiguration.getFileIds().get(Paths.get(inputUri).getFileName().toString());
-        QueryOptions options = new QueryOptions(VariantStorageEngine.Options.FILE_ID.key(), fileId);
+        QueryOptions options = new QueryOptions();
         options.put(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100);
         Iterator<String> iterator = studyConfiguration.getSampleIds().keySet().iterator();
         StudyConfiguration studyConfiguration;

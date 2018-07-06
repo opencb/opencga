@@ -110,18 +110,13 @@ public abstract class StorageOperation {
         return catalogOutDirId;
     }
 
-    public StudyConfiguration updateStudyConfiguration(String sessionId, long studyId, DataStore dataStore)
-            throws IOException, CatalogException, StorageEngineException {
-        return updateCatalogFromStudyConfiguration(sessionId, studyId, dataStore);
-    }
-
-    public StudyConfiguration updateCatalogFromStudyConfiguration(String sessionId, long studyId, DataStore dataStore)
+    public StudyConfiguration updateCatalogFromStudyConfiguration(String sessionId, String study, DataStore dataStore)
             throws IOException, CatalogException, StorageEngineException {
 
         CatalogStudyConfigurationFactory studyConfigurationFactory = new CatalogStudyConfigurationFactory(catalogManager);
         StudyConfigurationManager studyConfigurationManager = getVariantStorageEngine(dataStore).getStudyConfigurationManager();
 
-        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration((int) studyId, null).first();
+        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(study, null).first();
         if (studyConfiguration != null) {
             // Update Catalog file and cohort status.
             studyConfigurationFactory.updateCatalogFromStudyConfiguration(studyConfiguration, sessionId);

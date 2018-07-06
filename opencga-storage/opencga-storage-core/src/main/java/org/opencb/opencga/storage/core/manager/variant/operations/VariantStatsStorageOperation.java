@@ -63,18 +63,13 @@ public class VariantStatsStorageOperation extends StorageOperation {
 
     public void calculateStats(String studyStr, List<String> cohorts, String outdirStr, QueryOptions options, String sessionId)
             throws CatalogException, IOException, URISyntaxException, StorageEngineException {
-        String fileIdStr = options.getString(Options.FILE_ID.key(), null);
         boolean overwriteStats = options.getBoolean(Options.OVERWRITE_STATS.key(), false);
         boolean updateStats = options.getBoolean(Options.UPDATE_STATS.key(), false);
         boolean resume = options.getBoolean(Options.RESUME.key(), Options.RESUME.defaultValue());
 
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
-        long studyUid = study.getUid();
         String studyFqn = study.getFqn();
-
-        final String fileName = fileIdStr == null ? null : catalogManager.getFileManager().getUid(fileIdStr, studyStr, sessionId)
-                .getResource().getName();
 
 
         // Outdir must be empty
@@ -85,7 +80,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
         Aggregation aggregation = getAggregation(studyFqn, options, sessionId);
 
         DataStore dataStore = StorageOperation.getDataStore(catalogManager, studyFqn, File.Bioformat.VARIANT, sessionId);
-        StudyConfiguration studyConfiguration = updateStudyConfiguration(sessionId, studyUid, dataStore);
+        StudyConfiguration studyConfiguration = updateCatalogFromStudyConfiguration(sessionId, studyFqn, dataStore);
 
         List<String> cohortIds = checkCohorts(study, aggregation, cohorts, options, sessionId);
         Map<String, List<String>> cohortsMap = checkCanCalculateCohorts(studyFqn, cohortIds, updateStats, resume, sessionId);
@@ -103,7 +98,6 @@ public class VariantStatsStorageOperation extends StorageOperation {
                 .append(Options.OVERWRITE_STATS.key(), overwriteStats)
                 .append(Options.UPDATE_STATS.key(), updateStats)
                 .append(Options.RESUME.key(), resume);
-        calculateStatsOptions.putIfNotNull(Options.FILE_ID.key(), fileName);
         calculateStatsOptions.putIfNotEmpty(VariantQueryParam.REGION.key(), region);
 
         // if the study is aggregated and a mapping file is provided, pass it to storage

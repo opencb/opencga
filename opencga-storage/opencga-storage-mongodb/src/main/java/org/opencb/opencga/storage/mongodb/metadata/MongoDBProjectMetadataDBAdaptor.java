@@ -1,7 +1,5 @@
 package org.opencb.opencga.storage.mongodb.metadata;
 
-import com.mongodb.ErrorCategory;
-import com.mongodb.MongoWriteException;
 import com.mongodb.ReadPreference;
 import com.mongodb.WriteConcern;
 import com.mongodb.client.model.Updates;
@@ -33,6 +31,7 @@ public class MongoDBProjectMetadataDBAdaptor implements ProjectMetadataAdaptor {
 
     public static final String ID = "META";
     public static final Document QUERY = new Document("_id", ID);
+    public static final String COUNTERS_FIELD = "counters";
     private final MongoLock mongoLock;
     private final MongoDBCollection collection;
     private GenericDocumentComplexConverter<ProjectMetadata> converter;
@@ -66,7 +65,12 @@ public class MongoDBProjectMetadataDBAdaptor implements ProjectMetadataAdaptor {
 
         // Update field by field, instead of replacing the whole object to preserve existing fields like "_lock"
         List<Bson> updates = new ArrayList<>(mongo.size());
-        mongo.forEach((s, o) -> updates.add(new Document("$set", new Document(s, o))));
+        mongo.forEach((s, o) -> {
+            // Do not update counters
+            if (!s.equals(COUNTERS_FIELD)) {
+                updates.add(new Document("$set", new Document(s, o)));
+            }
+        });
 
         return collection.update(QUERY, Updates.combine(updates), new QueryOptions(UPSERT, true));
     }
@@ -74,26 +78,40 @@ public class MongoDBProjectMetadataDBAdaptor implements ProjectMetadataAdaptor {
     @Override
     public int generateId(StudyConfiguration studyConfiguration, String idType) throws StorageEngineException {
         // Ignore study configuration. Same ID counter for all studies in the same database
-        String field = "counters." + idType;
+        return generateId(idType, true);
+    }
+
+    private int generateId(String idType, boolean retry) throws StorageEngineException {
+        String field = COUNTERS_FIELD + '.' + idType;
         Document projection = new Document(field, true);
         Bson inc = Updates.inc(field, 1);
         QueryOptions queryOptions = new QueryOptions("returnNew", true);
         QueryResult<Document> result = collection.findAndUpdate(QUERY, projection, null, inc, queryOptions);
         if (result.first() == null) {
-            try {
-                updateProjectMetadata(new ProjectMetadata());
-            } catch (MongoWriteException e) {
-                if (e.getError().getCategory().equals(ErrorCategory.DUPLICATE_KEY)) {
-                    System.out.println("SKIP!");
-                } else {
-                    throw e;
-                }
+            if (retry) {
+                ensureProjectMetadataExists();
+                return generateId(idType, false);
+            } else {
+                throw new StorageEngineException("Error creating new ID. Project Metadata not found");
             }
-            return generateId(studyConfiguration, idType);
         } else {
             Document document = result.getResult().get(0);
-            Document counters = document.get("counters", Document.class);
-            return counters.getInteger(idType);
+            Document counters = document.get(COUNTERS_FIELD, Document.class);
+            Integer id = counters.getInteger(idType);
+//            System.out.println("New ID " + idType + " : " + id);
+            return id;
+        }
+    }
+
+    protected void ensureProjectMetadataExists() throws StorageEngineException {
+        try {
+            long lock = lockProject(100, 1000);
+            if (getProjectMetadata().first() == null) {
+                updateProjectMetadata(new ProjectMetadata());
+            }
+            unLockProject(lock);
+        } catch (InterruptedException | TimeoutException e) {
+            throw new StorageEngineException("Unable to get lock over project", e);
         }
     }
 }

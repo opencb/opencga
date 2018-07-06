@@ -139,11 +139,8 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 
         // We read all input files from fileId. This can either be a single file and then we just use it,
         // or this can be a directory, in that case we use all VCF files in that directory or subdirectory
-//        long studyUidByInputFileId = getStudyId(fileIds);
-        long studyUidByInputFileId = studyInfo.getStudyUid();
         String studyFQNByInputFileId = studyInfo.getStudyFQN();
 
-        options.put(VariantStorageEngine.Options.STUDY_ID.key(), studyUidByInputFileId);
         options.put(VariantStorageEngine.Options.STUDY_NAME.key(), studyFQNByInputFileId);
         options.put(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), getAggregation(studyFQNByInputFileId, options, sessionId));
 
@@ -160,7 +157,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         }
 
         // Update Catalog from the study configuration BEFORE executing the index and fetching files from Catalog
-        updateCatalogFromStudyConfiguration(sessionId, studyUidByInputFileId, dataStore);
+        updateCatalogFromStudyConfiguration(sessionId, studyFQNByInputFileId, dataStore);
 
         List<File> inputFiles = new ArrayList<>();
 //        for (Long fileIdLong : fileIds) {
@@ -309,7 +306,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             if (calculateStats && exception != null) {
                 updateDefaultCohortStatus(study, prevDefaultCohortStatus, sessionId);
             }
-            updateStudyConfiguration(sessionId, study.getUid(), dataStore);
+            updateCatalogFromStudyConfiguration(sessionId, study.getFqn(), dataStore);
         }
 
         if (exception == null) {

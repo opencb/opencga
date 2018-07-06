@@ -247,7 +247,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 //        boolean compressGenotypes = options.getBoolean(Options.COMPRESS_GENOTYPES.key(), false);
 //        boolean compressGenotypes = defaultGenotype != null && !defaultGenotype.isEmpty();
 
-        final int fileId = options.getInt(Options.FILE_ID.key());
+        final int fileId = getFileId();
 
         logger.info("Loading variants...");
         long start = System.currentTimeMillis();
@@ -358,7 +358,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     }
 
     public void stage(URI inputUri) throws StorageEngineException {
-        final int fileId = options.getInt(Options.FILE_ID.key());
+        final int fileId = getFileId();
 
         if (!options.getBoolean(STAGE.key(), false)) {
             // Do not stage!
@@ -508,7 +508,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
     public void stageSuccess(VariantFileMetadata metadata) throws StorageEngineException {
         // Stage loading finished. Save VariantSource and update BatchOperation
-        int fileId = options.getInt(Options.FILE_ID.key());
+        int fileId = getFileId();
         metadata.setId(String.valueOf(fileId));
 
         getStudyConfigurationManager()

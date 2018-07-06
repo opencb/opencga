@@ -75,17 +75,13 @@ public class CatalogStudyConfigurationFactory {
         this.catalogManager = catalogManager;
     }
 
-    public StudyConfiguration getStudyConfiguration(long studyId, QueryOptions options) throws CatalogException {
-        return getStudyConfiguration(studyId, null, options);
-    }
-
     public StudyConfiguration getStudyConfiguration(
-            long studyId, StudyConfigurationManager studyConfigurationManager, QueryOptions options) throws CatalogException {
+            String study, StudyConfigurationManager studyConfigurationManager, QueryOptions options) throws CatalogException {
         StudyConfiguration studyConfiguration = null;
         QueryOptions qOpts = new QueryOptions(options);
 
         if (studyConfigurationManager != null) {
-            studyConfiguration = studyConfigurationManager.getStudyConfiguration((int) studyId, qOpts).first();
+            studyConfiguration = studyConfigurationManager.getStudyConfiguration(study, qOpts).first();
         }
         return studyConfiguration;
     }

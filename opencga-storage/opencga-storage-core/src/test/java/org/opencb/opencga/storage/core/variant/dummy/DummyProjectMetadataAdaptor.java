@@ -59,6 +59,10 @@ public class DummyProjectMetadataAdaptor implements ProjectMetadataAdaptor {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+        clear();
+    }
+
+    public static void clear() {
         projectMetadata = null;
     }
 

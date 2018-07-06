@@ -349,7 +349,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
 
                             if (doMerge) {
                                 logger.info("Load - Merge '{}'", input);
-                                filesToMerge.add(storagePipeline.getOptions().getInt(Options.FILE_ID.key()));
+                                filesToMerge.add(storagePipeline.getFileId());
                                 resultsToMerge.add(result);
 
                                 if (filesToMerge.size() == batchLoad || !iterator.hasNext()) {
@@ -409,7 +409,6 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
                     StudyConfiguration studyConfiguration = storageResultMap.get(inputFiles.get(0)).getStudyConfiguration();
                     ObjectMap options = getOptions();
                     options.put(STUDY_NAME.key(), studyConfiguration.getStudyName());
-                    options.put(STUDY_ID.key(), studyConfiguration.getStudyId());
 
                     annotateLoadedFiles(outdirUri, inputFiles, results, options);
                     calculateStatsForLoadedFiles(outdirUri, inputFiles, results, options);

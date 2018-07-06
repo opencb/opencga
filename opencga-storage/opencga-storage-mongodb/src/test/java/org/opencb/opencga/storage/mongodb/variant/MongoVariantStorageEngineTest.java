@@ -221,13 +221,11 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         StudyConfiguration studyConfiguration = createStudyConfiguration();
 
         StoragePipelineResult storagePipelineResult = runDefaultETL(smallInputUri, variantStorageEngine, studyConfiguration, new ObjectMap()
-                .append(VariantStorageEngine.Options.FILE_ID.key(), 3)
                 .append(MongoDBVariantOptions.STAGE.key(), true)
                 .append(MongoDBVariantOptions.MERGE.key(), false));
 
         runETL(variantStorageEngine, storagePipelineResult.getTransformResult(), outputUri, new ObjectMap()
                 .append(VariantStorageEngine.Options.ANNOTATE.key(), false)
-                .append(VariantStorageEngine.Options.FILE_ID.key(), -1)
                 .append(MongoDBVariantOptions.STAGE.key(), false)
                 .append(MongoDBVariantOptions.MERGE.key(), true), false, false, true);
 
@@ -260,14 +258,12 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         ExecutorService executor = Executors.newFixedThreadPool(3);
         Future<Integer> loadOne = executor.submit(() -> {
             runDefaultETL(file1Transformed, getVariantStorageEngine(), studyConfiguration, new ObjectMap()
-                    .append(VariantStorageEngine.Options.FILE_ID.key(), -1)
                     .append(MongoDBVariantOptions.STAGE.key(), true)
                     .append(MongoDBVariantOptions.MERGE.key(), false), false, true);
             return 0;
         });
         Future<Integer> loadTwo = executor.submit(() -> {
             runDefaultETL(file2Transformed, getVariantStorageEngine(), studyConfiguration, new ObjectMap()
-                    .append(VariantStorageEngine.Options.FILE_ID.key(), -1)
                     .append(MongoDBVariantOptions.STAGE.key(), true)
                     .append(MongoDBVariantOptions.MERGE.key(), false), false, true);
             return 0;

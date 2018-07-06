@@ -93,6 +93,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     private String het;
     private String het1;
     private String het2;
+    protected int fileId = 1;
 
     @BeforeClass
     public static void beforeClass() throws IOException {
@@ -1305,11 +1306,11 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     @Test
     public void testGetAllVariants_files() {
 
-        Query query = new Query(FILE.key(), 6);
+        Query query = new Query(FILE.key(), fileId);
         long numResults = count(query);
         assertEquals(NUM_VARIANTS, numResults);
 
-        query = new Query(FILE.key(), 6).append(STUDY.key(), studyConfiguration.getStudyId());
+        query = new Query(FILE.key(), fileId).append(STUDY.key(), studyConfiguration.getStudyId());
         numResults = count(query);
         assertEquals(NUM_VARIANTS, numResults);
 
@@ -1351,7 +1352,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         long numResults;
 
         // FILTER+FILE
-        query = new Query(FILE.key(), 6).append(FILTER.key(), "PASS");
+        query = new Query(FILE.key(), fileId).append(FILTER.key(), "PASS");
         numResults = count(query);
         assertEquals(NUM_VARIANTS, numResults);
 
@@ -1359,7 +1360,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         assertEquals(0, count(query).longValue());
 
         // FILTER+FILE+STUDY
-        query = new Query(FILE.key(), 6).append(STUDY.key(), studyConfiguration.getStudyId()).append(FILTER.key(), "PASS");
+        query = new Query(FILE.key(), fileId).append(STUDY.key(), studyConfiguration.getStudyId()).append(FILTER.key(), "PASS");
         numResults = count(query);
         assertEquals(NUM_VARIANTS, numResults);
 
@@ -1581,7 +1582,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     @Test
     public void testGetAllVariants_samples_gt() {
-        Query query = new Query(SAMPLE.key(), "NA19600").append(GENOTYPE.key(), "NA19685" + IS + homRef);
+        Query query = new Query(SAMPLE.key(), "NA19600").append(GENOTYPE.key(), "NA19685" + IS + homRef).append(INCLUDE_SAMPLE.key(), ALL);
         queryResult = query(query, new QueryOptions());
         assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, allOf(
                 withSampleData("NA19600", "GT", containsString("1")),
@@ -1890,6 +1891,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             VariantAnnotation annotation = variant.getAnnotation();
 
             expectedAnnotation.setXrefs(null);
+            expectedAnnotation.setId(null);
             assertEquals(expectedAnnotation, annotation);
         }
     }

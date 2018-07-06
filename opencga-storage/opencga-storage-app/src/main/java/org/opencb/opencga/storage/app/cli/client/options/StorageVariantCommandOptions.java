@@ -701,6 +701,7 @@ public class StorageVariantCommandOptions {
 //                arity = 1)
 //        public String studyId;
 
+        @Deprecated
         @Parameter(names = {"-f", "--file-id"}, description = "Calculate stats only for the selected file", arity = 1)
         public String fileId;
 

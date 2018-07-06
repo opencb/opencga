@@ -375,7 +375,7 @@ public class VariantHbaseTestUtils {
 
     public static void removeFile(HadoopVariantStorageEngine variantStorageManager, String dbName, int fileId,
                                   StudyConfiguration studyConfiguration, Map<? extends String, ?> otherParams) throws Exception {
-        ObjectMap params = new ObjectMap(VariantStorageEngine.Options.STUDY_CONFIGURATION.key(), studyConfiguration)
+        ObjectMap params = new ObjectMap()
                 .append(VariantStorageEngine.Options.STUDY_ID.key(), studyConfiguration.getStudyId())
                 .append(VariantStorageEngine.Options.DB_NAME.key(), dbName);
         if (otherParams != null) {
@@ -401,8 +401,6 @@ public class VariantHbaseTestUtils {
         URI fileInputUri = VariantStorageBaseTest.getResourceUri(resourceName);
 
         ObjectMap params = new ObjectMap(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "proto")
-                .append(VariantStorageEngine.Options.STUDY_CONFIGURATION.key(), studyConfiguration)
-                .append(VariantStorageEngine.Options.STUDY_ID.key(), studyConfiguration.getStudyId())
                 .append(VariantStorageEngine.Options.STUDY_NAME.key(), studyConfiguration.getStudyName())
                 .append(VariantStorageEngine.Options.DB_NAME.key(), dbName).append(VariantStorageEngine.Options.ANNOTATE.key(), false)
                 .append(VariantAnnotationManager.SPECIES, "hsapiens").append(VariantAnnotationManager.ASSEMBLY, "GRch37")

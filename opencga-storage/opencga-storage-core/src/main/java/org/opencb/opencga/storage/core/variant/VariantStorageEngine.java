@@ -111,9 +111,6 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 //        COMPRESS_GENOTYPES ("compressGenotypes", true),    //Stores sample information as compressed genotypes
         EXCLUDE_GENOTYPES("exclude.genotypes", false),              //Do not store genotypes from samples
 
-        @Deprecated // Should be a member, not a parameter
-        STUDY_CONFIGURATION("studyConfiguration", ""),      //
-
         STUDY_TYPE("studyType", SampleSetType.CASE_CONTROL),
         AGGREGATED_TYPE("aggregatedType", Aggregation.NONE),
         STUDY_NAME("studyName", "default"),
@@ -122,8 +119,6 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         @Deprecated // Should be a member, not a parameter
         FILE_ID("fileId", -1),
         OVERRIDE_FILE_ID("overrideFileId", false),
-        @Deprecated // Should not be used
-        SAMPLE_IDS("sampleIds", ""),
         GVCF("gvcf", false),
         ISOLATE_FILE_FROM_STUDY_CONFIGURATION("isolateStudyConfiguration", false),
         TRANSFORM_FAIL_ON_MALFORMED_VARIANT("transform.fail.on.malformed", false),
@@ -337,9 +332,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         if (files != null && !files.isEmpty() && options.getBoolean(Options.ANNOTATE.key(), Options.ANNOTATE.defaultValue())) {
             try {
                 VariantDBAdaptor dbAdaptor = getDBAdaptor();
-                int studyId = options.getInt(Options.STUDY_ID.key());
+
+                String studyName = options.getString(Options.STUDY_NAME.key());
                 StudyConfiguration studyConfiguration =
-                        dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyId, new QueryOptions(options)).first();
+                        dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyName, new QueryOptions(options)).first();
+                int studyId = studyConfiguration.getStudyId();
 
                 List<Integer> fileIds = new ArrayList<>(files.size());
                 for (URI uri : files) {
@@ -474,7 +471,6 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 URI statsOutputUri = output.resolve(VariantStoragePipeline
                         .buildFilename(studyConfiguration.getStudyName(), fileIds.get(0)) + "." + TimeUtils.getTime());
                 statsOptions.put(DefaultVariantStatisticsManager.OUTPUT, statsOutputUri.toString());
-                statsOptions.remove(Options.FILE_ID.key());
 
                 List<String> cohorts = Collections.singletonList(StudyEntry.DEFAULT_COHORT);
                 calculateStats(studyConfiguration.getStudyName(), cohorts, statsOptions);

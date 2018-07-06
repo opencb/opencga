@@ -247,7 +247,6 @@ public class VariantCommandExecutor extends CommandExecutor {
         params.put(VariantStorageEngine.Options.STUDY_NAME.key(), indexVariantsCommandOptions.studyName);
         params.put(VariantStorageEngine.Options.STUDY_ID.key(), indexVariantsCommandOptions.studyId);
         params.put(VariantStorageEngine.Options.FILE_ID.key(), indexVariantsCommandOptions.fileId);
-        params.put(VariantStorageEngine.Options.SAMPLE_IDS.key(), indexVariantsCommandOptions.sampleIds);
         params.put(VariantStorageEngine.Options.CALCULATE_STATS.key(), indexVariantsCommandOptions.calculateStats);
         params.put(VariantStorageEngine.Options.INCLUDE_STATS.key(), indexVariantsCommandOptions.includeStats);
         params.put(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(), indexVariantsCommandOptions.excludeGenotype);
