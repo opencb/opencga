@@ -24,6 +24,7 @@ import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.clinical.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -198,11 +199,25 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 
     private static class ClinicalInterpretationParameters {
         public String id;
+        @Deprecated
         public String name;
-        public String file;
+        public String description;
 
-        public ClinicalAnalysis.ClinicalInterpretation toClinicalInterpretation() {
-            return new ClinicalAnalysis.ClinicalInterpretation(id, name, new File().setName(file));
+        public DiseasePanel panel;
+        public Software software;
+        public Analyst analyst;
+        public List<Version> versions;
+        public Map<String, Object> filters;
+        public String creationDate;
+
+        public List<Comment> comments;
+        public Map<String, Object> attributes;
+
+        public List<ReportedVariant> reportedVariants;
+
+        public Interpretation toClinicalInterpretation() {
+            return new Interpretation(id, name, description, panel, software, analyst, versions, filters, creationDate, comments,
+                    attributes, reportedVariants);
         }
     }
 
@@ -249,7 +264,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
                 f = new Family().setName(family);
             }
 
-            List<ClinicalAnalysis.ClinicalInterpretation> interpretationList =
+            List<Interpretation> interpretationList =
                     interpretations != null
                             ? interpretations.stream()
                             .map(ClinicalInterpretationParameters::toClinicalInterpretation).collect(Collectors.toList())

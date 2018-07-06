@@ -143,7 +143,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
         validateSubjects(clinicalAnalysis, study, sessionId);
         validateFamilyAndSubjects(clinicalAnalysis, study, sessionId);
-        validateInterpretations(clinicalAnalysis.getInterpretations(), studyStr, sessionId);
+//        validateInterpretations(clinicalAnalysis.getInterpretations(), studyStr, sessionId);
 
         if (clinicalAnalysis.getGermline() != null && StringUtils.isNotEmpty(clinicalAnalysis.getGermline().getName())) {
             MyResource<File> resource = catalogManager.getFileManager().getUid(clinicalAnalysis.getGermline().getName(), studyStr,
