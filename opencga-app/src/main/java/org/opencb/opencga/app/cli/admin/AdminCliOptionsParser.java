@@ -65,7 +65,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         catalogSubCommands.addCommand("export", catalogCommandOptions.exportCatalogCommandOptions);
         catalogSubCommands.addCommand("import", catalogCommandOptions.importCatalogCommandOptions);
         catalogSubCommands.addCommand("daemon", catalogCommandOptions.daemonCatalogCommandOptions);
-        catalogSubCommands.addCommand("diseasePanel", catalogCommandOptions.diseasePanelCatalogCommandOptions);
+        catalogSubCommands.addCommand("disease-panel", catalogCommandOptions.diseasePanelCatalogCommandOptions);
 
         usersCommandOptions = new UsersCommandOptions();
         jCommander.addCommand("users", usersCommandOptions);
@@ -441,7 +441,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public boolean stop;
     }
 
-    @Parameters(commandNames = {"diseasePanel"}, commandDescription = "Handle global disease panels")
+    @Parameters(commandNames = {"disease-panel"}, commandDescription = "Handle global disease panels")
     public class DiseasePanelCatalogCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
