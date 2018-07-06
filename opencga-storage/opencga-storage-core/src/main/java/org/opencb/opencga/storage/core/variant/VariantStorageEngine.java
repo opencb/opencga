@@ -149,6 +149,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
         RESUME("resume", false),
 
+        SEARCH_INDEX_LAST_TIMESTAMP("search.index.last.timestamp", 0),
+
         DEFAULT_TIMEOUT("dbadaptor.default_timeout", 10000), // Default timeout for DBAdaptor operations. Only used if none is provided.
         MAX_TIMEOUT("dbadaptor.max_timeout", 30000),         // Max allowed timeout for DBAdaptor operations
 
@@ -493,17 +495,32 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
         // then, load variants
         queryOptions.put(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES_SAMPLES_DATA, VariantField.STUDIES_FILES));
-        if (!overwrite) {
-            query.put(VariantQueryUtils.VARIANTS_TO_INDEX.key(), true);
-        }
-        try (VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions)) {
+        try (VariantDBIterator iterator = getVariantsToIndex(overwrite, query, queryOptions, dbAdaptor)) {
             ProgressLogger progressLogger = new ProgressLogger("Variants loaded in Solr:", () -> dbAdaptor.count(query).first(), 200);
-            return variantSearchManager.load(dbName, iterator, progressLogger, newVariantSearchLoadListener());
+            VariantSearchLoadResult load = variantSearchManager.load(dbName, iterator, progressLogger, newVariantSearchLoadListener());
+
+            for (String studyName : getStudyConfigurationManager().getStudyNames(null)) {
+                long value = System.currentTimeMillis();
+                getStudyConfigurationManager().lockAndUpdate(studyName, sc -> {
+                    sc.getAttributes().put(SEARCH_INDEX_LAST_TIMESTAMP.key(), value);
+                    return sc;
+                });
+            }
+
+            return load;
         } catch (StorageEngineException | IOException | VariantSearchException | RuntimeException e) {
             throw e;
         } catch (Exception e) {
             throw new StorageEngineException("Exception closing VariantDBIterator", e);
         }
+    }
+
+    protected VariantDBIterator getVariantsToIndex(boolean overwrite, Query query, QueryOptions queryOptions, VariantDBAdaptor dbAdaptor)
+            throws StorageEngineException {
+        if (!overwrite) {
+            query.put(VariantQueryUtils.VARIANTS_TO_INDEX.key(), true);
+        }
+        return dbAdaptor.iterator(query, queryOptions);
     }
 
     protected void searchIndexLoadedFiles(List<URI> inputFiles, ObjectMap options) throws StorageEngineException {

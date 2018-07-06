@@ -113,9 +113,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         MERGE_RESUME("merge.resume", false),
         MERGE_IGNORE_OVERLAPPING_VARIANTS("merge.ignore-overlapping-variants", false),   //Do not look for overlapping variants
         MERGE_PARALLEL_WRITE("merge.parallel.write", false),
-        MERGE_BATCH_SIZE("merge.batch.size", 10),          //Number of files to merge directly from first to second collection
-
-        SEARCH_INDEX_LAST_TIMESTAMP("search.index.last.timestamp", 0);
+        MERGE_BATCH_SIZE("merge.batch.size", 10);          //Number of files to merge directly from first to second collection
 
         private final String key;
         private final Object value;
@@ -235,14 +233,6 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
 
             // If the variants were loaded correctly, the trash can be clean up.
             getDBAdaptor().cleanTrash(timeStamp);
-        }
-
-        for (String studyName : getStudyConfigurationManager().getStudyNames(null)) {
-            long value = System.currentTimeMillis();
-            getStudyConfigurationManager().lockAndUpdate(studyName, sc -> {
-                sc.getAttributes().put(MongoDBVariantOptions.SEARCH_INDEX_LAST_TIMESTAMP.key(), value);
-                return sc;
-            });
         }
 
         return new VariantSearchLoadResult(searchIndex.getNumProcessedVariants(), searchIndex.getNumLoadedVariants(), deletedVariants);

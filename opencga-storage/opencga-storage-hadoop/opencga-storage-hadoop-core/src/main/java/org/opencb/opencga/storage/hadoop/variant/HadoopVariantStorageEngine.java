@@ -49,7 +49,9 @@ import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -359,6 +361,20 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         queryOptions = queryOptions == null ? new QueryOptions() : new QueryOptions(queryOptions);
         queryOptions.putIfAbsent(VariantHadoopDBAdaptor.NATIVE, true);
         return super.searchIndex(query, queryOptions, overwrite);
+    }
+
+    @Override
+    protected VariantDBIterator getVariantsToIndex(boolean overwrite, Query query, QueryOptions queryOptions, VariantDBAdaptor dbAdaptor)
+            throws StorageEngineException {
+        if (!overwrite) {
+            query.put(VariantQueryUtils.VARIANTS_TO_INDEX.key(), true);
+            logger.info("Column intersect!");
+//        queryOptions.put("multiIteratorBatchSize", 1000);
+            return (VariantDBIterator) getOrIteratorHBaseColumnIntersect(query, queryOptions, true);
+        } else {
+            logger.info("Get variants to index");
+            return super.getVariantsToIndex(overwrite, query, queryOptions, dbAdaptor);
+        }
     }
 
     @Override
@@ -839,7 +855,9 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                 .append(QueryOptions.INCLUDE, Arrays.asList(CHROMOSOME, START, END, REFERENCE, ALTERNATE));
 
         scanQuery.putIfNotNull(STUDY.key(), query.get(STUDY.key()));
-        if (isValidParam(query, SAMPLE)) {
+        if (query.getBoolean(VARIANTS_TO_INDEX.key(), false)) {
+            scanQuery.put(VARIANTS_TO_INDEX.key(), true);
+        } else if (isValidParam(query, SAMPLE)) {
             // At any case, filter only by first sample
             // TODO: Use sample with less variants?
 
