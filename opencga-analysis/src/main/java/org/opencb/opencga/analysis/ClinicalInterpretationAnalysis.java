@@ -21,18 +21,17 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.DiseasePanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
+import org.opencb.opencga.core.models.DiseasePanel;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.OntologyTerm;
 import org.opencb.opencga.core.models.clinical.Interpretation;
-import org.opencb.opencga.core.models.clinical.Panel;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import java.util.ArrayList;
@@ -59,7 +58,7 @@ public class ClinicalInterpretationAnalysis extends OpenCgaAnalysis {
     // query
     private Query query;
 
-    private Interpretation result;
+    private Interpretation interpretation;
 
 //    public ClinicalInterpretationAnalysis(String clnicalAnalysisId, String panelId, Query variantQuery, String sessionId) {
 //
@@ -98,10 +97,6 @@ public class ClinicalInterpretationAnalysis extends OpenCgaAnalysis {
         this.query = query;
     }
 
-    private static Query extractQueryFromPanel(Panel panel) {
-        // TODO: implement
-        return null;
-    }
 
     private ClinicalAnalysis getClinicalAnalysis() throws CatalogException {
         assert(null != catalogManager);
@@ -126,7 +121,7 @@ public class ClinicalInterpretationAnalysis extends OpenCgaAnalysis {
         final String userId = catalogManager.getUserManager().getUserId(sessionId);
 
         List<String> samples = new ArrayList<>();
-        List<String> variants = null;
+        List<String> variants;
 
         if (StringUtils.isNotEmpty(clinicalAnalysisId)) {
             ClinicalAnalysis clinicalAnalysis = getClinicalAnalysis();
@@ -136,30 +131,35 @@ public class ClinicalInterpretationAnalysis extends OpenCgaAnalysis {
             }
         }
 
-        if (StringUtils.isNotEmpty(this.panelId)) {
-//            Query panelQuery = new Query();
-//            panelQuery.put(PanelDBAdaptor.QueryParams.ID.key(), panelId);
-//            panelQuery.put(PanelDBAdaptor.QueryParams.VERSION.key(), panelVersion);
-//            QueryResult<Panel> panelResutl = catalogManager.getPanelManager().get(panelQuery, QueryOptions.empty(), sessionId);
-//            Panel panel = panelResutl.first();
-
-//            List<String> variants = panel.getVariants();
-//            String variantParam = StringUtils.join(variants, ",");
-        } else {
-            // petamos
+        // TODO throw a proper Exception
+        if (StringUtils.isEmpty(this.panelId)) {
+            logger.error("No disease panel provided");
+            return;
         }
 
+        // fetch disease panel
+        Query panelQuery = new Query();
+        panelQuery.put(DiseasePanelDBAdaptor.QueryParams.ID.key(), panelId);
+        panelQuery.put(DiseasePanelDBAdaptor.QueryParams.VERSION.key(), panelVersion);
+        QueryResult<DiseasePanel> panelResult = catalogManager.getPanelManager().get(studyStr, panelQuery, QueryOptions.empty(), sessionId);
+        DiseasePanel diseasePanel = panelResult.first();
+
+        // we create the variant strage manager
+        StorageEngineFactory storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
+        VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
+
+        // Step 1 - we first try to fetch diagnostic variants
+        variants = diseasePanel.getVariants();
         Query variantQuery = new Query();
         variantQuery.put(VariantQueryParam.ID.key(), StringUtils.join(variants, ","));
         variantQuery.put(VariantQueryParam.SAMPLE.key(), StringUtils.join(samples, ","));
 
-        StorageEngineFactory storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
-        VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
-
+        // Step 2 - we first try to fetch VUS variants
         VariantQueryResult<Variant> variantVariantQueryResult = variantManager.get(variantQuery, QueryOptions.empty(), sessionId);
-//        variantVariantQueryResult.getResult()
+        List<String> geneIds = getGeneIdsFromPanel(diseasePanel);
         if (variantVariantQueryResult.getNumResults() == 0) {
             variantQuery = new Query();
+            query.put(VariantQueryParam.GENE.key(), StringUtils.join(geneIds, ","));
             variantQuery.put(VariantQueryParam.SAMPLE.key(), StringUtils.join(samples, ","));
             variantQuery.put(VariantQueryParam.ANNOT_BIOTYPE.key(), "protein_coding");
             // ...
@@ -173,21 +173,27 @@ public class ClinicalInterpretationAnalysis extends OpenCgaAnalysis {
 
         // creat interpertation with variantVariantQueryResult
 
-
-        OntologyTerm hpoDisease;
+        if (saveId != null && clinicalAnalysis != null) {
+            // save in catalog
+        }
 
     }
 
-    public Interpretation getInterpretation() {
-        // TODO: what to do if interpretation is null?
-        if (null != this.result) {
-            return result;
-        } else {
-            // TODO: what to do in this case?
-            // null object pattern?
-            // I thing launching a "non executed exception" is
-            // the right thing to do
-            return null;
+    private List<String> getGeneIdsFromPanel(DiseasePanel diseasePanel) throws CatalogException {
+        List<String> geneIds = new ArrayList<>(diseasePanel.getGenes().size());
+        for (DiseasePanel.GenePanel gene : diseasePanel.getGenes()) {
+            geneIds.add(gene.getId());
         }
+        return geneIds;
+    }
+
+
+    public Interpretation getInterpretation() {
+        return interpretation;
+    }
+
+    public ClinicalInterpretationAnalysis setInterpretation(Interpretation interpretation) {
+        this.interpretation = interpretation;
+        return this;
     }
 }
