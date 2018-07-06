@@ -275,6 +275,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
+    public Boolean checkIsAdmin(String user) {
+        return user.equals(ADMIN);
+    }
+
+    @Override
     public Boolean checkIsOwnerOrAdmin(long studyId, String userId) throws CatalogException {
         String ownerId = studyDBAdaptor.getOwnerId(studyId);
 

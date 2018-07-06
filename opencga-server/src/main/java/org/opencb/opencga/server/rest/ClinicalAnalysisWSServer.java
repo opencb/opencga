@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
  */
 @Path("/{apiVersion}/clinical")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = "Clinical Analysis (BETA)", position = 9, description = "Methods for working with 'clinical analysis' endpoint")
+@Api(value = "Clinical Analysis", position = 9, description = "Methods for working with 'clinical analysis' endpoint")
 
 public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 

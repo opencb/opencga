@@ -75,3 +75,6 @@
 {"collection": "family", "fields": {"annotationSets.name": 1}, "options": {"background": true}}
 {"collection": "family", "fields": {"annotationSets.variableSetId": 1}, "options": {"background": true}}
 {"collection": "family", "fields": {"annotationSets.annotations.name": 1, "annotationSets.annotations.value": 1}, "options": {"background": true}}
+
+{"collection": "diseasePanel", "fields": {"id": 1, "studyUid": 1, "version": 1}, "options": {"unique": true, "background": true}}
+{"collection": "diseasePanel", "fields": {"uid": 1, "version": 1}, "options": {"unique": true, "background": true}}

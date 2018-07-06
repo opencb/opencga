@@ -47,6 +47,9 @@ public class DiseasePanelManager extends ResourceManager<DiseasePanel> {
     private UserManager userManager;
     private StudyManager studyManager;
 
+    // Reserved word to query over installation panels instead of the ones belonging to a study.
+    public static final String INSTALLATION_PANELS = "__INSTALLATION__";
+
     DiseasePanelManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                         DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                         Configuration configuration) {
@@ -80,6 +83,59 @@ public class DiseasePanelManager extends ResourceManager<DiseasePanel> {
         }
     }
 
+    private DiseasePanel getInstallationPanel(String entry) throws CatalogException {
+        Query query = new Query(DiseasePanelDBAdaptor.QueryParams.STUDY_UID.key(), -1);
+
+        if (UUIDUtils.isOpenCGAUUID(entry)) {
+            query.put(DiseasePanelDBAdaptor.QueryParams.UUID.key(), entry);
+        } else {
+            query.put(DiseasePanelDBAdaptor.QueryParams.ID.key(), entry);
+        }
+
+        QueryResult<DiseasePanel> panelQueryResult = panelDBAdaptor.get(query, QueryOptions.empty());
+        if (panelQueryResult.getNumResults() == 0) {
+            throw new CatalogException("Panel " + entry + " not found");
+        } else if (panelQueryResult.getNumResults() > 1) {
+            throw new CatalogException("More than one panel found based on " + entry);
+        } else {
+            return panelQueryResult.first();
+        }
+    }
+
+    /**
+     * Create a new installation panel. This method can only be run by the main OpenCGA administrator.
+     *
+     * @param panel Panel.
+     * @param overwrite Flag indicating to overwrite an already existing panel in case of an ID conflict.
+     * @param token token.
+     * @throws CatalogException In case of an ID conflict or an unauthorized action.
+     */
+    public void create(DiseasePanel panel, boolean overwrite, String token) throws CatalogException {
+        String userId = userManager.getUserId(token);
+
+        if (!authorizationManager.checkIsAdmin(userId)) {
+            throw new CatalogAuthorizationException("Only the main OpenCGA administrator can import global panels");
+        }
+
+        // Check all the panel fields
+        ParamUtils.checkAlias(panel.getId(), "id");
+        panel.setName(ParamUtils.defaultString(panel.getName(), panel.getId()));
+        panel.setRelease(-1);
+        panel.setVersion(1);
+        panel.setAuthor(ParamUtils.defaultString(panel.getAuthor(), ""));
+        panel.setCreationDate(TimeUtils.getTime());
+        panel.setStatus(new Status());
+        panel.setDescription(ParamUtils.defaultString(panel.getDescription(), ""));
+        panel.setPhenotypes(ParamUtils.defaultObject(panel.getPhenotypes(), Collections.emptyList()));
+        panel.setVariants(ParamUtils.defaultObject(panel.getVariants(), Collections.emptyList()));
+        panel.setRegions(ParamUtils.defaultObject(panel.getRegions(), Collections.emptyList()));
+        panel.setGenes(ParamUtils.defaultObject(panel.getGenes(), Collections.emptyList()));
+        panel.setAttributes(ParamUtils.defaultObject(panel.getAttributes(), Collections.emptyMap()));
+        panel.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.PANEL));
+
+        panelDBAdaptor.insert(panel, overwrite);
+    }
+
     @Override
     public QueryResult<DiseasePanel> create(String studyStr, DiseasePanel panel, QueryOptions options, String sessionId)
             throws CatalogException {
@@ -108,6 +164,26 @@ public class DiseasePanelManager extends ResourceManager<DiseasePanel> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         return panelDBAdaptor.insert(study.getUid(), panel, options);
+    }
+
+    public QueryResult<DiseasePanel> importInstallationPanel(String studyStr, String panelId, QueryOptions options, String token)
+            throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+
+        // 1. We check everything can be done
+        authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_PANELS);
+
+        // Fetch the installation Panel (if it exists)
+        DiseasePanel diseasePanel = getInstallationPanel(panelId);
+
+        diseasePanel.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.PANEL));
+        diseasePanel.setCreationDate(TimeUtils.getTime());
+        diseasePanel.setRelease(studyManager.getCurrentRelease(study, userId));
+        diseasePanel.setVersion(1);
+
+        // Install the current diseasePanel
+        return panelDBAdaptor.insert(study.getUid(), diseasePanel, options);
     }
 
     @Override
@@ -147,14 +223,20 @@ public class DiseasePanelManager extends ResourceManager<DiseasePanel> {
     @Override
     public QueryResult<DiseasePanel> get(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
         String userId = userManager.getUserId(sessionId);
-        Study study = studyManager.resolveId(studyStr, userId);
+
+        long studyUid;
+        if (studyStr.equals(INSTALLATION_PANELS)) {
+            studyUid = -1;
+        } else {
+            studyUid = catalogManager.getStudyManager().resolveId(studyStr, userId).getUid();
+        }
 
         QueryResult<DiseasePanel> panelQueryResult = search(studyStr, query, options, sessionId);
 
         if (panelQueryResult.getNumResults() == 0 && query.containsKey(DiseasePanelDBAdaptor.QueryParams.UID.key())) {
             List<Long> panelIds = query.getAsLongList(DiseasePanelDBAdaptor.QueryParams.UID.key());
             for (Long panelId : panelIds) {
-                authorizationManager.checkDiseasePanelPermission(study.getUid(), panelId, userId,
+                authorizationManager.checkDiseasePanelPermission(studyUid, panelId, userId,
                         DiseasePanelAclEntry.DiseasePanelPermissions.VIEW);
             }
         }
@@ -179,23 +261,40 @@ public class DiseasePanelManager extends ResourceManager<DiseasePanel> {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = userManager.getUserId(sessionId);
-        Study study = studyManager.resolveId(studyStr, userId);
+        if (studyStr.equals(INSTALLATION_PANELS)) {
+            query.append(DiseasePanelDBAdaptor.QueryParams.STUDY_UID.key(), -1);
 
-        query.append(DiseasePanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+            // Here view permissions won't be checked
+            return panelDBAdaptor.get(query, options);
+        } else {
+            String userId = userManager.getUserId(sessionId);
+            long studyUid = catalogManager.getStudyManager().resolveId(studyStr, userId).getUid();
+            query.append(DiseasePanelDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
 
-        return panelDBAdaptor.get(query, options, userId);
+            // Here permissions will be checked
+            return panelDBAdaptor.get(query, options, userId);
+        }
     }
 
     @Override
     public QueryResult<DiseasePanel> count(String studyStr, Query query, String sessionId) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
 
-        String userId = userManager.getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+        QueryResult<Long> queryResultAux;
+        if (studyStr.equals(INSTALLATION_PANELS)) {
+            query.append(DiseasePanelDBAdaptor.QueryParams.STUDY_UID.key(), -1);
 
-        query.append(DiseasePanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-        QueryResult<Long> queryResultAux = panelDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_PANELS);
+            // Here view permissions won't be checked
+            queryResultAux = panelDBAdaptor.count(query);
+        } else {
+            String userId = userManager.getUserId(sessionId);
+            long studyUid = catalogManager.getStudyManager().resolveId(studyStr, userId).getUid();
+            query.append(DiseasePanelDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+
+            // Here view permissions will be checked
+            queryResultAux = panelDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_PANELS);
+        }
+
         return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
                 queryResultAux.getErrorMsg(), Collections.emptyList());
     }
