@@ -187,6 +187,16 @@ public class DiseasePanelManager extends ResourceManager<DiseasePanel> {
     }
 
     @Override
+    public QueryResult<DiseasePanel> get(String studyStr, String entryStr, QueryOptions options, String sessionId) throws CatalogException {
+        if (StringUtils.isNotEmpty(studyStr) && INSTALLATION_PANELS.equals(studyStr)) {
+            DiseasePanel installationPanel = getInstallationPanel(entryStr);
+            return new QueryResult<>(entryStr, -1, 1, 1, "", "", Collections.singletonList(installationPanel));
+        } else {
+            return super.get(studyStr, entryStr, options, sessionId);
+        }
+    }
+
+    @Override
     public QueryResult<DiseasePanel> get(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
         String userId = userManager.getUserId(sessionId);
 

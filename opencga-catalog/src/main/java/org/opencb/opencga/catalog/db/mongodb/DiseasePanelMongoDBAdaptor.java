@@ -395,12 +395,9 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
         final String[] acceptedMapParams = {UpdateParams.ATTRIBUTES.key()};
         filterMapParams(parameters, panelParameters, acceptedMapParams);
 
-        final String[] acceptedObjectParams = {UpdateParams.PHENOTYPES.key(), UpdateParams.REGIONS.key(), UpdateParams.GENES.key(),
-            UpdateParams.SOURCE.key()};
+        final String[] acceptedObjectParams = {UpdateParams.VARIANTS.key(), UpdateParams.PHENOTYPES.key(), UpdateParams.REGIONS.key(),
+                UpdateParams.GENES.key(), UpdateParams.SOURCE.key()};
         filterObjectParams(parameters, panelParameters, acceptedObjectParams);
-
-        final String[] acceptedStringListParams = {UpdateParams.VARIANTS.key()};
-        filterStringListParams(parameters, panelParameters, acceptedStringListParams);
 
         if (parameters.containsKey(UpdateParams.ID.key())) {
             // That can only be done to one panel...
