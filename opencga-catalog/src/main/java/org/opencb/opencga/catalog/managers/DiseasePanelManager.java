@@ -102,40 +102,6 @@ public class DiseasePanelManager extends ResourceManager<DiseasePanel> {
         }
     }
 
-    /**
-     * Create a new installation panel. This method can only be run by the main OpenCGA administrator.
-     *
-     * @param panel Panel.
-     * @param overwrite Flag indicating to overwrite an already existing panel in case of an ID conflict.
-     * @param token token.
-     * @throws CatalogException In case of an ID conflict or an unauthorized action.
-     */
-    public void create(DiseasePanel panel, boolean overwrite, String token) throws CatalogException {
-        String userId = userManager.getUserId(token);
-
-        if (!authorizationManager.checkIsAdmin(userId)) {
-            throw new CatalogAuthorizationException("Only the main OpenCGA administrator can import global panels");
-        }
-
-        // Check all the panel fields
-        ParamUtils.checkAlias(panel.getId(), "id");
-        panel.setName(ParamUtils.defaultString(panel.getName(), panel.getId()));
-        panel.setRelease(-1);
-        panel.setVersion(1);
-        panel.setAuthor(ParamUtils.defaultString(panel.getAuthor(), ""));
-        panel.setCreationDate(TimeUtils.getTime());
-        panel.setStatus(new Status());
-        panel.setDescription(ParamUtils.defaultString(panel.getDescription(), ""));
-        panel.setPhenotypes(ParamUtils.defaultObject(panel.getPhenotypes(), Collections.emptyList()));
-        panel.setVariants(ParamUtils.defaultObject(panel.getVariants(), Collections.emptyList()));
-        panel.setRegions(ParamUtils.defaultObject(panel.getRegions(), Collections.emptyList()));
-        panel.setGenes(ParamUtils.defaultObject(panel.getGenes(), Collections.emptyList()));
-        panel.setAttributes(ParamUtils.defaultObject(panel.getAttributes(), Collections.emptyMap()));
-        panel.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.PANEL));
-
-        panelDBAdaptor.insert(panel, overwrite);
-    }
-
     @Override
     public QueryResult<DiseasePanel> create(String studyStr, DiseasePanel panel, QueryOptions options, String sessionId)
             throws CatalogException {
@@ -509,6 +475,53 @@ public class DiseasePanelManager extends ResourceManager<DiseasePanel> {
             default:
                 throw new CatalogException("Unexpected error occurred. No valid action found.");
         }
+    }
+
+
+    /* ********************************   Admin methods  ***********************************************/
+    /**
+     * Create a new installation panel. This method can only be run by the main OpenCGA administrator.
+     *
+     * @param panel Panel.
+     * @param overwrite Flag indicating to overwrite an already existing panel in case of an ID conflict.
+     * @param token token.
+     * @throws CatalogException In case of an ID conflict or an unauthorized action.
+     */
+    public void create(DiseasePanel panel, boolean overwrite, String token) throws CatalogException {
+        String userId = userManager.getUserId(token);
+
+        if (!authorizationManager.checkIsAdmin(userId)) {
+            throw new CatalogAuthorizationException("Only the main OpenCGA administrator can import global panels");
+        }
+
+        // Check all the panel fields
+        ParamUtils.checkAlias(panel.getId(), "id");
+        panel.setName(ParamUtils.defaultString(panel.getName(), panel.getId()));
+        panel.setRelease(-1);
+        panel.setVersion(1);
+        panel.setAuthor(ParamUtils.defaultString(panel.getAuthor(), ""));
+        panel.setCreationDate(TimeUtils.getTime());
+        panel.setStatus(new Status());
+        panel.setDescription(ParamUtils.defaultString(panel.getDescription(), ""));
+        panel.setPhenotypes(ParamUtils.defaultObject(panel.getPhenotypes(), Collections.emptyList()));
+        panel.setVariants(ParamUtils.defaultObject(panel.getVariants(), Collections.emptyList()));
+        panel.setRegions(ParamUtils.defaultObject(panel.getRegions(), Collections.emptyList()));
+        panel.setGenes(ParamUtils.defaultObject(panel.getGenes(), Collections.emptyList()));
+        panel.setAttributes(ParamUtils.defaultObject(panel.getAttributes(), Collections.emptyMap()));
+        panel.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.PANEL));
+
+        panelDBAdaptor.insert(panel, overwrite);
+    }
+
+    public void delete(String panelId, String token) throws CatalogException {
+        String userId = userManager.getUserId(token);
+
+        if (!authorizationManager.checkIsAdmin(userId)) {
+            throw new CatalogAuthorizationException("Only the main OpenCGA administrator can delete global panels");
+        }
+
+        DiseasePanel panel = getInstallationPanel(panelId);
+        panelDBAdaptor.delete(panel.getUid());
     }
 
 }

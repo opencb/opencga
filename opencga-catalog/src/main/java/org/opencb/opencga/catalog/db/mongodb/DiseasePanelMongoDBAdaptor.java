@@ -443,7 +443,8 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
 
     @Override
     public void delete(long id) throws CatalogDBException {
-        throw new UnsupportedOperationException("Delete not yet implemented.");
+        Query query = new Query(QueryParams.UID.key(), id);
+        delete(query);
     }
 
     @Override

@@ -447,12 +447,15 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         @ParametersDelegate
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
-        @Parameter(names = {"--import"}, description = "File or folder containing panels in JSON format to be imported in OpenCGA ",
-                required = true, arity = 1)
+        @Parameter(names = {"--import"}, description = "File or folder containing panels in JSON format to be imported in OpenCGA",
+                arity = 1)
         public String panelImport;
 
         @Parameter(names = {"--overwrite"}, description = "Flag indicating to overwrite installed panels in case of an ID conflict", arity = 0)
         public boolean overwrite;
+
+        @Parameter(names = {"--delete"}, description = "Comma separated list of global panel ids to delete", arity = 1)
+        public String delete;
     }
 
 
