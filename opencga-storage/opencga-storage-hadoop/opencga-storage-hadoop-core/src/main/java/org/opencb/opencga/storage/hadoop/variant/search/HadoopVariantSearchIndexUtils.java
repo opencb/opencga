@@ -23,7 +23,8 @@ public class HadoopVariantSearchIndexUtils {
      */
     public static Put addNotSyncStatus(Put put, byte[] columnFamily) {
         if (put != null) {
-            put.addColumn(columnFamily, VariantPhoenixHelper.VariantColumn.INDEX_NOT_SYNC.bytes(), PBoolean.TRUE_BYTES);
+            put.addColumn(columnFamily, VariantPhoenixHelper.VariantColumn.INDEX_NOT_SYNC.bytes(), System.currentTimeMillis(),
+                    PBoolean.TRUE_BYTES);
         }
         return put;
     }
@@ -37,7 +38,8 @@ public class HadoopVariantSearchIndexUtils {
      */
     public static Put addUnknownSyncStatus(Put put, byte[] columnFamily) {
         if (put != null) {
-            put.addColumn(columnFamily, VariantPhoenixHelper.VariantColumn.INDEX_UNKNOWN.bytes(), PBoolean.TRUE_BYTES);
+            put.addColumn(columnFamily, VariantPhoenixHelper.VariantColumn.INDEX_UNKNOWN.bytes(), System.currentTimeMillis(),
+                    PBoolean.TRUE_BYTES);
         }
         return put;
     }

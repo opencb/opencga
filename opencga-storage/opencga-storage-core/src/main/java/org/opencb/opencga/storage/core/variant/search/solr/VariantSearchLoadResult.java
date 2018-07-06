@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.core.variant.search.solr;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
  * Created on 23/04/18.
@@ -45,7 +46,7 @@ public class VariantSearchLoadResult {
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this)
+        return new ToStringBuilder(this, ToStringStyle.JSON_STYLE)
                 .append("numProcessedVariants", numProcessedVariants)
                 .append("numLoadedVariants", numLoadedVariants)
                 .append("numDeletedVariants", numDeletedVariants)

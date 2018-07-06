@@ -163,8 +163,8 @@ public class VariantHbaseTestUtils {
                     PhoenixHelper.Column column = VariantPhoenixHelper.VariantColumn.getColumn(key);
                     if (column != null) {
                         os.println("\t" + key + " = " + length(entry.getValue()) + ", "
-                                + column.getPDataType().toObject(entry.getValue()));
-                        // + ", ts:" + result.getColumnLatestCell(family, column.bytes()).getTimestamp()
+                                + column.getPDataType().toObject(entry.getValue())
+                         + ", ts:" + result.getColumnLatestCell(family, column.bytes()).getTimestamp());
                     } else if (key.endsWith(VariantPhoenixHelper.STATS_PROTOBUF_SUFIX)) {
 //                        ComplexFilter complexFilter = ComplexFilter.parseFrom(entry.getValue());
                         os.println("\t" + key + " = " + length(entry.getValue()) + ", " + Arrays.toString(entry.getValue()));

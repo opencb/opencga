@@ -49,6 +49,7 @@ import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.SEARCH_INDEX_LAST_TIMESTAMP;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory.extractVariantFromVariantRowKey;
 
 /**
@@ -77,7 +78,12 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
 
     public HBaseToVariantConverter(GenomeHelper genomeHelper, StudyConfigurationManager scm) {
         this.genomeHelper = genomeHelper;
-        this.annotationConverter = new HBaseToVariantAnnotationConverter(genomeHelper);
+        long ts = 0;
+        for (String studyName : scm.getStudyNames(null)) {
+            StudyConfiguration sc = scm.getStudyConfiguration(studyName, null).first();
+            ts = Math.max(ts, sc.getAttributes().getLong(SEARCH_INDEX_LAST_TIMESTAMP.key()));
+        }
+        this.annotationConverter = new HBaseToVariantAnnotationConverter(genomeHelper, ts);
         HBaseToVariantStatsConverter statsConverter = new HBaseToVariantStatsConverter(genomeHelper);
         this.studyEntryConverter = new HBaseToStudyEntryConverter(genomeHelper, scm, statsConverter);
     }

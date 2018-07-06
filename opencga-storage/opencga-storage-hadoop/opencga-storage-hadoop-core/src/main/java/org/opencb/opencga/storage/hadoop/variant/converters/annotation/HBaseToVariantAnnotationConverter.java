@@ -22,9 +22,9 @@ import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.phoenix.schema.types.PBoolean;
 import org.apache.phoenix.schema.types.PhoenixArray;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.EvidenceEntry;
@@ -61,11 +61,13 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
 
     private final ObjectMapper objectMapper;
     private final byte[] columnFamily;
+    private final long ts;
     private final VariantTraitAssociationToEvidenceEntryConverter traitAssociationConverter;
 
-    public HBaseToVariantAnnotationConverter(GenomeHelper genomeHelper) {
+    public HBaseToVariantAnnotationConverter(GenomeHelper genomeHelper, long ts) {
         super(genomeHelper.getColumnFamily());
         columnFamily = genomeHelper.getColumnFamily();
+        this.ts = ts;
         objectMapper = new ObjectMapper();
         objectMapper.addMixIn(VariantAnnotation.class, VariantAnnotationMixin.class);
         traitAssociationConverter = new VariantTraitAssociationToEvidenceEntryConverter();
@@ -129,9 +131,14 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
         } else {
             studies = null;
         }
+        Cell notSyncCell = result.getColumnLatestCell(columnFamily, VariantColumn.INDEX_NOT_SYNC.bytes());
+        Cell unknownCell = result.getColumnLatestCell(columnFamily, VariantColumn.INDEX_UNKNOWN.bytes());
 
-        boolean notSync = Arrays.equals(PBoolean.TRUE_BYTES, result.getFamilyMap(columnFamily).get(VariantColumn.INDEX_NOT_SYNC.bytes()));
-        boolean unknown = Arrays.equals(PBoolean.TRUE_BYTES, result.getFamilyMap(columnFamily).get(VariantColumn.INDEX_UNKNOWN.bytes()));
+        // Don't need to check the value. If present, only check the timestamp.
+        boolean notSync = notSyncCell != null && notSyncCell.getTimestamp() > ts;
+        // Arrays.equals(PBoolean.TRUE_BYTES, result.getFamilyMap(columnFamily).get(VariantColumn.INDEX_NOT_SYNC.bytes()))
+        boolean unknown = unknownCell != null && unknownCell.getTimestamp() > ts;
+        // Arrays.equals(PBoolean.TRUE_BYTES, result.getFamilyMap(columnFamily).get(VariantColumn.INDEX_UNKNOWN.bytes()))
         VariantSearchManager.SyncStatus syncStatus = HadoopVariantSearchIndexUtils.getSyncStatus(notSync, unknown, studies);
 
         return post(variantAnnotation, releases, syncStatus, studies);

@@ -73,7 +73,7 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
                 long expected = dbAdaptor.count(query).first();
 
                 VariantSearchLoadResult loadResult = searchIndex();
-                System.out.println("Load result after load 1,2 files: = " + loadResult);
+                System.out.println("Load result after load 1,2 files: = " + loadResult + ", at study : " + studyId);
                 checkLoadResult(expected, loadResult);
                 checkVariantSearchIndex(dbAdaptor);
 
@@ -90,7 +90,7 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
                         "!" + fileNames.get(0) + ";!" + fileNames.get(1) + ";" + fileNames.get(2) + ";!" + fileNames.get(3))).first();
 
                 loadResult = searchIndex();
-                System.out.println("Load result after load 3,4 files: = " + loadResult);
+                System.out.println("Load result after load 3,4 files: = " + loadResult + " , at study : " + studyId);
                 checkLoadResult(expected, loadResult);
                 checkVariantSearchIndex(dbAdaptor);
 
@@ -105,15 +105,21 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
                 query = new Query(VariantQueryParam.STUDY.key(), studyId);
                 expected = dbAdaptor.count(query).first();
                 loadResult = searchIndex();
-                System.out.println("Load result after stats calculate: = " + loadResult);
+                System.out.println("Load result after stats calculate: = " + loadResult + " , at study : " + studyId);
                 checkLoadResult(expected, loadResult);
                 checkVariantSearchIndex(dbAdaptor);
 
                 //////////////////////
                 expected = dbAdaptor.count(null).first();
                 loadResult = searchIndex(true);
-                System.out.println("Load result overwrite: = " + loadResult);
+                System.out.println("Load result overwrite: = " + loadResult + " , at study : " + studyId);
                 checkLoadResult(expected, loadResult);
+                checkVariantSearchIndex(dbAdaptor);
+
+                //////////////////////
+                loadResult = searchIndex();
+                System.out.println("Load result nothing to do: = " + loadResult + " , at study : " + studyId);
+                checkLoadResult(0, loadResult);
                 checkVariantSearchIndex(dbAdaptor);
 
                 /////////// NEW STUDY ///////////
