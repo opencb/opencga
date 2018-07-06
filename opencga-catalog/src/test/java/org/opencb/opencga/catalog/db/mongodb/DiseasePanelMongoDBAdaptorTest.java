@@ -30,7 +30,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by pfurio on 01/06/16.
  */
-public class PanelMongoDBAdaptorTest extends MongoDBAdaptorTest {
+public class DiseasePanelMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void createPanel() throws CatalogDBException {
