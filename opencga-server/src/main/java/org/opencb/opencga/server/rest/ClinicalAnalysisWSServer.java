@@ -21,7 +21,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
+import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
+import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.clinical.*;
@@ -30,9 +33,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -81,11 +82,46 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
         try {
             ObjectMap parameters = new ObjectMap(jsonObjectMapper.writeValueAsString(params.toClinicalAnalysis()));
 
+            if (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key())) {
+                Map<String, Object> actionMap = new HashMap<>();
+                actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key(), ParamUtils.UpdateAction.SET.name());
+                queryOptions.put(Constants.ACTIONS, actionMap);
+            }
+
             // We remove the following parameters that are always going to appear because of Jackson
             parameters.remove(ClinicalAnalysisDBAdaptor.QueryParams.UID.key());
             parameters.remove(ClinicalAnalysisDBAdaptor.QueryParams.RELEASE.key());
 
-            System.out.println(parameters.safeToString());
+            return createOkResponse(clinicalManager.update(studyStr, clinicalAnalysisStr, parameters, queryOptions, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{clinicalAnalysis}/interpretations/update")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Update a clinical analysis", position = 1, response = ClinicalAnalysis.class)
+    public Response interpretationUpdate(
+            @ApiParam(value = "Clinical analysis id") @PathParam(value = "clinicalAnalysis") String clinicalAnalysisStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
+                    String studyStr,
+            @ApiParam(value = "Action to be performed if the array of interpretations is being updated.", defaultValue = "ADD")
+            @QueryParam("interpretationAction") ParamUtils.BasicUpdateAction interpretationAction,
+            @ApiParam(name = "params", value = "JSON containing clinical analysis information", required = true)
+                    ClinicalInterpretationParameters params) {
+        try {
+            if (interpretationAction == null) {
+                interpretationAction = ParamUtils.BasicUpdateAction.ADD;
+            }
+
+            Map<String, Object> actionMap = new HashMap<>();
+            actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key(), interpretationAction.name());
+            queryOptions.put(Constants.ACTIONS, actionMap);
+
+            ObjectMap parameters = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key(),
+                    Arrays.asList(jsonObjectMapper.writeValueAsString(params.toClinicalInterpretation())));
+
             return createOkResponse(clinicalManager.update(studyStr, clinicalAnalysisStr, parameters, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);

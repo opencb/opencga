@@ -27,7 +27,6 @@ import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.DiseasePanel;
 import org.opencb.opencga.core.models.Individual;
-import org.opencb.opencga.core.models.OntologyTerm;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
@@ -121,7 +120,7 @@ public class ClinicalInterpretationAnalysis extends OpenCgaAnalysis {
         final String userId = catalogManager.getUserManager().getUserId(sessionId);
 
         List<String> samples = new ArrayList<>();
-        List<String> variants;
+        List<DiseasePanel.VariantPanel> variants;
 
         if (StringUtils.isNotEmpty(clinicalAnalysisId)) {
             ClinicalAnalysis clinicalAnalysis = getClinicalAnalysis();
@@ -141,7 +140,7 @@ public class ClinicalInterpretationAnalysis extends OpenCgaAnalysis {
         Query panelQuery = new Query();
         panelQuery.put(DiseasePanelDBAdaptor.QueryParams.ID.key(), panelId);
         panelQuery.put(DiseasePanelDBAdaptor.QueryParams.VERSION.key(), panelVersion);
-        QueryResult<DiseasePanel> panelResult = catalogManager.getPanelManager().get(studyStr, panelQuery, QueryOptions.empty(), sessionId);
+        QueryResult<DiseasePanel> panelResult = catalogManager.getDiseasePanelManager().get(studyStr, panelQuery, QueryOptions.empty(), sessionId);
         DiseasePanel diseasePanel = panelResult.first();
 
         // we create the variant strage manager

@@ -265,10 +265,11 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                     ParamUtils.checkAlias(parameters.getString(queryParam.key()), "name");
                     break;
                 case INTERPRETATIONS:
+                    // Get the file uid
                     List<LinkedHashMap<String, Object>> interpretationList = (List<LinkedHashMap<String, Object>>) param.getValue();
                     for (LinkedHashMap<String, Object> interpretationMap : interpretationList) {
                         LinkedHashMap<String, Object> fileMap = (LinkedHashMap<String, Object>) interpretationMap.get("file");
-                        MyResource<File> fileResource = catalogManager.getFileManager().getUid(String.valueOf(fileMap.get("name")),
+                        MyResource<File> fileResource = catalogManager.getFileManager().getUid(String.valueOf(fileMap.get("path")),
                                 studyStr, sessionId);
                         fileMap.put(FileDBAdaptor.QueryParams.UID.key(), fileResource.getResource().getUid());
                     }

@@ -134,10 +134,13 @@ public class DiseasePanel extends PrivateStudyUid {
         }
     }
 
-    public class VariantPanel {
+    public static class VariantPanel {
 
         private String id;
         private String phenotype;
+
+        public VariantPanel() {
+        }
 
         public VariantPanel(String id, String phenotype) {
             this.id = id;
