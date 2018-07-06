@@ -41,7 +41,7 @@ public class DiseasePanel extends PrivateStudyUid {
 
     private List<OntologyTerm> phenotypes;
 
-    private List<String> variants;
+    private List<VariantPanel> variants;
     private List<GenePanel> genes;
     private List<RegionPanel> regions;
 
@@ -57,7 +57,7 @@ public class DiseasePanel extends PrivateStudyUid {
     }
 
     public DiseasePanel(String id, String name, int release, int version, String author, SourcePanel source, String description,
-                        List<OntologyTerm> phenotypes, List<String> variants, List<GenePanel> genes, List<RegionPanel> regions,
+                        List<OntologyTerm> phenotypes, List<VariantPanel> variants, List<GenePanel> genes, List<RegionPanel> regions,
                         Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -130,6 +130,47 @@ public class DiseasePanel extends PrivateStudyUid {
 
         public SourcePanel setVersion(String version) {
             this.version = version;
+            return this;
+        }
+    }
+
+    public static class VariantPanel {
+
+        private String id;
+        private String phenotype;
+
+        public VariantPanel() {
+        }
+
+        public VariantPanel(String id, String phenotype) {
+            this.id = id;
+            this.phenotype = phenotype;
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("VariantPanel{");
+            sb.append("id='").append(id).append('\'');
+            sb.append(", phenotype='").append(phenotype).append('\'');
+            sb.append('}');
+            return sb.toString();
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public VariantPanel setId(String id) {
+            this.id = id;
+            return this;
+        }
+
+        public String getPhenotype() {
+            return phenotype;
+        }
+
+        public VariantPanel setPhenotype(String phenotype) {
+            this.phenotype = phenotype;
             return this;
         }
     }
@@ -356,11 +397,11 @@ public class DiseasePanel extends PrivateStudyUid {
         return this;
     }
 
-    public List<String> getVariants() {
+    public List<VariantPanel> getVariants() {
         return variants;
     }
 
-    public DiseasePanel setVariants(List<String> variants) {
+    public DiseasePanel setVariants(List<VariantPanel> variants) {
         this.variants = variants;
         return this;
     }

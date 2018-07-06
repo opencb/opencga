@@ -265,7 +265,7 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
         public DiseasePanel.SourcePanel source;
 
         public List<OntologyTerm> phenotypes;
-        public List<String> variants;
+        public List<DiseasePanel.VariantPanel> variants;
         public List<DiseasePanel.GenePanel> genes;
         public List<DiseasePanel.RegionPanel> regions;
         public Map<String, Object> attributes;

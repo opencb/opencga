@@ -37,7 +37,8 @@ public class PanelMongoDBAdaptorTest extends MongoDBAdaptorTest {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
 
         DiseasePanel diseasePanel = new DiseasePanel("panel1", "Panel 1", 1, 1, "author", null, "description", Collections.emptyList(),
-                Arrays.asList("variant1","variant2"), Collections.emptyList(), Collections.emptyList(), Collections.emptyMap());
+                Arrays.asList(new DiseasePanel.VariantPanel().setId("variant1"), new DiseasePanel.VariantPanel().setId("variant2")),
+                Collections.emptyList(), Collections.emptyList(), Collections.emptyMap());
 
         QueryResult<DiseasePanel> panel = catalogPanelDBAdaptor.insert(studyId, diseasePanel, new QueryOptions());
         assertEquals(1, panel.getNumResults());
@@ -47,7 +48,8 @@ public class PanelMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void getPanel() throws CatalogDBException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         DiseasePanel diseasePanel = new DiseasePanel("panel1", "Panel 1", 1, 1, "author", null, "description", Collections.emptyList(),
-                Arrays.asList("variant1","variant2"), Collections.emptyList(), Collections.emptyList(), Collections.emptyMap());
+                Arrays.asList(new DiseasePanel.VariantPanel().setId("variant1"), new DiseasePanel.VariantPanel().setId("variant2")),
+                Collections.emptyList(), Collections.emptyList(), Collections.emptyMap());
         QueryResult<DiseasePanel> panel = catalogPanelDBAdaptor.insert(studyId, diseasePanel, new QueryOptions());
 
         QueryResult<DiseasePanel> panel1 = catalogPanelDBAdaptor.get(panel.first().getUid(), new QueryOptions());
