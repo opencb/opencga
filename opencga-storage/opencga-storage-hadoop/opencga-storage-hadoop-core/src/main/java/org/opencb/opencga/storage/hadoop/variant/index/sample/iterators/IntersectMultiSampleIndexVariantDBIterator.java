@@ -22,6 +22,7 @@ public class IntersectMultiSampleIndexVariantDBIterator extends MultiSampleIndex
     public IntersectMultiSampleIndexVariantDBIterator(List<VariantDBIterator> iterators, List<VariantDBIterator> negatedIterators) {
         super(iterators);
         this.negatedIterators = negatedIterators;
+        negatedIterators.forEach(this::addCloseable);
         negatedVariants = new ArrayList<>(negatedIterators.size());
     }
 

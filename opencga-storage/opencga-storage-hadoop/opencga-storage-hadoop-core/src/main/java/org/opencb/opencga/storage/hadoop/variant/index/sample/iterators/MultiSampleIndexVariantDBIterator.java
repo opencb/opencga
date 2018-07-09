@@ -23,6 +23,7 @@ public abstract class MultiSampleIndexVariantDBIterator extends SampleIndexVaria
         next = null;
         prev = null;
         count = 0;
+        iterators.forEach(this::addCloseable);
     }
 
     protected void checkInit() {
