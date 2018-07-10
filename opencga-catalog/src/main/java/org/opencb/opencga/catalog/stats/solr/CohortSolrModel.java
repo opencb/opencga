@@ -2,9 +2,7 @@ package org.opencb.opencga.catalog.stats.solr;
 
 import org.apache.solr.client.solrj.beans.Field;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -28,12 +26,6 @@ public class CohortSolrModel {
     private String status;
 
     @Field
-    private String familyUuid;
-
-    @Field
-    private List<String> familyMembersUuid;
-
-    @Field
     private int release;
 
     @Field
@@ -43,7 +35,6 @@ public class CohortSolrModel {
     private Map<String, Object> annotations;
 
     public CohortSolrModel() {
-        this.familyMembersUuid = new ArrayList<>();
         this.annotations = new HashMap<>();
     }
 
@@ -55,15 +46,12 @@ public class CohortSolrModel {
         sb.append(", type='").append(type).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", status='").append(status).append('\'');
-        sb.append(", familyUuid='").append(familyUuid).append('\'');
-        sb.append(", familyMembersUuid=").append(familyMembersUuid);
         sb.append(", release=").append(release);
         sb.append(", samples=").append(samples);
         sb.append(", annotations=").append(annotations);
         sb.append('}');
         return sb.toString();
     }
-
 
     public long getUid() {
         return uid;
@@ -107,24 +95,6 @@ public class CohortSolrModel {
 
     public CohortSolrModel setStatus(String status) {
         this.status = status;
-        return this;
-    }
-
-    public String getFamilyUuid() {
-        return familyUuid;
-    }
-
-    public CohortSolrModel setFamilyUuid(String familyUuid) {
-        this.familyUuid = familyUuid;
-        return this;
-    }
-
-    public List<String> getFamilyMembersUuid() {
-        return familyMembersUuid;
-    }
-
-    public CohortSolrModel setFamilyMembersUuid(List<String> familyMembersUuid) {
-        this.familyMembersUuid = familyMembersUuid;
         return this;
     }
 

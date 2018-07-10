@@ -7,6 +7,9 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
+
 
 /**
  * Created by wasim on 09/07/18.
@@ -14,8 +17,18 @@ import org.slf4j.LoggerFactory;
 
 public class CatalogSolrQueryParser {
 
-
+    private static List<String> queryParameters = new ArrayList<>();
     protected static Logger logger = LoggerFactory.getLogger(CatalogSolrQueryParser.class);
+
+    static {
+
+        queryParameters.add("studyId");
+        queryParameters.add("type");
+        queryParameters.add("status");
+        queryParameters.add("creationDate");
+        queryParameters.add("release");
+
+    }
 
     public CatalogSolrQueryParser() {
     }
@@ -29,8 +42,8 @@ public class CatalogSolrQueryParser {
      */
     public SolrQuery parse(Query query, QueryOptions queryOptions) {
 
+        List<String> filterList = new ArrayList<>();
         SolrQuery solrQuery = new SolrQuery();
-        solrQuery.setQuery("*:*");
 
         //-------------------------------------
         // Facet processing
@@ -55,9 +68,22 @@ public class CatalogSolrQueryParser {
             parseSolrFacetRanges(queryOptions.get(QueryOptions.FACET_RANGE).toString(), solrQuery);
         }
 
+        queryParameters.forEach(queryParam -> {
+            if (query.containsKey(queryParam)) {
+                filterList.add(query.getString(queryParam));
+            }
+        });
+
+        logger.debug("query = {}\n", query.toJson());
+
+        solrQuery.setQuery("*:*");
+        filterList.forEach(filter -> {
+            solrQuery.addFilterQuery(filter);
+            logger.debug("Solr fq: {}\n", filter);
+        });
+
         return solrQuery;
     }
-
 
     /**
      * Parse facets.

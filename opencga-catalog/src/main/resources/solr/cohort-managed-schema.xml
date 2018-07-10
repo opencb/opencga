@@ -67,8 +67,6 @@
     <field name="type" type="string" indexed="false" stored="true" multiValued="false"/>
     <field name="creationDate" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="status" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="familyUuid" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="familyMembersUuids" type="string" indexed="false" stored="true" multiValued="true"/>
     <field name="release" type="int" indexed="true" stored="true" multiValued="false"/>
     <field name="samples" type="int" indexed="false" stored="true" multiValued="false"/>
 

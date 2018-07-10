@@ -165,9 +165,9 @@ public class CohortWSServer extends OpenCGAWSServer {
     })
     public Response infoSample(
             @ApiParam(value = "Comma separated list of cohort names or ids up to a maximum of 100", required = true)
-                @PathParam("cohorts") String cohortsStr,
+            @PathParam("cohorts") String cohortsStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                @QueryParam("study") String studyStr,
+            @QueryParam("study") String studyStr,
             @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             query.remove("study");
@@ -196,7 +196,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     })
     public Response searchCohorts(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                @QueryParam("study") String studyStr,
+            @QueryParam("study") String studyStr,
             @ApiParam(value = "DEPRECATED: Name of the cohort") @QueryParam("name") String name,
             @ApiParam(value = "Cohort type") @QueryParam("type") Study.Type type,
             @ApiParam(value = "Status") @QueryParam("status") String status,
@@ -246,7 +246,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     }
 
     private QueryResult<Cohort> createCohort(String studyStr, String cohortName, Study.Type type, String cohortDescription,
-                                             List <AnnotationSet> annotationSetList, Query query, QueryOptions queryOptions)
+                                             List<AnnotationSet> annotationSetList, Query query, QueryOptions queryOptions)
             throws CatalogException {
         //TODO CHANGE THIS for can insert the name also id(number)
         QueryResult<Sample> queryResult = catalogManager.getSampleManager().get(studyStr, query, queryOptions, sessionId);
@@ -263,9 +263,9 @@ public class CohortWSServer extends OpenCGAWSServer {
     public Response updateByPost(
             @ApiParam(value = "cohortId", required = true) @PathParam("cohort") String cohortStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                @QueryParam("study") String studyStr,
+            @QueryParam("study") String studyStr,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", defaultValue = "ADD")
-                @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
+            @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
             @ApiParam(value = "params") Map<String, Object> params) {
         try {
             Map<String, Object> actionMap = new HashMap<>();
@@ -314,7 +314,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Delete existing cohorts")
     public Response delete(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                @QueryParam("study") String studyStr,
+            @QueryParam("study") String studyStr,
             @ApiParam(value = "Cohort id") @QueryParam("id") String id,
             @ApiParam(value = "Cohort name") @QueryParam("name") String name,
             @ApiParam(value = "Cohort type") @QueryParam("type") Study.Type type,
@@ -523,11 +523,11 @@ public class CohortWSServer extends OpenCGAWSServer {
     })
     public Response groupBy(
             @ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("")
-                @QueryParam("fields") String fields,
+            @QueryParam("fields") String fields,
             @ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @DefaultValue("") @QueryParam("studyId")
-                String studyIdStr,
+                    String studyIdStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                @QueryParam("study") String studyStr,
+            @QueryParam("study") String studyStr,
             @ApiParam(value = "Comma separated list of ids.") @QueryParam("id") String ids,
             @ApiParam(value = "DEPRECATED: Comma separated list of names.", required = false) @DefaultValue("") @QueryParam("name")
                     String names,
@@ -615,10 +615,31 @@ public class CohortWSServer extends OpenCGAWSServer {
     public Response getFacets(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
             @QueryParam("study") String studyStr,
+
+            @ApiParam(value = "Type") @QueryParam("type") String type,
+            @ApiParam(value = "CreationDate") @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Status") @QueryParam("status") String status,
+            @ApiParam(value = "Release") @QueryParam("release") int release,
             @ApiParam(value = "List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: studies>>biotype;type") @QueryParam("facet") String facet,
             @ApiParam(value = "List of facet ranges separated by semicolons with the format {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1") @QueryParam("facetRange") String facetRange,
             @ApiParam(value = "List of facet intersections separated by semicolons with the format {field_name}:{value1}:{value2}[:{value3}], e.g.: studies:1kG_phase3:EXAC:ESP6500") @QueryParam("facetIntersection") String facetIntersection) {
         try {
+
+            if (StringUtils.isNotEmpty(studyStr)) {
+                query.append("studyId", studyStr);
+            }
+            if (StringUtils.isNotEmpty(type)) {
+                query.append("type", type);
+            }
+            if (StringUtils.isNotEmpty(creationDate)) {
+                query.append("creationDate", creationDate);
+            }
+            if (StringUtils.isNotEmpty(status)) {
+                query.append("status", status);
+            }
+            if (release != 0) {
+                query.append("release", release);
+            }
 
             FacetedQueryResult queryResult = catalogManager.getCohortManager().facet(query, queryOptions, sessionId);
 

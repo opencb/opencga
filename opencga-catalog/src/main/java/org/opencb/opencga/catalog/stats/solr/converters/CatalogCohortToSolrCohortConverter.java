@@ -28,10 +28,6 @@ public class CatalogCohortToSolrCohortConverter implements ComplexTypeConverter<
         cohortSolrModel.setCreationDate(cohort.getCreationDate());
         cohortSolrModel.setStatus(cohort.getStatus().getName());
 
-        if (cohort.getFamily() != null) {
-            cohortSolrModel.setFamilyUuid(cohort.getFamily().getId());
-        }
-
         if (cohort.getSamples() != null) {
             cohortSolrModel.setSamples(cohort.getSamples().size());
         }
