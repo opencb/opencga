@@ -242,7 +242,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
 
         variantStorageManager = getVariantStorageEngine();
         variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions()
-                .append(VariantStorageEngine.Options.STUDY_NAME.key(), studyConfigurationBatchFile.getStudyName())
+                .append(VariantStorageEngine.Options.STUDY.key(), studyConfigurationBatchFile.getStudyName())
                 .putAll(options);
 
         List<StoragePipelineResult> results = variantStorageManager.index(uris, outputUri, true, true, true);
@@ -321,7 +321,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
 //                studyConfiguration, options.append(VariantStorageEngine.Options.FILE_ID.key(), 6));
 
         variantStorageEngine.getOptions()
-                .append(VariantStorageEngine.Options.STUDY_NAME.key(), STUDY_NAME)
+                .append(VariantStorageEngine.Options.STUDY.key(), STUDY_NAME)
                 .append(VariantStorageEngine.Options.LOAD_SPLIT_DATA.key(), true);
 
         List<StoragePipelineResult> results = variantStorageEngine.index(Arrays.asList(chr1, chr22), outputUri, true, true, true);
@@ -427,7 +427,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         clearDB(DB_NAME);
         ObjectMap params = new ObjectMap();
         StudyConfiguration studyConfiguration = newStudyConfiguration();
-        params.put(VariantStorageEngine.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
+        params.put(VariantStorageEngine.Options.STUDY.key(), studyConfiguration.getStudyName());
         params.put(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "json");
         params.put(VariantStorageEngine.Options.COMPRESS_METHOD.key(), "gZiP");
         params.put(VariantStorageEngine.Options.TRANSFORM_THREADS.key(), 1);
@@ -459,7 +459,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         clearDB(DB_NAME);
         ObjectMap params = new ObjectMap();
         StudyConfiguration studyConfiguration = newStudyConfiguration();
-        params.put(VariantStorageEngine.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
+        params.put(VariantStorageEngine.Options.STUDY.key(), studyConfiguration.getStudyName());
         params.put(VariantStorageEngine.Options.COMPRESS_METHOD.key(), "snappy");
         params.put(VariantStorageEngine.Options.TRANSFORM_THREADS.key(), 8);
         params.put(VariantStorageEngine.Options.LOAD_THREADS.key(), 8);
@@ -678,7 +678,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         ObjectMap params = new ObjectMap();
         StudyConfiguration studyConfiguration = newStudyConfiguration();
 
-        params.put(VariantStorageEngine.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
+        params.put(VariantStorageEngine.Options.STUDY.key(), studyConfiguration.getStudyName());
         params.put(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "json");
         params.put(VariantStorageEngine.Options.COMPRESS_METHOD.key(), "gZiP");
         params.put(VariantStorageEngine.Options.TRANSFORM_THREADS.key(), 1);

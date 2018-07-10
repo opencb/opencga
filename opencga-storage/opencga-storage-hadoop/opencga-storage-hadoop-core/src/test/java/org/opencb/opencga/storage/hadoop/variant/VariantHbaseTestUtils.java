@@ -376,7 +376,7 @@ public class VariantHbaseTestUtils {
     public static void removeFile(HadoopVariantStorageEngine variantStorageManager, String dbName, int fileId,
                                   StudyConfiguration studyConfiguration, Map<? extends String, ?> otherParams) throws Exception {
         ObjectMap params = new ObjectMap()
-                .append(VariantStorageEngine.Options.STUDY_ID.key(), studyConfiguration.getStudyId())
+                .append(VariantStorageEngine.Options.STUDY.key(), studyConfiguration.getStudyName())
                 .append(VariantStorageEngine.Options.DB_NAME.key(), dbName);
         if (otherParams != null) {
             params.putAll(otherParams);
@@ -395,13 +395,13 @@ public class VariantHbaseTestUtils {
     }
 
     public static VariantFileMetadata loadFile(
-            HadoopVariantStorageEngine variantStorageManager, String dbName, URI outputUri, String resourceName, int fileId,
+            HadoopVariantStorageEngine variantStorageManager, String dbName, URI outputUri, String resourceName,
             StudyConfiguration studyConfiguration, Map<? extends String, ?> otherParams, boolean doTransform, boolean loadArchive,
             boolean loadVariant) throws Exception {
         URI fileInputUri = VariantStorageBaseTest.getResourceUri(resourceName);
 
         ObjectMap params = new ObjectMap(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "proto")
-                .append(VariantStorageEngine.Options.STUDY_NAME.key(), studyConfiguration.getStudyName())
+                .append(VariantStorageEngine.Options.STUDY.key(), studyConfiguration.getStudyName())
                 .append(VariantStorageEngine.Options.DB_NAME.key(), dbName).append(VariantStorageEngine.Options.ANNOTATE.key(), false)
                 .append(VariantAnnotationManager.SPECIES, "hsapiens").append(VariantAnnotationManager.ASSEMBLY, "GRch37")
                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
@@ -412,9 +412,9 @@ public class VariantHbaseTestUtils {
         if (otherParams != null) {
             params.putAll(otherParams);
         }
-        if (fileId > 0) {
-            params.append(VariantStorageEngine.Options.FILE_ID.key(), fileId);
-        }
+//        if (fileId > 0) {
+//            params.append(VariantStorageEngine.Options.FILE_ID.key(), fileId);
+//        }
         StoragePipelineResult etlResult = VariantStorageBaseTest.runETL(variantStorageManager, fileInputUri, outputUri, params, doTransform, doTransform, loadArchive || loadVariant);
         StudyConfiguration updatedStudyConfiguration = variantStorageManager.getDBAdaptor().getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
         if (updatedStudyConfiguration != null) {
@@ -425,12 +425,12 @@ public class VariantHbaseTestUtils {
     }
 
     public static VariantFileMetadata loadFile(HadoopVariantStorageEngine variantStorageManager, String dbName, URI outputUri,
-                                         String resourceName, int fileId, StudyConfiguration studyConfiguration) throws Exception {
-        return loadFile(variantStorageManager, dbName, outputUri, resourceName, fileId, studyConfiguration, null, true, true, true);
+                                               String resourceName, StudyConfiguration studyConfiguration) throws Exception {
+        return loadFile(variantStorageManager, dbName, outputUri, resourceName, studyConfiguration, null, true, true, true);
     }
 
     public static VariantFileMetadata loadFile(HadoopVariantStorageEngine variantStorageManager, String dbName, URI outputUri,
                                          String resourceName, StudyConfiguration studyConfiguration, Map<? extends String, ?> otherParams) throws Exception {
-        return loadFile(variantStorageManager, dbName, outputUri, resourceName, -1, studyConfiguration, otherParams, true, true, true);
+        return loadFile(variantStorageManager, dbName, outputUri, resourceName, studyConfiguration, otherParams, true, true, true);
     }
 }

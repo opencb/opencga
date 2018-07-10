@@ -113,11 +113,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
         STUDY_TYPE("studyType", SampleSetType.CASE_CONTROL),
         AGGREGATED_TYPE("aggregatedType", Aggregation.NONE),
-        STUDY_NAME("studyName", "default"),
-        @Deprecated // Should be a member, not a parameter
-        STUDY_ID("studyId", -1),
-        @Deprecated // Should be a member, not a parameter
-        FILE_ID("fileId", -1),
+        STUDY("study", null),
         OVERRIDE_FILE_ID("overrideFileId", false),
         GVCF("gvcf", false),
         ISOLATE_FILE_FROM_STUDY_CONFIGURATION("isolateStudyConfiguration", false),
@@ -333,7 +329,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             try {
                 VariantDBAdaptor dbAdaptor = getDBAdaptor();
 
-                String studyName = options.getString(Options.STUDY_NAME.key());
+                String studyName = options.getString(Options.STUDY.key());
                 StudyConfiguration studyConfiguration =
                         dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyName, new QueryOptions(options)).first();
                 int studyId = studyConfiguration.getStudyId();
@@ -453,7 +449,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 VariantDBAdaptor dbAdaptor = getDBAdaptor();
                 logger.debug("Calculating stats for files: '{}'...", files.toString());
 
-                String studyName = options.getString(Options.STUDY_NAME.key());
+                String studyName = options.getString(Options.STUDY.key());
                 QueryOptions statsOptions = new QueryOptions(options);
                 StudyConfiguration studyConfiguration =
                         dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyName, new QueryOptions()).first();

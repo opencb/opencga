@@ -101,6 +101,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     private final ObjectMap loadStats = new ObjectMap();
     private final Logger logger = LoggerFactory.getLogger(MongoDBVariantStoragePipeline.class);
     private MongoDBVariantWriteResult writeResult;
+    private List<Integer> fileIds;
 
     public MongoDBVariantStoragePipeline(StorageConfiguration configuration, String storageEngineId,
                                          VariantMongoDBAdaptor dbAdaptor) {
@@ -546,7 +547,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             throws StorageEngineException {
 
         long start = System.currentTimeMillis();
-        options.put(Options.FILE_ID.key(), fileIds);
+        this.fileIds = fileIds;
 
         StudyConfiguration studyConfiguration = preMerge(fileIds);
 
@@ -754,7 +755,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     public URI postLoad(URI input, URI output) throws StorageEngineException {
 
         if (options.getBoolean(MERGE.key()) || options.getBoolean(DIRECT_LOAD.key(), DIRECT_LOAD.defaultValue())) {
-            return super.postLoad(input, output);
+            return postLoad(input, output, fileIds);
         } else {
             return input;
         }

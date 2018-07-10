@@ -463,16 +463,16 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
                         .append(VariantStorageEngine.Options.ANNOTATE.key(), false);
 
                 runETL(variantStorageManager, f1, outputUri, objectMap
-                                .append(VariantStorageEngine.Options.STUDY_NAME.key(), studyConfiguration.getStudyName())
+                                .append(VariantStorageEngine.Options.STUDY.key(), studyConfiguration.getStudyName())
                         , true, true, true);
                 runETL(variantStorageManager, f2, outputUri, objectMap
-                                .append(VariantStorageEngine.Options.STUDY_NAME.key(), studyConfiguration.getStudyName())
+                                .append(VariantStorageEngine.Options.STUDY.key(), studyConfiguration.getStudyName())
                         , true, true, true);
                 runETL(variantStorageManager, f3, outputUri, objectMap
-                                .append(VariantStorageEngine.Options.STUDY_NAME.key(), studyConfiguration.getStudyName() + "_2")
+                                .append(VariantStorageEngine.Options.STUDY.key(), studyConfiguration.getStudyName() + "_2")
                         , true, true, true);
                 runETL(variantStorageManager, f4, outputUri, objectMap
-                                .append(VariantStorageEngine.Options.STUDY_NAME.key(), studyConfiguration.getStudyName() + "_2")
+                                .append(VariantStorageEngine.Options.STUDY.key(), studyConfiguration.getStudyName() + "_2")
                         , true, true, true);
             } catch (Exception e) {
                 e.printStackTrace();

@@ -141,7 +141,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         // or this can be a directory, in that case we use all VCF files in that directory or subdirectory
         String studyFQNByInputFileId = studyInfo.getStudyFQN();
 
-        options.put(VariantStorageEngine.Options.STUDY_NAME.key(), studyFQNByInputFileId);
+        options.put(VariantStorageEngine.Options.STUDY.key(), studyFQNByInputFileId);
         options.put(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), getAggregation(studyFQNByInputFileId, options, sessionId));
 
 //        Study study = catalogManager.getStudyManager().get(studyUidByInputFileId, new QueryOptions(), sessionId).getResult().get(0);

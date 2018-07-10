@@ -42,9 +42,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 /**
@@ -274,7 +271,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
 //        newParams.put(VariantStorageEngine.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
         newParams.putIfAbsent(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), studyConfiguration.getAggregation());
 //        newParams.putIfAbsent(VariantStorageEngine.Options.STUDY_ID.key(), studyConfiguration.getStudyId());
-        newParams.putIfAbsent(VariantStorageEngine.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
+        newParams.putIfAbsent(VariantStorageEngine.Options.STUDY.key(), studyConfiguration.getStudyName());
 //        newParams.putIfAbsent(VariantStorageEngine.Options.FILE_ID.key(), FILE_ID);
         // Default value is already avro
 //        newParams.putIfAbsent(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro");

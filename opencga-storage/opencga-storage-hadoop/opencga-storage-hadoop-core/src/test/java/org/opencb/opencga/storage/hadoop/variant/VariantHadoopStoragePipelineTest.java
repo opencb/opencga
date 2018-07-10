@@ -77,7 +77,6 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
         studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
         etlResult = VariantStorageBaseTest.runDefaultETL(inputUri, variantStorageManager, studyConfiguration,
                 new ObjectMap(Options.TRANSFORM_FORMAT.key(), "proto")
-                        .append(Options.FILE_ID.key(), FILE_ID)
                         .append(Options.ANNOTATE.key(), true)
                         .append(Options.CALCULATE_STATS.key(), false)
         );

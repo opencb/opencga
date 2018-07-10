@@ -408,7 +408,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
                 if (doMerge) {
                     StudyConfiguration studyConfiguration = storageResultMap.get(inputFiles.get(0)).getStudyConfiguration();
                     ObjectMap options = getOptions();
-                    options.put(STUDY_NAME.key(), studyConfiguration.getStudyName());
+                    options.put(Options.STUDY.key(), studyConfiguration.getStudyName());
 
                     annotateLoadedFiles(outdirUri, inputFiles, results, options);
                     calculateStatsForLoadedFiles(outdirUri, inputFiles, results, options);
@@ -459,7 +459,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
 
             // REGION + [ STUDY ]
             if (queryParams.equals(Collections.singleton(REGION))
-                    || queryParams.size() == 2 && queryParams.contains(REGION) && queryParams.contains(STUDY)) {
+                    || queryParams.size() == 2 && queryParams.contains(REGION) && queryParams.contains(VariantQueryParam.STUDY)) {
                 options.put(VariantSearchManager.USE_SEARCH_INDEX, VariantSearchManager.UseSearchIndex.NO);
                 return false;
             } else {
