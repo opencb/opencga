@@ -16,6 +16,9 @@ public class CohortSolrModel {
     private long uid;
 
     @Field
+    private String studyId;
+
+    @Field
     private String type;
 
     @Field
@@ -48,17 +51,19 @@ public class CohortSolrModel {
     public String toString() {
         final StringBuilder sb = new StringBuilder("CohortSolrModel{");
         sb.append("uid=").append(uid);
+        sb.append(", studyId='").append(studyId).append('\'');
         sb.append(", type='").append(type).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", status='").append(status).append('\'');
         sb.append(", familyUuid='").append(familyUuid).append('\'');
         sb.append(", familyMembersUuid=").append(familyMembersUuid);
         sb.append(", release=").append(release);
-        sb.append(", samplesUuid=").append(samples);
+        sb.append(", samples=").append(samples);
         sb.append(", annotations=").append(annotations);
         sb.append('}');
         return sb.toString();
     }
+
 
     public long getUid() {
         return uid;
@@ -66,6 +71,15 @@ public class CohortSolrModel {
 
     public CohortSolrModel setUid(long uid) {
         this.uid = uid;
+        return this;
+    }
+
+    public String getStudyId() {
+        return studyId;
+    }
+
+    public CohortSolrModel setStudyId(String studyId) {
+        this.studyId = studyId;
         return this;
     }
 
@@ -140,5 +154,4 @@ public class CohortSolrModel {
         this.annotations = annotations;
         return this;
     }
-
 }

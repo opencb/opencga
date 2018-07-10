@@ -16,17 +16,22 @@
 
 package org.opencb.opencga.catalog.stats.solr;
 
+import org.apache.commons.lang3.time.StopWatch;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrException;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.result.FacetedQueryResult;
+import org.opencb.commons.datastore.core.result.FacetedQueryResultItem;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.stats.solr.converters.SolrFacetUtil;
 import org.opencb.opencga.core.SolrManager;
 import org.opencb.opencga.core.config.SearchConfiguration;
 import org.slf4j.Logger;
@@ -182,16 +187,16 @@ public class CatalogSolrManager {
      */
     public FacetedQueryResult facetedQuery(String collection, Query query, QueryOptions queryOptions)
             throws IOException, SolrException {
-       /* StopWatch stopWatch = StopWatch.createStarted();
+        StopWatch stopWatch = StopWatch.createStarted();
         try {
-            SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+            CatalogSolrQueryParser catalogSolrQueryParser = new CatalogSolrQueryParser();
+            SolrQuery solrQuery = catalogSolrQueryParser.parse(query, queryOptions);
             QueryResponse response = solrManager.getSolrClient().query(collection, solrQuery);
-            FacetedQueryResultItem item = toFacetedQueryResultItem(queryOptions, response);
+            FacetedQueryResultItem item = SolrFacetUtil.toFacetedQueryResultItem(queryOptions, response);
             return new FacetedQueryResult("", (int) stopWatch.getTime(), 1, 1, "Faceted data from Solr", "", item);
         } catch (SolrServerException e) {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
-        }*/
-       return null;
+        }
     }
 
     //***************** PRIVATE ****************/
@@ -203,6 +208,5 @@ public class CatalogSolrManager {
         CONFIGS_COLLECTION.put(DATABASE_PREFIX + INDIVIDUAL_SOLR_COLLECTION, INDIVIDUAL_CONF_SET);
         CONFIGS_COLLECTION.put(DATABASE_PREFIX + SAMPLES_SOLR_COLLECTION, SAMPLE_CONF_SET);
     }
-
 }
 

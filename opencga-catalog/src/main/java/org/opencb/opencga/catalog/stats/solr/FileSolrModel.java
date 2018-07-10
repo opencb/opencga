@@ -16,6 +16,9 @@ public class FileSolrModel {
     private long uid;
 
     @Field
+    private String studyId;
+
+    @Field
     private String name;
 
     @Field
@@ -54,7 +57,7 @@ public class FileSolrModel {
     @Field
     private List<Long> relatedFiles;
 
-    @Field("annotations_*")
+    @Field("annotations__*")
     private Map<String, Object> annotations;
 
     public FileSolrModel() {
@@ -67,6 +70,7 @@ public class FileSolrModel {
     public String toString() {
         final StringBuilder sb = new StringBuilder("FileSolrModel{");
         sb.append("uid=").append(uid);
+        sb.append(", studyId='").append(studyId).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", type='").append(type).append('\'');
         sb.append(", format='").append(format).append('\'');
@@ -91,6 +95,15 @@ public class FileSolrModel {
 
     public FileSolrModel setUid(long uid) {
         this.uid = uid;
+        return this;
+    }
+
+    public String getStudyId() {
+        return studyId;
+    }
+
+    public FileSolrModel setStudyId(String studyId) {
+        this.studyId = studyId;
         return this;
     }
 
@@ -220,3 +233,5 @@ public class FileSolrModel {
         return this;
     }
 }
+
+

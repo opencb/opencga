@@ -16,6 +16,9 @@ public class IndividualSolrModel {
     private long uid;
 
     @Field
+    private String studyId;
+
+    @Field
     private String multipleTypeName;
 
     @Field
@@ -69,6 +72,7 @@ public class IndividualSolrModel {
     public String toString() {
         final StringBuilder sb = new StringBuilder("IndividualSolrModel{");
         sb.append("uid=").append(uid);
+        sb.append(", studyId='").append(studyId).append('\'');
         sb.append(", multipleTypeName='").append(multipleTypeName).append('\'');
         sb.append(", sex='").append(sex).append('\'');
         sb.append(", karyotypicSex='").append(karyotypicSex).append('\'');
@@ -81,7 +85,7 @@ public class IndividualSolrModel {
         sb.append(", lifeStatus='").append(lifeStatus).append('\'');
         sb.append(", affectationStatus='").append(affectationStatus).append('\'');
         sb.append(", phenotypes=").append(phenotypes);
-        sb.append(", samplesUuid=").append(samples);
+        sb.append(", samples=").append(samples);
         sb.append(", parentalConsanguinity=").append(parentalConsanguinity);
         sb.append(", annotations=").append(annotations);
         sb.append('}');
@@ -94,6 +98,15 @@ public class IndividualSolrModel {
 
     public IndividualSolrModel setUid(long uid) {
         this.uid = uid;
+        return this;
+    }
+
+    public String getStudyId() {
+        return studyId;
+    }
+
+    public IndividualSolrModel setStudyId(String studyId) {
+        this.studyId = studyId;
         return this;
     }
 

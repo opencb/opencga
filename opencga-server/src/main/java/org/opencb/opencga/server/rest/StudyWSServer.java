@@ -47,6 +47,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.utils.Constants.FLATTENED_ANNOTATIONS;
+
 
 @Path("/{apiVersion}/studies")
 @Produces(MediaType.APPLICATION_JSON)
@@ -795,20 +797,6 @@ public class StudyWSServer extends OpenCGAWSServer {
         }
     }
 
-
-    @POST
-    @Path("/{study}/syncSolr")
-    @ApiOperation(value = "Sync Catalog into the Solr")
-    public Response syncSolr(
-            @ApiParam(value = "Study [[user@]project:]study") @PathParam("study") String studyStr) {
-
-        try {
-            // check permissions with sessionId
-            return createOkResponse(catalogManager.getStudyManager().indexCatalogIntoSolr(query));
-        } catch (CatalogException | IOException e) {
-            return createErrorResponse(e);
-        }
-    }
 
     private static class VariableSetParameters {
         public Boolean unique;

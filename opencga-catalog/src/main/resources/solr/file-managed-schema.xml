@@ -72,6 +72,8 @@
     <field name="_root_" type="string" docValues="false" indexed="true" stored="false"/>
     <field name="_text_" type="text_general" multiValued="true" indexed="true" stored="false"/>
     <field name="_version_" type="long" indexed="false" stored="false"/>
+
+    <field name="studyId" type="string" indexed="false" stored="true" multiValued="false"/>
     <field name="name" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="type" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="format" type="string" indexed="true" stored="true" multiValued="false"/>
@@ -83,12 +85,12 @@
     <field name="size" type="int" indexed="true" stored="true" multiValued="false"/>
     <field name="software" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="experiment" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="samplesUuid" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="relatedFiles" type="string" indexed="true" stored="true" multiValued="true"/>
 
-    <dynamicField name="annotations__*" type="string" indexed="true" stored="true" multiValued="false"/>
-    <dynamicField name="annotations__*" type="double" indexed="true" stored="true" multiValued="false"/>
-    <dynamicField name="annotations__*" type="int" indexed="true" stored="true" multiValued="false"/>
-    <dynamicField name="annotations__*" type="boolean" indexed="true" stored="true" multiValued="false"/>
+    <dynamicField name="annotations__s__*" type="string" indexed="true" stored="true" multiValued="false"/>
+    <dynamicField name="annotations__d__*" type="double" indexed="true" stored="true" multiValued="false"/>
+    <dynamicField name="annotations__i__*" type="int" indexed="true" stored="true" multiValued="false"/>
+    <dynamicField name="annotations__b__*" type="boolean" indexed="true" stored="true" multiValued="false"/>
+    <dynamicField name="annotations__o__*" type="strings" multiValued="true" indexed="true" stored="true"/>
 
 </schema>

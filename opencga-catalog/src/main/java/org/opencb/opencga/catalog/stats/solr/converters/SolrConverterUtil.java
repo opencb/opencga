@@ -20,10 +20,8 @@ public class SolrConverterUtil {
             for (AnnotationSet annotationSet : annotationSets) {
                 for (String annotationKey : annotationSet.getAnnotations().keySet()) {
                     Object value = annotationSet.getAnnotations().get(annotationKey);
-                    if (!type(value).equals("__o__")) {
-                        result.put("annotations" + type(value) + annotationSet.getName() + "__" + annotationSet.getVariableSetId()
-                                + "__" + annotationKey, value);
-                    }
+                    result.put("annotations" + type(value) + annotationSet.getName() + "__" + annotationSet.getVariableSetId()
+                            + "__" + annotationKey, value);
                 }
             }
         }
@@ -54,5 +52,10 @@ public class SolrConverterUtil {
             return "__o__";
         }
         return "__o__";
+    }
+
+    // TODO: implement me after clarifying with Nacho
+    public static String getStudyId(long studyUid) {
+        return Long.toString(studyUid);
     }
 }

@@ -20,16 +20,13 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
-import org.opencb.opencga.catalog.stats.solr.converters.CatalogFamilyToSolrFamilyConverter;
-import org.opencb.opencga.catalog.stats.solr.converters.CatalogFileToSolrFileConverter;
-import org.opencb.opencga.catalog.stats.solr.converters.CatalogIndividualToSolrIndividualConverter;
-import org.opencb.opencga.core.models.Cohort;
-import org.opencb.opencga.core.models.Family;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Individual;
+import org.opencb.opencga.catalog.stats.solr.converters.*;
+import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 
 import java.io.IOException;
+
+import static org.opencb.opencga.catalog.utils.Constants.FLATTENED_ANNOTATIONS;
 
 
 /*
@@ -62,11 +59,19 @@ public class CatalogSolrManaerTest {
     @Test
     public void testIterator() throws CatalogException, SolrServerException, IOException, VariantSearchException {
         MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(catalog.getConfiguration());
-        CohortMongoDBAdaptor cohortMongoDBAdaptor = factory.getCatalogCohortDBAdaptor();
-        DBIterator<Cohort> cohortIterator = cohortMongoDBAdaptor.iterator(new Query(), new QueryOptions(QueryOptions.EXCLUDE, "samples"));
+        FileMongoDBAdaptor fileMongoDBAdaptor = factory.getCatalogFileDBAdaptor();
 
-        while (cohortIterator.hasNext()){
-            System.out.println(cohortIterator.next().getId());
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.LIMIT, "10000");
+        queryOptions.add(QueryOptions.EXCLUDE, "samples");
+        queryOptions.add(QueryOptions.EXCLUDE, "attributes");
+        queryOptions.add("allowDiskUse", "true");
+
+
+        DBIterator<File> fileDBIterator = fileMongoDBAdaptor.iterator(new Query(), queryOptions);
+
+        while (fileDBIterator.hasNext()) {
+            System.out.println(fileDBIterator.next().getId());
+
         }
 
 
@@ -74,10 +79,20 @@ public class CatalogSolrManaerTest {
 
 
     @Test
+    public void testFacet() throws CatalogException, SolrServerException, IOException, VariantSearchException {
+
+        catalogSolrManager.facetedQuery(catalog.getConfiguration().getDatabasePrefix() +"_"+ CatalogSolrManager.SAMPLES_SOLR_COLLECTION, new Query(), new QueryOptions(QueryOptions.FACET, "annotations__s__GermlineSample__GermlineSample__source"));
+
+    }
+
+    @Test
     public void getSamples() throws CatalogException, SolrServerException, IOException, VariantSearchException {
         Query query = new Query()
                 .append(SampleDBAdaptor.QueryParams.NAME.key(), "101");
 
+        QueryOptions queryOptions = new QueryOptions(FLATTENED_ANNOTATIONS, "true");
+        queryOptions.add(QueryOptions.EXCLUDE,"samples");
+       // queryOptions.add(QueryOptions.LIMIT,1000);
         //  .append(Constants.ALL_VERSIONS, true);
 
         //  CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalog, null);
@@ -86,27 +101,30 @@ public class CatalogSolrManaerTest {
 
         MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(catalog.getConfiguration());
 
-      /*  SampleMongoDBAdaptor catalogSampleDBAdaptor = factory.getCatalogSampleDBAdaptor();
+
+        SampleMongoDBAdaptor catalogSampleDBAdaptor = factory.getCatalogSampleDBAdaptor();
         CohortMongoDBAdaptor cohortMongoDBAdaptor = factory.getCatalogCohortDBAdaptor();
         FileMongoDBAdaptor fileMongoDBAdaptor = factory.getCatalogFileDBAdaptor();
-        FamilyDBAdaptor familyDBAdaptor = factory.getCatalogFamilyDBAdaptor();*/
-        IndividualDBAdaptor individualDBAdaptor = factory.getCatalogIndividualDBAdaptor();
+        FamilyDBAdaptor familyDBAdaptor = factory.getCatalogFamilyDBAdaptor();
+         IndividualDBAdaptor individualDBAdaptor = factory.getCatalogIndividualDBAdaptor();
+//        DBIterator<File> fileIterator = fileMongoDBAdaptor.iterator(new Query(), new QueryOptions(QueryOptions.LIMIT, "10"));
+  //      catalogSolrManager.insertCatalogCollection(fileIterator, new CatalogFileToSolrFileConverter(), CatalogSolrManager.FILE_SOLR_COLLECTION);
 
-        /*DBIterator<Sample> sampleIterator = catalogSampleDBAdaptor.iterator(new Query(), null);
-        DBIterator<Cohort> cohortIterator = cohortMongoDBAdaptor.iterator(query, null);
-
+        DBIterator<Sample> sampleIterator = catalogSampleDBAdaptor.iterator(new Query(), queryOptions);
+        //DBIterator<Cohort> cohortIterator = cohortMongoDBAdaptor.iterator(new Query(), queryOptions);
+       // DBIterator<Cohort> cohortIterator = cohortMongoDBAdaptor.iterator(new Query(), new QueryOptions(QueryOptions.EXCLUDE, "samples"));
         catalogSolrManager.insertCatalogCollection(sampleIterator, new CatalogSampleToSolrSampleConverter(), CatalogSolrManager.SAMPLES_SOLR_COLLECTION);
-        catalogSolrManager.insertCatalogCollection(cohortIterator, new CatalogCohortToSolrCohortConverter(), CatalogSolrManager.COHORT_SOLR_COLLECTION);
-*/
-     //   DBIterator<File> fileIterator = fileMongoDBAdaptor.iterator(new Query(), null);
-       // DBIterator<Family> familyIterator = familyDBAdaptor.iterator(new Query(), null);
+       // catalogSolrManager.insertCatalogCollection(cohortIterator, new CatalogCohortToSolrCohortConverter(), CatalogSolrManager.COHORT_SOLR_COLLECTION);
 
-       // catalogSolrManager.insertCatalogCollection(familyIterator, new CatalogFamilyToSolrFamilyConverter(), CatalogSolrManager.FAMILY_SOLR_COLLECTION);
+     //   DBIterator<File> fileIterator = fileMongoDBAdaptor.iterator(new Query(), queryOptions);
+        //DBIterator<Family> familyIterator = familyDBAdaptor.iterator(new Query(), null);
 
-        DBIterator<Individual> individualIterator = individualDBAdaptor.iterator(query, null);
-       // System.out.println(individualDBAdaptor.count());
-        catalogSolrManager.insertCatalogCollection(individualIterator, new CatalogIndividualToSolrIndividualConverter(), CatalogSolrManager.INDIVIDUAL_SOLR_COLLECTION);
-        //catalogSolrManager.insertCatalogCollection(fileIterator, new CatalogFileToSolrFileConverter(), CatalogSolrManager.FILE_SOLR_COLLECTION);
+        // catalogSolrManager.insertCatalogCollection(familyIterator, new CatalogFamilyToSolrFamilyConverter(), CatalogSolrManager.FAMILY_SOLR_COLLECTION);
+
+          //DBIterator<Individual> individualIterator = individualDBAdaptor.iterator(new Query(), queryOptions);
+        // System.out.println(individualDBAdaptor.count());
+        //catalogSolrManager.insertCatalogCollection(individualIterator, new CatalogIndividualToSolrIndividualConverter(), CatalogSolrManager.INDIVIDUAL_SOLR_COLLECTION);
+     //   catalogSolrManager.insertCatalogCollection(fileIterator, new CatalogFileToSolrFileConverter(), CatalogSolrManager.FILE_SOLR_COLLECTION);
 
         //  CohortMongoDBAdaptor cohortMongoDBAdaptor = factory.getCatalogCohortDBAdaptor();
         // QueryOptions queryOptions = new QueryOptions(QueryOptions.EXCLUDE,"samples");

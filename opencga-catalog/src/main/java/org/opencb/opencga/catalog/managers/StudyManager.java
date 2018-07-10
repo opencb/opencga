@@ -1190,59 +1190,58 @@ public class StudyManager extends AbstractManager {
         }
     }
 
-    public boolean indexCatalogIntoSolr(Query query) throws CatalogException, IOException {
+    public boolean indexCatalogIntoSolr(Query query, QueryOptions queryOptions) throws CatalogException, IOException {
 
         CatalogSolrManager catalogSolrManager = new CatalogSolrManager(this.catalogManager);
 
         ExecutorService threadPool = Executors.newFixedThreadPool(5);
-        threadPool.submit(() -> indexCohort(catalogSolrManager, query));
-        threadPool.submit(() -> indexFile(catalogSolrManager, query));
-        threadPool.submit(() -> indexFamily(catalogSolrManager, query));
-        threadPool.submit(() -> indexIndividual(catalogSolrManager, query));
-        threadPool.submit(() -> indexSample(catalogSolrManager, query));
+        threadPool.submit(() -> indexCohort(catalogSolrManager, query, queryOptions));
+        threadPool.submit(() -> indexFile(catalogSolrManager, query, queryOptions));
+        threadPool.submit(() -> indexFamily(catalogSolrManager, query, queryOptions));
+        threadPool.submit(() -> indexIndividual(catalogSolrManager, query, queryOptions));
+        threadPool.submit(() -> indexSample(catalogSolrManager, query, queryOptions));
+        threadPool.shutdown();
 
         return true;
     }
 
     // **************************   Private methods  ******************************** //
 
-    private Boolean indexCohort(CatalogSolrManager catalogSolrManager, Query query) throws CatalogException, IOException {
+    private Boolean indexCohort(CatalogSolrManager catalogSolrManager, Query query,
+                                QueryOptions queryOptions) throws CatalogException, IOException {
         catalogSolrManager.insertCatalogCollection(this.cohortDBAdaptor.iterator(query,
-                new QueryOptions(QueryOptions.EXCLUDE, "samples")), new CatalogCohortToSolrCohortConverter(),
-                CatalogSolrManager.COHORT_SOLR_COLLECTION);
+                queryOptions), new CatalogCohortToSolrCohortConverter(), CatalogSolrManager.COHORT_SOLR_COLLECTION);
         return true;
     }
 
-    private Boolean indexFile(CatalogSolrManager catalogSolrManager, Query query) throws CatalogException, IOException {
+    private Boolean indexFile(CatalogSolrManager catalogSolrManager, Query query,
+                              QueryOptions queryOptions) throws CatalogException, IOException {
         catalogSolrManager.insertCatalogCollection(this.fileDBAdaptor.iterator(query,
-                new QueryOptions(QueryOptions.EXCLUDE, "samples")), new CatalogFileToSolrFileConverter(),
-                CatalogSolrManager.FILE_SOLR_COLLECTION);
+                queryOptions), new CatalogFileToSolrFileConverter(), CatalogSolrManager.FILE_SOLR_COLLECTION);
         return true;
     }
 
 
-    private Boolean indexFamily(CatalogSolrManager catalogSolrManager, Query query) throws CatalogException, IOException {
+    private Boolean indexFamily(CatalogSolrManager catalogSolrManager, Query query,
+                                QueryOptions queryOptions) throws CatalogException, IOException {
         catalogSolrManager.insertCatalogCollection(this.familyDBAdaptor.iterator(query,
-                new QueryOptions(QueryOptions.EXCLUDE, "samples")), new CatalogFamilyToSolrFamilyConverter(),
-                CatalogSolrManager.FAMILY_SOLR_COLLECTION);
+                queryOptions), new CatalogFamilyToSolrFamilyConverter(), CatalogSolrManager.FAMILY_SOLR_COLLECTION);
         return true;
     }
 
 
-    private Boolean indexIndividual(CatalogSolrManager catalogSolrManager, Query query) throws CatalogException, IOException {
+    private Boolean indexIndividual(CatalogSolrManager catalogSolrManager, Query query,
+                                    QueryOptions queryOptions) throws CatalogException, IOException {
         catalogSolrManager.insertCatalogCollection(this.individualDBAdaptor.iterator(query,
-                new QueryOptions(QueryOptions.EXCLUDE, "samples")), new CatalogIndividualToSolrIndividualConverter(),
-                CatalogSolrManager.INDIVIDUAL_SOLR_COLLECTION);
+                queryOptions), new CatalogIndividualToSolrIndividualConverter(), CatalogSolrManager.INDIVIDUAL_SOLR_COLLECTION);
         return true;
-
     }
 
-    private Boolean indexSample(CatalogSolrManager catalogSolrManager, Query query) throws CatalogException, IOException {
+    private Boolean indexSample(CatalogSolrManager catalogSolrManager, Query query,
+                                QueryOptions queryOptions) throws CatalogException, IOException {
         catalogSolrManager.insertCatalogCollection(this.sampleDBAdaptor.iterator(query,
-                new QueryOptions(QueryOptions.EXCLUDE, "samples")), new CatalogSampleToSolrSampleConverter(),
-                CatalogSolrManager.SAMPLES_SOLR_COLLECTION);
+                queryOptions), new CatalogSampleToSolrSampleConverter(), CatalogSolrManager.SAMPLES_SOLR_COLLECTION);
         return true;
-
     }
 
 

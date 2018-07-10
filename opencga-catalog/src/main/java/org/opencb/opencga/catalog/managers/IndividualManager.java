@@ -23,6 +23,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.Error;
+import org.opencb.commons.datastore.core.result.FacetedQueryResult;
 import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
@@ -38,6 +39,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
@@ -52,6 +54,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -438,9 +441,9 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                     if (members.size() + 1 == family.getMembers().size()) {
                         // Remove member from the array of members in the family entry
                         Query familyQuery = new Query()
-                            .append(FamilyDBAdaptor.QueryParams.UID.key(), family.getUid())
-                            .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
-                            .append(Constants.ALL_VERSIONS, true);
+                                .append(FamilyDBAdaptor.QueryParams.UID.key(), family.getUid())
+                                .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                                .append(Constants.ALL_VERSIONS, true);
                         ObjectMap familyUpdate = new ObjectMap()
                                 .append(FamilyDBAdaptor.UpdateParams.MEMBERS.key(), members);
 
@@ -451,7 +454,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                         }
                     } else {
                         logger.error("Could not delete individual {}. The family {} that in theory contains that individual has the "
-                                + "following members: {}", individual.getId(), family.getId(),
+                                        + "following members: {}", individual.getId(), family.getId(),
                                 family.getMembers().stream().map(Individual::getId).collect(Collectors.toList()));
                         throw new CatalogException("Internal error: Could not delete individual");
                     }
@@ -492,7 +495,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     public QueryResult<Individual> updateAnnotationSet(String studyStr, String individualStr, List<AnnotationSet> annotationSetList,
-                                                   ParamUtils.UpdateAction action, QueryOptions options, String token)
+                                                       ParamUtils.UpdateAction action, QueryOptions options, String token)
             throws CatalogException {
         ObjectMap params = new ObjectMap(AnnotationSetManager.ANNOTATION_SETS, annotationSetList);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -507,7 +510,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     public QueryResult<Individual> addAnnotationSets(String studyStr, String individualStr, List<AnnotationSet> annotationSetList,
-                                                 QueryOptions options, String token) throws CatalogException {
+                                                     QueryOptions options, String token) throws CatalogException {
         return updateAnnotationSet(studyStr, individualStr, annotationSetList, ParamUtils.UpdateAction.ADD, options, token);
     }
 
@@ -517,17 +520,17 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     public QueryResult<Individual> setAnnotationSets(String studyStr, String individualStr, List<AnnotationSet> annotationSetList,
-                                                 QueryOptions options, String token) throws CatalogException {
+                                                     QueryOptions options, String token) throws CatalogException {
         return updateAnnotationSet(studyStr, individualStr, annotationSetList, ParamUtils.UpdateAction.SET, options, token);
     }
 
     public QueryResult<Individual> removeAnnotationSet(String studyStr, String individualStr, String annotationSetId, QueryOptions options,
-                                                   String token) throws CatalogException {
+                                                       String token) throws CatalogException {
         return removeAnnotationSets(studyStr, individualStr, Collections.singletonList(annotationSetId), options, token);
     }
 
     public QueryResult<Individual> removeAnnotationSets(String studyStr, String individualStr, List<String> annotationSetIdList,
-                                                    QueryOptions options, String token) throws CatalogException {
+                                                        QueryOptions options, String token) throws CatalogException {
         List<AnnotationSet> annotationSetList = annotationSetIdList
                 .stream()
                 .map(id -> new AnnotationSet().setId(id))
@@ -536,8 +539,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     public QueryResult<Individual> updateAnnotations(String studyStr, String individualStr, String annotationSetId,
-                                                 Map<String, Object> annotations, ParamUtils.CompleteUpdateAction action,
-                                                 QueryOptions options, String token) throws CatalogException {
+                                                     Map<String, Object> annotations, ParamUtils.CompleteUpdateAction action,
+                                                     QueryOptions options, String token) throws CatalogException {
         ObjectMap params = new ObjectMap(AnnotationSetManager.ANNOTATIONS, new AnnotationSet(annotationSetId, "", annotations));
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         options.put(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATIONS, action));
@@ -552,7 +555,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     public QueryResult<Individual> resetAnnotations(String studyStr, String individualStr, String annotationSetId, List<String> annotations,
-                                                QueryOptions options, String token) throws CatalogException {
+                                                    QueryOptions options, String token) throws CatalogException {
         return updateAnnotations(studyStr, individualStr, annotationSetId, new ObjectMap("reset", StringUtils.join(annotations, ",")),
                 ParamUtils.CompleteUpdateAction.RESET, options, token);
     }
@@ -853,7 +856,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                         .collect(Collectors.toList());
                 queryResults = authorizationManager.setAcls(resource.getStudy().getUid(), resource.getResourceList().stream()
                                 .map(Individual::getUid).collect(Collectors.toList()), members, permissions,
-                allIndividualPermissions, Entity.INDIVIDUAL);
+                        allIndividualPermissions, Entity.INDIVIDUAL);
                 if (aclParams.isPropagate()) {
                     List<String> sampleIds = getSamplesFromIndividuals(resource);
                     if (sampleIds.size() > 0) {
@@ -865,7 +868,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 break;
             case ADD:
                 queryResults = authorizationManager.addAcls(resource.getStudy().getUid(), resource.getResourceList().stream()
-                                .map(Individual::getUid).collect(Collectors.toList()), members, permissions, Entity.INDIVIDUAL);
+                        .map(Individual::getUid).collect(Collectors.toList()), members, permissions, Entity.INDIVIDUAL);
                 if (aclParams.isPropagate()) {
                     List<String> sampleIds = getSamplesFromIndividuals(resource);
                     if (sampleIds.size() > 0) {
@@ -877,7 +880,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 break;
             case REMOVE:
                 queryResults = authorizationManager.removeAcls(resource.getResourceList().stream().map(Individual::getUid)
-                                .collect(Collectors.toList()), members, permissions, Entity.INDIVIDUAL);
+                        .collect(Collectors.toList()), members, permissions, Entity.INDIVIDUAL);
                 if (aclParams.isPropagate()) {
                     List<String> sampleIds = getSamplesFromIndividuals(resource);
                     if (CollectionUtils.isNotEmpty(sampleIds)) {
@@ -889,7 +892,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 break;
             case RESET:
                 queryResults = authorizationManager.removeAcls(resource.getResourceList().stream().map(Individual::getUid)
-                                .collect(Collectors.toList()), members, null, Entity.INDIVIDUAL);
+                        .collect(Collectors.toList()), members, null, Entity.INDIVIDUAL);
                 if (aclParams.isPropagate()) {
                     List<String> sampleIds = getSamplesFromIndividuals(resource);
                     if (CollectionUtils.isNotEmpty(sampleIds)) {
@@ -908,6 +911,16 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
     public DBIterator<Individual> indexSolr(Query query) throws CatalogException {
         return individualDBAdaptor.iterator(query, null, null);
+    }
+
+
+    public FacetedQueryResult facet(Query query, QueryOptions queryOptions, String sessionId) throws IOException {
+
+        CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);
+        String collection = catalogManager.getConfiguration().getDatabasePrefix() + "_"
+                + CatalogSolrManager.INDIVIDUAL_CONF_SET;
+
+        return catalogSolrManager.facetedQuery(collection, query, queryOptions);
     }
 
     // **************************   Private methods  ******************************** //

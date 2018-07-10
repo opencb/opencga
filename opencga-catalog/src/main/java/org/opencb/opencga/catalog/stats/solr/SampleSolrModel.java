@@ -16,6 +16,9 @@ public class SampleSolrModel {
     private long uid;
 
     @Field
+    private String studyId;
+
+    @Field
     private String source;
 
     @Field
@@ -63,6 +66,7 @@ public class SampleSolrModel {
     public String toString() {
         final StringBuilder sb = new StringBuilder("SampleSolrModel{");
         sb.append("uid=").append(uid);
+        sb.append(", studyId='").append(studyId).append('\'');
         sb.append(", source='").append(source).append('\'');
         sb.append(", individualUuid='").append(individualUuid).append('\'');
         sb.append(", individualKaryotypicSex='").append(individualKaryotypicSex).append('\'');
@@ -86,6 +90,15 @@ public class SampleSolrModel {
 
     public SampleSolrModel setUid(long uid) {
         this.uid = uid;
+        return this;
+    }
+
+    public String getStudyId() {
+        return studyId;
+    }
+
+    public SampleSolrModel setStudyId(String studyId) {
+        this.studyId = studyId;
         return this;
     }
 

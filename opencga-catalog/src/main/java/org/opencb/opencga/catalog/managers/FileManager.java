@@ -27,6 +27,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.Error;
+import org.opencb.commons.datastore.core.result.FacetedQueryResult;
 import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.FileUtils;
@@ -41,6 +42,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.monitor.daemons.IndexDaemon;
+import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -931,10 +933,10 @@ public class FileManager extends ResourceManager<File> {
      * - Status -> PENDING_DELETE
      * - Path -> Renamed to {path}__DELETED_{time}
      * - URI -> File or folder name from the file system renamed to {name}__DELETED_{time}
-     *          URI in the database updated accordingly
+     * URI in the database updated accordingly
      *
      * @param studyId study id.
-     * @param file file or folder.
+     * @param file    file or folder.
      * @return a WriteResult object.
      */
     private WriteResult physicalDelete(long studyId, File file, boolean forceDelete) throws CatalogException {
@@ -1904,10 +1906,10 @@ public class FileManager extends ResourceManager<File> {
                         .map(String::valueOf)
                         .collect(Collectors.toList());
                 return authorizationManager.setAcls(resource.getStudy().getUid(), resource.getResourceList().stream().map(File::getUid)
-                                .collect(Collectors.toList()), members, permissions, allFilePermissions, Entity.FILE);
+                        .collect(Collectors.toList()), members, permissions, allFilePermissions, Entity.FILE);
             case ADD:
                 return authorizationManager.addAcls(resource.getStudy().getUid(), resource.getResourceList().stream().map(File::getUid)
-                                .collect(Collectors.toList()), members, permissions, Entity.FILE);
+                        .collect(Collectors.toList()), members, permissions, Entity.FILE);
             case REMOVE:
                 return authorizationManager.removeAcls(resource.getResourceList().stream().map(File::getUid).collect(Collectors.toList()),
                         members, permissions, Entity.FILE);
@@ -2167,11 +2169,11 @@ public class FileManager extends ResourceManager<File> {
     /**
      * Method to check if a files matching a query can be deleted. It will only be possible to delete files as long as they are not indexed.
      *
-     * @param query Query object.
+     * @param query          Query object.
      * @param physicalDelete boolean indicating whether the files matching the query should be completely deleted from the file system or
      *                       they should be sent to the trash bin.
-     * @param studyId Study where the query will be applied.
-     * @param userId user for which DELETE permissions will be checked.
+     * @param studyId        Study where the query will be applied.
+     * @param userId         user for which DELETE permissions will be checked.
      * @return the list of files scanned that can be deleted.
      * @throws CatalogException if any of the files cannot be deleted.
      */
@@ -2330,6 +2332,18 @@ public class FileManager extends ResourceManager<File> {
     public DBIterator<File> indexSolr(Query query) throws CatalogException {
         return fileDBAdaptor.iterator(query, null, null);
     }
+
+
+    public FacetedQueryResult facet(Query query, QueryOptions queryOptions, String sessionId) throws IOException {
+
+        CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);
+        String collection = catalogManager.getConfiguration().getDatabasePrefix() + "_"
+                + CatalogSolrManager.FILE_SOLR_COLLECTION;
+
+        return catalogSolrManager.facetedQuery(collection, query, queryOptions);
+    }
+
+
     private void updateIndexStatusAfterDeletionOfTransformedFile(long studyId, File file) throws CatalogDBException {
         if (file.getType() == File.Type.FILE && (file.getRelatedFiles() == null || file.getRelatedFiles().isEmpty())) {
             return;
