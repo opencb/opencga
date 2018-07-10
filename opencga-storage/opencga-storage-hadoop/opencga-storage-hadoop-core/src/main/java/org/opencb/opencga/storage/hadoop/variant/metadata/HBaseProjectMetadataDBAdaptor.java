@@ -4,9 +4,11 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.adaptors.ProjectMetadataAdaptor;
 import org.opencb.opencga.storage.hadoop.utils.HBaseLock;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
@@ -44,6 +46,7 @@ public class HBaseProjectMetadataDBAdaptor extends AbstractHBaseDBAdaptor implem
     @Override
     public long lockProject(long lockDuration, long timeout) throws InterruptedException, TimeoutException, StorageEngineException {
         try {
+            ensureTableExists();
             return lock.lock(getProjectRowKey(), getLockColumn(), lockDuration, timeout);
         } catch (IOException e) {
             throw new StorageEngineException("Error locking project in HBase", e);
@@ -105,4 +108,16 @@ public class HBaseProjectMetadataDBAdaptor extends AbstractHBaseDBAdaptor implem
         }
     }
 
+    @Override
+    public int generateId(StudyConfiguration studyConfiguration, String idType) throws StorageEngineException {
+        try {
+            return hBaseManager.act(tableName, (table) -> {
+                String id = idType + (studyConfiguration == null ? "" : ('_' + studyConfiguration.getStudyId()));
+                return (int) table.incrementColumnValue(getProjectRowKey(), family, Bytes.toBytes(id), 1);
+
+            });
+        } catch (IOException e) {
+            throw new StorageEngineException("Error generating ID", e);
+        }
+    }
 }

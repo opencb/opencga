@@ -28,20 +28,5 @@ public interface ProjectMetadataAdaptor extends AutoCloseable {
     default void close() throws IOException {
     }
 
-    default int generateId(StudyConfiguration studyConfiguration, String idType) throws StorageEngineException {
-        Integer id;
-        try {
-            long lock = lockProject(1000, 10000);
-            ProjectMetadata projectMetadata = getProjectMetadata().first();
-            id = projectMetadata.getCounters().compute(idType + (studyConfiguration == null ? "" : ('_' + studyConfiguration.getStudyId())),
-                    (key, value) -> value == null ? 1 : value + 1);
-
-            updateProjectMetadata(projectMetadata);
-            unLockProject(lock);
-
-        } catch (TimeoutException | InterruptedException e) {
-            throw new StorageEngineException("Error generating new ID for " + idType, e);
-        }
-        return id;
-    }
+    int generateId(StudyConfiguration studyConfiguration, String idType) throws StorageEngineException;
 }
