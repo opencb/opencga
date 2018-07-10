@@ -311,6 +311,12 @@
 | setHeader|Content-Type:application/json|
 | POST | /v1/samples/acl/$userA/update?sid=$sessionId&study=$study |200|  Content-Type: application/json ||
 
+!3 Update (SET) ACL Sample And Propagate True without Any Attached Individual
+!|Table: Rest Fixture | $baseURL |
+| setBody | {  "permissions": "VIEW", "action": "SET", "sample" : "$sampleId", "propagate" : "true"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/samples/acl/$userA/update?sid=$sessionId&study=$study |200|  Content-Type: application/json |jsonbody.response[0].warningMsg == "Error propagating permissions to individual: Missing individual parameter"|
+
 !3 Get Member ACL (Individual)
 !|Table: Rest Fixture | $baseURL ||
 | GET | /v1/individuals/$individualId/acl?sid=$sessionId&member=$userA|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '1.0' && jsonbody.response[0].result[0].permissions[0] == 'VIEW'|
