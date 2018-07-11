@@ -67,6 +67,7 @@ public class File extends PrivateStudyUid {
     private Experiment experiment;
     private List<Sample> samples;
 
+    private List<String> tags;
 
     /**
      * This field values -1 when file has been uploaded.
@@ -120,6 +121,7 @@ public class File extends PrivateStudyUid {
         this.software = software;
         this.experiment = experiment;
         this.samples = samples;
+        this.tags = Collections.emptyList();
         this.job = job;
         this.relatedFiles = relatedFiles;
         this.index = index != null ? index : new FileIndex();
@@ -328,7 +330,6 @@ public class File extends PrivateStudyUid {
         sb.append(", path='").append(path).append('\'');
         sb.append(", release=").append(release);
         sb.append(", creationDate='").append(creationDate).append('\'');
-        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", status=").append(status);
         sb.append(", external=").append(external);
@@ -336,6 +337,7 @@ public class File extends PrivateStudyUid {
         sb.append(", software=").append(software);
         sb.append(", experiment=").append(experiment);
         sb.append(", samples=").append(samples);
+        sb.append(", tags=").append(tags);
         sb.append(", job=").append(job);
         sb.append(", relatedFiles=").append(relatedFiles);
         sb.append(", index=").append(index);
@@ -510,6 +512,15 @@ public class File extends PrivateStudyUid {
 
     public File setSoftware(Software software) {
         this.software = software;
+        return this;
+    }
+
+    public List<String> getTags() {
+        return tags;
+    }
+
+    public File setTags(List<String> tags) {
+        this.tags = tags;
         return this;
     }
 

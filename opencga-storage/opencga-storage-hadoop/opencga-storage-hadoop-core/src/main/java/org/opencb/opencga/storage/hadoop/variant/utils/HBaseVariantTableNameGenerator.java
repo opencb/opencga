@@ -16,6 +16,7 @@ public class HBaseVariantTableNameGenerator {
     private static final String VARIANTS_SUFIX = "_variants";
     private static final String META_SUFIX = "_meta";
     private static final String ARCHIVE_SUFIX = "_archive_";
+    private static final String SAMPLE_SUFIX = "_gt_";
     private static final int MINIMUM_DB_NAME_SIZE = 1;
 
     private final String namespace;
@@ -50,6 +51,10 @@ public class HBaseVariantTableNameGenerator {
 
     public String getArchiveTableName(int studyId) {
         return getArchiveTableName(dbName, studyId, namespace);
+    }
+
+    public String getSampleIndexTableName(int studyId) {
+        return getSampleIndexTableName(dbName, studyId, namespace);
     }
 
     public String getMetaTableName() {
@@ -142,6 +147,15 @@ public class HBaseVariantTableNameGenerator {
      */
     public static String getArchiveTableName(String dbName, int studyId, String namespace) {
         return buildTableName(namespace, dbName, ARCHIVE_SUFIX + studyId);
+    }
+
+    public static int getStudyIdFromArchiveTable(String archiveTable) {
+        int idx = archiveTable.lastIndexOf(ARCHIVE_SUFIX.charAt(ARCHIVE_SUFIX.length() - 1));
+        return Integer.valueOf(archiveTable.substring(idx + 1));
+    }
+
+    public static String getSampleIndexTableName(String dbName, int studyId, String namespace) {
+        return buildTableName(namespace, dbName, SAMPLE_SUFIX + studyId);
     }
 
     public static String getVariantTableName(String dbName, ObjectMap options) {

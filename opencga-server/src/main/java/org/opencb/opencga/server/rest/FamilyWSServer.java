@@ -52,7 +52,7 @@ import java.util.stream.Collectors;
  */
 @Path("/{apiVersion}/families")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = "Families", position = 8, description = "Methods for working with 'families' endpoint")
+@Api(value = "Families", description = "Methods for working with 'families' endpoint")
 public class FamilyWSServer extends OpenCGAWSServer {
 
     private FamilyManager familyManager;
@@ -499,7 +499,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
             @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) FamilyWSServer.FamilyAcl params) {
         try {
-            ObjectUtils.defaultIfNull(params, new FamilyAcl());
+            params = ObjectUtils.defaultIfNull(params, new FamilyAcl());
             AclParams familyAclParams = new AclParams(params.getPermissions(), params.getAction());
             List<String> idList = getIdList(params.family);
             return createOkResponse(familyManager.updateAcl(studyStr, idList, memberId, familyAclParams, sessionId));

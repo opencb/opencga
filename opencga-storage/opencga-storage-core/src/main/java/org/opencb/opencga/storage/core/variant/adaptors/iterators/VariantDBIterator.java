@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.core.variant.adaptors;
+package org.opencb.opencga.storage.core.variant.adaptors.iterators;
 
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,19 +37,20 @@ public abstract class VariantDBIterator implements Iterator<Variant>, AutoClosea
     private List<AutoCloseable> closeables = new ArrayList<>();
     private final Logger logger = LoggerFactory.getLogger(VariantDBIterator.class);
 
-    public void addCloseable(AutoCloseable closeable) {
+    public VariantDBIterator addCloseable(AutoCloseable closeable) {
         this.closeables.add(closeable);
+        return this;
     }
 
     public long getTimeConverting() {
         return timeConverting;
     }
 
-    public long getTimeConverting(TimeUnit timeUnit) {
+    public final long getTimeConverting(TimeUnit timeUnit) {
         return timeUnit.convert(getTimeConverting(), TimeUnit.NANOSECONDS);
     }
 
-    public void setTimeFetching(long timeFetching) {
+    public final void setTimeFetching(long timeFetching) {
         this.timeFetching = timeFetching;
     }
 
@@ -56,17 +58,27 @@ public abstract class VariantDBIterator implements Iterator<Variant>, AutoClosea
         return timeFetching;
     }
 
-    public long getTimeFetching(TimeUnit timeUnit) {
+    public final long getTimeFetching(TimeUnit timeUnit) {
         return timeUnit.convert(getTimeFetching(), TimeUnit.NANOSECONDS);
     }
 
-    public void setTimeConverting(long timeConverting) {
+    public final void setTimeConverting(long timeConverting) {
         this.timeConverting = timeConverting;
     }
+
+    /**
+     * @return Number of returned variants
+     */
+    public abstract int getCount();
 
     public QueryResult<Variant> toQueryResult() {
         List<Variant> result = new ArrayList<>();
         this.forEachRemaining(result::add);
+        try {
+            close();
+        } catch (Exception e) {
+            throw VariantQueryException.internalException(e);
+        }
 
         int numResults = result.size();
         int numTotalResults = -1; // Unknown numTotalResults
@@ -99,7 +111,8 @@ public abstract class VariantDBIterator implements Iterator<Variant>, AutoClosea
         } finally {
             long delta = System.nanoTime() - start;
             if (TimeUnit.NANOSECONDS.toSeconds(delta) > 60) {
-                logger.warn("Slow backend. Took " + (TimeUnit.NANOSECONDS.toMillis(delta) / 1000.0) + "s to fetch more data");
+                logger.warn("Slow backend. Took " + (TimeUnit.NANOSECONDS.toMillis(delta) / 1000.0) + "s to fetch more data"
+                        + " from iterator " + getClass());
             }
             this.timeFetching += delta;
         }
@@ -131,8 +144,37 @@ public abstract class VariantDBIterator implements Iterator<Variant>, AutoClosea
         }
 
         @Override
-        public void close() throws Exception {
-            super.close();
+        public int getCount() {
+            return 0;
+        }
+    }
+
+    public static VariantDBIterator wrapper(Iterator<Variant> variant) {
+        return new VariantDBIteratorWrapper(variant);
+    }
+
+    private static class VariantDBIteratorWrapper extends VariantDBIterator {
+        private final Iterator<Variant> iterator;
+        private int count = 0;
+
+        VariantDBIteratorWrapper(Iterator<Variant> iterator) {
+            this.iterator = iterator;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return fetch(iterator::hasNext);
+        }
+
+        @Override
+        public Variant next() {
+            count++;
+            return fetch(iterator::next);
+        }
+
+        @Override
+        public int getCount() {
+            return count;
         }
     }
 

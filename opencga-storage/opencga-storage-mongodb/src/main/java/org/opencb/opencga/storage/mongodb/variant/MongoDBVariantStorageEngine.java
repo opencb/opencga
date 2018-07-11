@@ -449,13 +449,19 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     @Override
     protected boolean doQuerySearchManager(Query query, QueryOptions options) throws StorageEngineException {
         if (super.doQuerySearchManager(query, options)) {
+            if (VariantSearchManager.UseSearchIndex.from(options).equals(VariantSearchManager.UseSearchIndex.YES)) {
+                // Query search manager is mandatory
+                return true;
+            }
             // Get set of valid params. Remove Modifier params
             Set<VariantQueryParam> queryParams = VariantQueryUtils.validParams(query);
             queryParams.removeAll(MODIFIER_QUERY_PARAMS);
 
             // REGION + [ STUDY ]
-            if (queryParams.equals(Collections.singleton(REGION))
-                    || queryParams.size() == 2 && queryParams.contains(REGION) && queryParams.contains(STUDY)) {
+            if (queryParams.contains(REGION) // Has region
+                    && (queryParams.size() == 1 || queryParams.size() == 2 && queryParams.contains(STUDY)) // Optionally, has study
+                    && options.getBoolean(QueryOptions.SKIP_COUNT, DEFAULT_SKIP_COUNT)) {   // Do not require total count
+                // Do not use SearchIndex either for intersect.
                 options.put(VariantSearchManager.USE_SEARCH_INDEX, VariantSearchManager.UseSearchIndex.NO);
                 return false;
             } else {

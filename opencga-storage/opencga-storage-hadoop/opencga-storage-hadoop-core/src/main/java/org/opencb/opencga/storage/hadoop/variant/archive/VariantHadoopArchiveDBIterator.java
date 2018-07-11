@@ -26,7 +26,7 @@ import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.tools.variant.converters.proto.VcfRecordProtoToVariantConverter;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +46,7 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
     private final VcfRecordProtoToVariantConverter nonRefConverter;
     private final VcfRecordProtoToVariantConverter refConverter;
     private long limit;
-    private long count = 0;
+    private int count = 0;
     private ListIterator<VcfSliceProtos.VcfRecord> refVcfRecordIterator = Collections.emptyListIterator();
     private ListIterator<VcfSliceProtos.VcfRecord> nonRefVcfRecordIterator = Collections.emptyListIterator();
     private VcfSliceProtos.VcfSlice refVcfSlice;
@@ -191,6 +191,11 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
         logger.debug("Close variant iterator. Fetch = {}ms, Convert = {}ms", getTimeFetching() / 1000000.0,
                 getTimeConverting() / 1000000.0);
         resultScanner.close();
+    }
+
+    @Override
+    public int getCount() {
+        return count;
     }
 
     protected VariantHadoopArchiveDBIterator setLimit(long limit) {
