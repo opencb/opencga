@@ -394,7 +394,7 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
                 .append(variantsTable).append(' ')
                 .append(studyId).append(' ');
 
-        if (fileIds.isEmpty()) {
+        if (fileIds == null || fileIds.isEmpty()) {
             stringBuilder.append('.');
         } else {
             stringBuilder.append(fileIds.stream().map(Object::toString).collect(Collectors.joining(",")));

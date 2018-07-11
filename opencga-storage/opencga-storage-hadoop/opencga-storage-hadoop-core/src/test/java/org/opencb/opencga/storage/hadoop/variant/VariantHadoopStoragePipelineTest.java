@@ -35,8 +35,9 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
-import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
@@ -279,4 +280,10 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
         System.out.println("print variants at = " + outDir);
         VariantHbaseTestUtils.printVariants(studyConfiguration, dbAdaptor, outDir);
     }
+
+    @Test
+    public void exportAvro() throws Exception {
+        getVariantStorageEngine().exportData(URI.create("hdfs:///my.vcf.avro"), VariantWriterFactory.VariantOutputFormat.AVRO, new Query(), new QueryOptions());
+    }
+
 }

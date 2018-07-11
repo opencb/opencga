@@ -42,6 +42,7 @@ import java.util.Objects;
  * Created by mh719 on 21/11/2016.
  * @author Matthias Haimel
  */
+@Deprecated
 public class VariantTableExportDriver extends AbstractAnalysisTableDriver {
     @Deprecated
     public static final String CONFIG_VARIANT_TABLE_EXPORT_AVRO_PATH = "opencga.variant.table.export.avro.path";

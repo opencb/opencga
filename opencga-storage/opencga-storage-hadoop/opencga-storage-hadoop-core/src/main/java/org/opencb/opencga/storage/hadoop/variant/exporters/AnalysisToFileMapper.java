@@ -34,6 +34,7 @@ import static org.opencb.opencga.storage.hadoop.variant.exporters.VariantTableEx
  * Created by mh719 on 06/12/2016.
  * @author Matthias Haimel
  */
+@Deprecated
 public class AnalysisToFileMapper extends AbstractHBaseVariantMapper<Object, Object> {
 
     private Logger logger = LoggerFactory.getLogger(AnalysisToFileMapper.class);
