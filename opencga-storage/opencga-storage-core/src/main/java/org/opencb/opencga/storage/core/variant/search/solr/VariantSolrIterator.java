@@ -20,7 +20,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
 
 import java.io.IOException;
@@ -32,6 +32,7 @@ public class VariantSolrIterator extends VariantDBIterator {
 
     private VariantSearchSolrIterator variantSearchSolrIterator;
     private VariantSearchToVariantConverter variantSearchToVariantConverter;
+    private int count = 0;
 
     public VariantSolrIterator(SolrClient solrClient, String collection, SolrQuery solrQuery) throws IOException, SolrServerException {
         variantSearchSolrIterator = new VariantSearchSolrIterator(solrClient, collection, solrQuery);
@@ -45,12 +46,18 @@ public class VariantSolrIterator extends VariantDBIterator {
 
     @Override
     public Variant next() {
+        count++;
         return variantSearchToVariantConverter.convertToDataModelType(variantSearchSolrIterator.next());
     }
 
     @Override
     public void close() throws Exception {
         // nothing to do
+    }
+
+    @Override
+    public int getCount() {
+        return count;
     }
 
     public long getNumFound() {

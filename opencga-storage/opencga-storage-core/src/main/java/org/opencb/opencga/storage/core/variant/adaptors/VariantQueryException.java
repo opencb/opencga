@@ -26,6 +26,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.GENE;
+
 /**
  * Created on 29/01/16 .
  *
@@ -62,6 +64,9 @@ public class VariantQueryException extends IllegalArgumentException {
     public static VariantQueryException malformedParam(VariantQueryParam queryParam, String value, String message) {
         return new VariantQueryException("Malformed \"" + queryParam.key() + "\" query : \"" + value + "\". "
                 +  message);
+    }
+    public static VariantQueryException geneNotFound(String gene) {
+        return VariantQueryException.malformedParam(GENE, gene, "Gene not found!");
     }
 
     public static VariantQueryException studyNotFound(String study) {

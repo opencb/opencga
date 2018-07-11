@@ -16,6 +16,9 @@
 
 package org.opencb.opencga.storage.core.variant.adaptors;
 
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.core.Region;
@@ -93,6 +96,14 @@ public final class VariantQueryUtils {
         public String separator() {
             return separator;
         }
+    }
+
+    private static final ObjectMapper QUERY_MAPPER = new ObjectMapper().addMixIn(Variant.class, VariantMixin.class);
+
+    interface VariantMixin {
+        // Serialize variants with "toString". Used to serialize queries.
+        @JsonValue
+        String toString();
     }
 
     private VariantQueryUtils() {
@@ -1189,6 +1200,19 @@ public final class VariantQueryUtils {
             }
         }
         return regions;
+    }
+
+    public static String printQuery(Query query) {
+        if (query == null) {
+            return "{}";
+        } else {
+            try {
+                return QUERY_MAPPER.writeValueAsString(query);
+            } catch (JsonProcessingException e) {
+                logger.debug("Error writing json variant", e);
+                return query.toString();
+            }
+        }
     }
 
 }

@@ -16,8 +16,6 @@
 
 package org.opencb.opencga.storage.mongodb.variant.adaptors;
 
-import com.fasterxml.jackson.annotation.JsonValue;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.QueryBuilder;
@@ -40,7 +38,6 @@ import org.opencb.opencga.storage.mongodb.variant.converters.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -62,20 +59,11 @@ public class VariantMongoDBQueryParser {
     public static final VariantStringIdConverter STRING_ID_CONVERTER = new VariantStringIdConverter();
     protected static Logger logger = LoggerFactory.getLogger(VariantMongoDBQueryParser.class);
     private final StudyConfigurationManager studyConfigurationManager;
-    private final ObjectMapper queryMapper;
     //    private final CellBaseUtils cellBaseUtils;
-
-    interface VariantMixin {
-        // Serialize variants with "toString". Used to serialize queries.
-        @JsonValue
-        String toString();
-    }
 
     public VariantMongoDBQueryParser(StudyConfigurationManager studyConfigurationManager) {
         this.studyConfigurationManager = studyConfigurationManager;
 
-        queryMapper = new ObjectMapper();
-        queryMapper.addMixIn(Variant.class, VariantMixin.class);
     }
 
     protected Document parseQuery(final Query originalQuery) {
@@ -192,11 +180,7 @@ public class VariantMongoDBQueryParser {
         }
 
         logger.debug("----------------------");
-        try {
-            logger.debug("Query         = {}", originalQuery == null ? "{}" : queryMapper.writeValueAsString(originalQuery));
-        } catch (IOException e) {
-            logger.debug("Query         = {}", originalQuery.toString());
-        }
+        logger.debug("Query         = {}", VariantQueryUtils.printQuery(originalQuery));
         Document mongoQuery = new Document(builder.get().toMap());
         logger.debug("MongoDB Query = {}", mongoQuery.toJson(new JsonWriterSettings(JsonMode.SHELL, false)));
         return mongoQuery;
