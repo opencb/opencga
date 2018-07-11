@@ -399,7 +399,11 @@ public class VariantHBaseQueryParser {
                                     new BinaryPrefixComparator(Bytes.toBytes(genotype)));
                             filter.setFilterIfMissing(true);
                             filter.setLatestVersionOnly(true);
-                            return filter;
+                            if (genotype.equals("0/0")) {
+                                return new FilterList(FilterList.Operator.MUST_PASS_ONE, filter, missingColumnFilter(column));
+                            } else {
+                                return filter;
+                            }
                         })
                         .collect(Collectors.toList());
                 if (gtSubFilters.size() == 1) {
