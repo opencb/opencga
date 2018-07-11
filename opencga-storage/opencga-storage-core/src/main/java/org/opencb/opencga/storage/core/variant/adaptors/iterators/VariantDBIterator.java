@@ -147,11 +147,6 @@ public abstract class VariantDBIterator implements Iterator<Variant>, AutoClosea
         public int getCount() {
             return 0;
         }
-
-        @Override
-        public void close() throws Exception {
-            super.close();
-        }
     }
 
     public static VariantDBIterator wrapper(Iterator<Variant> variant) {
@@ -180,11 +175,6 @@ public abstract class VariantDBIterator implements Iterator<Variant>, AutoClosea
         @Override
         public int getCount() {
             return count;
-        }
-
-        @Override
-        public void close() throws Exception {
-            super.close();
         }
     }
 
