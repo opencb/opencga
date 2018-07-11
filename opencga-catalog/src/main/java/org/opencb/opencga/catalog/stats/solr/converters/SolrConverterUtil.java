@@ -53,9 +53,4 @@ public class SolrConverterUtil {
         }
         return "__o__";
     }
-
-    // TODO: implement me after clarifying with Nacho
-    public static String getStudyId(long studyUid) {
-        return Long.toString(studyUid);
-    }
 }

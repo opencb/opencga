@@ -23,7 +23,6 @@ public class CatalogFamilyToSolrFamilyConverter implements ComplexTypeConverter<
         FamilySolrModel familySolrModel = new FamilySolrModel();
 
         familySolrModel.setUid(family.getUid());
-        familySolrModel.setStudyId(SolrConverterUtil.getStudyId(family.getStudyUid()));
         familySolrModel.setCreationDate(family.getCreationDate());
 
         if (family.getStatus() != null) {

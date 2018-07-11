@@ -21,12 +21,17 @@ public class CatalogSolrQueryParser {
     protected static Logger logger = LoggerFactory.getLogger(CatalogSolrQueryParser.class);
 
     static {
-
+        // common
         queryParameters.add("studyId");
         queryParameters.add("type");
         queryParameters.add("status");
         queryParameters.add("creationDate");
         queryParameters.add("release");
+
+        queryParameters.add("formart");
+        queryParameters.add("bioformart");
+        queryParameters.add("size");
+        queryParameters.add("samples");
 
     }
 

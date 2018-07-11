@@ -1345,4 +1345,8 @@ public class StudyManager extends AbstractManager {
             throw new CatalogException("Invalid Study FQN. The accepted pattern is [ownerId@projectId:studyId]");
         }
     }
+
+    public Map<Long, String> getAllStudiesIdAndUid() throws CatalogDBException {
+        return studyDBAdaptor.getAllStudiesIdAndUid();
+    }
 }

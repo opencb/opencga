@@ -29,11 +29,13 @@ import org.opencb.commons.datastore.core.result.FacetedQueryResult;
 import org.opencb.commons.datastore.core.result.FacetedQueryResultItem;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.stats.solr.converters.SolrFacetUtil;
 import org.opencb.opencga.core.SolrManager;
 import org.opencb.opencga.core.config.SearchConfiguration;
+import org.opencb.opencga.core.models.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +53,7 @@ public class CatalogSolrManager {
     private CatalogManager catalogManager;
     private SolrManager solrManager;
     private int insertBatchSize;
-    private String DATABASE_PREFIX = "Solr";
+    private String DATABASE_PREFIX = "opencga";
 
     public static final int DEFAULT_INSERT_BATCH_SIZE = 10000;
     public static final String COHORT_SOLR_COLLECTION = "Catalog_Cohort_Collection";
@@ -66,10 +68,11 @@ public class CatalogSolrManager {
     public static final String INDIVIDUAL_CONF_SET = "OpenCGACatalogIndividualConfSet";
     public static final String SAMPLE_CONF_SET = "OpenCGACatalogSampleConfSet";
     public static final Map<String, String> CONFIGS_COLLECTION = new HashMap();
+    private Map<Long, String> STUDIES_UID_TO_ID = new HashMap();
 
     private Logger logger;
 
-    public CatalogSolrManager(CatalogManager catalogManager) throws SolrException {
+    public CatalogSolrManager(CatalogManager catalogManager) throws SolrException, CatalogDBException {
         this.catalogManager = catalogManager;
         SearchConfiguration searchConfiguration = catalogManager.getConfiguration().getCatalog().getSearch();
         this.solrManager = new SolrManager(searchConfiguration.getHost(), searchConfiguration.getMode(), searchConfiguration.getTimeout());
@@ -85,6 +88,8 @@ public class CatalogSolrManager {
         } else {
             createCatalogSolrCores();
         }
+
+        STUDIES_UID_TO_ID = catalogManager.getStudyManager().getAllStudiesIdAndUid();
 
         logger = LoggerFactory.getLogger(CatalogSolrManager.class);
     }
@@ -160,7 +165,8 @@ public class CatalogSolrManager {
         List<M> solrModels = new ArrayList<>();
 
         for (T record : records) {
-            solrModels.add((M) converter.convertToStorageType(record));
+            M result = (M) converter.convertToStorageType(record);
+            solrModels.add(setStudyId(record, result));
         }
 
         UpdateResponse updateResponse;
@@ -207,6 +213,28 @@ public class CatalogSolrManager {
         CONFIGS_COLLECTION.put(DATABASE_PREFIX + FAMILY_SOLR_COLLECTION, FAMILY_CONF_SET);
         CONFIGS_COLLECTION.put(DATABASE_PREFIX + INDIVIDUAL_SOLR_COLLECTION, INDIVIDUAL_CONF_SET);
         CONFIGS_COLLECTION.put(DATABASE_PREFIX + SAMPLES_SOLR_COLLECTION, SAMPLE_CONF_SET);
+    }
+
+    public <T, M> M setStudyId(T record, M result) {
+
+        String studyId;
+        if (record instanceof Cohort) {
+            studyId = STUDIES_UID_TO_ID.get(((Cohort) record).getStudyUid());
+            return (M) ((CohortSolrModel) result).setStudyId(studyId);
+        } else if (record instanceof File) {
+            studyId = STUDIES_UID_TO_ID.get(((File) record).getStudyUid());
+            return (M) ((FileSolrModel) result).setStudyId(studyId);
+        } else if (record instanceof Sample) {
+            studyId = STUDIES_UID_TO_ID.get(((Sample) record).getStudyUid());
+            return (M) ((SampleSolrModel) result).setStudyId(studyId);
+        } else if (record instanceof Individual) {
+            studyId = STUDIES_UID_TO_ID.get(((Individual) record).getStudyUid());
+            return (M) ((IndividualSolrModel) result).setStudyId(studyId);
+        } else if (record instanceof Family) {
+            studyId = STUDIES_UID_TO_ID.get(((Family) record).getStudyUid());
+            return (M) ((FamilySolrModel) result).setStudyId(studyId);
+        }
+        return result;
     }
 }
 

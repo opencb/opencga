@@ -93,6 +93,8 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
 
     String getProjectIdByStudyUid(long studyUid) throws CatalogDBException;
 
+    Map<Long, String> getAllStudiesIdAndUid() throws CatalogDBException;
+
     String getOwnerId(long studyId) throws CatalogDBException;
 
     QueryResult<Group> createGroup(long studyId, Group group) throws CatalogDBException;

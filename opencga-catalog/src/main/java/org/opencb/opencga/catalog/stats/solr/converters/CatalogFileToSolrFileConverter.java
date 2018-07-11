@@ -25,7 +25,6 @@ public class CatalogFileToSolrFileConverter implements ComplexTypeConverter<File
         FileSolrModel fileSolrModel = new FileSolrModel();
 
         fileSolrModel.setUid(file.getUid());
-        fileSolrModel.setStudyId(SolrConverterUtil.getStudyId(file.getStudyUid()));
         fileSolrModel.setName(file.getName());
         fileSolrModel.setType(file.getType().name());
         if (file.getFormat() != null) {
@@ -43,7 +42,9 @@ public class CatalogFileToSolrFileConverter implements ComplexTypeConverter<File
             fileSolrModel.setSoftware(file.getSoftware().getName());
         }
         fileSolrModel.setExperiment(file.getExperiment().getName());
-        //fileSolrModel.setSamplesUuid(file.getSamples())
+        if (file.getSamples() != null) {
+            fileSolrModel.setSamples(file.getSamples().size());
+        }
 
         return fileSolrModel;
     }

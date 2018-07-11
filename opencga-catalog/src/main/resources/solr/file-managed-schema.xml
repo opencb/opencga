@@ -85,7 +85,8 @@
     <field name="size" type="int" indexed="true" stored="true" multiValued="false"/>
     <field name="software" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="experiment" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="relatedFiles" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="samples" type="int" indexed="true" stored="true" multiValued="false"/>
+    <field name="relatedFiles" type="long" indexed="true" stored="true" multiValued="true"/>
 
     <dynamicField name="annotations__s__*" type="string" indexed="true" stored="true" multiValued="false"/>
     <dynamicField name="annotations__d__*" type="double" indexed="true" stored="true" multiValued="false"/>
