@@ -15,7 +15,6 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
@@ -24,6 +23,8 @@ import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapper;
 import java.io.IOException;
 
 import static org.opencb.opencga.storage.hadoop.variant.mr.AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME;
+import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.getQueryFromConfig;
+import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.getQueryOptionsFromConfig;
 
 /**
  * Created on 14/06/18.
@@ -60,14 +61,8 @@ public class VariantExporterDriver extends AbstractAnalysisTableDriver {
         if (outFile == null || outFile.isEmpty()) {
             throw new IllegalArgumentException(outFile);
         }
-        for (VariantQueryParam param : VariantQueryParam.values()) {
-            String value = getConf().get(param.key(), getConf().get("--" + param.key()));
-            if (value != null && !value.isEmpty()) {
-                query.put(param.key(), value);
-            }
-        }
-        options.put(QueryOptions.INCLUDE, getConf().get(QueryOptions.INCLUDE));
-        options.put(QueryOptions.EXCLUDE, getConf().get(QueryOptions.EXCLUDE));
+        getQueryFromConfig(query, getConf());
+        getQueryOptionsFromConfig(options, getConf());
     }
 
     @Override

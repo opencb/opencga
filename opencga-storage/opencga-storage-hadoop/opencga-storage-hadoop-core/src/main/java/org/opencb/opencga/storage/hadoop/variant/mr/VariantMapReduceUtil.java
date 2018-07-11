@@ -208,4 +208,21 @@ public class VariantMapReduceUtil {
             conf.set("mapreduce.map.java.opts", optString);
         }
     }
+
+    public static QueryOptions getQueryOptionsFromConfig(QueryOptions options, Configuration conf) {
+        options.put(QueryOptions.INCLUDE, conf.get(QueryOptions.INCLUDE));
+        options.put(QueryOptions.EXCLUDE, conf.get(QueryOptions.EXCLUDE));
+        return options;
+    }
+
+    public static Query getQueryFromConfig(Query query, Configuration conf) {
+        for (VariantQueryParam param : VariantQueryParam.values()) {
+            String value = conf.get(param.key(), conf.get("--" + param.key()));
+            if (value != null && !value.isEmpty()) {
+                query.put(param.key(), value);
+            }
+        }
+        return query;
+    }
+
 }
