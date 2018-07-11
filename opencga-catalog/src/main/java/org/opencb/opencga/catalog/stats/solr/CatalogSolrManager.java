@@ -57,7 +57,7 @@ public class CatalogSolrManager {
 
     public static final int DEFAULT_INSERT_BATCH_SIZE = 10000;
     public static final String COHORT_SOLR_COLLECTION = "Catalog_Cohort_Collection";
-    public static final String FILE_SOLR_COLLECTION = "Catalog_FILE_Collection";
+    public static final String FILE_SOLR_COLLECTION = "Catalog_File_Collection";
     public static final String FAMILY_SOLR_COLLECTION = "Catalog_Family_Collection";
     public static final String INDIVIDUAL_SOLR_COLLECTION = "Catalog_Individual_Collection";
     public static final String SAMPLES_SOLR_COLLECTION = "Catalog_Sample_Collection";
@@ -215,7 +215,7 @@ public class CatalogSolrManager {
         CONFIGS_COLLECTION.put(DATABASE_PREFIX + SAMPLES_SOLR_COLLECTION, SAMPLE_CONF_SET);
     }
 
-    public <T, M> M setStudyId(T record, M result) {
+    private <T, M> M setStudyId(T record, M result) {
 
         String studyId;
         if (record instanceof Cohort) {

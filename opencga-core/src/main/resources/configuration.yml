@@ -64,7 +64,7 @@ catalog:
       connectionsPerHost: ${OPENCGA.CATALOG.DB.CONNECTIONS_PER_HOST}
   search:   ## Solr configuration, by default is the same than storage
     host: ${OPENCGA.CATALOG.SEARCH.HOST}
-    mode: "standalone"
+    mode: "cloud"
     user: ""
     password: ""
     timeout: ${OPENCGA.CATALOG.SEARCH.TIMEOUT}

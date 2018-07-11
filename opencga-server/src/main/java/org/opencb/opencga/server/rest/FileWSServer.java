@@ -904,9 +904,9 @@ public class FileWSServer extends OpenCGAWSServer {
     public Response updatePOST(
             @ApiParam(value = "File id, name or path. Paths must be separated by : instead of /") @PathParam(value = "file") String fileIdStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                @QueryParam("study") String studyStr,
+            @QueryParam("study") String studyStr,
             @ApiParam(value = "Action to be performed if the array of samples is being updated.", defaultValue = "ADD")
-                @QueryParam("samplesAction") ParamUtils.UpdateAction samplesAction,
+            @QueryParam("samplesAction") ParamUtils.UpdateAction samplesAction,
             @ApiParam(name = "params", value = "Parameters to modify", required = true) FileUpdateParams updateParams) {
         try {
             ObjectMap params = updateParams.toFileObjectMap();
@@ -1074,14 +1074,14 @@ public class FileWSServer extends OpenCGAWSServer {
     })
     public Response delete(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                @QueryParam("study") String studyStr,
+            @QueryParam("study") String studyStr,
             @ApiParam(value = "Comma separated list of file names") @QueryParam("name") String name,
             @ApiParam(value = "Comma separated list of paths") @QueryParam("path") String path,
             @ApiParam(value = "Available types (FILE, DIRECTORY)") @QueryParam("type") String type,
             @ApiParam(value = "Comma separated bioformat values. For existing bioformats see files/bioformats")
-                @QueryParam("bioformat")String bioformat,
+            @QueryParam("bioformat") String bioformat,
             @ApiParam(value = "Comma separated format values. For existing formats see files/formats")
-                @QueryParam("format") String formats,
+            @QueryParam("format") String formats,
             @ApiParam(value = "Status") @QueryParam("status") String status,
             @ApiParam(value = "Directory under which we want to look for files or folders") @QueryParam("directory") String directory,
             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
@@ -1091,7 +1091,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of sample ids or names") @QueryParam("samples") String samples,
             @ApiParam(value = "Job id that created the file(s) or folder(s)") @QueryParam("job.id") String jobId,
             @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)") @QueryParam("attributes") String attributes,
-            @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)")  @QueryParam("nattributes") String nattributes,
+            @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)") @QueryParam("nattributes") String nattributes,
             @ApiParam(value = "Release value") @QueryParam("release") String release) {
         try {
             query.remove("study");
@@ -1296,10 +1296,35 @@ public class FileWSServer extends OpenCGAWSServer {
     public Response getFacets(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
             @QueryParam("study") String studyStr,
+            @ApiParam(value = "Type") @QueryParam("type") String type,
+            @ApiParam(value = "CreationDate") @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Status") @QueryParam("status") String status,
+            @ApiParam(value = "Release") @QueryParam("release") int release,
+            @ApiParam(value = "Formart") @QueryParam("formart") String formart,
+            @ApiParam(value = "Bioformart") @QueryParam("bioformart") String bioformart,
+            @ApiParam(value = "Size") @QueryParam("size") int size,
+            @ApiParam(value = "Samples") @QueryParam("samples") int samples,
+
             @ApiParam(value = "List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: studies>>biotype;type") @QueryParam("facet") String facet,
             @ApiParam(value = "List of facet ranges separated by semicolons with the format {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1") @QueryParam("facetRange") String facetRange,
             @ApiParam(value = "List of facet intersections separated by semicolons with the format {field_name}:{value1}:{value2}[:{value3}], e.g.: studies:1kG_phase3:EXAC:ESP6500") @QueryParam("facetIntersection") String facetIntersection) {
         try {
+
+            if (StringUtils.isNotEmpty(studyStr)) {
+                query.append("studyId", studyStr);
+            }
+            if (StringUtils.isNotEmpty(type)) {
+                query.append("type", type);
+            }
+            if (StringUtils.isNotEmpty(creationDate)) {
+                query.append("creationDate", creationDate);
+            }
+            if (StringUtils.isNotEmpty(status)) {
+                query.append("status", status);
+            }
+            if (release != 0) {
+                query.append("release", release);
+            }
 
             FacetedQueryResult queryResult = catalogManager.getFileManager().facet(query, queryOptions, sessionId);
 
