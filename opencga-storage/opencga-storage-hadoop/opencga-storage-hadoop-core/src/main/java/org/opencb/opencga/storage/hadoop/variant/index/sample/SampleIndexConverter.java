@@ -22,13 +22,6 @@ import static org.apache.hadoop.hbase.util.Bytes.SIZEOF_INT;
  */
 public class SampleIndexConverter implements Converter<Result, Collection<Variant>> {
 
-    public static final Comparator<Variant> VARIANT_COMPARATOR = Comparator.comparing(Variant::getChromosome)
-            .thenComparing(Variant::getStart)
-            .thenComparing(Variant::getEnd)
-            .thenComparing(Variant::getReference)
-            .thenComparing(Variant::getAlternate)
-            .thenComparing(Variant::toString);
-
     public static final Comparator<Variant> INTRA_CHROMOSOME_VARIANT_COMPARATOR = Comparator.comparing(Variant::getStart)
             .thenComparing(Variant::getEnd)
             .thenComparing(Variant::getReference)

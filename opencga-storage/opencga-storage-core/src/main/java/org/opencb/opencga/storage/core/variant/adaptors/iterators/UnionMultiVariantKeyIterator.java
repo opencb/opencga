@@ -1,24 +1,21 @@
-package org.opencb.opencga.storage.hadoop.variant.index.sample.iterators;
+package org.opencb.opencga.storage.core.variant.adaptors.iterators;
 
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
-import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConverter.VARIANT_COMPARATOR;
 
 /**
  * Created on 03/07/18.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class UnionMultiSampleIndexVariantDBIterator extends MultiSampleIndexVariantDBIterator {
+public class UnionMultiVariantKeyIterator extends MultiVariantKeyIterator {
 
     protected List<Variant> variants;
 
-    public UnionMultiSampleIndexVariantDBIterator(List<VariantDBIterator> iterators) {
+    public UnionMultiVariantKeyIterator(List<VariantDBIterator> iterators) {
         super(iterators);
         variants = new ArrayList<>(iterators.size());
     }
@@ -34,7 +31,6 @@ public class UnionMultiSampleIndexVariantDBIterator extends MultiSampleIndexVari
             }
         }
         next = variants.stream().filter(Objects::nonNull).min(VARIANT_COMPARATOR).orElse(null);
-
     }
 
     @Override

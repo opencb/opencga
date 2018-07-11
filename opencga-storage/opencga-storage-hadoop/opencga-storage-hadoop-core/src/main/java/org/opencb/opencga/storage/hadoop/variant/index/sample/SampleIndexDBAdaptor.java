@@ -12,17 +12,15 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.QueryOperation;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.iterators.IntersectMultiSampleIndexVariantDBIterator;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.iterators.SampleIndexVariantDBIterator;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.iterators.SingleSampleIndexVariantDBIterator;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.iterators.UnionMultiSampleIndexVariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.IntersectMultiVariantKeyIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.UnionMultiVariantKeyIterator;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,7 +67,7 @@ public class SampleIndexDBAdaptor {
         return studyId;
     }
 
-    public SampleIndexVariantDBIterator iterator(List<Region> regions, String study, Map<String, List<String>> samples,
+    public VariantDBIterator iterator(List<Region> regions, String study, Map<String, List<String>> samples,
                                                  QueryOperation operation) {
         if (samples.size() == 1) {
             Map.Entry<String, List<String>> entry = samples.entrySet().iterator().next();
@@ -103,10 +101,10 @@ public class SampleIndexDBAdaptor {
         }
         if (operation.equals(QueryOperation.OR)) {
             logger.info("Union of " + iterators.size() + " sample indexes");
-            return new UnionMultiSampleIndexVariantDBIterator(iterators);
+            return new UnionMultiVariantKeyIterator(iterators);
         } else {
             logger.info("Intersection of " + iterators.size() + " sample indexes plus " + negatedIterators.size() + " negated indexes");
-            return new IntersectMultiSampleIndexVariantDBIterator(iterators, negatedIterators);
+            return new IntersectMultiVariantKeyIterator(iterators, negatedIterators);
         }
 
     }
@@ -124,7 +122,7 @@ public class SampleIndexDBAdaptor {
         return allGts;
     }
 
-    public SampleIndexVariantDBIterator iterator(List<Region> regions, String study, String sample, List<String> gts) {
+    public VariantDBIterator iterator(List<Region> regions, String study, String sample, List<String> gts) {
 
         Integer studyId = getStudyId(study);
 

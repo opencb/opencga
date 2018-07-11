@@ -1,25 +1,27 @@
-package org.opencb.opencga.storage.hadoop.variant.index.sample.iterators;
+package org.opencb.opencga.storage.core.variant.adaptors.iterators;
 
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-
-import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConverter.VARIANT_COMPARATOR;
 
 /**
  * Created on 03/07/18.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class IntersectMultiSampleIndexVariantDBIterator extends MultiSampleIndexVariantDBIterator {
+public class IntersectMultiVariantKeyIterator extends MultiVariantKeyIterator {
 
     private final List<VariantDBIterator> negatedIterators;
     private final List<Variant> negatedVariants;
     protected boolean firstVariant = true;
 
-    public IntersectMultiSampleIndexVariantDBIterator(List<VariantDBIterator> iterators, List<VariantDBIterator> negatedIterators) {
+    public IntersectMultiVariantKeyIterator(List<VariantDBIterator> iterators) {
+        this(iterators, Collections.emptyList());
+    }
+
+    public IntersectMultiVariantKeyIterator(List<VariantDBIterator> iterators, List<VariantDBIterator> negatedIterators) {
         super(iterators);
         this.negatedIterators = negatedIterators;
         negatedIterators.forEach(this::addCloseable);

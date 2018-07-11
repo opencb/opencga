@@ -14,16 +14,20 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.core.variant.adaptors;
+package org.opencb.opencga.storage.core.variant.adaptors.iterators;
 
 import com.google.common.base.Throwables;
+import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 
 /**
@@ -77,6 +81,7 @@ public class MultiVariantDBIterator extends VariantDBIterator {
         this.options = options == null ? new QueryOptions() : new QueryOptions(options);
         this.iteratorFactory = Objects.requireNonNull(iteratorFactory);
         variantDBIterator = emptyIterator();
+        addCloseable(queryIterator);
 
         int limit = this.options.getInt(QueryOptions.LIMIT, 0);
         skip = Math.max(0, this.options.getInt(QueryOptions.SKIP, 0));
@@ -109,6 +114,11 @@ public class MultiVariantDBIterator extends VariantDBIterator {
         } else {
             return true;
         }
+    }
+
+    @Override
+    public int getCount() {
+        return numResults - skip;
     }
 
     /**
@@ -200,7 +210,7 @@ public class MultiVariantDBIterator extends VariantDBIterator {
         return numQueries;
     }
 
-    private static class VariantQueryIterator implements Iterator<Query> {
+    private static class VariantQueryIterator implements Iterator<Query>, AutoCloseable {
         private static final int MAX_BATCH_SIZE = 5000;
         private static final int MIN_BATCH_SIZE = 100;
 
@@ -216,7 +226,7 @@ public class MultiVariantDBIterator extends VariantDBIterator {
 //        private int lastQueryNumResults = 0;
         private int lastBatchSize;
         private int totalBatchSizeCount;
-//        private boolean firstBatch = true;
+        //        private boolean firstBatch = true;
         private Logger logger = LoggerFactory.getLogger(VariantQueryIterator.class);
 
         VariantQueryIterator(Iterator<?> variantsIterator, Query query, int batchSize) {
@@ -287,15 +297,22 @@ public class MultiVariantDBIterator extends VariantDBIterator {
             } else {
                 newQuery = new Query(query);
             }
-//            StopWatch stopWatch = StopWatch.createStarted();
+            StopWatch stopWatch = StopWatch.createStarted();
             List<Object> variants = new ArrayList<>(batchSize);
             do {
                 // Always execute "next" over variantsIterator, to fail if empty
                 variants.add(variantsIterator.next());
             } while (variantsIterator.hasNext() && variants.size() < batchSize);
             newQuery.append(VariantQueryParam.ID.key(), variants);
-//            logger.info("Get next query: " + stopWatch.getTime(TimeUnit.MILLISECONDS) / 1000.0);
+            logger.info("Get next query: " + stopWatch.getTime(TimeUnit.MILLISECONDS) / 1000.0);
             return newQuery;
+        }
+
+        @Override
+        public void close() throws Exception {
+            if (variantsIterator instanceof AutoCloseable) {
+                ((AutoCloseable) variantsIterator).close();
+            }
         }
     }
 }

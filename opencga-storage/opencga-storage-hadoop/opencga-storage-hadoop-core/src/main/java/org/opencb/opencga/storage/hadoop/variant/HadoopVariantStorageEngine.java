@@ -47,7 +47,11 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
-import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -70,7 +74,6 @@ import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConsoli
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBLoader;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.iterators.SampleIndexVariantDBIterator;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopDefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopMRVariantStatisticsManager;
@@ -904,7 +907,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     /**
      * Intersect result of SampleIndexTable and full phoenix query.
-     * Use {@link org.opencb.opencga.storage.core.variant.adaptors.MultiVariantDBIterator}.
+     * Use {@link org.opencb.opencga.storage.core.variant.adaptors.iterators.MultiVariantDBIterator}.
      *
      * @param query     Query
      * @param options   Options
@@ -996,7 +999,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         }
         String study = defaultStudyConfiguration.getStudyName();
 
-        SampleIndexVariantDBIterator variants =
+        VariantDBIterator variants =
                 sampleIndexDBAdaptor.iterator(regions, study, samplesMap, queryOperation);
 
         int batchSize = options.getInt("multiIteratorBatchSize", 200);
@@ -1060,7 +1063,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     /**
      * Intersect result of column hbase scan and full phoenix query.
-     * Use {@link org.opencb.opencga.storage.core.variant.adaptors.MultiVariantDBIterator}.
+     * Use {@link org.opencb.opencga.storage.core.variant.adaptors.iterators.MultiVariantDBIterator}.
      *
      * @param query     Query
      * @param options   Options

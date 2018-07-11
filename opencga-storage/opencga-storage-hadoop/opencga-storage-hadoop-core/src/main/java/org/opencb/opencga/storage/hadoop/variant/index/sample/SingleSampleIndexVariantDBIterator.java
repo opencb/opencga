@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.hadoop.variant.index.sample.iterators;
+package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import com.google.common.collect.Iterators;
 import org.apache.hadoop.hbase.client.Result;
@@ -8,10 +8,9 @@ import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.util.CollectionUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -23,9 +22,10 @@ import java.util.List;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class SingleSampleIndexVariantDBIterator extends SampleIndexVariantDBIterator {
+public class SingleSampleIndexVariantDBIterator extends VariantDBIterator {
 
     private final Iterator<Variant> iterator;
+    protected int count = 0;
 
     public SingleSampleIndexVariantDBIterator(Table table, List<Region> regions, Integer studyId, String sample, List<String> gts,
                                        SampleIndexDBAdaptor dbAdaptor) {
@@ -53,6 +53,11 @@ public class SingleSampleIndexVariantDBIterator extends SampleIndexVariantDBIter
                     }
                 }).iterator();
         iterator = Iterators.concat(iterators);
+    }
+
+    @Override
+    public int getCount() {
+        return count;
     }
 
     @Override

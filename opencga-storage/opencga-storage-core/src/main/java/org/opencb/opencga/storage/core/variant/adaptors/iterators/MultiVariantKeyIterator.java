@@ -1,8 +1,8 @@
-package org.opencb.opencga.storage.hadoop.variant.index.sample.iterators;
+package org.opencb.opencga.storage.core.variant.adaptors.iterators;
 
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -11,14 +11,22 @@ import java.util.NoSuchElementException;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public abstract class MultiSampleIndexVariantDBIterator extends SampleIndexVariantDBIterator {
+abstract class MultiVariantKeyIterator extends VariantDBIterator {
+
+    protected static final Comparator<Variant> VARIANT_COMPARATOR = Comparator.comparing(Variant::getChromosome)
+            .thenComparing(Variant::getStart)
+            .thenComparing(Variant::getEnd)
+            .thenComparing(Variant::getReference)
+            .thenComparing(Variant::getAlternate)
+            .thenComparing(Variant::toString);
 
     protected final List<VariantDBIterator> iterators;
     protected Variant next;
     protected Variant prev;
+    protected int count;
     private boolean init = false;
 
-    public MultiSampleIndexVariantDBIterator(List<VariantDBIterator> iterators) {
+    MultiVariantKeyIterator(List<VariantDBIterator> iterators) {
         this.iterators = iterators;
         next = null;
         prev = null;
@@ -36,6 +44,11 @@ public abstract class MultiSampleIndexVariantDBIterator extends SampleIndexVaria
     protected abstract void init();
 
     public abstract void getNext();
+
+    @Override
+    public int getCount() {
+        return count;
+    }
 
     @Override
     public long getTimeFetching() {
