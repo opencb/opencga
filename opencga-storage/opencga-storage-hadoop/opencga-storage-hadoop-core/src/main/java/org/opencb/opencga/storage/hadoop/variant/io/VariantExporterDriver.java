@@ -16,9 +16,13 @@ import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -77,15 +81,29 @@ public class VariantExporterDriver extends AbstractAnalysisTableDriver {
                 throw new IllegalArgumentException(outputFormat.toString());
         }
     }
+    private final Logger logger = LoggerFactory.getLogger(VariantExporterDriver.class);
 
     @Override
     protected Job setupJob(Job job, String archiveTable, String variantTable) throws IOException {
 
+        int caching;
+        boolean useSampleIndex = !getConf().getBoolean("skipSampleIndex", false) && SampleIndexQuery.validSampleIndexQuery(query);
+        if (useSampleIndex) {
+            // Remove extra fields from the query
+            SampleIndexQuery.extractSampleIndexQuery(query, getStudyConfigurationManager(), null);
+
+            logger.info("Use sample index to read from HBase");
+            caching = 100;
+        } else {
+            caching = getConf().getInt(HadoopVariantStorageEngine.MAPREDUCE_HBASE_SCAN_CACHING, 50);
+        }
+
         Scan scan = new VariantHBaseQueryParser(getHelper(), getStudyConfigurationManager()).parseQuery(query, options);
+        scan.setCaching(caching);
 
-        scan.setCaching(1);
+        logger.info("Set SCAN caching to " + caching);
 
-        VariantMapReduceUtil.initVariantMapperJobFromHBase(job, variantTable, scan, getMapperClass());
+        VariantMapReduceUtil.initVariantMapperJobFromHBase(job, variantTable, scan, getMapperClass(), useSampleIndex);
         VariantMapReduceUtil.setNoneReduce(job);
 
         FileOutputFormat.setOutputPath(job, new Path(this.outFile)); // set Path

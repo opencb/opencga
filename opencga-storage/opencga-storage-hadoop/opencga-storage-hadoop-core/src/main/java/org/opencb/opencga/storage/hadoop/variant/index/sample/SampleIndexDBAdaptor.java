@@ -12,15 +12,15 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.QueryOperation;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.IntersectMultiVariantKeyIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.UnionMultiVariantKeyIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.iterators.IntersectMultiVariantKeyIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.iterators.UnionMultiVariantKeyIterator;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,19 +52,8 @@ public class SampleIndexDBAdaptor {
         family = helper.getColumnFamily();
     }
 
-    protected Integer getStudyId(String study) {
-        Integer studyId;
-        if (StringUtils.isEmpty(study)) {
-            Map<String, Integer> studies = scm.getStudies(null);
-            if (studies.size() == 1) {
-                studyId = studies.values().iterator().next();
-            } else {
-                throw VariantQueryException.studyNotFound(study, studies.keySet());
-            }
-        } else {
-            studyId = scm.getStudyId(study, null);
-        }
-        return studyId;
+    public VariantDBIterator iterator(SampleIndexQuery query) {
+        return iterator(query.getRegions(), query.getStudy(), query.getSamplesMap(), query.getQueryOperation());
     }
 
     public VariantDBIterator iterator(List<Region> regions, String study, Map<String, List<String>> samples,
@@ -107,19 +96,6 @@ public class SampleIndexDBAdaptor {
             return new IntersectMultiVariantKeyIterator(iterators, negatedIterators);
         }
 
-    }
-
-    protected List<String> getAllLoadedGenotypes(String study) {
-        List<String> allGts = scm.getStudyConfiguration(study,
-                new QueryOptions(StudyConfigurationManager.CACHED, true)
-                        .append(StudyConfigurationManager.READ_ONLY, true))
-                .first()
-                .getAttributes()
-                .getAsStringList(HadoopVariantStorageEngine.LOADED_GENOTYPES);
-        if (allGts == null || allGts.isEmpty()) {
-            allGts = DEFAULT_LOADED_GENOTYPES;
-        }
-        return allGts;
     }
 
     public VariantDBIterator iterator(List<Region> regions, String study, String sample, List<String> gts) {
@@ -215,6 +191,34 @@ public class SampleIndexDBAdaptor {
         } catch (IOException e) {
             throw VariantQueryException.internalException(e);
         }
+    }
+
+    protected Integer getStudyId(String study) {
+        Integer studyId;
+        if (StringUtils.isEmpty(study)) {
+            Map<String, Integer> studies = scm.getStudies(null);
+            if (studies.size() == 1) {
+                studyId = studies.values().iterator().next();
+            } else {
+                throw VariantQueryException.studyNotFound(study, studies.keySet());
+            }
+        } else {
+            studyId = scm.getStudyId(study, null);
+        }
+        return studyId;
+    }
+
+    protected List<String> getAllLoadedGenotypes(String study) {
+        List<String> allGts = scm.getStudyConfiguration(study,
+                new QueryOptions(StudyConfigurationManager.CACHED, true)
+                        .append(StudyConfigurationManager.READ_ONLY, true))
+                .first()
+                .getAttributes()
+                .getAsStringList(HadoopVariantStorageEngine.LOADED_GENOTYPES);
+        if (allGts == null || allGts.isEmpty()) {
+            allGts = DEFAULT_LOADED_GENOTYPES;
+        }
+        return allGts;
     }
 
     /**

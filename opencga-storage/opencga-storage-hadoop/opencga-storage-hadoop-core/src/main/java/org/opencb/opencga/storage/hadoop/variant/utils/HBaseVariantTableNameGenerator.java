@@ -50,11 +50,11 @@ public class HBaseVariantTableNameGenerator {
     }
 
     public String getArchiveTableName(int studyId) {
-        return getArchiveTableName(dbName, studyId, namespace);
+        return getArchiveTableName(namespace, dbName, studyId);
     }
 
     public String getSampleIndexTableName(int studyId) {
-        return getSampleIndexTableName(dbName, studyId, namespace);
+        return getSampleIndexTableName(namespace, dbName, studyId);
     }
 
     public String getMetaTableName() {
@@ -110,7 +110,7 @@ public class HBaseVariantTableNameGenerator {
      */
     public static String getArchiveTableNameFromVariantsTable(String variantsTableName, int studyId, Configuration conf) {
         String dbName = getDBNameFromVariantsTableName(variantsTableName);
-        return getArchiveTableName(dbName, studyId, conf.get(HadoopVariantStorageEngine.HBASE_NAMESPACE, ""));
+        return getArchiveTableName(conf.get(HadoopVariantStorageEngine.HBASE_NAMESPACE, ""), dbName, studyId);
     }
 
     /**
@@ -122,7 +122,7 @@ public class HBaseVariantTableNameGenerator {
      * @return Table name
      */
     public static String getArchiveTableName(String dbName, int studyId, Configuration conf) {
-        return getArchiveTableName(dbName, studyId, conf.get(HadoopVariantStorageEngine.HBASE_NAMESPACE, ""));
+        return getArchiveTableName(conf.get(HadoopVariantStorageEngine.HBASE_NAMESPACE, ""), dbName, studyId);
     }
 
     /**
@@ -134,19 +134,19 @@ public class HBaseVariantTableNameGenerator {
      * @return Table name
      */
     public static String getArchiveTableName(String dbName, int studyId, ObjectMap options) {
-        return getArchiveTableName(dbName, studyId, options.getString(HadoopVariantStorageEngine.HBASE_NAMESPACE, ""));
+        return getArchiveTableName(options.getString(HadoopVariantStorageEngine.HBASE_NAMESPACE, ""), dbName, studyId);
     }
 
     /**
      * Get the archive table name given a StudyId.
      *
+     * @param namespace hbase namespace
      * @param dbName given database name
      * @param studyId Numerical study identifier
-     * @param namespace hbase namespace
      * @return Table name
      */
-    public static String getArchiveTableName(String dbName, int studyId, String namespace) {
-        return buildTableName(namespace, dbName, ARCHIVE_SUFIX + studyId);
+    public static String getArchiveTableName(String namespace, String dbName, int studyId) {
+        return buildTableName(namespace, "", dbName + ARCHIVE_SUFIX + studyId);
     }
 
     public static int getStudyIdFromArchiveTable(String archiveTable) {
@@ -154,8 +154,8 @@ public class HBaseVariantTableNameGenerator {
         return Integer.valueOf(archiveTable.substring(idx + 1));
     }
 
-    public static String getSampleIndexTableName(String dbName, int studyId, String namespace) {
-        return buildTableName(namespace, dbName, SAMPLE_SUFIX + studyId);
+    public static String getSampleIndexTableName(String namespace, String dbName, int studyId) {
+        return buildTableName(namespace, "", dbName + SAMPLE_SUFIX + studyId);
     }
 
     public static String getVariantTableName(String dbName, ObjectMap options) {
@@ -186,7 +186,7 @@ public class HBaseVariantTableNameGenerator {
                     tableName = tableName.substring(tableName.indexOf(':') + 1); // Remove '<namespace>:'
                 }
             }
-            sb.append(namespace).append(":");
+            sb.append(namespace).append(':');
         }
         if (StringUtils.isNotEmpty(prefix)) {
             if (prefix.endsWith("_") && tableName.startsWith("_")) {

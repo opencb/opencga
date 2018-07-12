@@ -13,15 +13,16 @@ import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
@@ -29,7 +30,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator.getDBNameFromVariantsTableName;
 
@@ -89,11 +89,10 @@ public class SampleIndexTableInputFormat extends TableInputFormat {
 
             studyConfiguration = scm.getStudyConfiguration(helper.getStudyId(), null).first();
 
-            HashMap<Object, List<String>> map = new HashMap<>();
-            operation = VariantQueryUtils.parseGenotypeFilter(conf.get(VariantQueryParam.GENOTYPE.key()), map);
-            samples = map.entrySet()
-                    .stream()
-                    .collect(Collectors.toMap(entry -> entry.getKey().toString(), Map.Entry::getValue));
+            Query query = VariantMapReduceUtil.getQueryFromConfig(new Query(), conf);
+            SampleIndexQuery sampleIndexQuery = SampleIndexQuery.extractSampleIndexQuery(query, scm, null);
+            operation = sampleIndexQuery.getQueryOperation();
+            samples = sampleIndexQuery.getSamplesMap();
 
         }
 

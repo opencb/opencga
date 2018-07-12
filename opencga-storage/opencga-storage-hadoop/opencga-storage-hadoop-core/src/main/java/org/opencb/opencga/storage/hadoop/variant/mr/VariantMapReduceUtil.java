@@ -100,12 +100,19 @@ public class VariantMapReduceUtil {
     public static void initVariantMapperJobFromHBase(Job job, String variantTableName, Scan scan,
                                                      Class<? extends VariantMapper> variantMapperClass)
             throws IOException {
+        initVariantMapperJobFromHBase(job, variantTableName, scan, variantMapperClass, false);
+    }
+
+    public static void initVariantMapperJobFromHBase(Job job, String variantTableName, Scan scan,
+                                                     Class<? extends VariantMapper> variantMapperClass, boolean useSampleIndex)
+            throws IOException {
         initTableMapperJob(job, variantTableName, scan, TableMapper.class);
 
         job.setMapperClass(variantMapperClass);
 
 //        job.getConfiguration().set(TableInputFormat.INPUT_TABLE, variantTableName);
         job.setInputFormatClass(HBaseVariantTableInputFormat.class);
+        job.getConfiguration().setBoolean(HBaseVariantTableInputFormat.USE_SAMPLE_INDEX_TABLE_INPUT_FORMAT, useSampleIndex);
     }
 
     public static void initVariantMapperJobFromPhoenix(Job job, VariantHadoopDBAdaptor dbAdaptor,
@@ -146,6 +153,10 @@ public class VariantMapReduceUtil {
 
     public static void setNoneReduce(Job job) throws IOException {
         job.setNumReduceTasks(0);
+    }
+
+    public static void setSampleIndexTableInputFormat(Job job) {
+        job.setInputFormatClass(SampleIndexTableInputFormat.class);
     }
 
     public static void setOutputHBaseTable(Job job, String outTable) throws IOException {

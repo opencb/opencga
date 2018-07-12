@@ -28,11 +28,17 @@ import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.
  */
 public class HBaseVariantTableInputFormat extends AbstractVariantsTableInputFormat<ImmutableBytesWritable, Result> {
 
+    public static final String USE_SAMPLE_INDEX_TABLE_INPUT_FORMAT = "useSampleIndexTableInputFormat";
     private HBaseToVariantConverter<Result> converter;
 
     @Override
     protected void init(Configuration configuration) throws IOException {
-        TableInputFormat tableInputFormat = new TableInputFormat();
+        TableInputFormat tableInputFormat;
+        if (configuration.getBoolean(USE_SAMPLE_INDEX_TABLE_INPUT_FORMAT, false)) {
+            tableInputFormat = new SampleIndexTableInputFormat();
+        } else {
+            tableInputFormat = new TableInputFormat();
+        }
 //            configuration.forEach(entry -> System.out.println(entry.getKey() + " = " + entry.getValue()));
         tableInputFormat.setConf(configuration);
         inputFormat = tableInputFormat;
