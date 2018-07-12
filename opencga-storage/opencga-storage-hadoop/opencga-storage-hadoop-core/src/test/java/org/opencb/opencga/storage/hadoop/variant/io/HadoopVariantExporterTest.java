@@ -12,11 +12,13 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 
+import java.io.IOException;
 import java.net.URI;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ANNOT_PROTEIN_SUBSTITUTION;
@@ -66,7 +68,7 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
         URI uri = URI.create("hdfs:///" + fileName);
         variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.AVRO, new Query(STUDY.key(), STUDY_NAME), new QueryOptions());
 
-        FileSystem.get(externalResource.getConf()).copyToLocalFile(true, new Path(uri), new Path(outputUri.resolve(fileName)));
+        copyToLocal(fileName, uri);
     }
 
     @Test
@@ -75,7 +77,7 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
         URI uri = URI.create("hdfs:///" + fileName);
         variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.AVRO_GZ, new Query(STUDY.key(), STUDY_NAME), new QueryOptions());
 
-        FileSystem.get(externalResource.getConf()).copyToLocalFile(true, new Path(uri), new Path(outputUri.resolve(fileName)));
+        copyToLocal(fileName, uri);
     }
 
     @Test
@@ -84,7 +86,7 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
         URI uri = URI.create("hdfs:///" + fileName);
         variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.VCF, new Query(STUDY.key(), STUDY_NAME), new QueryOptions());
 
-        FileSystem.get(externalResource.getConf()).copyToLocalFile(true, new Path(uri), new Path(outputUri.resolve(fileName)));
+        copyToLocal(fileName, uri);
     }
 
     @Test
@@ -94,7 +96,7 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
         variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.AVRO,
                 new Query(STUDY.key(), STUDY_NAME).append(GENOTYPE.key(), "NA19600:0|1,1|0;NA19660:1|1"), new QueryOptions());
 
-        FileSystem.get(externalResource.getConf()).copyToLocalFile(true, new Path(uri), new Path(outputUri.resolve(fileName)));
+        copyToLocal(fileName, uri);
     }
 
     @Test
@@ -104,7 +106,16 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
         variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.VCF,
                 new Query(STUDY.key(), STUDY_NAME).append(ANNOT_PROTEIN_SUBSTITUTION.key(), "sift<0.2"), new QueryOptions());
 
-        FileSystem.get(externalResource.getConf()).copyToLocalFile(true, new Path(uri), new Path(outputUri.resolve(fileName)));
+        copyToLocal(fileName, uri);
+    }
+
+    protected void copyToLocal(String fileName, URI uri) throws IOException {
+        FileSystem.get(externalResource.getConf()).copyToLocalFile(true,
+                new Path(uri),
+                new Path(outputUri.resolve(fileName)));
+        FileSystem.get(externalResource.getConf()).copyToLocalFile(true,
+                new Path(uri.toString() + VariantExporter.METADATA_FILE_EXTENSION),
+                new Path(outputUri.resolve(fileName + VariantExporter.METADATA_FILE_EXTENSION)));
     }
 
 }
