@@ -38,11 +38,10 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
@@ -104,7 +103,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     private HBaseManager hBaseManager;
 
     public VariantHadoopDBAdaptor(HBaseManager hBaseManager, HBaseCredentials credentials, StorageConfiguration configuration,
-                                  Configuration conf, CellBaseUtils cellBaseUtils, HBaseVariantTableNameGenerator tableNameGenerator)
+                                  Configuration conf, HBaseVariantTableNameGenerator tableNameGenerator)
             throws IOException {
         this.credentials = credentials;
         this.configuration = conf;
@@ -125,7 +124,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
         clientSideSkip = !options.getBoolean(PhoenixHelper.PHOENIX_SERVER_OFFSET_AVAILABLE, true);
         this.queryParser = new VariantSqlQueryParser(genomeHelper, this.variantTable,
-                studyConfigurationManager.get(), cellBaseUtils, clientSideSkip);
+                studyConfigurationManager.get(), clientSideSkip);
 
         phoenixFetchSize = options.getInt(HadoopVariantStorageEngine.DBADAPTOR_PHOENIX_FETCH_SIZE, -1);
 

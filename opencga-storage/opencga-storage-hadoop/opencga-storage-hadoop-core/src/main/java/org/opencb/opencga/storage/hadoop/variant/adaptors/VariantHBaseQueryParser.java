@@ -197,6 +197,7 @@ public class VariantHBaseQueryParser {
             scans = new ArrayList<>(regions.size() + variants.size());
             Query subQuery = new Query(query);
             subQuery.remove(REGION.key());
+            subQuery.remove(ANNOT_GENE_REGIONS.key());
             subQuery.remove(ANNOT_XREF.key());
             subQuery.remove(ID.key());
 
@@ -574,12 +575,17 @@ public class VariantHBaseQueryParser {
     }
 
     private List<Region> getRegions(Query query) {
-        List<Region> regions;
+        List<Region> regions = new ArrayList<>();
         if (isValidParam(query, REGION)) {
-            regions = Region.parseRegions(query.getString(REGION.key()));
-        } else {
-            regions = Collections.emptyList();
+            regions.addAll(Region.parseRegions(query.getString(REGION.key())));
         }
+
+        if (isValidParam(query, ANNOT_GENE_REGIONS)) {
+            regions.addAll(Region.parseRegions(query.getString(ANNOT_GENE_REGIONS.key())));
+        }
+
+        regions = mergeRegions(regions);
+
         return regions;
     }
 

@@ -22,7 +22,9 @@ import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.cellbase.core.api.GeneDBAdaptor;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +42,8 @@ public class CellBaseUtils {
     private static Logger logger = LoggerFactory.getLogger(CellBaseUtils.class);
     private static final int GENE_EXTRA_REGION = 5000;
     private final CellBaseClient cellBaseClient;
-    public static final QueryOptions GENE_QUERY_OPTIONS = new QueryOptions(QueryOptions.INCLUDE, "name,chromosome,start,end");
+    public static final QueryOptions GENE_QUERY_OPTIONS = new QueryOptions(QueryOptions.INCLUDE,
+            "id,name,chromosome,start,end,transcripts.id,transcripts.name,transcripts.proteinId");
 
 
     public CellBaseUtils(CellBaseClient cellBaseClient) {
@@ -60,15 +63,47 @@ public class CellBaseUtils {
         List<Region> regions = new ArrayList<>(geneStrs.size());
         try {
             long ts = System.currentTimeMillis();
-            List<Gene> genes = cellBaseClient.getGeneClient().get(geneStrs, GENE_QUERY_OPTIONS).allResults();
+            QueryResponse<Gene> response = cellBaseClient.getGeneClient().get(geneStrs, GENE_QUERY_OPTIONS);
             logger.info("Query genes " + geneStrs + " -> " + (System.currentTimeMillis() - ts) / 1000.0 + "s ");
-            for (Gene gene : genes) {
-                if (gene != null) {
-                    int start = Math.max(0, gene.getStart() - GENE_EXTRA_REGION);
-                    int end = gene.getEnd() + GENE_EXTRA_REGION;
-                    Region region = new Region(gene.getChromosome(), start, end);
-                    regions.add(region);
+            List<String> missingGenes = null;
+            for (QueryResult<Gene> result : response.getResponse()) {
+                Gene gene = null;
+                // It may happen that CellBase returns more than 1 result for the same gene name.
+                // Pick the gene where the given geneStr matches with the name,id,transcript.id,transcript.name or transcript.proteinId
+                if (result.getResult().size() > 1) {
+                    String geneStr = result.getId();
+                    for (Gene aGene : result.getResult()) {
+                        if (geneStr.equals(aGene.getName())
+                                || geneStr.equals(aGene.getId())
+                                || aGene.getTranscripts().stream().anyMatch(t -> geneStr.equals(t.getName()))
+                                || aGene.getTranscripts().stream().anyMatch(t -> geneStr.equals(t.getId()))
+                                || aGene.getTranscripts().stream().anyMatch(t -> geneStr.equals(t.getProteinID()))) {
+                            if (gene != null) {
+                                // More than one gene found!
+                                // Leave gene empty, so it is marked as "not found"
+                                gene = null;
+                                break;
+                            }
+                            gene = aGene;
+                        }
+                    }
+                } else {
+                    gene = result.first();
                 }
+                if (gene == null) {
+                    if (missingGenes == null) {
+                        missingGenes = new ArrayList<>();
+                    }
+                    missingGenes.add(result.getId());
+                    continue;
+                }
+                int start = Math.max(0, gene.getStart() - GENE_EXTRA_REGION);
+                int end = gene.getEnd() + GENE_EXTRA_REGION;
+                Region region = new Region(gene.getChromosome(), start, end);
+                regions.add(region);
+            }
+            if (missingGenes != null) {
+                throw VariantQueryException.geneNotFound(String.join(",", missingGenes));
             }
             return regions;
         } catch (IOException e) {

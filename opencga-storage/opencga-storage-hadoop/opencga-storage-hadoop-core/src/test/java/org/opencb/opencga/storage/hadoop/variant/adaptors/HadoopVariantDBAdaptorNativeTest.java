@@ -9,6 +9,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.results.VariantQueryResult;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
@@ -24,6 +25,7 @@ public class HadoopVariantDBAdaptorNativeTest extends HadoopVariantDBAdaptorTest
 
     @Override
     public VariantQueryResult<Variant> query(Query query, QueryOptions options) {
+        VariantQueryUtils.convertGenesToRegionsQuery(query, cellBaseUtils);
 //        checkCanExecuteNativeQuery(query);
         String message = getMessage(query);
         try {
@@ -40,6 +42,7 @@ public class HadoopVariantDBAdaptorNativeTest extends HadoopVariantDBAdaptorTest
 
     @Override
     public VariantDBIterator iterator(Query query, QueryOptions options) {
+        VariantQueryUtils.convertGenesToRegionsQuery(query, cellBaseUtils);
 //        checkCanExecuteNativeQuery(query);
         String message = getMessage(query);
         try {

@@ -1,21 +1,16 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import org.opencb.biodata.models.core.Region;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
 import java.util.*;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.isNegated;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.isValidParam;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.parseGenotypeFilter;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 
 /**
  * Created on 12/07/18.
@@ -79,11 +74,10 @@ public final class SampleIndexQuery {
      *
      * @param query         Input query. Will be modified.
      * @param scm           StudyConfigurationManager
-     * @param cellbaseUtils CellBaseUtils
      * @return              Valid SampleIndexQuery
      * @see                 SampleIndexQuery#validSampleIndexQuery(Query)
      */
-    public static SampleIndexQuery extractSampleIndexQuery(Query query, StudyConfigurationManager scm, CellBaseUtils cellbaseUtils) {
+    public static SampleIndexQuery extractSampleIndexQuery(Query query, StudyConfigurationManager scm) {
         //
         // Extract regions
         List<Region> regions = new ArrayList<>();
@@ -92,27 +86,14 @@ public final class SampleIndexQuery {
             query.remove(REGION.key());
         }
 
-        VariantQueryUtils.VariantQueryXref xref = VariantQueryUtils.parseXrefs(query);
-        if (!xref.getGenes().isEmpty()) {
-            if (cellbaseUtils == null) {
-                throw new IllegalStateException("Can not query by gene!");
-            }
-            List<Region> geneRegions = cellbaseUtils.getGeneRegion(xref.getGenes());
-            if (geneRegions.isEmpty()) {
-                throw VariantQueryException.geneNotFound(xref.getGenes().toString());
-            }
-            regions.addAll(geneRegions);
-            query.remove(GENE.key());
-
-            // TODO: Resolve other IDs?
-            query.put(ANNOT_XREF.key(), xref.getOtherXrefs());
-            ArrayList<String> ids = new ArrayList<>();
-            for (Variant variant : xref.getVariants()) {
-                ids.add(variant.toString());
-            }
-            ids.addAll(xref.getIds());
-            query.put(VariantQueryParam.ID.key(), ids);
+        if (isValidParam(query, ANNOT_GENE_REGIONS)) {
+            regions = Region.parseRegions(query.getString(ANNOT_GENE_REGIONS.key()));
+            query.remove(ANNOT_GENE_REGIONS.key());
         }
+
+        regions = mergeRegions(regions);
+
+        // TODO: Accept variant IDs?
 
         // Extract study
         StudyConfiguration defaultStudyConfiguration = VariantQueryUtils.getDefaultStudyConfiguration(query, null, scm);

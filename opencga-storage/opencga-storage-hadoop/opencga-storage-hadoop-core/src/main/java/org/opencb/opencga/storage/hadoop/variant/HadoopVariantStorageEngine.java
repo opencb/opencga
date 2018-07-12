@@ -730,7 +730,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                         Configuration configuration = getHadoopConfiguration();
                         configuration = VariantHadoopDBAdaptor.getHbaseConfiguration(configuration, credentials);
                         dbAdaptor.set(new VariantHadoopDBAdaptor(getHBaseManager(configuration), credentials,
-                                this.configuration, configuration, getCellBaseUtils(), getTableNameGenerator()));
+                                this.configuration, configuration, getTableNameGenerator()));
                     } catch (IOException e) {
                         throw new StorageEngineException("Error creating DB Adapter", e);
                     }
@@ -776,6 +776,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
         convertGoToGeneQuery(query, cellBaseUtils);
         convertExpressionToGeneQuery(query, cellBaseUtils);
+        convertGenesToRegionsQuery(query, cellBaseUtils);
 
         return query;
     }
@@ -910,8 +911,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         SampleIndexDBAdaptor sampleIndexDBAdaptor = getSampleIndexDBAdaptor();
 
         Query query = new Query(inputQuery);
-        SampleIndexQuery sampleIndexQuery =
-                SampleIndexQuery.extractSampleIndexQuery(query, getStudyConfigurationManager(), getCellBaseUtils());
+        SampleIndexQuery sampleIndexQuery = SampleIndexQuery.extractSampleIndexQuery(query, getStudyConfigurationManager());
 
         VariantDBIterator variants = sampleIndexDBAdaptor.iterator(sampleIndexQuery);
 

@@ -90,7 +90,7 @@ public class VariantExporterDriver extends AbstractAnalysisTableDriver {
         boolean useSampleIndex = !getConf().getBoolean("skipSampleIndex", false) && SampleIndexQuery.validSampleIndexQuery(query);
         if (useSampleIndex) {
             // Remove extra fields from the query
-            SampleIndexQuery.extractSampleIndexQuery(query, getStudyConfigurationManager(), null);
+            SampleIndexQuery.extractSampleIndexQuery(query, getStudyConfigurationManager());
 
             logger.info("Use sample index to read from HBase");
             caching = 100;

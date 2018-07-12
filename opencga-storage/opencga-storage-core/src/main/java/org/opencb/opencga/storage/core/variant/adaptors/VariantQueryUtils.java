@@ -68,6 +68,7 @@ public final class VariantQueryUtils {
 
     public static final QueryParam ANNOT_EXPRESSION_GENES = QueryParam.create("annot_expression_genes", "", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam ANNOT_GO_GENES = QueryParam.create("annot_go_genes", "", QueryParam.Type.TEXT_ARRAY);
+    public static final QueryParam ANNOT_GENE_REGIONS = QueryParam.create("annot_gene_regions", "", QueryParam.Type.TEXT_ARRAY);
 
     public static final Set<VariantQueryParam> MODIFIER_QUERY_PARAMS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             INCLUDE_STUDY,
@@ -1177,6 +1178,19 @@ public final class VariantQueryUtils {
                 genesByGo = Collections.singleton(NONE);
             }
             query.put(ANNOT_GO_GENES.key(), genesByGo);
+        }
+    }
+
+    public static void convertGenesToRegionsQuery(Query query, CellBaseUtils cellBaseUtils) {
+        VariantQueryXref variantQueryXref = VariantQueryUtils.parseXrefs(query);
+        List<String> genes = variantQueryXref.getGenes();
+        if (!genes.isEmpty()) {
+
+            List<Region> regions = cellBaseUtils.getGeneRegion(genes);
+
+            regions = mergeRegions(regions);
+
+            query.put(ANNOT_GENE_REGIONS.key(), regions);
         }
     }
 
