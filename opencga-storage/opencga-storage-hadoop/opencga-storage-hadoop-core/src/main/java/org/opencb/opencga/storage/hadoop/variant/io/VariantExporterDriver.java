@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.io;
 
+import org.apache.avro.file.DataFileConstants;
 import org.apache.avro.mapred.AvroKey;
 import org.apache.avro.mapreduce.AvroJob;
 import org.apache.avro.mapreduce.AvroKeyOutputFormat;
@@ -15,10 +16,12 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapper;
+import org.opencb.opencga.storage.hadoop.variant.mr.VcfOutputFormat;
 
 import java.io.IOException;
 
@@ -49,9 +52,9 @@ public class VariantExporterDriver extends AbstractAnalysisTableDriver {
     enum OutputFormat {
         AVRO,
         AVRO_GZ,
-        PARQUET
-        // VCF
-        // VCF_GZ
+        PARQUET,
+        VCF,
+        VCF_GZ
     }
 
     @Override
@@ -68,6 +71,9 @@ public class VariantExporterDriver extends AbstractAnalysisTableDriver {
     @Override
     protected Class<? extends VariantMapper> getMapperClass() {
         switch (outputFormat) {
+            case VCF:
+            case VCF_GZ:
+                return VcfVariantExporterMapper.class;
             case PARQUET:
                 return ParquetVariantExporterMapper.class;
             case AVRO:
@@ -89,13 +95,28 @@ public class VariantExporterDriver extends AbstractAnalysisTableDriver {
         VariantMapReduceUtil.setNoneReduce(job);
 
         FileOutputFormat.setOutputPath(job, new Path(this.outFile)); // set Path
-        FileOutputFormat.setOutputCompressorClass(job, GzipCodec.class); // compression
+
+        VariantMapReduceUtil.configureVariantConverter(job.getConfiguration(), false, true, true,
+                query.getString(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./."));
 
         switch (outputFormat) {
+            case VCF_GZ:
+                FileOutputFormat.setOutputCompressorClass(job, GzipCodec.class); // compression
+                // do not break
+            case VCF:
+                job.setOutputFormatClass(VcfOutputFormat.class);
+                job.setOutputKeyClass(Variant.class);
+                break;
+
+            case AVRO_GZ:
+                FileOutputFormat.setCompressOutput(job, true);
+                job.getConfiguration().set(AvroJob.CONF_OUTPUT_CODEC, DataFileConstants.DEFLATE_CODEC);
+                // do not break
             case AVRO:
                 job.setOutputFormatClass(AvroKeyOutputFormat.class);
                 AvroJob.setOutputKeySchema(job, VariantAvro.getClassSchema());
                 break;
+
             case PARQUET:
                 job.setOutputFormatClass(AvroParquetOutputFormat.class);
                 AvroParquetOutputFormat.setSchema(job, VariantAvro.getClassSchema());
@@ -110,6 +131,14 @@ public class VariantExporterDriver extends AbstractAnalysisTableDriver {
     @Override
     protected String getJobOperationName() {
         return "export_" + outputFormat;
+    }
+
+    public static class VcfVariantExporterMapper extends VariantMapper<Variant, NullWritable> {
+        @Override
+        protected void map(Object key, Variant value, Context context) throws IOException, InterruptedException {
+            context.getCounter(COUNTER_GROUP_NAME, "variants").increment(1);
+            context.write(value, NullWritable.get());
+        }
     }
 
     public static class AvroVariantExporterMapper extends VariantMapper<AvroKey<VariantAvro>, NullWritable> {

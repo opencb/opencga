@@ -209,20 +209,30 @@ public class VariantMapReduceUtil {
         }
     }
 
-    public static QueryOptions getQueryOptionsFromConfig(QueryOptions options, Configuration conf) {
-        options.put(QueryOptions.INCLUDE, conf.get(QueryOptions.INCLUDE));
-        options.put(QueryOptions.EXCLUDE, conf.get(QueryOptions.EXCLUDE));
+    public static QueryOptions getQueryOptionsFromConfig(Configuration conf) {
+        QueryOptions options = new QueryOptions();
+        getQueryOptionsFromConfig(options, conf);
         return options;
     }
 
-    public static Query getQueryFromConfig(Query query, Configuration conf) {
+    public static void getQueryOptionsFromConfig(QueryOptions options, Configuration conf) {
+        options.put(QueryOptions.INCLUDE, conf.get(QueryOptions.INCLUDE));
+        options.put(QueryOptions.EXCLUDE, conf.get(QueryOptions.EXCLUDE));
+    }
+
+    public static Query getQueryFromConfig(Configuration conf) {
+        Query query = new Query();
+        getQueryFromConfig(query, conf);
+        return query;
+    }
+
+    public static void getQueryFromConfig(Query query, Configuration conf) {
         for (VariantQueryParam param : VariantQueryParam.values()) {
             String value = conf.get(param.key(), conf.get("--" + param.key()));
             if (value != null && !value.isEmpty()) {
                 query.put(param.key(), value);
             }
         }
-        return query;
     }
 
 }

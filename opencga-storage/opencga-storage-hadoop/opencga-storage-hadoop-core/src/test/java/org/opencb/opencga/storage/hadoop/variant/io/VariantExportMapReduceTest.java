@@ -64,8 +64,32 @@ public class VariantExportMapReduceTest extends VariantStorageBaseTest implement
         URI uri = URI.create("hdfs:///variants.avro");
         variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.AVRO, new Query(STUDY.key(), STUDY_NAME), new QueryOptions());
 
-        FileSystem.get(externalResource.getConf()).copyToLocalFile(new Path(uri), new Path(outputUri.resolve("variants.avro")));
+        FileSystem.get(externalResource.getConf()).copyToLocalFile(true, new Path(uri), new Path(outputUri.resolve("variants.avro")));
     }
 
+    @Test
+    public void exportAvroGz() throws Exception {
+        URI uri = URI.create("hdfs:///variants.avro_gz");
+        variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.AVRO_GZ, new Query(STUDY.key(), STUDY_NAME), new QueryOptions());
+
+        FileSystem.get(externalResource.getConf()).copyToLocalFile(true, new Path(uri), new Path(outputUri.resolve("variants.avro_gz")));
+    }
+
+    @Test
+    public void exportVcf() throws Exception {
+        URI uri = URI.create("hdfs:///variants.vcf");
+        variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.VCF, new Query(STUDY.key(), STUDY_NAME), new QueryOptions());
+
+        FileSystem.get(externalResource.getConf()).copyToLocalFile(true, new Path(uri), new Path(outputUri.resolve("variants.vcf")));
+    }
+
+    @Test
+    public void exportIndex() throws Exception {
+        URI uri = URI.create("hdfs:///some_variants.avro");
+        variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.AVRO,
+                new Query(STUDY.key(), STUDY_NAME).append(GENOTYPE.key(), "NA19600:0|1,1|0;NA19660:1|1"), new QueryOptions());
+
+        FileSystem.get(externalResource.getConf()).copyToLocalFile(true, new Path(uri), new Path(outputUri.resolve("some_variants.avro")));
+    }
 
 }

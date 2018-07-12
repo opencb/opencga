@@ -33,6 +33,7 @@ import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.mr.VcfOutputFormat;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 
 import java.io.IOException;
@@ -102,7 +103,7 @@ public class VariantTableExportDriver extends AbstractAnalysisTableDriver {
                 AvroJob.setOutputKeySchema(job, VariantAvro.getClassSchema()); // Set schema
                 break;
             case VCF:
-                job.setOutputFormatClass(HadoopVcfOutputFormat.class);
+                job.setOutputFormatClass(VcfOutputFormat.class);
                 break;
             default:
                 throw new IllegalStateException("Type not known: " + this.type);
