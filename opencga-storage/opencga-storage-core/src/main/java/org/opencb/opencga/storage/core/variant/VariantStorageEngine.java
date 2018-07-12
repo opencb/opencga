@@ -264,6 +264,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                            Query query, QueryOptions queryOptions)
             throws IOException, StorageEngineException {
         VariantExporter exporter = newVariantExporter(metadataFactory);
+        preProcessQuery(query, getStudyConfigurationManager());
         exporter.export(outputFile, outputFormat, query, queryOptions);
     }
 
