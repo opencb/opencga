@@ -281,9 +281,4 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
         VariantHbaseTestUtils.printVariants(studyConfiguration, dbAdaptor, outDir);
     }
 
-    @Test
-    public void exportAvro() throws Exception {
-        getVariantStorageEngine().exportData(URI.create("hdfs:///my.vcf.avro"), VariantWriterFactory.VariantOutputFormat.AVRO, new Query(), new QueryOptions());
-    }
-
 }
