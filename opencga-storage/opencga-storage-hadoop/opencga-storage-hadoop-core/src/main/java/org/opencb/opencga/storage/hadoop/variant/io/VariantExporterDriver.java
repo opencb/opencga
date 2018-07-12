@@ -20,6 +20,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantSqlQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapper;
@@ -92,24 +93,31 @@ public class VariantExporterDriver extends AbstractAnalysisTableDriver {
     @Override
     protected Job setupJob(Job job, String archiveTable, String variantTable) throws IOException {
 
-        int caching;
-        boolean useSampleIndex = !getConf().getBoolean("skipSampleIndex", false) && SampleIndexQuery.validSampleIndexQuery(query);
-        if (useSampleIndex) {
-            // Remove extra fields from the query
-            SampleIndexQuery.extractSampleIndexQuery(query, getStudyConfigurationManager());
+        if (VariantHBaseQueryParser.isSupportedQuery(query)) {
+            logger.info("Init MapReduce job reading from HBase");
+            int caching;
+            boolean useSampleIndex = !getConf().getBoolean("skipSampleIndex", false) && SampleIndexQuery.validSampleIndexQuery(query);
+            if (useSampleIndex) {
+                // Remove extra fields from the query
+                SampleIndexQuery.extractSampleIndexQuery(query, getStudyConfigurationManager());
 
-            logger.info("Use sample index to read from HBase");
-            caching = 100;
-        } else {
+                logger.info("Use sample index to read from HBase");
+            }
             caching = getConf().getInt(HadoopVariantStorageEngine.MAPREDUCE_HBASE_SCAN_CACHING, 50);
+
+            Scan scan = new VariantHBaseQueryParser(getHelper(), getStudyConfigurationManager()).parseQuery(query, options);
+            scan.setCaching(caching);
+            logger.info("Set scan caching to " + caching);
+
+            VariantMapReduceUtil.initVariantMapperJobFromHBase(job, variantTable, scan, getMapperClass(), useSampleIndex);
+        } else {
+            logger.info("Init MapReduce job reading from Phoenix");
+            String sql = new VariantSqlQueryParser(getHelper(), variantTable, getStudyConfigurationManager())
+                    .parse(query, options).getSql();
+
+            VariantMapReduceUtil.initVariantMapperJobFromPhoenix(job, variantTable, sql, getMapperClass());
         }
 
-        Scan scan = new VariantHBaseQueryParser(getHelper(), getStudyConfigurationManager()).parseQuery(query, options);
-        scan.setCaching(caching);
-
-        logger.info("Set SCAN caching to " + caching);
-
-        VariantMapReduceUtil.initVariantMapperJobFromHBase(job, variantTable, scan, getMapperClass(), useSampleIndex);
         VariantMapReduceUtil.setNoneReduce(job);
 
         FileOutputFormat.setOutputPath(job, new Path(this.outFile)); // set Path

@@ -89,7 +89,7 @@ public class SampleIndexTableInputFormat extends TableInputFormat {
 
             studyConfiguration = scm.getStudyConfiguration(helper.getStudyId(), null).first();
 
-            Query query = VariantMapReduceUtil.getQueryFromConfig(new Query(), conf);
+            Query query = VariantMapReduceUtil.getQueryFromConfig(conf);
             SampleIndexQuery sampleIndexQuery = SampleIndexQuery.extractSampleIndexQuery(query, scm);
             operation = sampleIndexQuery.getQueryOperation();
             samples = sampleIndexQuery.getSamplesMap();

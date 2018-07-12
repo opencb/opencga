@@ -19,6 +19,7 @@ import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 
 import java.net.URI;
 
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ANNOT_PROTEIN_SUBSTITUTION;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.GENOTYPE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
 
@@ -27,7 +28,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class VariantExportMapReduceTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
+public class HadoopVariantExporterTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
     private static StudyConfiguration studyConfiguration;
 
@@ -61,35 +62,49 @@ public class VariantExportMapReduceTest extends VariantStorageBaseTest implement
 
     @Test
     public void exportAvro() throws Exception {
-        URI uri = URI.create("hdfs:///variants.avro");
+        String fileName = "variants.avro";
+        URI uri = URI.create("hdfs:///" + fileName);
         variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.AVRO, new Query(STUDY.key(), STUDY_NAME), new QueryOptions());
 
-        FileSystem.get(externalResource.getConf()).copyToLocalFile(true, new Path(uri), new Path(outputUri.resolve("variants.avro")));
+        FileSystem.get(externalResource.getConf()).copyToLocalFile(true, new Path(uri), new Path(outputUri.resolve(fileName)));
     }
 
     @Test
     public void exportAvroGz() throws Exception {
-        URI uri = URI.create("hdfs:///variants.avro_gz");
+        String fileName = "variants.avro_gz";
+        URI uri = URI.create("hdfs:///" + fileName);
         variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.AVRO_GZ, new Query(STUDY.key(), STUDY_NAME), new QueryOptions());
 
-        FileSystem.get(externalResource.getConf()).copyToLocalFile(true, new Path(uri), new Path(outputUri.resolve("variants.avro_gz")));
+        FileSystem.get(externalResource.getConf()).copyToLocalFile(true, new Path(uri), new Path(outputUri.resolve(fileName)));
     }
 
     @Test
     public void exportVcf() throws Exception {
-        URI uri = URI.create("hdfs:///variants.vcf");
+        String fileName = "variants.vcf";
+        URI uri = URI.create("hdfs:///" + fileName);
         variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.VCF, new Query(STUDY.key(), STUDY_NAME), new QueryOptions());
 
-        FileSystem.get(externalResource.getConf()).copyToLocalFile(true, new Path(uri), new Path(outputUri.resolve("variants.vcf")));
+        FileSystem.get(externalResource.getConf()).copyToLocalFile(true, new Path(uri), new Path(outputUri.resolve(fileName)));
     }
 
     @Test
     public void exportIndex() throws Exception {
-        URI uri = URI.create("hdfs:///some_variants.avro");
+        String fileName = "some_variants.avro";
+        URI uri = URI.create("hdfs:///" + fileName);
         variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.AVRO,
                 new Query(STUDY.key(), STUDY_NAME).append(GENOTYPE.key(), "NA19600:0|1,1|0;NA19660:1|1"), new QueryOptions());
 
-        FileSystem.get(externalResource.getConf()).copyToLocalFile(true, new Path(uri), new Path(outputUri.resolve("some_variants.avro")));
+        FileSystem.get(externalResource.getConf()).copyToLocalFile(true, new Path(uri), new Path(outputUri.resolve(fileName)));
+    }
+
+    @Test
+    public void exportFromPhoenix() throws Exception {
+        String fileName = "sift_variants.vcf";
+        URI uri = URI.create("hdfs:///" + fileName);
+        variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.VCF,
+                new Query(STUDY.key(), STUDY_NAME).append(ANNOT_PROTEIN_SUBSTITUTION.key(), "sift<0.2"), new QueryOptions());
+
+        FileSystem.get(externalResource.getConf()).copyToLocalFile(true, new Path(uri), new Path(outputUri.resolve(fileName)));
     }
 
 }
