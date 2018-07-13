@@ -46,7 +46,7 @@ public class DummyProjectMetadataAdaptor implements ProjectMetadataAdaptor {
     }
 
     @Override
-    public synchronized QueryResult updateProjectMetadata(ProjectMetadata projectMetadata) {
+    public synchronized QueryResult updateProjectMetadata(ProjectMetadata projectMetadata, boolean updateCounters) {
         this.projectMetadata = projectMetadata;
         return new QueryResult<>();
     }
@@ -56,7 +56,7 @@ public class DummyProjectMetadataAdaptor implements ProjectMetadataAdaptor {
         ProjectMetadata projectMetadata = getProjectMetadata().first();
         Integer id = projectMetadata.getCounters().compute(idType + (studyConfiguration == null ? "" : ('_' + studyConfiguration.getStudyId())),
                 (key, value) -> value == null ? 1 : value + 1);
-        updateProjectMetadata(projectMetadata);
+        updateProjectMetadata(projectMetadata, true);
         return id;
     }
 

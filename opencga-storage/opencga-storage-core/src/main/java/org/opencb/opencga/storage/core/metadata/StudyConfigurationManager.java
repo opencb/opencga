@@ -399,8 +399,15 @@ public class StudyConfigurationManager implements AutoCloseable {
         }
         try {
             ProjectMetadata projectMetadata = getProjectMetadata().first();
+            int countersHash = (projectMetadata == null ? Collections.emptyMap() : projectMetadata.getCounters()).hashCode();
+
             projectMetadata = function.update(projectMetadata);
-            projectDBAdaptor.updateProjectMetadata(projectMetadata);
+            int newCountersHash = (projectMetadata == null ? Collections.emptyMap() : projectMetadata.getCounters()).hashCode();
+
+            // If the function modifies the internal counters, update them
+            boolean updateCounters = countersHash != newCountersHash;
+
+            projectDBAdaptor.updateProjectMetadata(projectMetadata, updateCounters);
             return projectMetadata;
         } finally {
             projectDBAdaptor.unLockProject(lock);

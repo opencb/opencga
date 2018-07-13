@@ -60,14 +60,14 @@ public class MongoDBProjectMetadataDBAdaptor implements ProjectMetadataAdaptor {
     }
 
     @Override
-    public QueryResult updateProjectMetadata(ProjectMetadata projectMetadata) {
+    public QueryResult updateProjectMetadata(ProjectMetadata projectMetadata, boolean updateCounters) {
         Document mongo = new GenericDocumentComplexConverter<>(ProjectMetadata.class).convertToStorageType(projectMetadata);
 
         // Update field by field, instead of replacing the whole object to preserve existing fields like "_lock"
         List<Bson> updates = new ArrayList<>(mongo.size());
         mongo.forEach((s, o) -> {
             // Do not update counters
-            if (!s.equals(COUNTERS_FIELD)) {
+            if (updateCounters || !s.equals(COUNTERS_FIELD)) {
                 updates.add(new Document("$set", new Document(s, o)));
             }
         });
@@ -107,7 +107,7 @@ public class MongoDBProjectMetadataDBAdaptor implements ProjectMetadataAdaptor {
         try {
             long lock = lockProject(100, 1000);
             if (getProjectMetadata().first() == null) {
-                updateProjectMetadata(new ProjectMetadata());
+                updateProjectMetadata(new ProjectMetadata(), false);
             }
             unLockProject(lock);
         } catch (InterruptedException | TimeoutException e) {

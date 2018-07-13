@@ -318,7 +318,11 @@ public class VariantHbaseTestUtils {
                                 } catch (DataFormatException ignore) { }
                             }
                         }
-                        out.println("\t" + column + "\t" + Bytes.toString(value));
+                        if (column.startsWith("COUNTER_")) {
+                            out.println("\t" + column + "\t" + Bytes.toLong(value));
+                        } else {
+                            out.println("\t" + column + "\t" + Bytes.toString(value));
+                        }
                     }
                 }
             });

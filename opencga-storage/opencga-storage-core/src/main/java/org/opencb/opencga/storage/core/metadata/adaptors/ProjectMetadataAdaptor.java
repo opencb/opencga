@@ -22,7 +22,7 @@ public interface ProjectMetadataAdaptor extends AutoCloseable {
 
     QueryResult<ProjectMetadata> getProjectMetadata();
 
-    QueryResult updateProjectMetadata(ProjectMetadata projectMetadata);
+    QueryResult updateProjectMetadata(ProjectMetadata projectMetadata, boolean updateCounters);
 
     @Override
     default void close() throws IOException {
