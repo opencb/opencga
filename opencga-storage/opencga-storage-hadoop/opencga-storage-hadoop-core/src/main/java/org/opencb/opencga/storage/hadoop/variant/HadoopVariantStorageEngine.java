@@ -392,12 +392,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         }
 
         // Get files
-        Set<Integer> fileIds = new HashSet<>();
-        for (Map.Entry<Integer, LinkedHashSet<Integer>> entry : studyConfiguration.getSamplesInFiles().entrySet()) {
-            if (studyConfiguration.getIndexedFiles().contains(entry.getKey()) && !Collections.disjoint(entry.getValue(), sampleIds)) {
-                fileIds.add(entry.getKey());
-            }
-        }
+        Set<Integer> fileIds = StudyConfigurationManager.getFileIdsFromSampleIds(studyConfiguration, sampleIds);
 
         logger.info("FillGaps: Study " + study + ", samples " + samples);
         fillGapsOrMissing(study, studyConfiguration, fileIds, sampleIds, true, false, options);

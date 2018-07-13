@@ -72,13 +72,13 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
     public static final String STATS_LOAD_PARALLEL = "stats.load.parallel";
     public static final boolean DEFAULT_STATS_LOAD_PARALLEL = true;
 
-    private static final String VARIANT_STATS_SUFFIX = ".variants.stats.json.gz";
-    private static final String SOURCE_STATS_SUFFIX = ".source.stats.json.gz";
+    protected static final String VARIANT_STATS_SUFFIX = ".variants.stats.json.gz";
+    protected static final String SOURCE_STATS_SUFFIX = ".source.stats.json.gz";
 
     private final JsonFactory jsonFactory;
-    private final ObjectMapper jsonObjectMapper;
+    protected final ObjectMapper jsonObjectMapper;
     private final VariantDBAdaptor dbAdaptor;
-    private long numStatsToLoad = 0;
+    protected long numStatsToLoad = 0;
     protected static Logger logger = LoggerFactory.getLogger(DefaultVariantStatisticsManager.class);
 
     public DefaultVariantStatisticsManager(VariantDBAdaptor dbAdaptor) {
@@ -105,7 +105,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
     }
 
 
-    private OutputStream getOutputStream(Path filePath, QueryOptions options) throws IOException {
+    protected OutputStream getOutputStream(Path filePath, QueryOptions options) throws IOException {
         OutputStream outputStream = new FileOutputStream(filePath.toFile());
         logger.info("will write stats to {}", filePath);
         if (filePath.toString().endsWith(".gz")) {
@@ -130,7 +130,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
         return variantDBAdaptor.iterator(iteratorQuery, iteratorQueryOptions);
     }
 
-    public URI createStats(VariantDBAdaptor variantDBAdaptor, URI output, String study, List<String> cohorts,
+    public final URI createStats(VariantDBAdaptor variantDBAdaptor, URI output, String study, List<String> cohorts,
                            QueryOptions options) throws IOException, StorageEngineException {
 
         StudyConfigurationManager studyConfigurationManager = variantDBAdaptor.getStudyConfigurationManager();
@@ -183,8 +183,8 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
         }
 
         //Parse query options
-        int batchSize = options.getInt(Options.LOAD_BATCH_SIZE.key(), 100); // future optimization, threads, etc
-        int numTasks = options.getInt(Options.LOAD_THREADS.key(), 6);
+        int batchSize = options.getInt(Options.LOAD_BATCH_SIZE.key(), Options.LOAD_BATCH_SIZE.defaultValue());
+        int numTasks = options.getInt(Options.LOAD_THREADS.key(), Options.LOAD_THREADS.defaultValue());
         boolean overwrite = options.getBoolean(Options.OVERWRITE_STATS.key(), false);
         boolean updateStats = options.getBoolean(Options.UPDATE_STATS.key(), false);
         Properties tagmap = VariantStatisticsManager.getAggregationMappingProperties(options);
@@ -225,22 +225,11 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
         logger.info("ReaderQueryOptions: " + readerOptions.toJson());
         VariantDBReader reader = new VariantDBReader(studyConfiguration, variantDBAdaptor, readerQuery, readerOptions);
         List<Task<Variant, String>> tasks = new ArrayList<>(numTasks);
-        boolean skipCount = options.getBoolean(QueryOptions.SKIP_COUNT, false);
-        ProgressLogger progressLogger = new ProgressLogger("Calculated stats:",
-                () -> {
-                    if (skipCount) {
-                        return 0L;
-                    } else {
-                        numStatsToLoad = variantDBAdaptor.count(readerQuery).first();
-                        return numStatsToLoad;
-                    }
-                }, 200).setBatchSize(5000);
+        ProgressLogger progressLogger = buildCreateStatsProgressLogger(dbAdaptor, readerQuery, readerOptions);
         for (int i = 0; i < numTasks; i++) {
             tasks.add(new VariantStatsWrapperTask(overwrite, cohorts, studyConfiguration, variantSourceStats, tagmap, progressLogger));
         }
-        Path variantStatsPath = Paths.get(output.getPath() + VARIANT_STATS_SUFFIX);
-        logger.info("will write stats to {}", variantStatsPath);
-        StringDataWriter writer = new StringDataWriter(variantStatsPath, true);
+        StringDataWriter writer = buildVariantStatsStringDataWriter(output);
 
         // runner
         ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder().setNumTasks(numTasks).setBatchSize(batchSize).build();
@@ -273,6 +262,25 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
             checkAndUpdateStudyConfigurationCohorts(sc, cohorts, overwrite, updateStats);
             return sc;
         });
+    }
+
+    protected ProgressLogger buildCreateStatsProgressLogger(VariantDBAdaptor variantDBAdaptor, Query readerQuery, QueryOptions options) {
+        boolean skipCount = options.getBoolean(QueryOptions.SKIP_COUNT, false);
+        return new ProgressLogger("Calculated stats:",
+                () -> {
+                    if (skipCount) {
+                        return 0L;
+                    } else {
+                        numStatsToLoad = variantDBAdaptor.count(readerQuery).first();
+                        return numStatsToLoad;
+                    }
+                }, 200).setBatchSize(5000);
+    }
+
+    protected StringDataWriter buildVariantStatsStringDataWriter(URI output) {
+        Path variantStatsPath = Paths.get(output.getPath() + VARIANT_STATS_SUFFIX);
+        logger.info("will write stats to {}", variantStatsPath);
+        return new StringDataWriter(variantStatsPath, true);
     }
 
     class VariantStatsWrapperTask implements ParallelTaskRunner.Task<Variant, String> {

@@ -83,14 +83,14 @@ public class VariantStatsToHBaseConverter extends AbstractPhoenixConverter imple
                     .setMissingGenotypes(stats.getMissingGenotypes());
 
             if (stats.getMafAllele() != null) {
-                builder.setMaf(stats.getMaf())
-                        .setMafAllele(stats.getMafAllele());
+                builder.setMafAllele(stats.getMafAllele());
             }
+            builder.setMaf(stats.getMaf());
 
             if (stats.getMgfGenotype() != null) {
-                builder.setMgf(stats.getMgf())
-                        .setMgfGenotype(stats.getMgfGenotype());
+                builder.setMgfGenotype(stats.getMgfGenotype());
             }
+            builder.setMgf(stats.getMgf());
 
             if (stats.getGenotypesCount() != null) {
                 Map<String, Integer> map = new HashMap<>(stats.getGenotypesCount().size());

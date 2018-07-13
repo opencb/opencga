@@ -45,11 +45,13 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManag
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
+import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.opencb.opencga.storage.mongodb.annotation.MongoDBVariantAnnotationManager;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
 import org.opencb.opencga.storage.mongodb.metadata.MongoDBVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoVariantImporter;
+import org.opencb.opencga.storage.mongodb.variant.stats.MongoDBVariantStatisticsManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -183,6 +185,11 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     public MongoDBVariantStoragePipeline newStoragePipeline(boolean connected) throws StorageEngineException {
         VariantMongoDBAdaptor dbAdaptor = connected ? getDBAdaptor() : null;
         return new MongoDBVariantStoragePipeline(configuration, STORAGE_ENGINE_ID, dbAdaptor);
+    }
+
+    @Override
+    public VariantStatisticsManager newVariantStatisticsManager() throws StorageEngineException {
+        return new MongoDBVariantStatisticsManager(getDBAdaptor());
     }
 
     @Override

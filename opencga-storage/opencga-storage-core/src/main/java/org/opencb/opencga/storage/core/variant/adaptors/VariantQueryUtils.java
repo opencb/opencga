@@ -433,6 +433,14 @@ public final class VariantQueryUtils {
         private final Map<Integer, List<Integer>> files;
 //        private final Map<Integer, List<Integer>> cohortIds;
 
+        public SelectVariantElements(StudyConfiguration studyConfiguration, List<Integer> samples, List<Integer> files) {
+            this.fields = VariantField.getIncludeFields(null);
+            this.studies = Collections.singletonList(studyConfiguration.getStudyId());
+            this.studyConfigurations = Collections.singletonMap(studyConfiguration.getStudyId(), studyConfiguration);
+            this.samples = Collections.singletonMap(studyConfiguration.getStudyId(), samples);
+            this.files = Collections.singletonMap(studyConfiguration.getStudyId(), files);
+        }
+
         private SelectVariantElements(Set<VariantField> fields, List<Integer> studies, Map<Integer, StudyConfiguration> studyConfigurations,
                                       Map<Integer, List<Integer>> samples, Map<Integer, List<Integer>> files) {
             this.fields = fields;
@@ -639,17 +647,9 @@ public final class VariantQueryUtils {
             } else if (returnAllFiles) {
                 fileIds = new ArrayList<>(sc.getIndexedFiles());
             } else if (includeSamplesList != null && !includeSamplesList.isEmpty()) {
-                Set<Integer> fileSet = new LinkedHashSet<>();
-                for (String sample : includeSamplesList) {
-                    Integer sampleId = StudyConfigurationManager.getSampleIdFromStudy(sample, sc);
-                    if (sampleId != null) {
-                        for (Integer indexedFile : sc.getIndexedFiles()) {
-                            if (sc.getSamplesInFiles().get(indexedFile).contains(sampleId)) {
-                                fileSet.add(indexedFile);
-                            }
-                        }
-                    }
-                }
+                List<Integer> sampleIds = includeSamplesList.stream()
+                        .map(sample -> StudyConfigurationManager.getSampleIdFromStudy(sample, sc)).collect(Collectors.toList());
+                Set<Integer> fileSet = StudyConfigurationManager.getFileIdsFromSampleIds(sc, sampleIds);
                 fileIds = new ArrayList<>(fileSet);
             } else {
                 // Return all files

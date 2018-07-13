@@ -802,6 +802,20 @@ public class StudyConfigurationManager implements AutoCloseable {
         return getResourceIdFromStudy(cohortObj, sc, sc.getCohortIds());
     }
 
+    public static Set<Integer> getFileIdsFromSampleIds(StudyConfiguration studyConfiguration, Integer sampleId) {
+        return getFileIdsFromSampleIds(studyConfiguration, Collections.singleton(sampleId));
+    }
+
+    public static Set<Integer> getFileIdsFromSampleIds(StudyConfiguration studyConfiguration, Collection<Integer> sampleIds) {
+        Set<Integer> fileIds = new HashSet<>();
+        for (Map.Entry<Integer, LinkedHashSet<Integer>> entry : studyConfiguration.getSamplesInFiles().entrySet()) {
+            if (studyConfiguration.getIndexedFiles().contains(entry.getKey()) && !Collections.disjoint(entry.getValue(), sampleIds)) {
+                fileIds.add(entry.getKey());
+            }
+        }
+        return fileIds;
+    }
+
     /*
      * Before load file, the StudyConfiguration has to be updated with the new sample names.
      * If SAMPLE_IDS is missing, will auto-generate sampleIds
