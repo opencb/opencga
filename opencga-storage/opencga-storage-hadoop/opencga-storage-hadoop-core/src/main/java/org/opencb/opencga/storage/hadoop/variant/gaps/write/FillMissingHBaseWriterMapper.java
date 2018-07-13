@@ -50,5 +50,8 @@ public class FillMissingHBaseWriterMapper extends Mapper<BytesWritable, BytesWri
             context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "puts").increment(1);
             context.write(new ImmutableBytesWritable(variantsTable), put);
         }
+
+        // Indicate that the process is still alive
+        context.progress();
     }
 }
