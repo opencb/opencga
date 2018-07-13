@@ -69,8 +69,8 @@ public class HadoopVariantExporter extends VariantExporter {
             int studyId = defaultStudyConfiguration.getStudyId();
 
             ObjectMap options = new ObjectMap(engine.getOptions())
-                    .append("--output", outputFileUri.toString())
-                    .append("--of", outputFormat.toString());
+                    .append(VariantExporterDriver.OUTPUT_PARAM, outputFileUri.toString())
+                    .append(VariantExporterDriver.OUTPUT_FORMAT_PARAM, outputFormat.toString());
             options.putAll(query);
             options.putAll(queryOptions);
 

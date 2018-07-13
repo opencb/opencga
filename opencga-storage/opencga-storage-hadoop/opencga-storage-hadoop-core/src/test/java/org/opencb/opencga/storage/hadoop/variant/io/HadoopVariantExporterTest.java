@@ -90,6 +90,15 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
     }
 
     @Test
+    public void exportJson() throws Exception {
+        String fileName = "variants.json";
+        URI uri = URI.create("hdfs:///" + fileName);
+        variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.JSON, new Query(STUDY.key(), STUDY_NAME), new QueryOptions());
+
+        copyToLocal(fileName, uri);
+    }
+
+    @Test
     public void exportIndex() throws Exception {
         String fileName = "some_variants.avro";
         URI uri = URI.create("hdfs:///" + fileName);

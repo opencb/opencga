@@ -74,6 +74,7 @@ public class VariantWriterFactory {
         AVRO("avro"),
         AVRO_GZ("avro.gz"),
         AVRO_SNAPPY("avro.snappy"),
+        PARQUET("parquet"),
         STATS("stats.tsv", false),
         STATS_GZ("stats.tsv.gz", false),
         CELLBASE("frequencies.json"),
@@ -100,11 +101,11 @@ public class VariantWriterFactory {
             return multiStudy;
         }
 
-        boolean isGzip() {
+        public boolean isGzip() {
             return extension.endsWith(".gz");
         }
 
-        boolean isSnappy() {
+        public boolean isSnappy() {
             return extension.endsWith(".snappy");
         }
 

@@ -8,6 +8,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.compress.GzipCodec;
+import org.apache.hadoop.io.compress.SnappyCodec;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.ToolRunner;
@@ -17,6 +18,7 @@ import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
@@ -24,7 +26,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantSqlQueryPa
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapper;
-import org.opencb.opencga.storage.hadoop.variant.mr.VcfOutputFormat;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantFileOutputFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,23 +51,17 @@ import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.
  */
 public class VariantExporterDriver extends AbstractAnalysisTableDriver {
 
-    private OutputFormat outputFormat;
+    public static final String OUTPUT_FORMAT_PARAM = "--of";
+    public static final String OUTPUT_PARAM = "--output";
+    private VariantOutputFormat outputFormat;
     private String outFile;
     private Query query = new Query();
     private QueryOptions options = new QueryOptions();
 
-    enum OutputFormat {
-        AVRO,
-        AVRO_GZ,
-        PARQUET,
-        VCF,
-        VCF_GZ
-    }
-
     @Override
     protected void parseAndValidateParameters() {
-        outputFormat = OutputFormat.valueOf(getConf().get("--of", "avro").toUpperCase());
-        outFile = getConf().get("--output");
+        outputFormat = VariantOutputFormat.valueOf(getConf().get(OUTPUT_FORMAT_PARAM, "avro").toUpperCase());
+        outFile = getConf().get(OUTPUT_PARAM);
         if (outFile == null || outFile.isEmpty()) {
             throw new IllegalArgumentException(outFile);
         }
@@ -76,16 +72,13 @@ public class VariantExporterDriver extends AbstractAnalysisTableDriver {
     @Override
     protected Class<? extends VariantMapper> getMapperClass() {
         switch (outputFormat) {
-            case VCF:
-            case VCF_GZ:
-                return VcfVariantExporterMapper.class;
             case PARQUET:
                 return ParquetVariantExporterMapper.class;
             case AVRO:
             case AVRO_GZ:
                 return AvroVariantExporterMapper.class;
             default:
-                throw new IllegalArgumentException(outputFormat.toString());
+                return VariantExporterMapper.class;
         }
     }
     private final Logger logger = LoggerFactory.getLogger(VariantExporterDriver.class);
@@ -126,14 +119,6 @@ public class VariantExporterDriver extends AbstractAnalysisTableDriver {
                 query.getString(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./."));
 
         switch (outputFormat) {
-            case VCF_GZ:
-                FileOutputFormat.setOutputCompressorClass(job, GzipCodec.class); // compression
-                // do not break
-            case VCF:
-                job.setOutputFormatClass(VcfOutputFormat.class);
-                job.setOutputKeyClass(Variant.class);
-                break;
-
             case AVRO_GZ:
                 FileOutputFormat.setCompressOutput(job, true);
                 job.getConfiguration().set(AvroJob.CONF_OUTPUT_CODEC, DataFileConstants.DEFLATE_CODEC);
@@ -148,7 +133,14 @@ public class VariantExporterDriver extends AbstractAnalysisTableDriver {
                 AvroParquetOutputFormat.setSchema(job, VariantAvro.getClassSchema());
                 break;
             default:
-                throw new IllegalArgumentException("Unknown output format " + outputFormat);
+                if (outputFormat.isGzip()) {
+                    FileOutputFormat.setOutputCompressorClass(job, GzipCodec.class); // compression
+                } else if (outputFormat.isSnappy()) {
+                    FileOutputFormat.setOutputCompressorClass(job, SnappyCodec.class); // compression
+                }
+                job.setOutputFormatClass(VariantFileOutputFormat.class);
+                job.setOutputKeyClass(Variant.class);
+                break;
         }
 
         return job;
@@ -159,7 +151,7 @@ public class VariantExporterDriver extends AbstractAnalysisTableDriver {
         return "export_" + outputFormat;
     }
 
-    public static class VcfVariantExporterMapper extends VariantMapper<Variant, NullWritable> {
+    public static class VariantExporterMapper extends VariantMapper<Variant, NullWritable> {
         @Override
         protected void map(Object key, Variant value, Context context) throws IOException, InterruptedException {
             context.getCounter(COUNTER_GROUP_NAME, "variants").increment(1);

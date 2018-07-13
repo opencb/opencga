@@ -30,9 +30,10 @@ import org.apache.hadoop.util.ReflectionUtils;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
-import org.opencb.opencga.storage.core.variant.io.VcfDataWriter;
+import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 
@@ -40,14 +41,16 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
+import static org.opencb.opencga.storage.hadoop.variant.io.VariantExporterDriver.OUTPUT_FORMAT_PARAM;
+
 /**
  * Created by mh719 on 21/12/2016.
  *
  * @author Matthias Haimel
  */
-public class VcfOutputFormat extends FileOutputFormat<Variant, NullWritable> {
+public class VariantFileOutputFormat extends FileOutputFormat<Variant, NullWritable> {
 
-    public VcfOutputFormat() {
+    public VariantFileOutputFormat() {
         // do nothing
     }
 
@@ -68,25 +71,25 @@ public class VcfOutputFormat extends FileOutputFormat<Variant, NullWritable> {
         FileSystem fs = file.getFileSystem(conf);
         FSDataOutputStream fileOut = fs.create(file, false);
         if (!isCompressed) {
-            return new VcfOutputFormat.VcfRecordWriter(configureWriter(job, fileOut));
+            return new VariantRecordWriter(configureWriter(job, fileOut));
         } else {
             DataOutputStream out = new DataOutputStream(codec.createOutputStream(fileOut));
-            return new VcfOutputFormat.VcfRecordWriter(configureWriter(job, out));
+            return new VariantRecordWriter(configureWriter(job, out));
         }
     }
 
-    private VcfDataWriter<Variant> configureWriter(final TaskAttemptContext job, OutputStream fileOut) throws IOException {
+    private DataWriter<Variant> configureWriter(final TaskAttemptContext job, OutputStream fileOut) throws IOException {
 //        job.getCounter(VcfDataWriter.class.getName(), "failed").increment(0); // init
         final Configuration conf = job.getConfiguration();
+        VariantOutputFormat outputFormat = VariantOutputFormat.valueOf(conf.get(OUTPUT_FORMAT_PARAM));
 
-        VcfDataWriter<Variant> dataWriter;
+        DataWriter<Variant> dataWriter;
         VariantTableHelper helper = new VariantTableHelper(conf);
         try (StudyConfigurationManager scm = new StudyConfigurationManager(new HBaseVariantStorageMetadataDBAdaptorFactory(helper))) {
             VariantWriterFactory writerFactory = new VariantWriterFactory(scm);
             Query query = VariantMapReduceUtil.getQueryFromConfig(conf);
             QueryOptions options = VariantMapReduceUtil.getQueryOptionsFromConfig(conf);
-            dataWriter = (VcfDataWriter<Variant>) writerFactory.newDataWriter(
-                    VariantWriterFactory.VariantOutputFormat.VCF, fileOut, query, options);
+            dataWriter = writerFactory.newDataWriter(outputFormat, fileOut, query, options);
 
 //            dataWriter.setConverterErrorListener((v, e) ->
 //                    job.getCounter(VcfDataWriter.class.getName(), "failed").increment(1));
@@ -97,10 +100,10 @@ public class VcfOutputFormat extends FileOutputFormat<Variant, NullWritable> {
         }
     }
 
-    protected static class VcfRecordWriter extends RecordWriter<Variant, NullWritable> {
-        private final VcfDataWriter<Variant> writer;
+    protected static class VariantRecordWriter extends RecordWriter<Variant, NullWritable> {
+        private final DataWriter<Variant> writer;
 
-        public VcfRecordWriter(VcfDataWriter<Variant> writer) {
+        public VariantRecordWriter(DataWriter<Variant> writer) {
             this.writer = writer;
         }
 
