@@ -75,6 +75,7 @@ public class VariantWriterFactory {
         AVRO_GZ("avro.gz"),
         AVRO_SNAPPY("avro.snappy"),
         PARQUET("parquet"),
+        PARQUET_GZ("parquet.gz"),
         STATS("stats.tsv", false),
         STATS_GZ("stats.tsv.gz", false),
         CELLBASE("frequencies.json"),

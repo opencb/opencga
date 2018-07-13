@@ -99,6 +99,15 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
     }
 
     @Test
+    public void exportParquet() throws Exception {
+        String fileName = "variants.parquet";
+        URI uri = URI.create("hdfs:///" + fileName);
+        variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.PARQUET_GZ, new Query(STUDY.key(), STUDY_NAME), new QueryOptions());
+
+        copyToLocal(fileName, uri);
+    }
+
+    @Test
     public void exportIndex() throws Exception {
         String fileName = "some_variants.avro";
         URI uri = URI.create("hdfs:///" + fileName);

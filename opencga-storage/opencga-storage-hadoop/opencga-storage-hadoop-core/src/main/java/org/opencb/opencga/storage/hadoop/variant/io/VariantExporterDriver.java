@@ -12,7 +12,10 @@ import org.apache.hadoop.io.compress.SnappyCodec;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.ToolRunner;
+import org.apache.parquet.Log;
 import org.apache.parquet.avro.AvroParquetOutputFormat;
+import org.apache.parquet.hadoop.ParquetOutputFormat;
+import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.commons.datastore.core.Query;
@@ -24,13 +27,15 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantSqlQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQuery;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantFileOutputFormat;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapper;
-import org.opencb.opencga.storage.hadoop.variant.mr.VariantFileOutputFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.logging.Handler;
+import java.util.logging.Level;
 
 import static org.opencb.opencga.storage.hadoop.variant.mr.AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME;
 import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.getQueryFromConfig;
@@ -72,6 +77,7 @@ public class VariantExporterDriver extends AbstractAnalysisTableDriver {
     @Override
     protected Class<? extends VariantMapper> getMapperClass() {
         switch (outputFormat) {
+            case PARQUET_GZ:
             case PARQUET:
                 return ParquetVariantExporterMapper.class;
             case AVRO:
@@ -128,6 +134,9 @@ public class VariantExporterDriver extends AbstractAnalysisTableDriver {
                 AvroJob.setOutputKeySchema(job, VariantAvro.getClassSchema());
                 break;
 
+            case PARQUET_GZ:
+                ParquetOutputFormat.setCompression(job, CompressionCodecName.GZIP);
+                // do not break
             case PARQUET:
                 job.setOutputFormatClass(AvroParquetOutputFormat.class);
                 AvroParquetOutputFormat.setSchema(job, VariantAvro.getClassSchema());
@@ -167,11 +176,32 @@ public class VariantExporterDriver extends AbstractAnalysisTableDriver {
         }
     }
 
-    public static class ParquetVariantExporterMapper extends VariantMapper<AvroKey<VariantAvro>, NullWritable> {
+    public static class ParquetVariantExporterMapper extends VariantMapper<Void, VariantAvro> {
+
+        @Override
+        protected void setup(Context context) throws IOException, InterruptedException {
+            super.setup(context);
+            silenceParquet();
+        }
+
+        public static void silenceParquet() {
+            java.util.logging.Logger logger = java.util.logging.Logger.getLogger(Log.class.getPackage().getName());
+            logger.setLevel(Level.WARNING);
+            Handler[] handlers = logger.getHandlers();
+            if (handlers != null) {
+                for (Handler handler : handlers) {
+                    handler.setLevel(Level.WARNING);
+//                    if (handler instanceof StreamHandler) {
+//                        logger.removeHandler(handler);
+//                    }
+                }
+            }
+        }
+
         @Override
         protected void map(Object key, Variant value, Context context) throws IOException, InterruptedException {
             context.getCounter(COUNTER_GROUP_NAME, "variants").increment(1);
-            context.write(new AvroKey<>(value.getImpl()), NullWritable.get());
+            context.write(null, value.getImpl());
         }
     }
 
