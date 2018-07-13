@@ -23,16 +23,17 @@ import org.opencb.opencga.core.models.DiseasePanel;
 /**
  * Created by pfurio on 01/06/16.
  */
-public class PanelConverter extends GenericDocumentComplexConverter<DiseasePanel> {
+public class DiseasePanelConverter extends GenericDocumentComplexConverter<DiseasePanel> {
 
-    public PanelConverter() {
+    public DiseasePanelConverter() {
         super(DiseasePanel.class);
     }
 
     @Override
     public Document convertToStorageType(DiseasePanel object) {
         Document document = super.convertToStorageType(object);
-        document.put("id", document.getInteger("id").longValue());
+        document.put("uid", object.getUid());
+        document.put("studyUid", object.getStudyUid());
         return document;
     }
 

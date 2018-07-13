@@ -53,7 +53,8 @@ public class VariantTableHelper extends GenomeHelper {
     public static final String OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_INPUT = "opencga.storage.hadoop.vcf.transform.table.input";
     private final byte[] analysisTable;
     private final byte[] archiveTable;
-    private final byte[] metaTable;
+    private HBaseVariantTableNameGenerator generator;
+    private int studyId;
 
     public VariantTableHelper(Configuration conf) {
         this(conf, conf.get(OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_INPUT, StringUtils.EMPTY),
@@ -71,8 +72,9 @@ public class VariantTableHelper extends GenomeHelper {
         this.analysisTable = Bytes.toBytes(analysisTable);
         this.archiveTable = Bytes.toBytes(archiveTable);
         String dbName = HBaseVariantTableNameGenerator.getDBNameFromVariantsTableName(analysisTable);
-        HBaseVariantTableNameGenerator generator = new HBaseVariantTableNameGenerator(dbName, conf);
-        this.metaTable = Bytes.toBytes(generator.getMetaTableName());
+        generator = new HBaseVariantTableNameGenerator(dbName, conf);
+
+        studyId = HBaseVariantTableNameGenerator.getStudyIdFromArchiveTable(archiveTable);
     }
 
     public boolean createVariantTableIfNeeded(Connection con) throws IOException {
@@ -144,12 +146,13 @@ public class VariantTableHelper extends GenomeHelper {
     public byte[] getAnalysisTable() {
         return analysisTable;
     }
+
     public byte[] getMetaTable() {
-        return metaTable;
+        return Bytes.toBytes(generator.getMetaTableName());
     }
 
     public String getMetaTableAsString() {
-        return Bytes.toString(metaTable);
+        return generator.getMetaTableName();
     }
 
     public String getAnalysisTableAsString() {
@@ -162,5 +165,13 @@ public class VariantTableHelper extends GenomeHelper {
 
     public static void setArchiveTable(Configuration conf, String archiveTable) {
         conf.set(OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_INPUT, archiveTable);
+    }
+
+    public int getStudyId() {
+        return studyId;
+    }
+
+    public HBaseVariantTableNameGenerator getHBaseVariantTableNameGenerator() {
+        return generator;
     }
 }

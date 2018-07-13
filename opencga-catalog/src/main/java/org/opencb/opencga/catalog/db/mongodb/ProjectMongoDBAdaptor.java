@@ -714,6 +714,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case NAME:
+                    case UUID:
                     case ID:
                     case FQN:
                     case DESCRIPTION:

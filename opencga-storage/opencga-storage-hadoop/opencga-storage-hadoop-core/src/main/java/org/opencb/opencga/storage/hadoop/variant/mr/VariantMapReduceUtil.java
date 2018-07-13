@@ -3,7 +3,10 @@ package org.opencb.opencga.storage.hadoop.variant.mr;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
+import org.apache.hadoop.hbase.mapreduce.MultiTableOutputFormat;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -48,6 +51,13 @@ public class VariantMapReduceUtil {
             throws IOException {
         initTableMapperJob(job, inTable, scans, mapperClass);
         setOutputHBaseTable(job, outTable);
+        setNoneReduce(job);
+    }
+
+    public static void initTableMapperMultiOutputJob(Job job, String inTable, List<Scan> scans, Class<? extends TableMapper> mapperClass)
+            throws IOException {
+        initTableMapperJob(job, inTable, scans, mapperClass);
+        setMultiTableOutput(job);
         setNoneReduce(job);
     }
 
@@ -147,6 +157,20 @@ public class VariantMapReduceUtil {
                 job,
                 null, null, null, null,
                 addDependencyJar);
+    }
+
+    public static void setMultiTableOutput(Job job) throws IOException {
+        job.setOutputFormatClass(MultiTableOutputFormat.class);
+
+        boolean addDependencyJars = job.getConfiguration().getBoolean(HadoopVariantStorageEngine.MAPREDUCE_ADD_DEPENDENCY_JARS, true);
+
+        if (addDependencyJars) {
+            TableMapReduceUtil.addDependencyJars(job);
+        }
+        job.setOutputKeyClass(ImmutableBytesWritable.class);
+        job.setOutputValueClass(Mutation.class);
+
+        TableMapReduceUtil.initCredentials(job);
     }
 
     public static void configureVariantConverter(Configuration configuration,

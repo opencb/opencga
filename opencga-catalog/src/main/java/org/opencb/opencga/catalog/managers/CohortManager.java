@@ -39,6 +39,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -78,11 +79,15 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     @Override
     Cohort smartResolutor(long studyUid, String entry, String user) throws CatalogException {
         Query query = new Query()
-                .append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                .append(CohortDBAdaptor.QueryParams.ID.key(), entry);
+                .append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+        if (UUIDUtils.isOpenCGAUUID(entry)) {
+            query.put(CohortDBAdaptor.QueryParams.UUID.key(), entry);
+        } else {
+            query.put(CohortDBAdaptor.QueryParams.ID.key(), entry);
+        }
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                CohortDBAdaptor.QueryParams.UID.key(), CohortDBAdaptor.QueryParams.STUDY_UID.key(), CohortDBAdaptor.QueryParams.ID.key(),
-                CohortDBAdaptor.QueryParams.RELEASE.key(), CohortDBAdaptor.QueryParams.SAMPLES.key(),
+                CohortDBAdaptor.QueryParams.UUID.key(), CohortDBAdaptor.QueryParams.UID.key(), CohortDBAdaptor.QueryParams.STUDY_UID.key(),
+                CohortDBAdaptor.QueryParams.ID.key(), CohortDBAdaptor.QueryParams.RELEASE.key(), CohortDBAdaptor.QueryParams.SAMPLES.key(),
                 CohortDBAdaptor.QueryParams.STATUS.key()));
         QueryResult<Cohort> cohortQueryResult = cohortDBAdaptor.get(query, options, user);
         if (cohortQueryResult.getNumResults() == 0) {
@@ -146,6 +151,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             }
         }
 
+        cohort.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.COHORT));
         QueryResult<Cohort> queryResult = cohortDBAdaptor.insert(study.getUid(), cohort, variableSetList, null);
         auditManager.recordCreation(AuditRecord.Resource.cohort, queryResult.first().getUid(), userId, queryResult.first(), null, null);
         return queryResult;

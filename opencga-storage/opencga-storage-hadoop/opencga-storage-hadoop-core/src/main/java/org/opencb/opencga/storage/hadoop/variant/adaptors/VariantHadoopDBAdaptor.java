@@ -40,7 +40,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -250,7 +250,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             numTotalResults = variants.size();
         } else {
             if (options.getInt(QueryOptions.LIMIT, -1) > 0) {
-                if (options.getBoolean(QueryOptions.SKIP_COUNT, true)) {
+                if (options.getBoolean(QueryOptions.SKIP_COUNT, DEFAULT_SKIP_COUNT)) {
                     numTotalResults = -1;
                 } else {
                     numTotalResults = count(query).first();
@@ -474,7 +474,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             logger.debug("Table name = " + variantTable);
             VariantSqlQueryParser.VariantPhoenixSQLQuery phoenixQuery = queryParser.parse(query, options);
             String sql = phoenixQuery.getSql();
-            logger.info("Query : " + query.toJson());
+            logger.info("Query : " + VariantQueryUtils.printQuery(query));
             logger.info(sql);
             logger.debug("Creating {} iterator", VariantHBaseResultSetIterator.class);
             try {

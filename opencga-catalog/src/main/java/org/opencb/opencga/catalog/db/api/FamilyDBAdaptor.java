@@ -39,8 +39,9 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
 
     enum QueryParams implements QueryParam {
-        UID("uid", INTEGER, ""),
         ID("id", TEXT, ""),
+        UID("uid", INTEGER, ""),
+        UUID("uuid", TEXT, ""),
         NAME("name", TEXT, ""),
         MEMBERS("members", TEXT_ARRAY, ""),
         MEMBER_UID("members.uid", INTEGER, ""),

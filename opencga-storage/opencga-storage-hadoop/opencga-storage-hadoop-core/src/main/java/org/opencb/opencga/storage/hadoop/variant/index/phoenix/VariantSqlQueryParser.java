@@ -34,6 +34,7 @@ import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTask;
 import org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus;
@@ -59,6 +60,17 @@ import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPho
  */
 public class VariantSqlQueryParser {
 
+    public static final List<String> DEFAULT_LOADED_GENOTYPES = Collections.unmodifiableList(Arrays.asList(
+            ".", "./.",
+            "0/0", "0|0",
+            "0/1", "1/0", "1/1",
+            "0/2", "1/2", "2/2",
+            "0/3", "1/3", "2/3", "3/3",
+            ".|.",
+            "0|1", "1|0", "1|1",
+            "0|2", "2|0", "2|1", "1|2", "2|2",
+            "0|3", "1|3", "2|3", "3|3",
+            "3|0", "3|1", "3|2"));
     private final GenomeHelper genomeHelper;
     private final String variantTable;
     private final Logger logger = LoggerFactory.getLogger(VariantSqlQueryParser.class);
@@ -281,6 +293,13 @@ public class VariantSqlQueryParser {
 
     protected StringBuilder appendFilters(StringBuilder sb, List<String> filters, QueryOperation logicalOperation) {
         String delimiter;
+        if (logicalOperation == null) {
+            if (filters.size() == 1) {
+                return sb.append(" ( ").append(filters.get(0)).append(" ) ");
+            } else {
+                throw new VariantQueryException("Missing logical operation!");
+            }
+        }
         switch (logicalOperation) {
             case AND:
                 delimiter = " ) AND ( ";
@@ -705,9 +724,10 @@ public class VariantSqlQueryParser {
         }
 
         Map<Object, List<String>> genotypesMap = new HashMap<>();
+        QueryOperation genotypeQueryOperation = QueryOperation.AND;
         if (isValidParam(query, GENOTYPE)) {
             // NA12877_01 :  0/0  ;  NA12878_01 :  0/1  ,  1/1
-            parseGenotypeFilter(query.getString(GENOTYPE.key()), genotypesMap);
+            genotypeQueryOperation = parseGenotypeFilter(query.getString(GENOTYPE.key()), genotypesMap);
         }
         if (isValidParam(query, SAMPLE)) {
             String value = query.getString(SAMPLE.key());
@@ -720,6 +740,7 @@ public class VariantSqlQueryParser {
         }
 
         if (!genotypesMap.isEmpty()) {
+            List<String> gtFilters = new ArrayList<>(genotypesMap.size());
             for (Map.Entry<Object, List<String>> entry : genotypesMap.entrySet()) {
                 if (defaultStudyConfiguration == null) {
                     List<String> studyNames = studyConfigurationManager.getStudyNames(null);
@@ -728,18 +749,13 @@ public class VariantSqlQueryParser {
                 int studyId = defaultStudyConfiguration.getStudyId();
                 int sampleId = studyConfigurationManager.getSampleId(entry.getKey(), defaultStudyConfiguration);
                 Set<String> genotypes = new LinkedHashSet<>(entry.getValue().size());
-                // TODO: Read LOADED_GENOTYPES from StudyConfiguration!
-                List<String> loadedGenotypes = Arrays.asList(
-                        ".", "./.",
-                        "0/0", "0|0",
-                        "0/1", "1/0", "1/1",
-                        "0/2", "1/2", "2/2",
-                        "0/3", "1/3", "2/3", "3/3",
-                        ".|.",
-                        "0|1", "1|0", "1|1",
-                        "0|2", "2|0", "2|1", "1|2", "2|2",
-                        "0|3", "1|3", "2|3", "3|3",
-                        "3|0", "3|1", "3|2");
+                List<String> loadedGenotypes;
+                if (defaultStudyConfiguration.getAttributes().containsKey(HadoopVariantStorageEngine.LOADED_GENOTYPES)) {
+                    loadedGenotypes = defaultStudyConfiguration.getAttributes()
+                            .getAsStringList(HadoopVariantStorageEngine.LOADED_GENOTYPES);
+                } else {
+                    loadedGenotypes = DEFAULT_LOADED_GENOTYPES;
+                }
 
                 for (String gt : entry.getValue()) {
                     GenotypeClass genotypeClass = GenotypeClass.from(gt);
@@ -747,6 +763,7 @@ public class VariantSqlQueryParser {
                         genotypes.add(gt);
                     } else {
                         genotypes.addAll(genotypeClass.filter(loadedGenotypes));
+                        genotypes.addAll(genotypeClass.filter("0/0", "./."));
                     }
                 }
                 // If empty, should find none. Add non-existing genotype
@@ -755,7 +772,7 @@ public class VariantSqlQueryParser {
                     genotypes.add("x/x");
                 }
 
-                List<String> gtFilters = new ArrayList<>(genotypes.size());
+                List<String> sampleGtFilters = new ArrayList<>(genotypes.size());
                 final boolean negated;
                 if (genotypes.stream().allMatch(VariantQueryUtils::isNegated)) {
                     negated = true;
@@ -791,14 +808,15 @@ public class VariantSqlQueryParser {
                             filter = '"' + key + "\"[1] = '" + genotype + '\'';
                         }
                     }
-                    gtFilters.add(filter);
+                    sampleGtFilters.add(filter);
                 }
-                if (!negated) {
-                    filters.add(gtFilters.stream().collect(Collectors.joining(" OR ", " ( ", " ) ")));
+                if (negated) {
+                    gtFilters.add(appendFilters(sampleGtFilters, QueryOperation.AND));
                 } else {
-                    filters.add(gtFilters.stream().collect(Collectors.joining(" AND ", " ( ", " ) ")));
+                    gtFilters.add(appendFilters(sampleGtFilters, QueryOperation.OR));
                 }
             }
+            filters.add(appendFilters(gtFilters, genotypeQueryOperation));
         }
 
         if (isValidParam(query, RELEASE)) {
@@ -1273,8 +1291,11 @@ public class VariantSqlQueryParser {
     }
 
     private String checkStringValue(String value) {
+        if (value == null) {
+            throw new VariantQueryException("Unable to query null text field");
+        }
         if (value.contains("'")) {
-            throw new VariantQueryException("Unable to query text field using \"'\"");
+            throw new VariantQueryException("Unable to query text field with \"'\" : " + value);
         }
         return value;
     }

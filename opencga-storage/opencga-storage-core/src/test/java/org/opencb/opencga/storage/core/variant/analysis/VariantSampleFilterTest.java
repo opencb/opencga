@@ -6,7 +6,7 @@ import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantIterable;
 
 import java.util.*;
@@ -42,13 +42,11 @@ public class VariantSampleFilterTest {
                         .setStudyId(STUDY).setFormat("GT").addSample(S1, "1/1").addSample(S2, "0/1").addSample(S3, "1/1").build()
         );
 
-        VariantIterable iterable = (query, options) -> new VariantDBIterator() {
-            private List<String> queryVariants = query.getAsStringList("id");
-            private Iterator<Variant> iterator = Iterators.filter(variants.iterator(),
+        VariantIterable iterable = (query, options) -> {
+            List<String> queryVariants = query.getAsStringList("id");
+            Iterator<Variant> iterator = Iterators.filter(variants.iterator(),
                     variant -> queryVariants.isEmpty() || queryVariants.contains(variant.toString()));
-
-            @Override public boolean hasNext() { return iterator.hasNext(); }
-            @Override public Variant next() { return iterator.next(); }
+            return VariantDBIterator.wrapper(iterator);
         };
         filter = new VariantSampleFilter(iterable);
     }

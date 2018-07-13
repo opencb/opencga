@@ -85,9 +85,8 @@ public class FillGapsDriver extends AbstractAnalysisTableDriver {
                 logger.info("[" + i + "] Scan archive table " + archiveTableName + " with scan " + scan.toString(50));
             }
 
-            boolean directWrite = false;
-            if (fillGaps || directWrite) {
-                VariantMapReduceUtil.initTableMapperJob(job, archiveTableName, variantTableName, scans, FillGapsFromArchiveMapper.class);
+            if (fillGaps) {
+                VariantMapReduceUtil.initTableMapperMultiOutputJob(job, archiveTableName, scans, FillGapsFromArchiveMapper.class);
             } else {
                 // input
                 VariantMapReduceUtil.initTableMapperJob(job, archiveTableName, scans, FillMissingFromArchiveMapper.class);

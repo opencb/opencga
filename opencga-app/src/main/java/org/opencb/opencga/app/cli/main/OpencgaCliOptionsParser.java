@@ -194,6 +194,14 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         familySubCommands.addCommand("annotation-sets-update", familyCommandOptions.annotationUpdateCommandOptions);
         familySubCommands.addCommand("annotation-sets-delete", familyCommandOptions.annotationDeleteCommandOptions);
 
+        panelCommandOptions = new PanelCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
+        jCommander.addCommand("panels", panelCommandOptions);
+        JCommander panelSubcommands = jCommander.getCommands().get("panels");
+        panelSubcommands.addCommand("info", panelCommandOptions.infoCommandOptions);
+        panelSubcommands.addCommand("search", panelCommandOptions.searchCommandOptions);
+        panelSubcommands.addCommand("acl", panelCommandOptions.aclsCommandOptions);
+        panelSubcommands.addCommand("acl-update", panelCommandOptions.aclsUpdateCommandOptions);
+
         sampleCommandOptions = new SampleCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand("samples", sampleCommandOptions);
         JCommander sampleSubCommands = jCommander.getCommands().get("samples");

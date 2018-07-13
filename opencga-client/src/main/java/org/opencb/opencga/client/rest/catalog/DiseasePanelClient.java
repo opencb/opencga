@@ -27,10 +27,10 @@ import java.io.IOException;
 /**
  * Created by pfurio on 10/06/16.
  */
-public class PanelClient extends CatalogClient<DiseasePanel, DiseasePanelAclEntry> {
+public class DiseasePanelClient extends CatalogClient<DiseasePanel, DiseasePanelAclEntry> {
     private static final String PANEL_URL = "panels";
 
-    public PanelClient(String userId, String sessionId, ClientConfiguration configuration) {
+    public DiseasePanelClient(String userId, String sessionId, ClientConfiguration configuration) {
         super(userId, sessionId, configuration);
 
         this.category = PANEL_URL;
@@ -43,4 +43,10 @@ public class PanelClient extends CatalogClient<DiseasePanel, DiseasePanelAclEntr
         params = addParamsToObjectMap(params, "studyId", studyId, "name", name, "disease", disease);
         return execute(PANEL_URL, "create", params, GET, DiseasePanel.class);
     }
+
+    public QueryResponse<ObjectMap> groupBy(String studyId, String fields, ObjectMap params) throws IOException {
+        params = addParamsToObjectMap(params, "study", studyId, "fields", fields);
+        return execute(PANEL_URL, "groupBy", params, GET, ObjectMap.class);
+    }
+
 }

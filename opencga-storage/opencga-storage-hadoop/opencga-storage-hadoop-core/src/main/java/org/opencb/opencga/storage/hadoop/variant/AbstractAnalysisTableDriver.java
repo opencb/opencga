@@ -127,7 +127,7 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
             logger.error("error with job!");
         }
 
-        postExecution(succeed);
+        postExecution(job);
         if (scm != null) {
             scm.close();
             scm = null;
@@ -137,6 +137,10 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
 
     protected void preExecution(String variantTable) throws IOException, StorageEngineException {
         // do nothing
+    }
+
+    protected void postExecution(Job job) throws IOException, StorageEngineException {
+        postExecution(job.isSuccessful());
     }
 
     protected void postExecution(boolean succeed) throws IOException, StorageEngineException {

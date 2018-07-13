@@ -31,9 +31,9 @@ import java.util.Objects;
  */
 public class File extends PrivateStudyUid {
 
-    private String uuid;
     private String id;
     private String name;
+    private String uuid;
 
     /**
      * Formats: file, folder, index.
@@ -66,9 +66,8 @@ public class File extends PrivateStudyUid {
     private Software software;
     private Experiment experiment;
     private List<Sample> samples;
-    @Deprecated
-    private List<Long> sampleIds;
 
+    private List<String> tags;
 
     /**
      * This field values -1 when file has been uploaded.
@@ -122,6 +121,7 @@ public class File extends PrivateStudyUid {
         this.software = software;
         this.experiment = experiment;
         this.samples = samples;
+        this.tags = Collections.emptyList();
         this.job = job;
         this.relatedFiles = relatedFiles;
         this.index = index != null ? index : new FileIndex();
@@ -330,7 +330,6 @@ public class File extends PrivateStudyUid {
         sb.append(", path='").append(path).append('\'');
         sb.append(", release=").append(release);
         sb.append(", creationDate='").append(creationDate).append('\'');
-        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", status=").append(status);
         sb.append(", external=").append(external);
@@ -338,6 +337,7 @@ public class File extends PrivateStudyUid {
         sb.append(", software=").append(software);
         sb.append(", experiment=").append(experiment);
         sb.append(", samples=").append(samples);
+        sb.append(", tags=").append(tags);
         sb.append(", job=").append(job);
         sb.append(", relatedFiles=").append(relatedFiles);
         sb.append(", index=").append(index);
@@ -515,6 +515,15 @@ public class File extends PrivateStudyUid {
         return this;
     }
 
+    public List<String> getTags() {
+        return tags;
+    }
+
+    public File setTags(List<String> tags) {
+        this.tags = tags;
+        return this;
+    }
+
     public Experiment getExperiment() {
         return experiment;
     }
@@ -566,17 +575,6 @@ public class File extends PrivateStudyUid {
 
     public File setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
-        return this;
-    }
-
-    @Deprecated
-    public List<Long> getSampleIds() {
-        return sampleIds;
-    }
-
-    @Deprecated
-    public File setSampleIds(List<Long> sampleIds) {
-        this.sampleIds = sampleIds;
         return this;
     }
 

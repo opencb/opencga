@@ -88,8 +88,9 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
     void unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
 
     enum QueryParams implements QueryParam {
-        UID("uid", INTEGER_ARRAY, ""),
         ID("id", TEXT, ""),
+        UID("uid", INTEGER_ARRAY, ""),
+        UUID("uuid", TEXT, ""),
         NAME("name", TEXT_ARRAY, ""),
         USER_ID("userId", TEXT_ARRAY, ""),
         TOOL_NAME("toolName", TEXT_ARRAY, ""),

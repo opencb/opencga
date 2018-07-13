@@ -29,9 +29,9 @@ import java.util.*;
  */
 public class Study extends PrivateFields {
 
-    private String uuid;
     private String id;
     private String name;
+    private String uuid;
     private String alias;
     private Type type;
     private String creationDate;
@@ -135,7 +135,8 @@ public class Study extends PrivateFields {
         INDIVIDUALS(org.opencb.opencga.core.common.Entity.INDIVIDUAL),
         FAMILIES(org.opencb.opencga.core.common.Entity.FAMILY),
         JOBS(org.opencb.opencga.core.common.Entity.JOB),
-        CLINICAL_ANALYSES(org.opencb.opencga.core.common.Entity.CLINICAL_ANALYSIS);
+        CLINICAL_ANALYSES(org.opencb.opencga.core.common.Entity.CLINICAL_ANALYSIS),
+        PANELS(org.opencb.opencga.core.common.Entity.PANEL);
 
         private final org.opencb.opencga.core.common.Entity entity;
 

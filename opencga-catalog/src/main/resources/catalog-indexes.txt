@@ -26,6 +26,7 @@
 {"collection": "file", "fields": {"format": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"bioformat": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"uri": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "file", "fields": {"tags": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"path": 1, "studyUid": 1}, "options": {"unique": true, "background": true}}
 {"collection": "file", "fields": {"status.name": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"samples.uid": 1}, "options": {"background": true}}
@@ -74,3 +75,6 @@
 {"collection": "family", "fields": {"annotationSets.name": 1}, "options": {"background": true}}
 {"collection": "family", "fields": {"annotationSets.variableSetId": 1}, "options": {"background": true}}
 {"collection": "family", "fields": {"annotationSets.annotations.name": 1, "annotationSets.annotations.value": 1}, "options": {"background": true}}
+
+{"collection": "diseasePanel", "fields": {"id": 1, "studyUid": 1, "version": 1}, "options": {"unique": true, "background": true}}
+{"collection": "diseasePanel", "fields": {"uid": 1, "version": 1}, "options": {"unique": true, "background": true}}

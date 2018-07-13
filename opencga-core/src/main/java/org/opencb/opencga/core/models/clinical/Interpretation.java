@@ -1,6 +1,6 @@
 package org.opencb.opencga.core.models.clinical;
 
-import org.opencb.opencga.core.models.ClinicalAnalysis;
+import org.opencb.opencga.core.models.DiseasePanel;
 import org.opencb.opencga.core.models.Software;
 
 import java.util.List;
@@ -8,12 +8,12 @@ import java.util.Map;
 
 public class Interpretation {
 
-    private long id;
+    private String id;
+    @Deprecated
     private String name;
     private String description;
 
-    private ClinicalAnalysis clinicalAnalysis;
-
+    private DiseasePanel panel;
     private Software software;
     private Analyst analyst;
     private List<Version> versions;
@@ -28,13 +28,13 @@ public class Interpretation {
     public Interpretation() {
     }
 
-    public Interpretation(long id, String name, String description, ClinicalAnalysis clinicalAnalysis, Software software, Analyst
-            analyst, List<Version> versions, Map<String, Object> filters, String creationDate, List<Comment> comments,
-                          Map<String, Object> attributes, List<ReportedVariant> reportedVariants) {
+    public Interpretation(String id, String name, String description, DiseasePanel panel, Software software, Analyst analyst,
+                          List<Version> versions, Map<String, Object> filters, String creationDate, List<Comment> comments, Map<String,
+            Object> attributes, List<ReportedVariant> reportedVariants) {
         this.id = id;
         this.name = name;
         this.description = description;
-        this.clinicalAnalysis = clinicalAnalysis;
+        this.panel = panel;
         this.software = software;
         this.analyst = analyst;
         this.versions = versions;
@@ -48,10 +48,10 @@ public class Interpretation {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Interpretation{");
-        sb.append("id=").append(id);
+        sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
-        sb.append(", clinicalAnalysis=").append(clinicalAnalysis);
+        sb.append(", panel=").append(panel);
         sb.append(", software=").append(software);
         sb.append(", analyst=").append(analyst);
         sb.append(", versions=").append(versions);
@@ -64,11 +64,11 @@ public class Interpretation {
         return sb.toString();
     }
 
-    public long getId() {
+    public String getId() {
         return id;
     }
 
-    public Interpretation setId(long id) {
+    public Interpretation setId(String id) {
         this.id = id;
         return this;
     }
@@ -91,12 +91,12 @@ public class Interpretation {
         return this;
     }
 
-    public ClinicalAnalysis getClinicalAnalysis() {
-        return clinicalAnalysis;
+    public DiseasePanel getPanel() {
+        return panel;
     }
 
-    public Interpretation setClinicalAnalysis(ClinicalAnalysis clinicalAnalysis) {
-        this.clinicalAnalysis = clinicalAnalysis;
+    public Interpretation setPanel(DiseasePanel panel) {
+        this.panel = panel;
         return this;
     }
 

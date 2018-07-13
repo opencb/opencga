@@ -157,8 +157,18 @@ const tools = {
     sample: {
         title: "Sample Browser",
         showTitle: true,
-        filter: {},
+        filter: {
+            examples: [
+                {
+                    name: "Somatic",
+                    query: {
+                        somatic: "true"
+                    }
+                }
+            ]
+        },
         grid: {
+            pageSize: 3,
             showSelect: true,
         }
     },

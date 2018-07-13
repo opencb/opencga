@@ -25,9 +25,9 @@ import java.util.*;
  */
 public class Project extends PrivateFields {
 
-    private String uuid;
     private String id;
     private String name;
+    private String uuid;
     @Deprecated
     private String alias;
     private String fqn;

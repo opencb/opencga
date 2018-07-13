@@ -37,8 +37,9 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 public interface FileDBAdaptor extends DBAdaptor<File> {
 
     enum QueryParams implements QueryParam {
-        UID("uid", INTEGER_ARRAY, ""),
         ID("id", TEXT, ""),
+        UID("uid", INTEGER_ARRAY, ""),
+        UUID("uuid", TEXT, ""),
         NAME("name", TEXT_ARRAY, ""),
         TYPE("type", TEXT_ARRAY, ""),
         FORMAT("format", TEXT_ARRAY, ""),
@@ -65,6 +66,7 @@ public interface FileDBAdaptor extends DBAdaptor<File> {
         SOFTWARE_COMMIT("software.commit", TEXT, ""),
         SAMPLES("samples", TEXT_ARRAY, ""),
         SAMPLE_UIDS("samples.uid", INTEGER_ARRAY, ""),
+        TAGS("tags", TEXT_ARRAY, ""),
 
         JOB_UID("job.uid", INTEGER_ARRAY, ""),
 

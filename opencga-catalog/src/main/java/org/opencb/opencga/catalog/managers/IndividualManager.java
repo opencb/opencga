@@ -40,6 +40,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -95,14 +96,20 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     @Override
     Individual smartResolutor(long studyUid, String entry, String user) throws CatalogException {
         Query query = new Query()
-                .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                .append(IndividualDBAdaptor.QueryParams.ID.key(), entry);
+                .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+
+        if (UUIDUtils.isOpenCGAUUID(entry)) {
+            query.put(IndividualDBAdaptor.QueryParams.UUID.key(), entry);
+        } else {
+            query.put(IndividualDBAdaptor.QueryParams.ID.key(), entry);
+        }
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                IndividualDBAdaptor.QueryParams.UID.key(), IndividualDBAdaptor.QueryParams.STUDY_UID.key(),
-                IndividualDBAdaptor.QueryParams.ID.key(), IndividualDBAdaptor.QueryParams.RELEASE.key(),
-                IndividualDBAdaptor.QueryParams.VERSION.key(), IndividualDBAdaptor.QueryParams.STATUS.key(),
-                IndividualDBAdaptor.QueryParams.FATHER.key(), IndividualDBAdaptor.QueryParams.MOTHER.key(),
-                IndividualDBAdaptor.QueryParams.MULTIPLES.key(), IndividualDBAdaptor.QueryParams.SEX.key()));
+                IndividualDBAdaptor.QueryParams.UUID.key(), IndividualDBAdaptor.QueryParams.UID.key(),
+                IndividualDBAdaptor.QueryParams.STUDY_UID.key(), IndividualDBAdaptor.QueryParams.ID.key(),
+                IndividualDBAdaptor.QueryParams.RELEASE.key(), IndividualDBAdaptor.QueryParams.VERSION.key(),
+                IndividualDBAdaptor.QueryParams.STATUS.key(), IndividualDBAdaptor.QueryParams.FATHER.key(),
+                IndividualDBAdaptor.QueryParams.MOTHER.key(), IndividualDBAdaptor.QueryParams.MULTIPLES.key(),
+                IndividualDBAdaptor.QueryParams.SEX.key()));
         QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, options, user);
         if (individualQueryResult.getNumResults() == 0) {
             individualQueryResult = individualDBAdaptor.get(query, options);
@@ -124,8 +131,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                                           String populationDescription, String dateOfBirth, Individual.KaryotypicSex karyotypicSex,
                                           Individual.LifeStatus lifeStatus, Individual.AffectationStatus affectationStatus,
                                           QueryOptions options, String sessionId) throws CatalogException {
-        Individual individual = new Individual(name, name, null, null, null, fatherId, motherId, family, sex, karyotypicSex, ethnicity,
-                null, new Individual.Population(populationName, populationSubpopulation, populationDescription), dateOfBirth, -1, 1, null,
+        Individual individual = new Individual(name, name, null, null, null, sex, karyotypicSex, ethnicity,
+                new Individual.Population(populationName, populationSubpopulation, populationDescription), dateOfBirth, -1, 1, null,
                 null, lifeStatus, affectationStatus, null, null, false, null, null);
         return create(String.valueOf(studyId), individual, options, sessionId);
     }
@@ -137,9 +144,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
         ParamUtils.checkAlias(individual.getId(), "id");
         individual.setName(StringUtils.isEmpty(individual.getName()) ? individual.getId() : individual.getName());
-        individual.setFamily(ParamUtils.defaultObject(individual.getFamily(), ""));
         individual.setEthnicity(ParamUtils.defaultObject(individual.getEthnicity(), ""));
-        individual.setSpecies(ParamUtils.defaultObject(individual.getSpecies(), Individual.Species::new));
         individual.setPopulation(ParamUtils.defaultObject(individual.getPopulation(), Individual.Population::new));
         individual.setLifeStatus(ParamUtils.defaultObject(individual.getLifeStatus(), Individual.LifeStatus.UNKNOWN));
         individual.setKaryotypicSex(ParamUtils.defaultObject(individual.getKaryotypicSex(), Individual.KaryotypicSex.UNKNOWN));
@@ -211,6 +216,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         individual.setSamples(sampleList);
 
         // Create the individual
+        individual.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.INDIVIDUAL));
         QueryResult<Individual> queryResult = individualDBAdaptor.insert(studyUid, individual, variableSetList, options);
         auditManager.recordCreation(AuditRecord.Resource.individual, queryResult.first().getUid(), userId, queryResult.first(), null, null);
 
