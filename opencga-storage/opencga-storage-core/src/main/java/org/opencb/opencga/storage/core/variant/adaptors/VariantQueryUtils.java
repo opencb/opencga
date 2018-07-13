@@ -735,15 +735,20 @@ public final class VariantQueryUtils {
 
     public static Map<String, List<String>> getSamplesMetadata(Query query, QueryOptions options,
                                                                StudyConfigurationManager studyConfigurationManager) {
+        if (VariantField.getIncludeFields(options).contains(VariantField.STUDIES)) {
+            List<Integer> includeStudies = getIncludeStudies(query, options, studyConfigurationManager);
+            Function<Integer, StudyConfiguration> studyProvider = studyId ->
+                    studyConfigurationManager.getStudyConfiguration(studyId, options).first();
+            return getIncludeSamples(query, options, includeStudies, studyProvider, (sc, s) -> s, StudyConfiguration::getStudyName);
+        } else {
+            return Collections.emptyMap();
+        }
+    }
+
+    public static Map<String, List<String>> getSamplesMetadataIfRequested(Query query, QueryOptions options,
+                                                                          StudyConfigurationManager studyConfigurationManager) {
         if (query.getBoolean(SAMPLE_METADATA.key(), false)) {
-            if (VariantField.getIncludeFields(options).contains(VariantField.STUDIES)) {
-                List<Integer> includeStudies = getIncludeStudies(query, options, studyConfigurationManager);
-                Function<Integer, StudyConfiguration> studyProvider = studyId ->
-                        studyConfigurationManager.getStudyConfiguration(studyId, options).first();
-                return getIncludeSamples(query, options, includeStudies, studyProvider, (sc, s) -> s, StudyConfiguration::getStudyName);
-            } else {
-                return Collections.emptyMap();
-            }
+            return getSamplesMetadata(query, options, studyConfigurationManager);
         } else {
             return null;
         }

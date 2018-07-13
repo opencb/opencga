@@ -22,9 +22,14 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.managers.ResourceManager;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.manager.CatalogUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
@@ -33,8 +38,11 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
 import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 
 /**
@@ -50,19 +58,20 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             = QueryParam.create("sampleAnnotation", SAMPLE_ANNOTATION_DESC, QueryParam.Type.TEXT_ARRAY);
     public static final String PROJECT_DESC = "Project [user@]project where project can be either the ID or the alias";
     public static final QueryParam PROJECT = QueryParam.create("project", PROJECT_DESC, QueryParam.Type.TEXT_ARRAY);
-    private final StudyTransformFilter studyTransformFilter;
-    private final FileTransformFilter fileTransformFilter;
-    private final SampleTransformFilter sampleTransformFilter;
-    private final CohortTransformFilter cohortTransformFilter;
+    private final StudyFilterValidator studyFilterValidator;
+    private final FileFilterValidator fileFilterValidator;
+    private final SampleFilterValidator sampleFilterValidator;
+    private final GenotypeFilterValidator genotypeFilterValidator;
+    private final CohortFilterValidator cohortFilterValidator;
     //    public static final QueryParam SAMPLE_FILTER_GENOTYPE = QueryParam.create("sampleFilterGenotype", "", QueryParam.Type.TEXT_ARRAY);
 
     public VariantCatalogQueryUtils(CatalogManager catalogManager) {
         super(catalogManager);
-
-        studyTransformFilter = new StudyTransformFilter();
-        fileTransformFilter = new FileTransformFilter();
-        sampleTransformFilter = new SampleTransformFilter();
-        cohortTransformFilter = new CohortTransformFilter();
+        studyFilterValidator = new StudyFilterValidator();
+        fileFilterValidator = new FileFilterValidator();
+        sampleFilterValidator = new SampleFilterValidator();
+        genotypeFilterValidator = new GenotypeFilterValidator();
+        cohortFilterValidator = new CohortFilterValidator();
     }
 
     public static VariantQueryException wrongReleaseException(VariantQueryParam param, String value, int release) {
@@ -86,32 +95,31 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         String defaultStudyStr = getDefaultStudyId(studies);
         Integer release = getReleaseFilter(query, sessionId);
 
-        studyTransformFilter.processFilter(query, VariantQueryParam.STUDY, release, sessionId, defaultStudyStr);
-        studyTransformFilter.processFilter(query, VariantQueryParam.INCLUDE_STUDY, release, sessionId, defaultStudyStr);
-        sampleTransformFilter.processFilter(query, VariantQueryParam.SAMPLE, release, sessionId, defaultStudyStr);
-        sampleTransformFilter.processFilter(query, VariantQueryParam.INCLUDE_SAMPLE, release, sessionId, defaultStudyStr);
-        //TODO: Parse genotype filter
-        //sampleTransformFilter.processFilter(query, VariantQueryParam.GENOTYPE, release, sessionId, defaultStudyStr);
-        fileTransformFilter.processFilter(query, VariantQueryParam.FILE, release, sessionId, defaultStudyStr);
-        fileTransformFilter.processFilter(query, VariantQueryParam.INCLUDE_FILE, release, sessionId, defaultStudyStr);
-        cohortTransformFilter.processFilter(query, VariantQueryParam.COHORT, release, sessionId, defaultStudyStr);
-        cohortTransformFilter.processFilter(query, VariantQueryParam.STATS_MAF, release, sessionId, defaultStudyStr);
-        cohortTransformFilter.processFilter(query, VariantQueryParam.STATS_MGF, release, sessionId, defaultStudyStr);
-        cohortTransformFilter.processFilter(query, VariantQueryParam.MISSING_ALLELES, release, sessionId, defaultStudyStr);
-        cohortTransformFilter.processFilter(query, VariantQueryParam.MISSING_GENOTYPES, release, sessionId, defaultStudyStr);
+        studyFilterValidator.processFilter(query, VariantQueryParam.STUDY, release, sessionId, defaultStudyStr);
+        studyFilterValidator.processFilter(query, VariantQueryParam.INCLUDE_STUDY, release, sessionId, defaultStudyStr);
+        sampleFilterValidator.processFilter(query, VariantQueryParam.SAMPLE, release, sessionId, defaultStudyStr);
+        sampleFilterValidator.processFilter(query, VariantQueryParam.INCLUDE_SAMPLE, release, sessionId, defaultStudyStr);
+        genotypeFilterValidator.processFilter(query, VariantQueryParam.GENOTYPE, release, sessionId, defaultStudyStr);
+        fileFilterValidator.processFilter(query, VariantQueryParam.FILE, release, sessionId, defaultStudyStr);
+        fileFilterValidator.processFilter(query, VariantQueryParam.INCLUDE_FILE, release, sessionId, defaultStudyStr);
+        cohortFilterValidator.processFilter(query, VariantQueryParam.COHORT, release, sessionId, defaultStudyStr);
+        cohortFilterValidator.processFilter(query, VariantQueryParam.STATS_MAF, release, sessionId, defaultStudyStr);
+        cohortFilterValidator.processFilter(query, VariantQueryParam.STATS_MGF, release, sessionId, defaultStudyStr);
+        cohortFilterValidator.processFilter(query, VariantQueryParam.MISSING_ALLELES, release, sessionId, defaultStudyStr);
+        cohortFilterValidator.processFilter(query, VariantQueryParam.MISSING_GENOTYPES, release, sessionId, defaultStudyStr);
 
         if (release != null) {
             // If no list of included files is specified:
             if (VariantQueryUtils.isIncludeFilesDefined(query, Collections.singleton(VariantField.STUDIES_FILES))) {
                 List<String> includeFiles = new ArrayList<>();
-                QueryOptions fileOptions = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.UID.key());
+                QueryOptions fileOptions = new QueryOptions(INCLUDE, FileDBAdaptor.QueryParams.UID.key());
                 Query fileQuery = new Query(FileDBAdaptor.QueryParams.RELEASE.key(), "<=" + release)
                         .append(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY);
 
                 for (String study : studies) {
                     for (File file : catalogManager.getFileManager().get(study, fileQuery, fileOptions, sessionId)
                             .getResult()) {
-                        includeFiles.add(String.valueOf(file.getUid()));
+                        includeFiles.add(file.getName());
                     }
                 }
                 query.append(VariantQueryParam.INCLUDE_FILE.key(), includeFiles);
@@ -120,26 +128,26 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             if (!VariantQueryUtils.isIncludeSamplesDefined(query, Collections.singleton(VariantField.STUDIES_SAMPLES_DATA))) {
                 List<String> includeSamples = new ArrayList<>();
                 Query sampleQuery = new Query(SampleDBAdaptor.QueryParams.RELEASE.key(), "<=" + release);
-                QueryOptions sampleOptions = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.UID.key());
+                QueryOptions sampleOptions = new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.UID.key());
 
                 for (String study : studies) {
                     Query cohortQuery = new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT);
-                    QueryOptions cohortOptions = new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key());
+                    QueryOptions cohortOptions = new QueryOptions(INCLUDE, CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key());
                     // Get default cohort. It contains the list of indexed samples. If it doesn't exist, or is empty, do not include any
                     // sample from this study.
-                    QueryResult<Cohort> result = catalogManager.getCohortManager().get(String.valueOf(study), cohortQuery, cohortOptions,
+                    QueryResult<Cohort> result = catalogManager.getCohortManager().get(study, cohortQuery, cohortOptions,
                             sessionId);
                     if (result.first() != null || result.first().getSamples().isEmpty()) {
-                        Set<Long> sampleIds = result
+                        Set<String> sampleIds = result
                                 .first()
                                 .getSamples()
                                 .stream()
-                                .map(Sample::getUid)
+                                .map(Sample::getId)
                                 .collect(Collectors.toSet());
                         for (Sample s : catalogManager.getSampleManager().get(study, sampleQuery, sampleOptions,
                                 sessionId).getResult()) {
-                            if (sampleIds.contains(s.getUid())) {
-                                includeSamples.add(String.valueOf(s.getUid()));
+                            if (sampleIds.contains(s.getId())) {
+                                includeSamples.add(s.getId());
                             }
                         }
                     }
@@ -152,11 +160,11 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             String sampleAnnotation = query.getString(SAMPLE_ANNOTATION.key());
             Query sampleQuery = parseSampleAnnotationQuery(sampleAnnotation, SampleDBAdaptor.QueryParams::getParam);
             sampleQuery.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), defaultStudyStr);
-            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.UID);
-            List<Long> sampleIds = catalogManager.getSampleManager().get(defaultStudyStr, sampleQuery, options, sessionId)
+            QueryOptions options = new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.UID);
+            List<String> sampleIds = catalogManager.getSampleManager().get(defaultStudyStr, sampleQuery, options, sessionId)
                     .getResult()
                     .stream()
-                    .map(Sample::getUid)
+                    .map(Sample::getId)
                     .collect(Collectors.toList());
 
             if (sampleIds.isEmpty()) {
@@ -167,7 +175,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 //            String genotype = query.getString(VariantDBAdaptor.VariantQueryParams.GENOTYPE.key());
             if (StringUtils.isNotBlank(genotype)) {
                 StringBuilder sb = new StringBuilder();
-                for (Long sampleId : sampleIds) {
+                for (String sampleId : sampleIds) {
                     sb.append(sampleId).append(IS)
                             .append(genotype)
                             .append(AND); // TODO: Should this be an AND (;) or an OR (,)?
@@ -202,7 +210,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 throw VariantQueryException.malformedParam(VariantQueryParam.RELEASE, query.getString(VariantQueryParam.RELEASE.key()));
             }
             Project project = getProjectFromQuery(query, sessionId,
-                    new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key()));
+                    new QueryOptions(INCLUDE, ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key()));
             int currentRelease = project.getCurrentRelease();
             if (release > currentRelease) {
                 throw VariantQueryException.malformedParam(VariantQueryParam.RELEASE, query.getString(VariantQueryParam.RELEASE.key()));
@@ -217,8 +225,12 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         return release;
     }
 
-    public abstract class TransformFilter {
-        protected final QueryOptions OPTIONS = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.RELEASE.key());
+    public abstract class FilterValidator {
+        protected final QueryOptions RELEASE_OPTIONS = new QueryOptions(INCLUDE, Arrays.asList(
+                FileDBAdaptor.QueryParams.ID.key(),
+                FileDBAdaptor.QueryParams.NAME.key(),
+                FileDBAdaptor.QueryParams.INDEX.key(),
+                FileDBAdaptor.QueryParams.RELEASE.key()));
 
         /**
          * Splits the value from the query (if any) and translates the IDs to numerical Ids.
@@ -238,126 +250,187 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 if (isNoneOrAll(valuesStr)) {
                     return;
                 }
-                VariantQueryUtils.QueryOperation queryOperation = VariantQueryUtils.checkOperator(valuesStr);
-                if (queryOperation == null) {
-                    queryOperation = VariantQueryUtils.QueryOperation.OR;
-                }
-                List<String> values = VariantQueryUtils.splitValue(valuesStr, queryOperation);
+                QueryOperation queryOperation = getQueryOperation(valuesStr);
+                List<String> rawValues = splitValue(valuesStr, queryOperation);
+                List<String> values = getValuesToValidate(rawValues);
+                List<String> validatedValues = validate(defaultStudy, values, release, param, sessionId);
+
                 StringBuilder sb = new StringBuilder();
-                for (String value : values) {
+                for (int i = 0; i < rawValues.size(); i++) {
+                    String rawValue = rawValues.get(i);
+                    String value = values.get(i);
+                    String validatedValue = validatedValues.get(i);
                     if (sb.length() > 0) {
                         sb.append(queryOperation.separator());
                     }
-                    if (isNegated(value)) {
-                        sb.append(NOT);
-                        value = removeNegation(value);
-                    }
-                    String[] strings = VariantQueryUtils.splitOperator(value);
-                    boolean withComparisionOperator = strings[0] != null;
-                    if (withComparisionOperator) {
-                        value = strings[0];
-                        withComparisionOperator = true;
-                    }
 
-                    Long id;
-                    if (StringUtils.isNumeric(value)) {
-                        id = Long.parseLong(value);
-                        sb.append(value);
+                    if (!value.equals(validatedValue)) {
+                        sb.append(StringUtils.replace(rawValue, value, validatedValue, 1));
                     } else {
-                        id = toId(defaultStudy, value, sessionId);
-                        sb.append(id);
-                    }
-                    if (!releaseMatches(id, release, sessionId)) {
-                        throw wrongReleaseException(param, value, release);
+                        sb.append(rawValue);
                     }
 
-                    if (withComparisionOperator) {
-                        sb.append(strings[1]);
-                        sb.append(strings[2]);
-                    }
                 }
                 query.put(param.key(), sb.toString());
             }
         }
 
-        protected abstract boolean releaseMatches(Long id, Integer release, String sessionId) throws CatalogException;
+        protected QueryOperation getQueryOperation(String valuesStr) {
+            QueryOperation queryOperation = VariantQueryUtils.checkOperator(valuesStr);
+            if (queryOperation == null) {
+                queryOperation = QueryOperation.OR;
+            }
+            return queryOperation;
+        }
 
-        protected abstract Long toId(String defaultStudyStr, String value, String sessionId) throws CatalogException;
+        protected List<String> splitValue(String valuesStr, QueryOperation queryOperation) {
+            return VariantQueryUtils.splitValue(valuesStr, queryOperation);
+        }
+
+        protected List<String> getValuesToValidate(List<String> rawValues) {
+            return rawValues.stream()
+                    .map(value -> {
+                        value = isNegated(value) ? removeNegation(value) : value;
+                        String[] strings = VariantQueryUtils.splitOperator(value);
+                        boolean withComparisionOperator = strings[0] != null;
+                        if (withComparisionOperator) {
+                            value = strings[0];
+                        }
+                        return value;
+                    })
+                    .collect(Collectors.toList());
+        }
+
+
+        protected abstract List<String> validate(String defaultStudyStr, List<String> values, Integer release, VariantQueryParam param,
+                                                 String sessionId)
+                throws CatalogException;
+
+        protected final void checkRelease(Integer release, int resourceRelease, VariantQueryParam param, String value) {
+            if (release != null && resourceRelease > release) {
+                throw wrongReleaseException(param, value, release);
+            }
+        }
+
+        protected final <T extends PrivateStudyUid> List<String> validate(String defaultStudyStr, List<String> values, Integer release,
+                                                                          VariantQueryParam param, ResourceManager<T> manager,
+                                                                          Function<T, String> getId, Function<T, Integer> getRelease,
+                                                                          Consumer<T> valueValidator, String sessionId)
+                throws CatalogException {
+            List<QueryResult<T>> queryResults = manager.get(defaultStudyStr, values, null, RELEASE_OPTIONS, sessionId);
+            List<String> validatedValues = new ArrayList<>(values.size());
+            for (QueryResult<T> queryResult : queryResults) {
+                T value = queryResult.first();
+                if (valueValidator != null) {
+                    valueValidator.accept(value);
+                }
+                String id = getId.apply(value);
+                validatedValues.add(id);
+                checkRelease(release, getRelease.apply(value), param, id);
+            }
+            return validatedValues;
+        }
     }
 
 
-    public class StudyTransformFilter extends TransformFilter {
-        @Override
-        protected Long toId(String defaultStudyStr, String value, String sessionId) throws CatalogException {
-            return catalogManager.getStudyManager().resolveId(defaultStudyStr, catalogManager.getUserManager().getUserId(sessionId))
-                    .getUid();
-        }
+    public class StudyFilterValidator extends FilterValidator {
 
         @Override
-        protected boolean releaseMatches(Long id, Integer release, String sessionId) throws CatalogException {
+        protected List<String> validate(String defaultStudyStr, List<String> values, Integer release, VariantQueryParam param,
+                                        String sessionId) throws CatalogException {
             if (release == null) {
-                return true;
+                String userId = catalogManager.getUserManager().getUserId(sessionId);
+                List<Study> studies = catalogManager.getStudyManager().resolveIds(values, userId);
+                return studies.stream().map(Study::getFqn).collect(Collectors.toList());
+            } else {
+                List<String> validatedValues = new ArrayList<>(values.size());
+                List<QueryResult<Study>> queryResults = catalogManager.getStudyManager().get(values, RELEASE_OPTIONS, false, sessionId);
+                for (QueryResult<Study> queryResult : queryResults) {
+                    Study study = queryResult.first();
+                    validatedValues.add(study.getFqn());
+                    checkRelease(release, study.getRelease(), param, study.getFqn());
+                }
+                return validatedValues;
             }
-
-            return catalogManager.getStudyManager().get(id.toString(), OPTIONS, sessionId).first().getRelease() <= release;
         }
     }
 
-    public class FileTransformFilter extends TransformFilter {
-        protected final QueryOptions OPTIONS = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(FileDBAdaptor.QueryParams.RELEASE.key(), FileDBAdaptor.QueryParams.INDEX.key()));
+    public class FileFilterValidator extends FilterValidator {
 
         @Override
-        protected Long toId(String defaultStudyStr, String value, String sessionId) throws CatalogException {
-            return catalogManager.getFileManager().getUid(value, defaultStudyStr, sessionId).getResource().getUid();
-        }
-
-        @Override
-        protected boolean releaseMatches(Long id, Integer release, String sessionId) throws CatalogException {
+        protected List<String> validate(String defaultStudyStr, List<String> values, Integer release, VariantQueryParam param,
+                                        String sessionId)
+                throws CatalogException {
             if (release == null) {
-                return true;
-            }
+                AbstractManager.MyResources<File> uids = catalogManager.getFileManager().getUids(values, defaultStudyStr, sessionId);
+                return uids.getResourceList().stream().map(File::getId).collect(Collectors.toList());
+            } else {
+                return validate(defaultStudyStr, values, release, param, catalogManager.getFileManager(), File::getName,
+                        file -> ((int) file.getIndex().getRelease()), file -> {
+                            if (file.getIndex() == null
+                                    || file.getIndex().getStatus() == null
+                                    || file.getIndex().getStatus().getName() == null
+                                    || !file.getIndex().getStatus().getName().equals(Status.READY)) {
+                                throw new VariantQueryException("File '" + file.getName() + "' is not indexed");
+                            }
+                        },
+                        sessionId);
 
-            File file = catalogManager.getFileManager().get(id, OPTIONS, sessionId).first();
-            return file.getIndex() != null && file.getIndex().getRelease() <= release;
-//            return file.getRelease() <= release;
-//            return catalogManager.getFileManager().count(defaultStudyStr,
-//                    new Query(FileDBAdaptor.QueryParams.ID.key(), id)
-//                            .append(FileDBAdaptor.QueryParams.RELEASE.key(), release), sessionId).getNumTotalResults() == 1;
+            }
         }
     }
 
-    public class SampleTransformFilter extends TransformFilter {
+    public class SampleFilterValidator extends FilterValidator {
 
         @Override
-        protected Long toId(String defaultStudyStr, String value, String sessionId) throws CatalogException {
-            return catalogManager.getSampleManager().getUid(value, defaultStudyStr, sessionId).getResource().getUid();
-        }
-
-        @Override
-        protected boolean releaseMatches(Long id, Integer release, String sessionId) throws CatalogException {
+        protected List<String> validate(String defaultStudyStr, List<String> values, Integer release, VariantQueryParam param,
+                                        String sessionId) throws CatalogException {
             if (release == null) {
-                return true;
+                AbstractManager.MyResources<Sample> uids = catalogManager.getSampleManager().getUids(values, defaultStudyStr, sessionId);
+                return uids.getResourceList().stream().map(Sample::getId).collect(Collectors.toList());
+            } else {
+                return validate(defaultStudyStr, values, release, param, catalogManager.getSampleManager(),
+                        Sample::getId, Sample::getRelease, null, sessionId);
             }
-            return catalogManager.getSampleManager().get(id, OPTIONS, sessionId).first().getRelease() <= release;
         }
     }
 
-    public class CohortTransformFilter extends TransformFilter {
+    public class GenotypeFilterValidator extends SampleFilterValidator {
+
         @Override
-        protected Long toId(String defaultStudyStr, String value, String sessionId) throws CatalogException {
-            return catalogManager.getCohortManager().getUid(value, defaultStudyStr, sessionId).getResource().getUid();
+        protected QueryOperation getQueryOperation(String valuesStr) {
+            Map<Object, List<String>> genotypesMap = new HashMap<>();
+            return VariantQueryUtils.parseGenotypeFilter(valuesStr, genotypesMap);
         }
 
         @Override
-        protected boolean releaseMatches(Long id, Integer release, String sessionId) throws CatalogException {
-            if (release == null) {
-                return true;
-            }
+        protected List<String> splitValue(String valuesStr, QueryOperation queryOperation) {
+            Map<Object, List<String>> genotypesMap = new LinkedHashMap<>();
+            VariantQueryUtils.parseGenotypeFilter(valuesStr, genotypesMap);
 
-            Long studyId = catalogManager.getCohortManager().getStudyId(id);
-            return catalogManager.getCohortManager().get(String.valueOf(studyId), new Query(CohortDBAdaptor.QueryParams.UID.key(), id),
-                    OPTIONS, sessionId).first().getRelease() <= release;
+            return genotypesMap.entrySet().stream().map(entry -> entry.getKey() + ":" + String.join(",", entry.getValue()))
+                    .collect(Collectors.toList());
+        }
+
+        @Override
+        protected List<String> getValuesToValidate(List<String> rawValues) {
+            return rawValues.stream().map(value -> value.split(":")[0]).collect(Collectors.toList());
+        }
+    }
+
+    public class CohortFilterValidator extends FilterValidator {
+
+        @Override
+        protected List<String> validate(String defaultStudyStr, List<String> values, Integer release, VariantQueryParam param,
+                                        String sessionId)
+                throws CatalogException {
+            if (release == null) {
+                AbstractManager.MyResources<Cohort> uids = catalogManager.getCohortManager().getUids(values, defaultStudyStr, sessionId);
+                return uids.getResourceList().stream().map(Cohort::getId).collect(Collectors.toList());
+            } else {
+                return validate(defaultStudyStr, values, release, param, catalogManager.getCohortManager(),
+                        Cohort::getId, Cohort::getRelease, null, sessionId);
+            }
         }
     }
 

@@ -14,16 +14,14 @@ import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
 import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName;
 
@@ -78,12 +76,14 @@ public class NewProjectMetadataMigration {
 
                 if (numIndexedFiles > 0) {
                     DataStore dataStore = StorageOperation.getDataStore(catalogManager, study.getFqn(), File.Bioformat.VARIANT, sessionId);
+                    // Check only once per datastore
                     if (dataStores.add(dataStore)) {
 
                         VariantStorageEngine variantStorageEngine = storageEngineFactory
                                 .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+                        StudyConfigurationManager scm = variantStorageEngine.getStudyConfigurationManager();
 
-                        variantStorageEngine.getStudyConfigurationManager().lockAndUpdateProject(projectMetadata -> {
+                        Map<String, Integer> currentCounters = scm.lockAndUpdateProject(projectMetadata -> {
                             if (projectMetadata == null || StringUtils.isEmpty(projectMetadata.getSpecies())) {
                                 logger.info("Create ProjectMetadata for project " + project.getFqn());
 
@@ -92,17 +92,49 @@ public class NewProjectMetadataMigration {
                                         scientificName,
                                         project.getOrganism().getAssembly(),
                                         project.getCurrentRelease());
+
                             } else {
                                 logger.info("ProjectMetadata already exists for project " + project.getFqn() + ". Nothing to do!");
                             }
                             return projectMetadata;
-                        });
+                        }).getCounters();
+                        // Update counters
+                        if (currentCounters.isEmpty()) {
+                            logger.info(" * Update internal id counters for project " + project.getFqn());
+
+                            Map<String, Integer> counters = new HashMap<>();
+
+                            for (String studyName : scm.getStudyNames(null)) {
+                                StudyConfiguration studyConfiguration = scm.getStudyConfiguration(studyName, null).first();
+                                int studyId = studyConfiguration.getStudyId();
+
+                                updateMaxCounter(counters, "file", studyConfiguration.getFileIds().values());
+                                updateMaxCounter(counters, "file_" + studyId, studyConfiguration.getFileIds().values());
+                                updateMaxCounter(counters, "sample", studyConfiguration.getSampleIds().values());
+                                updateMaxCounter(counters, "sample_" + studyId, studyConfiguration.getSampleIds().values());
+                                updateMaxCounter(counters, "cohort", studyConfiguration.getCohortIds().values());
+                                updateMaxCounter(counters, "cohort_" + studyId, studyConfiguration.getCohortIds().values());
+                                updateMaxCounter(counters, "study", Collections.singleton(studyId));
+                            }
+
+                            scm.lockAndUpdateProject(projectMetadata -> {
+                                projectMetadata.setCounters(counters);
+                                return projectMetadata;
+                            });
+
+                        }
+
                     }
                 } else {
                     logger.info("Nothing to migrate!");
                 }
             }
         }
+    }
+
+    protected void updateMaxCounter(Map<String, Integer> counters, String idType, Collection<Integer> ids) {
+        Integer maxId = ids.stream().max(Integer::compareTo).orElse(0);
+        counters.compute(idType, (k, value) -> value == null ? maxId : Math.max(maxId, value));
     }
 
 }

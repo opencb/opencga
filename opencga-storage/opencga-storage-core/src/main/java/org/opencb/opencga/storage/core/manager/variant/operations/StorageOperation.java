@@ -18,9 +18,12 @@ package org.opencb.opencga.storage.core.manager.variant.operations;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.variant.metadata.Aggregation;
+import org.opencb.biodata.tools.variant.stats.AggregationUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -41,7 +44,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 
 import static org.opencb.opencga.catalog.monitor.executors.AbstractExecutor.*;
@@ -105,33 +110,13 @@ public abstract class StorageOperation {
         return catalogOutDirId;
     }
 
-    public StudyConfiguration updateStudyConfiguration(String sessionId, long studyId, DataStore dataStore)
-            throws IOException, CatalogException, StorageEngineException {
-
-        updateStudyConfigurationFromCatalog(sessionId, studyId, dataStore, null);
-        return updateCatalogFromStudyConfiguration(sessionId, studyId, dataStore);
-    }
-
-    public void updateStudyConfigurationFromCatalog(String sessionId, long studyId, DataStore dataStore, List<Long> filesToIndex)
-            throws IOException, CatalogException, StorageEngineException {
-
-        CatalogStudyConfigurationFactory studyConfigurationFactory = new CatalogStudyConfigurationFactory(catalogManager);
-        StudyConfigurationManager studyConfigurationManager = getVariantStorageEngine(dataStore).getStudyConfigurationManager();
-        try {
-            // Update StudyConfiguration. Add new elements and so
-            studyConfigurationFactory.updateStudyConfigurationFromCatalog(studyId, filesToIndex, studyConfigurationManager, sessionId);
-        } catch (StorageEngineException e) {
-            throw new StorageEngineException("Unable to update StudyConfiguration", e);
-        }
-    }
-
-    public StudyConfiguration updateCatalogFromStudyConfiguration(String sessionId, long studyId, DataStore dataStore)
+    public StudyConfiguration updateCatalogFromStudyConfiguration(String sessionId, String study, DataStore dataStore)
             throws IOException, CatalogException, StorageEngineException {
 
         CatalogStudyConfigurationFactory studyConfigurationFactory = new CatalogStudyConfigurationFactory(catalogManager);
         StudyConfigurationManager studyConfigurationManager = getVariantStorageEngine(dataStore).getStudyConfigurationManager();
 
-        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration((int) studyId, null).first();
+        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(study, null).first();
         if (studyConfiguration != null) {
             // Update Catalog file and cohort status.
             studyConfigurationFactory.updateCatalogFromStudyConfiguration(studyConfiguration, sessionId);
@@ -297,5 +282,54 @@ public abstract class StorageOperation {
             return projectMetadata;
         });
     }
+
+
+    /**
+     * If the study is aggregated and a mapping file is provided, pass it to
+     * and create in catalog the cohorts described in the mapping file.
+     *
+     * If the study aggregation was not defined, updateStudy with the provided aggregation type
+     *
+     * @param studyId   StudyId where calculate stats
+     * @param options   Options
+     * @param sessionId Users sessionId
+     * @return          Effective study aggregation type
+     * @throws CatalogException if something is wrong with catalog
+     */
+    public Aggregation getAggregation(String studyId, QueryOptions options, String sessionId) throws CatalogException {
+        QueryOptions include = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.ATTRIBUTES.key());
+        Study study = catalogManager.getStudyManager().get(studyId, include, sessionId).first();
+        Aggregation argsAggregation = options.get(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), Aggregation.class, Aggregation.NONE);
+        Object studyAggregationObj = study.getAttributes().get(VariantStorageEngine.Options.AGGREGATED_TYPE.key());
+        Aggregation studyAggregation = null;
+        if (studyAggregationObj != null) {
+            studyAggregation = AggregationUtils.valueOf(studyAggregationObj.toString());
+        }
+
+        final Aggregation aggregation;
+        if (AggregationUtils.isAggregated(argsAggregation)) {
+            if (studyAggregation != null && !studyAggregation.equals(argsAggregation)) {
+                // FIXME: Throw an exception?
+                logger.warn("Calculating statistics with aggregation " + argsAggregation + " instead of " + studyAggregation);
+            }
+            aggregation = argsAggregation;
+            // If studyAggregation is not define, update study aggregation
+            if (studyAggregation == null) {
+                //update study aggregation
+                Map<String, Aggregation> attributes = Collections.singletonMap(VariantStorageEngine.Options.AGGREGATED_TYPE.key(),
+                        argsAggregation);
+                ObjectMap parameters = new ObjectMap("attributes", attributes);
+                catalogManager.getStudyManager().update(studyId, parameters, null, sessionId);
+            }
+        } else {
+            if (studyAggregation == null) {
+                aggregation = Aggregation.NONE;
+            } else {
+                aggregation = studyAggregation;
+            }
+        }
+        return aggregation;
+    }
+
 
 }

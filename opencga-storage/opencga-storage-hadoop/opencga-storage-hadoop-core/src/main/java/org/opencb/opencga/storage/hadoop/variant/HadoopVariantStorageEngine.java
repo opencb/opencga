@@ -181,6 +181,9 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             VariantType.INDEL, /* VariantType.INSERTION, VariantType.DELETION,*/
             VariantType.MNV, VariantType.MNP);
 
+    public static final String FILE_ID = "fileId";
+    public static final String STUDY_ID = "studyId";
+
     protected Configuration conf = null;
     protected MRExecutor mrExecutor;
     private HdfsVariantReaderUtils variantReaderUtils;
@@ -523,25 +526,25 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         hadoopConfiguration = hadoopConfiguration == null ? getHadoopConfiguration(options) : hadoopConfiguration;
         hadoopConfiguration.setIfUnset(ARCHIVE_TABLE_COMPRESSION, Algorithm.SNAPPY.getName());
 
-        int studyId = options.getInt(Options.STUDY_ID.key());
-        HBaseCredentials archiveCredentials = connected ? buildCredentials(getArchiveTableName(studyId)) : null;
         MergeMode mergeMode;
         if (connected) {
-            StudyConfiguration sc = getStudyConfigurationManager().getStudyConfiguration(studyId, null).first();
+            String study = options.getString(Options.STUDY.key());
+//            archiveCredentials = buildCredentials(getArchiveTableName(studyId));
+            StudyConfiguration sc = getStudyConfigurationManager().getStudyConfiguration(study, null).first();
             if (sc == null || !sc.getAttributes().containsKey(MERGE_MODE.key())) {
                 mergeMode = MergeMode.from(options);
             } else {
                 mergeMode = MergeMode.from(sc.getAttributes());
             }
         } else {
-            mergeMode = MergeMode.from(options);
+            mergeMode = MergeMode.BASIC;
         }
 
         if (mergeMode.equals(MergeMode.ADVANCED)) {
             throw new IllegalStateException("Unable to load with MergeMode " + MergeMode.ADVANCED);
         }
         HadoopVariantStoragePipeline storageETL = new HadoopLocalLoadVariantStoragePipeline(configuration, dbAdaptor,
-                hadoopConfiguration, archiveCredentials, getVariantReaderUtils(hadoopConfiguration), options);
+                hadoopConfiguration, getVariantReaderUtils(hadoopConfiguration), options);
 //        if (mergeMode.equals(MergeMode.BASIC)) {
 //            storageETL = new HadoopMergeBasicVariantStoragePipeline(configuration, dbAdaptor,
 //                    hadoopConfiguration, archiveCredentials, getVariantReaderUtils(hadoopConfiguration), options);

@@ -153,24 +153,6 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"-s", "--study"}, description = "Full name of the study where the file is classified", arity = 1)
         public String study;
 
-        @Deprecated
-        @Parameter(names = {"--study-name"}, description = "Full name of the study where the file is classified", arity = 1)
-        public String studyName;
-
-        @Deprecated
-        @Parameter(names = {"--study-id"}, description = "Unique ID for the study where the file is classified", arity = 1)
-        public String studyId = VariantStorageEngine.Options.STUDY_ID.defaultValue().toString();
-
-
-        @Deprecated
-        @Parameter(names = {"--file-id"}, description = "Unique ID for the file", arity = 1, hidden = true)
-        public String fileId = VariantStorageEngine.Options.FILE_ID.defaultValue().toString();
-
-        @Deprecated
-        @Parameter(names = {"--sample-ids"}, description = "CSV list of sampleIds. <sampleName>:<sampleId>[,<sampleName>:<sampleId>]*", hidden = true)
-        public String sampleIds;
-
-
 //        @Deprecated
 //        @Parameter(names = {"-p", "--pedigree"}, description = "File containing pedigree information (in PED format, optional)", arity = 1)
 //        public String pedigree;
@@ -179,10 +161,6 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"-t", "--study-type"}, description = "One of the following: FAMILY, TRIO, CONTROL, CASE, CASE_CONTROL, " +
                 "PAIRED, PAIRED_TUMOR, COLLECTION, TIME_SERIES", arity = 1, hidden = true)
         public SampleSetType studyType = SampleSetType.CASE_CONTROL;
-
-        @Parameter(names = {"--study-configuration-file"}, description = "File with the study configuration. org.opencb.opencga.storage" +
-                ".core.StudyConfiguration", arity = 1)
-        public String studyConfigurationFile;
 
     }
 
@@ -701,8 +679,8 @@ public class StorageVariantCommandOptions {
 //                arity = 1)
 //        public String studyId;
 
-        @Parameter(names = {"-f", "--file-id"}, description = "Calculate stats only for the selected file", arity = 1)
-        public String fileId;
+//        @Parameter(names = {"-f", "--file"}, description = "Calculate stats only for the selected file", arity = 1)
+//        public String file;
 
         @Parameter(names = {"--output-filename"}, description = "Output file name. Default: database name", arity = 1)
         public String fileName;
@@ -723,9 +701,9 @@ public class StorageVariantCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = true,
+        @Parameter(names = {"-s", "--study"}, description = "Unique ID for the study where the file is classified", required = true,
                 arity = 1)
-        public String studyId;
+        public String study;
 
         @Parameter(names = {"-d", "--database"}, description = "DataBase name", arity = 1)
         public String dbName;
@@ -733,17 +711,9 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1)
         public String outdir = ".";
 
-        @DynamicParameter(names = {"--cohort-sample-ids"}, description = "Cohort definition with the schema -> <cohort-name>:<sample-id>" +
-                "(,<sample-id>)* ", descriptionKey = "CohortName", assignment = ":")
+        @DynamicParameter(names = {"--cohort"}, description = "Cohort definition with the schema -> <cohort>:<sample>" +
+                "(,<sample>)* ", descriptionKey = "CohortName", assignment = ":")
         public Map<String, String> cohort = new HashMap<>();
-
-        @DynamicParameter(names = {"--cohort-ids"}, description = "Cohort Ids for the cohorts to be inserted. If it is not provided, " +
-                "cohortIds will be auto-generated.", assignment = ":")
-        public Map<String, String> cohortIds = new HashMap<>();
-
-        @Parameter(names = {"--study-configuration-file"}, description = "File with the study configuration. org.opencb.opencga.storage" +
-                ".core.StudyConfiguration", arity = 1)
-        public String studyConfigurationFile;
     }
 
     /**
@@ -752,18 +722,15 @@ public class StorageVariantCommandOptions {
 
     public static class GenericVariantExportOptions {
 
-        @Parameter(names = {"--file-id"}, description = "Calculate stats only for the selected file", arity = 1)
-        public String fileId;
-
         @Parameter(names = {"--output-filename"}, description = "Output filename.", arity = 1)
         public String outFilename = ".";
 
 //        @Parameter(names = {"--region"}, description = "Variant region to export.")
 //        public String region;
 
-        @Parameter(names = {"--study-configuration-file"}, description = "File with the study configuration. org.opencb.opencga.storage" +
-                ".core.StudyConfiguration", arity = 1)
-        public String studyConfigurationFile;
+//        @Parameter(names = {"--study-configuration-file"}, description = "File with the study configuration. org.opencb.opencga.storage" +
+//                ".core.StudyConfiguration", arity = 1)
+//        public String studyConfigurationFile;
     }
 
 
@@ -776,9 +743,6 @@ public class StorageVariantCommandOptions {
         @ParametersDelegate
         public VariantQueryCommandOptions queryOptions = new VariantQueryCommandOptions();
 
-//        @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = true,
-//                arity = 1)
-//        public String studyId;
 //
 //        @Parameter(names = {"-d", "--database"}, description = "DataBase name", arity = 1)
 //        public String dbName;

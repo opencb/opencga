@@ -146,6 +146,9 @@ public class HBaseVariantTableNameGenerator {
      * @return Table name
      */
     public static String getArchiveTableName(String namespace, String dbName, int studyId) {
+        if (studyId <= 0) {
+            throw new IllegalArgumentException("Can not get archive table name. Invalid studyId!");
+        }
         return buildTableName(namespace, "", dbName + ARCHIVE_SUFIX + studyId);
     }
 

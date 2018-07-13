@@ -37,7 +37,7 @@ public abstract class VariantStorageEngineSomaticTest extends VariantStorageBase
         StudyConfiguration studyConfiguration = newStudyConfiguration();
         StoragePipelineResult etlResult = runDefaultETL(getResourceUri("variant-test-somatic.vcf"), getVariantStorageEngine(), studyConfiguration,
                 new ObjectMap(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("GL", "DP", "AU", "CU", "GU", "TU"))
-                        .append(VariantStorageEngine.Options.FILE_ID.key(), 2)
+//                        .append(VariantStorageEngine.Options.FILE_ID.key(), 2)
                         .append(VariantStorageEngine.Options.ANNOTATE.key(), false)
         );
 
@@ -65,7 +65,7 @@ public abstract class VariantStorageEngineSomaticTest extends VariantStorageBase
                         .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(), false)
                         .append(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(), true)
                         .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
-                        .append(VariantStorageEngine.Options.FILE_ID.key(), 2)
+//                        .append(VariantStorageEngine.Options.FILE_ID.key(), 2)
                         .append(VariantStorageEngine.Options.ANNOTATE.key(), false)
         );
         etlResult = runDefaultETL(getResourceUri("variant-test-somatic_2.vcf"), getVariantStorageEngine(), studyConfiguration,
@@ -73,7 +73,7 @@ public abstract class VariantStorageEngineSomaticTest extends VariantStorageBase
                         .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(), true)
                         .append(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(), false)
                         .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
-                        .append(VariantStorageEngine.Options.FILE_ID.key(), 3)
+//                        .append(VariantStorageEngine.Options.FILE_ID.key(), 3)
                         .append(VariantStorageEngine.Options.ANNOTATE.key(), false)
         );
         VariantDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
@@ -113,14 +113,13 @@ public abstract class VariantStorageEngineSomaticTest extends VariantStorageBase
         });
 
         iterator = dbAdaptor.iterator(new Query(VariantQueryParam.INCLUDE_SAMPLE.key(), "SAMPLE_2")
-                .append(VariantQueryParam.FILE.key(), 3)
-                .append(VariantQueryParam.INCLUDE_FILE.key(), 3), new QueryOptions());
+                .append(VariantQueryParam.FILE.key(), "variant-test-somatic_2.vcf"), new QueryOptions());
         iterator.forEachRemaining(variant -> {
             System.out.println("variant.toJson() = " + variant.toJson());
             assertEquals(1, variant.getStudy(STUDY_NAME).getSamplesData().size());
             assertEquals(Collections.singleton("SAMPLE_2"), variant.getStudy(STUDY_NAME).getSamplesName());
             if (!variant.getStudy(STUDY_NAME).getFiles().isEmpty()) {
-                assertEquals("3", variant.getStudy(STUDY_NAME).getFiles().get(0).getFileId());
+                assertEquals("2", variant.getStudy(STUDY_NAME).getFiles().get(0).getFileId());
             }
         });
     }

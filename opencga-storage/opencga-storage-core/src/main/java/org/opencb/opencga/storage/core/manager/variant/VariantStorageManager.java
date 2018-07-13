@@ -16,8 +16,6 @@
 
 package org.opencb.opencga.storage.core.manager.variant;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.core.Region;
@@ -34,11 +32,13 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.FacetedQueryResult;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
-import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.DataStore;
+import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -512,45 +512,43 @@ public class VariantStorageManager extends StorageManager {
             return Collections.emptyMap();
         }
 
-        BiMap<Integer, String> studyIdMap = HashBiMap.create(scm.getStudies(null)).inverse();
         if (VariantQueryUtils.isIncludeSamplesDefined(query, returnedFields)) {
-            Map<Integer, List<Integer>> samplesToReturn = VariantQueryUtils.getIncludeSamples(query, queryOptions, scm);
-            for (Map.Entry<Integer, List<Integer>> entry : samplesToReturn.entrySet()) {
-                int studyId = entry.getKey();
-                String study = studyIdMap.get(studyId);
+            Map<String, List<String>> samplesToReturn = VariantQueryUtils.getSamplesMetadata(query, queryOptions, scm);
+            for (Map.Entry<String, List<String>> entry : samplesToReturn.entrySet()) {
+                String studyId = entry.getKey();
                 if (!entry.getValue().isEmpty()) {
-                    QueryResult<Sample> samplesQueryResult = catalogManager.getSampleManager().get(study,
-                            new Query(SampleDBAdaptor.QueryParams.UID.key(), entry.getValue()), new QueryOptions("exclude",
-                                    Arrays.asList("projects.studies.samples.annotationSets", "projects.studies.samples.attributes")),
-                            sessionId);
-                    if (samplesQueryResult.getNumResults() != entry.getValue().size()) {
+                    List<QueryResult<Sample>> samplesQueryResult = catalogManager.getSampleManager().get(studyId, entry.getValue(),
+                            new Query(), new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.ID.key()), sessionId);
+                    if (samplesQueryResult.size() != entry.getValue().size()) {
                         throw new CatalogAuthorizationException("Permission denied. User "
                                 + catalogManager.getUserManager().getUserId(sessionId) + " can't read all the requested samples");
                     }
-                    samplesMap.put(study, samplesQueryResult.getResult());
+                    samplesMap.put(studyId, samplesQueryResult.stream().map(QueryResult::first).collect(Collectors.toList()));
                 } else {
-                    samplesMap.put(study, Collections.emptyList());
+                    samplesMap.put(studyId, Collections.emptyList());
                 }
             }
         } else {
             logger.debug("Missing returned samples! Obtaining returned samples from catalog.");
-            List<Integer> returnedStudies = VariantQueryUtils.getIncludeStudies(query, queryOptions, scm);
-            List<Study> studies = catalogManager.getStudyManager().get(new Query(StudyDBAdaptor.QueryParams.UID.key(), returnedStudies),
-                    new QueryOptions(INCLUDE, FQN.key()), sessionId).getResult();
+            List<String> returnedStudies = VariantQueryUtils.getIncludeStudies(query, queryOptions, scm)
+                    .stream()
+                    .map(scm.getStudies(null).inverse()::get)
+                    .collect(Collectors.toList());
+            List<Study> studies = catalogManager.getStudyManager().get(returnedStudies,
+                    new QueryOptions(INCLUDE, FQN.key()), false, sessionId).stream().map(QueryResult::first).collect(Collectors.toList());
             if (!returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)) {
-                for (Integer returnedStudy : returnedStudies) {
-                    samplesMap.put(studyIdMap.get(returnedStudy), Collections.emptyList());
+                for (String returnedStudy : returnedStudies) {
+                    samplesMap.put(returnedStudy, Collections.emptyList());
                 }
             } else {
-                List<Long> returnedSamples = new LinkedList<>();
+                List<String> returnedSamples = new LinkedList<>();
                 for (Study study : studies) {
                     QueryResult<Sample> samplesQueryResult = catalogManager.getSampleManager().get(study.getFqn(),
-                            new Query(), new QueryOptions("exclude",
-                                    Arrays.asList("projects.studies.samples.annotationSets", "projects.studies.samples.attributes")),
+                            new Query(), new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.ID.key()),
                             sessionId);
-                    samplesQueryResult.getResult().sort(Comparator.comparingLong(PrivateFields::getUid));
+                    samplesQueryResult.getResult().sort(Comparator.comparing(Sample::getId));
                     samplesMap.put(study.getFqn(), samplesQueryResult.getResult());
-                    samplesQueryResult.getResult().stream().map(Sample::getUid).forEach(returnedSamples::add);
+                    samplesQueryResult.getResult().stream().map(Sample::getId).forEach(returnedSamples::add);
                 }
                 query.append(VariantQueryParam.INCLUDE_SAMPLE.key(), returnedSamples);
             }

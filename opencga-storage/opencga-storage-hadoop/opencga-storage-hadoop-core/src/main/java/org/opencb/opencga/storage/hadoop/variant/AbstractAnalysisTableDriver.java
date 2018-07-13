@@ -34,7 +34,6 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
@@ -283,7 +282,7 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
     }
 
     public static List<Integer> getFiles(Configuration conf) {
-        String[] fileArr = conf.getStrings(VariantStorageEngine.Options.FILE_ID.key(), new String[0]);
+        String[] fileArr = conf.getStrings(HadoopVariantStorageEngine.FILE_ID, new String[0]);
         return Arrays.stream(fileArr)
                     .filter(s -> StringUtils.isNotEmpty(s) && !s.equals("."))
                     .map(Integer::parseInt)
@@ -291,7 +290,7 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
     }
 
     protected int getStudyId() {
-        return getConf().getInt(VariantStorageEngine.Options.STUDY_ID.key(), -1);
+        return getConf().getInt(HadoopVariantStorageEngine.STUDY_ID, -1);
     }
 
     protected String getAnalysisTable() {
@@ -362,12 +361,12 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
 
         getConf().set(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME, args[0]);
         getConf().set(CONFIG_VARIANT_TABLE_NAME, args[1]);
-        getConf().set(VariantStorageEngine.Options.STUDY_ID.key(), args[2]);
+        getConf().set(HadoopVariantStorageEngine.STUDY_ID, args[2]);
         if (args[3].equals(".") || args[3].isEmpty()) {
-            getConf().unset(VariantStorageEngine.Options.FILE_ID.key());
+            getConf().unset(HadoopVariantStorageEngine.FILE_ID);
             getConf().unset(VariantQueryParam.FILE.key());
         } else {
-            getConf().setStrings(VariantStorageEngine.Options.FILE_ID.key(), args[3].split(","));
+            getConf().setStrings(HadoopVariantStorageEngine.FILE_ID, args[3].split(","));
             getConf().setStrings(VariantQueryParam.FILE.key(), args[3].split(","));
         }
 

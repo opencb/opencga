@@ -330,7 +330,6 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
                 .append(VariantStorageEngine.Options.RESUME.key(), cliOptions.genericVariantStatsOptions.resume)
                 .append(VariantQueryParam.REGION.key(), cliOptions.genericVariantStatsOptions.region)
                 .append(StorageOperation.CATALOG_PATH, cliOptions.catalogPath);
-        options.putIfNotEmpty(VariantStorageEngine.Options.FILE_ID.key(), cliOptions.genericVariantStatsOptions.fileId);
 
         options.putAll(cliOptions.commonOptions.params);
 

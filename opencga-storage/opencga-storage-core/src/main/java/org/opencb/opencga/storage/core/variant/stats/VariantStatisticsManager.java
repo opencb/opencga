@@ -92,9 +92,6 @@ public interface VariantStatisticsManager {
                                  ObjectMap options) {
         Query readerQuery = new Query(VariantQueryParam.STUDY.key(), studyConfiguration.getStudyId())
                 .append(VariantQueryParam.INCLUDE_STUDY.key(), studyConfiguration.getStudyId());
-        if (options.containsKey(VariantStorageEngine.Options.FILE_ID.key())) {
-            readerQuery.append(VariantQueryParam.FILE.key(), options.get(VariantStorageEngine.Options.FILE_ID.key()));
-        }
         if (options.containsKey(VariantQueryParam.REGION.key())) {
             Object region = options.get(VariantQueryParam.REGION.key());
             readerQuery.put(VariantQueryParam.REGION.key(), region);

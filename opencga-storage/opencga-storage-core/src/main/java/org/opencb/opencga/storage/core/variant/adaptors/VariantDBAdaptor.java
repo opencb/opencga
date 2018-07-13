@@ -33,7 +33,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.getSamplesMetadata;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.getSamplesMetadataIfRequested;
 
 /**
  * @author Ignacio Medina <igmecas@gmail.com>
@@ -67,7 +67,8 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      * @return A QueryResult with the result of the query
      */
     default VariantQueryResult<Variant> get(Iterator<?> variants, Query query, QueryOptions options) {
-        return iterator(variants, query, options).toQueryResult(getSamplesMetadata(query, options, getStudyConfigurationManager()));
+        return iterator(variants, query, options)
+                .toQueryResult(getSamplesMetadataIfRequested(query, options, getStudyConfigurationManager()));
     }
 
     /**
