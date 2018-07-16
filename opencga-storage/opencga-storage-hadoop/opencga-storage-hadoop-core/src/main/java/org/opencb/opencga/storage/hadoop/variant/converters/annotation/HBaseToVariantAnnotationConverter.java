@@ -182,6 +182,10 @@ public class HBaseToVariantAnnotationConverter implements Converter<Result, Vari
             }
         }
 
+        if (variantAnnotation.getConsequenceTypes() == null) {
+            variantAnnotation.setConsequenceTypes(Collections.emptyList());
+        }
+
         if (variantAnnotation.getTraitAssociation() == null) {
             variantAnnotation.setTraitAssociation(Collections.emptyList());
         } else {
