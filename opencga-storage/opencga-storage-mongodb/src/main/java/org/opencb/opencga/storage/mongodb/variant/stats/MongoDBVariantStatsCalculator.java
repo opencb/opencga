@@ -7,9 +7,9 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.stats.VariantStatsCalculator;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.mongodb.variant.converters.AbstractDocumentConverter;
-import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
 
@@ -40,7 +40,7 @@ public class MongoDBVariantStatsCalculator extends AbstractDocumentConverter imp
         List<String> defaultGenotypes = studyConfiguration.getAttributes().getAsStringList(DEFAULT_GENOTYPE.key());
 
         defaultGenotype = defaultGenotypes.isEmpty() ? null : defaultGenotypes.get(0);
-        if (DocumentToSamplesConverter.UNKNOWN_GENOTYPE.equals(defaultGenotype)) {
+        if (GenotypeClass.UNKNOWN_GENOTYPE.equals(defaultGenotype)) {
             defaultGenotype = this.unknownGenotype;
         }
 
@@ -92,7 +92,7 @@ public class MongoDBVariantStatsCalculator extends AbstractDocumentConverter imp
                 for (Map.Entry<String, Set<Integer>> entry : gtsMap.entrySet()) {
                     String gtStr = entry.getKey();
                     // If any ?/? is present in the DB, must be read as "unknownGenotype", usually "./."
-                    if (DocumentToSamplesConverter.UNKNOWN_GENOTYPE.equals(gtStr)) {
+                    if (GenotypeClass.UNKNOWN_GENOTYPE.equals(gtStr)) {
                         gtStr = unknownGenotype;
                     }
                     if ((entry.getValue()).contains(sampleId)) {

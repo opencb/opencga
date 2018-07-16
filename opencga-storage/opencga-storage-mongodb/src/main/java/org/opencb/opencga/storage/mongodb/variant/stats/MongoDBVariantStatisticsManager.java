@@ -61,7 +61,7 @@ public class MongoDBVariantStatisticsManager extends DefaultVariantStatisticsMan
         if (cohorts == null) {
             cohorts = new LinkedHashMap<>();
         }
-        checkAndUpdateStudyConfigurationCohorts(studyConfiguration, cohorts, cohortIdsMap, overwrite, updateStats);
+        checkAndUpdateStudyConfigurationCohorts(studyConfiguration, cohorts, overwrite, updateStats);
         List<Integer> cohortIds = cohorts.keySet().stream().map(studyConfiguration.getCohortIds()::get).collect(Collectors.toList());
 
         if (!overwrite) {

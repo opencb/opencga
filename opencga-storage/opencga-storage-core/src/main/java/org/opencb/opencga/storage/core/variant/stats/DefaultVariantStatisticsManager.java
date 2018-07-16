@@ -509,7 +509,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
      * * if a cohort is already calculated, it is not an error if overwrite was provided
      *
      */
-    static List<Integer> checkAndUpdateStudyConfigurationCohorts(StudyConfiguration studyConfiguration,
+    protected static List<Integer> checkAndUpdateStudyConfigurationCohorts(StudyConfiguration studyConfiguration,
                                                           Map<String, Set<String>> cohorts,
                                                           boolean overwrite, boolean updateStats)
             throws StorageEngineException {
