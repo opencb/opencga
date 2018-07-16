@@ -53,7 +53,8 @@ public class FillGapsDriver extends AbstractAnalysisTableDriver {
     }
 
     @Override
-    protected void parseAndValidateParameters() {
+    protected void parseAndValidateParameters() throws IOException {
+        super.parseAndValidateParameters();
         samples = FillGapsFromArchiveMapper.getSamples(getConf());
     }
 

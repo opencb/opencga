@@ -64,7 +64,8 @@ public class VariantExporterDriver extends AbstractAnalysisTableDriver {
     private QueryOptions options = new QueryOptions();
 
     @Override
-    protected void parseAndValidateParameters() {
+    protected void parseAndValidateParameters() throws IOException {
+        super.parseAndValidateParameters();
         outputFormat = VariantOutputFormat.valueOf(getConf().get(OUTPUT_FORMAT_PARAM, "avro").toUpperCase());
         outFile = getConf().get(OUTPUT_PARAM);
         if (outFile == null || outFile.isEmpty()) {

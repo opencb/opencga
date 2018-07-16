@@ -38,7 +38,8 @@ public class PrepareFillMissingDriver extends AbstractAnalysisTableDriver {
     }
 
     @Override
-    protected void parseAndValidateParameters() {
+    protected void parseAndValidateParameters() throws IOException {
+        super.parseAndValidateParameters();
     }
 
     @Override

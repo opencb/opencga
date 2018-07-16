@@ -46,6 +46,7 @@ public class SampleIndexConsolidationDrive extends AbstractAnalysisTableDriver {
 
     @Override
     protected void parseAndValidateParameters() throws IOException {
+        super.parseAndValidateParameters();
         sampleIndexTable = getHelper().getHBaseVariantTableNameGenerator().getSampleIndexTableName(getStudyId());
 
         if (sampleIndexTable == null || sampleIndexTable.isEmpty()) {

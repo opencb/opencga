@@ -39,7 +39,8 @@ public class VariantStatsDriver extends AbstractAnalysisTableDriver {
     }
 
     @Override
-    protected void parseAndValidateParameters() {
+    protected void parseAndValidateParameters() throws IOException {
+        super.parseAndValidateParameters();
         cohorts = VariantStatsMapper.getCohorts(getConf());
     }
 

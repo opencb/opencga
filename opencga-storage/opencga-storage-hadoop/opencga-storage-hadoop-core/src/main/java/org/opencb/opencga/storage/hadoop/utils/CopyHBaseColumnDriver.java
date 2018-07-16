@@ -70,7 +70,8 @@ public class CopyHBaseColumnDriver extends AbstractHBaseDriver {
     }
 
     @Override
-    protected void parseAndValidateParameters() {
+    protected void parseAndValidateParameters() throws IOException {
+        super.parseAndValidateParameters();
         columnsToCopyMap = getColumnsToCopy(getConf());
     }
 

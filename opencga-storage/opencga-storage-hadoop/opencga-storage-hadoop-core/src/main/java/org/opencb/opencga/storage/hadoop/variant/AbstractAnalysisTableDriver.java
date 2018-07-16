@@ -18,7 +18,6 @@ package org.opencb.opencga.storage.hadoop.variant;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.client.ConnectionConfiguration;
@@ -35,6 +34,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDriver;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
@@ -53,7 +53,7 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngi
 /**
  * Created by mh719 on 21/11/2016.
  */
-public abstract class AbstractAnalysisTableDriver extends Configured implements Tool {
+public abstract class AbstractAnalysisTableDriver extends AbstractHBaseDriver implements Tool {
 
     public static final String CONFIG_VARIANT_TABLE_NAME           = "opencga.variant.table.name";
     public static final String TIMESTAMP                           = "opencga.variant.table.timestamp";
@@ -72,12 +72,9 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
     }
 
     @Override
-    public int run(String[] args) throws Exception {
+    protected void parseAndValidateParameters() throws IOException {
+        super.parseAndValidateParameters();
         Configuration conf = getConf();
-        HBaseConfiguration.addHbaseResources(conf);
-        getConf().setClassLoader(AbstractAnalysisTableDriver.class.getClassLoader());
-        configFromArgs(args);
-
         String archiveTable = getArchiveTable();
         String variantTable = getAnalysisTable();
         Integer studyId = getStudyId();
@@ -103,53 +100,46 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
 
         initVariantTableHelper(studyId, archiveTable, variantTable);
 
-        // Other validations
-        parseAndValidateParameters();
-
         /* -------------------------------*/
         // Validate input CHECK
         try (HBaseManager hBaseManager = new HBaseManager(conf)) {
             checkTablesExist(hBaseManager, archiveTable, variantTable);
         }
 
-        preExecution(variantTable);
+        // Increase the ScannerTimeoutPeriod to avoid ScannerTimeoutExceptions
+        // See opencb/opencga#352 for more info.
+        int scannerTimeout = getConf().getInt(MAPREDUCE_HBASE_SCANNER_TIMEOUT,
+                getConf().getInt(HConstants.HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD, HConstants.DEFAULT_HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD));
+        logger.info("Set Scanner timeout to " + scannerTimeout + " ...");
+        conf.setInt(HConstants.HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD, scannerTimeout);
 
-        /* -------------------------------*/
-        // JOB setup
-        Job job = newJob();
-        setupJob(job, archiveTable, variantTable);
+    }
 
-        logger.info("=================================================");
-        logger.info("Execute " + getJobOperationName() + " for table " + variantTable);
-        logger.info("=================================================");
-        boolean succeed = executeJob(job);
-        if (!succeed) {
-            logger.error("error with job!");
-        }
-
-        postExecution(job);
-        if (scm != null) {
-            scm.close();
-            scm = null;
-        }
-        return succeed ? 0 : 1;
+    @Override
+    protected void preExecution() throws IOException, StorageEngineException {
+        super.preExecution();
+        preExecution(getAnalysisTable());
     }
 
     protected void preExecution(String variantTable) throws IOException, StorageEngineException {
         // do nothing
     }
 
-    protected void postExecution(Job job) throws IOException, StorageEngineException {
-        postExecution(job.isSuccessful());
+    @Override
+    protected void close() throws IOException, StorageEngineException {
+        super.close();
+        if (scm != null) {
+            scm.close();
+            scm = null;
+        }
     }
-
-    protected void postExecution(boolean succeed) throws IOException, StorageEngineException {
-        // do nothing
-    }
-
-    protected abstract void parseAndValidateParameters() throws IOException;
 
     protected abstract Class<?> getMapperClass();
+
+    @Override
+    protected final void setupJob(Job job, String table) throws IOException {
+        setupJob(job, getArchiveTable(), getAnalysisTable());
+    }
 
     protected abstract Job setupJob(Job job, String archiveTable, String variantTable) throws IOException;
 
@@ -163,28 +153,6 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
      * @return Job action
      */
     protected abstract String getJobOperationName();
-
-    private boolean executeJob(Job job) throws IOException, InterruptedException, ClassNotFoundException {
-        Thread hook = new Thread(() -> {
-            try {
-                if (!job.isComplete()) {
-                    job.killJob();
-                }
-//                onError();
-            } catch (IOException e) {
-                logger.error("Error", e);
-            }
-        });
-        boolean succeed;
-        try {
-            Runtime.getRuntime().addShutdownHook(hook);
-            succeed = job.waitForCompletion(true);
-        } finally {
-            Runtime.getRuntime().removeShutdownHook(hook);
-        }
-        return succeed;
-    }
-
 
     protected final Scan createArchiveTableScan(List<Integer> files) {
         Scan scan = new Scan();
@@ -219,21 +187,8 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
         return scan;
     }
 
-    private Job newJob() throws IOException {
-        Job job = Job.getInstance(getConf(), buildJobName());
-        job.getConfiguration().set("mapreduce.job.user.classpath.first", "true");
-        job.setJarByClass(getMapperClass());    // class that contains mapper
-
-        // Increase the ScannerTimeoutPeriod to avoid ScannerTimeoutExceptions
-        // See opencb/opencga#352 for more info.
-        int scannerTimeout = getConf().getInt(MAPREDUCE_HBASE_SCANNER_TIMEOUT,
-                getConf().getInt(HConstants.HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD, HConstants.DEFAULT_HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD));
-        logger.info("Set Scanner timeout to " + scannerTimeout + " ...");
-        job.getConfiguration().setInt(HConstants.HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD, scannerTimeout);
-        return job;
-    }
-
-    protected String buildJobName() {
+    @Override
+    protected String getJobName() {
         String variantTable = getAnalysisTable();
         List<Integer> files = getFiles();
         StringBuilder sb = new StringBuilder("opencga: ").append(getJobOperationName())
@@ -318,16 +273,12 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
         return scm;
     }
 
-    private void checkTablesExist(HBaseManager hBaseManager, String... tables) {
-        Arrays.stream(tables).forEach(table -> {
-            try {
-                if (!hBaseManager.tableExists(table)) {
-                    throw new IllegalArgumentException("Table " + table + " does not exist!!!");
-                }
-            } catch (IOException e) {
-                throw new IllegalStateException(e);
+    private void checkTablesExist(HBaseManager hBaseManager, String... tables) throws IOException {
+        for (String fileName : tables) {
+            if (!hBaseManager.tableExists(fileName)) {
+                throw new IOException("Table " + fileName + " does not exist!!!");
             }
-        });
+        }
     }
 
     private VariantTableHelper initVariantTableHelper(Integer studyId, String archiveTable, String analysisTable) {
@@ -343,22 +294,19 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
         return variantTablehelper;
     }
 
-    private void configFromArgs(String[] args) {
-        int fixedSizeArgs = 4;
+    @Override
+    protected final int getFixedSizeArgs() {
+        return 4;
+    }
 
-        if (args.length < fixedSizeArgs || (args.length - fixedSizeArgs) % 2 != 0) {
-            System.err.println("Usage: " + getClass().getSimpleName()
-                    + " [generic options] <archive-table> <variants-table> <studyId> <fileIds> [<key> <value>]*");
-            System.err.println("Found " + Arrays.toString(args));
-            ToolRunner.printGenericCommandUsage(System.err);
-            throw new IllegalArgumentException("Wrong number of arguments!");
-        }
+    @Override
+    protected final String getUsage() {
+        return "Usage: " + getClass().getSimpleName()
+                + " [generic options] <archive-table> <variants-table> <studyId> <fileIds> [<key> <value>]*";
+    }
 
-        // Get first other args to avoid overwrite the fixed position args.
-        for (int i = fixedSizeArgs; i < args.length; i = i + 2) {
-            getConf().set(args[i], args[i + 1]);
-        }
-
+    @Override
+    protected final void parseFixedParams(String[] args) {
         getConf().set(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME, args[0]);
         getConf().set(CONFIG_VARIANT_TABLE_NAME, args[1]);
         getConf().set(HadoopVariantStorageEngine.STUDY_ID, args[2]);
@@ -369,7 +317,6 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
             getConf().setStrings(HadoopVariantStorageEngine.FILE_ID, args[3].split(","));
             getConf().setStrings(VariantQueryParam.FILE.key(), args[3].split(","));
         }
-
     }
 
     public int privateMain(String[] args) throws Exception {
