@@ -175,6 +175,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
+    public Boolean checkCanSyncSolr(String studyId, String userId) throws CatalogException {
+        //TODO: implement with new permissions for solr sync
+        // what to do when you want to sync ALL studies, where permissions is stored ? ? ? only admin can do ??
+        return true;
+    }
+
+    @Override
     public void checkCanViewStudy(long studyId, String userId) throws CatalogException {
         if (ADMIN.equals(userId)) {
             return;

@@ -1190,18 +1190,20 @@ public class StudyManager extends AbstractManager {
         }
     }
 
-    public boolean indexCatalogIntoSolr(Query query, QueryOptions queryOptions) throws CatalogException, IOException {
+    public boolean indexCatalogIntoSolr(String studyStr, Query query, QueryOptions queryOptions, String sessionId)
+            throws CatalogException, IOException {
 
-        CatalogSolrManager catalogSolrManager = new CatalogSolrManager(this.catalogManager);
+        if (checkCanSyncSolr(studyStr, sessionId)) {
+            CatalogSolrManager catalogSolrManager = new CatalogSolrManager(this.catalogManager);
 
-        ExecutorService threadPool = Executors.newFixedThreadPool(5);
-        threadPool.submit(() -> indexCohort(catalogSolrManager, query, queryOptions));
-        threadPool.submit(() -> indexFile(catalogSolrManager, query, queryOptions));
-        threadPool.submit(() -> indexFamily(catalogSolrManager, query, queryOptions));
-        threadPool.submit(() -> indexIndividual(catalogSolrManager, query, queryOptions));
-        threadPool.submit(() -> indexSample(catalogSolrManager, query, queryOptions));
-        threadPool.shutdown();
-
+            ExecutorService threadPool = Executors.newFixedThreadPool(5);
+            threadPool.submit(() -> indexCohort(catalogSolrManager, query, queryOptions));
+            threadPool.submit(() -> indexFile(catalogSolrManager, query, queryOptions));
+            threadPool.submit(() -> indexFamily(catalogSolrManager, query, queryOptions));
+            threadPool.submit(() -> indexIndividual(catalogSolrManager, query, queryOptions));
+            threadPool.submit(() -> indexSample(catalogSolrManager, query, queryOptions));
+            threadPool.shutdown();
+        }
         return true;
     }
 
@@ -1348,5 +1350,13 @@ public class StudyManager extends AbstractManager {
 
     public Map<Long, String> getAllStudiesIdAndUid() throws CatalogDBException {
         return studyDBAdaptor.getAllStudiesIdAndUid();
+    }
+
+    private Boolean checkCanSyncSolr(String studyStr, String sessionId) throws CatalogException {
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        if ("admin".equals(userId)) {
+            return true;
+        }
+        return authorizationManager.checkCanSyncSolr(studyStr, userId);
     }
 }

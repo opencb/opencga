@@ -153,7 +153,7 @@ public class AdminWSServer extends OpenCGAWSServer {
             queryOptions.put(QueryOptions.EXCLUDE, "samples,attributes");
             queryOptions.put(FLATTENED_ANNOTATIONS, "true");
             queryOptions.remove(QueryOptions.LIMIT);
-            return createOkResponse(catalogManager.getStudyManager().indexCatalogIntoSolr(query, queryOptions));
+            return createOkResponse(catalogManager.getStudyManager().indexCatalogIntoSolr(studyStr, query, queryOptions, sessionId));
         } catch (CatalogException | IOException e) {
             return createErrorResponse(e);
         }

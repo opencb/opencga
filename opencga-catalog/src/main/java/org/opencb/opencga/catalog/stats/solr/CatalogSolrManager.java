@@ -67,8 +67,8 @@ public class CatalogSolrManager {
     public static final String FAMILY_CONF_SET = "OpenCGACatalogFamilyConfSet";
     public static final String INDIVIDUAL_CONF_SET = "OpenCGACatalogIndividualConfSet";
     public static final String SAMPLE_CONF_SET = "OpenCGACatalogSampleConfSet";
-    public static final Map<String, String> CONFIGS_COLLECTION = new HashMap();
-    private Map<Long, String> STUDIES_UID_TO_ID = new HashMap();
+    public static final Map<String, String> CONFIGS_COLLECTION = new HashMap<>();
+    private Map<Long, String> STUDIES_UID_TO_ID = new HashMap<>();
 
     private Logger logger;
 
