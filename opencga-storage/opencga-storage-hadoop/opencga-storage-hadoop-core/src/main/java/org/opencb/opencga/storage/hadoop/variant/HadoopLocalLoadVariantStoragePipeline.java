@@ -33,7 +33,6 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
-import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHBaseArchiveDataWriter;
@@ -74,15 +73,14 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
      * @param configuration      {@link StorageConfiguration}
      * @param dbAdaptor          {@link VariantHadoopDBAdaptor}
      * @param conf               {@link Configuration}
-     * @param archiveCredentials {@link HBaseCredentials}
      * @param variantReaderUtils {@link VariantReaderUtils}
      * @param options            {@link ObjectMap}
      */
     public HadoopLocalLoadVariantStoragePipeline(StorageConfiguration configuration,
                                                  VariantHadoopDBAdaptor dbAdaptor, Configuration conf,
-                                                 HBaseCredentials archiveCredentials, VariantReaderUtils variantReaderUtils,
+                                                 VariantReaderUtils variantReaderUtils,
                                                  ObjectMap options) {
-        super(configuration, dbAdaptor, variantReaderUtils, options, archiveCredentials, null, conf);
+        super(configuration, dbAdaptor, variantReaderUtils, options, null, conf);
     }
 
     @Override
@@ -96,7 +94,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
 
         final AtomicInteger ongoingLoads = new AtomicInteger(1); // this
         boolean resume = options.getBoolean(VariantStorageEngine.Options.RESUME.key(), VariantStorageEngine.Options.RESUME.defaultValue());
-        List<Integer> fileIds = Collections.singletonList(options.getInt(VariantStorageEngine.Options.FILE_ID.key()));
+        List<Integer> fileIds = Collections.singletonList(getFileId());
 
         StudyConfigurationManager.addBatchOperation(studyConfiguration, OPERATION_NAME, fileIds, resume, BatchFileOperation.Type.LOAD,
                 operation -> {
@@ -126,7 +124,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         try {
             Runtime.getRuntime().addShutdownHook(hook);
             Path input = Paths.get(inputUri.getPath());
-            String table = archiveTableCredentials.getTable();
+            String table = getArchiveTable();
             String fileName = input.getFileName().toString();
 
             VariantFileMetadata fileMetadata = variantReaderUtils.readVariantFileMetadata(inputUri);

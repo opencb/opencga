@@ -34,6 +34,7 @@ import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.metadata.local.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
@@ -44,11 +45,13 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManag
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
+import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.opencb.opencga.storage.mongodb.annotation.MongoDBVariantAnnotationManager;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
 import org.opencb.opencga.storage.mongodb.metadata.MongoDBVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoVariantImporter;
+import org.opencb.opencga.storage.mongodb.variant.stats.MongoDBVariantStatisticsManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -182,6 +185,11 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     public MongoDBVariantStoragePipeline newStoragePipeline(boolean connected) throws StorageEngineException {
         VariantMongoDBAdaptor dbAdaptor = connected ? getDBAdaptor() : null;
         return new MongoDBVariantStoragePipeline(configuration, STORAGE_ENGINE_ID, dbAdaptor);
+    }
+
+    @Override
+    public VariantStatisticsManager newVariantStatisticsManager() throws StorageEngineException {
+        return new MongoDBVariantStatisticsManager(getDBAdaptor());
     }
 
     @Override
@@ -349,7 +357,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
 
                             if (doMerge) {
                                 logger.info("Load - Merge '{}'", input);
-                                filesToMerge.add(storagePipeline.getOptions().getInt(Options.FILE_ID.key()));
+                                filesToMerge.add(storagePipeline.getFileId());
                                 resultsToMerge.add(result);
 
                                 if (filesToMerge.size() == batchLoad || !iterator.hasNext()) {
@@ -406,8 +414,12 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
 
                 }
                 if (doMerge) {
-                    annotateLoadedFiles(outdirUri, inputFiles, results, getOptions());
-                    calculateStatsForLoadedFiles(outdirUri, inputFiles, results, getOptions());
+                    StudyConfiguration studyConfiguration = storageResultMap.get(inputFiles.get(0)).getStudyConfiguration();
+                    ObjectMap options = getOptions();
+                    options.put(Options.STUDY.key(), studyConfiguration.getStudyName());
+
+                    annotateLoadedFiles(outdirUri, inputFiles, results, options);
+                    calculateStatsForLoadedFiles(outdirUri, inputFiles, results, options);
                 }
             }
 
@@ -459,7 +471,8 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
 
             // REGION + [ STUDY ]
             if (queryParams.contains(REGION) // Has region
-                    && (queryParams.size() == 1 || queryParams.size() == 2 && queryParams.contains(STUDY)) // Optionally, has study
+                    // Optionally, has study
+                    && (queryParams.size() == 1 || queryParams.size() == 2 && queryParams.contains(VariantQueryParam.STUDY))
                     && options.getBoolean(QueryOptions.SKIP_COUNT, DEFAULT_SKIP_COUNT)) {   // Do not require total count
                 // Do not use SearchIndex either for intersect.
                 options.put(VariantSearchManager.USE_SEARCH_INDEX, VariantSearchManager.UseSearchIndex.NO);

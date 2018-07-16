@@ -42,7 +42,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -100,7 +99,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
         String inTable = conf.get(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME, StringUtils.EMPTY);
         String outTable = conf.get(AbstractAnalysisTableDriver.CONFIG_VARIANT_TABLE_NAME, StringUtils.EMPTY);
         String[] fileArr = argFileArray();
-        Integer studyId = conf.getInt(VariantStorageEngine.Options.STUDY_ID.key(), -1);
+        Integer studyId = conf.getInt(HadoopVariantStorageEngine.STUDY_ID, -1);
 
         /* -------------------------------*/
         // Validate parameters CHECK
@@ -174,7 +173,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
     protected abstract String getJobOperationName();
 
     protected String[] argFileArray() {
-        return getConf().getStrings(VariantStorageEngine.Options.FILE_ID.key(), new String[0]);
+        return getConf().getStrings(HadoopVariantStorageEngine.FILE_ID, new String[0]);
     }
 
     protected VariantTableHelper getHelper() {
@@ -358,8 +357,8 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
         conf = HBaseManager.addHBaseSettings(conf, toolArgs[0]);
         conf.set(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME, toolArgs[1]);
         conf.set(AbstractAnalysisTableDriver.CONFIG_VARIANT_TABLE_NAME, toolArgs[2]);
-        conf.set(VariantStorageEngine.Options.STUDY_ID.key(), toolArgs[3]);
-        conf.setStrings(VariantStorageEngine.Options.FILE_ID.key(), toolArgs[4].split(","));
+        conf.set(HadoopVariantStorageEngine.STUDY_ID, toolArgs[3]);
+        conf.setStrings(HadoopVariantStorageEngine.FILE_ID, toolArgs[4].split(","));
         for (int i = fixedSizeArgs; i < toolArgs.length; i = i + 2) {
             conf.set(toolArgs[i], toolArgs[i + 1]);
         }

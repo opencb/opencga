@@ -57,7 +57,7 @@ public class DocumentToVariantStatsConverterTest {
         genotypes.append("1/1", 10);
         mongoStats.append(DocumentToVariantStatsConverter.NUMGT_FIELD, genotypes);
 
-        stats = new VariantStats(null, -1, null, null, VariantType.SNV, 0.1f, 0.01f, "A", "A/A", 10, 5, -1, -1, -1, -1, -1);
+        stats = new VariantStats(null, -1, "A", "C", VariantType.SNV, 0.1f, 0.01f, "A", "A/A", 10, 5, -1, -1, -1, -1, -1);
         stats.addGenotype(new Genotype("0/0"), 100);
         stats.addGenotype(new Genotype("0/1"), 50);
         stats.addGenotype(new Genotype("1/1"), 10);
@@ -77,7 +77,8 @@ public class DocumentToVariantStatsConverterTest {
     @Test
     public void testConvertToDataModelType() {
         DocumentToVariantStatsConverter converter = new DocumentToVariantStatsConverter();
-        VariantStats converted = converter.convertToDataModelType(mongoStats);
+        VariantStats converted = new VariantStats("A", "C", VariantType.SNV);
+        converter.convertToDataModelType(mongoStats, converted);
         assertEquals(stats, converted);
     }
 
@@ -86,7 +87,8 @@ public class DocumentToVariantStatsConverterTest {
         DocumentToVariantStatsConverter converter = new DocumentToVariantStatsConverter();
         mongoStats.remove(DocumentToVariantStatsConverter.ALT_FREQ_FIELD);
         mongoStats.remove(DocumentToVariantStatsConverter.REF_FREQ_FIELD);
-        VariantStats converted = converter.convertToDataModelType(mongoStats);
+        VariantStats converted = new VariantStats("A", "C", VariantType.SNV);
+        converter.convertToDataModelType(mongoStats, converted);
         assertEquals(stats, converted);
     }
 

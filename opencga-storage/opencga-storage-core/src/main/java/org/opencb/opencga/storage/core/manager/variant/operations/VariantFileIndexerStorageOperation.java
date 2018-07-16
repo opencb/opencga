@@ -27,11 +27,9 @@ import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
-import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
@@ -141,9 +139,10 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 
         // We read all input files from fileId. This can either be a single file and then we just use it,
         // or this can be a directory, in that case we use all VCF files in that directory or subdirectory
-//        long studyUidByInputFileId = getStudyId(fileIds);
-        long studyUidByInputFileId = studyInfo.getStudyUid();
         String studyFQNByInputFileId = studyInfo.getStudyFQN();
+
+        options.put(VariantStorageEngine.Options.STUDY.key(), studyFQNByInputFileId);
+        options.put(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), getAggregation(studyFQNByInputFileId, options, sessionId));
 
 //        Study study = catalogManager.getStudyManager().get(studyUidByInputFileId, new QueryOptions(), sessionId).getResult().get(0);
         Study study = studyInfo.getStudy();
@@ -158,7 +157,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         }
 
         // Update Catalog from the study configuration BEFORE executing the index and fetching files from Catalog
-        updateCatalogFromStudyConfiguration(sessionId, studyUidByInputFileId, dataStore);
+        updateCatalogFromStudyConfiguration(sessionId, studyFQNByInputFileId, dataStore);
 
         List<File> inputFiles = new ArrayList<>();
 //        for (Long fileIdLong : fileIds) {
@@ -196,8 +195,6 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 
         logger.debug("Index - Number of files to be indexed: {}, list of files: {}", inputFiles.size(),
                 inputFiles.stream().map(File::getName).collect(Collectors.toList()));
-
-        options.put(VariantStorageEngine.Options.STUDY_ID.key(), studyUidByInputFileId);
 
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
 
@@ -258,16 +255,8 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             }
         }
 
-        // Update study configuration BEFORE executing the index
-        List<Long> fileIdsToIndex = filesToIndex.stream().map(File::getUid).collect(Collectors.toList());
-        updateStudyConfigurationFromCatalog(sessionId, studyUidByInputFileId, dataStore, fileIdsToIndex);
-
         String prevDefaultCohortStatus = Cohort.CohortStatus.NONE;
         if (step.equals(Type.INDEX) || step.equals(Type.LOAD)) {
-            // Default Cohort is managed by storage. Samples are added when the file is fully loaded.
-//            for (File file : filesToIndex) {
-//                updateDefaultCohort(file, study, options, sessionId);
-//            }
             if (calculateStats) {
                 prevDefaultCohortStatus = updateDefaultCohortStatus(study, Cohort.CohortStatus.CALCULATING, sessionId);
             }
@@ -317,7 +306,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             if (calculateStats && exception != null) {
                 updateDefaultCohortStatus(study, prevDefaultCohortStatus, sessionId);
             }
-            updateStudyConfiguration(sessionId, study.getUid(), dataStore);
+            updateCatalogFromStudyConfiguration(sessionId, study.getFqn(), dataStore);
         }
 
         if (exception == null) {
@@ -568,50 +557,6 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 //                throw new CatalogException("Error reading file \"" + fileUri + "\"", e);
 //            }
 //        }
-    }
-
-    @Deprecated
-    private boolean updateDefaultCohort(File file, Study study, QueryOptions options, String sessionId) throws CatalogException {
-        /* Get file samples */
-        boolean modified = false;
-        List<Sample> sampleList;
-        if (file.getSamples() == null || file.getSamples().isEmpty()) {
-            final ObjectMap fileModifyParams = new ObjectMap(FileDBAdaptor.QueryParams.ATTRIBUTES.key(), new ObjectMap());
-            sampleList = FileMetadataReader.get(catalogManager).getFileSamples(study, file,
-                    catalogManager.getFileManager().getUri(file), fileModifyParams,
-                    options.getBoolean(FileMetadataReader.CREATE_MISSING_SAMPLES, true), false, options, sessionId);
-        } else {
-            Query query = new Query(SampleDBAdaptor.QueryParams.UID.key(),
-                    file.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()));
-            sampleList = catalogManager.getSampleManager().get(study.getFqn(), query, new QueryOptions(), sessionId)
-                    .getResult();
-        }
-
-        Cohort defaultCohort;
-        Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT);
-        QueryResult<Cohort> cohorts = catalogManager.getCohortManager().get(study.getFqn(), query, new QueryOptions(), sessionId);
-
-        if (cohorts.getResult().isEmpty()) {
-            defaultCohort = createDefaultCohort(study, sessionId);
-            modified = true;
-        } else {
-            defaultCohort = cohorts.first();
-        }
-
-        //Samples are the already indexed plus those that are going to be indexed
-        ObjectMap updateParams = new ObjectMap();
-        Set<Long> samples = new HashSet<>(defaultCohort.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()));
-        samples.addAll(sampleList.stream().map(Sample::getUid).collect(Collectors.toList()));
-        if (samples.size() != defaultCohort.getSamples().size()) {
-            logger.debug("Updating \"{}\" cohort", StudyEntry.DEFAULT_COHORT);
-            updateParams.append(CohortDBAdaptor.QueryParams.SAMPLES.key(), new ArrayList<>(samples));
-        }
-        if (!updateParams.isEmpty()) {
-            catalogManager.getCohortManager().update(study.getFqn(), defaultCohort.getId(), updateParams,
-                    new QueryOptions(), sessionId);
-            modified = true;
-        }
-        return modified;
     }
 
     private Cohort createDefaultCohortIfNeeded(Study study, String sessionId) throws CatalogException {

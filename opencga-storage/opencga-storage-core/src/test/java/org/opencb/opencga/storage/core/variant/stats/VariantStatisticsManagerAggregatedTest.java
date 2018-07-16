@@ -34,8 +34,10 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Paths;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
@@ -85,14 +87,12 @@ public abstract class VariantStatisticsManagerAggregatedTest extends VariantStor
 
         checkAggregatedCohorts(dbAdaptor, studyConfiguration);
 
-        Integer fileId = studyConfiguration.getFileIds().get(Paths.get(inputUri).getFileName().toString());
-        QueryOptions options = new QueryOptions(VariantStorageEngine.Options.FILE_ID.key(), fileId);
+        QueryOptions options = new QueryOptions();
         options.put(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100);
         options.put(DefaultVariantStatisticsManager.OUTPUT, outputUri.resolve("aggregated.stats").getPath());
         if (getAggregationMappingFile() != null) {
             options.put(VariantStorageEngine.Options.AGGREGATION_MAPPING_PROPERTIES.key(), getAggregationMappingFile());
         }
-
 
         //Calculate stats
         List<String> cohorts = Collections.singletonList(StudyEntry.DEFAULT_COHORT);

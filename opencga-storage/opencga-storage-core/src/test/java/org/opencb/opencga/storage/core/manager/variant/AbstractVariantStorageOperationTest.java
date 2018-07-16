@@ -45,10 +45,7 @@ import org.opencb.opencga.storage.core.manager.OpenCGATestExternalResource;
 import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
 import org.opencb.opencga.storage.core.manager.variant.operations.VariantFileIndexerStorageOperation;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationAdaptor;
-import org.opencb.opencga.storage.core.variant.dummy.DummyVariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStoragePipeline;
+import org.opencb.opencga.storage.core.variant.dummy.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -167,6 +164,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
     @After
     public void tearDown() throws Exception {
         DummyStudyConfigurationAdaptor.writeAndClear(opencga.getOpencgaHome());
+        DummyProjectMetadataAdaptor.writeAndClear(opencga.getOpencgaHome());
     }
 
     protected String getStorageEngine() {

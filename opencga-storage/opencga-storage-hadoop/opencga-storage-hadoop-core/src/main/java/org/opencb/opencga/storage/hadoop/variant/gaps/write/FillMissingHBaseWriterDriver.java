@@ -83,6 +83,8 @@ public class FillMissingHBaseWriterDriver extends AbstractAnalysisTableDriver {
         // mapper
         job.setMapperClass(FillMissingHBaseWriterMapper.class);
 
+        job.setSpeculativeExecution(false);
+
         // output
         VariantMapReduceUtil.setMultiTableOutput(job);
 

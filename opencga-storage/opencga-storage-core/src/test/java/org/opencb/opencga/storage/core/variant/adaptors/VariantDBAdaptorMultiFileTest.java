@@ -61,7 +61,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
                 studyConfiguration.getSampleIds().put("NA" + fileId, fileId);
                 if (inputFiles.size() == 4) {
                     dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
-                    options.put(VariantStorageEngine.Options.STUDY_ID.key(), studyId);
+                    options.put(VariantStorageEngine.Options.STUDY.key(), "S_" + studyId);
                     storageEngine.getOptions().putAll(options);
                     storageEngine.getOptions().put(VariantStorageEngine.Options.RELEASE.key(), release++);
                     storageEngine.index(inputFiles.subList(0, 2), outputUri, true, true, true);
