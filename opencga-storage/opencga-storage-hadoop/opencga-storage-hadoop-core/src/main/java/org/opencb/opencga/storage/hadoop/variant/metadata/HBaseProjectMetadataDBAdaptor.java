@@ -84,7 +84,9 @@ public class HBaseProjectMetadataDBAdaptor extends AbstractHBaseDBAdaptor implem
                     byte[] value = result.getValue(family, getValueColumn());
                     if (value != null && value.length > 0) {
                         ProjectMetadata pm = objectMapper.readValue(value, ProjectMetadata.class);
-                        pm.setCounters(counters);
+                        if (pm != null) {
+                            pm.setCounters(counters);
+                        }
                         return pm;
                     }
                 }
