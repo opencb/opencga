@@ -459,7 +459,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             options.put(FillGapsFromArchiveMapper.FILL_GAPS, fillGaps);
             options.put(FillGapsFromArchiveMapper.OVERWRITE, overwrite);
 
-            String args = FillGapsDriver.buildCommandLineArgs(
+            String[] args = FillGapsDriver.buildArgs(
                     getArchiveTableName(studyId),
                     getVariantTableName(),
                     studyId, fileIds, options);

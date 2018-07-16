@@ -80,6 +80,7 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
 
     @Override
     protected void parseAndValidateParameters() throws IOException {
+        super.parseAndValidateParameters();
         columns = getColumnsToDelete(getConf());
 
         if (columns.isEmpty()) {

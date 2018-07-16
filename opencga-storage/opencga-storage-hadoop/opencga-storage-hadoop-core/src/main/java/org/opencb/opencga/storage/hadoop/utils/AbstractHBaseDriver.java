@@ -47,6 +47,11 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
     protected abstract void setupJob(Job job, String table) throws IOException;
 
     protected void parseAndValidateParameters() throws IOException {
+        /* -------------------------------*/
+        // Validate parameters CHECK
+        if (StringUtils.isEmpty(table)) {
+            throw new IllegalArgumentException("No table specified!");
+        }
     }
 
     protected String getUsage() {
@@ -125,12 +130,6 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
 
     protected void parseFixedParams(String[] args) {
         table = args[0];
-
-        /* -------------------------------*/
-        // Validate parameters CHECK
-        if (StringUtils.isEmpty(table)) {
-            throw new IllegalArgumentException("No table specified!");
-        }
     }
 
     private boolean executeJob(Job job) throws IOException, InterruptedException, ClassNotFoundException {

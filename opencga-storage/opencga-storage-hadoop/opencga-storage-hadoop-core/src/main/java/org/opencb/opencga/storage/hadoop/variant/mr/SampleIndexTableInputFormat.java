@@ -87,10 +87,9 @@ public class SampleIndexTableInputFormat extends TableInputFormat {
 
             sampleIndexDBAdaptor = new SampleIndexDBAdaptor(helper, hBaseManager, tableNameGenerator, scm);
 
-            studyConfiguration = scm.getStudyConfiguration(helper.getStudyId(), null).first();
-
             Query query = VariantMapReduceUtil.getQueryFromConfig(conf);
             SampleIndexQuery sampleIndexQuery = SampleIndexQuery.extractSampleIndexQuery(query, scm);
+            studyConfiguration = scm.getStudyConfiguration(sampleIndexQuery.getStudy(), null).first();
             operation = sampleIndexQuery.getQueryOperation();
             samples = sampleIndexQuery.getSamplesMap();
 
@@ -146,7 +145,9 @@ public class SampleIndexTableInputFormat extends TableInputFormat {
                 logger.error("Error closing StudyConfigurationManager", e);
             }
             try {
-                iterator.close();
+                if (iterator != null) {
+                    iterator.close();
+                }
             } catch (Exception e) {
                 logger.error("Error closing SampleIndexIterator", e);
             }
@@ -193,6 +194,7 @@ public class SampleIndexTableInputFormat extends TableInputFormat {
                 allChromosomes = Arrays.asList("1", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
                         "2", "20", "21", "22", "3", "4", "5", "6", "7", "8", "9", "M", "MT", "X", "Y");
             }
+            allChromosomes.replaceAll(Region::normalizeChromosome);
             allChromosomes.sort(String::compareTo);
 
             byte[] firstRow = scan.getStartRow();

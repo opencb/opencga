@@ -11,9 +11,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
@@ -26,7 +24,6 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
-import java.util.Collections;
 import java.util.zip.GZIPOutputStream;
 
 /**
@@ -63,24 +60,13 @@ public class HadoopVariantExporter extends VariantExporter {
                 throw new IOException("Output file " + outputFileUri + " already exists!");
             }
 
-            StudyConfiguration defaultStudyConfiguration =
-                    VariantQueryUtils.getDefaultStudyConfiguration(query, queryOptions, dbAdaptor.getStudyConfigurationManager());
-            // TODO: Should accept multi-study export!
-            int studyId = defaultStudyConfiguration.getStudyId();
-
             ObjectMap options = new ObjectMap(engine.getOptions())
                     .append(VariantExporterDriver.OUTPUT_PARAM, outputFileUri.toString())
                     .append(VariantExporterDriver.OUTPUT_FORMAT_PARAM, outputFormat.toString());
             options.putAll(query);
             options.putAll(queryOptions);
 
-            String args = VariantExporterDriver.buildCommandLineArgs(
-                    dbAdaptor.getArchiveTableName(studyId),
-                    dbAdaptor.getVariantTable(),
-                    studyId,
-                    Collections.emptyList(),
-                    options
-            );
+            String[] args = VariantExporterDriver.buildArgs(dbAdaptor.getVariantTable(), options);
 
             mrExecutor.run(VariantExporterDriver.class, args, engine.getOptions(), "Export variants");
 

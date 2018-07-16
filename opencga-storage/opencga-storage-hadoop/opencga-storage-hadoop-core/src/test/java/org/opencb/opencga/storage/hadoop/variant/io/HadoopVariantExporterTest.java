@@ -32,23 +32,32 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
  */
 public class HadoopVariantExporterTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
-    private static StudyConfiguration studyConfiguration;
-
     @ClassRule
     public static HadoopExternalResource externalResource = new HadoopExternalResource();
     private static HadoopVariantStorageEngine variantStorageEngine;
+    private static final String study1 = "st1";
+    private static final String study2 = "st2";
 
     @BeforeClass
     public static void beforeClass() throws Exception {
         variantStorageEngine = externalResource.getVariantStorageEngine();
-        externalResource.clearDB(variantStorageEngine.getVariantTableName());
-        externalResource.clearDB(variantStorageEngine.getArchiveTableName(STUDY_ID));
 
 //        URI inputUri = VariantStorageBaseTest.getResourceUri("sample1.genome.vcf");
-        URI inputUri = VariantStorageBaseTest.getResourceUri("variant-test-file.vcf.gz");
+        URI inputUri = VariantStorageBaseTest.getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz");
 
-        studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
-        VariantStorageBaseTest.runDefaultETL(inputUri, variantStorageEngine, studyConfiguration,
+        VariantStorageBaseTest.runDefaultETL(inputUri, variantStorageEngine, new StudyConfiguration(0, study1),
+                new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), true)
+                        .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
+        );
+
+        inputUri = VariantStorageBaseTest.getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz");
+        VariantStorageBaseTest.runDefaultETL(inputUri, variantStorageEngine, new StudyConfiguration(0, study1),
+                new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), true)
+                        .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
+        );
+
+        inputUri = VariantStorageBaseTest.getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz");
+        VariantStorageBaseTest.runDefaultETL(inputUri, variantStorageEngine, new StudyConfiguration(0, study2),
                 new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), true)
                         .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
         );
@@ -66,7 +75,16 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
     public void exportAvro() throws Exception {
         String fileName = "variants.avro";
         URI uri = URI.create("hdfs:///" + fileName);
-        variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.AVRO, new Query(STUDY.key(), STUDY_NAME), new QueryOptions());
+        variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.AVRO, new Query(STUDY.key(), study1), new QueryOptions());
+
+        copyToLocal(fileName, uri);
+    }
+
+    @Test
+    public void exportMultiStudy() throws Exception {
+        String fileName = "multi.variants.avro";
+        URI uri = URI.create("hdfs:///" + fileName);
+        variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.AVRO, new Query(STUDY.key(), study1 + "," + study2), new QueryOptions());
 
         copyToLocal(fileName, uri);
     }
@@ -75,7 +93,7 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
     public void exportAvroGz() throws Exception {
         String fileName = "variants.avro_gz";
         URI uri = URI.create("hdfs:///" + fileName);
-        variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.AVRO_GZ, new Query(STUDY.key(), STUDY_NAME), new QueryOptions());
+        variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.AVRO_GZ, new Query(STUDY.key(), study1), new QueryOptions());
 
         copyToLocal(fileName, uri);
     }
@@ -84,7 +102,7 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
     public void exportVcf() throws Exception {
         String fileName = "variants.vcf";
         URI uri = URI.create("hdfs:///" + fileName);
-        variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.VCF, new Query(STUDY.key(), STUDY_NAME), new QueryOptions());
+        variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.VCF, new Query(STUDY.key(), study1), new QueryOptions());
 
         copyToLocal(fileName, uri);
     }
@@ -93,7 +111,7 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
     public void exportJson() throws Exception {
         String fileName = "variants.json";
         URI uri = URI.create("hdfs:///" + fileName);
-        variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.JSON, new Query(STUDY.key(), STUDY_NAME), new QueryOptions());
+        variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.JSON, new Query(STUDY.key(), study1), new QueryOptions());
 
         copyToLocal(fileName, uri);
     }
@@ -102,7 +120,7 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
     public void exportParquet() throws Exception {
         String fileName = "variants.parquet";
         URI uri = URI.create("hdfs:///" + fileName);
-        variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.PARQUET_GZ, new Query(STUDY.key(), STUDY_NAME), new QueryOptions());
+        variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.PARQUET_GZ, new Query(STUDY.key(), study1), new QueryOptions());
 
         copyToLocal(fileName, uri);
     }
@@ -112,7 +130,7 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
         String fileName = "some_variants.avro";
         URI uri = URI.create("hdfs:///" + fileName);
         variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.AVRO,
-                new Query(STUDY.key(), STUDY_NAME).append(GENOTYPE.key(), "NA19600:0|1,1|0;NA19660:1|1"), new QueryOptions());
+                new Query(STUDY.key(), study1).append(GENOTYPE.key(), "NA12877:0|1,1|0;NA12878:1|1"), new QueryOptions());
 
         copyToLocal(fileName, uri);
     }
@@ -122,7 +140,7 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
         String fileName = "sift_variants.vcf";
         URI uri = URI.create("hdfs:///" + fileName);
         variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.VCF,
-                new Query(STUDY.key(), STUDY_NAME).append(ANNOT_PROTEIN_SUBSTITUTION.key(), "sift<0.2"), new QueryOptions());
+                new Query(STUDY.key(), study1).append(ANNOT_PROTEIN_SUBSTITUTION.key(), "sift<0.2"), new QueryOptions());
 
         copyToLocal(fileName, uri);
     }

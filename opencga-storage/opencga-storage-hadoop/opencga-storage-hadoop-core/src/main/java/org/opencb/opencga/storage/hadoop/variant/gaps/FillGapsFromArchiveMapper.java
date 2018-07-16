@@ -6,6 +6,7 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.Job;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.AbstractArchiveTableMapper;
 import org.opencb.opencga.storage.hadoop.variant.mr.AnalysisTableMapReduceHelper;
 
@@ -59,8 +60,9 @@ public class FillGapsFromArchiveMapper extends AbstractArchiveTableMapper {
         long timestamp = getMrHelper().getTimestamp();
         if (isFillGaps(context.getConfiguration())) {
             Collection<Integer> samples = getSamples(context.getConfiguration());
+            String archiveTableName = context.getConfiguration().get(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME);
             task = new FillGapsFromArchiveTask(getHBaseManager(),
-                    getHelper().getArchiveTableAsString(),
+                    archiveTableName,
                     getStudyConfiguration(), getHelper(),
                     samples);
         } else {
@@ -71,7 +73,7 @@ public class FillGapsFromArchiveMapper extends AbstractArchiveTableMapper {
         task.setQuiet(true);
         task.pre();
 
-        variantsTable = new ImmutableBytesWritable(getHelper().getAnalysisTable());
+        variantsTable = new ImmutableBytesWritable(getHelper().getVariantsTable());
         sampleIndexTable = new ImmutableBytesWritable(Bytes.toBytes(getHelper().getHBaseVariantTableNameGenerator()
                 .getSampleIndexTableName(getHelper().getStudyId())));
     }

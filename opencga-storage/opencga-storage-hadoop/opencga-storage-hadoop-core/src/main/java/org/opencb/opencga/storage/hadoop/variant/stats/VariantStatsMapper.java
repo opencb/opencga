@@ -80,7 +80,7 @@ public class VariantStatsMapper extends VariantMapper<ImmutableBytesWritable, Pu
                 context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "stats.put.null").increment(1);
             } else {
                 context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "stats.put").increment(1);
-                context.write(new ImmutableBytesWritable(helper.getAnalysisTable()), put);
+                context.write(new ImmutableBytesWritable(helper.getVariantsTable()), put);
             }
         } catch (Exception e) {
             logger.error("Problem with variant " + variant, e);
