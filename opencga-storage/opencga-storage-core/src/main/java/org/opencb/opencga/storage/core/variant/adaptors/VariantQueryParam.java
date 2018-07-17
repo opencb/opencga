@@ -75,7 +75,8 @@ public final class VariantQueryParam implements QueryParam {
 
     //SAMPLES_DESCR = "Filter variants where ALL the provided samples are mutated (not HOM_REF or missing)";
     public static final String SAMPLE_DESCR
-            = "Filter variants where ALL the samples contain the variant (HET or HOM_ALT). "
+            = "Filter variants where the samples contain the variant (HET or HOM_ALT). "
+            + "Accepts AND (" + VariantQueryUtils.AND + ") and OR (" + VariantQueryUtils.OR + ") operators. "
             + "This will automatically set 'includeSample' parameter when not provided";
     public static final VariantQueryParam SAMPLE = new VariantQueryParam("sample", TEXT_ARRAY, SAMPLE_DESCR);
 

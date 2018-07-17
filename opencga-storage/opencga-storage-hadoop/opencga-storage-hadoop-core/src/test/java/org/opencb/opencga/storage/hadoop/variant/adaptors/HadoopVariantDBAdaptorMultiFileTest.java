@@ -101,7 +101,7 @@ public class HadoopVariantDBAdaptorMultiFileTest extends VariantDBAdaptorMultiFi
     public void testGetBySamplesName(String expectedSource, QueryOptions options) throws Exception {
         query = new Query()
                 .append(VariantQueryParam.STUDY.key(), "S_1")
-                .append(VariantQueryParam.SAMPLE.key(), "NA12877,NA12878");
+                .append(VariantQueryParam.SAMPLE.key(), "NA12877;NA12878");
 //        queryResult = dbAdaptor.get(query, options);
         queryResult = variantStorageEngine.get(query, options);
         VariantQueryResult<Variant> allVariants = dbAdaptor.get(new Query()

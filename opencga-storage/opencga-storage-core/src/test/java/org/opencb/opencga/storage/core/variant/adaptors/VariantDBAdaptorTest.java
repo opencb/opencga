@@ -1574,6 +1574,12 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         allVariants = query(new Query(INCLUDE_SAMPLE.key(), "NA19600,NA19685"), new QueryOptions());
         query = new Query(SAMPLE.key(), "NA19600,NA19685");
         queryResult = query(query, new QueryOptions());
+        assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, anyOf(
+                withSampleData("NA19600", "GT", containsString("1")),
+                withSampleData("NA19685", "GT", containsString("1"))))));
+
+        query = new Query(SAMPLE.key(), "NA19600;NA19685");
+        queryResult = query(query, new QueryOptions());
         assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, allOf(
                 withSampleData("NA19600", "GT", containsString("1")),
                 withSampleData("NA19685", "GT", containsString("1"))))));

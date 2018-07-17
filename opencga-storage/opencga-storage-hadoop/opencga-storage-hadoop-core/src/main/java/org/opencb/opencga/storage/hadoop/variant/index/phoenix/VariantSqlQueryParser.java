@@ -24,6 +24,7 @@ import org.apache.phoenix.parse.HintNode;
 import org.apache.phoenix.schema.PTableType;
 import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
@@ -85,9 +86,6 @@ public class VariantSqlQueryParser {
         SQL_OPERATOR.put("~", "LIKE");
         SQL_OPERATOR.put("!", "!=");
     }
-
-    // Internal usage only
-    private static final String ALT_GT = "ALT";
 
     public static class VariantPhoenixSQLQuery {
         private String sql;
@@ -721,20 +719,45 @@ public class VariantSqlQueryParser {
             }
         }
 
+        List<String> loadedGenotypes;
+        if (defaultStudyConfiguration != null
+                && defaultStudyConfiguration.getAttributes().containsKey(HadoopVariantStorageEngine.LOADED_GENOTYPES)) {
+            loadedGenotypes = defaultStudyConfiguration.getAttributes()
+                    .getAsStringList(HadoopVariantStorageEngine.LOADED_GENOTYPES);
+        } else {
+            loadedGenotypes = DEFAULT_LOADED_GENOTYPES;
+        }
         Map<Object, List<String>> genotypesMap = new HashMap<>();
-        QueryOperation genotypeQueryOperation = QueryOperation.AND;
+        QueryOperation genotypeQueryOperation = null;
         if (isValidParam(query, GENOTYPE)) {
             // NA12877_01 :  0/0  ;  NA12878_01 :  0/1  ,  1/1
             genotypeQueryOperation = parseGenotypeFilter(query.getString(GENOTYPE.key()), genotypesMap);
         }
         if (isValidParam(query, SAMPLE)) {
+            List<String> sampleGts = loadedGenotypes
+                    .stream()
+                    .filter(gt -> Arrays
+                            .stream(new Genotype(gt).getAllelesIdx())
+                            .anyMatch(i -> i == 1))
+                    .collect(Collectors.toList());
             String value = query.getString(SAMPLE.key());
-            QueryOperation op = checkOperator(value);
-            List<String> samples = splitValue(value, op);
+            QueryOperation sampleQueryOperation = checkOperator(value);
+            List<String> samples = splitValue(value, sampleQueryOperation);
             for (String sample : samples) {
-                genotypesMap.put(sample, Collections.singletonList(ALT_GT));
+                genotypesMap.put(sample, sampleGts);
+//                genotypesMap.put(sample, Collections.singletonList(ALT_GT));
 //                genotypesMap.put(sample, Arrays.asList(NOT + HOM_REF, NOT + NOCALL, NOT + "./."));
             }
+
+            if (genotypeQueryOperation != null && sampleQueryOperation != null && !genotypeQueryOperation.equals(sampleQueryOperation)) {
+                throw VariantQueryException.incompatibleSampleAndGenotypeOperators();
+            }
+            if (genotypeQueryOperation == null) {
+                genotypeQueryOperation = sampleQueryOperation;
+            }
+        }
+        if (genotypeQueryOperation == null) {
+            genotypeQueryOperation = QueryOperation.AND;
         }
 
         if (!genotypesMap.isEmpty()) {
@@ -746,13 +769,7 @@ public class VariantSqlQueryParser {
                 }
                 int studyId = defaultStudyConfiguration.getStudyId();
                 int sampleId = studyConfigurationManager.getSampleId(entry.getKey(), defaultStudyConfiguration);
-                List<String> loadedGenotypes;
-                if (defaultStudyConfiguration.getAttributes().containsKey(HadoopVariantStorageEngine.LOADED_GENOTYPES)) {
-                    loadedGenotypes = defaultStudyConfiguration.getAttributes()
-                            .getAsStringList(HadoopVariantStorageEngine.LOADED_GENOTYPES);
-                } else {
-                    loadedGenotypes = DEFAULT_LOADED_GENOTYPES;
-                }
+
                 List<String> genotypes = GenotypeClass.filter(entry.getValue(), loadedGenotypes);
 
                 // If empty, should find none. Add non-existing genotype
@@ -777,14 +794,7 @@ public class VariantSqlQueryParser {
                     }
                     String key = buildSampleColumnKey(studyId, sampleId, new StringBuilder()).toString();
                     final String filter;
-                    if (ALT_GT.equals(genotype)) {
-                        // Either starts or ends by 1 : 0/1, 1/1, 0|1, 1|0, 1/2, ...
-//                        filter = "( \"" + key + "\"[1] LIKE '%1' OR \"" + key + "\"[1] LIKE '1%' )";
-
-                        // The genotype contains a 1: 0/1, 1/1, 0|1, 1|0, 1/2, ...
-                        filter = '"' + key + "\"[1] LIKE '%1%'";
-                        // FIXME: This may return unwanted values at big multi-allelic variants like : 5/10
-                    } else if (FillGapsTask.isHomRefDiploid(genotype)) {
+                    if (FillGapsTask.isHomRefDiploid(genotype)) {
                         if (negated) {
                             filter = '"' + key + "\" IS NOT NULL AND \"" + key + "\"[1] != '" + genotype + '\'';
                         } else {

@@ -422,7 +422,6 @@ public class VariantHBaseQueryParser {
             String value = query.getString(SAMPLE.key());
             VariantQueryUtils.QueryOperation operation = checkOperator(value);
             List<String> values = splitValue(value, operation);
-            operation = QueryOperation.AND; // SAMPLES filter is always an AND
             FilterList subFilters;
             if (operation == QueryOperation.OR) {
                 subFilters = new FilterList(FilterList.Operator.MUST_PASS_ONE);

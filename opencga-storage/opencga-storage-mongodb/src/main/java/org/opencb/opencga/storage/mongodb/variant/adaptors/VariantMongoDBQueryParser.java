@@ -574,9 +574,10 @@ public class VariantMongoDBQueryParser {
             }
 
             Map<Object, List<String>> genotypesFilter = new HashMap<>();
+            QueryOperation queryOperation = null;
             if (isValidParam(query, GENOTYPE)) {
                 String sampleGenotypes = query.getString(GENOTYPE.key());
-                parseGenotypeFilter(sampleGenotypes, genotypesFilter);
+                queryOperation = parseGenotypeFilter(sampleGenotypes, genotypesFilter);
             }
 
             if (isValidParam(query, SAMPLE)) {
@@ -595,7 +596,15 @@ public class VariantMongoDBQueryParser {
                             "1/2", "1|2", "2|1"
                     );
                 }
-                for (String sample : samples.split(",")) {
+                QueryOperation sampleQueryOperation = VariantQueryUtils.checkOperator(samples);
+                if (queryOperation != null && sampleQueryOperation != null && !queryOperation.equals(sampleQueryOperation)) {
+                    throw VariantQueryException.incompatibleSampleAndGenotypeOperators();
+                }
+                if (queryOperation == null) {
+                    queryOperation = sampleQueryOperation;
+                }
+
+                for (String sample : VariantQueryUtils.splitValue(samples, queryOperation)) {
                     if (isNegated(sample)) {
                         throw VariantQueryException.malformedParam(SAMPLE, samples, "Unsupported negated samples");
                     }
@@ -613,16 +622,19 @@ public class VariantMongoDBQueryParser {
                 if (defaultStudyConfiguration != null) {
                     defaultGenotypes = defaultStudyConfiguration.getAttributes().getAsStringList(DEFAULT_GENOTYPE.key());
                     loadedGenotypes = defaultStudyConfiguration.getAttributes().getAsStringList(LOADED_GENOTYPES.key());
+                    loadedGenotypes.replaceAll(DocumentToSamplesConverter::genotypeToDataModelType);
                 } else {
                     defaultGenotypes = DEFAULT_GENOTYPE.defaultValue();
                     loadedGenotypes = Arrays.asList(
                             "0/0", "0|0",
-                            "0/1", "1/0", "1/1", "-1/-1",
-                            "0|1", "1|0", "1|1", "-1|-1",
+                            "0/1", "1/0", "1/1", "./.",
+                            "0|1", "1|0", "1|1", ".|.",
                             "0|2", "2|0", "2|1", "1|2", "2|2",
                             "0/2", "2/0", "2/1", "1/2", "2/2",
                             GenotypeClass.UNKNOWN_GENOTYPE);
                 }
+
+                List<DBObject> genotypeQueries = new ArrayList<>(genotypesFilter.size());
 
                 for (Map.Entry<Object, List<String>> entry : genotypesFilter.entrySet()) {
                     Object sample = entry.getKey();
@@ -713,8 +725,15 @@ public class VariantMongoDBQueryParser {
                             }
                         }
                     }
-                    studyBuilder.and(genotypesBuilder.get());
+                    genotypeQueries.add(genotypesBuilder.get());
                 }
+
+                if (queryOperation == QueryOperation.OR) {
+                    studyBuilder.or(genotypeQueries.toArray(new DBObject[genotypeQueries.size()])).get();
+                } else {
+                    studyBuilder.and(genotypeQueries.toArray(new DBObject[genotypeQueries.size()]));
+                }
+
                 // If there is no valid files filter, add files filter to speed up this query
                 if (filesFilterBySamples && !files.isEmpty()
                         && !files.containsAll(defaultStudyConfiguration.getIndexedFiles())) {
