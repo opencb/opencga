@@ -34,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 
@@ -105,11 +106,15 @@ public class VariantExporterDriver extends AbstractAnalysisTableDriver {
             }
             caching = getConf().getInt(HadoopVariantStorageEngine.MAPREDUCE_HBASE_SCAN_CACHING, 50);
 
-            Scan scan = new VariantHBaseQueryParser(getHelper(), getStudyConfigurationManager()).parseQuery(query, options);
-            scan.setCaching(caching);
+            VariantHBaseQueryParser parser = new VariantHBaseQueryParser(getHelper(), getStudyConfigurationManager());
+            List<Scan> scans = parser.parseQueryMultiRegion(query, options);
+            for (Scan scan : scans) {
+                scan.setCaching(caching);
+                scan.setCacheBlocks(false);
+            }
             logger.info("Set scan caching to " + caching);
 
-            VariantMapReduceUtil.initVariantMapperJobFromHBase(job, variantTable, scan, getMapperClass(), useSampleIndex);
+            VariantMapReduceUtil.initVariantMapperJobFromHBase(job, variantTable, scans, getMapperClass(), useSampleIndex);
         } else {
             logger.info("Init MapReduce job reading from Phoenix");
             String sql = new VariantSqlQueryParser(getHelper(), variantTable, getStudyConfigurationManager())

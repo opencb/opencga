@@ -21,9 +21,7 @@ import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 import java.io.IOException;
 import java.net.URI;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ANNOT_PROTEIN_SUBSTITUTION;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.GENOTYPE;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
 /**
  * Created on 11/07/18.
@@ -90,6 +88,15 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
     }
 
     @Test
+    public void exportMultiRegion() throws Exception {
+        String fileName = "multi.region.avro";
+        URI uri = URI.create("hdfs:///" + fileName);
+        variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.AVRO, new Query(REGION.key(), "1,2"), new QueryOptions());
+
+        copyToLocal(fileName, uri);
+    }
+
+    @Test
     public void exportAvroGz() throws Exception {
         String fileName = "variants.avro_gz";
         URI uri = URI.create("hdfs:///" + fileName);
@@ -131,6 +138,17 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
         URI uri = URI.create("hdfs:///" + fileName);
         variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.AVRO,
                 new Query(STUDY.key(), study1).append(GENOTYPE.key(), "NA12877:0|1,1|0;NA12878:1|1"), new QueryOptions());
+
+        copyToLocal(fileName, uri);
+    }
+
+    @Test
+    public void exportIndexMultiRegion() throws Exception {
+        String fileName = "some_variants.multiregion.avro";
+        URI uri = URI.create("hdfs:///" + fileName);
+        variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.AVRO,
+                new Query(STUDY.key(), study1).append(GENOTYPE.key(), "NA12877:0|1,1|0;NA12878:1|1")
+                .append(REGION.key(), "1,2"), new QueryOptions());
 
         copyToLocal(fileName, uri);
     }
