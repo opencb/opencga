@@ -507,6 +507,10 @@ public class SolrQueryParser {
         //    - Exclusive range queries are denoted by curly brackets.
         StringBuilder sb = new StringBuilder();
         if (StringUtils.isNotEmpty(value)) {
+            // FIXME at the higher level
+            value = value.replace("<<", "<");
+            value = value.replace("<", "<<");
+
             boolean or = value.contains(",");
             boolean and = value.contains(";");
             if (or && and) {
