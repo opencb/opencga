@@ -8,7 +8,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.Job;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.AbstractArchiveTableMapper;
-import org.opencb.opencga.storage.hadoop.variant.mr.AnalysisTableMapReduceHelper;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
 
 import java.io.IOException;
 import java.util.*;
@@ -104,7 +104,7 @@ public class FillGapsFromArchiveMapper extends AbstractArchiveTableMapper {
 
     private void updateStats(Context context) {
         for (Map.Entry<String, Long> entry : task.takeStats().entrySet()) {
-            context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, entry.getKey()).increment(entry.getValue());
+            context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, entry.getKey()).increment(entry.getValue());
         }
     }
 }

@@ -9,7 +9,7 @@ import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillMissingFromArchiveMapper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.mr.AnalysisTableMapReduceHelper;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
 
 import java.io.IOException;
 
@@ -44,10 +44,10 @@ public class FillMissingHBaseWriterMapper extends Mapper<BytesWritable, BytesWri
 
         Put put = ProtobufUtil.toPut(proto);
         if (FillMissingFromArchiveMapper.isSampleIndexTablePut(put)) {
-            context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "sample_index_puts").increment(1);
+            context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "sample_index_puts").increment(1);
             context.write(sampleIndexTable, put);
         } else {
-            context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "puts").increment(1);
+            context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "puts").increment(1);
             context.write(new ImmutableBytesWritable(variantsTable), put);
         }
 

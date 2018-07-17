@@ -21,7 +21,7 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
-import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.slf4j.Logger;
@@ -36,9 +36,9 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Created by mh719 on 22/12/2016.
  */
-public class AnalysisTableMapReduceHelper implements AutoCloseable {
+public class VariantsTableMapReduceHelper implements AutoCloseable {
     public static final String COUNTER_GROUP_NAME = "OPENCGA.HBASE";
-    private final Logger logger = LoggerFactory.getLogger(AnalysisTableMapReduceHelper.class);
+    private final Logger logger = LoggerFactory.getLogger(VariantsTableMapReduceHelper.class);
 
     private final Mapper.Context context;
     private final VariantTableHelper helper;
@@ -51,7 +51,7 @@ public class AnalysisTableMapReduceHelper implements AutoCloseable {
     private final HBaseManager hBaseManager;
 
 
-    public AnalysisTableMapReduceHelper(Mapper.Context context) throws IOException {
+    public VariantsTableMapReduceHelper(Mapper.Context context) throws IOException {
         this.context = context;
 
         Thread.currentThread().setName(context.getTaskAttemptID().toString());
@@ -67,7 +67,7 @@ public class AnalysisTableMapReduceHelper implements AutoCloseable {
                 .setSimpleGenotypes(false);
         this.indexedSamples = StudyConfiguration.getIndexedSamples(this.studyConfiguration);
 //        timestamp = HConstants.LATEST_TIMESTAMP;
-        timestamp = context.getConfiguration().getLong(AbstractAnalysisTableDriver.TIMESTAMP, -1);
+        timestamp = context.getConfiguration().getLong(AbstractVariantsTableDriver.TIMESTAMP, -1);
         if (timestamp == -1) {
             throw new IllegalArgumentException("Missing TimeStamp");
         }
@@ -129,7 +129,7 @@ public class AnalysisTableMapReduceHelper implements AutoCloseable {
 
     public void addTimesAsCounters() {
         for (Map.Entry<String, Long> entry : timeSum.entrySet()) {
-            context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME,
+            context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME,
                     "VCF_TIMER_" + entry.getKey().replace(' ', '_')).increment(entry.getValue());
         }
         timeSum.clear();

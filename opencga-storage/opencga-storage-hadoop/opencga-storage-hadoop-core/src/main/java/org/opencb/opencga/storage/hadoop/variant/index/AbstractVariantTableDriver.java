@@ -43,7 +43,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
-import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
@@ -97,7 +97,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
         conf.setInt(ConnectionConfiguration.MAX_KEYVALUE_SIZE_KEY, maxKeyValueSize); // always overwrite server default (usually 1MB)
 
         String inTable = conf.get(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME, StringUtils.EMPTY);
-        String outTable = conf.get(AbstractAnalysisTableDriver.CONFIG_VARIANT_TABLE_NAME, StringUtils.EMPTY);
+        String outTable = conf.get(AbstractVariantsTableDriver.CONFIG_VARIANT_TABLE_NAME, StringUtils.EMPTY);
         String[] fileArr = argFileArray();
         Integer studyId = conf.getInt(HadoopVariantStorageEngine.STUDY_ID, -1);
 
@@ -129,7 +129,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
         getLog().info(String.format("Use table %s as input", inTable));
 
         GenomeHelper.setStudyId(conf, studyId);
-        VariantTableHelper.setAnalysisTable(conf, outTable);
+        VariantTableHelper.setVariantsTable(conf, outTable);
         VariantTableHelper.setArchiveTable(conf, inTable);
 
         /* -------------------------------*/
@@ -286,7 +286,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
                 .append(outputTable).append(' ').append(studyId).append(' ');
 
         stringBuilder.append(fileIds.stream().map(Object::toString).collect(Collectors.joining(",")));
-        AbstractAnalysisTableDriver.addOtherParams(other, stringBuilder);
+        AbstractVariantsTableDriver.addOtherParams(other, stringBuilder);
         return stringBuilder.toString();
     }
 
@@ -356,7 +356,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
 
         conf = HBaseManager.addHBaseSettings(conf, toolArgs[0]);
         conf.set(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME, toolArgs[1]);
-        conf.set(AbstractAnalysisTableDriver.CONFIG_VARIANT_TABLE_NAME, toolArgs[2]);
+        conf.set(AbstractVariantsTableDriver.CONFIG_VARIANT_TABLE_NAME, toolArgs[2]);
         conf.set(HadoopVariantStorageEngine.STUDY_ID, toolArgs[3]);
         conf.setStrings(HadoopVariantStorageEngine.FILE_ID, toolArgs[4].split(","));
         for (int i = fixedSizeArgs; i < toolArgs.length; i = i + 2) {

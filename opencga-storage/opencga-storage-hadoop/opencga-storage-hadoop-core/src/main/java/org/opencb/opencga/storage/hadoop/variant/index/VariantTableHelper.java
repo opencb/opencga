@@ -31,7 +31,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
-import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
@@ -55,7 +55,7 @@ public class VariantTableHelper extends GenomeHelper {
     private HBaseVariantTableNameGenerator generator;
 
     public VariantTableHelper(Configuration conf) {
-        this(conf, conf.get(AbstractAnalysisTableDriver.CONFIG_VARIANT_TABLE_NAME, StringUtils.EMPTY));
+        this(conf, conf.get(AbstractVariantsTableDriver.CONFIG_VARIANT_TABLE_NAME, StringUtils.EMPTY));
     }
 
     public VariantTableHelper(Configuration conf, String variantsTable) {
@@ -75,11 +75,11 @@ public class VariantTableHelper extends GenomeHelper {
     }
 
     public boolean createVariantTableIfNeeded(Connection con) throws IOException {
-        return createVariantTableIfNeeded(this, getAnalysisTableAsString(), con);
+        return createVariantTableIfNeeded(this, getVariantsTableAsString(), con);
     }
 
     public boolean createVariantTableIfNeeded() throws IOException {
-        return createVariantTableIfNeeded(this, getAnalysisTableAsString());
+        return createVariantTableIfNeeded(this, getVariantsTableAsString());
     }
 
     public static boolean createVariantTableIfNeeded(GenomeHelper genomeHelper, String tableName) throws IOException {
@@ -96,7 +96,7 @@ public class VariantTableHelper extends GenomeHelper {
 //            HBaseManager.createNamespaceIfNeeded(con, namespace);
             try (java.sql.Connection jdbcConnection = variantPhoenixHelper.newJdbcConnection()) {
                 variantPhoenixHelper.createSchemaIfNeeded(jdbcConnection, namespace);
-                LoggerFactory.getLogger(AbstractAnalysisTableDriver.class).info("Phoenix connection is autoclosed ... " + jdbcConnection);
+                LoggerFactory.getLogger(AbstractVariantsTableDriver.class).info("Phoenix connection is autoclosed ... " + jdbcConnection);
             } catch (ClassNotFoundException | SQLException e) {
                 throw new IOException(e);
             }
@@ -114,7 +114,7 @@ public class VariantTableHelper extends GenomeHelper {
         if (newTable) {
             try (java.sql.Connection jdbcConnection = variantPhoenixHelper.newJdbcConnection()) {
                 variantPhoenixHelper.createTableIfNeeded(jdbcConnection, tableName);
-                LoggerFactory.getLogger(AbstractAnalysisTableDriver.class).info("Phoenix connection is autoclosed ... " + jdbcConnection);
+                LoggerFactory.getLogger(AbstractVariantsTableDriver.class).info("Phoenix connection is autoclosed ... " + jdbcConnection);
             } catch (ClassNotFoundException | SQLException e) {
                 throw new IOException(e);
             }
@@ -144,16 +144,16 @@ public class VariantTableHelper extends GenomeHelper {
         return generator.getMetaTableName();
     }
 
-    public String getAnalysisTableAsString() {
+    public String getVariantsTableAsString() {
         return Bytes.toString(getVariantsTable());
     }
 
-    public static void setAnalysisTable(Configuration conf, String analysisTable) {
-        conf.set(AbstractAnalysisTableDriver.CONFIG_VARIANT_TABLE_NAME, analysisTable);
+    public static void setVariantsTable(Configuration conf, String variantsTable) {
+        conf.set(AbstractVariantsTableDriver.CONFIG_VARIANT_TABLE_NAME, variantsTable);
     }
 
-    public static String getAnalysisTable(Configuration conf) {
-        return conf.get(AbstractAnalysisTableDriver.CONFIG_VARIANT_TABLE_NAME);
+    public static String getVariantsTable(Configuration conf) {
+        return conf.get(AbstractVariantsTableDriver.CONFIG_VARIANT_TABLE_NAME);
     }
 
     public static void setArchiveTable(Configuration conf, String archiveTable) {

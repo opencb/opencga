@@ -65,7 +65,7 @@ public class HBaseVariantFileMetadataDBAdaptor extends AbstractHBaseDBAdaptor im
     public HBaseVariantFileMetadataDBAdaptor(Configuration configuration) {
         // FIXME
         this(null, new HBaseVariantTableNameGenerator(HBaseVariantTableNameGenerator
-                .getDBNameFromVariantsTableName(new VariantTableHelper(configuration).getAnalysisTableAsString()), configuration)
+                .getDBNameFromVariantsTableName(new VariantTableHelper(configuration).getVariantsTableAsString()), configuration)
                 .getMetaTableName(), configuration);
     }
 

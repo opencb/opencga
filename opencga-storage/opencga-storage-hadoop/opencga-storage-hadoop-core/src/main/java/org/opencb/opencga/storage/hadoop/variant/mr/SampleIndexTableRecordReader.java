@@ -63,7 +63,7 @@ public class SampleIndexTableRecordReader extends TableRecordReader {
     public SampleIndexTableRecordReader(Configuration conf) {
         GenomeHelper helper = new GenomeHelper(conf);
         hBaseManager = new HBaseManager(conf);
-        String variantsTableName = VariantTableHelper.getAnalysisTable(conf);
+        String variantsTableName = VariantTableHelper.getVariantsTable(conf);
         HBaseVariantTableNameGenerator tableNameGenerator =
                 new HBaseVariantTableNameGenerator(getDBNameFromVariantsTableName(variantsTableName), conf);
         scm = new StudyConfigurationManager(new HBaseVariantStorageMetadataDBAdaptorFactory(

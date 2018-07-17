@@ -11,7 +11,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
-import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver;
 import org.opencb.opencga.storage.hadoop.variant.gaps.PrepareFillMissingMapper;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
@@ -29,12 +29,12 @@ import static org.apache.hadoop.mapreduce.MRJobConfig.JOB_RUNNING_MAP_LIMIT;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class FillMissingHBaseWriterDriver extends AbstractAnalysisTableDriver {
+public class FillMissingHBaseWriterDriver extends AbstractVariantsTableDriver {
 
     private static final Logger LOG = LoggerFactory.getLogger(FillMissingHBaseWriterDriver.class);
     private String inputPath;
     private FileSystem fs;
-    private final Logger logger = LoggerFactory.getLogger(AbstractAnalysisTableDriver.class);
+    private final Logger logger = LoggerFactory.getLogger(AbstractVariantsTableDriver.class);
 
     public FillMissingHBaseWriterDriver() {
     }

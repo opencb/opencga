@@ -53,22 +53,22 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngi
 /**
  * Created by mh719 on 21/11/2016.
  */
-public abstract class AbstractAnalysisTableDriver extends AbstractHBaseDriver implements Tool {
+public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver implements Tool {
 
     public static final String CONFIG_VARIANT_TABLE_NAME           = "opencga.variant.table.name";
     public static final String TIMESTAMP                           = "opencga.variant.table.timestamp";
 
-    private final Logger logger = LoggerFactory.getLogger(AbstractAnalysisTableDriver.class);
+    private final Logger logger = LoggerFactory.getLogger(AbstractVariantsTableDriver.class);
     private GenomeHelper helper;
     private StudyConfigurationManager scm;
     private List<Integer> fileIds;
     protected HBaseVariantTableNameGenerator generator;
 
-    public AbstractAnalysisTableDriver() {
+    public AbstractVariantsTableDriver() {
         super(HBaseConfiguration.create());
     }
 
-    public AbstractAnalysisTableDriver(Configuration conf) {
+    public AbstractVariantsTableDriver(Configuration conf) {
         super(conf);
     }
 
@@ -77,7 +77,7 @@ public abstract class AbstractAnalysisTableDriver extends AbstractHBaseDriver im
         super.parseAndValidateParameters();
         Configuration conf = getConf();
         String archiveTable = getArchiveTable();
-        String variantTable = getAnalysisTable();
+        String variantTable = getVariantsTable();
 
         int maxKeyValueSize = conf.getInt(HadoopVariantStorageEngine.MAPREDUCE_HBASE_KEYVALUE_SIZE_MAX, 10485760); // 10MB
         logger.info("HBASE: set " + ConnectionConfiguration.MAX_KEYVALUE_SIZE_KEY + " to " + maxKeyValueSize);
@@ -95,12 +95,12 @@ public abstract class AbstractAnalysisTableDriver extends AbstractHBaseDriver im
         if (variantTable.equals(archiveTable)) {
             throw new IllegalArgumentException("archive and variant tables must be different");
         }
-        VariantTableHelper.setAnalysisTable(getConf(), table);
+        VariantTableHelper.setVariantsTable(getConf(), table);
 //        if (studyId < 0) {
 //            throw new IllegalArgumentException("No Study id specified!!!");
 //        }
 
-        String dbName = HBaseVariantTableNameGenerator.getDBNameFromVariantsTableName(getAnalysisTable());
+        String dbName = HBaseVariantTableNameGenerator.getDBNameFromVariantsTableName(getVariantsTable());
         generator = new HBaseVariantTableNameGenerator(dbName, getConf());
 
         initVariantTableHelper(getStudyId());
@@ -123,7 +123,7 @@ public abstract class AbstractAnalysisTableDriver extends AbstractHBaseDriver im
     @Override
     protected void preExecution() throws IOException, StorageEngineException {
         super.preExecution();
-        preExecution(getAnalysisTable());
+        preExecution(getVariantsTable());
     }
 
     protected void preExecution(String variantTable) throws IOException, StorageEngineException {
@@ -143,7 +143,7 @@ public abstract class AbstractAnalysisTableDriver extends AbstractHBaseDriver im
 
     @Override
     protected final void setupJob(Job job, String table) throws IOException {
-        setupJob(job, getArchiveTable(), getAnalysisTable());
+        setupJob(job, getArchiveTable(), getVariantsTable());
     }
 
     protected abstract Job setupJob(Job job, String archiveTable, String variantTable) throws IOException;
@@ -194,7 +194,7 @@ public abstract class AbstractAnalysisTableDriver extends AbstractHBaseDriver im
 
     @Override
     protected String getJobName() {
-        String variantTable = getAnalysisTable();
+        String variantTable = getVariantsTable();
         List<Integer> files = getFiles();
         StringBuilder sb = new StringBuilder("opencga: ").append(getJobOperationName())
                 .append(" from VariantTable '").append(variantTable).append('\'');
@@ -253,7 +253,7 @@ public abstract class AbstractAnalysisTableDriver extends AbstractHBaseDriver im
         return getConf().getInt(HadoopVariantStorageEngine.STUDY_ID, -1);
     }
 
-    protected String getAnalysisTable() {
+    protected String getVariantsTable() {
         return table;
     }
 
@@ -290,7 +290,7 @@ public abstract class AbstractAnalysisTableDriver extends AbstractHBaseDriver im
     private GenomeHelper initVariantTableHelper(Integer studyId) {
         Configuration conf = getConf();
         GenomeHelper.setStudyId(conf, studyId);
-        VariantTableHelper.setAnalysisTable(conf, getAnalysisTable());
+        VariantTableHelper.setVariantsTable(conf, getVariantsTable());
         helper = new GenomeHelper(conf, studyId);
         return helper;
     }
@@ -319,7 +319,7 @@ public abstract class AbstractAnalysisTableDriver extends AbstractHBaseDriver im
 
     public static String[] buildArgs(String archiveTable, String variantsTable, int studyId, Collection<?> fileIds, ObjectMap other) {
         other.put(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME, archiveTable);
-        other.put(AbstractAnalysisTableDriver.CONFIG_VARIANT_TABLE_NAME, variantsTable);
+        other.put(AbstractVariantsTableDriver.CONFIG_VARIANT_TABLE_NAME, variantsTable);
 
         other.put(STUDY_ID, studyId);
 

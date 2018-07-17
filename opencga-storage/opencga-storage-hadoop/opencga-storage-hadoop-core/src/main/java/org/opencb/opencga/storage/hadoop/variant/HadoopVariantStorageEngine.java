@@ -429,7 +429,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                     // Allow concurrent operations if fillGaps.
                     (v) -> fillGaps || v.getOperationName().equals(FILL_GAPS_OPERATION_NAME));
 
-            options.put(AbstractAnalysisTableDriver.TIMESTAMP, operation.getTimestamp());
+            options.put(AbstractVariantsTableDriver.TIMESTAMP, operation.getTimestamp());
             return sc;
         });
 
@@ -590,7 +590,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         StudyConfiguration sc = scm.getStudyConfiguration(studyId, null).first();
         boolean removeWholeStudy = sc.getIndexedFiles().size() == fileIds.size() && sc.getIndexedFiles().containsAll(fileIds);
         BatchFileOperation operation = StudyConfigurationManager.getOperation(sc, REMOVE_OPERATION_NAME, fileIds);
-        options.put(AbstractAnalysisTableDriver.TIMESTAMP, operation.getTimestamp());
+        options.put(AbstractVariantsTableDriver.TIMESTAMP, operation.getTimestamp());
 
         // Delete
         Thread hook = getStudyConfigurationManager().buildShutdownHook(REMOVE_OPERATION_NAME, studyId, fileIds);
