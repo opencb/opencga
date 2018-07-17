@@ -746,7 +746,6 @@ public class VariantSqlQueryParser {
                 }
                 int studyId = defaultStudyConfiguration.getStudyId();
                 int sampleId = studyConfigurationManager.getSampleId(entry.getKey(), defaultStudyConfiguration);
-                Set<String> genotypes = new LinkedHashSet<>(entry.getValue().size());
                 List<String> loadedGenotypes;
                 if (defaultStudyConfiguration.getAttributes().containsKey(HadoopVariantStorageEngine.LOADED_GENOTYPES)) {
                     loadedGenotypes = defaultStudyConfiguration.getAttributes()
@@ -754,19 +753,11 @@ public class VariantSqlQueryParser {
                 } else {
                     loadedGenotypes = DEFAULT_LOADED_GENOTYPES;
                 }
+                List<String> genotypes = GenotypeClass.filter(entry.getValue(), loadedGenotypes);
 
-                for (String gt : entry.getValue()) {
-                    GenotypeClass genotypeClass = GenotypeClass.from(gt);
-                    if (genotypeClass == null) {
-                        genotypes.add(gt);
-                    } else {
-                        genotypes.addAll(genotypeClass.filter(loadedGenotypes));
-                        genotypes.addAll(genotypeClass.filter("0/0", "./."));
-                    }
-                }
                 // If empty, should find none. Add non-existing genotype
                 // TODO: Fast empty result
-                if (genotypes.isEmpty()) {
+                if (!entry.getValue().isEmpty() && genotypes.isEmpty()) {
                     genotypes.add("x/x");
                 }
 

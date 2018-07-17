@@ -4,8 +4,7 @@ import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.feature.Genotype;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -145,6 +144,24 @@ public enum GenotypeClass {
 
     public List<String> filter(List<String> gts) {
         return gts.stream().filter(predicate).collect(Collectors.toList());
+    }
+
+    public static List<String> filter(List<String> gts, List<String> loadedGts) {
+        return filter(gts, loadedGts, Arrays.asList("0/0", "./."));
+    }
+
+    public static List<String> filter(List<String> gts, List<String> loadedGts, List<String> defaultGts) {
+        Set<String> filteredGts = new HashSet<>(gts.size());
+        for (String gt : gts) {
+            GenotypeClass genotypeClass = GenotypeClass.from(gt);
+            if (genotypeClass == null) {
+                filteredGts.add(gt);
+            } else {
+                filteredGts.addAll(genotypeClass.filter(loadedGts));
+                filteredGts.addAll(genotypeClass.filter(defaultGts));
+            }
+        }
+        return new ArrayList<>(filteredGts);
     }
 
     /**

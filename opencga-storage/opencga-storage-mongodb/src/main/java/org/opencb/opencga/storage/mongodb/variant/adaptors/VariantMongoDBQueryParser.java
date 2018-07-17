@@ -609,13 +609,13 @@ public class VariantMongoDBQueryParser {
                 boolean filesFilterBySamples = !isValidParam(query, FILE) && defaultStudyConfiguration != null;
 
                 List<String> defaultGenotypes;
-                List<String> otherGenotypes;
+                List<String> loadedGenotypes;
                 if (defaultStudyConfiguration != null) {
                     defaultGenotypes = defaultStudyConfiguration.getAttributes().getAsStringList(DEFAULT_GENOTYPE.key());
-                    otherGenotypes = defaultStudyConfiguration.getAttributes().getAsStringList(LOADED_GENOTYPES.key());
+                    loadedGenotypes = defaultStudyConfiguration.getAttributes().getAsStringList(LOADED_GENOTYPES.key());
                 } else {
                     defaultGenotypes = DEFAULT_GENOTYPE.defaultValue();
-                    otherGenotypes = Arrays.asList(
+                    loadedGenotypes = Arrays.asList(
                             "0/0", "0|0",
                             "0/1", "1/0", "1/1", "-1/-1",
                             "0|1", "1|0", "1|1", "-1|-1",
@@ -626,19 +626,11 @@ public class VariantMongoDBQueryParser {
 
                 for (Map.Entry<Object, List<String>> entry : genotypesFilter.entrySet()) {
                     Object sample = entry.getKey();
-                    Set<String> genotypes = new LinkedHashSet<>(entry.getValue().size());
-                    for (String gt : entry.getValue()) {
-                        GenotypeClass genotypeClass = GenotypeClass.from(gt);
-                        if (genotypeClass == null) {
-                            genotypes.add(gt);
-                        } else {
-                            genotypes.addAll(genotypeClass.filter(otherGenotypes));
-                            genotypes.addAll(genotypeClass.filter(defaultGenotypes));
-                        }
-                    }
+                    List<String> genotypes = GenotypeClass.filter(entry.getValue(), loadedGenotypes, defaultGenotypes);
+
                     // If empty, should find none. Add non-existing genotype
                     // TODO: Fast empty result
-                    if (genotypes.isEmpty()) {
+                    if (!entry.getValue().isEmpty() && genotypes.isEmpty()) {
                         genotypes.add("x/x");
                     }
 
@@ -684,7 +676,7 @@ public class VariantMongoDBQueryParser {
                         if (defaultGenotypes.contains(genotype)) {
 
                             if (negated) {
-                                for (String otherGenotype : otherGenotypes) {
+                                for (String otherGenotype : loadedGenotypes) {
                                     if (defaultGenotypes.contains(otherGenotype)) {
                                         continue;
                                     }
@@ -695,7 +687,7 @@ public class VariantMongoDBQueryParser {
                                 }
                             } else {
                                 QueryBuilder andBuilder = QueryBuilder.start();
-                                for (String otherGenotype : otherGenotypes) {
+                                for (String otherGenotype : loadedGenotypes) {
                                     if (defaultGenotypes.contains(otherGenotype)) {
                                         continue;
                                     }
