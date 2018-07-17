@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant.mr;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
+import org.apache.hadoop.hbase.mapreduce.MultiTableInputFormat;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
@@ -28,20 +29,32 @@ import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.
  */
 public class HBaseVariantTableInputFormat extends AbstractVariantsTableInputFormat<ImmutableBytesWritable, Result> {
 
-    public static final String USE_SAMPLE_INDEX_TABLE_INPUT_FORMAT = "useSampleIndexTableInputFormat";
+    public static final String USE_SAMPLE_INDEX_TABLE_INPUT_FORMAT = "hbase_variant_table_input_format.use_sample_index_table_input_format";
+    public static final String MULTI_SCANS = "hbase_variant_table_input_format.multi_scans";
     private HBaseToVariantConverter<Result> converter;
 
     @Override
     protected void init(Configuration configuration) throws IOException {
-        TableInputFormat tableInputFormat;
-        if (configuration.getBoolean(USE_SAMPLE_INDEX_TABLE_INPUT_FORMAT, false)) {
-            tableInputFormat = new SampleIndexTableInputFormat();
+        if (configuration.getBoolean(MULTI_SCANS, false)) {
+            MultiTableInputFormat tableInputFormat;
+            if (configuration.getBoolean(USE_SAMPLE_INDEX_TABLE_INPUT_FORMAT, false)) {
+                tableInputFormat = new MultiRegionSampleIndexTableInputFormat();
+            } else {
+                tableInputFormat = new MultiTableInputFormat();
+            }
+            tableInputFormat.setConf(configuration);
+            inputFormat = tableInputFormat;
         } else {
-            tableInputFormat = new TableInputFormat();
+            TableInputFormat tableInputFormat;
+            if (configuration.getBoolean(USE_SAMPLE_INDEX_TABLE_INPUT_FORMAT, false)) {
+                tableInputFormat = new SampleIndexTableInputFormat();
+            } else {
+                tableInputFormat = new TableInputFormat();
+            }
+            tableInputFormat.setConf(configuration);
+            inputFormat = tableInputFormat;
         }
 //            configuration.forEach(entry -> System.out.println(entry.getKey() + " = " + entry.getValue()));
-        tableInputFormat.setConf(configuration);
-        inputFormat = tableInputFormat;
         VariantTableHelper helper = new VariantTableHelper(configuration);
         VariantQueryUtils.SelectVariantElements selectVariantElements;
         try (StudyConfigurationManager scm = new StudyConfigurationManager(new HBaseVariantStorageMetadataDBAdaptorFactory(helper))) {

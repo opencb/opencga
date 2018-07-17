@@ -152,6 +152,10 @@ public class VariantTableHelper extends GenomeHelper {
         conf.set(AbstractAnalysisTableDriver.CONFIG_VARIANT_TABLE_NAME, analysisTable);
     }
 
+    public static String getAnalysisTable(Configuration conf) {
+        return conf.get(AbstractAnalysisTableDriver.CONFIG_VARIANT_TABLE_NAME);
+    }
+
     public static void setArchiveTable(Configuration conf, String archiveTable) {
         conf.set(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME, archiveTable);
     }

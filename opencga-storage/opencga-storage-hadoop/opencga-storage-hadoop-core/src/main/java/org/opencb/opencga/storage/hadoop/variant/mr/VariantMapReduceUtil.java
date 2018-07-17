@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -106,12 +107,19 @@ public class VariantMapReduceUtil {
     public static void initVariantMapperJobFromHBase(Job job, String variantTableName, Scan scan,
                                                      Class<? extends VariantMapper> variantMapperClass, boolean useSampleIndex)
             throws IOException {
-        initTableMapperJob(job, variantTableName, scan, TableMapper.class);
+        initVariantMapperJobFromHBase(job, variantTableName, Collections.singletonList(scan), variantMapperClass, useSampleIndex);
+    }
+
+    public static void initVariantMapperJobFromHBase(Job job, String variantTableName, List<Scan> scans,
+                                                     Class<? extends VariantMapper> variantMapperClass, boolean useSampleIndex)
+            throws IOException {
+        initTableMapperJob(job, variantTableName, scans, TableMapper.class);
 
         job.setMapperClass(variantMapperClass);
 
 //        job.getConfiguration().set(TableInputFormat.INPUT_TABLE, variantTableName);
         job.setInputFormatClass(HBaseVariantTableInputFormat.class);
+        job.getConfiguration().setBoolean(HBaseVariantTableInputFormat.MULTI_SCANS, scans.size() > 1);
         job.getConfiguration().setBoolean(HBaseVariantTableInputFormat.USE_SAMPLE_INDEX_TABLE_INPUT_FORMAT, useSampleIndex);
     }
 
