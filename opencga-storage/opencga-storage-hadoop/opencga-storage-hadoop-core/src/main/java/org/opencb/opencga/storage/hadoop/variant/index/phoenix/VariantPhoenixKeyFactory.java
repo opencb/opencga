@@ -99,12 +99,11 @@ public class VariantPhoenixKeyFactory {
         if (!alt.isEmpty()) {
             size += QueryConstants.SEPARATOR_BYTE_ARRAY.length
                     + PVarchar.INSTANCE.estimateByteSizeFromLength(alt.length());
+        } else {
+            // If alt is empty, add separator
+            size += QueryConstants.SEPARATOR_BYTE_ARRAY.length;
         }
         if (sv != null) {
-            if (alt.isEmpty()) {
-                // If alt is empty, add separator
-                size += QueryConstants.SEPARATOR_BYTE_ARRAY.length;
-            }
             size += PUnsignedInt.INSTANCE.getByteSize() * OPTIONAL_PRIMARY_KEY.size() + QueryConstants.SEPARATOR_BYTE_ARRAY.length;
         }
         byte[] rk = new byte[size];
@@ -124,9 +123,12 @@ public class VariantPhoenixKeyFactory {
         }
         if (!alt.isEmpty()) {
             offset += PVarchar.INSTANCE.toBytes(alt, rk, offset);
+
+        }
+        if (alt.isEmpty() || sv != null) {
+            rk[offset++] = QueryConstants.SEPARATOR_BYTE;
         }
         if (sv != null) {
-            rk[offset++] = QueryConstants.SEPARATOR_BYTE;
             offset += PUnsignedInt.INSTANCE.toBytes(end, rk, offset);
             offset += PUnsignedInt.INSTANCE.toBytes(sv.getCiStartLeft() == null ? 0 : sv.getCiStartLeft(), rk, offset);
             offset += PUnsignedInt.INSTANCE.toBytes(sv.getCiStartRight() == null ? 0 : sv.getCiStartRight(), rk, offset);

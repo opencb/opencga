@@ -61,6 +61,11 @@ public class VariantPhoenixKeyFactoryTest {
         Set<VariantPhoenixHelper.VariantColumn> nullableColumn = new HashSet<>(Arrays.asList(
                 VariantPhoenixHelper.VariantColumn.REFERENCE,
                 VariantPhoenixHelper.VariantColumn.ALTERNATE
+//                VariantPhoenixHelper.VariantColumn.SV_END,
+//                VariantPhoenixHelper.VariantColumn.CI_START_L,
+//                VariantPhoenixHelper.VariantColumn.CI_START_R,
+//                VariantPhoenixHelper.VariantColumn.CI_END_L,
+//                VariantPhoenixHelper.VariantColumn.CI_END_R
         ));
 
         PTableImpl table;
@@ -91,11 +96,11 @@ public class VariantPhoenixKeyFactoryTest {
                     Bytes.toBytes(variant.getReference()),
                     Bytes.toBytes(variant.getAlternate()),
                     Bytes.toBytes(variant.getEnd()),
-                    Bytes.toBytes(variant.getSv().getCiStartLeft() == null ? 0 : variant.getSv().getCiStartLeft()),
-                    Bytes.toBytes(variant.getSv().getCiStartRight() == null ? 0 : variant.getSv().getCiStartRight()),
-                    Bytes.toBytes(variant.getSv().getCiEndLeft() == null ? 0 : variant.getSv().getCiEndLeft()),
-                    Bytes.toBytes(variant.getSv().getCiEndRight() == null ? 0 : variant.getSv().getCiEndRight()),
-                    Bytes.toBytes(variant.getSv().getCopyNumber() == null ? 0 : variant.getSv().getCopyNumber())
+                    Bytes.toBytes(variant.getSv()==null||variant.getSv().getCiStartLeft() == null ? 0 : variant.getSv().getCiStartLeft()),
+                    Bytes.toBytes(variant.getSv()==null||variant.getSv().getCiStartRight() == null ? 0 : variant.getSv().getCiStartRight()),
+                    Bytes.toBytes(variant.getSv()==null||variant.getSv().getCiEndLeft() == null ? 0 : variant.getSv().getCiEndLeft()),
+                    Bytes.toBytes(variant.getSv()==null||variant.getSv().getCiEndRight() == null ? 0 : variant.getSv().getCiEndRight()),
+                    Bytes.toBytes(variant.getSv()==null||variant.getSv().getCopyNumber() == null ? 0 : variant.getSv().getCopyNumber())
             });
         } else {
             table.newKey(key, new byte[][]{
