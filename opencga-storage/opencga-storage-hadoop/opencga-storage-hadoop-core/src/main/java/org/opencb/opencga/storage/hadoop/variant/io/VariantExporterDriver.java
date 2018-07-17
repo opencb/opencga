@@ -212,11 +212,13 @@ public class VariantExporterDriver extends AbstractAnalysisTableDriver {
     }
 
     public static void main(String[] args) {
+        int exitCode;
         try {
-            ToolRunner.run(new VariantExporterDriver(), args);
+            exitCode = ToolRunner.run(new VariantExporterDriver(), args);
         } catch (Exception e) {
             e.printStackTrace();
-            System.exit(1);
+            exitCode = 1;
         }
+        System.exit(exitCode);
     }
 }
