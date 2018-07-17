@@ -1602,6 +1602,28 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     @Test
+    public void testGetAllVariants_clinicalSignificance() {
+        for (ClinicalSignificance clinicalSignificance : ClinicalSignificance.values()) {
+            if (ClinicalSignificance.uncertain_significance.equals(clinicalSignificance)) {
+                continue;
+            }
+            Query query = new Query(ANNOT_CLINICAL_SIGNIFICANCE.key(), clinicalSignificance);
+            queryResult = query(query, new QueryOptions());
+            assertThat(queryResult, everyResult(allVariants, hasAnnotation(with("clinicalSignificance",
+                    va -> va == null || va.getTraitAssociation() == null
+                            ? Collections.emptyList()
+                            : va.getTraitAssociation()
+                            .stream()
+                            .map(EvidenceEntry::getVariantClassification)
+                            .filter(Objects::nonNull)
+                            .map(VariantClassification::getClinicalSignificance)
+                            .filter(Objects::nonNull)
+                            .collect(Collectors.toList()),
+                    hasItem(clinicalSignificance)))));
+        }
+    }
+
+    @Test
     public void groupBy_gene_limit_0() throws Exception {
         QueryResult queryResult = groupBy(new Query(), "gene", new QueryOptions("limit", 0).append("count", true));
         assertTrue(queryResult.getNumResults() > 0);

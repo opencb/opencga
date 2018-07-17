@@ -226,6 +226,11 @@ public final class VariantQueryParam implements QueryParam {
             = "List of traits, based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...";
     public static final VariantQueryParam ANNOT_TRAIT = new VariantQueryParam("trait", TEXT_ARRAY, ANNOT_TRAIT_DESCR);
 
+    public static final String ANNOT_CLINICAL_SIGNIFICANCE_DESCR
+            = "";
+    public static final VariantQueryParam ANNOT_CLINICAL_SIGNIFICANCE =
+            new VariantQueryParam("clinicalSignificance", TEXT_ARRAY, ANNOT_CLINICAL_SIGNIFICANCE_DESCR);
+
     @Deprecated
     public static final String ANNOT_CLINVAR_DESCR
             = "List of ClinVar accessions";
