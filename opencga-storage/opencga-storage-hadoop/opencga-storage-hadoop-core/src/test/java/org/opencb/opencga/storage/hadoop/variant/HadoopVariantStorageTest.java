@@ -55,8 +55,6 @@ import org.apache.hadoop.http.HttpServer2;
 import org.apache.hadoop.io.compress.CodecPool;
 import org.apache.hadoop.mapred.MapTask;
 import org.apache.hadoop.mapred.Task;
-import org.apache.hadoop.util.Tool;
-import org.apache.hadoop.util.ToolRunner;
 import org.apache.log4j.Level;
 import org.apache.phoenix.coprocessor.MetaDataEndpointImpl;
 import org.apache.phoenix.hbase.index.Indexer;
@@ -82,20 +80,16 @@ import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageTest;
-import org.opencb.opencga.storage.hadoop.utils.CopyHBaseColumnDriver;
-import org.opencb.opencga.storage.hadoop.utils.DeleteHBaseColumnDriver;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
-import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.stats.VariantStatsDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -457,45 +451,42 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                 // Copy configuration
                 Configuration conf = new Configuration(false);
                 HBaseConfiguration.merge(conf, configuration);
-                if (executable.endsWith(ArchiveDriver.class.getName())) {
-                    System.out.println("Executing ArchiveDriver : " + executable + " " + args);
-                    int r = ArchiveDriver.privateMain(Commandline.translateCommandline(args), conf);
-                    System.out.println("Finish execution ArchiveDriver");
 
-                    return r;
-                } else if (executable.endsWith(FillGapsDriver.class.getName())) {
-                    System.out.println("Executing FillGapsDriver : " + executable + " " + args);
-                    int r = new FillGapsDriver().privateMain(Commandline.translateCommandline(args), conf);
-                    System.out.println("Finish execution FillGapsDriver");
-                    return r;
-                } else if (executable.endsWith(VariantStatsDriver.class.getName())) {
-                    System.out.println("Executing VariantStatsDriver : " + executable + " " + args);
-                    int r = new VariantStatsDriver().privateMain(Commandline.translateCommandline(args), conf);
-                    System.out.println("Finish execution VariantStatsDriver");
-                    return r;
-                } else if (executable.endsWith(DeleteHBaseColumnDriver.class.getName())) {
-                    System.out.println("Executing DeleteHBaseColumnDriver : " + executable + " " + args);
-                    int r = new DeleteHBaseColumnDriver().privateMain(Commandline.translateCommandline(args), conf);
-                    System.out.println("Finish execution DeleteHBaseColumnDriver");
-                    return r;
-                } else if (executable.endsWith(CopyHBaseColumnDriver.class.getName())) {
-                    System.out.println("Executing CopyHBaseColumnDriver : " + executable + " " + args);
-                    int r = new CopyHBaseColumnDriver(conf).run(Commandline.translateCommandline(args));
-                    System.out.println("Finish execution CopyHBaseColumnDriver");
-                    return r;
-                } else {
-                    Class<?> aClass = Class.forName(executable.split(" ")[3]);
-                    if (Tool.class.isAssignableFrom(aClass)) {
-                        Class<Tool> tool = (Class<Tool>) aClass;
-                        return ToolRunner.run(conf, tool.newInstance(), Commandline.translateCommandline(args));
-                    } else {
-                        throw new IllegalArgumentException("Unknown executable " + executable + ". " + aClass + " is not a Tool");
-                    }
-                }
+                String className = executable.substring(executable.lastIndexOf(" ") + 1);
+                Class<?> clazz = Class.forName(className);
+                System.out.println("Executing " + clazz.getSimpleName() + ": " + executable + " " + args);
+                Method method = clazz.getMethod("privateMain", String[].class, Configuration.class);
+                Object o = method.invoke(clazz.newInstance(), Commandline.translateCommandline(args), conf);
+                System.out.println("Finish execution " + clazz.getSimpleName());
+                return ((Number) o).intValue();
+
+//                if (executable.endsWith(ArchiveDriver.class.getName())) {
+//                    System.out.println("Executing ArchiveDriver : " + executable + " " + args);
+//                    int r = ArchiveDriver.privateMain(Commandline.translateCommandline(args), conf);
+//                    System.out.println("Finish execution ArchiveDriver");
+//
+//                    return r;
+//                } else if (executable.endsWith(FillGapsDriver.class.getName())) {
+//                    System.out.println("Executing FillGapsDriver : " + executable + " " + args);
+//                    int r = new FillGapsDriver().privateMain(Commandline.translateCommandline(args), conf);
+//                    System.out.println("Finish execution FillGapsDriver");
+//                    return r;
+//                } else if (executable.endsWith(VariantStatsDriver.class.getName())) {
+//                    System.out.println("Executing VariantStatsDriver : " + executable + " " + args);
+//                    int r = new VariantStatsDriver().privateMain(Commandline.translateCommandline(args), conf);
+//                    System.out.println("Finish execution VariantStatsDriver");
+//                    return r;
+//                } else if (executable.endsWith(DeleteHBaseColumnDriver.class.getName())) {
+//                    System.out.println("Executing DeleteHBaseColumnDriver : " + executable + " " + args);
+//                    int r = new DeleteHBaseColumnDriver().privateMain(Commandline.translateCommandline(args), conf);
+//                    System.out.println("Finish execution DeleteHBaseColumnDriver");
+//                    return r;
+//                }
             } catch (Exception e) {
                 e.printStackTrace();
                 return -1;
             }
+//            return 0;
         }
     }
 

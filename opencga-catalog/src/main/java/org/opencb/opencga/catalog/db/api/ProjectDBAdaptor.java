@@ -34,9 +34,10 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 public interface ProjectDBAdaptor extends DBAdaptor<Project> {
 
     enum QueryParams implements QueryParam {
-        ID("id", INTEGER_ARRAY, ""),
+        ID("id", TEXT, ""),
+        UID("uid", INTEGER_ARRAY, ""),
+        UUID("uuid", TEXT, ""),
         NAME("name", TEXT_ARRAY, ""),
-        ALIAS("alias", TEXT_ARRAY, ""),
         CREATION_DATE("creationDate", DATE, ""),
         DESCRIPTION("description", TEXT_ARRAY, ""),
         ORGANIZATION("organization", TEXT_ARRAY, ""),
@@ -46,6 +47,7 @@ public interface ProjectDBAdaptor extends DBAdaptor<Project> {
         ORGANISM_TAXONOMY_CODE("organism.taxonomyCode", TEXT, ""),
         ORGANISM_ASSEMBLY("organism.assembly", TEXT, ""),
         CURRENT_RELEASE("currentRelease", INTEGER, ""),
+        FQN("fqn", TEXT, ""),
         STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
@@ -58,7 +60,7 @@ public interface ProjectDBAdaptor extends DBAdaptor<Project> {
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
 
         STUDY("study", TEXT, ""), // For the project/search ws
-        STUDY_ID("study.id", INTEGER_ARRAY, ""),
+        STUDY_UID("study.uid", INTEGER_ARRAY, ""),
         STUDY_ALIAS("study.alias", TEXT_ARRAY, ""),
 
         // TOCHECK: Pedro. Check parameter user_others_id.
@@ -107,7 +109,7 @@ public interface ProjectDBAdaptor extends DBAdaptor<Project> {
 
 
     default boolean exists(long projectId) throws CatalogDBException {
-        return count(new Query(QueryParams.ID.key(), projectId)).first() > 0;
+        return count(new Query(QueryParams.UID.key(), projectId)).first() > 0;
     }
 
     default void checkId(long projectId) throws CatalogDBException {
@@ -135,7 +137,7 @@ public interface ProjectDBAdaptor extends DBAdaptor<Project> {
 //        return delete(projectId, false);
 //    }
 
-    QueryResult<Project> renameAlias(long projectId, String newAliasName) throws CatalogDBException;
+    void editId(long projectUid, String newId) throws CatalogDBException;
 
 //    @Deprecated
 //    QueryResult<Project> modifyProject(long projectId, ObjectMap parameters) throws CatalogDBException;

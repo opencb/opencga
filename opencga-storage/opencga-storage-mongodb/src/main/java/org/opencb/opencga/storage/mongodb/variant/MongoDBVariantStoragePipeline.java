@@ -44,11 +44,11 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.metadata.adaptors.VariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.MergeMode;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.transform.RemapVariantIdsTask;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
-import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
 import org.opencb.opencga.storage.mongodb.variant.exceptions.MongoVariantStorageEngineException;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantWriteResult;
 import org.opencb.opencga.storage.mongodb.variant.load.direct.MongoDBVariantDirectConverter;
@@ -101,6 +101,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     private final ObjectMap loadStats = new ObjectMap();
     private final Logger logger = LoggerFactory.getLogger(MongoDBVariantStoragePipeline.class);
     private MongoDBVariantWriteResult writeResult;
+    private List<Integer> fileIds;
 
     public MongoDBVariantStoragePipeline(StorageConfiguration configuration, String storageEngineId,
                                          VariantMongoDBAdaptor dbAdaptor) {
@@ -141,7 +142,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     studyConfiguration.getAttributes().put(MERGE_IGNORE_OVERLAPPING_VARIANTS.key(), true);
                     // When ignoring overlapping variants, the default genotype MUST be the UNKNOWN_GENOTYPE (?/?).
                     // Otherwise, a "fillGaps" step will be needed afterwards
-                    studyConfiguration.getAttributes().put(DEFAULT_GENOTYPE.key(), DocumentToSamplesConverter.UNKNOWN_GENOTYPE);
+                    studyConfiguration.getAttributes().put(DEFAULT_GENOTYPE.key(), GenotypeClass.UNKNOWN_GENOTYPE);
                     break;
                 case ADVANCED:
                     studyConfiguration.getAttributes().put(MERGE_IGNORE_OVERLAPPING_VARIANTS.key(), false);
@@ -164,7 +165,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     case FAMILY:
                     case TRIO:
                     case PAIRED:
-                        defaultGenotype = Collections.singleton(DocumentToSamplesConverter.UNKNOWN_GENOTYPE);
+                        defaultGenotype = Collections.singleton(GenotypeClass.UNKNOWN_GENOTYPE);
                         logger.debug("Do not compress genotypes. Default genotype : {}", defaultGenotype);
                         break;
                     default:
@@ -247,7 +248,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 //        boolean compressGenotypes = options.getBoolean(Options.COMPRESS_GENOTYPES.key(), false);
 //        boolean compressGenotypes = defaultGenotype != null && !defaultGenotype.isEmpty();
 
-        final int fileId = options.getInt(Options.FILE_ID.key());
+        final int fileId = getFileId();
 
         logger.info("Loading variants...");
         long start = System.currentTimeMillis();
@@ -358,7 +359,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     }
 
     public void stage(URI inputUri) throws StorageEngineException {
-        final int fileId = options.getInt(Options.FILE_ID.key());
+        final int fileId = getFileId();
 
         if (!options.getBoolean(STAGE.key(), false)) {
             // Do not stage!
@@ -508,7 +509,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
     public void stageSuccess(VariantFileMetadata metadata) throws StorageEngineException {
         // Stage loading finished. Save VariantSource and update BatchOperation
-        int fileId = options.getInt(Options.FILE_ID.key());
+        int fileId = getFileId();
         metadata.setId(String.valueOf(fileId));
 
         getStudyConfigurationManager()
@@ -546,7 +547,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             throws StorageEngineException {
 
         long start = System.currentTimeMillis();
-        options.put(Options.FILE_ID.key(), fileIds);
+        this.fileIds = fileIds;
 
         StudyConfiguration studyConfiguration = preMerge(fileIds);
 
@@ -675,8 +676,8 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     }
 
     private StudyConfiguration preMerge(List<Integer> fileIds) throws StorageEngineException {
-        int studyId = getStudyId();
-        return dbAdaptor.getStudyConfigurationManager().lockAndUpdate(studyId, studyConfiguration -> {
+        return dbAdaptor.getStudyConfigurationManager().lockAndUpdate(getStudyId(), studyConfiguration -> {
+            studyConfiguration = checkExistsStudyConfiguration(studyConfiguration);
             for (Integer fileId : fileIds) {
                 if (studyConfiguration.getIndexedFiles().contains(fileId)) {
                     throw StorageEngineException.alreadyLoaded(fileId, studyConfiguration);
@@ -754,7 +755,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     public URI postLoad(URI input, URI output) throws StorageEngineException {
 
         if (options.getBoolean(MERGE.key()) || options.getBoolean(DIRECT_LOAD.key(), DIRECT_LOAD.defaultValue())) {
-            return super.postLoad(input, output);
+            return postLoad(input, output, fileIds);
         } else {
             return input;
         }

@@ -29,7 +29,6 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.adaptors.StudyConfigurationAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.hadoop.utils.HBaseLock;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
@@ -74,7 +73,8 @@ public class HBaseStudyConfigurationDBAdaptor extends AbstractHBaseDBAdaptor imp
         BiMap<String, Integer> studies = getStudies(options);
         Integer studyId = studies.get(studyName);
         if (studyId == null) {
-            throw VariantQueryException.studyNotFound(studyName, studies.keySet());
+//            throw VariantQueryException.studyNotFound(studyName, studies.keySet());
+            return new QueryResult<>("", 0, 0, 0, "", "", Collections.emptyList());
         }
 
 //        if (StringUtils.isEmpty(studyName)) {

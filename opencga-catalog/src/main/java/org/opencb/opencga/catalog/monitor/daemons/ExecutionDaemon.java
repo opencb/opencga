@@ -145,24 +145,24 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     }
 
     private void checkRunningJob(Job job) throws CatalogIOException {
-        Path tmpOutdirPath = getJobTemporaryFolder(job.getId(), tempJobFolder);
+        Path tmpOutdirPath = getJobTemporaryFolder(job.getUid(), tempJobFolder);
         Job.JobStatus jobStatus;
 
         ExecutionOutputRecorder outputRecorder = new ExecutionOutputRecorder(catalogManager, this.sessionId);
         if (!tmpOutdirPath.toFile().exists()) {
             jobStatus = new Job.JobStatus(Job.JobStatus.ERROR, "Temporal output directory not found");
             try {
-                logger.info("Updating job {} from {} to {}", job.getId(), Job.JobStatus.RUNNING, jobStatus.getName());
+                logger.info("Updating job {} from {} to {}", job.getUid(), Job.JobStatus.RUNNING, jobStatus.getName());
                 outputRecorder.updateJobStatus(job, jobStatus);
             } catch (CatalogException e) {
-                logger.warn("Could not update job {} to status error", job.getId(), e);
+                logger.warn("Could not update job {} to status error", job.getUid(), e);
             } finally {
                 cleanPrivateJobInformation(job);
             }
         } else {
             String status = executorManager.status(tmpOutdirPath, job);
             if (!status.equalsIgnoreCase(Job.JobStatus.UNKNOWN) && !status.equalsIgnoreCase(Job.JobStatus.RUNNING)) {
-                logger.info("Updating job {} from {} to {}", job.getId(), Job.JobStatus.RUNNING, status);
+                logger.info("Updating job {} from {} to {}", job.getUid(), Job.JobStatus.RUNNING, status);
                 try {
                     outputRecorder.updateJobStatus(job, new Job.JobStatus(status));
                 } catch (CatalogException e) {
@@ -189,7 +189,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
     private void checkPreparedJob(Job job) {
         // Create the temporal output directory.
-        Path path = getJobTemporaryFolder(job.getId(), tempJobFolder);
+        Path path = getJobTemporaryFolder(job.getUid(), tempJobFolder);
         try {
             catalogIOManager.createDirectory(path.toUri());
         } catch (CatalogIOException e) {
@@ -199,8 +199,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }
 
         // Define where the stdout and stderr will be stored
-        String stderr = path.resolve(job.getName() + '_' + job.getId() + ".err").toString();
-        String stdout = path.resolve(job.getName() + '_' + job.getId() + ".out").toString();
+        String stderr = path.resolve(job.getName() + '_' + job.getUid() + ".err").toString();
+        String stdout = path.resolve(job.getName() + '_' + job.getUid() + ".out").toString();
 
         // Create token without expiration time for the user
         try {
@@ -212,9 +212,9 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             } else {
                 commandLine.append("tools execute ");
             }
-            commandLine.append("--job ").append(job.getId()).append(' ');
+            commandLine.append("--job ").append(job.getUid()).append(' ');
 
-            logger.info("Updating job {} from {} to {}", job.getId(), Job.JobStatus.PREPARED, Job.JobStatus.QUEUED);
+            logger.info("Updating job {} from {} to {}", job.getUid(), Job.JobStatus.PREPARED, Job.JobStatus.QUEUED);
             try {
                 job.getAttributes().put(Job.OPENCGA_TMP_DIR, path.toString());
 
@@ -228,15 +228,15 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                         .append(JobDBAdaptor.QueryParams.ATTRIBUTES.key(), job.getAttributes())
                         .append(JobDBAdaptor.QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key(), job.getResourceManagerAttributes());
 
-                QueryResult<Job> update = jobDBAdaptor.update(job.getId(), params, QueryOptions.empty());
+                QueryResult<Job> update = jobDBAdaptor.update(job.getUid(), params, QueryOptions.empty());
                 if (update.getNumResults() == 1) {
                     job = update.first();
                     executeJob(job, userToken);
                 } else {
-                    logger.error("Could not update nor run job {}" + job.getId());
+                    logger.error("Could not update nor run job {}" + job.getUid());
                 }
             } catch (CatalogException e) {
-                logger.error("Could not update job {}. {}", job.getId(), e.getMessage());
+                logger.error("Could not update job {}. {}", job.getUid(), e.getMessage());
                 e.printStackTrace();
             }
 

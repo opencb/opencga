@@ -18,10 +18,7 @@ package org.opencb.opencga.storage.hadoop.variant;
 
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExternalResource;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -52,7 +49,6 @@ import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTaskTest;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantFileMetadataDBAdaptor;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -95,27 +91,28 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         HBaseToVariantConverter.setFailOnWrongVariants(true);
     }
 
+    @After
+    public void tearDown() throws Exception {
+        printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri());
+    }
+
     @Override
     public Map<String, ?> getOtherStorageConfigurationOptions() {
         return new ObjectMap(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, true).append(VariantStorageEngine.Options.ANNOTATE.key(), false);
     }
 
-    public VariantFileMetadata loadFile(String resourceName, int fileId, StudyConfiguration studyConfiguration) throws Exception {
-        return loadFile(resourceName, fileId, studyConfiguration, null);
+    public VariantFileMetadata loadFile(String resourceName, StudyConfiguration studyConfiguration) throws Exception {
+        return loadFile(resourceName, studyConfiguration, null);
     }
 
     public VariantFileMetadata loadFile(String resourceName, StudyConfiguration studyConfiguration, Map<? extends String, ?> otherParams) throws Exception {
-        return loadFile(resourceName, -1, studyConfiguration, otherParams);
+        return loadFile(resourceName, studyConfiguration, otherParams, true, true, true);
     }
 
-    public VariantFileMetadata loadFile(String resourceName, int fileId, StudyConfiguration studyConfiguration, Map<? extends String, ?> otherParams) throws Exception {
-        return loadFile(resourceName, fileId, studyConfiguration, otherParams, true, true, true);
-    }
-
-    public VariantFileMetadata loadFile(String resourceName, int fileId, StudyConfiguration studyConfiguration,
+    public VariantFileMetadata loadFile(String resourceName, StudyConfiguration studyConfiguration,
                                         Map<? extends String, ?> otherParams, boolean doTransform, boolean loadArchive, boolean loadVariant)
             throws Exception {
-        return VariantHbaseTestUtils.loadFile(getVariantStorageEngine(), DB_NAME, outputUri, resourceName, fileId, studyConfiguration,
+        return VariantHbaseTestUtils.loadFile(getVariantStorageEngine(), DB_NAME, outputUri, resourceName, studyConfiguration,
                 otherParams, doTransform, loadArchive, loadVariant);
     }
 
@@ -191,8 +188,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         ObjectMap options = variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
         options.put(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, true);
         options.put(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "proto");
-        options.put(VariantStorageEngine.Options.STUDY_ID.key(), studyConfiguration.getStudyId());
-        options.put(VariantStorageEngine.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
+        options.put(VariantStorageEngine.Options.STUDY.key(), studyConfiguration.getStudyName());
         options.putAll(notCollapseDeletions);
 
         List<URI> inputFiles = Arrays.asList(getResourceUri("s1.genome.vcf"), getResourceUri("s2.genome.vcf"));
@@ -224,9 +220,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         HadoopVariantStorageEngine variantStorageManager = getVariantStorageEngine();
         ObjectMap options = variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
         options.put(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "proto");
-        options.put(VariantStorageEngine.Options.STUDY_ID.key(), STUDY_ID);
-        options.put(VariantStorageEngine.Options.STUDY_NAME.key(), STUDY_NAME);
-        options.put(VariantStorageEngine.Options.FILE_ID.key(), -1);
+        options.put(VariantStorageEngine.Options.STUDY.key(), STUDY_NAME);
 
         List<URI> inputFiles = new LinkedList<>();
 
@@ -303,8 +297,8 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
         ObjectMap options = variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
         options.put(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "proto");
-        options.put(VariantStorageEngine.Options.STUDY_ID.key(), studyConfiguration.getStudyId());
-        options.put(VariantStorageEngine.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
+//        options.put(VariantStorageEngine.Options.STUDY_ID.key(), studyConfiguration.getStudyId());
+        options.put(VariantStorageEngine.Options.STUDY.key(), studyConfiguration.getStudyName());
 //        options.put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,AD");
         options.putAll(extraParams);
         List<StoragePipelineResult> index = variantStorageManager.index(inputFiles, outputUri, true, true, true);
@@ -367,7 +361,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         Integer fileId = studyConfiguration.getFileIds().get("s1.genome.vcf");
         System.out.println("fileId = " + fileId);
 //        otherParams.put(VariantMergerTableMapperFail.SLICE_TO_FAIL, "_"); // FIXME
-        loadFile("s1.genome.vcf.variants.proto.gz", -1, studyConfiguration, otherParams, false, false, true);
+        loadFile("s1.genome.vcf.variants.proto.gz", studyConfiguration, otherParams, false, false, true);
         checkArchiveTableTimeStamp(dbAdaptor);
         loadFile("s2.genome.vcf", studyConfiguration, notCollapseDeletions);
         checkArchiveTableTimeStamp(dbAdaptor);
@@ -589,8 +583,9 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         for (int fileId = 12877; fileId <= 12893; fileId++) {
             ObjectMap params = new ObjectMap();
             params.putAll(otherParams);
-            String resourceName = "platinum/1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz";
-            VariantFileMetadata fileMetadata = loadFile(resourceName, fileId, studyConfiguration, params);
+            String fileName = "1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz";
+            String resourceName = "platinum/" + fileName;
+            VariantFileMetadata fileMetadata = loadFile(resourceName, studyConfiguration, params);
 
             studyConfiguration = scm.getStudyConfiguration(studyConfiguration.getStudyId(), new QueryOptions()).first();
             System.out.println(studyConfiguration);
@@ -598,7 +593,8 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
             Set<String> variants = checkArchiveTableLoadedVariants(studyConfiguration, dbAdaptor, fileMetadata);
             filesMetadata.add(fileMetadata);
             expectedVariants.addAll(variants);
-            assertTrue(studyConfiguration.getIndexedFiles().contains(fileId));
+            assertTrue(studyConfiguration.getFileIds().containsKey(fileName));
+            assertTrue(studyConfiguration.getIndexedFiles().contains(studyConfiguration.getFileIds().get(fileName)));
 //            printVariants(studyConfiguration, dbAdaptor, newOutputUri());
 
 //            checkLoadedVariants(expectedVariants, dbAdaptor, PLATINUM_SKIP_VARIANTS);

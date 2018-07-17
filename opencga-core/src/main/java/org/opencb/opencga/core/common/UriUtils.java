@@ -33,11 +33,32 @@ public class UriUtils {
     }
 
     public static URI createUri(String input) throws URISyntaxException {
-        URI sourceUri = new URI(null, input, null);
-        if (sourceUri.getScheme() == null || sourceUri.getScheme().isEmpty()) {
-            sourceUri = Paths.get(input).toUri();
+        return createUri(input, true);
+    }
+
+    public static URI createUriSafe(String input) {
+        try {
+            return createUri(input, false);
+        } catch (URISyntaxException e) {
+            // Method above should never throw an exception
+            throw new IllegalStateException(e);
         }
-        return sourceUri;
+    }
+
+    public static URI createUri(String input, boolean failOnInvalidUri) throws URISyntaxException {
+        try {
+            URI sourceUri = new URI(null, input, null);
+            if (sourceUri.getScheme() == null || sourceUri.getScheme().isEmpty()) {
+                sourceUri = Paths.get(input).toUri();
+            }
+            return sourceUri;
+        } catch (URISyntaxException e) {
+            if (failOnInvalidUri) {
+                throw e;
+            } else {
+                return null;
+            }
+        }
     }
 
     public static URI createDirectoryUri(String input) throws URISyntaxException {
@@ -50,4 +71,9 @@ public class UriUtils {
         return uri;
     }
 
+    public static String fileName(URI uri) {
+        String path = uri.getPath();
+        int idx = path.lastIndexOf("/");
+        return idx < 0 ? path : path.substring(idx + 1);
+    }
 }

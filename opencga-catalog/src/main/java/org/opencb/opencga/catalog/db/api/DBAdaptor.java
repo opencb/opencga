@@ -101,7 +101,6 @@ public interface DBAdaptor<T> extends Iterable<T> {
 
     void delete(Query query) throws CatalogDBException;
 
-    @Deprecated
     default QueryResult<T> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
         throw new NotImplementedException("");
     }

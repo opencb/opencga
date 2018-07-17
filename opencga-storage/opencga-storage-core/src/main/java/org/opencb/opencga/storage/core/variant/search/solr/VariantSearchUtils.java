@@ -50,7 +50,7 @@ public class VariantSearchUtils {
     public static final Set<VariantQueryParam> UNSUPPORTED_MODIFIERS = Collections.unmodifiableSet(new HashSet<>(
             Arrays.asList(VariantQueryParam.INCLUDE_FILE,
                     VariantQueryParam.INCLUDE_SAMPLE,
-                    VariantQueryParam.INCLUDE_STUDY,
+//                    VariantQueryParam.INCLUDE_STUDY,
                     VariantQueryParam.UNKNOWN_GENOTYPE,
                     VariantQueryParam.INCLUDE_FORMAT,
                     VariantQueryParam.INCLUDE_GENOTYPE,

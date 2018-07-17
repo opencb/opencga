@@ -27,10 +27,12 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
+import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.managers.SampleManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
@@ -40,9 +42,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by jacobo on 15/12/14.
@@ -79,6 +80,9 @@ public class SampleWSServer extends OpenCGAWSServer {
                     boolean allVersions,
             @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
+            query.remove("study");
+            query.remove("samples");
+
             List<String> sampleList = getIdList(samplesStr);
             List<QueryResult<Sample>> sampleQueryResult = sampleManager.get(studyStr, sampleList, query, queryOptions, silent, sessionId);
             return createOkResponse(sampleQueryResult);
@@ -101,7 +105,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Individual id or name to whom the sample will correspond.") @QueryParam("individual") String individual,
             @ApiParam(value = "JSON containing sample information", required = true) CreateSamplePOST params) {
         try {
-            ObjectUtils.defaultIfNull(params, new CreateSamplePOST());
+            params = ObjectUtils.defaultIfNull(params, new CreateSamplePOST());
 
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
@@ -126,7 +130,6 @@ public class SampleWSServer extends OpenCGAWSServer {
                                 @QueryParam("study") String studyStr,
                                 @ApiParam(value = "DEPRECATED: use file instead", hidden = true) @QueryParam("fileId") String fileIdStr,
                                 @ApiParam(value = "file", required = true) @QueryParam("file") String fileStr,
-                                @ApiParam(value = "variableSetId", hidden = true) @QueryParam("variableSetId") Long variableSetId,
                                 @ApiParam(value = "variableSet", required = false) @QueryParam("variableSet") String variableSet) {
         try {
             if (StringUtils.isNotEmpty(studyIdStr)) {
@@ -135,20 +138,10 @@ public class SampleWSServer extends OpenCGAWSServer {
             if (StringUtils.isNotEmpty(fileStr)) {
                 fileIdStr = fileStr;
             }
-            if (variableSetId != null) {
-                variableSet = Long.toString(variableSetId);
-            }
-            AbstractManager.MyResourceId resourceId = catalogManager.getFileManager().getId(fileIdStr, studyStr, sessionId);
-            Long varSetId;
-            if (StringUtils.isNotBlank(variableSet)) {
-                varSetId = catalogManager.getStudyManager().getVariableSetId(variableSet, studyStr, sessionId).getResourceId();
-            } else {
-                varSetId = null;
-            }
 
-            File pedigreeFile = catalogManager.getFileManager().get(resourceId.getResourceId(), null, sessionId).first();
+            File pedigreeFile = catalogManager.getFileManager().get(studyIdStr, fileIdStr, null, sessionId).first();
             CatalogSampleAnnotationsLoader loader = new CatalogSampleAnnotationsLoader(catalogManager);
-            QueryResult<Sample> sampleQueryResult = loader.loadSampleAnnotations(pedigreeFile, varSetId, sessionId);
+            QueryResult<Sample> sampleQueryResult = loader.loadSampleAnnotations(pedigreeFile, variableSet, sessionId);
             return createOkResponse(sampleQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -173,7 +166,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "Study [[user@]project:]{study1,study2|*}  where studies and project can be either the id or"
                                    + " alias.", required = false) @QueryParam("study") String studyStr,
                            @ApiParam(value = "DEPRECATED: use /info instead", hidden = true) @QueryParam("id") String id,
-                           @ApiParam(value = "name") @QueryParam("name") String name,
+                           @ApiParam(value = "DEPRECATED: name") @QueryParam("name") String name,
                            @ApiParam(value = "source") @QueryParam("source") String source,
                            @ApiParam(value = "type") @QueryParam("type") String type,
                            @ApiParam(value = "somatic") @QueryParam("somatic") Boolean somatic,
@@ -195,6 +188,8 @@ public class SampleWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "Snapshot value (Latest version of samples in the specified release)") @QueryParam("snapshot")
                                    int snapshot) {
         try {
+            query.remove("study");
+
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
 
             if (StringUtils.isNotEmpty(studyIdStr)) {
@@ -216,11 +211,11 @@ public class SampleWSServer extends OpenCGAWSServer {
             }
 
             // TODO: individualId is deprecated. Remember to remove this if after next release
-            if (query.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key())) {
+            if (query.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key())) {
                 if (!query.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL.key())) {
-                    query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), query.get(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key()));
+                    query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), query.get(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key()));
                 }
-                query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key());
+                query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key());
             }
 
             QueryResult<Sample> queryResult;
@@ -238,30 +233,39 @@ public class SampleWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{sample}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some sample attributes", position = 6)
+    @ApiOperation(value = "Update some sample attributes", position = 6,
+            notes = "The entire sample is returned after the modification. Using include/exclude query parameters is encouraged to "
+                    + "avoid slowdowns when sending unnecessary information where possible")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
+                    example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query")
+    })
     public Response updateByPost(
             @ApiParam(value = "sampleId", required = true) @PathParam("sample") String sampleStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                 @QueryParam("study") String studyStr,
             @ApiParam(value = "Create a new version of sample", defaultValue = "false")
                 @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
-            @ApiParam(value = "Delete a specific annotation set. AnnotationSetName expected.")
-                @QueryParam(Constants.DELETE_ANNOTATION_SET) String deleteAnnotationSet,
-            @ApiParam(value = "Delete a specific annotation. Format: Comma separated list of annotationSetName:variable")
-                @QueryParam(Constants.DELETE_ANNOTATION) String deleteAnnotation,
+            @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", defaultValue = "ADD")
+                @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
             @ApiParam(value = "params") UpdateSamplePOST parameters) {
         try {
-            ObjectUtils.defaultIfNull(parameters, new UpdateSamplePOST());
-
             ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(parameters));
-            params.putIfNotEmpty(SampleDBAdaptor.UpdateParams.DELETE_ANNOTATION.key(), deleteAnnotation);
-            params.putIfNotEmpty(SampleDBAdaptor.UpdateParams.DELETE_ANNOTATION_SET.key(), deleteAnnotationSet);
 
-            if (params.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key())) {
+            if (annotationSetsAction == null) {
+                annotationSetsAction = ParamUtils.UpdateAction.ADD;
+            }
+
+            Map<String, Object> actionMap = new HashMap<>();
+            actionMap.put(SampleDBAdaptor.UpdateParams.ANNOTATION_SETS.key(), annotationSetsAction.name());
+            queryOptions.put(Constants.ACTIONS, actionMap);
+
+            if (params.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key())) {
                 if (!params.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL.key())) {
-                    params.put(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), params.get(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key()));
+                    params.put(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), params.get(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key()));
                 }
-                params.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key());
+                params.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key());
             }
 
             if (params.size() == 0) {
@@ -274,23 +278,75 @@ public class SampleWSServer extends OpenCGAWSServer {
         }
     }
 
-//    @GET
-//    @Path("/{samples}/delete")
-//    @ApiOperation(value = "Delete a sample [WARNING]", position = 9,
-//            notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
-//                    "planned to be fully implemented and tested in version 1.4.0")
-//    public Response delete(@ApiParam(value = "Comma separated list of sample IDs or names up to a maximum of 100", required = true) @PathParam("samples")
-//                                   String sampleStr,
-//                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-//                           @QueryParam("study") String studyStr,
-//                           @QueryParam("silent") boolean silent) {
-//        try {
-//            List<QueryResult<Sample>> delete = catalogManager.getSampleManager().delete(studyStr, sampleStr, queryOptions, sessionId);
-//            return createOkResponse(delete);
-//        } catch (CatalogException | IOException e) {
-//            return createErrorResponse(e);
-//        }
-//    }
+    @POST
+    @Path("/{sample}/annotationSets/{annotationSet}/annotations/update")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Update annotations from an annotationSet")
+    public Response updateAnnotations(
+            @ApiParam(value = "Sample id", required = true) @PathParam("sample") String sampleStr,
+            @ApiParam(value = "Study [[user@]project:]study.") @QueryParam("study") String studyStr,
+            @ApiParam(value = "AnnotationSet id to be updated.") @PathParam("annotationSet") String annotationSetId,
+            @ApiParam(value = "Action to be performed: ADD to add new annotations; SET to set the new list of annotations removing any "
+                    + "possible old annotations; REMOVE to remove some annotations; RESET to set some annotations to the default value "
+                    + "configured in the corresponding variables of the VariableSet if any.", defaultValue = "ADD")
+            @QueryParam("action") ParamUtils.CompleteUpdateAction action,
+            @ApiParam(value = "Create a new version of sample", defaultValue = "false") @QueryParam(Constants.INCREMENT_VERSION)
+                    boolean incVersion,
+            @ApiParam(value = "Json containing the map of annotations when the action is ADD or SET, a json with only the key "
+                    + "'remove' containing the comma separated variables to be removed as a value when the action is REMOVE or a json "
+                    + "with only the key 'reset' containing the comma separated variables that will be set to the default value"
+                    + " when the action is RESET"
+            ) Map<String, Object> updateParams) {
+        try {
+            return createOkResponse(catalogManager.getSampleManager().updateAnnotations(studyStr, sampleStr, annotationSetId,
+                    updateParams, action, queryOptions, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @DELETE
+    @Path("/delete")
+    @ApiOperation(value = "Delete existing samples")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = Constants.FORCE, value = "Force the deletion of samples even if they are associated to files, "
+                    + "individuals or cohorts.", dataType = "boolean", defaultValue = "false", paramType = "query"),
+            @ApiImplicitParam(name = Constants.EMPTY_FILES_ACTION, value = "Action to be performed over files that were associated only to"
+                    + " the sample to be deleted. Possible actions are NONE, TRASH, DELETE.", dataType = "string",
+                    defaultValue = "NONE", paramType = "query"),
+            @ApiImplicitParam(name = Constants.DELETE_EMPTY_COHORTS, value = "Boolean indicating if the cohorts associated only to the "
+                    + "sample to be deleted should be also deleted.", dataType = "boolean", defaultValue = "false",
+                    paramType = "query")
+    })
+    public Response delete(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                @QueryParam("study") String studyStr,
+            @ApiParam(value = "Sample id") @QueryParam("id") String id,
+            @ApiParam(value = "Sample name") @QueryParam("name") String name,
+            @ApiParam(value = "Sample source") @QueryParam("source") String source,
+            @ApiParam(value = "Sample type") @QueryParam("type") String type,
+            @ApiParam(value = "Somatic") @QueryParam("somatic") Boolean somatic,
+            @ApiParam(value = "Individual id or name") @QueryParam("individual") String individual,
+            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
+            @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
+            @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)") @QueryParam("attributes") String attributes,
+            @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)") @QueryParam("nattributes") String nattributes,
+            @ApiParam(value = "Release value (Current release from the moment the samples were first created)")
+                @QueryParam("release") String release) {
+        try {
+            query.remove("study");
+            queryOptions.put(Constants.EMPTY_FILES_ACTION, query.getString(Constants.EMPTY_FILES_ACTION, "NONE"));
+            queryOptions.put(Constants.DELETE_EMPTY_COHORTS, query.getBoolean(Constants.DELETE_EMPTY_COHORTS, false));
+
+            query.remove(Constants.EMPTY_FILES_ACTION);
+            query.remove(Constants.DELETE_EMPTY_COHORTS);
+
+            return createOkResponse(sampleManager.delete(studyStr, query, queryOptions, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
 
     @GET
     @Path("/groupBy")
@@ -308,7 +364,8 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "DEPRECATED: use study instead", hidden = true) @DefaultValue("") @QueryParam("studyId") String studyIdStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                 @QueryParam("study") String studyStr,
-            @ApiParam(value = "Comma separated list of names.") @QueryParam("name") String name,
+            @ApiParam(value = "Comma separated list of ids.") @QueryParam("id") String id,
+            @ApiParam(value = "DEPRECATED: Comma separated list of names.") @QueryParam("name") String name,
             @ApiParam(value = "source") @QueryParam("source") String source,
             @ApiParam(value = "Individual id or name", hidden = true) @QueryParam("individual.id") String individualId,
             @ApiParam(value = "Individual id or name") @QueryParam("individual") String individual,
@@ -322,16 +379,19 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Snapshot value (Latest version of families in the specified release)") @QueryParam("snapshot")
                     int snapshot) {
         try {
+            query.remove("study");
+            query.remove("fields");
+            
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
 
             // TODO: individualId is deprecated. Remember to remove this if after next release
-            if (query.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key())) {
+            if (query.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key())) {
                 if (!query.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL.key())) {
-                    query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), query.get(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key()));
+                    query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), query.get(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key()));
                 }
-                query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key());
+                query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key());
             }
             QueryResult result = sampleManager.groupBy(studyStr, query, fields, queryOptions, sessionId);
             return createOkResponse(result);
@@ -342,42 +402,42 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{sample}/annotationsets/search")
-    @ApiOperation(value = "Search annotation sets [DEPRECATED]", position = 11, notes = "Use /samples/search instead")
+    @ApiOperation(value = "Search annotation sets [DEPRECATED]", hidden = true, position = 11, notes = "Use /samples/search instead")
     public Response searchAnnotationSetGET(
             @ApiParam(value = "sampleId", required = true) @PathParam("sample") String sampleStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
-            @ApiParam(value = "Variable set id or name", required = true) @QueryParam("variableSet") String variableSet,
+            @ApiParam(value = "Variable set id") @QueryParam("variableSet") String variableSet,
             @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)") @QueryParam("annotation") String annotation,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap) {
         try {
-            AbstractManager.MyResourceId resourceId = sampleManager.getId(sampleStr, studyStr, sessionId);
+            AbstractManager.MyResource resource = sampleManager.getUid(sampleStr, studyStr, sessionId);
 
             Query query = new Query()
-                    .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), resourceId.getStudyId())
-                    .append(SampleDBAdaptor.QueryParams.ID.key(), resourceId.getResourceId())
-                    .append(Constants.FLATTENED_ANNOTATIONS, asMap);
-
-            String variableSetId = String.valueOf(catalogManager.getStudyManager()
-                    .getVariableSetId(variableSet, String.valueOf(resourceId.getStudyId()), sessionId).getResourceId());
+                    .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), resource.getStudy().getUid())
+                    .append(SampleDBAdaptor.QueryParams.UID.key(), resource.getResource().getUid());
 
             if (StringUtils.isEmpty(annotation)) {
-                annotation = Constants.VARIABLE_SET + "=" + variableSetId;
-            } else {
-                String[] annotationsSplitted = StringUtils.split(annotation, ",");
-                List<String> annotationList = new ArrayList<>(annotationsSplitted.length);
-                for (String auxAnnotation : annotationsSplitted) {
-                    String[] split = StringUtils.split(auxAnnotation, ":");
-                    if (split.length == 1) {
-                        annotationList.add(variableSetId + ":" + auxAnnotation);
-                    } else {
-                        annotationList.add(auxAnnotation);
-                    }
+                if (StringUtils.isNotEmpty(variableSet)) {
+                    annotation = Constants.VARIABLE_SET + "=" + variableSet;
                 }
-                annotation = StringUtils.join(annotationList, ";");
+            } else {
+                if (StringUtils.isNotEmpty(variableSet)) {
+                    String[] annotationsSplitted = StringUtils.split(annotation, ",");
+                    List<String> annotationList = new ArrayList<>(annotationsSplitted.length);
+                    for (String auxAnnotation : annotationsSplitted) {
+                        String[] split = StringUtils.split(auxAnnotation, ":");
+                        if (split.length == 1) {
+                            annotationList.add(variableSet + ":" + auxAnnotation);
+                        } else {
+                            annotationList.add(auxAnnotation);
+                        }
+                    }
+                    annotation = StringUtils.join(annotationList, ";");
+                }
             }
             query.putIfNotEmpty(Constants.ANNOTATION, annotation);
 
-            QueryResult<Sample> search = sampleManager.search(String.valueOf(resourceId.getStudyId()), query, new QueryOptions(),
+            QueryResult<Sample> search = sampleManager.search(studyStr, query, new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap),
                     sessionId);
             if (search.getNumResults() == 1) {
                 return createOkResponse(new QueryResult<>("Search", search.getDbTime(), search.first().getAnnotationSets().size(),
@@ -393,7 +453,7 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{samples}/annotationsets")
-    @ApiOperation(value = "Return the annotation sets of the sample [DEPRECATED]", position = 12, notes = "Use /samples/search instead")
+    @ApiOperation(value = "Return the annotation sets of the sample [DEPRECATED]", hidden = true, position = 12, notes = "Use /samples/search instead")
     public Response getAnnotationSet(
             @ApiParam(value = "Comma separated list sample IDs or names up to a maximum of 100", required = true) @PathParam("samples") String samplesStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
@@ -402,20 +462,20 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false")
                 @QueryParam("silent") boolean silent) throws WebServiceException {
         try {
-            AbstractManager.MyResourceIds resourceIds = sampleManager.getIds(samplesStr, studyStr, sessionId);
+            AbstractManager.MyResources<Sample> resource = sampleManager.getUids(samplesStr, studyStr, sessionId);
 
             Query query = new Query()
-                    .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
-                    .append(SampleDBAdaptor.QueryParams.ID.key(), resourceIds.getResourceIds())
-                    .append(Constants.FLATTENED_ANNOTATIONS, asMap);
-            QueryOptions queryOptions = new QueryOptions();
+                    .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), resource.getStudy().getUid())
+                    .append(SampleDBAdaptor.QueryParams.UID.key(), resource.getResourceList().stream().map(Sample::getUid)
+                            .collect(Collectors.toList()));
+            QueryOptions queryOptions = new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap);
 
             if (StringUtils.isNotEmpty(annotationsetName)) {
                 query.append(Constants.ANNOTATION, Constants.ANNOTATION_SET_NAME + "=" + annotationsetName);
                 queryOptions.put(QueryOptions.INCLUDE, Constants.ANNOTATION_SET_NAME + "." + annotationsetName);
             }
 
-            QueryResult<Sample> search = sampleManager.search(String.valueOf(resourceIds.getStudyId()), query, queryOptions, sessionId);
+            QueryResult<Sample> search = sampleManager.search(studyStr, query, queryOptions, sessionId);
             if (search.getNumResults() == 1) {
                 return createOkResponse(new QueryResult<>("List annotationSets", search.getDbTime(),
                         search.first().getAnnotationSets().size(), search.first().getAnnotationSets().size(), search.getWarningMsg(),
@@ -431,7 +491,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{sample}/annotationsets/create")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Create an annotation set for the sample [DEPRECATED]", position = 13, notes = "Use /{sample}/update instead")
+    @ApiOperation(value = "Create an annotation set for the sample [DEPRECATED]", hidden = true, position = 13, notes = "Use /{sample}/update instead")
     public Response annotateSamplePOST(
             @ApiParam(value = "SampleId", required = true) @PathParam("sample") String sampleStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
@@ -444,8 +504,20 @@ public class SampleWSServer extends OpenCGAWSServer {
             if (StringUtils.isNotEmpty(variableSetId)) {
                 variableSet = variableSetId;
             }
-            QueryResult<AnnotationSet> queryResult = sampleManager.createAnnotationSet(sampleStr, studyStr, variableSet, params.name,
-                    params.annotations, sessionId);
+
+            String annotationSetId = StringUtils.isEmpty(params.id) ? params.name : params.id;
+            sampleManager.update(studyStr, sampleStr, new ObjectMap()
+                            .append(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(new ObjectMap()
+                                    .append(AnnotationSetManager.ID, annotationSetId)
+                                    .append(AnnotationSetManager.VARIABLE_SET_ID, variableSet)
+                                    .append(AnnotationSetManager.ANNOTATIONS, params.annotations))
+                            ),
+                    QueryOptions.empty(), sessionId);
+            QueryResult<Sample> sampleQueryResult = sampleManager.get(studyStr, sampleStr, new QueryOptions(QueryOptions.INCLUDE,
+                    Constants.ANNOTATION_SET_NAME + "." + annotationSetId), sessionId);
+            List<AnnotationSet> annotationSets = sampleQueryResult.first().getAnnotationSets();
+            QueryResult<AnnotationSet> queryResult = new QueryResult<>(sampleStr, sampleQueryResult.getDbTime(), annotationSets.size(),
+                    annotationSets.size(), "", "", annotationSets);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             return createErrorResponse(e);
@@ -454,7 +526,7 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{sample}/annotationsets/{annotationsetName}/delete")
-    @ApiOperation(value = "Delete the annotation set or the annotations within the annotation set [DEPRECATED]", position = 14,
+    @ApiOperation(value = "Delete the annotation set or the annotations within the annotation set [DEPRECATED]", hidden = true, position = 14,
         notes = "Use /{sample}/update instead")
     public Response deleteAnnotationGET(@ApiParam(value = "sampleId", required = true) @PathParam("sample") String sampleStr,
                                         @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
@@ -477,7 +549,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{sample}/annotationsets/{annotationsetName}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update the annotations [DEPRECATED]", position = 15, notes = "Use /{sample}/update instead")
+    @ApiOperation(value = "Update the annotations [DEPRECATED]", hidden = true, position = 15, notes = "Use /{sample}/update instead")
     public Response updateAnnotationGET(
             @ApiParam(value = "sampleId", required = true) @PathParam("sample") String sampleIdStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
@@ -522,7 +594,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "JSON containing one of the keys 'add', 'set' or 'remove'", required = true) StudyWSServer.MemberAclUpdateOld params) {
         try {
             Sample.SampleAclParams sampleAclParams = getAclParams(params.add, params.remove, params.set);
-            List<String> idList = getIdList(sampleIdStr);
+            List<String> idList = StringUtils.isEmpty(sampleIdStr) ? Collections.emptyList() : getIdList(sampleIdStr);
             return createOkResponse(sampleManager.updateAcl(studyStr, idList, memberId, sampleAclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -584,10 +656,10 @@ public class SampleWSServer extends OpenCGAWSServer {
                     + "propagate the permissions defined to the individuals that are associated to the matching samples", required = true)
                     SampleAcl params) {
         try {
-            ObjectUtils.defaultIfNull(params, new SampleAcl());
+            params = ObjectUtils.defaultIfNull(params, new SampleAcl());
             Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams(
                     params.getPermissions(), params.getAction(), params.individual, params.file, params.cohort, params.propagate);
-            List<String> idList = getIdList(params.sample);
+            List<String> idList = StringUtils.isEmpty(params.sample) ? Collections.emptyList() : getIdList(params.sample);
             return createOkResponse(sampleManager.updateAcl(studyStr, idList, memberId, sampleAclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -595,6 +667,8 @@ public class SampleWSServer extends OpenCGAWSServer {
     }
 
     private static class SamplePOST {
+        public String id;
+        @Deprecated
         public String name;
         public String description;
         public String type;
@@ -625,8 +699,10 @@ public class SampleWSServer extends OpenCGAWSServer {
 //                }
 //            }
 
-            return new Sample(-1, name, source, individual != null ? individual.toIndividual(studyStr, studyManager, sessionId) : null,
-                    description, type, somatic, 1, 1, annotationSets, phenotypes, stats, attributes);
+            String sampleId = StringUtils.isEmpty(id) ? name : id;
+            String sampleName = StringUtils.isEmpty(name) ? sampleId : name;
+            return new Sample(sampleId, source, individual != null ? individual.toIndividual(studyStr, studyManager, sessionId) : null,
+                    description, type, somatic, 1, 1, annotationSets, phenotypes, stats, attributes).setName(sampleName);
         }
     }
 }

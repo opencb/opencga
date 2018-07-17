@@ -91,6 +91,7 @@ public class ParamUtils {
 
     public static void checkPath(Path path, String paramName) throws CatalogParameterException {
         checkObj(path, paramName);
+        // FIXME: What if the path contains ":" ?
         if (path.isAbsolute()) {
             throw new CatalogParameterException("Error in path: Path '" + path + "' can't be absolute");
         } else if (path.toString().matches("\\.|\\.\\.")) {
@@ -104,13 +105,9 @@ public class ParamUtils {
         }
     }
 
-    public static void checkAlias(String alias, String name, long offset) throws CatalogParameterException {
+    public static void checkAlias(String alias, String name) throws CatalogParameterException {
         if (alias == null || alias.isEmpty() || !alias.matches("^[A-Za-z0-9]([-_.]?[A-Za-z0-9])*$")) {
             throw new CatalogParameterException("Error in alias: Invalid alias for '" + name + "'.");
-        }
-        if (StringUtils.isNumeric(alias) && Long.parseLong(alias) >= offset) {
-            throw new CatalogParameterException("Error in alias: Invalid alias for '" + name + "'. Alias cannot be a numeric value above "
-                    + offset);
         }
     }
 
@@ -151,5 +148,23 @@ public class ParamUtils {
             object = supplier.get();
         }
         return object;
+    }
+
+    public enum BasicUpdateAction {
+        ADD,
+        REMOVE
+    }
+
+    public enum UpdateAction {
+        ADD,
+        SET,
+        REMOVE
+    }
+
+    public enum CompleteUpdateAction {
+        ADD,
+        SET,
+        REMOVE,
+        RESET
     }
 }

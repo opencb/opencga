@@ -94,7 +94,7 @@ public class PlatinumFileIndexerTest extends AbstractVariantStorageOperationTest
 
         int i = 1;
         for (File inputFile : inputFiles) {
-            inputFile = opencga.getCatalogManager().getFileManager().get(inputFile.getId(), null, sessionId).first();
+            inputFile = opencga.getCatalogManager().getFileManager().get(studyId, inputFile.getId(), null, sessionId).first();
             assertEquals(1, inputFile.getRelease());
             assertEquals(i, inputFile.getIndex().getRelease());
             i++;

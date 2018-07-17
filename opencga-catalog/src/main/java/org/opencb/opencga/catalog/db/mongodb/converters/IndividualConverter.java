@@ -41,15 +41,16 @@ public class IndividualConverter extends AnnotableConverter<Individual> {
         Document document = super.convertToStorageType(object, variableSetList);
         document.remove(IndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key());
 
-        document.put("id", document.getInteger("id").longValue());
+        document.put("uid", object.getUid());
+        document.put("studyUid", object.getStudyUid());
 
         Document father = (Document) document.get("father");
-        long fatherId = father != null ? (father.getInteger("id") == 0 ? -1L : father.getInteger("id").longValue()) : -1L;
-        document.put("father", fatherId > 0 ? new Document("id", fatherId) : new Document());
+        long fatherId = father != null ? (father.getInteger("uid") == 0 ? -1L : father.getInteger("uid").longValue()) : -1L;
+        document.put("father", fatherId > 0 ? new Document("uid", fatherId) : new Document());
 
         Document mother = (Document) document.get("mother");
-        long motherId = mother != null ? (mother.getInteger("id") == 0 ? -1L : mother.getInteger("id").longValue()) : -1L;
-        document.put("mother", motherId > 0 ? new Document("id", motherId) : new Document());
+        long motherId = mother != null ? (mother.getInteger("uid") == 0 ? -1L : mother.getInteger("uid").longValue()) : -1L;
+        document.put("mother", motherId > 0 ? new Document("uid", motherId) : new Document());
 
         validateSamplesToUpdate(document);
 
@@ -62,17 +63,20 @@ public class IndividualConverter extends AnnotableConverter<Individual> {
             // We make sure we don't store duplicates
             Map<Long, Sample> sampleMap = new HashMap<>();
             for (Document sample : samples) {
-                long id = sample.getInteger("id").longValue();
+                long id = sample.getInteger("uid").longValue();
                 int version = sample.getInteger("version");
                 if (id > 0) {
-                    sampleMap.put(id, new Sample().setId(id).setVersion(version));
+                    Sample tmpSample = new Sample()
+                            .setVersion(version);
+                    tmpSample.setUid(id);
+                    sampleMap.put(id, tmpSample);
                 }
             }
 
             document.put("samples",
                     sampleMap.entrySet().stream()
                             .map(entry -> new Document()
-                                    .append("id", entry.getValue().getId())
+                                    .append("uid", entry.getValue().getUid())
                                     .append("version", entry.getValue().getVersion()))
                             .collect(Collectors.toList()));
         }

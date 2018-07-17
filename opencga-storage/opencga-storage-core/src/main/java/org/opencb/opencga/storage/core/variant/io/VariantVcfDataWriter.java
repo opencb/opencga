@@ -36,7 +36,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
 import org.slf4j.Logger;
@@ -188,7 +188,7 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
         logger.info("Samples mapped: {} ... ", names.size());
 
 //        Iterator<VariantSource> iterator = sourceDBAdaptor.iterator(
-//                new Query(VariantStorageEngine.Options.STUDY_ID.key(), studyConfiguration.getStudyId()),
+//                new Query(VariantStorageEngine.Options.STUDY_UID.key(), studyConfiguration.getStudyId()),
 //                new QueryOptions());
 //        if (iterator.hasNext()) {
 //            VariantSource source = iterator.next();
@@ -323,7 +323,7 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
 //        String fileHeader;
 //        if (headers.isEmpty()) {
 //            Iterator<VariantSource> iterator = sourceDBAdaptor.iterator(
-//                    new Query(VariantStorageEngine.Options.STUDY_ID.key(), studyConfiguration.getStudyId()),
+//                    new Query(VariantStorageEngine.Options.STUDY_UID.key(), studyConfiguration.getStudyId()),
 //                    new QueryOptions());
 //            if (iterator.hasNext()) {
 //                VariantSource source = iterator.next();

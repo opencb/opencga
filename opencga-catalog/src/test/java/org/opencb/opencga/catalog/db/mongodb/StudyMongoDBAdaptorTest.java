@@ -51,8 +51,8 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
      */
     @Test
     public void createStudySameAliasDifferentProject() throws CatalogException {
-        QueryResult<Study> ph1 = catalogStudyDBAdaptor.insert(1, new Study("Phase 1", "ph1", Study.Type.CASE_CONTROL, "",
-                new Status(), null, 1), "", null);
+        QueryResult<Study> ph1 = catalogStudyDBAdaptor.insert(user1.getProjects().get(0),
+                new Study("Phase 1", "ph1", Study.Type.CASE_CONTROL, "", new Status(), null, 1), null);
         assertTrue("It is impossible creating an study with an existing alias on a different project.", ph1.getNumResults() == 1);
     }
 
@@ -70,25 +70,25 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 new Variable("PHEN", "", Variable.VariableType.CATEGORICAL, "", true, false, Arrays.asList("CASE", "CONTROL"), 4, "", "",
                         null, Collections.<String, Object>emptyMap())
         ));
-        VariableSet variableSet = new VariableSet(-1, name, false, confidential, "My description", variables, 1, Collections.emptyMap());
+        VariableSet variableSet = new VariableSet(name, name, false, confidential, "My description", variables, 1, Collections.emptyMap());
         return catalogStudyDBAdaptor.createVariableSet(5L, variableSet);
     }
 
     @Test
     public void createVariableSetTest() throws CatalogDBException {
         QueryResult<VariableSet> queryResult = createExampleVariableSet("VARSET_1", false);
-        assertEquals("VARSET_1", queryResult.first().getName());
-        assertTrue("The id of the variableSet is wrong.", queryResult.first().getId() > -1);
+        assertEquals("VARSET_1", queryResult.first().getId());
+        assertTrue("The id of the variableSet is wrong.", queryResult.first().getUid() > -1);
     }
 
     @Test
     public void testRemoveFieldFromVariableSet() throws CatalogDBException, CatalogAuthorizationException {
         QueryResult<VariableSet> variableSetQueryResult = createExampleVariableSet("VARSET_1", false);
         QueryResult<VariableSet> queryResult =
-                catalogStudyDBAdaptor.removeFieldFromVariableSet(variableSetQueryResult.first().getId(), "NAME", user3.getId());
+                catalogStudyDBAdaptor.removeFieldFromVariableSet(variableSetQueryResult.first().getUid(), "NAME", user3.getId());
         assertTrue(queryResult.first().getVariables()
                 .stream()
-                .filter(v -> "NAME".equals(v.getName()))
+                .filter(v -> "NAME".equals(v.getId()))
                 .collect(Collectors.toList()).isEmpty());
     }
 
@@ -138,7 +138,7 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
         QueryResult<VariableSet> queryResult = catalogStudyDBAdaptor.addFieldToVariableSet(18, variable, user3.getId());
 
         // Check that the new variable has been inserted in the variableSet
-        assertTrue(queryResult.first().getVariables().stream().filter(variable1 -> variable.getName().equals(variable1.getName())).findAny()
+        assertTrue(queryResult.first().getVariables().stream().filter(variable1 -> variable.getId().equals(variable1.getId())).findAny()
                 .isPresent());
 
         // We try to insert the same one again.

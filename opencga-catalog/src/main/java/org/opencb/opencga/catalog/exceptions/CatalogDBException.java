@@ -46,8 +46,8 @@ public class CatalogDBException extends CatalogException {
         return new CatalogDBException(name + " { id: \"" + id + "\" } not found.");
     }
 
-    public static CatalogDBException idNotFound(String name, long id) {
-        return new CatalogDBException(name + " { id: " + id + " } not found.");
+    public static CatalogDBException uidNotFound(String name, long id) {
+        return new CatalogDBException(name + " { uid: " + id + " } not found.");
     }
 
     public static CatalogDBException alreadyExists(String name, String key, String value) {

@@ -55,6 +55,9 @@ import java.util.Map;
  <field name="traits" type="text_en" indexed="true" stored="true" multiValued="true"/>
  <dynamicField name="stats_*" type="double" indexed="true" stored="true" multiValued="false"/>
  <dynamicField name="popFreq_*" type="double" indexed="true" stored="true" multiValued="false"/>
+ <dynamicField name="attr_s_*" type="string" indexed="true" stored="true" multiValued="false"/>
+ <dynamicField name="attr_i_*" type="int" indexed="true" stored="true" multiValued="false"/>
+ <dynamicField name="attr_d_*" type="double" indexed="true" stored="true" multiValued="false"/>
  */
 
 public class VariantSearchModel {
@@ -137,6 +140,15 @@ public class VariantSearchModel {
     @Field("popFreq_*")
     private Map<String, Float> popFreq;
 
+    @Field("attr_s_*")
+    private Map<String, String> sAttrs;
+
+    @Field("attr_i_*")
+    private Map<String, Integer> iAttrs;
+
+    @Field("attr_d_*")
+    private Map<String, Double> dAttrs;
+
     public static final double MISSING_VALUE = -100.0;
 
     public VariantSearchModel() {
@@ -153,6 +165,9 @@ public class VariantSearchModel {
         this.geneToSoAcc = new ArrayList<>();
         this.other = new ArrayList<>();
         this.popFreq = new HashMap<>();
+        this.sAttrs = new HashMap<>();
+        this.iAttrs = new HashMap<>();
+        this.dAttrs = new HashMap<>();
     }
 
     @Override
@@ -184,6 +199,9 @@ public class VariantSearchModel {
         sb.append(", other=").append(other);
         sb.append(", stats=").append(stats);
         sb.append(", popFreq=").append(popFreq);
+        sb.append(", sAttrs=").append(sAttrs);
+        sb.append(", iAttrs=").append(iAttrs);
+        sb.append(", dAttrs=").append(dAttrs);
         sb.append('}');
         return sb.toString();
     }
@@ -419,6 +437,33 @@ public class VariantSearchModel {
 
     public VariantSearchModel setPopFreq(Map<String, Float> popFreq) {
         this.popFreq = popFreq;
+        return this;
+    }
+
+    public Map<String, String> getsAttrs() {
+        return sAttrs;
+    }
+
+    public VariantSearchModel setsAttrs(Map<String, String> sAttrs) {
+        this.sAttrs = sAttrs;
+        return this;
+    }
+
+    public Map<String, Integer> getiAttrs() {
+        return iAttrs;
+    }
+
+    public VariantSearchModel setiAttrs(Map<String, Integer> iAttrs) {
+        this.iAttrs = iAttrs;
+        return this;
+    }
+
+    public Map<String, Double> getdAttrs() {
+        return dAttrs;
+    }
+
+    public VariantSearchModel setdAttrs(Map<String, Double> dAttrs) {
+        this.dAttrs = dAttrs;
         return this;
     }
 }

@@ -648,7 +648,7 @@ public class UserManager extends AbstractManager {
      * @return the set configuration.
      * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id.
      */
-    public QueryResult setConfig(String userId, String name, ObjectMap config, String sessionId) throws CatalogException {
+    public QueryResult setConfig(String userId, String name, Map<String, Object> config, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(name, "name");
@@ -716,7 +716,6 @@ public class UserManager extends AbstractManager {
     public QueryResult getConfig(String userId, String name, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(sessionId, "sessionId");
-        ParamUtils.checkParameter(name, "name");
 
         String userIdAux = getUserId(sessionId);
         userDBAdaptor.checkId(userId);
@@ -735,12 +734,16 @@ public class UserManager extends AbstractManager {
             throw new CatalogException("Internal error: Configuration object is null.");
         }
 
-        if (configs.get(name) == null) {
+        if (StringUtils.isNotEmpty(name) && configs.get(name) == null) {
             throw new CatalogException("Error: Cannot fetch configuration with name " + name + ". Configuration name not found.");
         }
 
+        // Remove filters form configs array
+        configs.remove("filters");
+        Map configMap = StringUtils.isEmpty(name) ? configs : (Map) configs.get(name);
+
         return new QueryResult("Get configuration", userQueryResult.getDbTime(), 1, 1, userQueryResult.getWarningMsg(),
-                userQueryResult.getErrorMsg(), Arrays.asList(configs.get(name)));
+                userQueryResult.getErrorMsg(), Arrays.asList(configMap));
     }
 
 
@@ -922,15 +925,9 @@ public class UserManager extends AbstractManager {
         if (StringUtils.isEmpty(studyStr) || StringUtils.isEmpty(studyGroup)) {
             return retResult;
         }
-        long studyId = catalogManager.getStudyManager().getId("admin", studyStr);
-
-        if (studyId <= 0) {
-            retResult.setErrorMsg("Study " + studyStr + " not found.");
-            return retResult;
-        }
 
         try {
-            catalogManager.getStudyManager().createGroup(Long.toString(studyId), studyGroup, StringUtils.join(userSet, ","), token);
+            catalogManager.getStudyManager().createGroup(studyStr, studyGroup, StringUtils.join(userSet, ","), token);
         } catch (CatalogException e) {
             if (e.getMessage().contains("users already belong to")) {
                 // Cannot create a group with those users because they already belong to other group
@@ -939,7 +936,7 @@ public class UserManager extends AbstractManager {
             }
             try {
                 GroupParams groupParams = new GroupParams(StringUtils.join(userSet, ","), GroupParams.Action.ADD);
-                catalogManager.getStudyManager().updateGroup(Long.toString(studyId), studyGroup, groupParams, token);
+                catalogManager.getStudyManager().updateGroup(studyStr, studyGroup, groupParams, token);
             } catch (CatalogException e1) {
                 retResult.setErrorMsg(e1.getMessage());
                 return retResult;
@@ -947,7 +944,7 @@ public class UserManager extends AbstractManager {
         }
 
         try {
-            QueryResult<Group> group = catalogManager.getStudyManager().getGroup(Long.toString(studyId), studyGroup, token);
+            QueryResult<Group> group = catalogManager.getStudyManager().getGroup(studyStr, studyGroup, token);
             if (!group.first().getUserIds().isEmpty()) {
                 retResult.setWarningMsg(retResult.getWarningMsg() + "Users registered in group " + studyGroup + " in study " + studyStr
                         + ": " + String.join(", ", group.first().getUserIds()));

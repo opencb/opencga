@@ -102,7 +102,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         for (Project p : projects) {
             String projectErrorMsg = dbAdaptorFactory.getCatalogProjectDbAdaptor().insert(p, user.getId(), options).getErrorMsg();
             if (projectErrorMsg != null && !projectErrorMsg.isEmpty()) {
-                errorMsg += ", " + p.getAlias() + ":" + projectErrorMsg;
+                errorMsg += ", " + p.getId() + ":" + projectErrorMsg;
             }
         }
 
@@ -164,7 +164,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     }
 
     @Override
-    public QueryResult setConfig(String userId, String name, ObjectMap config) throws CatalogDBException {
+    public QueryResult setConfig(String userId, String name, Map<String, Object> config) throws CatalogDBException {
         long startTime = startQuery();
 
         // Set the config
@@ -320,7 +320,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     @Override
     public QueryResult<User> get(Query query, QueryOptions options) throws CatalogDBException {
         if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
-            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
         }
         Bson bson = parseQuery(query);
         QueryResult<User> userQueryResult = userCollection.find(bson, null, userConverter, options);
@@ -329,7 +329,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
             if (user.getProjects() != null) {
                 List<Project> projects = new ArrayList<>(user.getProjects().size());
                 for (Project project : user.getProjects()) {
-                    Query query1 = new Query(ProjectDBAdaptor.QueryParams.ID.key(), project.getId());
+                    Query query1 = new Query(ProjectDBAdaptor.QueryParams.UID.key(), project.getUid());
                     QueryResult<Project> projectQueryResult = dbAdaptorFactory.getCatalogProjectDbAdaptor().get(query1, options);
                     projects.add(projectQueryResult.first());
                 }
@@ -347,7 +347,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
-            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
         }
         Bson bson = parseQuery(query);
         QueryResult<Document> queryResult = userCollection.find(bson, options);
@@ -357,8 +357,8 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
             if (projects.size() > 0) {
                 List<Document> projectsTmp = new ArrayList<>(projects.size());
                 for (Document project : projects) {
-                    Query query1 = new Query(ProjectDBAdaptor.QueryParams.ID.key(), project.get(ProjectDBAdaptor
-                            .QueryParams.ID.key()));
+                    Query query1 = new Query(ProjectDBAdaptor.QueryParams.UID.key(), project.get(ProjectDBAdaptor
+                            .QueryParams.UID.key()));
                     QueryResult<Document> queryResult1 = dbAdaptorFactory.getCatalogProjectDbAdaptor().nativeGet(query1, options);
                     projectsTmp.add(queryResult1.first());
                 }
@@ -451,7 +451,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         Query query = new Query(QueryParams.ID.key(), id)
                 .append(QueryParams.STATUS_NAME.key(), User.UserStatus.READY + "," + User.UserStatus.BANNED);
         if (count(query).first() == 0) {
-            query.put(QueryParams.STATUS_NAME.key(), User.UserStatus.TRASHED + "," + User.UserStatus.DELETED);
+            query.put(QueryParams.STATUS_NAME.key(), User.UserStatus.DELETED);
             QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.STATUS_NAME.key());
             User user = get(query, options).first();
             throw new CatalogDBException("The user {" + id + "} was already " + user.getStatus().getName());
@@ -469,10 +469,10 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         }
 
         // Change the status of the user to deleted
-        setStatus(id, User.UserStatus.TRASHED);
+        setStatus(id, User.UserStatus.DELETED);
 
         query = new Query(QueryParams.ID.key(), id)
-                .append(QueryParams.STATUS_NAME.key(), User.UserStatus.TRASHED);
+                .append(QueryParams.STATUS_NAME.key(), User.UserStatus.DELETED);
 
         return endQuery("Delete user", startTime, get(query, queryOptions));
     }
@@ -512,7 +512,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     @Override
     public QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        query.put(QueryParams.STATUS_NAME.key(), Status.TRASHED);
+        query.put(QueryParams.STATUS_NAME.key(), Status.DELETED);
         return endQuery("Restore users", startTime, setStatus(query, Status.READY));
     }
 
@@ -526,7 +526,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
 
         checkId(id);
         Query query = new Query(QueryParams.ID.key(), id)
-                .append(QueryParams.STATUS_NAME.key(), Status.TRASHED);
+                .append(QueryParams.STATUS_NAME.key(), Status.DELETED);
         if (count(query).first() == 0) {
             throw new CatalogDBException("The user {" + id + "} is not deleted");
         }
@@ -635,7 +635,8 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
             QueryParams queryParam = QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
                     : QueryParams.getParam(key);
             if (queryParam == null) {
-                continue;
+                throw new CatalogDBException("Unexpected parameter " + entry.getKey() + ". The parameter does not exist or cannot be "
+                        + "queried for.");
             }
             try {
                 switch (queryParam) {
@@ -664,9 +665,9 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
                     case SIZE:
                     case QUOTA:
                     case PROJECTS:
-                    case PROJECT_ID:
+                    case PROJECTS_UID:
                     case PROJECT_NAME:
-                    case PROJECT_ALIAS:
+                    case PROJECTS_ID:
                     case PROJECT_ORGANIZATION:
                     case PROJECT_STATUS:
                     case PROJECT_LAST_MODIFIED:
@@ -679,7 +680,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     default:
-                        break;
+                        throw new CatalogDBException("Cannot query by parameter " + queryParam.key());
                 }
             } catch (Exception e) {
                 throw new CatalogDBException(e);

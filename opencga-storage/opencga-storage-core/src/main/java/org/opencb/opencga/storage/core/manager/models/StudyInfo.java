@@ -34,10 +34,10 @@ public class StudyInfo {
 
     private String sessionId;
     private String userId;
-    private long projectId;
+    private long projectUid;
     private Study study;
 
-    private String projectAlias;
+    private String projectId;
 
     private Path workspace;
     private Map<File.Bioformat, DataStore> dataStores;
@@ -46,7 +46,7 @@ public class StudyInfo {
     private List<FileInfo> fileInfos;
 
     public StudyInfo() {
-        this.projectId = -1;
+        this.projectUid = -1;
         this.fileInfos = new ArrayList<>();
     }
 
@@ -59,17 +59,17 @@ public class StudyInfo {
         return this;
     }
 
-    public long getProjectId() {
-        return projectId;
+    public long getProjectUid() {
+        return projectUid;
     }
 
-    public StudyInfo setProjectId(long projectId) {
-        this.projectId = projectId;
+    public StudyInfo setProjectUid(long projectUid) {
+        this.projectUid = projectUid;
         return this;
     }
 
-    public long getStudyId() {
-        return study != null ? study.getId() : -1;
+    public long getStudyUid() {
+        return study != null ? study.getUid() : -1;
     }
 
     public Study getStudy() {
@@ -81,17 +81,17 @@ public class StudyInfo {
         return this;
     }
 
-    public String getProjectAlias() {
-        return projectAlias;
+    public String getProjectId() {
+        return projectId;
     }
 
-    public StudyInfo setProjectAlias(String projectAlias) {
-        this.projectAlias = projectAlias;
+    public StudyInfo setProjectId(String projectId) {
+        this.projectId = projectId;
         return this;
     }
 
-    public String getStudyAlias() {
-        return study != null ? study.getAlias() : null;
+    public String getStudyFQN() {
+        return study != null ? study.getFqn() : null;
     }
 
 

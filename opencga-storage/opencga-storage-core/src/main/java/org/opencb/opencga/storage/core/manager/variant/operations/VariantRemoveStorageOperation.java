@@ -37,34 +37,36 @@ public class VariantRemoveStorageOperation extends StorageOperation {
         DataStore dataStore = studyInfo.getDataStores().get(File.Bioformat.VARIANT);
 
         // Update study configuration BEFORE executing the operation and fetching files from Catalog
-        updateStudyConfiguration(sessionId, studyInfo.getStudyId(), dataStore);
+        updateCatalogFromStudyConfiguration(sessionId, studyInfo.getStudyFQN(), dataStore);
 
-        List<String> files = new ArrayList<>(studyInfo.getFileInfos().size());
+        List<String> fileNames = new ArrayList<>(studyInfo.getFileInfos().size());
+        List<String> filePaths = new ArrayList<>(studyInfo.getFileInfos().size());
         for (FileInfo fileInfo : studyInfo.getFileInfos()) {
-            File file = catalogManager.getFileManager().get(fileInfo.getFileId(), null, sessionId).first();
+            File file = catalogManager.getFileManager().get(studyInfo.getStudyFQN(), fileInfo.getPath(), null, sessionId).first();
             if (file.getIndex().getStatus().getName().equals(FileIndex.IndexStatus.READY)) {
-                files.add(String.valueOf(fileInfo.getFileId()));
+                fileNames.add(fileInfo.getName());
+                filePaths.add(fileInfo.getPath());
             } else {
                 throw new CatalogException("Unable to remove variants from file " + file.getName() + ". "
                         + "IndexStatus = " + file.getIndex().getStatus().getName());
             }
         }
 
-        if (files.isEmpty()) {
+        if (fileNames.isEmpty()) {
             throw new CatalogException("Nothing to do!");
         }
 
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
         variantStorageEngine.getOptions().putAll(options);
 
-        variantStorageEngine.removeFiles(String.valueOf(studyInfo.getStudyId()), files);
+        variantStorageEngine.removeFiles(studyInfo.getStudyFQN(), fileNames);
 
 
         // Update study configuration to synchronize
-        updateStudyConfiguration(sessionId, studyInfo.getStudyId(), dataStore);
+        updateCatalogFromStudyConfiguration(sessionId, studyInfo.getStudyFQN(), dataStore);
 
-        return catalogManager.getFileManager().get(studyInfo.getStudyId(), new Query(FileDBAdaptor.QueryParams.ID.key(), files), new
-                QueryOptions(), sessionId)
+        return catalogManager.getFileManager().get(studyInfo.getStudyFQN(),
+                new Query(FileDBAdaptor.QueryParams.PATH.key(), filePaths), new QueryOptions(), sessionId)
                 .getResult();
     }
 
@@ -75,16 +77,16 @@ public class VariantRemoveStorageOperation extends StorageOperation {
         DataStore dataStore = studyInfo.getDataStores().get(File.Bioformat.VARIANT);
 
         // Update study configuration BEFORE executing the operation and fetching files from Catalog
-        updateStudyConfiguration(sessionId, studyInfo.getStudyId(), dataStore);
+        updateCatalogFromStudyConfiguration(sessionId, studyInfo.getStudyFQN(), dataStore);
 
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
         variantStorageEngine.getOptions().putAll(options);
 
-        variantStorageEngine.removeStudy(String.valueOf(studyInfo.getStudyId()));
+        variantStorageEngine.removeStudy(studyInfo.getStudyFQN());
 
 
         // Update study configuration to synchronize
-        updateStudyConfiguration(sessionId, studyInfo.getStudyId(), dataStore);
+        updateCatalogFromStudyConfiguration(sessionId, studyInfo.getStudyFQN(), dataStore);
 
     }
 

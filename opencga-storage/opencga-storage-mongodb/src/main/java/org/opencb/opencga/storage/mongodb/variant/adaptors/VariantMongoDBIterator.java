@@ -25,8 +25,10 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoPersistentCursor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Created by jacobo on 9/01/15.
@@ -35,6 +37,8 @@ public class VariantMongoDBIterator extends VariantDBIterator {
 
     private MongoCursor<Document> dbCursor;
     private DocumentToVariantConverter documentToVariantConverter;
+    private int count;
+    private Logger logger = LoggerFactory.getLogger(VariantMongoDBIterator.class);
 
     //Package protected
     VariantMongoDBIterator(FindIterable<Document> dbCursor, DocumentToVariantConverter documentToVariantConverter) {
@@ -73,12 +77,18 @@ public class VariantMongoDBIterator extends VariantDBIterator {
     }
 
     @Override
+    public int getCount() {
+        return count;
+    }
+
+    @Override
     public Variant next() {
         Document document = fetch(() -> dbCursor.next());
         try {
+            count++;
             return convert(() -> documentToVariantConverter.convertToDataModelType(document));
-        } catch (Exception e) {
-            System.out.println(document.getString("_id"));
+        } catch (RuntimeException e) {
+            logger.error("Error converting variant " + document.getString("_id"));
             throw e;
         }
     }

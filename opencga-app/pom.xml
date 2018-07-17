@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>1.4.0-dev</version>
+        <version>1.4.0-rc-dev</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -79,6 +79,13 @@
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-core</artifactId>
+            <version>${opencga.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-catalog</artifactId>
             <version>${opencga.version}</version>
             <type>test-jar</type>
             <scope>test</scope>

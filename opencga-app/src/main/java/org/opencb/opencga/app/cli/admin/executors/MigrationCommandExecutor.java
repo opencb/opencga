@@ -2,10 +2,10 @@ package org.opencb.opencga.app.cli.admin.executors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.app.cli.admin.executors.migration.AnnotationSetMigration;
+import org.opencb.opencga.app.cli.admin.executors.migration.NewProjectMetadataMigration;
 import org.opencb.opencga.app.cli.admin.executors.migration.NewVariantMetadataMigration;
 import org.opencb.opencga.app.cli.admin.options.MigrationCommandOptions;
-import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
-import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 
 import java.io.BufferedReader;
@@ -88,6 +88,10 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                 }
                 input.close();
 
+                p.waitFor();
+                if (p.exitValue() != 0) {
+                    throw new IllegalStateException("Error migrating catalog database!");
+                }
 
                 // Storage
 
@@ -97,42 +101,90 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
     }
 
     private void v1_4_0() throws Exception {
-        logger.info("MIGRATING v1.4.0");
         MigrationCommandOptions.MigrateV1_4_0CommandOptions options = migrationCommandOptions.getMigrateV140CommandOptions();
+
+        boolean skipAnnotations = false;
+        boolean skipCatalogJS = false;
+        boolean skipStorage = false;
+        switch (options.what) {
+            case CATALOG:
+                skipStorage = true;
+                break;
+            case STORAGE:
+                skipAnnotations = true;
+                skipCatalogJS = true;
+                break;
+            case ANNOTATIONS:
+                skipCatalogJS = true;
+                skipStorage = true;
+                break;
+            case CATALOG_NO_ANNOTATIONS:
+                skipAnnotations = true;
+                skipStorage = true;
+                break;
+            case ALL:
+            default:
+                break;
+        }
 
         setCatalogDatabaseCredentials(options, options.commonOptions);
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
-            catalogManager.getUserManager().login("admin", options.commonOptions.adminPassword);
+            // We get a non-expiring token
+            String sessionId = catalogManager.getUserManager().getSystemTokenForUser("admin", options.commonOptions.adminPassword);
 
             // Catalog
-            String basePath = appHome + "/migration/v1.4.0/";
+            if (!skipCatalogJS) {
+                logger.info("Starting Catalog migration for 1.4.0");
+                
+                String basePath = appHome + "/migration/v1.4.0/";
 
-            String authentication = "";
-            if (StringUtils.isNotEmpty(configuration.getCatalog().getDatabase().getUser())
-                    && StringUtils.isNotEmpty(configuration.getCatalog().getDatabase().getPassword())) {
-                authentication = "-u " + configuration.getCatalog().getDatabase().getUser() + " -p "
-                        + configuration.getCatalog().getDatabase().getPassword() + " --authenticationDatabase "
-                        + configuration.getCatalog().getDatabase().getOptions().getOrDefault("authenticationDatabase", "admin") + " ";
+                String authentication = "";
+                if (StringUtils.isNotEmpty(configuration.getCatalog().getDatabase().getUser())
+                        && StringUtils.isNotEmpty(configuration.getCatalog().getDatabase().getPassword())) {
+                    authentication = "-u " + configuration.getCatalog().getDatabase().getUser() + " -p "
+                            + configuration.getCatalog().getDatabase().getPassword() + " --authenticationDatabase "
+                            + configuration.getCatalog().getDatabase().getOptions().getOrDefault("authenticationDatabase", "admin") + " ";
+                }
+
+                String catalogCli = "mongo " + authentication
+                        + StringUtils.join(configuration.getCatalog().getDatabase().getHosts(), ",") + "/"
+                        + catalogManager.getCatalogDatabase() + " opencga_catalog_v1.3.x_to_1.4.0.js";
+
+                logger.info("Migrating Catalog. Running {} from {}", catalogCli, basePath);
+                ProcessBuilder processBuilder = new ProcessBuilder(catalogCli.split(" "));
+                processBuilder.directory(new File(basePath));
+                Process p = processBuilder.start();
+
+                BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+                String line;
+                while ((line = input.readLine()) != null) {
+                    logger.info(line);
+                }
+                p.waitFor();
+                input.close();
+
+                if (p.exitValue() == 0) {
+                    logger.info("Finished Catalog migration");
+                } else {
+                    throw new CatalogException("Error migrating catalog database!");
+                }
+
             }
 
-            String catalogCli = "mongo " + authentication + configuration.getCatalog().getDatabase().getHosts().get(0) + "/"
-                    + catalogManager.getCatalogDatabase() + " opencga_catalog_v1.3.x_to_1.4.0.js";
+            if (!skipAnnotations) {
+                logger.info("Starting annotation migration for 1.4.0");
 
-            logger.info("Migrating Catalog. Running {} from {}", catalogCli, basePath);
-            ProcessBuilder processBuilder = new ProcessBuilder(catalogCli.split(" "));
-            processBuilder.directory(new File(basePath));
-            Process p = processBuilder.start();
+                // Migrate annotationSets
+                new AnnotationSetMigration(catalogManager).migrate();
 
-            BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
-            String line;
-            while ((line = input.readLine()) != null) {
-                logger.info(line);
+                logger.info("Finished annotation migration");
             }
-            input.close();
 
-            // Migrate annotationSets
-            new AnnotationSetMigration(catalogManager.getConfiguration()).migrate();
+            if (!skipStorage) {
+                new NewProjectMetadataMigration(storageConfiguration, catalogManager, options).migrate(sessionId);
+            }
+
         }
     }
 

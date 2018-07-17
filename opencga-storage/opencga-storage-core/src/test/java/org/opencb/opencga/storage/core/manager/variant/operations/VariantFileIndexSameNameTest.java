@@ -32,8 +32,8 @@ public class VariantFileIndexSameNameTest extends AbstractVariantStorageOperatio
         inputFile1 = create(studyId, getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz", "platinum_1/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"), "data/platinum_1/");
         inputFile2 = create(studyId, getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz", "platinum_2/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"), "data/platinum_2/");
 
-        System.out.println("inputFile1 = " + inputFile1.getId());
-        System.out.println("inputFile2 = " + inputFile2.getId());
+        System.out.println("inputFile1 = " + inputFile1.getUid());
+        System.out.println("inputFile2 = " + inputFile2.getUid());
     }
 
     @Test

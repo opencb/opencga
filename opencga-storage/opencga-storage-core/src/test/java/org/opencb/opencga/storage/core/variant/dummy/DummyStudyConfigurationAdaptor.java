@@ -114,7 +114,7 @@ public class DummyStudyConfigurationAdaptor implements StudyConfigurationAdaptor
         ObjectMapper objectMapper = new ObjectMapper(new JsonFactory()).configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         String prefix = "storage_configuration_" + NUM_PRINTS.incrementAndGet() + "_";
         for (StudyConfiguration studyConfiguration : DummyStudyConfigurationAdaptor.STUDY_CONFIGURATIONS_BY_NAME.values()) {
-            try (OutputStream os = new FileOutputStream(path.resolve(prefix + studyConfiguration.getStudyName()).toFile())) {
+            try (OutputStream os = new FileOutputStream(path.resolve(prefix + studyConfiguration.getStudyName() + ".json").toFile())) {
                 objectMapper.writerWithDefaultPrettyPrinter().writeValue(os, studyConfiguration);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);

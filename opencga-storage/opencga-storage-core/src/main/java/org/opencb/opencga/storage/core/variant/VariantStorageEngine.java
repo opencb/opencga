@@ -47,6 +47,7 @@ import org.opencb.opencga.storage.core.metadata.*;
 import org.opencb.opencga.storage.core.metadata.local.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
@@ -111,15 +112,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 //        COMPRESS_GENOTYPES ("compressGenotypes", true),    //Stores sample information as compressed genotypes
         EXCLUDE_GENOTYPES("exclude.genotypes", false),              //Do not store genotypes from samples
 
-        STUDY_CONFIGURATION("studyConfiguration", ""),      //
-
         STUDY_TYPE("studyType", SampleSetType.CASE_CONTROL),
         AGGREGATED_TYPE("aggregatedType", Aggregation.NONE),
-        STUDY_NAME("studyName", "default"),
-        STUDY_ID("studyId", -1),
-        FILE_ID("fileId", -1),
+        STUDY("study", null),
         OVERRIDE_FILE_ID("overrideFileId", false),
-        SAMPLE_IDS("sampleIds", ""),
         GVCF("gvcf", false),
         ISOLATE_FILE_FROM_STUDY_CONFIGURATION("isolateStudyConfiguration", false),
         TRANSFORM_FAIL_ON_MALFORMED_VARIANT("transform.fail.on.malformed", false),
@@ -263,6 +259,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                            Query query, QueryOptions queryOptions)
             throws IOException, StorageEngineException {
         VariantExporter exporter = newVariantExporter(metadataFactory);
+        preProcessQuery(query, getStudyConfigurationManager());
         exporter.export(outputFile, outputFormat, query, queryOptions);
     }
 
@@ -333,9 +330,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         if (files != null && !files.isEmpty() && options.getBoolean(Options.ANNOTATE.key(), Options.ANNOTATE.defaultValue())) {
             try {
                 VariantDBAdaptor dbAdaptor = getDBAdaptor();
-                int studyId = options.getInt(Options.STUDY_ID.key());
+
+                String studyName = options.getString(Options.STUDY.key());
                 StudyConfiguration studyConfiguration =
-                        dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyId, new QueryOptions(options)).first();
+                        dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyName, new QueryOptions(options)).first();
+                int studyId = studyConfiguration.getStudyId();
 
                 List<Integer> fileIds = new ArrayList<>(files.size());
                 for (URI uri : files) {
@@ -421,6 +420,19 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         statisticsManager.calculateStatistics(study, cohorts, options);
     }
 
+    public void calculateStats(String study, Map<String, ? extends Collection<String>> cohorts, QueryOptions options)
+            throws StorageEngineException, IOException {
+        VariantStatisticsManager statisticsManager = newVariantStatisticsManager();
+
+        StudyConfigurationManager scm = getStudyConfigurationManager();
+        scm.lockAndUpdate(study, sc -> {
+            scm.registerCohorts(sc, cohorts);
+            return sc;
+        });
+
+        statisticsManager.calculateStatistics(study, new ArrayList<>(cohorts.keySet()), options);
+    }
+
     /**
      * Calculate stats for loaded files. Used to calculate statistics for cohort ALL from recently loaded files, after the {@link #index}.
      *
@@ -439,10 +451,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 VariantDBAdaptor dbAdaptor = getDBAdaptor();
                 logger.debug("Calculating stats for files: '{}'...", files.toString());
 
-                int studyId = options.getInt(Options.STUDY_ID.key());
+                String studyName = options.getString(Options.STUDY.key());
                 QueryOptions statsOptions = new QueryOptions(options);
                 StudyConfiguration studyConfiguration =
-                        dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyId, new QueryOptions()).first();
+                        dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyName, new QueryOptions()).first();
 
                 List<Integer> fileIds = new ArrayList<>(files.size());
                 for (URI uri : files) {
@@ -457,7 +469,6 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 URI statsOutputUri = output.resolve(VariantStoragePipeline
                         .buildFilename(studyConfiguration.getStudyName(), fileIds.get(0)) + "." + TimeUtils.getTime());
                 statsOptions.put(DefaultVariantStatisticsManager.OUTPUT, statsOutputUri.toString());
-                statsOptions.remove(Options.FILE_ID.key());
 
                 List<String> cohorts = Collections.singletonList(StudyEntry.DEFAULT_COHORT);
                 calculateStats(studyConfiguration.getStudyName(), cohorts, statsOptions);

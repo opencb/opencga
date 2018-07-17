@@ -21,7 +21,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.core.models.*;
@@ -45,7 +44,7 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
 
 
     default Long exists(long studyId) throws CatalogDBException {
-        return count(new Query(QueryParams.ID.key(), studyId)).first();
+        return count(new Query(QueryParams.UID.key(), studyId)).first();
     }
 
     default void checkId(long studyId) throws CatalogDBException {
@@ -62,7 +61,7 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
 
     void nativeInsert(Map<String, Object> study, String userId) throws CatalogDBException;
 
-    QueryResult<Study> insert(long projectId, Study study, String owner, QueryOptions options) throws CatalogDBException;
+    QueryResult<Study> insert(Project project, Study study, QueryOptions options) throws CatalogDBException;
 
     boolean hasStudyPermission(long studyId, String user, StudyAclEntry.StudyPermissions permission) throws CatalogDBException;
 
@@ -90,7 +89,9 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
 
     long getId(long projectId, String studyAlias) throws CatalogDBException;
 
-    long getProjectIdByStudyId(long studyId) throws CatalogDBException;
+    long getProjectUidByStudyUid(long studyUid) throws CatalogDBException;
+
+    String getProjectIdByStudyUid(long studyUid) throws CatalogDBException;
 
     String getOwnerId(long studyId) throws CatalogDBException;
 
@@ -170,7 +171,7 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
      * @param permissionRules PermissionRules object that will be added.
      * @throws CatalogDBException if the permission rule id already existed.
      */
-    void createPermissionRule(long studyId, Study.Entry entry, PermissionRule permissionRules) throws CatalogDBException;
+    void createPermissionRule(long studyId, Study.Entity entry, PermissionRule permissionRules) throws CatalogDBException;
 
     /**
      * Get permission rules defined for an entry.
@@ -180,7 +181,7 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
      * @return the list of permission rules defined.
      * @throws CatalogDBException if there is any error.
      */
-    QueryResult<PermissionRule> getPermissionRules(long studyId, Study.Entry entry) throws CatalogDBException;
+    QueryResult<PermissionRule> getPermissionRules(long studyId, Study.Entity entry) throws CatalogDBException;
 
     /**
      * Mark a concrete permission rule to be deleted by the daemon.
@@ -196,7 +197,7 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
                 NONE: Remove the permission rule but no the permissions that might have been eventually assigned because of it.
      * @throws CatalogDBException if the permission rule does not exist.
      */
-    void markDeletedPermissionRule(long studyId, Study.Entry entry, String permissionRuleId,
+    void markDeletedPermissionRule(long studyId, Study.Entity entry, String permissionRuleId,
                                    PermissionRule.DeleteAction deleteAction) throws CatalogDBException;
 
     /*
@@ -212,7 +213,7 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
     Long variableSetExists(long variableSetId);
 
     default Long variableSetExists(String variableSetName, long studyId) throws CatalogDBException {
-        Query query = new Query(QueryParams.VARIABLE_SET_NAME.key(), variableSetName).append(QueryParams.ID.key(), studyId);
+        Query query = new Query(QueryParams.VARIABLE_SET_NAME.key(), variableSetName).append(QueryParams.UID.key(), studyId);
         return count(query).first();
     }
 
@@ -277,9 +278,12 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
     QueryResult<Study> getStudiesFromUser(String userId, QueryOptions queryOptions) throws CatalogDBException;
 
     enum QueryParams implements QueryParam {
-        ID("id", INTEGER_ARRAY, ""),
-        NAME("name", TEXT_ARRAY, ""),
-        ALIAS("alias", TEXT_ARRAY, ""),
+        ID("id", TEXT, ""),
+        UID("uid", INTEGER_ARRAY, ""),
+        UUID("uuid", TEXT, ""),
+        NAME("name", TEXT, ""),
+        ALIAS("alias", TEXT, ""),
+        FQN("fqn", TEXT, ""),
         CREATION_DATE("creationDate", DATE, ""),
         DESCRIPTION("description", TEXT, ""),
         CIPHER("cipher", TEXT, ""),
@@ -290,7 +294,9 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
         DATASTORES("dataStores", TEXT_ARRAY, ""),
         SIZE("size", INTEGER_ARRAY, ""),
         URI("uri", TEXT_ARRAY, ""),
-        PROJECT_ID("projectId", INTEGER_ARRAY, ""),
+        PROJECT_ID("projectId", TEXT, ""),
+        PROJECT_UID("projectUid", INTEGER, ""),
+        PROJECT_UUID("projectUuid", TEXT, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]",
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
@@ -305,11 +311,6 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
         GROUP_SYNCED_FROM_AUTH_ORIGIN("groups.syncedFrom.authOrigin", TEXT, ""),
         GROUP_SYNCED_FROM_REMOTE_GROUP("groups.syncedFrom.remoteGroup", TEXT, ""),
 
-        ROLES("roles", TEXT_ARRAY, ""),
-        ROLES_ID("roles.id", TEXT, ""),
-        ROLES_USERS("roles.users", TEXT_ARRAY, ""),
-        ROLES_PERMISSIONS("roles.permissions", TEXT, ""),
-
         PERMISSION_RULES("permissionRules", TEXT_ARRAY, ""),
 
         EXPERIMENT_ID("experiments.id", INTEGER_ARRAY, ""),
@@ -323,43 +324,10 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
         EXPERIMENT_RESPONSIBLE("experiments.responsible", TEXT_ARRAY, ""),
 
         OWNER("_ownerId", TEXT, ""),
-//        FILE_ID("files.id", INTEGER_ARRAY, ""),
-//        FILE_NAME("files.name", TEXT_ARRAY, ""),
-//        FILE_TYPE("files.type", TEXT_ARRAY, ""),
-//        FILE_FORMAT("files.format", TEXT_ARRAY, ""),
-//        FILE_BIOFORMAT("files.bioformat", TEXT_ARRAY, ""),
-//        FILE_DISK_USAGE("files.size", INTEGER_ARRAY, ""),
-
-//        JOB_ID("jobs.id", INTEGER_ARRAY, ""),
-//        JOB_NAME("jobs.name", TEXT_ARRAY, ""),
-//        JOB_USER_ID("jobs.userId", TEXT_ARRAY, ""),
-//        JOB_TOOL_NAME("jobs.toolName", TEXT_ARRAY, ""),
-//        JOB_CREATION_DATE("jobs.creationDate", TEXT_ARRAY, ""),
-//        JOB_STATUS("jobs.status", TEXT_ARRAY, ""),
-//        JOB_DISK_USAGE("jobs.size", DECIMAL, ""),
-
-//        INDIVIDUAL_ID("individuals.id", INTEGER_ARRAY, ""),
-//        INDIVIDUAL_NAME("individuals.name", TEXT_ARRAY, ""),
-//        INDIVIDUAL_FATHER_ID("individuals.fatherId", INTEGER_ARRAY, ""),
-//        INDIVIDUAL_MOTHER_ID("individuals.motherId", INTEGER_ARRAY, ""),
-//        INDIVIDUAL_FAMILY("individuals.family", TEXT_ARRAY, ""),
-//        INDIVIDUAL_RACE("individuals.race", TEXT_ARRAY, ""),
-
-//        SAMPLE_ID("samples.id", INTEGER_ARRAY, ""),
-//        SAMPLE_NAME("samples.name", TEXT_ARRAY, ""),
-//        SAMPLE_SOURCE("samples.source", TEXT_ARRAY, ""),
-//        SAMPLE_INDIVIDUAL_ID("samples.individualId", INTEGER_ARRAY, ""),
-
-//        DATASET_ID("datasets.id", INTEGER_ARRAY, ""),
-//        DATASET_NAME("datasets.name", TEXT_ARRAY, ""),
-
         COHORTS("cohorts", TEXT_ARRAY, ""),
-//        COHORT_ID("cohorts.id", INTEGER_ARRAY, ""),
-//        COHORT_NAME("cohorts.name", TEXT_ARRAY, ""),
-//        COHORT_TYPE("cohorts.type", TEXT_ARRAY, ""),
 
         VARIABLE_SET("variableSets", TEXT_ARRAY, ""),
-        VARIABLE_SET_ID("variableSets.id", INTEGER_ARRAY, ""),
+        VARIABLE_SET_UID("variableSets.uid", INTEGER_ARRAY, ""),
         VARIABLE_SET_NAME("variableSets.name", TEXT_ARRAY, ""),
         VARIABLE_SET_DESCRIPTION("variableSets.description", TEXT_ARRAY, "");
 
@@ -406,8 +374,8 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
     }
 
     enum VariableSetParams implements QueryParam {
-        ID("id", DOUBLE, ""),
-        NAME("name", TEXT, ""),
+        UID("uid", INTEGER, ""),
+        ID("id", TEXT, ""),
         UNIQUE("unique", BOOLEAN, ""),
         CONFIDENTIAL("confidential", BOOLEAN, ""),
         DESCRIPTION("description", TEXT, ""),
@@ -461,52 +429,4 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
         }
     }
 
-    @Deprecated
-    enum StudyFilterOptions implements AbstractDBAdaptor.FilterOption {
-        id(Type.NUMERICAL, ""),
-        projectId(Type.NUMERICAL, ""),
-        name(Type.TEXT, ""),
-        alias(Type.TEXT, ""),
-        type(Type.TEXT, ""),
-        groups(Type.TEXT, ""),
-        creatorId(Type.TEXT, ""),
-        creationDate(Type.TEXT, ""),
-        status(Type.TEXT, ""),
-        lastModified(Type.TEXT, ""),
-        stats(Type.TEXT, ""),
-        attributes(Type.TEXT, ""),
-        nattributes("attributes", Type.NUMERICAL, ""),
-        battributes("attributes", Type.BOOLEAN, "");
-
-        private final String _key;
-        private final String _description;
-        private final Type _type;
-
-        StudyFilterOptions(String key, Type type, String description) {
-            this._key = key;
-            this._description = description;
-            this._type = type;
-        }
-
-        StudyFilterOptions(Type type, String description) {
-            this._key = name();
-            this._description = description;
-            this._type = type;
-        }
-
-        @Override
-        public String getKey() {
-            return _key;
-        }
-
-        @Override
-        public String getDescription() {
-            return _description;
-        }
-
-        @Override
-        public Type getType() {
-            return _type;
-        }
-    }
 }

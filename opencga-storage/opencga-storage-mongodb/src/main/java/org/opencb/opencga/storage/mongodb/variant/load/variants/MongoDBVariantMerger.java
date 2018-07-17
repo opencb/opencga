@@ -35,6 +35,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStoragePipeline;
@@ -52,7 +53,7 @@ import java.util.stream.Collectors;
 import static com.mongodb.client.model.Filters.*;
 import static com.mongodb.client.model.Updates.*;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.DEFAULT_GENOTYPE;
-import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter.UNKNOWN_GENOTYPE;
+import static org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass.UNKNOWN_GENOTYPE;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.*;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.IDS_FIELD;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.RELEASE_FIELD;
@@ -1305,9 +1306,9 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
     public static boolean loadUnknownGenotypes(StudyConfiguration studyConfiguration) {
         Logger logger = LoggerFactory.getLogger(MongoDBVariantMerger.class);
         String defaultGenotype = studyConfiguration.getAttributes().getString(DEFAULT_GENOTYPE.key(), "");
-        if (defaultGenotype.equals(DocumentToSamplesConverter.UNKNOWN_GENOTYPE)) {
+        if (defaultGenotype.equals(GenotypeClass.UNKNOWN_GENOTYPE)) {
             logger.debug("Do not need fill unknown genotype array. DefaultGenotype is UNKNOWN_GENOTYPE({}).",
-                    DocumentToSamplesConverter.UNKNOWN_GENOTYPE);
+                    GenotypeClass.UNKNOWN_GENOTYPE);
             return false;
         } else if (getExcludeGenotypes(studyConfiguration)) {
             logger.debug("Do not need fill unknown genotype array. Excluding genotypes.");

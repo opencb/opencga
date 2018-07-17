@@ -22,7 +22,7 @@
 
     <groupId>org.opencb.opencga</groupId>
     <artifactId>opencga</artifactId>
-    <version>1.4.0-dev</version>
+    <version>1.4.0-rc-dev</version>
     <packaging>pom</packaging>
     <name>OpenCGA</name>
     
@@ -37,7 +37,7 @@
     </modules>
 
     <properties>
-        <opencga.version>1.4.0-dev</opencga.version>
+        <opencga.version>1.4.0-rc-dev</opencga.version>
         <java.version>1.8</java.version>
         <java-common-libs.version>3.7.0-SNAPSHOT</java-common-libs.version>
         <biodata.version>1.4.0-SNAPSHOT</biodata.version>
@@ -271,6 +271,98 @@
                     <exclusion>
                         <groupId>org.mortbay.jetty</groupId>
                         <artifactId>servlet-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.spark</groupId>
+                        <artifactId>spark-sql_2.11</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.spark</groupId>
+                        <artifactId>spark-mllib_2.11</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.databricks</groupId>
+                        <artifactId>spark-avro_2.11</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.parquet</groupId>
+                        <artifactId>parquet-avro</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.parquet</groupId>
+                        <artifactId>parquet-hadoop</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.hpg-bigdata</groupId>
+                <artifactId>hpg-bigdata-analysis</artifactId>
+                <version>${hpg-bigdata.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <artifactId>hadoop-bam</artifactId>
+                        <groupId>org.seqdoop</groupId>
+                    </exclusion>
+
+                    <exclusion>
+                        <artifactId>hadoop-common</artifactId>
+                        <groupId>org.apache.hadoop</groupId>
+                    </exclusion>
+                    <exclusion>
+                        <artifactId>hadoop-client</artifactId>
+                        <groupId>org.apache.hadoop</groupId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.hadoop</groupId>
+                        <artifactId>hadoop-annotations</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.hadoop</groupId>
+                        <artifactId>hadoop-mapreduce-client-core</artifactId>
+                    </exclusion>
+
+                    <exclusion>
+                        <artifactId>hbase-client</artifactId>
+                        <groupId>org.apache.hbase</groupId>
+                    </exclusion>
+                    <exclusion>
+                        <artifactId>hbase-server</artifactId>
+                        <groupId>org.apache.hbase</groupId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.hbase</groupId>
+                        <artifactId>hbase-common</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.hbase</groupId>
+                        <artifactId>hbase-annotations</artifactId>
+                    </exclusion>
+
+                    <exclusion>
+                        <artifactId>avro-mapred</artifactId>
+                        <groupId>org.apache.avro</groupId>
+                    </exclusion>
+
+                    <exclusion>
+                        <artifactId>com.sun.jersey</artifactId>
+                        <groupId>jersey-json</groupId>
+                    </exclusion>
+                    <exclusion>
+                        <artifactId>com.sun.jersey</artifactId>
+                        <groupId>jersey-server</groupId>
+                    </exclusion>
+
+                    <exclusion>
+                        <groupId>org.apache.spark</groupId>
+                        <artifactId>spark-sql_2.11</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.spark</groupId>
+                        <artifactId>spark-mllib_2.11</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.spark</groupId>
+                        <artifactId>spark-avro_2.11</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>

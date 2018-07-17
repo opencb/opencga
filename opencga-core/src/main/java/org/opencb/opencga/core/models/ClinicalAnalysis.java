@@ -16,16 +16,20 @@
 
 package org.opencb.opencga.core.models;
 
+import org.opencb.opencga.core.models.clinical.Interpretation;
+
 import java.util.List;
 import java.util.Map;
 
 /**
  * Created by pfurio on 05/06/17.
  */
-public class ClinicalAnalysis {
+public class ClinicalAnalysis extends PrivateStudyUid {
 
-    private long id;
+    private String id;
+    @Deprecated
     private String name;
+    private String uuid;
     private String description;
     private Type type;
 
@@ -36,7 +40,7 @@ public class ClinicalAnalysis {
 
     private List<Individual> subjects;
     private Family family;
-    private List<ClinicalInterpretation> interpretations;
+    private List<Interpretation> interpretations;
 
     private String creationDate;
     private Status status;
@@ -48,6 +52,7 @@ public class ClinicalAnalysis {
     }
 
     // Todo: Think about a better place to have this enum
+    @Deprecated
     public enum Action {
         ADD,
         SET,
@@ -57,11 +62,10 @@ public class ClinicalAnalysis {
     public ClinicalAnalysis() {
     }
 
-    public ClinicalAnalysis(long id, String name, String description, Type type, OntologyTerm disease, File germline, File somatic,
-                            List<Individual> subjects, Family family, List<ClinicalInterpretation> interpretations, String creationDate,
+    public ClinicalAnalysis(String id, String description, Type type, OntologyTerm disease, File germline, File somatic,
+                            List<Individual> subjects, Family family, List<Interpretation> interpretations, String creationDate,
                             Status status, int release, Map<String, Object> attributes) {
         this.id = id;
-        this.name = name;
         this.description = description;
         this.type = type;
         this.disease = disease;
@@ -79,7 +83,8 @@ public class ClinicalAnalysis {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClinicalAnalysis{");
-        sb.append("id=").append(id);
+        sb.append("uuid='").append(uuid).append('\'');
+        sb.append(", id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", type=").append(type);
@@ -97,12 +102,33 @@ public class ClinicalAnalysis {
         return sb.toString();
     }
 
-    public long getId() {
+    public String getUuid() {
+        return uuid;
+    }
+
+    public ClinicalAnalysis setUuid(String uuid) {
+        this.uuid = uuid;
+        return this;
+    }
+
+    public String getId() {
         return id;
     }
 
-    public ClinicalAnalysis setId(long id) {
+    public ClinicalAnalysis setId(String id) {
         this.id = id;
+        return this;
+    }
+
+    @Override
+    public ClinicalAnalysis setUid(long uid) {
+        super.setUid(uid);
+        return this;
+    }
+
+    @Override
+    public ClinicalAnalysis setStudyUid(long studyUid) {
+        super.setStudyUid(studyUid);
         return this;
     }
 
@@ -178,11 +204,11 @@ public class ClinicalAnalysis {
         return this;
     }
 
-    public List<ClinicalInterpretation> getInterpretations() {
+    public List<Interpretation> getInterpretations() {
         return interpretations;
     }
 
-    public ClinicalAnalysis setInterpretations(List<ClinicalInterpretation> interpretations) {
+    public ClinicalAnalysis setInterpretations(List<Interpretation> interpretations) {
         this.interpretations = interpretations;
         return this;
     }
@@ -223,6 +249,7 @@ public class ClinicalAnalysis {
         return this;
     }
 
+    @Deprecated
     public static class ClinicalInterpretation {
 
         private String id;

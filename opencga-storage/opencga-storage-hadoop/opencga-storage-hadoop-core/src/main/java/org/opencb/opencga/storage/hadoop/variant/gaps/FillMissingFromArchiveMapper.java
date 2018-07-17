@@ -9,11 +9,9 @@ import org.apache.hadoop.hbase.protobuf.generated.ClientProtos;
 import org.apache.hadoop.io.BytesWritable;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.mr.AnalysisTableMapReduceHelper;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -48,18 +46,32 @@ public class FillMissingFromArchiveMapper extends TableMapper<BytesWritable, Byt
 
     @Override
     protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
-        List<Put> puts = task.apply(Collections.singletonList(value));
+        AbstractFillFromArchiveTask.FillResult fillResult = task.apply(value);
 
-        for (Put put : puts) {
+        for (Put put : fillResult.getVariantPuts()) {
+            ClientProtos.MutationProto proto = ProtobufUtil.toMutation(ClientProtos.MutationProto.MutationType.PUT, put);
+            context.write(new BytesWritable(put.getRow()), new BytesWritable(proto.toByteArray()));
+        }
+        for (Put put : fillResult.getSamplesIndexPuts()) {
+            setSampleIndexTablePut(put);
             ClientProtos.MutationProto proto = ProtobufUtil.toMutation(ClientProtos.MutationProto.MutationType.PUT, put);
             context.write(new BytesWritable(put.getRow()), new BytesWritable(proto.toByteArray()));
         }
         updateStats(context);
     }
 
+    public static void setSampleIndexTablePut(Put put) {
+        put.setAttribute("s", new byte[]{1});
+    }
+
+    public static boolean isSampleIndexTablePut(Put put) {
+        byte[] s = put.getAttribute("s");
+        return s != null && s[0] == 1;
+    }
+
     private void updateStats(Context context) {
         for (Map.Entry<String, Long> entry : task.takeStats().entrySet()) {
-            context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, entry.getKey()).increment(entry.getValue());
+            context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, entry.getKey()).increment(entry.getValue());
         }
     }
 

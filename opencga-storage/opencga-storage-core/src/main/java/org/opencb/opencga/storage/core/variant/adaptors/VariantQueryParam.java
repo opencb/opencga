@@ -75,13 +75,16 @@ public final class VariantQueryParam implements QueryParam {
 
     //SAMPLES_DESCR = "Filter variants where ALL the provided samples are mutated (not HOM_REF or missing)";
     public static final String SAMPLE_DESCR
-            = "Filter variants where ALL the samples contain the variant (HET or HOM_ALT). "
+            = "Filter variants where the samples contain the variant (HET or HOM_ALT). "
+            + "Accepts AND (" + VariantQueryUtils.AND + ") and OR (" + VariantQueryUtils.OR + ") operators. "
             + "This will automatically set 'includeSample' parameter when not provided";
     public static final VariantQueryParam SAMPLE = new VariantQueryParam("sample", TEXT_ARRAY, SAMPLE_DESCR);
 
     public static final String GENOTYPE_DESCR
             = "Samples with a specific genotype: {samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}(,{gt_n})*)*"
             + " e.g. HG0097:0/0;HG0098:0/1,1/1. "
+            + "Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT and MISS "
+            + " e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT. "
             + "This will automatically set 'includeSample' parameter when not provided";
     public static final VariantQueryParam GENOTYPE = new VariantQueryParam("genotype", TEXT_ARRAY, GENOTYPE_DESCR);
 
