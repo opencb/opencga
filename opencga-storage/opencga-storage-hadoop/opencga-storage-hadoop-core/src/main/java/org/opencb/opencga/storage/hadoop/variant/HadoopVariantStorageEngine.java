@@ -28,7 +28,6 @@ import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.io.compress.Compression.Algorithm;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.solr.common.SolrException;
-import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantType;
@@ -44,16 +43,17 @@ import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
+import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
@@ -73,7 +73,8 @@ import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHel
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConsolidationDrive;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBLoader;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQuery;
+import org.opencb.opencga.storage.hadoop.variant.io.HadoopVariantExporter;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopDefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopMRVariantStatisticsManager;
@@ -94,12 +95,12 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.MERGE_MODE;
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.RESUME;
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.ALTERNATE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.REFERENCE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser.isSupportedQueryParam;
 import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver.*;
@@ -351,6 +352,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
+    protected VariantExporter newVariantExporter(VariantMetadataFactory metadataFactory) throws StorageEngineException {
+        return new HadoopVariantExporter(this, metadataFactory, getMRExecutor());
+    }
+
+    @Override
     public VariantStatisticsManager newVariantStatisticsManager() throws StorageEngineException {
         // By default, execute a MR to calculate statistics
         if (getOptions().getBoolean(STATS_LOCAL, false)) {
@@ -431,7 +437,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                     // Allow concurrent operations if fillGaps.
                     (v) -> fillGaps || v.getOperationName().equals(FILL_GAPS_OPERATION_NAME));
 
-            options.put(AbstractAnalysisTableDriver.TIMESTAMP, operation.getTimestamp());
+            options.put(AbstractVariantsTableDriver.TIMESTAMP, operation.getTimestamp());
             return sc;
         });
 
@@ -456,7 +462,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             options.put(FillGapsFromArchiveMapper.FILL_GAPS, fillGaps);
             options.put(FillGapsFromArchiveMapper.OVERWRITE, overwrite);
 
-            String args = FillGapsDriver.buildCommandLineArgs(
+            String[] args = FillGapsDriver.buildArgs(
                     getArchiveTableName(studyId),
                     getVariantTableName(),
                     studyId, fileIds, options);
@@ -592,7 +598,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         StudyConfiguration sc = scm.getStudyConfiguration(studyId, null).first();
         boolean removeWholeStudy = sc.getIndexedFiles().size() == fileIds.size() && sc.getIndexedFiles().containsAll(fileIds);
         BatchFileOperation operation = StudyConfigurationManager.getOperation(sc, REMOVE_OPERATION_NAME, fileIds);
-        options.put(AbstractAnalysisTableDriver.TIMESTAMP, operation.getTimestamp());
+        options.put(AbstractVariantsTableDriver.TIMESTAMP, operation.getTimestamp());
 
         // Delete
         Thread hook = getStudyConfigurationManager().buildShutdownHook(REMOVE_OPERATION_NAME, studyId, fileIds);
@@ -731,7 +737,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                         Configuration configuration = getHadoopConfiguration();
                         configuration = VariantHadoopDBAdaptor.getHbaseConfiguration(configuration, credentials);
                         dbAdaptor.set(new VariantHadoopDBAdaptor(getHBaseManager(configuration), credentials,
-                                this.configuration, configuration, getCellBaseUtils(), getTableNameGenerator()));
+                                this.configuration, configuration, getTableNameGenerator()));
                     } catch (IOException e) {
                         throw new StorageEngineException("Error creating DB Adapter", e);
                     }
@@ -777,6 +783,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
         convertGoToGeneQuery(query, cellBaseUtils);
         convertExpressionToGeneQuery(query, cellBaseUtils);
+        convertGenesToRegionsQuery(query, cellBaseUtils);
 
         return query;
     }
@@ -887,26 +894,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     private boolean doHBaseSampleIndexIntersect(Query query, QueryOptions options) {
         if (options.getBoolean("sample_index_intersect", true)) {
-            if (isValidParam(query, GENOTYPE)) {
-                HashMap<Object, List<String>> gtMap = new HashMap<>();
-                VariantQueryUtils.parseGenotypeFilter(query.getString(GENOTYPE.key()), gtMap);
-                for (List<String> gts : gtMap.values()) {
-                    boolean valid = true;
-                    for (String gt : gts) {
-                        // Despite invalid genotypes (i.e. genotypes not in the index) can be used to filter within AND queries,
-                        // we require at least one sample where all the genotypes are valid
-                        valid &= SampleIndexDBLoader.validGenotype(gt);
-                        valid &= !isNegated(gt);
-                    }
-                    if (valid) {
-                        // If any sample is valid, go for it
-                        return true;
-                    }
-                }
-            }
-            if (isValidParam(query, SAMPLE, true)) {
-                return true;
-            }
+            return SampleIndexQuery.validSampleIndexQuery(query);
         }
         return false;
     }
@@ -915,98 +903,24 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
      * Intersect result of SampleIndexTable and full phoenix query.
      * Use {@link org.opencb.opencga.storage.core.variant.adaptors.iterators.MultiVariantDBIterator}.
      *
-     * @param query     Query
-     * @param options   Options
-     * @param iterator  Shall the resulting object be an iterator instead of a QueryResult
-     * @return          QueryResult or Iterator with the variants that matches the query
+     * @param inputQuery Query
+     * @param options    Options
+     * @param iterator   Shall the resulting object be an iterator instead of a QueryResult
+     * @return           QueryResult or Iterator with the variants that matches the query
      * @throws StorageEngineException StorageEngineException
      */
-    private Object getOrIteratorSampleIndexIntersect(Query query, QueryOptions options, boolean iterator) throws StorageEngineException {
+    private Object getOrIteratorSampleIndexIntersect(Query inputQuery, QueryOptions options, boolean iterator)
+            throws StorageEngineException {
         VariantHadoopDBAdaptor dbAdaptor = getDBAdaptor();
 
         logger.info("HBase SampleIndex intersect");
 
         SampleIndexDBAdaptor sampleIndexDBAdaptor = getSampleIndexDBAdaptor();
 
-        // Build SampleIndexTable query. Extract Regions, Study, Sample and Genotypes
-        // Extract regions
-        List<Region> regions = new ArrayList<>();
-        if (isValidParam(query, REGION)) {
-            regions = Region.parseRegions(query.getString(REGION.key()));
-            query.remove(REGION.key());
-        }
+        Query query = new Query(inputQuery);
+        SampleIndexQuery sampleIndexQuery = SampleIndexQuery.extractSampleIndexQuery(query, getStudyConfigurationManager());
 
-        VariantQueryXref xref = VariantQueryUtils.parseXrefs(query);
-        if (!xref.getGenes().isEmpty()) {
-            List<Region> geneRegions = getCellBaseUtils().getGeneRegion(xref.getGenes());
-            if (geneRegions.isEmpty()) {
-                throw VariantQueryException.geneNotFound(xref.getGenes().toString());
-            }
-            regions.addAll(geneRegions);
-            query.remove(GENE.key());
-
-            // TODO: Resolve other IDs?
-            query.put(ANNOT_XREF.key(), xref.getOtherXrefs());
-            ArrayList<String> ids = new ArrayList<>();
-            for (Variant variant : xref.getVariants()) {
-                ids.add(variant.toString());
-            }
-            ids.addAll(xref.getIds());
-            query.put(VariantQueryParam.ID.key(), ids);
-        }
-
-        // Extract study
-        StudyConfiguration defaultStudyConfiguration = VariantQueryUtils.getDefaultStudyConfiguration(query, options,
-                dbAdaptor.getStudyConfigurationManager());
-
-        // Extract sample and genotypes to filter
-//        String sample = null;
-//        List<String> gts = null;
-        QueryOperation queryOperation;
-        Map<String, List<String>> samplesMap = new HashMap<>();
-        if (isValidParam(query, GENOTYPE)) {
-            // Get the genotype sample with fewer genotype filters (i.e., the most strict filter)
-
-            HashMap<Object, List<String>> map = new HashMap<>();
-            queryOperation = parseGenotypeFilter(query.getString(GENOTYPE.key()), map);
-
-            for (Map.Entry<Object, List<String>> entry : map.entrySet()) {
-                boolean valid = true;
-                for (String gt : entry.getValue()) {
-                    if (queryOperation == QueryOperation.OR) {
-                        // Invalid genotypes (i.e. genotypes not in the index) are not allowed in OR queries
-                        valid &= SampleIndexDBLoader.validGenotype(gt);
-                    }
-                    valid &= !isNegated(gt);
-                }
-                if (valid) {
-                    samplesMap.put(entry.getKey().toString(), entry.getValue());
-                }
-            }
-
-        } else if (isValidParam(query, SAMPLE)) {
-            // At any case, filter only by first sample
-            // TODO: Use sample with less variants?
-            queryOperation = QueryOperation.AND;
-            List<String> samples = query.getAsStringList(SAMPLE.key());
-            samples.stream().filter(s -> !isNegated(s)).forEach(sample -> samplesMap.put(sample, Collections.emptyList()));
-//            sample = samples.stream().filter(s -> !isNegated(s)).findFirst().orElse(null);
-//            gts = Collections.emptyList();
-
-        //} else if (isValidParam(query, FILE)) { // TODO: Add FILEs filter
-
-        } else {
-            throw new IllegalStateException("Unable to query SamplesIndex");
-        }
-
-        if (defaultStudyConfiguration == null) {
-            String sample = samplesMap.keySet().iterator().next();
-            throw VariantQueryException.missingStudyForSample(sample, dbAdaptor.getStudyConfigurationManager().getStudyNames(null));
-        }
-        String study = defaultStudyConfiguration.getStudyName();
-
-        VariantDBIterator variants =
-                sampleIndexDBAdaptor.iterator(regions, study, samplesMap, queryOperation);
+        VariantDBIterator variants = sampleIndexDBAdaptor.iterator(sampleIndexQuery);
 
         int batchSize = options.getInt("multiIteratorBatchSize", 200);
         if (iterator) {
@@ -1016,7 +930,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         } else {
             VariantQueryResult<Variant> result = dbAdaptor.get(variants, query, options);
             // TODO: Allow exact count with "approximateCount=false"
-            if (!options.getBoolean(QueryOptions.SKIP_COUNT, true)) {
+            if (!options.getBoolean(QueryOptions.SKIP_COUNT, true) || options.getBoolean(APPROXIMATE_COUNT.key(), false)) {
                 int sampling = variants.getCount();
                 int limit = options.getInt(QueryOptions.LIMIT, 0);
                 if (limit > 0 && limit > result.getNumResults()) {
@@ -1025,9 +939,10 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                     result.setNumTotalResults(result.getNumResults());
                 } else if (variants.hasNext()) {
                     long totalCount;
-                    if (samplesMap.size() == 1) {
-                        Map.Entry<String, List<String>> entry = samplesMap.entrySet().iterator().next();
-                        totalCount = sampleIndexDBAdaptor.count(regions, study, entry.getKey(), entry.getValue());
+                    if (sampleIndexQuery.getSamplesMap().size() == 1) {
+                        Map.Entry<String, List<String>> entry = sampleIndexQuery.getSamplesMap().entrySet().iterator().next();
+                        totalCount = sampleIndexDBAdaptor.count(
+                                sampleIndexQuery.getRegions(), sampleIndexQuery.getStudy(), entry.getKey(), entry.getValue());
                     } else {
                         Iterators.getLast(variants);
                         totalCount = variants.getCount();

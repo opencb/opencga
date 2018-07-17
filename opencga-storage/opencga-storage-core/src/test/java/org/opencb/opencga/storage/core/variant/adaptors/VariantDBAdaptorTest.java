@@ -1274,13 +1274,11 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         }
 
         query = new Query(GENE.key(), "WRONG_GENE");
-        result = query(query, new QueryOptions());
 
-        assertThat(result, everyResult(allVariants, hasAnnotation(hasGenes(Collections.singletonList("WRONG_GENE")))));
-        assertThat(result, numResults(is(0)));
-        for (Variant variant : result.getResult()) {
-            System.out.println("variant = " + variant);
-        }
+        VariantQueryException exception = VariantQueryException.geneNotFound("WRONG_GENE");
+        thrown.expect(exception.getClass());
+        thrown.expectMessage(exception.getMessage());
+        result = query(query, new QueryOptions());
     }
 
     @Test

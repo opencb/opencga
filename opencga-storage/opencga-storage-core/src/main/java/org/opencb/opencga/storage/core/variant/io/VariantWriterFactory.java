@@ -30,6 +30,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.io.avro.VariantAvroWriter;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonWriter;
 import org.slf4j.Logger;
@@ -55,10 +56,14 @@ import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.Va
 public class VariantWriterFactory {
 
     private static Logger logger = LoggerFactory.getLogger(VariantWriterFactory.class);
-    private final VariantDBAdaptor dbAdaptor;
+    private final StudyConfigurationManager studyConfigurationManager;
 
     public VariantWriterFactory(VariantDBAdaptor dbAdaptor) {
-        this.dbAdaptor = dbAdaptor;
+        studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
+    }
+
+    public VariantWriterFactory(StudyConfigurationManager studyConfigurationManager) {
+        this.studyConfigurationManager = studyConfigurationManager;
     }
 
     public enum VariantOutputFormat {
@@ -69,6 +74,8 @@ public class VariantWriterFactory {
         AVRO("avro"),
         AVRO_GZ("avro.gz"),
         AVRO_SNAPPY("avro.snappy"),
+        PARQUET("parquet"),
+        PARQUET_GZ("parquet.gz"),
         STATS("stats.tsv", false),
         STATS_GZ("stats.tsv.gz", false),
         CELLBASE("frequencies.json"),
@@ -95,11 +102,11 @@ public class VariantWriterFactory {
             return multiStudy;
         }
 
-        boolean isGzip() {
+        public boolean isGzip() {
             return extension.endsWith(".gz");
         }
 
-        boolean isSnappy() {
+        public boolean isSnappy() {
             return extension.endsWith(".snappy");
         }
 
@@ -204,15 +211,14 @@ public class VariantWriterFactory {
         return outputStream;
     }
 
-    protected DataWriter<Variant> newDataWriter(VariantOutputFormat outputFormat, final OutputStream outputStream,
+    public DataWriter<Variant> newDataWriter(VariantOutputFormat outputFormat, final OutputStream outputStream,
                                                 Query query, QueryOptions queryOptions) throws IOException {
         final DataWriter<Variant> exporter;
 
         switch (outputFormat) {
             case VCF_GZ:
             case VCF:
-                VariantMetadataFactory metadataFactory = new VariantMetadataFactory(dbAdaptor.getStudyConfigurationManager()
-                );
+                VariantMetadataFactory metadataFactory = new VariantMetadataFactory(studyConfigurationManager);
                 VariantMetadata variantMetadata;
                 try {
                     variantMetadata = metadataFactory.makeVariantMetadata(query, queryOptions);
@@ -246,7 +252,7 @@ public class VariantWriterFactory {
 
             case STATS_GZ:
             case STATS:
-                StudyConfiguration sc = getStudyConfiguration(query, dbAdaptor, true);
+                StudyConfiguration sc = getStudyConfiguration(query, true);
                 List<String> cohorts = new ArrayList<>(sc.getCohortIds().keySet());
 
                 exporter = new VariantStatsTsvExporter(outputStream, sc.getStudyName(), cohorts);
@@ -272,12 +278,11 @@ public class VariantWriterFactory {
         return StringUtils.isEmpty(output);
     }
 
-    protected StudyConfiguration getStudyConfiguration(Query query, VariantDBAdaptor dbAdaptor, boolean singleStudy) {
-        List<Integer> studyIds = dbAdaptor.getReturnedStudies(query, QueryOptions.empty());
+    protected StudyConfiguration getStudyConfiguration(Query query, boolean singleStudy) {
+        List<Integer> studyIds = VariantQueryUtils.getIncludeStudies(query, QueryOptions.empty(), studyConfigurationManager);
 
-        StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
         if (studyIds.isEmpty()) {
-            studyIds = scm.getStudyIds(null);
+            studyIds = studyConfigurationManager.getStudyIds(null);
             if (studyIds == null) {
                 throw new IllegalArgumentException();
             }
@@ -287,7 +292,7 @@ public class VariantWriterFactory {
                 throw new IllegalArgumentException();
             }
         }
-        return scm.getStudyConfiguration(studyIds.get(0), null).first();
+        return studyConfigurationManager.getStudyConfiguration(studyIds.get(0), null).first();
     }
 
     /**

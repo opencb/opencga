@@ -11,7 +11,7 @@ import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.VariantStatsToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
-import org.opencb.opencga.storage.hadoop.variant.mr.AnalysisTableMapReduceHelper;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +63,7 @@ public class VariantStatsFromResultMapper extends TableMapper<ImmutableBytesWrit
 
     @Override
     protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
-        context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "variants").increment(1);
+        context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "variants").increment(1);
         Variant variant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(value.getRow());
         VariantStatsWrapper wrapper = new VariantStatsWrapper(variant.getChromosome(), variant.getStart(), variant.getEnd(),
                 new HashMap<>(calculators.size()), null);
@@ -75,10 +75,10 @@ public class VariantStatsFromResultMapper extends TableMapper<ImmutableBytesWrit
 
         Put put = converter.convert(wrapper);
         if (put == null) {
-            context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "stats.put.null").increment(1);
+            context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "stats.put.null").increment(1);
         } else {
-            context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "stats.put").increment(1);
-            context.write(new ImmutableBytesWritable(helper.getAnalysisTable()), put);
+            context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "stats.put").increment(1);
+            context.write(new ImmutableBytesWritable(helper.getVariantsTable()), put);
         }
 
     }

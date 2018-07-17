@@ -3,7 +3,6 @@ package org.opencb.opencga.storage.hadoop.variant.gaps;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Table;
-import org.apache.tools.ant.types.Commandline;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -23,7 +22,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
-import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
@@ -73,11 +72,11 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
         ObjectMap other = new ObjectMap();
 //        other.putAll(variantStorageEngine.getOptions());
         other.put(FillGapsFromArchiveMapper.SAMPLES, sampleIds.stream().map(Object::toString).collect(Collectors.joining(",")));
-        String cli = AbstractAnalysisTableDriver.buildCommandLineArgs(
+        String[] args = AbstractVariantsTableDriver.buildArgs(
                 variantStorageEngine.getArchiveTableName(studyConfiguration.getStudyId()), variantStorageEngine.getVariantTableName(),
                 studyConfiguration.getStudyId(), Collections.emptyList(), other);
-        System.out.println("cli = " + cli);
-        Assert.assertEquals(0, new FillGapsDriver(configuration.get()).privateMain(Commandline.translateCommandline(cli)));
+        System.out.println("cli = " + Arrays.toString(args));
+        Assert.assertEquals(0, new FillGapsDriver(configuration.get()).privateMain(args));
     }
 
     public static void fillGapsLocal(HadoopVariantStorageEngine variantStorageEngine, StudyConfiguration studyConfiguration,

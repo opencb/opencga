@@ -14,7 +14,7 @@ import org.apache.hadoop.mapreduce.lib.output.SequenceFileAsBinaryOutputFormat;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantSqlQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
@@ -34,7 +34,7 @@ import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromVariant
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class FillGapsDriver extends AbstractAnalysisTableDriver {
+public class FillGapsDriver extends AbstractVariantsTableDriver {
 
     public static final String FILL_GAPS_OPERATION_NAME = "fill_gaps";
     public static final String FILL_MISSING_OPERATION_NAME = "fill_missing";
@@ -53,7 +53,8 @@ public class FillGapsDriver extends AbstractAnalysisTableDriver {
     }
 
     @Override
-    protected void parseAndValidateParameters() {
+    protected void parseAndValidateParameters() throws IOException {
+        super.parseAndValidateParameters();
         samples = FillGapsFromArchiveMapper.getSamples(getConf());
     }
 
@@ -106,7 +107,7 @@ public class FillGapsDriver extends AbstractAnalysisTableDriver {
             // Sql
             Query query = buildQuery(getStudyId(), samples, getFiles());
             QueryOptions options = buildQueryOptions();
-            String sql = new VariantSqlQueryParser(getHelper(), getAnalysisTable(), getStudyConfigurationManager())
+            String sql = new VariantSqlQueryParser(getHelper(), getVariantsTable(), getStudyConfigurationManager())
                     .parse(query, options).getSql();
 
             logger.info("Query : " + query.toJson());
