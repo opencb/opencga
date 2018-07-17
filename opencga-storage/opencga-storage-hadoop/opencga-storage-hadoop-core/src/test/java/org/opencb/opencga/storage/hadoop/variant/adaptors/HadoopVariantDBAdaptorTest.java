@@ -25,8 +25,11 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.results.VariantQueryResult;
+import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorTest;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -61,6 +64,7 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     public ObjectMap indexParams;
 
     public static ObjectMap previousIndexParams = null;
+    protected CellBaseUtils cellBaseUtils;
 
     @Parameters
     public static List<Object[]> data() {
@@ -113,9 +117,27 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
                 e.printStackTrace();
             }
         }
+        cellBaseUtils = variantStorageEngine.getCellBaseUtils();
+    }
+//
+    @Override
+    public VariantQueryResult<Variant> query(Query query, QueryOptions options) {
+        VariantQueryUtils.convertGenesToRegionsQuery(query, cellBaseUtils);
+        return super.query(query, options);
     }
 
-//    @Override
+    @Override
+    public VariantDBIterator iterator(Query query, QueryOptions options) {
+        VariantQueryUtils.convertGenesToRegionsQuery(query, cellBaseUtils);
+        return super.iterator(query, options);
+    }
+
+    @Override
+    public Long count(Query query) {
+        VariantQueryUtils.convertGenesToRegionsQuery(query, cellBaseUtils);
+        return super.count(query);
+    }
+    //    @Override
 //    public Map<String, ?> getOtherStorageConfigurationOptions() {
 //        return new ObjectMap(AbstractHadoopVariantStoragePipeline.SKIP_CREATE_PHOENIX_INDEXES, true);
 //    }

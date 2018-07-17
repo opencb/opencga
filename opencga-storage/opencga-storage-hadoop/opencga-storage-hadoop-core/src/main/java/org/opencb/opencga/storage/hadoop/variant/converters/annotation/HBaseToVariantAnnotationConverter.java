@@ -25,6 +25,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
+import org.opencb.biodata.models.variant.avro.EthnicCategory;
 import org.opencb.biodata.models.variant.avro.EvidenceEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.tools.Converter;
@@ -180,6 +181,36 @@ public class HBaseToVariantAnnotationConverter implements Converter<Result, Vari
                 variantAnnotation = new VariantAnnotation();
             }
         }
+
+        if (variantAnnotation.getConsequenceTypes() == null) {
+            variantAnnotation.setConsequenceTypes(Collections.emptyList());
+        }
+
+        if (variantAnnotation.getTraitAssociation() == null) {
+            variantAnnotation.setTraitAssociation(Collections.emptyList());
+        } else {
+            for (EvidenceEntry evidenceEntry : variantAnnotation.getTraitAssociation()) {
+                if (evidenceEntry.getSubmissions() == null) {
+                    evidenceEntry.setSubmissions(Collections.emptyList());
+                }
+                if (evidenceEntry.getHeritableTraits() == null) {
+                    evidenceEntry.setHeritableTraits(Collections.emptyList());
+                }
+                if (evidenceEntry.getEthnicity() == null) {
+                    evidenceEntry.setEthnicity(EthnicCategory.Z);
+                }
+                if (evidenceEntry.getAdditionalProperties() == null) {
+                    evidenceEntry.setAdditionalProperties(Collections.emptyList());
+                }
+                if (evidenceEntry.getBibliography() == null) {
+                    evidenceEntry.setBibliography(Collections.emptyList());
+                }
+                if (evidenceEntry.getGenomicFeatures() == null) {
+                    evidenceEntry.setGenomicFeatures(Collections.emptyList());
+                }
+            }
+        }
+
         // If there are VariantTraitAssociation, and there are none TraitAssociations (EvidenceEntry), convert
         if (variantAnnotation.getVariantTraitAssociation() != null
                 && CollectionUtils.isEmpty(variantAnnotation.getTraitAssociation())) {

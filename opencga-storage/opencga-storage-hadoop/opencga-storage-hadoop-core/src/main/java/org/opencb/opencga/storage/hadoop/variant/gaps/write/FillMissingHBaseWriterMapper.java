@@ -28,7 +28,7 @@ public class FillMissingHBaseWriterMapper extends Mapper<BytesWritable, BytesWri
         super.setup(context);
 
         VariantTableHelper helper = new VariantTableHelper(context.getConfiguration());
-        variantsTable = new ImmutableBytesWritable(helper.getAnalysisTable());
+        variantsTable = new ImmutableBytesWritable(helper.getVariantsTable());
         sampleIndexTable = new ImmutableBytesWritable(Bytes.toBytes(helper.getHBaseVariantTableNameGenerator()
                 .getSampleIndexTableName(helper.getStudyId())));
     }

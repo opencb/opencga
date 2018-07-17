@@ -53,11 +53,6 @@ public class VariantTableStatsDriver extends AbstractAnalysisTableDriver {
     }
 
     @Override
-    protected void parseAndValidateParameters() {
-        // nothing to do
-    }
-
-    @Override
     protected Class<? extends TableMapper> getMapperClass() {
         return AnalysisStatsMapper.class;
     }

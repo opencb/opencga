@@ -37,6 +37,7 @@ import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
+import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTask;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 import org.slf4j.Logger;
@@ -88,6 +89,10 @@ public class VariantHBaseQueryParser {
      * @return      If the query can be fully executed with hbase
      */
     public static boolean isSupportedQuery(Query query) {
+        return unsupportedParamsFromQuery(query).isEmpty();
+    }
+
+    public static Set<String> unsupportedParamsFromQuery(Query query) {
         Set<VariantQueryParam> otherParams = validParams(query);
         otherParams.removeAll(SUPPORTED_QUERY_PARAMS);
         Set<String> messages = new HashSet<>();
@@ -142,25 +147,22 @@ public class VariantHBaseQueryParser {
                 if (gts.stream().anyMatch(VariantQueryUtils::isNegated)) {
                     messages.add("Negated genotypes not supported");
                 }
-                if (gts.stream().anyMatch(gt -> gt.equals("0/0") || gt.equals("0|0"))) {
-                    messages.add("Reference genotype [0/0] not supported");
-                }
+//                if (gts.stream().anyMatch(gt -> gt.equals("0/0") || gt.equals("0|0"))) {
+//                    messages.add("Reference genotype [0/0] not supported");
+//                }
             }
             otherParams.remove(GENOTYPE);
         }
 
         if (messages.isEmpty() && otherParams.isEmpty()) {
-            return true;
+            return Collections.emptySet();
         } else {
-            if (!messages.isEmpty()) {
-                for (String message : messages) {
-                    logger.warn(message);
+            if (!otherParams.isEmpty()) {
+                for (VariantQueryParam otherParam : otherParams) {
+                    messages.add("Unsupported param " + otherParam);
                 }
             }
-            if (!otherParams.isEmpty()) {
-                logger.warn("Unsupported params " + otherParams);
-            }
-            return false;
+            return messages;
         }
     }
 
@@ -197,6 +199,7 @@ public class VariantHBaseQueryParser {
             scans = new ArrayList<>(regions.size() + variants.size());
             Query subQuery = new Query(query);
             subQuery.remove(REGION.key());
+            subQuery.remove(ANNOT_GENE_REGIONS.key());
             subQuery.remove(ANNOT_XREF.key());
             subQuery.remove(ID.key());
 
@@ -399,7 +402,11 @@ public class VariantHBaseQueryParser {
                                     new BinaryPrefixComparator(Bytes.toBytes(genotype)));
                             filter.setFilterIfMissing(true);
                             filter.setLatestVersionOnly(true);
-                            return filter;
+                            if (FillGapsTask.isHomRefDiploid(genotype)) {
+                                return new FilterList(FilterList.Operator.MUST_PASS_ONE, filter, missingColumnFilter(column));
+                            } else {
+                                return filter;
+                            }
                         })
                         .collect(Collectors.toList());
                 if (gtSubFilters.size() == 1) {
@@ -570,12 +577,17 @@ public class VariantHBaseQueryParser {
     }
 
     private List<Region> getRegions(Query query) {
-        List<Region> regions;
+        List<Region> regions = new ArrayList<>();
         if (isValidParam(query, REGION)) {
-            regions = Region.parseRegions(query.getString(REGION.key()));
-        } else {
-            regions = Collections.emptyList();
+            regions.addAll(Region.parseRegions(query.getString(REGION.key())));
         }
+
+        if (isValidParam(query, ANNOT_GENE_REGIONS)) {
+            regions.addAll(Region.parseRegions(query.getString(ANNOT_GENE_REGIONS.key())));
+        }
+
+        regions = mergeRegions(regions);
+
         return regions;
     }
 

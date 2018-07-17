@@ -73,11 +73,11 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
         ObjectMap other = new ObjectMap();
 //        other.putAll(variantStorageEngine.getOptions());
         other.put(FillGapsFromArchiveMapper.SAMPLES, sampleIds.stream().map(Object::toString).collect(Collectors.joining(",")));
-        String cli = AbstractAnalysisTableDriver.buildCommandLineArgs(
+        String[] args = AbstractAnalysisTableDriver.buildArgs(
                 variantStorageEngine.getArchiveTableName(studyConfiguration.getStudyId()), variantStorageEngine.getVariantTableName(),
                 studyConfiguration.getStudyId(), Collections.emptyList(), other);
-        System.out.println("cli = " + cli);
-        Assert.assertEquals(0, new FillGapsDriver(configuration.get()).privateMain(Commandline.translateCommandline(cli)));
+        System.out.println("cli = " + Arrays.toString(args));
+        Assert.assertEquals(0, new FillGapsDriver(configuration.get()).privateMain(args));
     }
 
     public static void fillGapsLocal(HadoopVariantStorageEngine variantStorageEngine, StudyConfiguration studyConfiguration,

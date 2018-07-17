@@ -165,11 +165,11 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
         VariantStorageBaseTest.rootDir = rootDir;
     }
 
-    public URI newOutputUri() throws IOException {
+    public static URI newOutputUri() throws IOException {
         return newOutputUri(1, outputUri);
     }
 
-    public URI newOutputUri(int extraCalls) throws IOException {
+    public static URI newOutputUri(int extraCalls) throws IOException {
         return newOutputUri(1 + extraCalls, outputUri);
     }
 
@@ -182,7 +182,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
         return newOutputUri(testName, outputUri);
     }
 
-    protected URI newOutputUri(String testName) throws IOException {
+    protected static URI newOutputUri(String testName) throws IOException {
         return newOutputUri(testName, outputUri);
     }
 

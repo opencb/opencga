@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -100,12 +101,26 @@ public class VariantMapReduceUtil {
     public static void initVariantMapperJobFromHBase(Job job, String variantTableName, Scan scan,
                                                      Class<? extends VariantMapper> variantMapperClass)
             throws IOException {
-        initTableMapperJob(job, variantTableName, scan, TableMapper.class);
+        initVariantMapperJobFromHBase(job, variantTableName, scan, variantMapperClass, false);
+    }
+
+    public static void initVariantMapperJobFromHBase(Job job, String variantTableName, Scan scan,
+                                                     Class<? extends VariantMapper> variantMapperClass, boolean useSampleIndex)
+            throws IOException {
+        initVariantMapperJobFromHBase(job, variantTableName, Collections.singletonList(scan), variantMapperClass, useSampleIndex);
+    }
+
+    public static void initVariantMapperJobFromHBase(Job job, String variantTableName, List<Scan> scans,
+                                                     Class<? extends VariantMapper> variantMapperClass, boolean useSampleIndex)
+            throws IOException {
+        initTableMapperJob(job, variantTableName, scans, TableMapper.class);
 
         job.setMapperClass(variantMapperClass);
 
 //        job.getConfiguration().set(TableInputFormat.INPUT_TABLE, variantTableName);
         job.setInputFormatClass(HBaseVariantTableInputFormat.class);
+        job.getConfiguration().setBoolean(HBaseVariantTableInputFormat.MULTI_SCANS, scans.size() > 1);
+        job.getConfiguration().setBoolean(HBaseVariantTableInputFormat.USE_SAMPLE_INDEX_TABLE_INPUT_FORMAT, useSampleIndex);
     }
 
     public static void initVariantMapperJobFromPhoenix(Job job, VariantHadoopDBAdaptor dbAdaptor,
@@ -120,7 +135,7 @@ public class VariantMapReduceUtil {
         GenomeHelper genomeHelper = dbAdaptor.getGenomeHelper();
         String variantTableName = dbAdaptor.getVariantTable();
         StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
-        VariantSqlQueryParser variantSqlQueryParser = new VariantSqlQueryParser(genomeHelper, variantTableName, scm, null, false);
+        VariantSqlQueryParser variantSqlQueryParser = new VariantSqlQueryParser(genomeHelper, variantTableName, scm, false);
 
         String sql = variantSqlQueryParser.parse(query, queryOptions).getSql();
 
@@ -146,6 +161,10 @@ public class VariantMapReduceUtil {
 
     public static void setNoneReduce(Job job) throws IOException {
         job.setNumReduceTasks(0);
+    }
+
+    public static void setSampleIndexTableInputFormat(Job job) {
+        job.setInputFormatClass(SampleIndexTableInputFormat.class);
     }
 
     public static void setOutputHBaseTable(Job job, String outTable) throws IOException {
@@ -208,4 +227,31 @@ public class VariantMapReduceUtil {
             conf.set("mapreduce.map.java.opts", optString);
         }
     }
+
+    public static QueryOptions getQueryOptionsFromConfig(Configuration conf) {
+        QueryOptions options = new QueryOptions();
+        getQueryOptionsFromConfig(options, conf);
+        return options;
+    }
+
+    public static void getQueryOptionsFromConfig(QueryOptions options, Configuration conf) {
+        options.put(QueryOptions.INCLUDE, conf.get(QueryOptions.INCLUDE));
+        options.put(QueryOptions.EXCLUDE, conf.get(QueryOptions.EXCLUDE));
+    }
+
+    public static Query getQueryFromConfig(Configuration conf) {
+        Query query = new Query();
+        getQueryFromConfig(query, conf);
+        return query;
+    }
+
+    public static void getQueryFromConfig(Query query, Configuration conf) {
+        for (VariantQueryParam param : VariantQueryParam.values()) {
+            String value = conf.get(param.key(), conf.get("--" + param.key()));
+            if (value != null && !value.isEmpty()) {
+                query.put(param.key(), value);
+            }
+        }
+    }
+
 }

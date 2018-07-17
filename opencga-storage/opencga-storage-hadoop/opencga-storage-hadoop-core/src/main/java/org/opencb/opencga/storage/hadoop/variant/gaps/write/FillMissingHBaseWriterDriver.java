@@ -45,6 +45,7 @@ public class FillMissingHBaseWriterDriver extends AbstractAnalysisTableDriver {
 
     @Override
     protected void parseAndValidateParameters() throws IOException {
+        super.parseAndValidateParameters();
         fs = FileSystem.get(getConf());
         inputPath = getConf().get(FillGapsDriver.FILL_MISSING_INTERMEDIATE_FILE);
         if (!fs.exists(new Path(inputPath))) {

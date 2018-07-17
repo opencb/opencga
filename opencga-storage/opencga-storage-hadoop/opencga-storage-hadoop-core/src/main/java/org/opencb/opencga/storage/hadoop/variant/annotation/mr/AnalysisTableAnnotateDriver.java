@@ -45,7 +45,8 @@ public class AnalysisTableAnnotateDriver extends AbstractAnalysisTableDriver {
     }
 
     @Override
-    protected void parseAndValidateParameters() {
+    protected void parseAndValidateParameters() throws IOException {
+        super.parseAndValidateParameters();
         int parallel = getConf().getInt(CONFIG_VARIANT_TABLE_ANNOTATE_PARALLEL, 5);
         getConf().setInt("mapreduce.job.running.map.limit", parallel);
         getConf().setLong("phoenix.upsert.batch.size", 200L);

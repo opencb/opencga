@@ -30,7 +30,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -75,7 +74,6 @@ public class VariantSqlQueryParser {
     private final String variantTable;
     private final Logger logger = LoggerFactory.getLogger(VariantSqlQueryParser.class);
     private final StudyConfigurationManager studyConfigurationManager;
-    private final CellBaseUtils cellBaseUtils;
     private final boolean clientSideSkip;
 
     private static final Map<String, String> SQL_OPERATOR;
@@ -105,15 +103,14 @@ public class VariantSqlQueryParser {
     }
 
     public VariantSqlQueryParser(GenomeHelper genomeHelper, String variantTable, StudyConfigurationManager studyConfigurationManager) {
-        this(genomeHelper, variantTable, studyConfigurationManager, null, false);
+        this(genomeHelper, variantTable, studyConfigurationManager, false);
     }
 
     public VariantSqlQueryParser(GenomeHelper genomeHelper, String variantTable,
-                                 StudyConfigurationManager studyConfigurationManager, CellBaseUtils cellBaseUtils, boolean clientSideSkip) {
+                                 StudyConfigurationManager studyConfigurationManager, boolean clientSideSkip) {
         this.genomeHelper = genomeHelper;
         this.variantTable = variantTable;
         this.studyConfigurationManager = studyConfigurationManager;
-        this.cellBaseUtils = cellBaseUtils;
         this.clientSideSkip = clientSideSkip;
     }
 
@@ -357,15 +354,16 @@ public class VariantSqlQueryParser {
         }
 
         // Ask cellbase for gene region?
-        for (String gene : variantQueryXref.getGenes()) {
-            Region region = cellBaseUtils.getGeneRegion(gene);
-            if (region != null) {
-                regionFilters.add(getRegionFilter(region));
+        if (!variantQueryXref.getGenes().isEmpty()) {
+            if (isValidParam(query, ANNOT_GENE_REGIONS)) {
+                for (Region region : Region.parseRegions(query.getString(ANNOT_GENE_REGIONS.key()))) {
+                    regionFilters.add(getRegionFilter(region));
+                }
             } else {
-                regionFilters.add(getVoidFilter());
+                throw new VariantQueryException("Error building query by genes '" + variantQueryXref.getGenes()
+                        + "', missing gene regions");
             }
         }
-//        addQueryFilter(query, GENE, VariantColumn.GENES, regionFilters);
 
 //        if (regionFilters.isEmpty()) {
 //            // chromosome != _METADATA

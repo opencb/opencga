@@ -68,7 +68,8 @@ public class SampleIndexDriver extends AbstractAnalysisTableDriver {
     }
 
     @Override
-    protected void parseAndValidateParameters() {
+    protected void parseAndValidateParameters() throws IOException {
+        super.parseAndValidateParameters();
         outputTable = getConf().get("output");
         if (outputTable == null || outputTable.isEmpty()) {
             throw new IllegalArgumentException("Missing output table!");
