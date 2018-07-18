@@ -20,6 +20,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.QueryBuilder;
 import htsjdk.variant.vcf.VCFConstants;
+import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.bson.Document;
@@ -28,7 +29,9 @@ import org.bson.json.JsonWriterSettings;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
@@ -303,6 +306,26 @@ public class VariantMongoDBQueryParser {
                         + '.' + DocumentToVariantAnnotationConverter.GENE_TRAIT_NAME_FIELD, value, builder, QueryOperation.AND);
             }
 
+            if (isValidParam(query, ANNOT_CLINICAL_SIGNIFICANCE)) {
+                String value = query.getString(ANNOT_CLINICAL_SIGNIFICANCE.key());
+                String key = DocumentToVariantConverter.ANNOTATION_FIELD
+                        + '.' + DocumentToVariantAnnotationConverter.CLINICAL_DATA_FIELD
+                        + '.' + DocumentToVariantAnnotationConverter.CLINICAL_CLINVAR_FIELD
+                        + '.' + "clinicalSignificance";
+                for (String clinicalSignificance : splitValue(value).getValue()) {
+                    ClinicalSignificance enumValue = EnumUtils.getEnum(ClinicalSignificance.class, clinicalSignificance);
+                    if (enumValue != null) {
+                        for (Map.Entry<String, ClinicalSignificance> entry : VariantAnnotationUtils.CLINVAR_CLINSIG_TO_ACMG.entrySet()) {
+                            if (entry.getValue() == enumValue) {
+                                clinicalSignificance = entry.getKey();
+                                break;
+                            }
+                        }
+                    }
+                    builder.and(key).regex(Pattern.compile("^" + clinicalSignificance, Pattern.CASE_INSENSITIVE));
+                }
+            }
+
             if (isValidParam(query, ANNOT_HPO)) {
                 String value = query.getString(ANNOT_HPO.key());
 //                addQueryStringFilter(DocumentToVariantAnnotationConverter.GENE_TRAIT_HPO_FIELD, value, geneTraitBuilder,
@@ -574,9 +597,10 @@ public class VariantMongoDBQueryParser {
             }
 
             Map<Object, List<String>> genotypesFilter = new HashMap<>();
+            QueryOperation queryOperation = null;
             if (isValidParam(query, GENOTYPE)) {
                 String sampleGenotypes = query.getString(GENOTYPE.key());
-                parseGenotypeFilter(sampleGenotypes, genotypesFilter);
+                queryOperation = parseGenotypeFilter(sampleGenotypes, genotypesFilter);
             }
 
             if (isValidParam(query, SAMPLE)) {
@@ -595,7 +619,15 @@ public class VariantMongoDBQueryParser {
                             "1/2", "1|2", "2|1"
                     );
                 }
-                for (String sample : samples.split(",")) {
+                QueryOperation sampleQueryOperation = VariantQueryUtils.checkOperator(samples);
+                if (queryOperation != null && sampleQueryOperation != null && !queryOperation.equals(sampleQueryOperation)) {
+                    throw VariantQueryException.incompatibleSampleAndGenotypeOperators();
+                }
+                if (queryOperation == null) {
+                    queryOperation = sampleQueryOperation;
+                }
+
+                for (String sample : VariantQueryUtils.splitValue(samples, queryOperation)) {
                     if (isNegated(sample)) {
                         throw VariantQueryException.malformedParam(SAMPLE, samples, "Unsupported negated samples");
                     }
@@ -609,36 +641,31 @@ public class VariantMongoDBQueryParser {
                 boolean filesFilterBySamples = !isValidParam(query, FILE) && defaultStudyConfiguration != null;
 
                 List<String> defaultGenotypes;
-                List<String> otherGenotypes;
+                List<String> loadedGenotypes;
                 if (defaultStudyConfiguration != null) {
                     defaultGenotypes = defaultStudyConfiguration.getAttributes().getAsStringList(DEFAULT_GENOTYPE.key());
-                    otherGenotypes = defaultStudyConfiguration.getAttributes().getAsStringList(LOADED_GENOTYPES.key());
+                    loadedGenotypes = defaultStudyConfiguration.getAttributes().getAsStringList(LOADED_GENOTYPES.key());
+                    loadedGenotypes.replaceAll(DocumentToSamplesConverter::genotypeToDataModelType);
                 } else {
                     defaultGenotypes = DEFAULT_GENOTYPE.defaultValue();
-                    otherGenotypes = Arrays.asList(
+                    loadedGenotypes = Arrays.asList(
                             "0/0", "0|0",
-                            "0/1", "1/0", "1/1", "-1/-1",
-                            "0|1", "1|0", "1|1", "-1|-1",
+                            "0/1", "1/0", "1/1", "./.",
+                            "0|1", "1|0", "1|1", ".|.",
                             "0|2", "2|0", "2|1", "1|2", "2|2",
                             "0/2", "2/0", "2/1", "1/2", "2/2",
                             GenotypeClass.UNKNOWN_GENOTYPE);
                 }
 
+                List<DBObject> genotypeQueries = new ArrayList<>(genotypesFilter.size());
+
                 for (Map.Entry<Object, List<String>> entry : genotypesFilter.entrySet()) {
                     Object sample = entry.getKey();
-                    Set<String> genotypes = new LinkedHashSet<>(entry.getValue().size());
-                    for (String gt : entry.getValue()) {
-                        GenotypeClass genotypeClass = GenotypeClass.from(gt);
-                        if (genotypeClass == null) {
-                            genotypes.add(gt);
-                        } else {
-                            genotypes.addAll(genotypeClass.filter(otherGenotypes));
-                            genotypes.addAll(genotypeClass.filter(defaultGenotypes));
-                        }
-                    }
+                    List<String> genotypes = GenotypeClass.filter(entry.getValue(), loadedGenotypes, defaultGenotypes);
+
                     // If empty, should find none. Add non-existing genotype
                     // TODO: Fast empty result
-                    if (genotypes.isEmpty()) {
+                    if (!entry.getValue().isEmpty() && genotypes.isEmpty()) {
                         genotypes.add("x/x");
                     }
 
@@ -684,7 +711,7 @@ public class VariantMongoDBQueryParser {
                         if (defaultGenotypes.contains(genotype)) {
 
                             if (negated) {
-                                for (String otherGenotype : otherGenotypes) {
+                                for (String otherGenotype : loadedGenotypes) {
                                     if (defaultGenotypes.contains(otherGenotype)) {
                                         continue;
                                     }
@@ -695,7 +722,7 @@ public class VariantMongoDBQueryParser {
                                 }
                             } else {
                                 QueryBuilder andBuilder = QueryBuilder.start();
-                                for (String otherGenotype : otherGenotypes) {
+                                for (String otherGenotype : loadedGenotypes) {
                                     if (defaultGenotypes.contains(otherGenotype)) {
                                         continue;
                                     }
@@ -721,8 +748,15 @@ public class VariantMongoDBQueryParser {
                             }
                         }
                     }
-                    studyBuilder.and(genotypesBuilder.get());
+                    genotypeQueries.add(genotypesBuilder.get());
                 }
+
+                if (queryOperation == QueryOperation.OR) {
+                    studyBuilder.or(genotypeQueries.toArray(new DBObject[genotypeQueries.size()])).get();
+                } else {
+                    studyBuilder.and(genotypeQueries.toArray(new DBObject[genotypeQueries.size()]));
+                }
+
                 // If there is no valid files filter, add files filter to speed up this query
                 if (filesFilterBySamples && !files.isEmpty()
                         && !files.containsAll(defaultStudyConfiguration.getIndexedFiles())) {

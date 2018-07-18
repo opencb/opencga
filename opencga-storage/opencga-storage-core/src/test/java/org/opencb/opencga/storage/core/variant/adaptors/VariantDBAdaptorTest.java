@@ -1574,6 +1574,12 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         allVariants = query(new Query(INCLUDE_SAMPLE.key(), "NA19600,NA19685"), new QueryOptions());
         query = new Query(SAMPLE.key(), "NA19600,NA19685");
         queryResult = query(query, new QueryOptions());
+        assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, anyOf(
+                withSampleData("NA19600", "GT", containsString("1")),
+                withSampleData("NA19685", "GT", containsString("1"))))));
+
+        query = new Query(SAMPLE.key(), "NA19600;NA19685");
+        queryResult = query(query, new QueryOptions());
         assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, allOf(
                 withSampleData("NA19600", "GT", containsString("1")),
                 withSampleData("NA19685", "GT", containsString("1"))))));
@@ -1593,6 +1599,28 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         Query query = new Query(GENOTYPE.key(), "WRONG_SAMPLE:1|1");
         thrown.expect(VariantQueryException.class);
         queryResult = query(query, new QueryOptions());
+    }
+
+    @Test
+    public void testGetAllVariants_clinicalSignificance() {
+        for (ClinicalSignificance clinicalSignificance : ClinicalSignificance.values()) {
+            if (ClinicalSignificance.uncertain_significance.equals(clinicalSignificance)) {
+                continue;
+            }
+            Query query = new Query(ANNOT_CLINICAL_SIGNIFICANCE.key(), clinicalSignificance);
+            queryResult = query(query, new QueryOptions());
+            assertThat(queryResult, everyResult(allVariants, hasAnnotation(with("clinicalSignificance",
+                    va -> va == null || va.getTraitAssociation() == null
+                            ? Collections.emptyList()
+                            : va.getTraitAssociation()
+                            .stream()
+                            .map(EvidenceEntry::getVariantClassification)
+                            .filter(Objects::nonNull)
+                            .map(VariantClassification::getClinicalSignificance)
+                            .filter(Objects::nonNull)
+                            .collect(Collectors.toList()),
+                    hasItem(clinicalSignificance)))));
+        }
     }
 
     @Test

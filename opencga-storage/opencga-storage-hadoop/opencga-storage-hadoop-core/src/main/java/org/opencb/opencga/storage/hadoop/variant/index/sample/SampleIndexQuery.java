@@ -123,8 +123,9 @@ public final class SampleIndexQuery {
 
         } else if (isValidParam(query, SAMPLE)) {
             // Filter by all non negated samples
-            queryOperation = VariantQueryUtils.QueryOperation.AND;
-            List<String> samples = query.getAsStringList(SAMPLE.key());
+            String samplesStr = query.getString(SAMPLE.key());
+            queryOperation = VariantQueryUtils.checkOperator(samplesStr);
+            List<String> samples = VariantQueryUtils.splitValue(samplesStr, queryOperation);
             samples.stream().filter(s -> !isNegated(s)).forEach(sample -> samplesMap.put(sample, Collections.emptyList()));
         //} else if (isValidParam(query, FILE)) {
             // TODO: Add FILEs filter
