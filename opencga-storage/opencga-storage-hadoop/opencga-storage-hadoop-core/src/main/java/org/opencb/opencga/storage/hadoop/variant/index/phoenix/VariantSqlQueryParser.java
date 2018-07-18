@@ -35,6 +35,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
+import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTask;
 import org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus;
@@ -351,15 +352,43 @@ public class VariantSqlQueryParser {
             regionFilters.add(getVariantFilter(variantQueryXref.getVariants()));
         }
 
-        // Ask cellbase for gene region?
+        boolean onlyGeneRegionFilter = regionFilters.isEmpty();
         if (!variantQueryXref.getGenes().isEmpty()) {
+            List<String> geneRegionFilters = new ArrayList<>();
             if (isValidParam(query, ANNOT_GENE_REGIONS)) {
                 for (Region region : Region.parseRegions(query.getString(ANNOT_GENE_REGIONS.key()))) {
-                    regionFilters.add(getRegionFilter(region));
+                    geneRegionFilters.add(getRegionFilter(region));
                 }
             } else {
                 throw new VariantQueryException("Error building query by genes '" + variantQueryXref.getGenes()
                         + "', missing gene regions");
+            }
+            if (isValidParam(query, ANNOT_CONSEQUENCE_TYPE)) {
+                List<String> genes = variantQueryXref.getGenes();
+                List<String> soList = query.getAsStringList(ANNOT_CONSEQUENCE_TYPE.key());
+                Set<String> gnSoSet = new HashSet<>(genes.size() * soList.size());
+                List<String> gnSoFilters = new ArrayList<>(genes.size() * soList.size());
+                for (String gene : genes) {
+                    for (String so : soList) {
+                        int soNumber = parseConsequenceType(so);
+                        gnSoSet.add(VariantAnnotationToPhoenixConverter.buildGeneSO(gene, soNumber));
+                    }
+                }
+                for (String gnSo : gnSoSet) {
+                    gnSoFilters.add(buildFilter(VariantColumn.GENE_SO, "=", gnSo));
+                }
+
+                regionFilters.add(appendFilters(Arrays.asList(
+                        appendFilters(geneRegionFilters, QueryOperation.OR),
+                        appendFilters(gnSoFilters, QueryOperation.OR)), QueryOperation.AND));
+
+                if (onlyGeneRegionFilter) {
+                    // If there are only gene region filter, remove ConsequenceType filter
+                    query.remove(ANNOT_CONSEQUENCE_TYPE.key());
+                }
+
+            } else {
+                regionFilters.addAll(geneRegionFilters);
             }
         }
 

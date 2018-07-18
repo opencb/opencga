@@ -263,7 +263,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                            Query query, QueryOptions queryOptions)
             throws IOException, StorageEngineException {
         VariantExporter exporter = newVariantExporter(metadataFactory);
-        preProcessQuery(query, getStudyConfigurationManager());
+        preProcessQuery(query);
         exporter.export(outputFile, outputFormat, query, queryOptions);
     }
 
@@ -747,7 +747,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             options = QueryOptions.empty();
         }
         // TODO: Use CacheManager ?
-        query = preProcessQuery(query, getStudyConfigurationManager());
+        query = preProcessQuery(query);
         if (doQuerySearchManager(query, options)) {
             try {
                 if (iterator) {
@@ -849,7 +849,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
     }
 
-    protected Query preProcessQuery(Query query, StudyConfigurationManager studyConfigurationManager) throws StorageEngineException {
+    protected Query preProcessQuery(Query originalQuery) throws StorageEngineException {
+        // Copy input query! Do not modify original query!
+        Query query = originalQuery == null ? new Query() : new Query(originalQuery);
 
         if (VariantQueryUtils.isValidParam(query, ANNOT_CLINICAL_SIGNIFICANCE)) {
             String v = query.getString(ANNOT_CLINICAL_SIGNIFICANCE.key());
@@ -961,7 +963,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     public QueryResult<Long> count(Query query) throws StorageEngineException {
-        query = preProcessQuery(query, getStudyConfigurationManager());
+        query = preProcessQuery(query);
         if (!doQuerySearchManager(query, new QueryOptions(QueryOptions.COUNT, true))) {
             return getDBAdaptor().count(query);
         } else {

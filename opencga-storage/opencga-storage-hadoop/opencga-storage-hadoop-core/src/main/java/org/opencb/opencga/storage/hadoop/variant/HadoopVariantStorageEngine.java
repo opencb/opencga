@@ -763,9 +763,10 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public Query preProcessQuery(Query originalQuery, StudyConfigurationManager studyConfigurationManager) throws StorageEngineException {
-        // Copy input query! Do not modify original query!
-        Query query = originalQuery == null ? new Query() : new Query(originalQuery);
+    public Query preProcessQuery(Query originalQuery) throws StorageEngineException {
+        Query query = super.preProcessQuery(originalQuery);
+
+        StudyConfigurationManager studyConfigurationManager = getStudyConfigurationManager();
         List<String> studyNames = studyConfigurationManager.getStudyNames(QueryOptions.empty());
         CellBaseUtils cellBaseUtils = getCellBaseUtils();
 
