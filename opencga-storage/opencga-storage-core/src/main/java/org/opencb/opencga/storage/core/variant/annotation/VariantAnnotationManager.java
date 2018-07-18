@@ -53,15 +53,15 @@ public abstract class VariantAnnotationManager {
     public static final String CREATE = "annotation.create";
     public static final String LOAD_FILE = "annotation.load.file";
     public static final String CUSTOM_ANNOTATION_KEY = "custom_annotation_key";
-    public static final String LATEST = "LATEST";
+    public static final String CURRENT = "CURRENT";
 
     private static Logger logger = LoggerFactory.getLogger(VariantAnnotationManager.class);
 
     public abstract void annotate(Query query, ObjectMap options) throws VariantAnnotatorException, IOException, StorageEngineException;
 
-    public abstract void createAnnotationSnapshot(String name, ObjectMap options) throws StorageEngineException, VariantAnnotatorException;
+    public abstract void saveAnnotation(String name, ObjectMap options) throws StorageEngineException, VariantAnnotatorException;
 
-    public abstract void deleteAnnotationSnapshot(String name, ObjectMap options) throws StorageEngineException, VariantAnnotatorException;
+    public abstract void deleteAnnotation(String name, ObjectMap options) throws StorageEngineException, VariantAnnotatorException;
 
     protected final VariantAnnotationMetadata checkCurrentAnnotation(VariantAnnotator annotator, ProjectMetadata projectMetadata,
                                                                      boolean overwrite)
@@ -94,7 +94,7 @@ public abstract class VariantAnnotationManager {
             current = new VariantAnnotationMetadata();
             projectMetadata.getAnnotation().setCurrent(current);
             current.setId(-1);
-            current.setName(LATEST);
+            current.setName(CURRENT);
         }
 
         // Check using same annotator and same source version

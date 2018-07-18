@@ -36,7 +36,6 @@ import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.analysis.VariantSampleFilter;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -472,7 +471,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     }
 
     @GET
-    @Path("/annotation/{name}/query")
+    @Path("/annotation/query")
     @ApiOperation(value = "", position = 15, response = VariantAnnotation[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
@@ -485,7 +484,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "id", value = ID_DESCR, dataType = "string", paramType = "query"),
 
     })
-    public Response getAnnotation(@ApiParam(value = "") @DefaultValue(VariantAnnotationManager.LATEST) @PathParam("name") String name) {
+    public Response getAnnotation(@ApiParam(value = "") @DefaultValue(VariantAnnotationManager.CURRENT) @QueryParam("annotationId") String annotationId) {
         logger.info("limit {} , skip {}", count, limit, skip);
         try {
             // Get all query options
@@ -495,7 +494,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             logger.info("query " + query.toJson());
             logger.info("queryOptions " + queryOptions.toJson());
 
-            QueryResult<VariantAnnotation> result = variantManager.getAnnotation(name, query, queryOptions, sessionId);
+            QueryResult<VariantAnnotation> result = variantManager.getAnnotation(annotationId, query, queryOptions, sessionId);
 
             return createOkResponse(result);
         } catch (Exception e) {

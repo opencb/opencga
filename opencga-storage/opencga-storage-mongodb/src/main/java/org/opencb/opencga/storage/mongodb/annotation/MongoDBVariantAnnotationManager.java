@@ -38,7 +38,7 @@ public class MongoDBVariantAnnotationManager extends DefaultVariantAnnotationMan
     }
 
     @Override
-    public void createAnnotationSnapshot(String name, ObjectMap options) throws StorageEngineException, VariantAnnotatorException {
+    public void saveAnnotation(String name, ObjectMap options) throws StorageEngineException, VariantAnnotatorException {
 
         dbAdaptor.getStudyConfigurationManager().lockAndUpdateProject(project -> {
             registerNewAnnotationSnapshot(name, variantAnnotator, project);
@@ -63,7 +63,7 @@ public class MongoDBVariantAnnotationManager extends DefaultVariantAnnotationMan
     }
 
     @Override
-    public void deleteAnnotationSnapshot(String name, ObjectMap options) throws StorageEngineException, VariantAnnotatorException {
+    public void deleteAnnotation(String name, ObjectMap options) throws StorageEngineException, VariantAnnotatorException {
         mongoDbAdaptor.dropAnnotationCollection(name);
 
         dbAdaptor.getStudyConfigurationManager().lockAndUpdateProject(project -> {

@@ -59,11 +59,11 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.*;
 
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.CreateAnnotationSnapshotCommandOptions.COPY_ANNOTATION_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.DeleteAnnotationSnapshotCommandOptions.DELETE_ANNOTATION_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationSaveCommandOptions.ANNOTATION_SAVE_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationDeleteCommandOptions.ANNOTATION_DELETE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillMissingCommandOptions.FILL_MISSING_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.QueryAnnotationCommandOptions.QUERY_ANNOTATION_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationQueryCommandOptions.ANNOTATION_QUERY_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
 import static org.opencb.opencga.storage.core.manager.variant.operations.VariantFileIndexerStorageOperation.LOAD;
 import static org.opencb.opencga.storage.core.manager.variant.operations.VariantFileIndexerStorageOperation.TRANSFORM;
@@ -120,14 +120,14 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
             case "annotate":
                 annotate();
                 break;
-            case COPY_ANNOTATION_COMMAND:
-                copyAnnotation();
+            case ANNOTATION_SAVE_COMMAND:
+                annotationSave();
                 break;
-            case DELETE_ANNOTATION_COMMAND:
-                deleteAnnotation();
+            case ANNOTATION_DELETE_COMMAND:
+                annotationDelete();
                 break;
-            case QUERY_ANNOTATION_COMMAND:
-                queryAnnotation();
+            case ANNOTATION_QUERY_COMMAND:
+                annotationQuery();
                 break;
             case FILL_GAPS_COMMAND:
                 fillGaps();
@@ -367,30 +367,30 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         variantManager.annotate(cliOptions.project, cliOptions.study, query, cliOptions.outdir, options, sessionId);
     }
 
-    private void copyAnnotation() throws IllegalAccessException, StorageEngineException, InstantiationException, VariantAnnotatorException, CatalogException, ClassNotFoundException {
-        VariantCommandOptions.CreateAnnotationSnapshotCommandOptions cliOptions = variantCommandOptions.createAnnotationSnapshotCommandOptions;
+    private void annotationSave() throws IllegalAccessException, StorageEngineException, InstantiationException, VariantAnnotatorException, CatalogException, ClassNotFoundException {
+        VariantCommandOptions.AnnotationSaveCommandOptions cliOptions = variantCommandOptions.annotationSaveSnapshotCommandOptions;
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
         QueryOptions options = new QueryOptions();
         options.putAll(cliOptions.commonOptions.params);
 
 
-        variantManager.createAnnotationSnapshot(cliOptions.project, cliOptions.name, options, sessionId);
+        variantManager.saveAnnotation(cliOptions.project, cliOptions.name, options, sessionId);
     }
 
-    private void deleteAnnotation() throws IllegalAccessException, StorageEngineException, InstantiationException, VariantAnnotatorException, CatalogException, ClassNotFoundException {
-        VariantCommandOptions.CreateAnnotationSnapshotCommandOptions cliOptions = variantCommandOptions.createAnnotationSnapshotCommandOptions;
+    private void annotationDelete() throws IllegalAccessException, StorageEngineException, InstantiationException, VariantAnnotatorException, CatalogException, ClassNotFoundException {
+        VariantCommandOptions.AnnotationSaveCommandOptions cliOptions = variantCommandOptions.annotationSaveSnapshotCommandOptions;
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
         QueryOptions options = new QueryOptions();
         options.putAll(cliOptions.commonOptions.params);
 
 
-        variantManager.deleteAnnotationSnapshot(cliOptions.project, cliOptions.name, options, sessionId);
+        variantManager.deleteAnnotation(cliOptions.project, cliOptions.name, options, sessionId);
     }
 
-    private void queryAnnotation() throws CatalogException, IOException, StorageEngineException {
-        VariantCommandOptions.QueryAnnotationCommandOptions cliOptions = variantCommandOptions.queryAnnotationCommandOptions;
+    private void annotationQuery() throws CatalogException, IOException, StorageEngineException {
+        VariantCommandOptions.AnnotationQueryCommandOptions cliOptions = variantCommandOptions.annotationQueryCommandOptions;
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
         QueryOptions options = new QueryOptions();
@@ -421,6 +421,8 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
             System.out.println();
         }
     }
+
+    private void annotationMetadata() throws CatalogException, IOException, StorageEngineException {}
 
     private void fillGaps() throws StorageEngineException, IOException, URISyntaxException, VariantAnnotatorException, CatalogException,
             AnalysisExecutionException, IllegalAccessException, InstantiationException, ClassNotFoundException {

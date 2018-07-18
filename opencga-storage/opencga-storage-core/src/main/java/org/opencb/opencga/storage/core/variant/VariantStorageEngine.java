@@ -365,12 +365,15 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
     }
 
-    public void createAnnotationSnapshot(String name, ObjectMap params) throws StorageEngineException, VariantAnnotatorException {
-        newVariantAnnotationManager(params).createAnnotationSnapshot(name, params);
+    public void saveAnnotation(String name, ObjectMap params) throws StorageEngineException, VariantAnnotatorException {
+        newVariantAnnotationManager(params).saveAnnotation(name, params);
     }
 
-    public void deleteAnnotationSnapshot(String name, ObjectMap params) throws StorageEngineException, VariantAnnotatorException {
-        newVariantAnnotationManager(params).deleteAnnotationSnapshot(name, params);
+    public void deleteAnnotation(String name, ObjectMap params) throws StorageEngineException, VariantAnnotatorException {
+        if (VariantAnnotationManager.CURRENT.equals(name)) {
+            throw new StorageEngineException("Can not delete " + VariantAnnotationManager.CURRENT + " annotation");
+        }
+        newVariantAnnotationManager(params).deleteAnnotation(name, params);
     }
 
     public QueryResult<VariantAnnotation> getAnnotation(String name, Query query, QueryOptions options) throws StorageEngineException {

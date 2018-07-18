@@ -17,7 +17,6 @@
 package org.opencb.opencga.app.cli.main;
 
 import com.beust.jcommander.JCommander;
-import com.beust.jcommander.ParameterDescription;
 import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
@@ -26,14 +25,10 @@ import org.opencb.opencga.app.cli.analysis.options.AlignmentCommandOptions;
 import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
 import org.opencb.opencga.app.cli.main.options.*;
 import org.opencb.opencga.core.common.GitRepositoryState;
-import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.*;
 
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.QueryAnnotationCommandOptions.QUERY_ANNOTATION_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationQueryCommandOptions.ANNOTATION_QUERY_COMMAND;
 
 /**
  * Created by imedina on AdminMain.
@@ -264,7 +259,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         JCommander variantSubCommands = jCommander.getCommands().get("variant");
         variantSubCommands.addCommand("index", variantCommandOptions.indexVariantCommandOptions);
         variantSubCommands.addCommand("query", variantCommandOptions.queryVariantCommandOptions);
-        variantSubCommands.addCommand(QUERY_ANNOTATION_COMMAND, variantCommandOptions.queryAnnotationCommandOptions);
+        variantSubCommands.addCommand(ANNOTATION_QUERY_COMMAND, variantCommandOptions.annotationQueryCommandOptions);
 
     }
 
