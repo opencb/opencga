@@ -37,7 +37,7 @@ public class VariantRemoveStorageOperation extends StorageOperation {
         DataStore dataStore = studyInfo.getDataStores().get(File.Bioformat.VARIANT);
 
         // Update study configuration BEFORE executing the operation and fetching files from Catalog
-        updateStudyConfiguration(sessionId, studyInfo.getStudyUid(), dataStore);
+        updateCatalogFromStudyConfiguration(sessionId, studyInfo.getStudyFQN(), dataStore);
 
         List<String> fileNames = new ArrayList<>(studyInfo.getFileInfos().size());
         List<String> filePaths = new ArrayList<>(studyInfo.getFileInfos().size());
@@ -63,7 +63,7 @@ public class VariantRemoveStorageOperation extends StorageOperation {
 
 
         // Update study configuration to synchronize
-        updateStudyConfiguration(sessionId, studyInfo.getStudyUid(), dataStore);
+        updateCatalogFromStudyConfiguration(sessionId, studyInfo.getStudyFQN(), dataStore);
 
         return catalogManager.getFileManager().get(studyInfo.getStudyFQN(),
                 new Query(FileDBAdaptor.QueryParams.PATH.key(), filePaths), new QueryOptions(), sessionId)
@@ -77,7 +77,7 @@ public class VariantRemoveStorageOperation extends StorageOperation {
         DataStore dataStore = studyInfo.getDataStores().get(File.Bioformat.VARIANT);
 
         // Update study configuration BEFORE executing the operation and fetching files from Catalog
-        updateStudyConfiguration(sessionId, studyInfo.getStudyUid(), dataStore);
+        updateCatalogFromStudyConfiguration(sessionId, studyInfo.getStudyFQN(), dataStore);
 
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
         variantStorageEngine.getOptions().putAll(options);
@@ -86,7 +86,7 @@ public class VariantRemoveStorageOperation extends StorageOperation {
 
 
         // Update study configuration to synchronize
-        updateStudyConfiguration(sessionId, studyInfo.getStudyUid(), dataStore);
+        updateCatalogFromStudyConfiguration(sessionId, studyInfo.getStudyFQN(), dataStore);
 
     }
 

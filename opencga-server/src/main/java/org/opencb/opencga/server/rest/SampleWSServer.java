@@ -656,7 +656,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                     + "propagate the permissions defined to the individuals that are associated to the matching samples", required = true)
                     SampleAcl params) {
         try {
-            ObjectUtils.defaultIfNull(params, new SampleAcl());
+            params = ObjectUtils.defaultIfNull(params, new SampleAcl());
             Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams(
                     params.getPermissions(), params.getAction(), params.individual, params.file, params.cohort, params.propagate);
             List<String> idList = StringUtils.isEmpty(params.sample) ? Collections.emptyList() : getIdList(params.sample);

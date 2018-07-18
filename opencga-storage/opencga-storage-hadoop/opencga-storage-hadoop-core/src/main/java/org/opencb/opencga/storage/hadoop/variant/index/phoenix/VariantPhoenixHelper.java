@@ -75,6 +75,7 @@ public class VariantPhoenixHelper {
     private static final String STUDY_POP_FREQ_SEPARATOR = "_";
     public static final List<Column> PRIMARY_KEY = Collections.unmodifiableList(Arrays.asList(CHROMOSOME, POSITION, REFERENCE, ALTERNATE));
     public static final String FILL_MISSING_SUFIX = "_FM";
+    public static final byte[] FILL_MISSING_SUFIX_BYTES = Bytes.toBytes(FILL_MISSING_SUFIX);
 
     protected static Logger logger = LoggerFactory.getLogger(VariantPhoenixHelper.class);
 
@@ -97,6 +98,7 @@ public class VariantPhoenixHelper {
         TRANSCRIPTION_FLAGS(ANNOTATION_PREFIX + "FLAGS", PVarcharArray.INSTANCE),
         GENE_TRAITS_NAME(ANNOTATION_PREFIX + "GT_NAME", PVarcharArray.INSTANCE),
         GENE_TRAITS_ID(ANNOTATION_PREFIX + "GT_ID", PVarcharArray.INSTANCE),
+        CLINICAL_SIGNIFICANCE(ANNOTATION_PREFIX + "CLI_SIG", PVarcharArray.INSTANCE),
 //        HPO(ANNOTATION_PREFIX + "HPO", PVarcharArray.INSTANCE),
         PROTEIN_KEYWORDS(ANNOTATION_PREFIX + "PROT_KW", PVarcharArray.INSTANCE),
         DRUG(ANNOTATION_PREFIX + "DRUG", PVarcharArray.INSTANCE),

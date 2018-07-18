@@ -42,6 +42,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
+import org.opencb.commons.datastore.mongodb.MongoPersistentCursor;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
@@ -50,6 +51,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
@@ -400,7 +402,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         Document mongoQuery = queryParser.parseQuery(query);
         Document projection = queryParser.createProjection(query, options);
-        options.putIfAbsent(QueryOptions.SKIP_COUNT, true);
+        options.putIfAbsent(QueryOptions.SKIP_COUNT, DEFAULT_SKIP_COUNT);
 
         if (options.getBoolean("explain", false)) {
             Document explain = variantsCollection.nativeQuery()
@@ -411,7 +413,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
 
         DocumentToVariantConverter converter = getDocumentToVariantConverter(query, options);
-        Map<String, List<String>> samples = getSamplesMetadata(query, options, studyConfigurationManager);
+        Map<String, List<String>> samples = getSamplesMetadataIfRequested(query, options, studyConfigurationManager);
         return new VariantQueryResult<>(variantsCollection.find(mongoQuery, projection, converter, options), samples);
     }
 
@@ -469,7 +471,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     watch.stop();
                     queryResult.setDbTime(((int) watch.getTime()));
                     queryResult.setId("getPhased");
-                    queryResult.setSamples(getSamplesMetadata(query, options, studyConfigurationManager));
+                    queryResult.setSamples(getSamplesMetadataIfRequested(query, options, studyConfigurationManager));
                     return queryResult;
                 }
             }
@@ -571,6 +573,30 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         } else {
             logger.debug("Using mongodb persistent iterator");
             return VariantMongoDBIterator.persistentIterator(variantsCollection, mongoQuery, projection, options, converter);
+        }
+    }
+
+    public MongoCursor<Document> nativeIterator(Query query, QueryOptions options, boolean persistent) {
+        if (query == null) {
+            query = new Query();
+        }
+        if (options == null) {
+            options = new QueryOptions();
+        }
+
+        Document mongoQuery = queryParser.parseQuery(query);
+        System.out.println("mongoQuery = " + mongoQuery);
+        Document projection = queryParser.createProjection(query, options);
+        System.out.println("projection = " + projection);
+        options.putIfAbsent(MongoDBCollection.BATCH_SIZE, 100);
+
+
+        if (persistent) {
+            logger.debug("Using mongodb persistent iterator");
+            return new MongoPersistentCursor(variantsCollection, mongoQuery, projection, options);
+        } else {
+            FindIterable<Document> dbCursor = variantsCollection.nativeQuery().find(mongoQuery, projection, options);
+            return dbCursor.iterator();
         }
     }
 

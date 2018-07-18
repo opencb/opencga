@@ -16,6 +16,9 @@
 
 package org.opencb.opencga.storage.core.variant.adaptors;
 
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.core.Region;
@@ -65,6 +68,7 @@ public final class VariantQueryUtils {
 
     public static final QueryParam ANNOT_EXPRESSION_GENES = QueryParam.create("annot_expression_genes", "", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam ANNOT_GO_GENES = QueryParam.create("annot_go_genes", "", QueryParam.Type.TEXT_ARRAY);
+    public static final QueryParam ANNOT_GENE_REGIONS = QueryParam.create("annot_gene_regions", "", QueryParam.Type.TEXT_ARRAY);
 
     public static final Set<VariantQueryParam> MODIFIER_QUERY_PARAMS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             INCLUDE_STUDY,
@@ -76,6 +80,7 @@ public final class VariantQueryUtils {
             UNKNOWN_GENOTYPE,
             SAMPLE_METADATA
     )));
+    public static final boolean DEFAULT_SKIP_COUNT = true;
 
     private static Logger logger = LoggerFactory.getLogger(VariantQueryUtils.class);
 
@@ -92,6 +97,14 @@ public final class VariantQueryUtils {
         public String separator() {
             return separator;
         }
+    }
+
+    private static final ObjectMapper QUERY_MAPPER = new ObjectMapper().addMixIn(Variant.class, VariantMixin.class);
+
+    interface VariantMixin {
+        // Serialize variants with "toString". Used to serialize queries.
+        @JsonValue
+        String toString();
     }
 
     private VariantQueryUtils() {
@@ -421,6 +434,14 @@ public final class VariantQueryUtils {
         private final Map<Integer, List<Integer>> files;
 //        private final Map<Integer, List<Integer>> cohortIds;
 
+        public SelectVariantElements(StudyConfiguration studyConfiguration, List<Integer> samples, List<Integer> files) {
+            this.fields = VariantField.getIncludeFields(null);
+            this.studies = Collections.singletonList(studyConfiguration.getStudyId());
+            this.studyConfigurations = Collections.singletonMap(studyConfiguration.getStudyId(), studyConfiguration);
+            this.samples = Collections.singletonMap(studyConfiguration.getStudyId(), samples);
+            this.files = Collections.singletonMap(studyConfiguration.getStudyId(), files);
+        }
+
         private SelectVariantElements(Set<VariantField> fields, List<Integer> studies, Map<Integer, StudyConfiguration> studyConfigurations,
                                       Map<Integer, List<Integer>> samples, Map<Integer, List<Integer>> files) {
             this.fields = fields;
@@ -627,17 +648,9 @@ public final class VariantQueryUtils {
             } else if (returnAllFiles) {
                 fileIds = new ArrayList<>(sc.getIndexedFiles());
             } else if (includeSamplesList != null && !includeSamplesList.isEmpty()) {
-                Set<Integer> fileSet = new LinkedHashSet<>();
-                for (String sample : includeSamplesList) {
-                    Integer sampleId = StudyConfigurationManager.getSampleIdFromStudy(sample, sc);
-                    if (sampleId != null) {
-                        for (Integer indexedFile : sc.getIndexedFiles()) {
-                            if (sc.getSamplesInFiles().get(indexedFile).contains(sampleId)) {
-                                fileSet.add(indexedFile);
-                            }
-                        }
-                    }
-                }
+                List<Integer> sampleIds = includeSamplesList.stream()
+                        .map(sample -> StudyConfigurationManager.getSampleIdFromStudy(sample, sc)).collect(Collectors.toList());
+                Set<Integer> fileSet = StudyConfigurationManager.getFileIdsFromSampleIds(sc, sampleIds);
                 fileIds = new ArrayList<>(fileSet);
             } else {
                 // Return all files
@@ -722,15 +735,20 @@ public final class VariantQueryUtils {
 
     public static Map<String, List<String>> getSamplesMetadata(Query query, QueryOptions options,
                                                                StudyConfigurationManager studyConfigurationManager) {
+        if (VariantField.getIncludeFields(options).contains(VariantField.STUDIES)) {
+            List<Integer> includeStudies = getIncludeStudies(query, options, studyConfigurationManager);
+            Function<Integer, StudyConfiguration> studyProvider = studyId ->
+                    studyConfigurationManager.getStudyConfiguration(studyId, options).first();
+            return getIncludeSamples(query, options, includeStudies, studyProvider, (sc, s) -> s, StudyConfiguration::getStudyName);
+        } else {
+            return Collections.emptyMap();
+        }
+    }
+
+    public static Map<String, List<String>> getSamplesMetadataIfRequested(Query query, QueryOptions options,
+                                                                          StudyConfigurationManager studyConfigurationManager) {
         if (query.getBoolean(SAMPLE_METADATA.key(), false)) {
-            if (VariantField.getIncludeFields(options).contains(VariantField.STUDIES)) {
-                List<Integer> includeStudies = getIncludeStudies(query, options, studyConfigurationManager);
-                Function<Integer, StudyConfiguration> studyProvider = studyId ->
-                        studyConfigurationManager.getStudyConfiguration(studyId, options).first();
-                return getIncludeSamples(query, options, includeStudies, studyProvider, (sc, s) -> s, StudyConfiguration::getStudyName);
-            } else {
-                return Collections.emptyMap();
-            }
+            return getSamplesMetadata(query, options, studyConfigurationManager);
         } else {
             return null;
         }
@@ -1168,6 +1186,19 @@ public final class VariantQueryUtils {
         }
     }
 
+    public static void convertGenesToRegionsQuery(Query query, CellBaseUtils cellBaseUtils) {
+        VariantQueryXref variantQueryXref = VariantQueryUtils.parseXrefs(query);
+        List<String> genes = variantQueryXref.getGenes();
+        if (!genes.isEmpty()) {
+
+            List<Region> regions = cellBaseUtils.getGeneRegion(genes);
+
+            regions = mergeRegions(regions);
+
+            query.put(ANNOT_GENE_REGIONS.key(), regions);
+        }
+    }
+
     public static List<Region> mergeRegions(List<Region> regions) {
         if (regions != null && regions.size() > 1) {
             regions = new ArrayList<>(regions);
@@ -1188,6 +1219,19 @@ public final class VariantQueryUtils {
             }
         }
         return regions;
+    }
+
+    public static String printQuery(Query query) {
+        if (query == null) {
+            return "{}";
+        } else {
+            try {
+                return QUERY_MAPPER.writeValueAsString(query);
+            } catch (JsonProcessingException e) {
+                logger.debug("Error writing json variant", e);
+                return query.toString();
+            }
+        }
     }
 
 }

@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.manager.variant.operations;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
@@ -88,28 +89,33 @@ public class VariantExportStorageOperation extends StorageOperation {
                 throw new IllegalArgumentException(e);
             }
             String outputFileName = null;
-            java.io.File file = Paths.get(outdirUri).toFile();
-            if (!file.exists() || !file.isDirectory()) {
-                outputFileName = outdirUri.resolve(".").relativize(outdirUri).toString();
-                outdirUri = outdirUri.resolve(".");
-            } else {
-                try {
-                    outdirUri = UriUtils.createDirectoryUri(outputStr);
-                } catch (URISyntaxException e) {
-                    throw new IllegalArgumentException(e);
+            if (StringUtils.isEmpty(outdirUri.getScheme()) || outdirUri.getScheme().equals("file")) {
+                java.io.File file = Paths.get(outdirUri).toFile();
+                if (!file.exists() || !file.isDirectory()) {
+                    outputFileName = outdirUri.resolve(".").relativize(outdirUri).toString();
+                    outdirUri = outdirUri.resolve(".");
+                } else {
+                    try {
+                        outdirUri = UriUtils.createDirectoryUri(outputStr);
+                    } catch (URISyntaxException e) {
+                        throw new IllegalArgumentException(e);
+                    }
+                    List<Region> regions = Region.parseRegions(query.getString(VariantQueryParam.REGION.key()));
+                    outputFileName = buildOutputFileName(studyInfos.stream().map(StudyInfo::getStudyFQN).collect(Collectors.toList()),
+                            regions);
                 }
-                List<Region> regions = Region.parseRegions(query.getString(VariantQueryParam.REGION.key()));
-                outputFileName = buildOutputFileName(studyInfos.stream().map(StudyInfo::getStudyFQN).collect(Collectors.toList()),
-                        regions);
+                outputFile = outdirUri.resolve(outputFileName);
+                outdir = Paths.get(outdirUri);
+
+                outdirMustBeEmpty(outdir, options);
+
+                hook = buildHook(outdir);
+                writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.RUNNING, "Job has just started"));
+                Runtime.getRuntime().addShutdownHook(hook);
+            } else {
+                outdir = null;
+                outputFile = outdirUri;
             }
-            outputFile = outdirUri.resolve(outputFileName);
-            outdir = Paths.get(outdirUri);
-
-            outdirMustBeEmpty(outdir, options);
-
-            hook = buildHook(outdir);
-            writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.RUNNING, "Job has just started"));
-            Runtime.getRuntime().addShutdownHook(hook);
         } else {
             outdir = null;
         }
@@ -175,7 +181,7 @@ public class VariantExportStorageOperation extends StorageOperation {
     public void importData(StudyInfo studyInfo, URI inputUri, String sessionId) throws IOException, StorageEngineException {
 
         VariantMetadataImporter variantMetadataImporter;
-        variantMetadataImporter = new CatalogVariantMetadataImporter(studyInfo.getStudyUid(), inputUri, sessionId);
+        variantMetadataImporter = new CatalogVariantMetadataImporter(studyInfo.getStudyFQN(), inputUri, sessionId);
 
         try {
             DataStore dataStore = studyInfo.getDataStores().get(File.Bioformat.VARIANT);
@@ -210,18 +216,17 @@ public class VariantExportStorageOperation extends StorageOperation {
     private final class CatalogVariantMetadataImporter extends VariantMetadataImporter {
         private final URI inputUri;
         private final String sessionId;
-        private long studyId;
+        private final String studyStr;
 
-        private CatalogVariantMetadataImporter(long studyId, URI inputUri, String sessionId) {
+        private CatalogVariantMetadataImporter(String studyStr, URI inputUri, String sessionId) {
             this.inputUri = inputUri;
             this.sessionId = sessionId;
-            this.studyId = studyId;
+            this.studyStr = studyStr;
         }
 
         @Override
         protected void processStudyConfiguration(StudyConfiguration studyConfiguration) {
-            studyConfiguration.setStudyId((int) studyId);
-            String studyStr = String.valueOf(studyId);
+//            studyConfiguration.setStudyId((int) studyFqn);
 
             try {
                 // Create Samples

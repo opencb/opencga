@@ -109,7 +109,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         QueryResult<Long> count = sampleCollection.count(bson);
 
         if (count.getResult().get(0) > 0) {
-            throw new CatalogDBException("Sample { name: '" + sample.getId() + "'} already exists.");
+            throw new CatalogDBException("Sample { id: '" + sample.getId() + "'} already exists.");
         }
 
         long sampleId = getNewId();
@@ -295,9 +295,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.SOURCE.key(), QueryParams.DESCRIPTION.key(),
                 QueryParams.TYPE.key()};
         filterStringParams(parameters, sampleParameters, acceptedParams);
-
-        final String[] acceptedIntParams = {QueryParams.UID.key()};
-        filterLongParams(parameters, sampleParameters, acceptedIntParams);
 
         final String[] acceptedMapParams = {QueryParams.STATS.key(), QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, sampleParameters, acceptedMapParams);

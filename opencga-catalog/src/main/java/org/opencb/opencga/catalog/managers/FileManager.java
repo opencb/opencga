@@ -35,6 +35,7 @@ import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
@@ -49,6 +50,7 @@ import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.HookConfiguration;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
@@ -563,6 +565,7 @@ public class FileManager extends ResourceManager<File> {
         }
 
         file.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
+        checkHooks(file, study.getFqn(), HookConfiguration.Stage.CREATE);
         QueryResult<File> queryResult = fileDBAdaptor.insert(file, studyId, options);
         // We obtain the permissions set in the parent folder and set them to the file or folder being created
         QueryResult<FileAclEntry> allFileAcls = authorizationManager.getAllFileAcls(studyId, parentFileId, userId, false);
@@ -2453,6 +2456,7 @@ public class FileManager extends ResourceManager<File> {
                 false, 0, null, new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(), null, null,
                 catalogManager.getStudyManager().getCurrentRelease(study, userId), null);
         folder.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
+        checkHooks(folder, study.getFqn(), HookConfiguration.Stage.CREATE);
         QueryResult<File> queryResult = fileDBAdaptor.insert(folder, study.getUid(), new QueryOptions());
         // Propagate ACLs
         if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
@@ -2610,7 +2614,9 @@ public class FileManager extends ResourceManager<File> {
                         Collections.emptyList(), null, Collections.emptyMap(),
                         catalogManager.getStudyManager().getCurrentRelease(study, userId), Collections.emptyMap());
                 subfile.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
+                checkHooks(subfile, study.getFqn(), HookConfiguration.Stage.CREATE);
                 QueryResult<File> queryResult = fileDBAdaptor.insert(subfile, study.getUid(), new QueryOptions());
+
                 // Propagate ACLs
                 if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
                     authorizationManager.replicateAcls(study.getUid(), Arrays.asList(queryResult.first().getUid()), allFileAcls.getResult(),
@@ -2682,6 +2688,7 @@ public class FileManager extends ResourceManager<File> {
                                     Collections.emptyMap(), catalogManager.getStudyManager().getCurrentRelease(study, userId),
                                     Collections.emptyMap());
                             folder.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
+                            checkHooks(folder, study.getFqn(), HookConfiguration.Stage.CREATE);
                             QueryResult<File> queryResult = fileDBAdaptor.insert(folder, study.getUid(), new QueryOptions());
 
                             // Propagate ACLs
@@ -2733,6 +2740,7 @@ public class FileManager extends ResourceManager<File> {
                                     Collections.emptyMap(), catalogManager.getStudyManager().getCurrentRelease(study, userId),
                                     Collections.emptyMap());
                             subfile.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
+                            checkHooks(subfile, study.getFqn(), HookConfiguration.Stage.CREATE);
                             QueryResult<File> queryResult = fileDBAdaptor.insert(subfile, study.getUid(), new QueryOptions());
 
                             // Propagate ACLs
@@ -2792,6 +2800,261 @@ public class FileManager extends ResourceManager<File> {
                     .append(QueryOptions.LIMIT, 100);
             return fileDBAdaptor.get(query, queryOptions);
         }
+    }
+
+    private void checkHooks(File file, String fqn, HookConfiguration.Stage stage) throws CatalogException {
+
+        Map<String, Map<String, List<HookConfiguration>>> hooks = this.configuration.getHooks();
+        if (hooks != null && hooks.containsKey(fqn)) {
+            Map<String, List<HookConfiguration>> entityHookMap = hooks.get(fqn);
+            List<HookConfiguration> hookList = null;
+            if (entityHookMap.containsKey(MongoDBAdaptorFactory.FILE_COLLECTION)) {
+                hookList = entityHookMap.get(MongoDBAdaptorFactory.FILE_COLLECTION);
+            } else if (entityHookMap.containsKey(MongoDBAdaptorFactory.FILE_COLLECTION.toUpperCase())) {
+                hookList = entityHookMap.get(MongoDBAdaptorFactory.FILE_COLLECTION.toUpperCase());
+            }
+
+            // We check the hook list
+            if (hookList != null) {
+                for (HookConfiguration hookConfiguration : hookList) {
+                    if (hookConfiguration.getStage() != stage) {
+                        continue;
+                    }
+
+                    String field = hookConfiguration.getField();
+                    if (StringUtils.isEmpty(field)) {
+                        logger.warn("Missing 'field' field from hook configuration");
+                        continue;
+                    }
+                    field = field.toLowerCase();
+
+                    String filterValue = hookConfiguration.getValue();
+                    if (StringUtils.isEmpty(filterValue)) {
+                        logger.warn("Missing 'value' field from hook configuration");
+                        continue;
+                    }
+
+                    String value = null;
+                    switch (field) {
+                        case "name":
+                            value = file.getName();
+                            break;
+                        case "format":
+                            value = file.getFormat().name();
+                            break;
+                        case "bioformat":
+                            value = file.getFormat().name();
+                            break;
+                        case "path":
+                            value = file.getPath();
+                            break;
+                        case "description":
+                            value = file.getDescription();
+                            break;
+                        // TODO: At some point, we will also have to consider any field that is not a String
+//                        case "size":
+//                            value = file.getSize();
+//                            break;
+                        default:
+                            break;
+                    }
+                    if (value == null) {
+                        continue;
+                    }
+
+                    String filterNewValue = hookConfiguration.getWhat();
+                    if (StringUtils.isEmpty(filterNewValue)) {
+                        logger.warn("Missing 'what' field from hook configuration");
+                        continue;
+                    }
+
+                    String filterWhere = hookConfiguration.getWhere();
+                    if (StringUtils.isEmpty(filterWhere)) {
+                        logger.warn("Missing 'where' field from hook configuration");
+                        continue;
+                    }
+                    filterWhere = filterWhere.toLowerCase();
+
+
+                    if (filterValue.startsWith("~")) {
+                        // Regular expression
+                        if (!value.matches(filterValue.substring(1))) {
+                            // If it doesn't match, we will check the next hook of the loop
+                            continue;
+                        }
+                    } else {
+                        if (!value.equals(filterValue)) {
+                            // If it doesn't match, we will check the next hook of the loop
+                            continue;
+                        }
+                    }
+
+                    // The value matched, so we will perform the action desired by the user
+                    if (hookConfiguration.getAction() == HookConfiguration.Action.ABORT) {
+                        throw new CatalogException("A hook to abort the insertion matched");
+                    }
+
+                    // We check the field the user wants to update
+                    if (filterWhere.equals(FileDBAdaptor.QueryParams.DESCRIPTION.key())) {
+                        switch (hookConfiguration.getAction()) {
+                            case ADD:
+                            case SET:
+                                file.setDescription(hookConfiguration.getWhat());
+                                break;
+                            case REMOVE:
+                                file.setDescription("");
+                                break;
+                            default:
+                                break;
+                        }
+                    } else if (filterWhere.equals(FileDBAdaptor.QueryParams.TAGS.key())) {
+                        switch (hookConfiguration.getAction()) {
+                            case ADD:
+                                List<String> values;
+                                if (hookConfiguration.getWhat().contains(",")) {
+                                    values = Arrays.asList(hookConfiguration.getWhat().split(","));
+                                } else {
+                                    values = Collections.singletonList(hookConfiguration.getWhat());
+                                }
+                                List<String> tagsCopy = new ArrayList<>(file.getTags());
+                                tagsCopy.addAll(values);
+                                file.setTags(tagsCopy);
+                                break;
+                            case SET:
+                                if (hookConfiguration.getWhat().contains(",")) {
+                                    values = Arrays.asList(hookConfiguration.getWhat().split(","));
+                                } else {
+                                    values = Collections.singletonList(hookConfiguration.getWhat());
+                                }
+                                file.setTags(values);
+                                break;
+                            case REMOVE:
+                                file.setTags(Collections.emptyList());
+                                break;
+                            default:
+                                break;
+                        }
+                    } else if (filterWhere.startsWith(FileDBAdaptor.QueryParams.STATS.key())) {
+                        String[] split = StringUtils.split(filterWhere, ".", 2);
+                        String statsField = null;
+                        if (split.length == 2) {
+                            statsField = split[1];
+                        }
+
+                        switch (hookConfiguration.getAction()) {
+                            case ADD:
+                                if (statsField == null) {
+                                    logger.error("Cannot add a value to {} directly. Expected {}.<subfield>",
+                                            FileDBAdaptor.QueryParams.STATS.key(), FileDBAdaptor.QueryParams.STATS.key());
+                                    continue;
+                                }
+
+                                List<String> values;
+                                if (hookConfiguration.getWhat().contains(",")) {
+                                    values = Arrays.asList(hookConfiguration.getWhat().split(","));
+                                } else {
+                                    values = Collections.singletonList(hookConfiguration.getWhat());
+                                }
+
+                                Object currentStatsValue = file.getStats().get(statsField);
+                                if (currentStatsValue == null) {
+                                    file.getStats().put(statsField, values);
+                                } else if (currentStatsValue instanceof Collection) {
+                                    ((List) currentStatsValue).addAll(values);
+                                } else {
+                                    logger.error("Cannot add a value to {} if it is not an array", filterWhere);
+                                    continue;
+                                }
+
+                                break;
+                            case SET:
+                                if (statsField == null) {
+                                    logger.error("Cannot set a value to {} directly. Expected {}.<subfield>",
+                                            FileDBAdaptor.QueryParams.STATS.key(), FileDBAdaptor.QueryParams.STATS.key());
+                                    continue;
+                                }
+
+                                if (hookConfiguration.getWhat().contains(",")) {
+                                    values = Arrays.asList(hookConfiguration.getWhat().split(","));
+                                } else {
+                                    values = Collections.singletonList(hookConfiguration.getWhat());
+                                }
+                                file.getStats().put(statsField, values);
+                                break;
+                            case REMOVE:
+                                if (statsField == null) {
+                                    file.setStats(Collections.emptyMap());
+                                } else {
+                                    file.getStats().remove(statsField);
+                                }
+                                break;
+                            default:
+                                break;
+                        }
+                    } else if (filterWhere.startsWith(FileDBAdaptor.QueryParams.ATTRIBUTES.key())) {
+                        String[] split = StringUtils.split(filterWhere, ".", 2);
+                        String attributesField = null;
+                        if (split.length == 2) {
+                            attributesField = split[1];
+                        }
+
+                        switch (hookConfiguration.getAction()) {
+                            case ADD:
+                                if (attributesField == null) {
+                                    logger.error("Cannot add a value to {} directly. Expected {}.<subfield>",
+                                            FileDBAdaptor.QueryParams.ATTRIBUTES.key(), FileDBAdaptor.QueryParams.ATTRIBUTES.key());
+                                    continue;
+                                }
+
+                                List<String> values;
+                                if (hookConfiguration.getWhat().contains(",")) {
+                                    values = Arrays.asList(hookConfiguration.getWhat().split(","));
+                                } else {
+                                    values = Collections.singletonList(hookConfiguration.getWhat());
+                                }
+
+                                Object currentStatsValue = file.getAttributes().get(attributesField);
+                                if (currentStatsValue == null) {
+                                    file.getAttributes().put(attributesField, values);
+                                } else if (currentStatsValue instanceof Collection) {
+                                    ((List) currentStatsValue).addAll(values);
+                                } else {
+                                    logger.error("Cannot add a value to {} if it is not an array", filterWhere);
+                                    continue;
+                                }
+
+                                break;
+                            case SET:
+                                if (attributesField == null) {
+                                    logger.error("Cannot set a value to {} directly. Expected {}.<subfield>",
+                                            FileDBAdaptor.QueryParams.ATTRIBUTES.key(), FileDBAdaptor.QueryParams.ATTRIBUTES.key());
+                                    continue;
+                                }
+
+                                if (hookConfiguration.getWhat().contains(",")) {
+                                    values = Arrays.asList(hookConfiguration.getWhat().split(","));
+                                } else {
+                                    values = Collections.singletonList(hookConfiguration.getWhat());
+                                }
+                                file.getAttributes().put(attributesField, values);
+                                break;
+                            case REMOVE:
+                                if (attributesField == null) {
+                                    file.setAttributes(Collections.emptyMap());
+                                } else {
+                                    file.getAttributes().remove(attributesField);
+                                }
+                                break;
+                            default:
+                                break;
+                        }
+                    } else {
+                        logger.error("{} field cannot be updated. Please, check the hook configured.", hookConfiguration.getWhere());
+                    }
+                }
+            }
+        }
+
     }
 
     private URI getStudyUri(long studyId) throws CatalogException {

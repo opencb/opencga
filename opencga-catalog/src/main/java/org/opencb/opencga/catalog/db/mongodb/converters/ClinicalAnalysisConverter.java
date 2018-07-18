@@ -76,20 +76,21 @@ public class ClinicalAnalysisConverter extends GenericDocumentComplexConverter<C
     }
 
     public void validateDocumentToUpdate(Document document) {
-        List<Document> interpretationList = (List) document.get("interpretations");
-        if (interpretationList != null) {
-            for (int i = 0; i < interpretationList.size(); i++) {
-                validateInterpretation(interpretationList.get(i));
-            }
-        }
+       validateInterpretationToUpdate(document);
+       validateFamilyToUpdate(document);
+       validateSubjectsToUpdate(document);
+    }
 
+    public void validateFamilyToUpdate(Document document) {
         Document family = (Document) document.get("family");
         if (family != null) {
             long familyId = getLongValue(family, "uid");
             familyId = familyId <= 0 ? -1L : familyId;
             document.put("family", new Document("uid", familyId));
         }
+    }
 
+    public void validateSubjectsToUpdate(Document document) {
         List<Document> subjectList = (List) document.get("subjects");
         if (subjectList != null) {
             List<Document> finalSubjects = new ArrayList<>(subjectList.size());
@@ -115,6 +116,15 @@ public class ClinicalAnalysisConverter extends GenericDocumentComplexConverter<C
             }
 
             document.put("subjects", finalSubjects);
+        }
+    }
+
+    public void validateInterpretationToUpdate(Document document) {
+        List<Document> interpretationList = (List) document.get("interpretations");
+        if (interpretationList != null) {
+            for (int i = 0; i < interpretationList.size(); i++) {
+                validateInterpretation(interpretationList.get(i));
+            }
         }
     }
 

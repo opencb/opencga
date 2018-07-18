@@ -17,6 +17,8 @@
 package org.opencb.opencga.analysis;
 
 import org.opencb.commons.utils.FileUtils;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.slf4j.Logger;
@@ -30,6 +32,7 @@ import java.nio.file.Paths;
 
 public class OpenCgaAnalysis {
 
+    protected CatalogManager catalogManager;
     protected Configuration configuration;
     protected StorageConfiguration storageConfiguration;
 
@@ -49,7 +52,9 @@ public class OpenCgaAnalysis {
         try {
             loadConfiguration();
             loadStorageConfiguration();
-        } catch (IOException e) {
+
+            catalogManager = new CatalogManager(configuration);
+        } catch (IOException | CatalogException e) {
             e.printStackTrace();
         }
     }

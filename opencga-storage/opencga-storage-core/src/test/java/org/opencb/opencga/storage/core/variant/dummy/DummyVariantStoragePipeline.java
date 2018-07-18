@@ -22,7 +22,6 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -31,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -56,7 +56,7 @@ public class DummyVariantStoragePipeline extends VariantStoragePipeline {
     protected void securePreLoad(StudyConfiguration studyConfiguration, VariantFileMetadata source) throws StorageEngineException {
         super.securePreLoad(studyConfiguration, source);
 
-        List<Integer> fileIds = getOptions().getAsIntegerList(VariantStorageEngine.Options.FILE_ID.key());
+        List<Integer> fileIds = Collections.singletonList(getFileId());
         BatchFileOperation op = new BatchFileOperation("load", fileIds, 1, BatchFileOperation.Type.LOAD);
         op.addStatus(BatchFileOperation.Status.RUNNING);
         studyConfiguration.getBatches().add(op);
@@ -65,7 +65,7 @@ public class DummyVariantStoragePipeline extends VariantStoragePipeline {
     @Override
     public URI load(URI input) throws IOException, StorageEngineException {
         logger.info("Loading file " + input);
-        List<Integer> fileIds = getOptions().getAsIntegerList(VariantStorageEngine.Options.FILE_ID.key());
+        List<Integer> fileIds = Collections.singletonList(getFileId());
         if (getOptions().getBoolean(VARIANTS_LOAD_FAIL)) {
             getStudyConfigurationManager().atomicSetStatus(getStudyId(), BatchFileOperation.Status.ERROR, "load", fileIds);
         } else {

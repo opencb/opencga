@@ -2,10 +2,10 @@ package org.opencb.opencga.app.cli.admin.executors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.app.cli.admin.executors.migration.AnnotationSetMigration;
+import org.opencb.opencga.app.cli.admin.executors.migration.NewProjectMetadataMigration;
 import org.opencb.opencga.app.cli.admin.executors.migration.NewVariantMetadataMigration;
 import org.opencb.opencga.app.cli.admin.options.MigrationCommandOptions;
-import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
-import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 
 import java.io.BufferedReader;
@@ -131,7 +131,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             // We get a non-expiring token
-            catalogManager.getUserManager().getSystemTokenForUser("admin", options.commonOptions.adminPassword);
+            String sessionId = catalogManager.getUserManager().getSystemTokenForUser("admin", options.commonOptions.adminPassword);
 
             // Catalog
             if (!skipCatalogJS) {
@@ -161,9 +161,15 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                 while ((line = input.readLine()) != null) {
                     logger.info(line);
                 }
+                p.waitFor();
                 input.close();
 
-                logger.info("Finished Catalog migration");
+                if (p.exitValue() == 0) {
+                    logger.info("Finished Catalog migration");
+                } else {
+                    throw new CatalogException("Error migrating catalog database!");
+                }
+
             }
 
             if (!skipAnnotations) {
@@ -173,6 +179,10 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                 new AnnotationSetMigration(catalogManager).migrate();
 
                 logger.info("Finished annotation migration");
+            }
+
+            if (!skipStorage) {
+                new NewProjectMetadataMigration(storageConfiguration, catalogManager, options).migrate(sessionId);
             }
 
         }

@@ -54,10 +54,10 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
     public static final String SMALL_VCF_TEST_FILE_NAME = "variant-test-file.vcf.gz";
     public static final String VCF_CORRUPTED_FILE_NAME = "variant-test-file-corrupted.vcf";
     public static final int NUM_VARIANTS = 9792;
-    public static final int STUDY_ID = 1;
+    @Deprecated public static final int STUDY_ID = 1;
     public static final String STUDY_NAME = "1000g";
     public static final String DB_NAME = "opencga_variants_test";
-    public static final int FILE_ID = 6;
+    @Deprecated public static final int FILE_ID = 1;
     public static final Set<String> VARIANTS_WITH_CONFLICTS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             "22:16050655-16063474:-:<CN0>",
             "22:16050655-16063474:-:<CN2>",
@@ -165,11 +165,11 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
         VariantStorageBaseTest.rootDir = rootDir;
     }
 
-    public URI newOutputUri() throws IOException {
+    public static URI newOutputUri() throws IOException {
         return newOutputUri(1, outputUri);
     }
 
-    public URI newOutputUri(int extraCalls) throws IOException {
+    public static URI newOutputUri(int extraCalls) throws IOException {
         return newOutputUri(1 + extraCalls, outputUri);
     }
 
@@ -182,7 +182,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
         return newOutputUri(testName, outputUri);
     }
 
-    protected URI newOutputUri(String testName) throws IOException {
+    protected static URI newOutputUri(String testName) throws IOException {
         return newOutputUri(testName, outputUri);
     }
 
@@ -268,11 +268,11 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
 
         ObjectMap newParams = new ObjectMap(params);
 
-        newParams.put(VariantStorageEngine.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+//        newParams.put(VariantStorageEngine.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
         newParams.putIfAbsent(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), studyConfiguration.getAggregation());
-        newParams.putIfAbsent(VariantStorageEngine.Options.STUDY_ID.key(), studyConfiguration.getStudyId());
-        newParams.putIfAbsent(VariantStorageEngine.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
-        newParams.putIfAbsent(VariantStorageEngine.Options.FILE_ID.key(), FILE_ID);
+//        newParams.putIfAbsent(VariantStorageEngine.Options.STUDY_ID.key(), studyConfiguration.getStudyId());
+        newParams.putIfAbsent(VariantStorageEngine.Options.STUDY.key(), studyConfiguration.getStudyName());
+//        newParams.putIfAbsent(VariantStorageEngine.Options.FILE_ID.key(), FILE_ID);
         // Default value is already avro
 //        newParams.putIfAbsent(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro");
         newParams.putIfAbsent(VariantStorageEngine.Options.ANNOTATE.key(), true);
@@ -283,7 +283,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
         StoragePipelineResult storagePipelineResult = runETL(variantStorageManager, inputUri, outputUri, newParams, true, doTransform, doLoad);
 
         try (VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor()) {
-            StudyConfiguration newStudyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+            StudyConfiguration newStudyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyName(), null).first();
             if (newStudyConfiguration != null) {
                 studyConfiguration.copy(newStudyConfiguration);
             }

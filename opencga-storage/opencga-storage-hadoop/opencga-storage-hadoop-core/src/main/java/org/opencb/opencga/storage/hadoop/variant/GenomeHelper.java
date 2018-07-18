@@ -23,7 +23,6 @@ import com.google.protobuf.MessageLite;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +47,7 @@ public class GenomeHelper {
 
     private final Configuration conf;
 
-    private final int studyId;
+    private int studyId;
 
     public GenomeHelper(GenomeHelper other) {
         this(other.getConf());
@@ -59,7 +58,7 @@ public class GenomeHelper {
     }
 
     public GenomeHelper(Configuration conf) {
-        this(conf, conf.getInt(VariantStorageEngine.Options.STUDY_ID.key(), -1));
+        this(conf, conf.getInt(HadoopVariantStorageEngine.STUDY_ID, -1));
     }
 
     protected GenomeHelper(Configuration conf, int studyId) {
@@ -70,7 +69,7 @@ public class GenomeHelper {
         // TODO: Report this bug to phoenix JIRA
         this.columnFamily = Bytes.toBytes(conf.get(HadoopVariantStorageEngine.HBASE_COLUMN_FAMILY, DEFAULT_COLUMN_FAMILY));
         this.chunkSize = conf.getInt(HadoopVariantStorageEngine.ARCHIVE_CHUNK_SIZE, HadoopVariantStorageEngine.DEFAULT_ARCHIVE_CHUNK_SIZE);
-        this.studyId = studyId > 0 ? studyId : conf.getInt(VariantStorageEngine.Options.STUDY_ID.key(), -1);
+        this.studyId = studyId > 0 ? studyId : conf.getInt(HadoopVariantStorageEngine.STUDY_ID, -1);
     }
 
     public Configuration getConf() {
@@ -82,7 +81,11 @@ public class GenomeHelper {
     }
 
     public static void setStudyId(Configuration conf, Integer studyId) {
-        conf.setInt(VariantStorageEngine.Options.STUDY_ID.key(), studyId);
+        conf.setInt(HadoopVariantStorageEngine.STUDY_ID, studyId);
+    }
+
+    protected void setStudyId(int studyId) {
+        this.studyId = studyId;
     }
 
     public int getStudyId() {

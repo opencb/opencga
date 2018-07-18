@@ -39,7 +39,6 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
-import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.HBaseToVariantStatsConverter;
@@ -74,7 +73,6 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     public static final int FILE_FILTER_IDX = 4;
     public static final int FILE_INFO_START_IDX = 5;
 
-    private final GenomeHelper genomeHelper;
     private final StudyConfigurationManager scm;
     private final HBaseToVariantStatsConverter statsConverter;
     private final QueryOptions scmOptions = new QueryOptions(StudyConfigurationManager.READ_ONLY, true)
@@ -92,10 +90,9 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     protected final Logger logger = LoggerFactory.getLogger(HBaseToStudyEntryConverter.class);
     private VariantQueryUtils.SelectVariantElements selectVariantElements;
 
-    public HBaseToStudyEntryConverter(GenomeHelper genomeHelper, StudyConfigurationManager scm,
+    public HBaseToStudyEntryConverter(byte[] columnFamily, StudyConfigurationManager scm,
                                       HBaseToVariantStatsConverter statsConverter) {
-        super(genomeHelper.getColumnFamily());
-        this.genomeHelper = genomeHelper;
+        super(columnFamily);
         this.scm = scm;
         this.statsConverter = statsConverter;
     }
@@ -492,7 +489,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
      *                                  file updated by the fillMissing task
      * @return List of boolean values, one per sample.
      */
-    private List<Boolean> getMissingUpdatedSamples(StudyConfiguration studyConfiguration, int fillMissingColumnValue) {
+    protected List<Boolean> getMissingUpdatedSamples(StudyConfiguration studyConfiguration, int fillMissingColumnValue) {
         Pair<Integer, Integer> pair = Pair.of(studyConfiguration.getStudyId(), fillMissingColumnValue);
         List<Boolean> missingUpdatedList = missingUpdatedSamplesMap.get(pair);
         if (missingUpdatedList == null) {
@@ -578,7 +575,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         return samplesWithVariant;
     }
 
-    private String getDefaultGenotype(StudyConfiguration studyConfiguration) {
+    protected String getDefaultGenotype(StudyConfiguration studyConfiguration) {
         String defaultGenotype;
         if (VariantStorageEngine.MergeMode.from(studyConfiguration.getAttributes()).equals(VariantStorageEngine.MergeMode.ADVANCED)
                 || studyConfiguration.getAttributes().getBoolean(MISSING_GENOTYPES_UPDATED)) {
@@ -644,9 +641,8 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
      * @param studyConfiguration StudyConfiguration from the study
      * @param alternateFileIdMap Map from SecondaryAlternate to FileId
      */
-    private void addSecondaryAlternates(Variant variant, StudyEntry studyEntry, StudyConfiguration studyConfiguration,
+    protected void addSecondaryAlternates(Variant variant, StudyEntry studyEntry, StudyConfiguration studyConfiguration,
                                         Map<String, List<String>> alternateFileIdMap) {
-
 
         final List<AlternateCoordinate> alternateCoordinates;
         if (alternateFileIdMap.isEmpty()) {
@@ -667,6 +663,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
             for (Map.Entry<String, List<String>> entry : alternateFileIdMap.entrySet()) {
                 String secondaryAlternates = entry.getKey();
+                List<String> fileIds = entry.getValue();
 
                 Variant sampleVariant = new Variant(
                         variant.getChromosome(),
@@ -677,7 +674,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 se.setSecondaryAlternates(getAlternateCoordinates(secondaryAlternates));
                 se.setFormat(studyEntry.getFormat());
 
-                for (String fileId : entry.getValue()) {
+                for (String fileId : fileIds) {
                     se.getFiles().add(studyEntry.getFile(fileId));
                     for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(Integer.parseInt(fileId))) {
                         String sample = studyConfiguration.getSampleIds().inverse().get(sampleId);
@@ -727,39 +724,15 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         );
     }
 
-    @SuppressWarnings("unchecked")
-    public <T> List<T> toList(Array value) {
-        try {
-            return Arrays.asList((T[]) value.getArray());
-        } catch (SQLException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    public <T> List<T> toModifiableList(Array value) {
-        try {
-            T[] array = (T[]) value.getArray();
-            ArrayList<T> list = new ArrayList<>(array.length);
-            for (T t : array) {
-                list.add(t);
-            }
-            return list;
-//            return Arrays.asList((T[]) value.getArray());
-        } catch (SQLException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
-    private Integer getStudyId(String[] split) {
+    protected Integer getStudyId(String[] split) {
         return Integer.valueOf(split[0]);
     }
 
-    private Integer getSampleId(String[] split) {
+    protected Integer getSampleId(String[] split) {
         return Integer.valueOf(split[1]);
     }
 
-    private String getFileId(String[] split) {
+    protected String getFileId(String[] split) {
         return split[1];
     }
 

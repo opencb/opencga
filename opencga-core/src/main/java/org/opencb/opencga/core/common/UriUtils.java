@@ -71,4 +71,9 @@ public class UriUtils {
         return uri;
     }
 
+    public static String fileName(URI uri) {
+        String path = uri.getPath();
+        int idx = path.lastIndexOf("/");
+        return idx < 0 ? path : path.substring(idx + 1);
+    }
 }

@@ -158,10 +158,12 @@ public class Sample extends Annotable {
         return this;
     }
 
+    @Deprecated
     public String getName() {
         return name;
     }
 
+    @Deprecated
     public Sample setName(String name) {
         this.name = name;
         return this;

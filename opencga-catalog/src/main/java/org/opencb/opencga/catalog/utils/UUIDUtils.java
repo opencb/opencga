@@ -8,6 +8,7 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+
 public class UUIDUtils {
 
     // OpenCGA uuid pattern: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
@@ -16,7 +17,7 @@ public class UUIDUtils {
     //                                ----           ------------
     //                              time mid            random
     //                                     ----
-    //              version (1 word) + internal version (1 word) + entity (2 words)
+    //              version (1 hex digit) + internal version (1 hex digit) + entity (2 hex digit)
 
     public static final Pattern UUID_PATTERN = Pattern.compile("[0-9a-f]{8}-[0-9a-f]{4}-0[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}");
 
@@ -68,30 +69,22 @@ public class UUIDUtils {
     private static long getMostSignificantBits(Date date, Entity entity) {
         long time = date.getTime();
 
-        String timeLow = Long.toBinaryString(time & Long.parseLong("ffffffff", 16));
-        String timeMid = Long.toBinaryString((time >> 32) & Long.parseLong("ffff", 16));
-//        String timeHigh = Long.toBinaryString((time >> 48) & Long.parseLong("ffff", 16));
+        long timeLow = time & 0xffffffffL;
+        long timeMid = (time >>> 32) & 0xffffL;
+        // long timeHigh = (time >>> 48) & 0xffffL;
 
-        String uuidVersion = "0";
-        String internalVersion = "0";
-        // 2 words for the entity
-        String entityBin = Integer.toBinaryString(entity.getMask());
+        long uuidVersion = /*0xff &*/ 0;
+        long internalVersion = /*0xff &*/ 0;
+        long entityBin = 0xffL & (long)entity.getMask();
 
-        return Long.parseLong(String.format("%32s", timeLow).replace(" ", "0") + String.format("%16s", timeMid).replace(" ", "0")
-                + String.format("%4s", uuidVersion).replace(" ", "0") + String.format("%4s", internalVersion).replace(" ", "0")
-                + String.format("%8s", entityBin).replace(" ", "0"), 2);
+        return (timeLow << 32) | (timeMid << 16) | (uuidVersion << 12) | (internalVersion << 8) | entityBin;
     }
 
     private static long getLeastSignificantBits() {
-        // 4 words installation
-        String installation = "1";
-
-        // 12 words random
+        long installation = /*0xffL &*/ 0x1L;
+        // 12 hex digits random
         Random rand = new Random();
-        String randomNumberBin = Long.toBinaryString(rand.nextLong() & Long.parseLong("ffffffffffff", 16));
-
-        return Long.parseLong(String.format("%16s", installation).replace(" ", "0")
-                + String.format("%48s", randomNumberBin).replace(" ", "0"), 2);
+        long randomNumber = 0xffffffffffffL & rand.nextLong();
+        return (installation << 48) | randomNumber;
     }
-
 }

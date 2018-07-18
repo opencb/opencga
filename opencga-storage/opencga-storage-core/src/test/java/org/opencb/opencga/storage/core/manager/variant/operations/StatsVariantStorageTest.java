@@ -248,7 +248,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
 
         List<String> newCohort = catalogManager.getCohortManager().get(studyId, coh[0], null, sessionId).first().getSamples().stream()
                 .map(Sample::getId)
-                .limit(100)
+                .skip(10).limit(100)
                 .collect(Collectors.toList());
         catalogManager.getCohortManager().update(studyId, coh[0], new ObjectMap("samples", newCohort), new QueryOptions(), sessionId);
         assertEquals(Cohort.CohortStatus.INVALID, catalogManager.getCohortManager().get(studyId, coh[0], null, sessionId).first().getStatus().getName());
@@ -268,7 +268,8 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
 
         DummyVariantStorageEngine vsm = mockVariantStorageManager();
         String message = "Error";
-        doThrow(new StorageEngineException(message)).when(vsm).calculateStats(any(), any(), any());
+        doThrow(new StorageEngineException(message)).when(vsm).calculateStats(any(), any(List.class), any());
+        doThrow(new StorageEngineException(message)).when(vsm).calculateStats(any(), any(Map.class), any());
 
         try {
             calculateStats(coh[1]);

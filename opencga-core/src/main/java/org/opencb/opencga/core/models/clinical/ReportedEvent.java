@@ -8,7 +8,7 @@ public class ReportedEvent {
     private String phenotype;
     private GenomicFeature genomicFeature;
     private ReportedModeOfInheritance modeOfInheritance;
-    private Panel panel;
+//    private Panel panel;
     private VariantClassification variantClassification;
     private Penetrance penetrance;
     private double score;
@@ -50,14 +50,14 @@ public class ReportedEvent {
     public ReportedEvent() {
     }
 
-    public ReportedEvent(String id, String phenotype, GenomicFeature genomicFeature, ReportedModeOfInheritance modeOfInheritance, Panel
-            panel, VariantClassification variantClassification, Penetrance penetrance, double score, boolean fullyExplainsPhenotype, int
-            groupOfVariants, String justification, String tier) {
+    public ReportedEvent(String id, String phenotype, GenomicFeature genomicFeature, ReportedModeOfInheritance modeOfInheritance,
+                         VariantClassification variantClassification, Penetrance penetrance, double score, boolean fullyExplainsPhenotype,
+                         int groupOfVariants, String justification, String tier) {
         this.id = id;
         this.phenotype = phenotype;
         this.genomicFeature = genomicFeature;
         this.modeOfInheritance = modeOfInheritance;
-        this.panel = panel;
+//        this.panel = panel;
         this.variantClassification = variantClassification;
         this.penetrance = penetrance;
         this.score = score;
@@ -74,7 +74,7 @@ public class ReportedEvent {
         sb.append(", phenotype='").append(phenotype).append('\'');
         sb.append(", genomicFeature=").append(genomicFeature);
         sb.append(", modeOfInheritance=").append(modeOfInheritance);
-        sb.append(", panel=").append(panel);
+//        sb.append(", panel=").append(panel);
         sb.append(", variantClassification=").append(variantClassification);
         sb.append(", penetrance=").append(penetrance);
         sb.append(", score=").append(score);
@@ -122,14 +122,14 @@ public class ReportedEvent {
         return this;
     }
 
-    public Panel getPanel() {
-        return panel;
-    }
-
-    public ReportedEvent setPanel(Panel panel) {
-        this.panel = panel;
-        return this;
-    }
+//    public Panel getPanel() {
+//        return panel;
+//    }
+//
+//    public ReportedEvent setPanel(Panel panel) {
+//        this.panel = panel;
+//        return this;
+//    }
 
     public VariantClassification getVariantClassification() {
         return variantClassification;

@@ -22,7 +22,7 @@ import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.phoenix.mapreduce.util.PhoenixMapReduceUtil;
-import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.VariantColumn;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
@@ -33,19 +33,20 @@ import java.util.Arrays;
 /**
  * Created by mh719 on 15/12/2016.
  */
-public class AnalysisTableAnnotateDriver extends AbstractAnalysisTableDriver {
+public class VariantsTableAnnotateDriver extends AbstractVariantsTableDriver {
     public static final String CONFIG_VARIANT_TABLE_ANNOTATE_PARALLEL = "opencga.variant.table.annotate.parallel";
 
-    public AnalysisTableAnnotateDriver() {
+    public VariantsTableAnnotateDriver() {
         super();
     }
 
-    public AnalysisTableAnnotateDriver(Configuration conf) {
+    public VariantsTableAnnotateDriver(Configuration conf) {
         super(conf);
     }
 
     @Override
-    protected void parseAndValidateParameters() {
+    protected void parseAndValidateParameters() throws IOException {
+        super.parseAndValidateParameters();
         int parallel = getConf().getInt(CONFIG_VARIANT_TABLE_ANNOTATE_PARALLEL, 5);
         getConf().setInt("mapreduce.job.running.map.limit", parallel);
         getConf().setLong("phoenix.upsert.batch.size", 200L);
@@ -81,7 +82,7 @@ public class AnalysisTableAnnotateDriver extends AbstractAnalysisTableDriver {
 
     public static void main(String[] args) throws Exception {
         try {
-            System.exit(new AnalysisTableAnnotateDriver().privateMain(args));
+            System.exit(new VariantsTableAnnotateDriver().privateMain(args));
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(1);

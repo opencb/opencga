@@ -18,7 +18,6 @@ package org.opencb.opencga.storage.hadoop.variant;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.client.ConnectionConfiguration;
@@ -34,14 +33,14 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDriver;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillMissingFromArchiveTask;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
+import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,39 +48,36 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.MAPREDUCE_HBASE_SCANNER_TIMEOUT;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.*;
 
 /**
  * Created by mh719 on 21/11/2016.
  */
-public abstract class AbstractAnalysisTableDriver extends Configured implements Tool {
+public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver implements Tool {
 
     public static final String CONFIG_VARIANT_TABLE_NAME           = "opencga.variant.table.name";
     public static final String TIMESTAMP                           = "opencga.variant.table.timestamp";
 
-    private final Logger logger = LoggerFactory.getLogger(AbstractAnalysisTableDriver.class);
-    private VariantTableHelper variantTablehelper;
+    private final Logger logger = LoggerFactory.getLogger(AbstractVariantsTableDriver.class);
+    private GenomeHelper helper;
     private StudyConfigurationManager scm;
     private List<Integer> fileIds;
+    protected HBaseVariantTableNameGenerator generator;
 
-    public AbstractAnalysisTableDriver() {
+    public AbstractVariantsTableDriver() {
         super(HBaseConfiguration.create());
     }
 
-    public AbstractAnalysisTableDriver(Configuration conf) {
+    public AbstractVariantsTableDriver(Configuration conf) {
         super(conf);
     }
 
     @Override
-    public int run(String[] args) throws Exception {
+    protected void parseAndValidateParameters() throws IOException {
+        super.parseAndValidateParameters();
         Configuration conf = getConf();
-        HBaseConfiguration.addHbaseResources(conf);
-        getConf().setClassLoader(AbstractAnalysisTableDriver.class.getClassLoader());
-        configFromArgs(args);
-
         String archiveTable = getArchiveTable();
-        String variantTable = getAnalysisTable();
-        Integer studyId = getStudyId();
+        String variantTable = getVariantsTable();
 
         int maxKeyValueSize = conf.getInt(HadoopVariantStorageEngine.MAPREDUCE_HBASE_KEYVALUE_SIZE_MAX, 10485760); // 10MB
         logger.info("HBASE: set " + ConnectionConfiguration.MAX_KEYVALUE_SIZE_KEY + " to " + maxKeyValueSize);
@@ -89,23 +85,25 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
 
         /* -------------------------------*/
         // Validate parameters CHECK
-        if (StringUtils.isEmpty(archiveTable)) {
-            throw new IllegalArgumentException("No archive hbase table basename specified!!!");
-        }
+//        if (StringUtils.isEmpty(archiveTable)) {
+//            throw new IllegalArgumentException("No archive hbase table basename specified!!!");
+//        }
         if (StringUtils.isEmpty(variantTable)) {
             throw new IllegalArgumentException("No variant hbase table specified!!!");
         }
-        if (archiveTable.equals(variantTable)) {
+        HBaseVariantTableNameGenerator.checkValidVariantsTableName(variantTable);
+        if (variantTable.equals(archiveTable)) {
             throw new IllegalArgumentException("archive and variant tables must be different");
         }
-        if (studyId < 0) {
-            throw new IllegalArgumentException("No Study id specified!!!");
-        }
+        VariantTableHelper.setVariantsTable(getConf(), table);
+//        if (studyId < 0) {
+//            throw new IllegalArgumentException("No Study id specified!!!");
+//        }
 
-        initVariantTableHelper(studyId, archiveTable, variantTable);
+        String dbName = HBaseVariantTableNameGenerator.getDBNameFromVariantsTableName(getVariantsTable());
+        generator = new HBaseVariantTableNameGenerator(dbName, getConf());
 
-        // Other validations
-        parseAndValidateParameters();
+        initVariantTableHelper(getStudyId());
 
         /* -------------------------------*/
         // Validate input CHECK
@@ -113,40 +111,40 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
             checkTablesExist(hBaseManager, archiveTable, variantTable);
         }
 
-        preExecution(variantTable);
+        // Increase the ScannerTimeoutPeriod to avoid ScannerTimeoutExceptions
+        // See opencb/opencga#352 for more info.
+        int scannerTimeout = getConf().getInt(MAPREDUCE_HBASE_SCANNER_TIMEOUT,
+                getConf().getInt(HConstants.HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD, HConstants.DEFAULT_HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD));
+        logger.info("Set Scanner timeout to " + scannerTimeout + " ...");
+        conf.setInt(HConstants.HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD, scannerTimeout);
 
-        /* -------------------------------*/
-        // JOB setup
-        Job job = newJob();
-        setupJob(job, archiveTable, variantTable);
+    }
 
-        logger.info("=================================================");
-        logger.info("Execute " + getJobOperationName() + " for table " + variantTable);
-        logger.info("=================================================");
-        boolean succeed = executeJob(job);
-        if (!succeed) {
-            logger.error("error with job!");
-        }
-
-        postExecution(succeed);
-        if (scm != null) {
-            scm.close();
-            scm = null;
-        }
-        return succeed ? 0 : 1;
+    @Override
+    protected void preExecution() throws IOException, StorageEngineException {
+        super.preExecution();
+        preExecution(getVariantsTable());
     }
 
     protected void preExecution(String variantTable) throws IOException, StorageEngineException {
         // do nothing
     }
 
-    protected void postExecution(boolean succeed) throws IOException, StorageEngineException {
-        // do nothing
+    @Override
+    protected void close() throws IOException, StorageEngineException {
+        super.close();
+        if (scm != null) {
+            scm.close();
+            scm = null;
+        }
     }
 
-    protected abstract void parseAndValidateParameters() throws IOException;
-
     protected abstract Class<?> getMapperClass();
+
+    @Override
+    protected final void setupJob(Job job, String table) throws IOException {
+        setupJob(job, getArchiveTable(), getVariantsTable());
+    }
 
     protected abstract Job setupJob(Job job, String archiveTable, String variantTable) throws IOException;
 
@@ -160,28 +158,6 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
      * @return Job action
      */
     protected abstract String getJobOperationName();
-
-    private boolean executeJob(Job job) throws IOException, InterruptedException, ClassNotFoundException {
-        Thread hook = new Thread(() -> {
-            try {
-                if (!job.isComplete()) {
-                    job.killJob();
-                }
-//                onError();
-            } catch (IOException e) {
-                logger.error("Error", e);
-            }
-        });
-        boolean succeed;
-        try {
-            Runtime.getRuntime().addShutdownHook(hook);
-            succeed = job.waitForCompletion(true);
-        } finally {
-            Runtime.getRuntime().removeShutdownHook(hook);
-        }
-        return succeed;
-    }
-
 
     protected final Scan createArchiveTableScan(List<Integer> files) {
         Scan scan = new Scan();
@@ -216,22 +192,9 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
         return scan;
     }
 
-    private Job newJob() throws IOException {
-        Job job = Job.getInstance(getConf(), buildJobName());
-        job.getConfiguration().set("mapreduce.job.user.classpath.first", "true");
-        job.setJarByClass(getMapperClass());    // class that contains mapper
-
-        // Increase the ScannerTimeoutPeriod to avoid ScannerTimeoutExceptions
-        // See opencb/opencga#352 for more info.
-        int scannerTimeout = getConf().getInt(MAPREDUCE_HBASE_SCANNER_TIMEOUT,
-                getConf().getInt(HConstants.HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD, HConstants.DEFAULT_HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD));
-        logger.info("Set Scanner timeout to " + scannerTimeout + " ...");
-        job.getConfiguration().setInt(HConstants.HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD, scannerTimeout);
-        return job;
-    }
-
-    protected String buildJobName() {
-        String variantTable = getAnalysisTable();
+    @Override
+    protected String getJobName() {
+        String variantTable = getVariantsTable();
         List<Integer> files = getFiles();
         StringBuilder sb = new StringBuilder("opencga: ").append(getJobOperationName())
                 .append(" from VariantTable '").append(variantTable).append('\'');
@@ -266,7 +229,7 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
             }
         }
         if (files.isEmpty()) { // if still empty (no files provided and / or found in study
-            throw new IllegalArgumentException("No files specified / available for study " + getHelper().getStudyId());
+            throw new IllegalArgumentException("No files specified / available for study " + getStudyId());
         }
         return files;
     }
@@ -279,7 +242,7 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
     }
 
     public static List<Integer> getFiles(Configuration conf) {
-        String[] fileArr = conf.getStrings(VariantStorageEngine.Options.FILE_ID.key(), new String[0]);
+        String[] fileArr = conf.getStrings(FILE_ID, new String[0]);
         return Arrays.stream(fileArr)
                     .filter(s -> StringUtils.isNotEmpty(s) && !s.equals("."))
                     .map(Integer::parseInt)
@@ -287,11 +250,11 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
     }
 
     protected int getStudyId() {
-        return getConf().getInt(VariantStorageEngine.Options.STUDY_ID.key(), -1);
+        return getConf().getInt(HadoopVariantStorageEngine.STUDY_ID, -1);
     }
 
-    protected String getAnalysisTable() {
-        return getConf().get(CONFIG_VARIANT_TABLE_NAME, StringUtils.EMPTY);
+    protected String getVariantsTable() {
+        return table;
     }
 
     protected String getArchiveTable() {
@@ -300,7 +263,7 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
 
     protected StudyConfiguration readStudyConfiguration() throws IOException {
         StudyConfigurationManager scm = getStudyConfigurationManager();
-        int studyId = getHelper().getStudyId();
+        int studyId = getStudyId();
         QueryResult<StudyConfiguration> res = scm.getStudyConfiguration(studyId, new QueryOptions());
         if (res.getResult().size() != 1) {
             throw new IllegalStateException("StudyConfiguration " + studyId + " not found! " + res.getResult().size());
@@ -310,63 +273,35 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
 
     protected StudyConfigurationManager getStudyConfigurationManager() throws IOException {
         if (scm == null) {
-            scm = new StudyConfigurationManager(new HBaseVariantStorageMetadataDBAdaptorFactory(getHelper()));
+            scm = new StudyConfigurationManager(new HBaseVariantStorageMetadataDBAdaptorFactory(
+                    null, generator.getMetaTableName(), getConf()));
         }
         return scm;
     }
 
-    private void checkTablesExist(HBaseManager hBaseManager, String... tables) {
-        Arrays.stream(tables).forEach(table -> {
-            try {
-                if (!hBaseManager.tableExists(table)) {
-                    throw new IllegalArgumentException("Table " + table + " does not exist!!!");
-                }
-            } catch (IOException e) {
-                throw new IllegalStateException(e);
+    private void checkTablesExist(HBaseManager hBaseManager, String... tables) throws IOException {
+        for (String fileName : tables) {
+            if (StringUtils.isNotEmpty(fileName) && !hBaseManager.tableExists(fileName)) {
+                throw new IOException("Table " + fileName + " does not exist!!!");
             }
-        });
+        }
     }
 
-    private VariantTableHelper initVariantTableHelper(Integer studyId, String archiveTable, String analysisTable) {
+    private GenomeHelper initVariantTableHelper(Integer studyId) {
         Configuration conf = getConf();
-        VariantTableHelper.setStudyId(conf, studyId);
-        VariantTableHelper.setAnalysisTable(conf, analysisTable);
-        VariantTableHelper.setArchiveTable(conf, archiveTable);
-        variantTablehelper = new VariantTableHelper(conf, archiveTable, analysisTable);
-        return variantTablehelper;
+        GenomeHelper.setStudyId(conf, studyId);
+        VariantTableHelper.setVariantsTable(conf, getVariantsTable());
+        helper = new GenomeHelper(conf, studyId);
+        return helper;
     }
 
-    protected VariantTableHelper getHelper() {
-        return variantTablehelper;
+    protected GenomeHelper getHelper() {
+        return helper;
     }
 
-    private void configFromArgs(String[] args) {
-        int fixedSizeArgs = 4;
-
-        if (args.length < fixedSizeArgs || (args.length - fixedSizeArgs) % 2 != 0) {
-            System.err.println("Usage: " + getClass().getSimpleName()
-                    + " [generic options] <archive-table> <variants-table> <studyId> <fileIds> [<key> <value>]*");
-            System.err.println("Found " + Arrays.toString(args));
-            ToolRunner.printGenericCommandUsage(System.err);
-            throw new IllegalArgumentException("Wrong number of arguments!");
-        }
-
-        // Get first other args to avoid overwrite the fixed position args.
-        for (int i = fixedSizeArgs; i < args.length; i = i + 2) {
-            getConf().set(args[i], args[i + 1]);
-        }
-
-        getConf().set(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME, args[0]);
-        getConf().set(CONFIG_VARIANT_TABLE_NAME, args[1]);
-        getConf().set(VariantStorageEngine.Options.STUDY_ID.key(), args[2]);
-        if (args[3].equals(".") || args[3].isEmpty()) {
-            getConf().unset(VariantStorageEngine.Options.FILE_ID.key());
-            getConf().unset(VariantQueryParam.FILE.key());
-        } else {
-            getConf().setStrings(VariantStorageEngine.Options.FILE_ID.key(), args[3].split(","));
-            getConf().setStrings(VariantQueryParam.FILE.key(), args[3].split(","));
-        }
-
+    @Override
+    protected final String getUsage() {
+        return "Usage: " + getClass().getSimpleName() + " [generic options] <variants-table> [<key> <value>]*";
     }
 
     public int privateMain(String[] args) throws Exception {
@@ -382,21 +317,16 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
     }
 
 
-    public static String buildCommandLineArgs(String archiveTable, String variantsTable, int studyId, Collection<?> fileIds,
-                                              ObjectMap other) {
-        StringBuilder stringBuilder = new StringBuilder()
-//                .append(server).append(' ')
-                .append(archiveTable).append(' ')
-                .append(variantsTable).append(' ')
-                .append(studyId).append(' ');
+    public static String[] buildArgs(String archiveTable, String variantsTable, int studyId, Collection<?> fileIds, ObjectMap other) {
+        other.put(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME, archiveTable);
+        other.put(AbstractVariantsTableDriver.CONFIG_VARIANT_TABLE_NAME, variantsTable);
 
-        if (fileIds.isEmpty()) {
-            stringBuilder.append('.');
-        } else {
-            stringBuilder.append(fileIds.stream().map(Object::toString).collect(Collectors.joining(",")));
+        other.put(STUDY_ID, studyId);
+
+        if (fileIds != null && !fileIds.isEmpty()) {
+            other.put(FILE_ID, fileIds.stream().map(Object::toString).collect(Collectors.joining(",")));
         }
-        addOtherParams(other, stringBuilder);
-        return stringBuilder.toString();
+        return buildArgs(variantsTable, other);
     }
 
     public static void addOtherParams(ObjectMap other, StringBuilder stringBuilder) {
