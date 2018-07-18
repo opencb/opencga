@@ -57,7 +57,7 @@ import java.util.Map;
  <dynamicField name="popFreq_*" type="double" indexed="true" stored="true" multiValued="false"/>
  <dynamicField name="gt_*" type="string" indexed="true" stored="true" multiValued="false"/>
  <dynamicField name="filter_*" type="string" indexed="true" stored="true" multiValued="false"/>
- <dynamicField name="qual_*" type="int" indexed="true" stored="true" multiValued="false"/>
+ <dynamicField name="qual_*" type="double" indexed="true" stored="true" multiValued="false"/>
  <dynamicField name="fileInfo_*" type="string" indexed="false" stored="true" multiValued="false"/>
  <dynamicField name="sampleFormat_*" type="string" indexed="false" stored="true" multiValued="false"/>
  */
@@ -146,10 +146,10 @@ public class VariantSearchModel {
     private Map<String, String> gt;
 
     @Field("filter_*")
-    private Map<String, Integer> filter;
+    private Map<String, String> filter;
 
     @Field("qual_*")
-    private Map<String, Integer> qual;
+    private Map<String, Float> qual;
 
     @Field("fileInfo_*")
     private Map<String, String> fileInfo;
@@ -461,20 +461,20 @@ public class VariantSearchModel {
         return this;
     }
 
-    public Map<String, Integer> getFilter() {
+    public Map<String, String> getFilter() {
         return filter;
     }
 
-    public VariantSearchModel setFilter(Map<String, Integer> filter) {
+    public VariantSearchModel setFilter(Map<String, String> filter) {
         this.filter = filter;
         return this;
     }
 
-    public Map<String, Integer> getQual() {
+    public Map<String, Float> getQual() {
         return qual;
     }
 
-    public VariantSearchModel setQual(Map<String, Integer> qual) {
+    public VariantSearchModel setQual(Map<String, Float> qual) {
         this.qual = qual;
         return this;
     }
