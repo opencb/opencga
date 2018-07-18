@@ -55,9 +55,11 @@ import java.util.Map;
  <field name="traits" type="text_en" indexed="true" stored="true" multiValued="true"/>
  <dynamicField name="stats_*" type="double" indexed="true" stored="true" multiValued="false"/>
  <dynamicField name="popFreq_*" type="double" indexed="true" stored="true" multiValued="false"/>
- <dynamicField name="attr_s_*" type="string" indexed="true" stored="true" multiValued="false"/>
- <dynamicField name="attr_i_*" type="int" indexed="true" stored="true" multiValued="false"/>
- <dynamicField name="attr_d_*" type="double" indexed="true" stored="true" multiValued="false"/>
+ <dynamicField name="gt_*" type="string" indexed="true" stored="true" multiValued="false"/>
+ <dynamicField name="filter_*" type="string" indexed="true" stored="true" multiValued="false"/>
+ <dynamicField name="qual_*" type="int" indexed="true" stored="true" multiValued="false"/>
+ <dynamicField name="fileInfo_*" type="string" indexed="false" stored="true" multiValued="false"/>
+ <dynamicField name="sampleFormat_*" type="string" indexed="false" stored="true" multiValued="false"/>
  */
 
 public class VariantSearchModel {
@@ -140,14 +142,20 @@ public class VariantSearchModel {
     @Field("popFreq_*")
     private Map<String, Float> popFreq;
 
-    @Field("attr_s_*")
-    private Map<String, String> sAttrs;
+    @Field("gt_*")
+    private Map<String, String> gt;
 
-    @Field("attr_i_*")
-    private Map<String, Integer> iAttrs;
+    @Field("filter_*")
+    private Map<String, Integer> filter;
 
-    @Field("attr_d_*")
-    private Map<String, Double> dAttrs;
+    @Field("qual_*")
+    private Map<String, Integer> qual;
+
+    @Field("fileInfo_*")
+    private Map<String, String> fileInfo;
+
+    @Field("sampleFormat_*")
+    private Map<String, Integer> sampleFormat;
 
     public static final double MISSING_VALUE = -100.0;
 
@@ -165,14 +173,16 @@ public class VariantSearchModel {
         this.geneToSoAcc = new ArrayList<>();
         this.other = new ArrayList<>();
         this.popFreq = new HashMap<>();
-        this.sAttrs = new HashMap<>();
-        this.iAttrs = new HashMap<>();
-        this.dAttrs = new HashMap<>();
+        this.gt = new HashMap<>();
+        this.filter = new HashMap<>();
+        this.qual = new HashMap<>();
+        this.fileInfo = new HashMap<>();
+        this.sampleFormat = new HashMap<>();
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("VariantSearchModel{");
+        final StringBuffer sb = new StringBuffer("VariantSearchModel{");
         sb.append("id='").append(id).append('\'');
         sb.append(", variantId='").append(variantId).append('\'');
         sb.append(", chromosome='").append(chromosome).append('\'');
@@ -199,9 +209,11 @@ public class VariantSearchModel {
         sb.append(", other=").append(other);
         sb.append(", stats=").append(stats);
         sb.append(", popFreq=").append(popFreq);
-        sb.append(", sAttrs=").append(sAttrs);
-        sb.append(", iAttrs=").append(iAttrs);
-        sb.append(", dAttrs=").append(dAttrs);
+        sb.append(", gt=").append(gt);
+        sb.append(", filter=").append(filter);
+        sb.append(", qual=").append(qual);
+        sb.append(", fileInfo=").append(fileInfo);
+        sb.append(", sampleFormat=").append(sampleFormat);
         sb.append('}');
         return sb.toString();
     }
@@ -440,30 +452,48 @@ public class VariantSearchModel {
         return this;
     }
 
-    public Map<String, String> getsAttrs() {
-        return sAttrs;
+    public Map<String, String> getGt() {
+        return gt;
     }
 
-    public VariantSearchModel setsAttrs(Map<String, String> sAttrs) {
-        this.sAttrs = sAttrs;
+    public VariantSearchModel setGt(Map<String, String> gt) {
+        this.gt = gt;
         return this;
     }
 
-    public Map<String, Integer> getiAttrs() {
-        return iAttrs;
+    public Map<String, Integer> getFilter() {
+        return filter;
     }
 
-    public VariantSearchModel setiAttrs(Map<String, Integer> iAttrs) {
-        this.iAttrs = iAttrs;
+    public VariantSearchModel setFilter(Map<String, Integer> filter) {
+        this.filter = filter;
         return this;
     }
 
-    public Map<String, Double> getdAttrs() {
-        return dAttrs;
+    public Map<String, Integer> getQual() {
+        return qual;
     }
 
-    public VariantSearchModel setdAttrs(Map<String, Double> dAttrs) {
-        this.dAttrs = dAttrs;
+    public VariantSearchModel setQual(Map<String, Integer> qual) {
+        this.qual = qual;
+        return this;
+    }
+
+    public Map<String, String> getFileInfo() {
+        return fileInfo;
+    }
+
+    public VariantSearchModel setFileInfo(Map<String, String> fileInfo) {
+        this.fileInfo = fileInfo;
+        return this;
+    }
+
+    public Map<String, Integer> getSampleFormat() {
+        return sampleFormat;
+    }
+
+    public VariantSearchModel setSampleFormat(Map<String, Integer> sampleFormat) {
+        this.sampleFormat = sampleFormat;
         return this;
     }
 }
