@@ -455,6 +455,7 @@ public class VariantSqlQueryParser {
      * {@link VariantQueryParam#ANNOT_PROTEIN_KEYWORD}
      * {@link VariantQueryParam#ANNOT_DRUG}
      * {@link VariantQueryParam#ANNOT_FUNCTIONAL_SCORE}
+     * {@link VariantQueryParam#ANNOT_CLINICAL_SIGNIFICANCE}
      *
      * Stats filters:
      * {@link VariantQueryParam#STATS_MAF}
@@ -980,6 +981,8 @@ public class VariantSqlQueryParser {
 
         addQueryFilter(query, ANNOT_FUNCTIONAL_SCORE,
                 (keyOpValue, rawValue) -> getFunctionalScoreColumn(keyOpValue[0], rawValue), null, filters);
+
+        addQueryFilter(query, ANNOT_CLINICAL_SIGNIFICANCE, VariantColumn.CLINICAL_SIGNIFICANCE, filters);
     }
 
     /**

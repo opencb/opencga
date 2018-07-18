@@ -16,11 +16,13 @@
 
 package org.opencb.opencga.storage.hadoop.variant.converters.annotation;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.client.Put;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.tools.Converter;
+import org.opencb.opencga.storage.core.variant.annotation.converters.VariantTraitAssociationToEvidenceEntryConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
@@ -28,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.VariantColumn.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory.generateVariantRowKey;
@@ -40,8 +43,11 @@ import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPho
 public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverter
         implements Converter<VariantAnnotation, Map<PhoenixHelper.Column, ?>> {
 
+    private VariantTraitAssociationToEvidenceEntryConverter evidenceEntryConverter;
+
     public VariantAnnotationToPhoenixConverter(byte[] columnFamily) {
         super(columnFamily);
+        evidenceEntryConverter = new VariantTraitAssociationToEvidenceEntryConverter();
     }
 
     private final Logger logger = LoggerFactory.getLogger(VariantAnnotationToPhoenixConverter.class);
@@ -68,6 +74,7 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
         Set<String> drugs = new HashSet<>();
         Set<String> proteinKeywords = new HashSet<>();
         // Contains all the xrefs, and the id, the geneNames and transcripts
+        Set<ClinicalSignificance> clinicalSignificanceSet = new HashSet<>();
         Set<String> xrefs = new HashSet<>();
 
         addNotNull(xrefs, variantAnnotation.getId());
@@ -119,6 +126,23 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
             }
         }
 
+        // If there are VariantTraitAssociation, and there are none TraitAssociations (EvidenceEntry), convert
+        if (variantAnnotation.getVariantTraitAssociation() != null && CollectionUtils.isEmpty(variantAnnotation.getTraitAssociation())) {
+            List<EvidenceEntry> evidenceEntries = evidenceEntryConverter.convert(variantAnnotation.getVariantTraitAssociation());
+            variantAnnotation.setTraitAssociation(evidenceEntries);
+        }
+
+        if (CollectionUtils.isNotEmpty(variantAnnotation.getTraitAssociation())) {
+            for (EvidenceEntry evidenceEntry : variantAnnotation.getTraitAssociation()) {
+                if (evidenceEntry.getVariantClassification() != null) {
+                    ClinicalSignificance clinicalSignificance = evidenceEntry.getVariantClassification().getClinicalSignificance();
+                    if (clinicalSignificance != null) {
+                        clinicalSignificanceSet.add(clinicalSignificance);
+                    }
+                }
+            }
+        }
+
         xrefs.addAll(genes);
         xrefs.addAll(transcripts);
         if (variantAnnotation.getXrefs() != null) {
@@ -160,6 +184,7 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
         map.put(GENE_TRAITS_NAME, geneTraitName);
         map.put(DRUG, drugs);
         map.put(XREFS, xrefs);
+        map.put(CLINICAL_SIGNIFICANCE, clinicalSignificanceSet.stream().map(ClinicalSignificance::toString).collect(Collectors.toList()));
 
         if (variantAnnotation.getConservation() != null) {
             for (Score score : variantAnnotation.getConservation()) {
