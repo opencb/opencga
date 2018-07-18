@@ -155,7 +155,7 @@ public class VariantSearchModel {
     private Map<String, String> fileInfo;
 
     @Field("sampleFormat_*")
-    private Map<String, Integer> sampleFormat;
+    private Map<String, String> sampleFormat;
 
     public static final double MISSING_VALUE = -100.0;
 
@@ -488,11 +488,11 @@ public class VariantSearchModel {
         return this;
     }
 
-    public Map<String, Integer> getSampleFormat() {
+    public Map<String, String> getSampleFormat() {
         return sampleFormat;
     }
 
-    public VariantSearchModel setSampleFormat(Map<String, Integer> sampleFormat) {
+    public VariantSearchModel setSampleFormat(Map<String, String> sampleFormat) {
         this.sampleFormat = sampleFormat;
         return this;
     }
