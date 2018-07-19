@@ -202,8 +202,12 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         // Xrefs
         List<String> hgvs = new ArrayList<>();
         List<Xref> xrefs = new ArrayList<>();
-        if (variantSearchModel.getXrefs() != null) {
-            for (String xref : variantSearchModel.getXrefs()) {
+        if (ListUtils.isNotEmpty(variantSearchModel.getXrefs())) {
+            for (String xref: variantSearchModel.getXrefs()) {
+                // Sanity check
+                if (xref == null) {
+                    continue;
+                }
                 if (xref.startsWith("rs")) {
                     xrefs.add(new Xref(xref, "dbSNP"));
                     continue;
