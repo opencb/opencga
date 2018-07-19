@@ -33,6 +33,12 @@ public class CatalogSolrQueryParser {
         queryParameters.add("size");
         queryParameters.add("samples");
 
+        queryParameters.add("sex");
+        queryParameters.add("ethnicity");
+        queryParameters.add("population");
+        queryParameters.add("source");
+        queryParameters.add("somatic");
+
     }
 
     public CatalogSolrQueryParser() {
