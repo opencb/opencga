@@ -22,7 +22,7 @@ public class CatalogSolrQueryParser {
 
     static {
         // common
-        queryParameters.add("studyId");
+        queryParameters.add("study");
         queryParameters.add("type");
         queryParameters.add("status");
         queryParameters.add("creationDate");
