@@ -68,11 +68,10 @@ import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
 import static org.opencb.commons.datastore.core.QueryOptions.empty;
 import static org.opencb.opencga.catalog.db.api.StudyDBAdaptor.QueryParams.FQN;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.addDefaultLimit;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.getDefaultLimit;
 
 public class VariantStorageManager extends StorageManager {
-
-    public static final int LIMIT_DEFAULT = 1000;
-    public static final int LIMIT_MAX = 5000;
 
     private final VariantCatalogQueryUtils catalogUtils;
 
@@ -561,25 +560,6 @@ public class VariantStorageManager extends StorageManager {
     }
 
     // Some aux methods
-
-    private int addDefaultLimit(QueryOptions queryOptions) {
-        return addDefaultLimit(queryOptions, LIMIT_MAX, LIMIT_DEFAULT);
-    }
-
-    private int addDefaultLimit(QueryOptions queryOptions, int limitMax, int limitDefault) {
-        // Add default limit
-        int limit = getDefaultLimit(queryOptions.getInt(QueryOptions.LIMIT, -1), limitMax, limitDefault);
-        queryOptions.put(QueryOptions.LIMIT,  limit);
-        return limit;
-    }
-
-    private int getDefaultLimit(int limit, int limitMax, int limitDefault) {
-        if (limit > limitMax) {
-            logger.info("Unable to return more than {} variants. Change limit from {} to {}", limitMax, limit, limitMax);
-        }
-        limit = (limit > 0) ? Math.min(limit, limitMax) : limitDefault;
-        return limit;
-    }
 
     private String[] getRegions(Query query) {
         String[] regions;
