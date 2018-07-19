@@ -74,11 +74,10 @@ public class VariantQueryCommandUtils {
          * Annotation parameters
          */
         addParam(query, ANNOT_CONSEQUENCE_TYPE, options.consequenceType);
-        addParam(query, ANNOT_POPULATION_ALTERNATE_FREQUENCY, options.populationFreqs);
+        addParam(query, ANNOT_POPULATION_ALTERNATE_FREQUENCY, options.populationFreqAlt);
         addParam(query, ANNOT_CONSERVATION, options.conservation);
         addParam(query, ANNOT_FUNCTIONAL_SCORE, options.functionalScore);
         addParam(query, ANNOT_PROTEIN_SUBSTITUTION, options.proteinSubstitution);
-        addParam(query, ANNOT_HPO, options.hpo);
 
         /*
          * Stats parameters
@@ -112,14 +111,14 @@ public class VariantQueryCommandUtils {
 
 
         addParam(query, STUDY, studiesFilter);
-        addParam(query, INCLUDE_STUDY, queryVariantsOptions.returnStudy);
+        addParam(query, INCLUDE_STUDY, queryVariantsOptions.includeStudy);
         addParam(query, FILE, queryVariantsOptions.file);
-        addParam(query, INCLUDE_FILE, queryVariantsOptions.returnFile);
+        addParam(query, INCLUDE_FILE, queryVariantsOptions.includeFile);
         addParam(query, FILTER, queryVariantsOptions.filter);
         addParam(query, QUAL, queryVariantsOptions.qual);
         addParam(query, GENOTYPE, queryVariantsOptions.sampleGenotype);
         addParam(query, SAMPLE, queryVariantsOptions.samples);
-        addParam(query, INCLUDE_SAMPLE, queryVariantsOptions.returnSample);
+        addParam(query, INCLUDE_SAMPLE, queryVariantsOptions.includeSample);
         addParam(query, INCLUDE_FORMAT, queryVariantsOptions.includeFormat);
         addParam(query, INCLUDE_GENOTYPE, queryVariantsOptions.includeGenotype);
         addParam(query, UNKNOWN_GENOTYPE, queryVariantsOptions.unknownGenotype);
@@ -129,7 +128,8 @@ public class VariantQueryCommandUtils {
          * Annotation parameters
          */
         addParam(query, ANNOT_BIOTYPE, queryVariantsOptions.geneBiotype);
-        addParam(query, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY, queryVariantsOptions.populationMaf);
+        addParam(query, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY, queryVariantsOptions.populationFreqMaf);
+        addParam(query, ANNOT_POPULATION_REFERENCE_FREQUENCY, queryVariantsOptions.populationFreqRef);
         addParam(query, ANNOT_TRANSCRIPTION_FLAG, queryVariantsOptions.flags);
 //        addParam(query, ANNOT_GENE_TRAITS, queryVariantsOptions.geneTrait);
         addParam(query, ANNOT_GENE_TRAIT_ID, queryVariantsOptions.geneTraitId);
@@ -137,40 +137,9 @@ public class VariantQueryCommandUtils {
         addParam(query, ANNOT_GO, queryVariantsOptions.go);
         addParam(query, ANNOT_PROTEIN_KEYWORD, queryVariantsOptions.proteinKeywords);
         addParam(query, ANNOT_DRUG, queryVariantsOptions.drugs);
-        addParam(query, ANNOT_COSMIC, queryVariantsOptions.cosmic);
-        addParam(query, ANNOT_CLINVAR, queryVariantsOptions.clinvar);
-        addParam(query, ANNOT_XREF, queryVariantsOptions.annotXref);
-
-        /*
-         * Stats parameters
-         */
-        if (queryVariantsOptions.stats != null && !queryVariantsOptions.stats.isEmpty()) {
-            Set<String> acceptedStatKeys = new HashSet<>(Arrays.asList(STATS_MAF.key(),
-                    STATS_MGF.key(),
-                    MISSING_ALLELES.key(),
-                    MISSING_GENOTYPES.key()));
-
-            for (String stat : queryVariantsOptions.stats.split(",")) {
-                int index = stat.indexOf("<");
-                index = index >= 0 ? index : stat.indexOf("!");
-                index = index >= 0 ? index : stat.indexOf("~");
-                index = index >= 0 ? index : stat.indexOf("<");
-                index = index >= 0 ? index : stat.indexOf(">");
-                index = index >= 0 ? index : stat.indexOf("=");
-                if (index < 0) {
-                    throw new UnsupportedOperationException("Unknown stat filter operation: " + stat);
-                }
-                String name = stat.substring(0, index);
-                String cond = stat.substring(index);
-
-                if (acceptedStatKeys.contains(name)) {
-                    query.put(name, cond);
-                } else {
-                    throw new UnsupportedOperationException("Unknown stat filter name: " + name);
-                }
-                logger.info("Parsed stat filter: {} {}", name, cond);
-            }
-        }
+        addParam(query, ANNOT_TRAIT, queryVariantsOptions.trait);
+        addParam(query, ANNOT_XREF, queryVariantsOptions.xref);
+        addParam(query, ANNOT_CLINICAL_SIGNIFICANCE, queryVariantsOptions.clinicalSignificance);
 
         addParam(query, STATS_MAF, queryVariantsOptions.maf);
         addParam(query, STATS_MGF, queryVariantsOptions.mgf);

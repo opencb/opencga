@@ -131,7 +131,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         VariantCommandOptions.VariantQueryCommandOptions queryCommandOptions = variantCommandOptions.queryVariantCommandOptions;
 
         queryCommandOptions.study = resolveStudy(queryCommandOptions.study);
-        queryCommandOptions.genericVariantQueryOptions.returnStudy = resolveStudy(queryCommandOptions.genericVariantQueryOptions.returnStudy);
+        queryCommandOptions.genericVariantQueryOptions.includeStudy = resolveStudy(queryCommandOptions.genericVariantQueryOptions.includeStudy);
 
         List<String> studies = new ArrayList<>();
         if (cliSession != null && cliSession.getProjectsAndStudies() != null) {

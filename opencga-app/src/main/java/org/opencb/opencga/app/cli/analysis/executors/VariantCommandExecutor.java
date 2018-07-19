@@ -176,7 +176,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         queryCliOptions.commonOptions.outputFormat = exportCliOptions.commonOptions.outputFormat.toLowerCase().replace("tsv", "stats");
         queryCliOptions.project = exportCliOptions.project;
         queryCliOptions.study = exportCliOptions.study;
-        queryCliOptions.genericVariantQueryOptions.returnStudy = exportCliOptions.study;
+        queryCliOptions.genericVariantQueryOptions.includeStudy = exportCliOptions.study;
         queryCliOptions.numericOptions.limit = exportCliOptions.numericOptions.limit;
 //        queryCliOptions.sort = true;
         queryCliOptions.numericOptions.skip = exportCliOptions.numericOptions.skip;
@@ -185,7 +185,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         queryCliOptions.output = exportCliOptions.output;
         queryCliOptions.genericVariantQueryOptions.gene = exportCliOptions.gene;
         queryCliOptions.numericOptions.count = exportCliOptions.numericOptions.count;
-        queryCliOptions.genericVariantQueryOptions.returnSample = VariantQueryUtils.NONE;
+        queryCliOptions.genericVariantQueryOptions.includeSample = VariantQueryUtils.NONE;
         queryCliOptions.dataModelOptions.include = String.join(",",
                 VariantField.CHROMOSOME.fieldName(),
                 VariantField.START.fieldName(),

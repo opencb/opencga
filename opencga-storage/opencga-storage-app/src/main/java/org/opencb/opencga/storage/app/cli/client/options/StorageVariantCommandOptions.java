@@ -22,7 +22,6 @@ import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.opencga.storage.app.cli.GeneralCliOptions;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
@@ -33,6 +32,7 @@ import java.util.Map;
 
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationCommandOptions.ANNOTATION_ID_DESCRIPTION;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationCommandOptions.ANNOTATION_ID_PARAM;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
 /**
  * Created by imedina on 22/01/17.
@@ -191,7 +191,7 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"-s", "--study"}, description = "Full name of the study where the file is classified", arity = 1, required = true)
         public String study;
 
-        @Parameter(names = {"-d", "--database"}, description = "DataBase name to load the data", required = false, arity = 1)
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name to load the data", arity = 1)
         public String dbName;
 
     }
@@ -203,44 +203,49 @@ public class StorageVariantCommandOptions {
      */
     public static class BasicVariantQueryOptions {
 
-        @Parameter(names = {"--id"}, description = VariantQueryParam.ID_DESCR, variableArity = true)
+        @Parameter(names = {"--id"}, description = ID_DESCR, variableArity = true)
         public List<String> id;
 
-        @Parameter(names = {"-r", "--region"}, description = VariantQueryParam.REGION_DESCR)
+        @Parameter(names = {"-r", "--region"}, description = REGION_DESCR)
         public String region;
 
         @Parameter(names = {"--region-file"}, description = "GFF File with regions")
         public String regionFile;
 
-        @Parameter(names = {"-g", "--gene"}, description = VariantQueryParam.GENE_DESCR)
+        @Parameter(names = {"-g", "--gene"}, description = GENE_DESCR)
         public String gene;
 
-        @Parameter(names = {"-t", "--type"}, description = "Whether the variant is a: SNV, INDEL or SV")
+        @Parameter(names = {"-t", "--type"}, description = TYPE_DESCR)
         public String type;
 
-        @Parameter(names = {"--ct", "--consequence-type"}, description = "Consequence type SO term list. example: SO:0000045,SO:0000046",
-                arity = 1)
+        @Parameter(names = {"--ct", "--consequence-type"}, description = ANNOT_CONSEQUENCE_TYPE_DESCR)
         public String consequenceType;
 
-        @Parameter(names = {"-c", "--conservation"}, description = "Conservation score: {conservation_score}[<|>|<=|>=]{number} example: " +
-                "phastCons>0.5,phylop<0.1", arity = 1)
+        @Parameter(names = {"-c", "--conservation"}, description = ANNOT_CONSERVATION_DESCR)
         public String conservation;
 
-        @Parameter(names = {"--ps", "--protein-substitution"}, description = "Filter by Sift or/and Polyphen scores, e.g. \"sift<0.2;polyphen<0.4\"", arity = 1)
+        @Parameter(names = {"--ps", "--protein-substitution"}, description = ANNOT_PROTEIN_SUBSTITUTION_DESCR)
         public String proteinSubstitution;
 
-        @Parameter(names = {"--cadd"}, description = "Functional score: {functional_score}[<|>|<=|>=]{number} "
-                + "e.g. cadd_scaled>5.2,cadd_raw<=0.3", arity = 1)
+        @Parameter(names = {"--fs", "--functional-score"}, description = ANNOT_FUNCTIONAL_SCORE_DESCR)
         public String functionalScore;
 
-        @Parameter(names = {"--hpo"}, description = "List of HPO terms. e.g. \"HP:0000545,HP:0002812\"", arity = 1)
-        public String hpo;
+        @Deprecated
+        @Parameter(names = {"--cadd"}, description = "[DEPRECATED] use --fs or --functional-score")
+        void setDeprecatedFunctionalScore(String cadd) {
+            this.functionalScore = cadd;
+        }
 
-        @Parameter(names = {"--apf", "--alt-population-frequency"}, description = "Alternate Population Frequency: " +
-                "{study}:{population}[<|>|<=|>=]{number}", arity = 1)
-        public String populationFreqs;
+        @Deprecated
+        @Parameter(names = {"--apf", "--alt-population-frequency"}, description = "[DEPRECATED] use --pf or --population-frequency-alt")
+        void setDeprecatedPopulationFreqAlternate(String populationFreqAlt) {
+            this.populationFreqAlt = populationFreqAlt;
+        }
 
-        @Parameter(names = {"--maf", "--stats-maf"}, description = "Take a <STUDY>:<COHORT> and filter by Minor Allele Frequency, example: 1000g:all>0.4")
+        @Parameter(names = {"--pf", "--population-frequency-alt"}, description = ANNOT_POPULATION_ALTERNATE_FREQUENCY_DESCR)
+        public String populationFreqAlt;
+
+        @Parameter(names = {"--maf", "--stats-maf"}, description = STATS_MAF_DESCR)
         public String maf;
     }
 
@@ -258,129 +263,182 @@ public class StorageVariantCommandOptions {
 //        @Parameter(names = {"-s", "--study"}, description = "A comma separated list of studies to be used as filter")
 //        public String study;
 
-        @Parameter(names = {"--gt", "--genotype"}, description = VariantQueryParam.GENOTYPE_DESCR, arity = 1)
+        @Parameter(names = {"--gt", "--genotype"}, description = GENOTYPE_DESCR)
         public String sampleGenotype;
 
-        @Parameter(names = {"--sample"}, description = VariantQueryParam.SAMPLE_DESCR, arity = 1)
+        @Parameter(names = {"--sample"}, description = SAMPLE_DESCR)
         public String samples;
 
-        @Parameter(names = {"-f", "--file"}, description = "A comma separated list of files to be used as filter", arity = 1)
+        @Parameter(names = {"-f", "--file"}, description = FILE_DESCR)
         public String file;
 
-        @Parameter(names = {"--filter"}, description = VariantQueryParam.FILTER_DESCR, arity = 1)
+        @Parameter(names = {"--filter"}, description = FILTER_DESCR)
         public String filter;
 
-        @Parameter(names = {"--qual"}, description = VariantQueryParam.QUAL_DESCR, arity = 1)
+        @Parameter(names = {"--qual"}, description = QUAL_DESCR)
         public String qual;
 
-        @Parameter(names = {"--biotype"}, description = VariantQueryParam.ANNOT_BIOTYPE_DESCR, arity = 1)
+        @Parameter(names = {"--biotype"}, description = ANNOT_BIOTYPE_DESCR)
         public String geneBiotype;
 
-        @Parameter(names = {"--pmaf", "--population-maf"}, description = "Population minor allele frequency: " +
-                "{study}:{population}[<|>|<=|>=]{number}", arity = 1)
-        public String populationMaf;
+        @Parameter(names = {"--population-maf"}, description = "[DEPRECATED] use --pmaf or --population-frequency-maf")
+        void setDeprecatedPopulationFreqMaf(String populationFreqMaf) {
+            this.populationFreqMaf = populationFreqMaf;
+        }
 
-        @Parameter(names = {"--transcript-flag"}, description = "List of transcript annotation flags. e.g. CCDS,basic,cds_end_NF, mRNA_end_NF,cds_start_NF,mRNA_start_NF,seleno", arity = 1)
+        @Parameter(names = {"--pmaf", "--population-frequency-maf"}, description = ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_DESCR)
+        public String populationFreqMaf;
+
+        @Parameter(names = {"--population-frequency-ref"}, description = ANNOT_POPULATION_REFERENCE_FREQUENCY_DESCR)
+        public String populationFreqRef;
+
+        @Parameter(names = {"--transcript-flag"}, description = ANNOT_TRANSCRIPTION_FLAG_DESCR)
         public String flags;
 
-        // TODO Jacobo please implement this ASAP
-        @Parameter(names = {"--gene-trait"}, description = "[PENDING] List of gene trait association IDs or names. e.g. \"umls:C0007222,Cardiovascular Diseases\"", arity = 1)
-        public String geneTrait;
-
-        @Deprecated
-        @Parameter(names = {"--gene-trait-id"}, description = "[DEPRECATED] List of gene trait association names. e.g. \"Cardiovascular Diseases\"", arity = 1)
+        @Parameter(names = {"--gene-trait-id"}, description = ANNOT_GENE_TRAIT_ID_DESCR)
         public String geneTraitId;
 
         @Deprecated
-        @Parameter(names = {"--gene-trait-name"}, description = "[DEPRECATED] List of gene trait association id. e.g. \"umls:C0007222,OMIM:269600\"", arity = 1)
+        @Parameter(names = {"--gene-trait-name"}, description = "[DEPRECATED] use --trait")
         public String geneTraitName;
 
-        @Parameter(names = {"--go", "--gene-ontology"}, description = "List of Gene Ontology (GO) accessions or names. e.g. \"GO:0002020\"", arity = 1)
+        @Parameter(names = {"--go", "--gene-ontology"}, description = ANNOT_GO_DESCR)
         public String go;
 
-//        @Parameter(names = {"--expression", "--tissue"}, description = "List of tissues of interest. e.g. \"tongue\"", arity = 1)
-//        public String expression;
+        @Parameter(names = {"--expression"}, description = ANNOT_EXPRESSION_DESCR)
+        public String expression;
 
-        @Parameter(names = {"--protein-keywords"}, description = "List of Uniprot protein keywords", arity = 1)
+        @Parameter(names = {"--protein-keywords"}, description = ANNOT_PROTEIN_KEYWORD_DESCR)
         public String proteinKeywords;
 
-        @Parameter(names = {"--drug"}, description = "List of drug names", arity = 1)
+        @Parameter(names = {"--drug"}, description = ANNOT_DRUG_DESCR)
         public String drugs;
 
         @Deprecated
-        @Parameter(names = {"--gwas"}, description = "[DEPRECATED]", arity = 1, hidden = true)
-        public String gwas;
-
-        @Parameter(names = {"--cosmic"}, description = VariantQueryParam.ANNOT_COSMIC_DESCR, arity = 1)
-        public String cosmic;
-
-        @Parameter(names = {"--clinvar"}, description = VariantQueryParam.ANNOT_CLINVAR_DESCR, arity = 1)
-        public String clinvar;
+        @Parameter(names = {"--cosmic"}, description = "[DEPRECATED] use --xref")
+        void setCosmic(String cosmic) {
+            setXref(cosmic);
+        }
 
         @Deprecated
-        @Parameter(names = {"--stats"}, description = "[DEPRECATED]", hidden = true)
-        public String stats;
+        @Parameter(names = {"--clinvar"}, description = "[DEPRECATED] use --xref")
+        void setClinvar(String clinvar) {
+            setXref(clinvar);
+        }
 
-        @Parameter(names = {"--mgf", "--stats-mgf"}, description = "Take a <STUDY>:<COHORT> and filter by Minor Genotype Frequency, example: 1000g:all<=0.4")
+        @Parameter(names = {"--trait"}, description = ANNOT_TRAIT_DESCR)
+        void setTrait(String trait) {
+            this.trait = this.trait == null ? trait : this.trait + ',' + trait;
+        }
+
+        public String trait;
+
+        @Parameter(names = {"--mgf", "--stats-mgf"}, description = STATS_MGF_DESCR)
         public String mgf;
 
-        @Parameter(names = {"--stats-missing-allele"}, description = "Take a <STUDY>:<COHORT> and filter by number of missing alleles, example: 1000g:all=5")
+        @Parameter(names = {"--stats-missing-allele"}, description = MISSING_ALLELES_DESCR)
         public String missingAlleleCount;
 
-        @Parameter(names = {"--stats-missing-genotype"}, description = "Take a <STUDY>:<COHORT> and filter by number of missing genotypes, " +
-                "example: 1000g:all!=0")
+        @Parameter(names = {"--stats-missing-genotype"}, description = MISSING_GENOTYPES_DESCR)
         public String missingGenotypeCount;
 
+//        @Parameter(names = {"--dominant"}, description = "[PENDING] Take a family in the form of: FATHER,MOTHER,CHILD and specifies if is" +
+//                " affected or not to filter by dominant segregation, example: 1000g:NA001:aff,1000g:NA002:unaff,1000g:NA003:aff",
+//                required = false)
+//        public String dominant;
+//
+//        @Parameter(names = {"--recessive"}, description = "[PENDING] Take a family in the form of: FATHER,MOTHER,CHILD and specifies if " +
+//                "is affected or not to filter by recessive segregation, example: 1000g:NA001:aff,1000g:NA002:unaff,1000g:NA003:aff",
+//                required = false)
+//        public String recessive;
+//
+//        @Parameter(names = {"--ch", "--compound-heterozygous"}, description = "[PENDING] Take a family in the form of: FATHER,MOTHER," +
+//                "CHILD and specifies if is affected or not to filter by compound heterozygous, example: 1000g:NA001:aff," +
+//                "1000g:NA002:unaff,1000g:NA003:aff")
+//        public String compoundHeterozygous;
 
-        @Parameter(names = {"--dominant"}, description = "[PENDING] Take a family in the form of: FATHER,MOTHER,CHILD and specifies if is" +
-                " affected or not to filter by dominant segregation, example: 1000g:NA001:aff,1000g:NA002:unaff,1000g:NA003:aff",
-                required = false)
-        public String dominant;
 
-        @Parameter(names = {"--recessive"}, description = "[PENDING] Take a family in the form of: FATHER,MOTHER,CHILD and specifies if " +
-                "is affected or not to filter by recessive segregation, example: 1000g:NA001:aff,1000g:NA002:unaff,1000g:NA003:aff",
-                required = false)
-        public String recessive;
+        @Parameter(names = {"--include-study"}, description = INCLUDE_STUDY_DESCR)
+        public String includeStudy;
 
-        @Parameter(names = {"--ch", "--compound-heterozygous"}, description = "[PENDING] Take a family in the form of: FATHER,MOTHER," +
-                "CHILD and specifies if is affected or not to filter by compound heterozygous, example: 1000g:NA001:aff," +
-                "1000g:NA002:unaff,1000g:NA003:aff")
-        public String compoundHeterozygous;
+        @Deprecated
+        @Parameter(names = {"--output-study"}, description = "[DEPRECATED] use --include-study")
+        void setOutputStudy(String outputStudy) {
+            includeStudy = outputStudy;
+        }
 
+        @Parameter(names = {"--include-file"}, description = INCLUDE_FILE_DESCR)
+        public String includeFile;
 
-        @Parameter(names = {"--output-study"}, description = "A comma separated list of studies to be returned")
-        public String returnStudy;
+        @Deprecated
+        @Parameter(names = {"--output-file"}, description = "[DEPRECATED] use --include-file")
+        void setOutputFile(String outputFile) {
+            includeFile = outputFile;
+        }
 
-        @Parameter(names = {"--output-file"}, description = "A comma separated list of files from the SAME study to be returned")
-        public String returnFile;
+        @Parameter(names = {"--include-sample"}, description = INCLUDE_SAMPLE_DESCR)
+        public String includeSample;
 
-        @Parameter(names = {"--include-format"}, description = VariantQueryParam.INCLUDE_FORMAT_DESCR)
+        @Deprecated
+        @Parameter(names = {"--output-sample"}, description = "[DEPRECATED] use --include-sample")
+        void setOutputSample(String outputSample) {
+            includeSample = outputSample;
+        }
+
+        @Parameter(names = {"--include-format"}, description = INCLUDE_FORMAT_DESCR)
         public String includeFormat;
 
-        @Parameter(names = {"--include-genotype"}, description = VariantQueryParam.INCLUDE_GENOTYPE_DESCR)
+        @Parameter(names = {"--include-genotype"}, description = INCLUDE_GENOTYPE_DESCR)
         public boolean includeGenotype;
 
-        @Parameter(names = {"--output-sample"}, description = "A comma separated list of samples from the SAME study to be returned")
-        public String returnSample;
-
         @Parameter(names = {"--annotations", "--output-vcf-info"}, description = "Set variant annotation to return in the INFO column. " +
-                "Accepted values include 'all', 'default' aor a comma-separated list such as 'gene,biotype,consequenceType'", arity = 1)
+                "Accepted values include 'all', 'default' or a comma-separated list such as 'gene,biotype,consequenceType'", arity = 1)
         public String annotations;
 
-        @Parameter(names = {"--output-unknown-genotype"}, description = "Returned genotype for unknown genotypes. Common values: [0/0, 0|0, ./.]")
+        @Deprecated
+        @Parameter(names = {"--output-unknown-genotype"}, description = "[DEPRECATED] use --unknown-genotype")
+        void setOutputUnknownGenotype(String outputUnknownGenotype) {
+            this.unknownGenotype = outputUnknownGenotype;
+        }
+
+        @Parameter(names = {"--unknown-genotype"}, description = UNKNOWN_GENOTYPE_DESCR)
         public String unknownGenotype = "./.";
 
-        @Parameter(names = {"--output-histogram"}, description = "Calculate histogram. Requires --region.")
+        @Deprecated
+        @Parameter(names = {"--output-histogram"}, description = "[DEPRECATED] use --histogram")
+        void setOutputHistogram(boolean histogram) {
+            this.histogram = histogram;
+        }
+
+        @Parameter(names = {"--histogram"}, description = "Calculate histogram. Requires --region.")
         public boolean histogram;
 
         @Parameter(names = {"--histogram-interval"}, description = "Histogram interval size. Default:2000", arity = 1)
         public int interval;
 
         @Deprecated
-        @Parameter(names = {"--annot-xref"}, description = "[DEPRECATED] XRef", arity = 1)
-        public String annotXref;
+        @Parameter(names = {"--hpo"}, description = "[DEPRECATED] use --trait", arity = 1)
+        void setHpo(String hpo) {
+            setTrait(hpo);
+        }
 
-        @Parameter(names = {"--sample-metadata"}, description = "Returns the samples metadata group by study. Sample names will appear in the same order as their corresponding genotypes.")
+        @Deprecated
+        @Parameter(names = {"--annot-xref"}, description = "[DEPRECATED] use --xref")
+        void setAnnotXref(String annotXref) {
+            setXref(annotXref);
+        }
+
+        @Parameter(names = {"--xref"}, description = ANNOT_XREF_DESCR)
+        void setXref(String xref) {
+            this.xref = this.xref == null ? xref : this.xref + ',' + xref;
+        }
+
+        public String xref;
+
+        @Parameter(names = {"--clinical-significance"}, description = ANNOT_CLINICAL_SIGNIFICANCE_DESCR)
+        public String clinicalSignificance;
+
+        @Parameter(names = {"--sample-metadata"}, description = SAMPLE_METADATA_DESCR)
         public boolean samplesMetadata;
 
         @Parameter(names = {"--summary"}, description = "Fast fetch of main variant parameters")
@@ -399,7 +457,7 @@ public class StorageVariantCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.QueryCommandOptions commonQueryOptions = queryCommandOptions;
 
-        @Parameter(names = {"-s", "--study"}, description = "A comma separated list of studies to be used as filter")
+        @Parameter(names = {"-s", "--study"}, description = STUDY_DESCR)
         public String study;
 
 //        @Parameter(names = {"-o", "--output"}, description = "Output file. [STDOUT]", arity = 1)
@@ -546,10 +604,10 @@ public class StorageVariantCommandOptions {
         @Parameter(names = ANNOTATION_ID_PARAM, description = ANNOTATION_ID_DESCRIPTION)
         public String annotationId = VariantAnnotationManager.CURRENT;
 
-        @Parameter(names = {"--id"}, description = VariantQueryParam.ID_DESCR, variableArity = true)
+        @Parameter(names = {"--id"}, description = ID_DESCR, variableArity = true)
         public List<String> id;
 
-        @Parameter(names = {"-r", "--region"}, description = VariantQueryParam.REGION_DESCR)
+        @Parameter(names = {"-r", "--region"}, description = REGION_DESCR)
         public String region;
 
     }
@@ -566,10 +624,10 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = true, arity = 1)
         public String dbName;
 
-        @Parameter(names = {"--skip"}, description = "Skip some number of elements.", required = false, arity = 1)
+        @Parameter(names = {"--skip"}, description = "Skip some number of elements.", arity = 1)
         public int skip;
 
-        @Parameter(names = {"--limit"}, description = "Limit the number of returned elements.", required = false, arity = 1)
+        @Parameter(names = {"--limit"}, description = "Limit the number of returned elements.", arity = 1)
         public int limit;
     }
 
