@@ -380,6 +380,31 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         return getDBAdaptor().getAnnotation(name, query, options);
     }
 
+    public QueryResult<ProjectMetadata.VariantAnnotationMetadata> getAnnotationMetadata(String name) throws StorageEngineException {
+        QueryResult<ProjectMetadata> queryResult = getStudyConfigurationManager().getProjectMetadata();
+        ProjectMetadata.VariantAnnotationSets annotation = queryResult.first().getAnnotation();
+        List<ProjectMetadata.VariantAnnotationMetadata> list;
+        if (StringUtils.isEmpty(name) || VariantQueryUtils.ALL.equals(name)) {
+            list = new ArrayList<>(annotation.getSaved().size() + 1);
+            if (annotation.getCurrent() != null) {
+                list.add(annotation.getCurrent());
+            }
+            list.addAll(annotation.getSaved());
+        } else {
+            list = new ArrayList<>();
+            for (String annotationName : name.split(",")) {
+                if (VariantAnnotationManager.CURRENT.equals(annotationName)) {
+                    if (annotation.getCurrent() != null) {
+                        list.add(annotation.getCurrent());
+                    }
+                } else {
+                    list.add(annotation.getSaved(annotationName));
+                }
+            }
+        }
+        return new QueryResult<>(name, queryResult.getDbTime(), list.size(), list.size(), null, null, list);
+    }
+
     /**
      * Provide a new VariantAnnotationManager for creating and loading annotations.
      *

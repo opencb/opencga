@@ -43,6 +43,7 @@ import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
 import org.opencb.opencga.storage.core.manager.variant.operations.VariantFileIndexerStorageOperation;
+import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -59,6 +60,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.*;
 
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationSaveCommandOptions.ANNOTATION_SAVE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationDeleteCommandOptions.ANNOTATION_DELETE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
@@ -75,7 +77,6 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
 
     //    private AnalysisCliOptionsParser.VariantCommandOptions variantCommandOptions;
     private VariantCommandOptions variantCommandOptions;
-    private VariantStorageEngine variantStorageEngine;
 
     public VariantCommandExecutor(VariantCommandOptions variantCommandOptions) {
         super(variantCommandOptions.commonCommandOptions);
@@ -128,6 +129,9 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
                 break;
             case ANNOTATION_QUERY_COMMAND:
                 annotationQuery();
+                break;
+            case ANNOTATION_METADATA_COMMAND:
+                annotationMetadata();
                 break;
             case FILL_GAPS_COMMAND:
                 fillGaps();
@@ -375,7 +379,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         options.putAll(cliOptions.commonOptions.params);
 
 
-        variantManager.saveAnnotation(cliOptions.project, cliOptions.name, options, sessionId);
+        variantManager.saveAnnotation(cliOptions.project, cliOptions.annotationId, options, sessionId);
     }
 
     private void annotationDelete() throws IllegalAccessException, StorageEngineException, InstantiationException, VariantAnnotatorException, CatalogException, ClassNotFoundException {
@@ -386,7 +390,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         options.putAll(cliOptions.commonOptions.params);
 
 
-        variantManager.deleteAnnotation(cliOptions.project, cliOptions.name, options, sessionId);
+        variantManager.deleteAnnotation(cliOptions.project, cliOptions.annotationId, options, sessionId);
     }
 
     private void annotationQuery() throws CatalogException, IOException, StorageEngineException {
@@ -405,7 +409,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         query.put(VariantQueryParam.REGION.key(), cliOptions.region);
         query.put(VariantQueryParam.ID.key(), cliOptions.id);
 
-        QueryResult<VariantAnnotation> queryResult = variantManager.getAnnotation(cliOptions.name, query, options, sessionId);
+        QueryResult<VariantAnnotation> queryResult = variantManager.getAnnotation(cliOptions.annotationId, query, options, sessionId);
 
         // WRITE
         ObjectMapper objectMapper = new ObjectMapper();
@@ -422,7 +426,27 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         }
     }
 
-    private void annotationMetadata() throws CatalogException, IOException, StorageEngineException {}
+    private void annotationMetadata() throws CatalogException, IOException, StorageEngineException {
+        VariantCommandOptions.AnnotationMetadataCommandOptions cliOptions = variantCommandOptions.annotationMetadataCommandOptions;
+        VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
+
+        QueryResult<ProjectMetadata.VariantAnnotationMetadata> result =
+                variantManager.getAnnotationMetadata(cliOptions.annotationId, cliOptions.project, sessionId);
+
+        // WRITE
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
+        objectMapper.configure(SerializationFeature.CLOSE_CLOSEABLE, false);
+        ObjectWriter writer = objectMapper.writer();
+//        ObjectWriter writer = objectMapper.writerWithDefaultPrettyPrinter();
+        SequenceWriter sequenceWriter = writer.writeValues(System.out);
+        for (ProjectMetadata.VariantAnnotationMetadata metadata : result.getResult()) {
+            sequenceWriter.write(metadata);
+            sequenceWriter.flush();
+//            writer.writeValue(System.out, annotation);
+            System.out.println();
+        }
+    }
 
     private void fillGaps() throws StorageEngineException, IOException, URISyntaxException, VariantAnnotatorException, CatalogException,
             AnalysisExecutionException, IllegalAccessException, InstantiationException, ClassNotFoundException {

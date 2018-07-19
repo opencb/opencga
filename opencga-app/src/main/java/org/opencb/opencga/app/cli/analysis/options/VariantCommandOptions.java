@@ -32,6 +32,8 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnno
 
 import java.util.List;
 
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationSaveCommandOptions.ANNOTATION_SAVE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationSaveCommandOptions.ANNOTATION_SAVE_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationDeleteCommandOptions.ANNOTATION_DELETE_COMMAND;
@@ -63,6 +65,7 @@ public class VariantCommandOptions {
     public final AnnotationSaveCommandOptions annotationSaveSnapshotCommandOptions;
     public final AnnotationDeleteCommandOptions annotationDeleteCommandOptions;
     public final AnnotationQueryCommandOptions annotationQueryCommandOptions;
+    public final AnnotationMetadataCommandOptions annotationMetadataCommandOptions;
     public final FillGapsCommandOptions fillGapsVariantCommandOptions;
     public final FillMissingCommandOptions fillMissingCommandOptions;
     public final VariantExportStatsCommandOptions exportVariantStatsCommandOptions;
@@ -93,6 +96,7 @@ public class VariantCommandOptions {
         this.annotationSaveSnapshotCommandOptions = new AnnotationSaveCommandOptions();
         this.annotationDeleteCommandOptions = new AnnotationDeleteCommandOptions();
         this.annotationQueryCommandOptions = new AnnotationQueryCommandOptions();
+        this.annotationMetadataCommandOptions = new AnnotationMetadataCommandOptions();
         this.fillGapsVariantCommandOptions = new FillGapsCommandOptions();
         this.fillMissingCommandOptions = new FillMissingCommandOptions();
         this.exportVariantStatsCommandOptions = new VariantExportStatsCommandOptions();
@@ -589,6 +593,16 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--limit"}, description = "Limit the number of returned elements.", required = false, arity = 1)
         public int limit;
+    }
+
+    @Parameters(commandNames = {ANNOTATION_METADATA_COMMAND}, commandDescription = ANNOTATION_METADATA_COMMAND_DESCRIPTION)
+    public class AnnotationMetadataCommandOptions extends StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-p", "--project"}, description = PROJECT_DESC, arity = 1)
+        public String project;
     }
 
     @Deprecated

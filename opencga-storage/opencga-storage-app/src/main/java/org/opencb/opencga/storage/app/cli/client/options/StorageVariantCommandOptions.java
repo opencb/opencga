@@ -31,6 +31,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationCommandOptions.ANNOTATION_ID_DESCRIPTION;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationCommandOptions.ANNOTATION_ID_PARAM;
+
 /**
  * Created by imedina on 22/01/17.
  */
@@ -45,6 +48,7 @@ public class StorageVariantCommandOptions {
     public final AnnotationSaveCommandOptions annotationSaveCommandOptions;
     public final AnnotationDeleteCommandOptions annotationDeleteCommandOptions;
     public final AnnotationQueryCommandOptions annotationQueryCommandOptions;
+    public final AnnotationMetadataCommandOptions annotationMetadataCommandOptions;
     public final VariantStatsCommandOptions statsVariantsCommandOptions;
     public final FillGapsCommandOptions fillGapsCommandOptions;
     public final FillMissingCommandOptions fillMissingCommandOptions;
@@ -71,6 +75,7 @@ public class StorageVariantCommandOptions {
         this.annotationSaveCommandOptions = new AnnotationSaveCommandOptions();
         this.annotationDeleteCommandOptions = new AnnotationDeleteCommandOptions();
         this.annotationQueryCommandOptions = new AnnotationQueryCommandOptions();
+        this.annotationMetadataCommandOptions = new AnnotationMetadataCommandOptions();
         this.statsVariantsCommandOptions = new VariantStatsCommandOptions();
         this.fillGapsCommandOptions = new FillGapsCommandOptions();
         this.fillMissingCommandOptions = new FillMissingCommandOptions();
@@ -495,13 +500,16 @@ public class StorageVariantCommandOptions {
     }
 
     public static class GenericAnnotationCommandOptions {
-        @Parameter(names = {"--annotation-id"}, description = "Annotation snapshot name", required = true, arity = 1)
-        public String name;
+        public static final String ANNOTATION_ID_PARAM = "--annotation-id";
+        public static final String ANNOTATION_ID_DESCRIPTION = "Annotation identifier";
+
+        @Parameter(names = {ANNOTATION_ID_PARAM}, description = ANNOTATION_ID_DESCRIPTION, required = true, arity = 1)
+        public String annotationId;
     }
 
     public static class GenericAnnotationSaveCommandOptions extends GenericAnnotationCommandOptions {
         public static final String ANNOTATION_SAVE_COMMAND = "annotation-save";
-        public static final String ANNOTATION_SAVE_COMMAND_DESCRIPTION = "Creates a snapshot of the current variant annotation at the database.";
+        public static final String ANNOTATION_SAVE_COMMAND_DESCRIPTION = "Save a copy of the current variant annotation at the database";
     }
 
     @Parameters(commandNames = {GenericAnnotationSaveCommandOptions.ANNOTATION_SAVE_COMMAND}, commandDescription = GenericAnnotationSaveCommandOptions.ANNOTATION_SAVE_COMMAND_DESCRIPTION)
@@ -517,7 +525,7 @@ public class StorageVariantCommandOptions {
 
     public static class GenericAnnotationDeleteCommandOptions extends GenericAnnotationCommandOptions {
         public static final String ANNOTATION_DELETE_COMMAND = "annotation-delete";
-        public static final String ANNOTATION_DELETE_COMMAND_DESCRIPTION = "Deletes a variant annotation snapshot.";
+        public static final String ANNOTATION_DELETE_COMMAND_DESCRIPTION = "Deletes a saved copy of variant annotation";
     }
 
     @Parameters(commandNames = {GenericAnnotationDeleteCommandOptions.ANNOTATION_DELETE_COMMAND}, commandDescription = GenericAnnotationDeleteCommandOptions.ANNOTATION_DELETE_COMMAND_DESCRIPTION)
@@ -531,13 +539,12 @@ public class StorageVariantCommandOptions {
 
     }
 
-    public static class GenericAnnotationQueryCommandOptions extends GenericAnnotationCommandOptions {
+    public static class GenericAnnotationQueryCommandOptions {
         public static final String ANNOTATION_QUERY_COMMAND = "annotation-query";
-        public static final String ANNOTATION_QUERY_COMMAND_DESCRIPTION = "";
+        public static final String ANNOTATION_QUERY_COMMAND_DESCRIPTION = "Query variant annotations from any saved versions";
 
-        public GenericAnnotationQueryCommandOptions() {
-            name = VariantAnnotationManager.CURRENT;
-        }
+        @Parameter(names = ANNOTATION_ID_PARAM, description = ANNOTATION_ID_DESCRIPTION)
+        public String annotationId = VariantAnnotationManager.CURRENT;
 
         @Parameter(names = {"--id"}, description = VariantQueryParam.ID_DESCR, variableArity = true)
         public List<String> id;
@@ -564,6 +571,24 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"--limit"}, description = "Limit the number of returned elements.", required = false, arity = 1)
         public int limit;
+    }
+
+    public static class GenericAnnotationMetadataCommandOptions {
+        public static final String ANNOTATION_METADATA_COMMAND = "annotation-metadata";
+        public static final String ANNOTATION_METADATA_COMMAND_DESCRIPTION = "Read variant annotations metadata from any saved versions";
+
+        @Parameter(names = ANNOTATION_ID_PARAM, description = ANNOTATION_ID_DESCRIPTION)
+        public String annotationId = VariantQueryUtils.ALL;
+    }
+
+    @Parameters(commandNames = {GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND}, commandDescription = GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND_DESCRIPTION)
+    public class AnnotationMetadataCommandOptions extends GenericAnnotationMetadataCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = true, arity = 1)
+        public String dbName;
     }
 
     /**
