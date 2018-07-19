@@ -177,7 +177,8 @@ public abstract class VariantAnnotationManager {
         boolean nameDuplicated = projectMetadata.getAnnotation().getSaved()
                 .stream()
                 .map(VariantAnnotationMetadata::getName)
-                .anyMatch(s -> s.equalsIgnoreCase(name));
+                .anyMatch(s -> s.equalsIgnoreCase(name))
+                || VariantAnnotationManager.CURRENT.equalsIgnoreCase(name);
 
         if (nameDuplicated) {
             throw new VariantAnnotatorException("Annotation snapshot name already exists!");
@@ -201,6 +202,11 @@ public abstract class VariantAnnotationManager {
 
     protected final VariantAnnotationMetadata removeAnnotationSnapshot(String name, ProjectMetadata projectMetadata)
             throws VariantAnnotatorException {
+
+        if (VariantAnnotationManager.CURRENT.equalsIgnoreCase(name)) {
+            throw new VariantAnnotatorException("Can not delete " + VariantAnnotationManager.CURRENT + " annotation");
+        }
+
         Iterator<VariantAnnotationMetadata> iterator = projectMetadata.getAnnotation().getSaved().iterator();
         VariantAnnotationMetadata annotation = null;
         boolean found = false;

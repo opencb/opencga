@@ -208,10 +208,10 @@ public final class VariantQueryUtils {
         final String annotation = VariantField.ANNOTATION.fieldName();
         for (String field : queryOptions.getAsStringList(key)) {
             String newField;
-            if (!field.startsWith(annotation + '.')) {
-                newField = annotation + '.' + field;
-            } else {
+            if (field.startsWith(annotation + '.') || field.equals(annotation)) {
                 newField = field;
+            } else {
+                newField = annotation + '.' + field;
             }
 
             if (VariantField.get(newField) == null) {

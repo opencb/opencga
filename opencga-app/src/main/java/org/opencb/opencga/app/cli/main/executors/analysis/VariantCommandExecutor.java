@@ -394,7 +394,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getVariantClient().annotationQuery(cliOptions.annotationId, query, options);
     }
 
-    public QueryResponse<VariantAnnotation> annotationMetadata() throws IOException {
+    public QueryResponse<ObjectMap> annotationMetadata() throws IOException {
         VariantCommandOptions.AnnotationMetadataCommandOptions cliOptions = variantCommandOptions.annotationMetadataCommandOptions;
 
         QueryOptions options = new QueryOptions();

@@ -371,9 +371,6 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     public void deleteAnnotation(String name, ObjectMap params) throws StorageEngineException, VariantAnnotatorException {
-        if (VariantAnnotationManager.CURRENT.equals(name)) {
-            throw new StorageEngineException("Can not delete " + VariantAnnotationManager.CURRENT + " annotation");
-        }
         newVariantAnnotationManager(params).deleteAnnotation(name, params);
     }
 
@@ -395,7 +392,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         } else {
             list = new ArrayList<>();
             for (String annotationName : name.split(",")) {
-                if (VariantAnnotationManager.CURRENT.equals(annotationName)) {
+                if (VariantAnnotationManager.CURRENT.equalsIgnoreCase(annotationName)) {
                     if (annotation.getCurrent() != null) {
                         list.add(annotation.getCurrent());
                     }
