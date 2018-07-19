@@ -174,9 +174,9 @@ public class SampleWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
                            @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
                            @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: annotationSet[=|==|!|!=]{annotationSetName}")
-                               @QueryParam("annotationsetName") String annotationsetName,
+                           @QueryParam("annotationsetName") String annotationsetName,
                            @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: variableSet[=|==|!|!=]{variableSetId}")
-                               @QueryParam("variableSet") String variableSet,
+                           @QueryParam("variableSet") String variableSet,
                            @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
                            @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)", required = false) @DefaultValue("") @QueryParam("attributes") String attributes,
                            @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)", required = false) @DefaultValue("")
@@ -243,11 +243,11 @@ public class SampleWSServer extends OpenCGAWSServer {
     public Response updateByPost(
             @ApiParam(value = "sampleId", required = true) @PathParam("sample") String sampleStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                @QueryParam("study") String studyStr,
+            @QueryParam("study") String studyStr,
             @ApiParam(value = "Create a new version of sample", defaultValue = "false")
-                @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
+            @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", defaultValue = "ADD")
-                @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
+            @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
             @ApiParam(value = "params") UpdateSamplePOST parameters) {
         try {
             ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(parameters));
@@ -319,7 +319,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     })
     public Response delete(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                @QueryParam("study") String studyStr,
+            @QueryParam("study") String studyStr,
             @ApiParam(value = "Sample id") @QueryParam("id") String id,
             @ApiParam(value = "Sample name") @QueryParam("name") String name,
             @ApiParam(value = "Sample source") @QueryParam("source") String source,
@@ -332,7 +332,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)") @QueryParam("attributes") String attributes,
             @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)") @QueryParam("nattributes") String nattributes,
             @ApiParam(value = "Release value (Current release from the moment the samples were first created)")
-                @QueryParam("release") String release) {
+            @QueryParam("release") String release) {
         try {
             query.remove("study");
             queryOptions.put(Constants.EMPTY_FILES_ACTION, query.getString(Constants.EMPTY_FILES_ACTION, "NONE"));
@@ -359,28 +359,28 @@ public class SampleWSServer extends OpenCGAWSServer {
     })
     public Response groupBy(
             @ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("")
-                @QueryParam("fields") String fields,
+            @QueryParam("fields") String fields,
             @ApiParam(value = "DEPRECATED: use study instead", hidden = true) @DefaultValue("") @QueryParam("studyId") String studyIdStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                @QueryParam("study") String studyStr,
+            @QueryParam("study") String studyStr,
             @ApiParam(value = "Comma separated list of ids.") @QueryParam("id") String id,
             @ApiParam(value = "DEPRECATED: Comma separated list of names.") @QueryParam("name") String name,
             @ApiParam(value = "source") @QueryParam("source") String source,
             @ApiParam(value = "Individual id or name", hidden = true) @QueryParam("individual.id") String individualId,
             @ApiParam(value = "Individual id or name") @QueryParam("individual") String individual,
             @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: annotationSet[=|==|!|!=]{annotationSetName}")
-                @QueryParam("annotationsetName") String annotationsetName,
+            @QueryParam("annotationsetName") String annotationsetName,
             @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: variableSet[=|==|!|!=]{variableSetId}")
-                @QueryParam("variableSet") String variableSet,
+            @QueryParam("variableSet") String variableSet,
             @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
             @ApiParam(value = "Release value (Current release from the moment the families were first created)")
-                @QueryParam("release") String release,
+            @QueryParam("release") String release,
             @ApiParam(value = "Snapshot value (Latest version of families in the specified release)") @QueryParam("snapshot")
                     int snapshot) {
         try {
             query.remove("study");
             query.remove("fields");
-            
+
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
@@ -459,7 +459,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap,
             @ApiParam(value = "Annotation set name. If provided, only chosen annotation set will be shown") @QueryParam("name") String annotationsetName,
             @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false")
-                @QueryParam("silent") boolean silent) throws WebServiceException {
+            @QueryParam("silent") boolean silent) throws WebServiceException {
         try {
             AbstractManager.MyResources<Sample> resource = sampleManager.getUids(samplesStr, studyStr, sessionId);
 
@@ -526,7 +526,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{sample}/annotationsets/{annotationsetName}/delete")
     @ApiOperation(value = "Delete the annotation set or the annotations within the annotation set [DEPRECATED]", hidden = true, position = 14,
-        notes = "Use /{sample}/update instead")
+            notes = "Use /{sample}/update instead")
     public Response deleteAnnotationGET(@ApiParam(value = "sampleId", required = true) @PathParam("sample") String sampleStr,
                                         @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                         @QueryParam("study") String studyStr,
@@ -574,7 +574,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(sampleIdsStr);
-                return createOkResponse(sampleManager.getAcls(studyStr, idList, member,silent, sessionId));
+            return createOkResponse(sampleManager.getAcls(studyStr, idList, member, silent, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -671,10 +671,35 @@ public class SampleWSServer extends OpenCGAWSServer {
     public Response getFacets(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
             @QueryParam("study") String studyStr,
+
+            @ApiParam(value = "source") @QueryParam("source") String source,
+            @ApiParam(value = "CreationDate") @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Status") @QueryParam("status") String status,
+            @ApiParam(value = "Release") @QueryParam("release") int release,
+            @ApiParam(value = "Somatic") @QueryParam("somatic") Boolean somatic,
             @ApiParam(value = "List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: studies>>biotype;type") @QueryParam("facet") String facet,
             @ApiParam(value = "List of facet ranges separated by semicolons with the format {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1") @QueryParam("facetRange") String facetRange,
             @ApiParam(value = "List of facet intersections separated by semicolons with the format {field_name}:{value1}:{value2}[:{value3}], e.g.: studies:1kG_phase3:EXAC:ESP6500") @QueryParam("facetIntersection") String facetIntersection) {
         try {
+
+            if (StringUtils.isNotEmpty(studyStr)) {
+                query.append("studyId", studyStr);
+            }
+            if (StringUtils.isNotEmpty(source)) {
+                query.append("type", source);
+            }
+            if (StringUtils.isNotEmpty(creationDate)) {
+                query.append("creationDate", creationDate);
+            }
+            if (StringUtils.isNotEmpty(status)) {
+                query.append("status", status);
+            }
+            if (release != 0) {
+                query.append("release", release);
+            }
+            if (somatic != null) {
+                query.append("somatic", somatic);
+            }
 
             FacetedQueryResult queryResult = catalogManager.getSampleManager().facet(query, queryOptions, sessionId);
 

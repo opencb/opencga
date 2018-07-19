@@ -1325,6 +1325,18 @@ public class FileWSServer extends OpenCGAWSServer {
             if (release != 0) {
                 query.append("release", release);
             }
+            if (StringUtils.isNotEmpty(formart)) {
+                query.append("formart", formart);
+            }
+            if (StringUtils.isNotEmpty(bioformart)) {
+                query.append("bioformart", bioformart);
+            }
+            if (size != 0) {
+                query.append("size", size);
+            }
+            if (samples != 0) {
+                query.append("samples", samples);
+            }
 
             FacetedQueryResult queryResult = catalogManager.getFileManager().facet(query, queryOptions, sessionId);
 
