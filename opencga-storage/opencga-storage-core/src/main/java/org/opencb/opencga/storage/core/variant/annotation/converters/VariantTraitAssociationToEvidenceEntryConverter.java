@@ -156,7 +156,7 @@ public class VariantTraitAssociationToEvidenceEntryConverter implements Converte
                 variantClassification.setTraitAssociation(VariantAnnotationUtils.CLINVAR_CLINSIG_TO_TRAIT_ASSOCIATION.get(value));
             } else if (VariantAnnotationUtils.CLINVAR_CLINSIG_TO_DRUG_RESPONSE.containsKey(value)) {
                 variantClassification.setDrugResponseClassification(VariantAnnotationUtils.CLINVAR_CLINSIG_TO_DRUG_RESPONSE.get(value));
-            } else {
+            } else if (!value.equals("not provided")) {
                 logger.debug("No mapping found for referenceClinVarAssertion.clinicalSignificance '{}'", value);
                 logger.debug("No value will be set at EvidenceEntry.variantClassification for this term");
             }

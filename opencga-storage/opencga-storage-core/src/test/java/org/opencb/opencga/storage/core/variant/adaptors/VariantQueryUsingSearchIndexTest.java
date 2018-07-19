@@ -25,9 +25,9 @@ public abstract class VariantQueryUsingSearchIndexTest extends VariantDBAdaptorT
     public void before() throws Exception {
 
         boolean preFileIndexed = VariantDBAdaptorTest.fileIndexed;
+        solr.configure(variantStorageEngine);
         super.before();
 
-        solr.configure(variantStorageEngine);
         if (!preFileIndexed) {
             variantStorageEngine.searchIndex();
         }

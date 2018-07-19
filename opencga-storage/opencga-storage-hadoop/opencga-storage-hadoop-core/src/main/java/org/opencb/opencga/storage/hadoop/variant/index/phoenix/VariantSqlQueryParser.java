@@ -86,6 +86,10 @@ public class VariantSqlQueryParser {
         SQL_OPERATOR.put("=~", "LIKE");
         SQL_OPERATOR.put("~", "LIKE");
         SQL_OPERATOR.put("!", "!=");
+        SQL_OPERATOR.put(">>", ">");
+        SQL_OPERATOR.put(">>=", ">=");
+        SQL_OPERATOR.put("<<", "<");
+        SQL_OPERATOR.put("<<=", "<=");
     }
 
     public static class VariantPhoenixSQLQuery {
@@ -703,6 +707,15 @@ public class VariantSqlQueryParser {
 
                             double parsedValue = parseDouble(qual, QUAL, qualValue);
                             sb.append(parseNumericOperator(op)).append(' ').append(parsedValue);
+
+                            if (op.startsWith(">>") || op.startsWith("<<")) {
+                                sb.append(" OR \"");
+                                buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue(), sb);
+                                sb.append('"');
+
+                                // Arrays in SQL are 1-based.
+                                sb.append('[').append(HBaseToStudyEntryConverter.FILE_QUAL_IDX + 1).append("] IS NULL");
+                            }
                         }
                         sb.append(" ) ");
                     }
@@ -906,6 +919,24 @@ public class VariantSqlQueryParser {
                 return VariantColumn.POLYPHEN;
             } else {
                 return VariantColumn.POLYPHEN_DESC;
+            }
+        }, null, null, null, filters, op -> op.contains(">") ? 2 : op.contains("<") ? 1 : -1);
+
+        addQueryFilter(query, ANNOT_PROTEIN_SUBSTITUTION, (keyOpValue, rawValue) -> {
+            if (keyOpValue[0].equalsIgnoreCase("sift")) {
+                if (NumberUtils.isParsable(keyOpValue[2])) {
+                    return VariantColumn.SIFT;
+                } else {
+                    return VariantColumn.SIFT_DESC;
+                }
+            } else if (keyOpValue[0].equalsIgnoreCase("polyphen")) {
+                if (NumberUtils.isParsable(keyOpValue[2])) {
+                    return VariantColumn.POLYPHEN;
+                } else {
+                    return VariantColumn.POLYPHEN_DESC;
+                }
+            } else {
+                throw VariantQueryException.malformedParam(ANNOT_PROTEIN_SUBSTITUTION, Arrays.toString(keyOpValue));
             }
         }, null, null, null, filters, op -> op.contains(">") ? 2 : op.contains("<") ? 1 : -1);
 
@@ -1141,7 +1172,8 @@ public class VariantSqlQueryParser {
                 Column column = columnParser.apply(keyOpValue, rawValue);
 
 
-                String op = parseOperator(keyOpValue[1]);
+//                String op = parseOperator(keyOpValue[1]);
+                String op = keyOpValue[1];
                 if (operatorParser != null) {
                     op = operatorParser.apply(op);
                 }
@@ -1211,6 +1243,7 @@ public class VariantSqlQueryParser {
             sqlType = sqlType.replace(" ARRAY", "");
             arrayPosition = "[" + idx + "]";
         }
+        boolean orNull = op.startsWith(">>") || op.startsWith("<<");
         switch (sqlType) {
             case "VARCHAR":
                 parsedValue = checkStringValue((String) value);
@@ -1274,6 +1307,9 @@ public class VariantSqlQueryParser {
             default:
                 throw new VariantQueryException("Unsupported column type " + column.getPDataType().getSqlTypeName()
                         + " for column " + column);
+        }
+        if (orNull) {
+            sb.append(" OR \"").append(column).append("\" IS NULL");
         }
         if (StringUtils.isNotEmpty(extra)) {
             sb.append(' ').append(extra).append(" )");
@@ -1372,12 +1408,20 @@ public class VariantSqlQueryParser {
         switch (op) {
             case ">":
                 return "<=";
+            case ">>":
+                return "<<=";
             case ">=":
                 return "<";
+            case ">>=":
+                return "<<";
             case "<":
                 return ">=";
+            case "<<":
+                return ">>=";
             case "<=":
                 return ">";
+            case "<<=":
+                return ">>";
             case "":
             case "=":
             case "==":
