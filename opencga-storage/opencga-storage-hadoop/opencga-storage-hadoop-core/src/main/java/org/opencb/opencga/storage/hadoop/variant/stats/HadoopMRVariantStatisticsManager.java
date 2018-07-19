@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -68,7 +69,7 @@ public class HadoopMRVariantStatisticsManager implements VariantStatisticsManage
 
         Class execClass = VariantStatsDriver.class;
         String executable = hadoopRoute + " jar " + jar + ' ' + execClass.getName();
-        String args = VariantStatsDriver.buildCommandLineArgs(
+        String[] args = VariantStatsDriver.buildArgs(
                 dbAdaptor.getTableNameGenerator().getArchiveTableName(sc.getStudyId()),
                 dbAdaptor.getTableNameGenerator().getVariantTableName(),
                 sc.getStudyId(), Collections.emptyList(), options);
@@ -76,7 +77,7 @@ public class HadoopMRVariantStatisticsManager implements VariantStatisticsManage
         long startTime = System.currentTimeMillis();
         logger.info("------------------------------------------------------");
         logger.info("Calculate stats of cohorts {} into variants table '{}'", cohorts, dbAdaptor.getVariantTable());
-        logger.debug(executable + ' ' + args);
+        logger.debug(executable + ' ' + Arrays.toString(args));
         logger.info("------------------------------------------------------");
         int exitValue = mrExecutor.run(executable, args);
         logger.info("------------------------------------------------------");

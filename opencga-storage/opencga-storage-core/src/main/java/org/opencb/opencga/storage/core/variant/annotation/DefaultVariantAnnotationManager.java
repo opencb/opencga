@@ -416,13 +416,13 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
 
     //TODO: Make this method abstract
     @Override
-    public void createAnnotationSnapshot(String name, ObjectMap options) throws StorageEngineException, VariantAnnotatorException {
+    public void saveAnnotation(String name, ObjectMap options) throws StorageEngineException, VariantAnnotatorException {
         throw new UnsupportedOperationException();
     }
 
     //TODO: Make this method abstract
     @Override
-    public void deleteAnnotationSnapshot(String name, ObjectMap options) throws StorageEngineException, VariantAnnotatorException {
+    public void deleteAnnotation(String name, ObjectMap options) throws StorageEngineException, VariantAnnotatorException {
         throw new UnsupportedOperationException();
     }
 }

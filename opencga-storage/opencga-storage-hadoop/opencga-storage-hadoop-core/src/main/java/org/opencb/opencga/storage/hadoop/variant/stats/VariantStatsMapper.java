@@ -12,7 +12,7 @@ import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsCalculator
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.VariantStatsToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.mr.AnalysisTableMapReduceHelper;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,14 +73,14 @@ public class VariantStatsMapper extends VariantMapper<ImmutableBytesWritable, Pu
             }
             VariantStatsWrapper stats = variantStatsWrappers.get(0);
 
-            context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "variants").increment(1);
+            context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "variants").increment(1);
 
             Put put = converter.convert(stats);
             if (put == null) {
-                context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "stats.put.null").increment(1);
+                context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "stats.put.null").increment(1);
             } else {
-                context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "stats.put").increment(1);
-                context.write(new ImmutableBytesWritable(helper.getAnalysisTable()), put);
+                context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "stats.put").increment(1);
+                context.write(new ImmutableBytesWritable(helper.getVariantsTable()), put);
             }
         } catch (Exception e) {
             logger.error("Problem with variant " + variant, e);
@@ -93,7 +93,7 @@ public class VariantStatsMapper extends VariantMapper<ImmutableBytesWritable, Pu
         super.cleanup(context);
         if (calculator.getSkippedFiles() > 0) {
             logger.warn("Non calculated variant stats: " + calculator.getSkippedFiles());
-            context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "stats.skipped").increment(calculator.getSkippedFiles());
+            context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "stats.skipped").increment(calculator.getSkippedFiles());
         }
     }
 

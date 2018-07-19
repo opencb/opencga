@@ -702,7 +702,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
                 .collect(Collectors.toList());
 
         query = new Query(STUDY.key(), studyConfiguration1.getStudyId())
-                .append(SAMPLE.key(), samples);
+                .append(SAMPLE.key(), String.join(AND, samples));
         queryResult = dbAdaptor.get(query, options);
 
         assertThat(queryResult, everyResult(withStudy(studyConfiguration1.getStudyName(), allOf(

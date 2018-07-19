@@ -47,7 +47,7 @@ public class GenomeHelper {
 
     private final Configuration conf;
 
-    private final int studyId;
+    private int studyId;
 
     public GenomeHelper(GenomeHelper other) {
         this(other.getConf());
@@ -82,6 +82,10 @@ public class GenomeHelper {
 
     public static void setStudyId(Configuration conf, Integer studyId) {
         conf.setInt(HadoopVariantStorageEngine.STUDY_ID, studyId);
+    }
+
+    protected void setStudyId(int studyId) {
+        this.studyId = studyId;
     }
 
     public int getStudyId() {

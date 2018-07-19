@@ -8,7 +8,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
-import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantSqlQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
@@ -23,7 +23,7 @@ import java.util.Collection;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class VariantStatsDriver extends AbstractAnalysisTableDriver {
+public class VariantStatsDriver extends AbstractVariantsTableDriver {
     public static final String STATS_INPUT = "stats.input";
     public static final String STATS_INPUT_DEFAULT = "native";
     private static final String STATS_OPERATION_NAME = "stats";
@@ -39,7 +39,8 @@ public class VariantStatsDriver extends AbstractAnalysisTableDriver {
     }
 
     @Override
-    protected void parseAndValidateParameters() {
+    protected void parseAndValidateParameters() throws IOException {
+        super.parseAndValidateParameters();
         cohorts = VariantStatsMapper.getCohorts(getConf());
     }
 
@@ -71,7 +72,7 @@ public class VariantStatsDriver extends AbstractAnalysisTableDriver {
             VariantMapReduceUtil.initTableMapperJob(job, variantTableName, variantTableName, scan, VariantStatsFromResultMapper.class);
         } else if (getConf().get(STATS_INPUT, STATS_INPUT_DEFAULT).equalsIgnoreCase("phoenix")) {
             // Sql
-            String sql = new VariantSqlQueryParser(getHelper(), getAnalysisTable(), getStudyConfigurationManager())
+            String sql = new VariantSqlQueryParser(getHelper(), getVariantsTable(), getStudyConfigurationManager())
                     .parse(query, queryOptions).getSql();
 
             LOG.info(sql);

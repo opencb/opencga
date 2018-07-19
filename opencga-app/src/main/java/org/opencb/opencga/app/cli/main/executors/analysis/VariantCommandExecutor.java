@@ -50,7 +50,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.QueryAnnotationCommandOptions.QUERY_ANNOTATION_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationQueryCommandOptions.ANNOTATION_QUERY_COMMAND;
 
 /**
  * Created by pfurio on 15/08/16.
@@ -79,8 +79,8 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
             case "query":
                 queryResponse = query();
                 break;
-            case QUERY_ANNOTATION_COMMAND:
-                queryResponse = queryAnnotation();
+            case ANNOTATION_QUERY_COMMAND:
+                queryResponse = annotationQuery();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -370,8 +370,8 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         return study;
     }
 
-    public QueryResponse<VariantAnnotation> queryAnnotation() throws IOException {
-        VariantCommandOptions.QueryAnnotationCommandOptions cliOptions = variantCommandOptions.queryAnnotationCommandOptions;
+    public QueryResponse<VariantAnnotation> annotationQuery() throws IOException {
+        VariantCommandOptions.AnnotationQueryCommandOptions cliOptions = variantCommandOptions.annotationQueryCommandOptions;
 
 
         QueryOptions options = new QueryOptions();
@@ -387,6 +387,6 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         query.put(VariantQueryParam.REGION.key(), cliOptions.region);
         query.put(VariantQueryParam.ID.key(), cliOptions.id);
 
-        return openCGAClient.getVariantClient().queryAnnotation(cliOptions.name, query, options);
+        return openCGAClient.getVariantClient().annotationQuery(cliOptions.name, query, options);
     }
 }

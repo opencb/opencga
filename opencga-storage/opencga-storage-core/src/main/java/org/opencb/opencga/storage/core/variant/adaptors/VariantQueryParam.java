@@ -75,7 +75,8 @@ public final class VariantQueryParam implements QueryParam {
 
     //SAMPLES_DESCR = "Filter variants where ALL the provided samples are mutated (not HOM_REF or missing)";
     public static final String SAMPLE_DESCR
-            = "Filter variants where ALL the samples contain the variant (HET or HOM_ALT). "
+            = "Filter variants where the samples contain the variant (HET or HOM_ALT). "
+            + "Accepts AND (" + VariantQueryUtils.AND + ") and OR (" + VariantQueryUtils.OR + ") operators. "
             + "This will automatically set 'includeSample' parameter when not provided";
     public static final VariantQueryParam SAMPLE = new VariantQueryParam("sample", TEXT_ARRAY, SAMPLE_DESCR);
 
@@ -224,6 +225,11 @@ public final class VariantQueryParam implements QueryParam {
     public static final String ANNOT_TRAIT_DESCR
             = "List of traits, based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...";
     public static final VariantQueryParam ANNOT_TRAIT = new VariantQueryParam("trait", TEXT_ARRAY, ANNOT_TRAIT_DESCR);
+
+    public static final String ANNOT_CLINICAL_SIGNIFICANCE_DESCR
+            = "";
+    public static final VariantQueryParam ANNOT_CLINICAL_SIGNIFICANCE =
+            new VariantQueryParam("clinicalSignificance", TEXT_ARRAY, ANNOT_CLINICAL_SIGNIFICANCE_DESCR);
 
     @Deprecated
     public static final String ANNOT_CLINVAR_DESCR

@@ -243,11 +243,7 @@ public class VariantStorageManager extends StorageManager {
         return annotOperation.annotateVariants(project, studiesList, query, outDir, sessionId, config);
     }
 
-    public void deleteAnnotation(String annotationId, String studyId, String sessionId) {
-        throw new UnsupportedOperationException();
-    }
-
-    public void createAnnotationSnapshot(String project, String annotationName, ObjectMap params, String sessionId)
+    public void saveAnnotation(String project, String annotationName, ObjectMap params, String sessionId)
             throws StorageEngineException, VariantAnnotatorException, CatalogException, IllegalAccessException, InstantiationException,
             ClassNotFoundException {
 
@@ -257,10 +253,10 @@ public class VariantStorageManager extends StorageManager {
 
         StorageOperation.updateProjectMetadata(catalogManager, variantStorageEngine.getStudyConfigurationManager(), project, sessionId);
 
-        variantStorageEngine.createAnnotationSnapshot(annotationName, params);
+        variantStorageEngine.saveAnnotation(annotationName, params);
     }
 
-    public void deleteAnnotationSnapshot(String project, String annotationName, ObjectMap params, String sessionId)
+    public void deleteAnnotation(String project, String annotationName, ObjectMap params, String sessionId)
             throws StorageEngineException, VariantAnnotatorException, CatalogException, IllegalAccessException,
             InstantiationException, ClassNotFoundException {
 
@@ -270,7 +266,7 @@ public class VariantStorageManager extends StorageManager {
 
         StorageOperation.updateProjectMetadata(catalogManager, variantStorageEngine.getStudyConfigurationManager(), project, sessionId);
 
-        variantStorageEngine.deleteAnnotationSnapshot(annotationName, params);
+        variantStorageEngine.deleteAnnotation(annotationName, params);
     }
 
     public QueryResult<VariantAnnotation> getAnnotation(String name, Query query, QueryOptions options, String sessionId)

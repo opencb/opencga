@@ -490,7 +490,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         Document projection = queryParser.createProjection(query, options);
 
         MongoDBCollection annotationCollection;
-        if (name.equals(VariantAnnotationManager.LATEST)) {
+        if (name.equals(VariantAnnotationManager.CURRENT)) {
             annotationCollection = getVariantsCollection();
         } else {
             annotationCollection = getAnnotationCollection(name);

@@ -11,11 +11,11 @@ import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.Job;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromArchiveMapper;
-import org.opencb.opencga.storage.hadoop.variant.mr.AnalysisTableMapReduceHelper;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +37,7 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngi
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class SampleIndexConsolidationDrive extends AbstractAnalysisTableDriver {
+public class SampleIndexConsolidationDrive extends AbstractVariantsTableDriver {
     public static final String GENOTYPES_COUNTER_GROUP_NAME = "genotypes";
     private final Logger logger = LoggerFactory.getLogger(SampleIndexConsolidationDrive.class);
     private String sampleIndexTable;
@@ -46,7 +46,8 @@ public class SampleIndexConsolidationDrive extends AbstractAnalysisTableDriver {
 
     @Override
     protected void parseAndValidateParameters() throws IOException {
-        sampleIndexTable = getHelper().getHBaseVariantTableNameGenerator().getSampleIndexTableName(getStudyId());
+        super.parseAndValidateParameters();
+        sampleIndexTable = generator.getSampleIndexTableName(getStudyId());
 
         if (sampleIndexTable == null || sampleIndexTable.isEmpty()) {
             throw new IllegalArgumentException("Missing sampleIndex table!");
@@ -157,7 +158,7 @@ public class SampleIndexConsolidationDrive extends AbstractAnalysisTableDriver {
             }
 
             if (!delete.isEmpty()) {
-                context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "consolidation").increment(1);
+                context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "consolidation").increment(1);
                 Put put = new Put(result.getRow());
                 for (Map.Entry<String, List<String>> entry : map.entrySet()) {
                     String gt = entry.getKey();
@@ -166,11 +167,11 @@ public class SampleIndexConsolidationDrive extends AbstractAnalysisTableDriver {
                     List<String> variants = entry.getValue();
                     Cell cell = otherCells.get(gt);
                     if (cell == null) {
-                        context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "new_gt").increment(1);
+                        context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "new_gt").increment(1);
                         put.addColumn(family, Bytes.toBytes(gt), Bytes.toBytes(String.join(",", variants)));
                         put.addColumn(family, SampleIndexConverter.toGenotypeCountColumn(gt), Bytes.toBytes(variants.size()));
                     } else {
-                        context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "merged_gt").increment(1);
+                        context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "merged_gt").increment(1);
                         // Merge with existing values
                         TreeSet<Variant> variantsSet = new TreeSet<>(SampleIndexConverter.INTRA_CHROMOSOME_VARIANT_COMPARATOR);
                         List<Variant> loadedVariants = SampleIndexConverter.getVariants(cell);
@@ -180,7 +181,7 @@ public class SampleIndexConsolidationDrive extends AbstractAnalysisTableDriver {
                         }
 
                         if (loadedVariants.size() == variantsSet.size()) {
-                            context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "merged_gt_skip").increment(1);
+                            context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "merged_gt_skip").increment(1);
                         } else {
                             StringBuilder sb = new StringBuilder();
                             Iterator<Variant> iterator = variantsSet.iterator();
