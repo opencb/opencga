@@ -20,31 +20,31 @@ public class ReportedEvent {
     private String tier;
 
     public enum ReportedModeOfInheritance {
-        monoallelic,
-        monoallelic_not_imprinted,
-        monoallelic_maternally_imprinted,
-        monoallelic_paternally_imprinted,
-        biallelic,
-        monoallelic_and_biallelic,
-        monoallelic_and_more_severe_biallelic,
-        xlinked_biallelic,
-        xlinked_monoallelic,
-        mitochondrial,
-        unknown
+        MONOALLELIC,
+        MONOALLELIC_NOT_IMPRINTED,
+        MONOALLELIC_MATERNALLY_IMPRINTED,
+        MONOALLELIC_PATERNALLY_IMPRINTED,
+        BIALLELIC,
+        MONOALLELIC_AND_BIALLELIC,
+        MONOALLELIC_AND_MORE_SEVERE_BIALLELIC,
+        XLINKED_BIALLELIC,
+        XLINKED_MONOALLELIC,
+        MITOCHRONDRIAL,
+        UNKNOWN
     }
 
     public enum VariantClassification {
-        pathogenic_variant,
-        likely_pathogenic_variant,
-        variant_of_unknown_clinical_significance,
-        likely_benign_variant,
-        benign_variant,
-        not_assessed
+        PATHOGENIC_VARIANT,
+        LIKELY_PATHOGENIC_VARIANT,
+        VARIANT_OF_UNKNOWN_CLINICAL_SIGNIFICANCE,
+        LINKELY_BENIGN_VARIANT,
+        BENIGN_VARIANT,
+        NOT_ASSESSED
     }
 
     public enum Penetrance {
-        complete,
-        incomplete
+        COMPLETE,
+        INCOMPLETE
     }
 
     public ReportedEvent() {
