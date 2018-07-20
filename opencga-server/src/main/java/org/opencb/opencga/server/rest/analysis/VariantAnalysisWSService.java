@@ -209,7 +209,10 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = QueryOptions.COUNT, value = "Total number of results", dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.SKIP_COUNT, value = "Do not count total number of results", dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.SORT, value = "Sort the results", dataType = "boolean", paramType = "query"),
-            @ApiImplicitParam(name = VariantField.SUMMARY, value = "Fetch summary data from Solr", dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = VariantField.SUMMARY, value = "Fast fetch of main variant parameters", dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = "approximateCount", value = "Get an approximate count, instead of an exact total count. Reduces execution time", dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = "approximateCountSamplingSize", value = "Sampling size to get the approximate count. "
+                    + "Larger values increase accuracy but also increase execution time", dataType = "integer", paramType = "query"),
 
             // Variant filters
             @ApiImplicitParam(name = "id", value = ID_DESCR, dataType = "string", paramType = "query"),
