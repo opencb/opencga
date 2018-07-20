@@ -61,7 +61,7 @@ public class SolrQueryParser {
         includeMap.put("end", "end");
         includeMap.put("type", "type");
 
-        includeMap.put("studies", "studies,stats__*");
+        includeMap.put("studies", "studies,stats__*,gt_*,filter_*,qual_*,fileInfo_*,sampleFormat_*");
         includeMap.put("studies.stats", "studies,stats__*");
 
         includeMap.put("annotation", "genes,soAcc,geneToSoAcc,biotypes,sift,siftDesc,polyphen,polyphenDesc,popFreq__*,xrefs,"

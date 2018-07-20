@@ -73,6 +73,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -534,6 +535,37 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions);
             ProgressLogger progressLogger = new ProgressLogger("Variants loaded in Solr:", () -> dbAdaptor.count(query).first(), 200);
             variantSearchManager.load(dbName, iterator, progressLogger);
+        } else {
+            throw new StorageEngineException("Solr is not alive!");
+        }
+        dbAdaptor.close();
+    }
+
+    public void searchIndexSamples(String study, List<String> samples) throws StorageEngineException, IOException, VariantSearchException {
+        VariantDBAdaptor dbAdaptor = getDBAdaptor();
+
+        VariantSearchManager variantSearchManager = getVariantSearchManager();
+        // first, create the collection it it does not exist
+
+        AtomicInteger id = new AtomicInteger();
+        StudyConfiguration sc = getStudyConfigurationManager().lockAndUpdate(study, studyConfiguration -> {
+            id.set(getStudyConfigurationManager().registerSearchIndexSamples(studyConfiguration, samples));
+            return studyConfiguration;
+        });
+
+        String collectionName = variantSearchManager.buildSamplesIndexCollectionName(this.dbName, sc, id.intValue());
+
+        variantSearchManager.create(collectionName);
+        if (configuration.getSearch().getActive() && variantSearchManager.isAlive(collectionName)) {
+            // then, load variants
+            QueryOptions queryOptions = new QueryOptions();
+            Query query = new Query(VariantQueryParam.STUDY.key(), study)
+                    .append(VariantQueryParam.SAMPLE.key(), samples);
+
+            VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions);
+
+            ProgressLogger progressLogger = new ProgressLogger("Variants loaded in Solr:", () -> dbAdaptor.count(query).first(), 200);
+            variantSearchManager.load(collectionName, iterator, progressLogger);
         } else {
             throw new StorageEngineException("Solr is not alive!");
         }

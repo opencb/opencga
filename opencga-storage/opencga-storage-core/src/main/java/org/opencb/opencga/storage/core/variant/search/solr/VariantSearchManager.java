@@ -39,6 +39,7 @@ import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -313,6 +314,9 @@ public class VariantSearchManager {
         }
     }
 
+    public String buildSamplesIndexCollectionName(String dbName, StudyConfiguration sc, int id) {
+        return dbName + '_' + sc.getStudyId() + '_' + id;
+    }
 
     /**-------------------------------------
      *  P R I V A T E    M E T H O D S
