@@ -64,7 +64,7 @@ public class CatalogUtils {
      *                 cases, they will be treated as annotations.
      * @return A query object.
      */
-    protected static Query parseSampleAnnotationQuery(String value, Function<String, QueryParam> getParam) {
+    public static Query parseSampleAnnotationQuery(String value, Function<String, QueryParam> getParam) {
 
         Query query = new Query();
 
