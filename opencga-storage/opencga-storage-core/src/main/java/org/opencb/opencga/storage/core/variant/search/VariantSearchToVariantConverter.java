@@ -129,7 +129,6 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 }
                 // Populate the format-array for each
                 for (String key: variantSearchModel.getSampleFormat().keySet()) {
-                    //                               fields[1] fields[2]  fields[3]  fields[4]
                     // key consists of: sampleFormat__studyId__samplePos__formatPos__fieldName = fieldValue
                     String[] fields = key.split("__");
                     String studyId = fields[1];
@@ -204,7 +203,6 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         List<Xref> xrefs = new ArrayList<>();
         if (ListUtils.isNotEmpty(variantSearchModel.getXrefs())) {
             for (String xref: variantSearchModel.getXrefs()) {
-                // Sanity check
                 if (xref == null) {
                     continue;
                 }
@@ -268,8 +266,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             proteinAnnotation.setSubstitutionScores(scores);
         }
 
-        // and finally, update the SO accession for each consequence type
-        // and setProteinVariantAnnotation if SO accession is 1583
+        // and finally, update the SO acc. for each conseq. type and setProteinVariantAnnotation if SO accession is 1583
         Set<Integer> geneRelatedSoTerms = new HashSet<>();
         if (variantSearchModel.getGeneToSoAcc() != null) {
             for (String geneToSoAcc : variantSearchModel.getGeneToSoAcc()) {
@@ -286,8 +283,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     }
                     consequenceTypeMap.get(fields[0]).getSequenceOntologyTerms().add(sequenceOntologyTerm);
 
-                    // only set protein for that consequence type
-                    // if annotated protein and SO accession is 1583 (missense_variant)
+                    // only set protein for that conseq. type if annotated protein and SO acc is 1583 (missense_variant)
                     if (soAcc == 1583) {
                         consequenceTypeMap.get(fields[0]).setProteinVariantAnnotation(proteinAnnotation);
                     }
