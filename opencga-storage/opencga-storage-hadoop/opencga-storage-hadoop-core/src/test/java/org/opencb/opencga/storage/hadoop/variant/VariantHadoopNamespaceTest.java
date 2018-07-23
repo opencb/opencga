@@ -74,7 +74,7 @@ public class VariantHadoopNamespaceTest extends VariantStorageBaseTest implement
                 System.out.println("\ttableName = " + tableName);
             }
             if (namespaceDescriptor.getName().equals("opencga")) {
-                Assert.assertEquals(3, admin.listTableNamesByNamespace(namespaceDescriptor.getName()).length);
+                Assert.assertEquals(4, admin.listTableNamesByNamespace(namespaceDescriptor.getName()).length);
             }
         }
 
