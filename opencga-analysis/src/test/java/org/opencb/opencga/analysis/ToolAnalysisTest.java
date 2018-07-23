@@ -52,9 +52,12 @@ public class ToolAnalysisTest extends GenericTest {
         catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.FULL, null, null);
         sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
 
-        long projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "ACME", "Homo sapiens", null,
-                null, "GRCh38", new QueryOptions(), sessionIdUser).first().getUid();
-        catalogManager.getStudyManager().create(String.valueOf(projectId), "phase1", null, "Phase 1", Study.Type.TRIO, null, "Done", null, null, null, null, null, null, null, null, sessionIdUser);
+//        long projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "ACME", "Homo sapiens", null,
+//                null, "GRCh38", new QueryOptions(), sessionIdUser).first().getUid();
+//        catalogManager.getStudyManager().create(String.valueOf(projectId), "phase1", null, "Phase 1", Study.Type.TRIO, null, "Done", null, null, null, null, null, null, null, null, sessionIdUser);
+        String projectStr = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "ACME", "Homo sapiens", null,
+              null, "GRCh38", new QueryOptions(), sessionIdUser).first().getFqn();
+        catalogManager.getStudyManager().create(projectStr, "phase1", null, "Phase 1", Study.Type.TRIO, null, "Done", null, null, null, null, null, null, null, null, sessionIdUser);
     }
 
 
