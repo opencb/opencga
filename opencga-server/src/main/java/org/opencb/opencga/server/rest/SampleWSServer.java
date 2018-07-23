@@ -258,7 +258,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             }
 
             Map<String, Object> actionMap = new HashMap<>();
-            actionMap.put(SampleDBAdaptor.UpdateParams.ANNOTATION_SETS.key(), annotationSetsAction.name());
+            actionMap.put(SampleDBAdaptor.UpdateParams.ANNOTATION_SETS.key(), annotationSetsAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
             if (params.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key())) {

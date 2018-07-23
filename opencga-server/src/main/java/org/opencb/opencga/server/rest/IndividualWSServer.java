@@ -409,7 +409,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
             Map<String, Object> actionMap = new HashMap<>();
             actionMap.put(IndividualDBAdaptor.UpdateParams.SAMPLES.key(), samplesAction.name());
-            actionMap.put(IndividualDBAdaptor.UpdateParams.ANNOTATION_SETS.key(), annotationSetsAction.name());
+            actionMap.put(IndividualDBAdaptor.UpdateParams.ANNOTATION_SETS.key(), annotationSetsAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
             QueryResult<Individual> queryResult = catalogManager.getIndividualManager().update(studyStr, individualStr, params,
