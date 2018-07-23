@@ -155,12 +155,12 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
 
         VariantSolrIterator solrIterator = variantSearchManager.iterator(collection, new Query(), new QueryOptions(QueryOptions.SORT, true));
 
-        int i = 0;
+//        int i = 0;
         while (solrIterator.hasNext()) {
             Variant actual = solrIterator.next();
             Variant expected = variantStorageEngine.getDBAdaptor().get(query.append(ID.key(), actual.toString()), null).first();
 //            System.out.println(collection + "[" + i + "] " + actual);
-            i++;
+//            i++;
 
             assertNotNull(expected);
             assertEquals(expected.toString(), actual.toString());
