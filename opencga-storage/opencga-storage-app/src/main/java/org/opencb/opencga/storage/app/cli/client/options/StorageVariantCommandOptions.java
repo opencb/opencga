@@ -40,6 +40,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 @Parameters(commandNames = {"variant"}, commandDescription = "Variant management.")
 public class StorageVariantCommandOptions {
 
+    protected static final String DEPRECATED = "[DEPRECATED] ";
     public final VariantIndexCommandOptions indexVariantsCommandOptions;
     public final VariantRemoveCommandOptions variantRemoveCommandOptions;
     public final VariantQueryCommandOptions variantQueryCommandOptions;
@@ -231,13 +232,13 @@ public class StorageVariantCommandOptions {
         public String functionalScore;
 
         @Deprecated
-        @Parameter(names = {"--cadd"}, description = "[DEPRECATED] use --fs or --functional-score")
+        @Parameter(names = {"--cadd"}, hidden = true, description = DEPRECATED + "use --fs or --functional-score")
         void setDeprecatedFunctionalScore(String cadd) {
             this.functionalScore = cadd;
         }
 
         @Deprecated
-        @Parameter(names = {"--apf", "--alt-population-frequency"}, description = "[DEPRECATED] use --pf or --population-frequency-alt")
+        @Parameter(names = {"--apf", "--alt-population-frequency"}, hidden = true, description = DEPRECATED + "use --pf or --population-frequency-alt")
         void setDeprecatedPopulationFreqAlternate(String populationFreqAlt) {
             this.populationFreqAlt = populationFreqAlt;
         }
@@ -281,7 +282,7 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--biotype"}, description = ANNOT_BIOTYPE_DESCR)
         public String geneBiotype;
 
-        @Parameter(names = {"--population-maf"}, description = "[DEPRECATED] use --pmaf or --population-frequency-maf")
+        @Parameter(names = {"--population-maf"}, hidden = true, description = DEPRECATED + "use --pmaf or --population-frequency-maf")
         void setDeprecatedPopulationFreqMaf(String populationFreqMaf) {
             this.populationFreqMaf = populationFreqMaf;
         }
@@ -299,7 +300,7 @@ public class StorageVariantCommandOptions {
         public String geneTraitId;
 
         @Deprecated
-        @Parameter(names = {"--gene-trait-name"}, description = "[DEPRECATED] use --trait")
+        @Parameter(names = {"--gene-trait-name"}, hidden = true, description = DEPRECATED + "use --trait")
         public String geneTraitName;
 
         @Parameter(names = {"--go", "--gene-ontology"}, description = ANNOT_GO_DESCR)
@@ -315,13 +316,13 @@ public class StorageVariantCommandOptions {
         public String drugs;
 
         @Deprecated
-        @Parameter(names = {"--cosmic"}, description = "[DEPRECATED] use --xref")
+        @Parameter(names = {"--cosmic"}, hidden = true, description = DEPRECATED + "use --xref")
         void setCosmic(String cosmic) {
             setXref(cosmic);
         }
 
         @Deprecated
-        @Parameter(names = {"--clinvar"}, description = "[DEPRECATED] use --xref")
+        @Parameter(names = {"--clinvar"}, hidden = true, description = DEPRECATED + "use --xref")
         void setClinvar(String clinvar) {
             setXref(clinvar);
         }
@@ -362,7 +363,7 @@ public class StorageVariantCommandOptions {
         public String includeStudy;
 
         @Deprecated
-        @Parameter(names = {"--output-study"}, description = "[DEPRECATED] use --include-study")
+        @Parameter(names = {"--output-study"}, hidden = true, description = DEPRECATED + "use --include-study")
         void setOutputStudy(String outputStudy) {
             includeStudy = outputStudy;
         }
@@ -371,7 +372,7 @@ public class StorageVariantCommandOptions {
         public String includeFile;
 
         @Deprecated
-        @Parameter(names = {"--output-file"}, description = "[DEPRECATED] use --include-file")
+        @Parameter(names = {"--output-file"}, hidden = true, description = DEPRECATED + "use --include-file")
         void setOutputFile(String outputFile) {
             includeFile = outputFile;
         }
@@ -380,7 +381,7 @@ public class StorageVariantCommandOptions {
         public String includeSample;
 
         @Deprecated
-        @Parameter(names = {"--output-sample"}, description = "[DEPRECATED] use --include-sample")
+        @Parameter(names = {"--output-sample"}, hidden = true, description = DEPRECATED + "use --include-sample")
         void setOutputSample(String outputSample) {
             includeSample = outputSample;
         }
@@ -396,7 +397,7 @@ public class StorageVariantCommandOptions {
         public String annotations;
 
         @Deprecated
-        @Parameter(names = {"--output-unknown-genotype"}, description = "[DEPRECATED] use --unknown-genotype")
+        @Parameter(names = {"--output-unknown-genotype"}, hidden = true, description = DEPRECATED + "use --unknown-genotype")
         void setOutputUnknownGenotype(String outputUnknownGenotype) {
             this.unknownGenotype = outputUnknownGenotype;
         }
@@ -405,7 +406,7 @@ public class StorageVariantCommandOptions {
         public String unknownGenotype = "./.";
 
         @Deprecated
-        @Parameter(names = {"--output-histogram"}, description = "[DEPRECATED] use --histogram")
+        @Parameter(names = {"--output-histogram"}, hidden = true, description = DEPRECATED + "use --histogram")
         void setOutputHistogram(boolean histogram) {
             this.histogram = histogram;
         }
@@ -417,13 +418,13 @@ public class StorageVariantCommandOptions {
         public int interval;
 
         @Deprecated
-        @Parameter(names = {"--hpo"}, description = "[DEPRECATED] use --trait", arity = 1)
+        @Parameter(names = {"--hpo"}, hidden = true, description = DEPRECATED + "use --trait", arity = 1)
         void setHpo(String hpo) {
             setTrait(hpo);
         }
 
         @Deprecated
-        @Parameter(names = {"--annot-xref"}, description = "[DEPRECATED] use --xref")
+        @Parameter(names = {"--annot-xref"}, hidden = true, description = DEPRECATED + "use --xref")
         void setAnnotXref(String annotXref) {
             setXref(annotXref);
         }
