@@ -553,7 +553,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             return studyConfiguration;
         });
 
-        String collectionName = variantSearchManager.buildSamplesIndexCollectionName(this.dbName, sc, id.intValue());
+        String collectionName = buildSamplesIndexCollectionName(this.dbName, sc, id.intValue());
 
         variantSearchManager.create(collectionName);
         if (configuration.getSearch().getActive() && variantSearchManager.isAlive(collectionName)) {
@@ -783,7 +783,21 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
         // TODO: Use CacheManager ?
         query = preProcessQuery(query);
-        if (doQuerySearchManager(query, options)) {
+
+
+        String specificSearchIndexSamples = inferSpecificSearchIndexSamplesCollection(
+                query, options, getStudyConfigurationManager(), dbName);
+        if (specificSearchIndexSamples != null) {
+            try {
+                if (iterator) {
+                    return getVariantSearchManager().iterator(specificSearchIndexSamples, query, options);
+                } else {
+                    return getVariantSearchManager().query(specificSearchIndexSamples, query, options);
+                }
+            } catch (IOException | VariantSearchException e) {
+                throw new VariantQueryException("Error querying Solr", e);
+            }
+        } else if (doQuerySearchManager(query, options)) {
             try {
                 if (iterator) {
                     return getVariantSearchManager().iterator(dbName, query, options);

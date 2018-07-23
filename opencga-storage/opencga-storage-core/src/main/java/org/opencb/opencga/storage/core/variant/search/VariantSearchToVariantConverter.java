@@ -557,15 +557,15 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         if (MapUtils.isNotEmpty(fileEntry.getAttributes())) {
                             for (String key: fileEntry.getAttributes().keySet()) {
                                 fileInfo.put("fileInfo__" + studyId + "__" + fileEntry.getFileId() + "__" + key,
-                                        fileEntry.getAttributes().get(key).toString());
+                                        fileEntry.getAttributes().get(key));
                             }
                             // In additon, store QUAL and FILTER separately
-                            String value = fileEntry.getAttributes().get("QUAL").toString();
+                            String value = fileEntry.getAttributes().get("QUAL");
                             if (StringUtils.isNotEmpty(value)) {
                                 qual.put("qual__" + studyId + "__" + fileEntry.getFileId(), Float.parseFloat(value));
                             }
 
-                            value = fileEntry.getAttributes().get("FILTER").toString();
+                            value = fileEntry.getAttributes().get("FILTER");
                             if (StringUtils.isNotEmpty(value)) {
                                 filter.put("filter__" + studyId + "__" + fileEntry.getFileId(), value);
                             }
