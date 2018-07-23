@@ -498,9 +498,9 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             // Complete family information
             if (clinicalAnalysis.getFamily() != null && clinicalAnalysis.getFamily().getUid() > 0) {
                 try {
-                	Query query = new Query();
-                	query.put(FamilyDBAdaptor.QueryParams.UID.key(), clinicalAnalysis.getFamily().getUid());
-                	QueryResult<Family> familyQueryResult = catalogManager.getFamilyManager().get(studyStr,
+                    Query query = new Query();
+                    query.put(FamilyDBAdaptor.QueryParams.UID.key(), clinicalAnalysis.getFamily().getUid());
+                    QueryResult<Family> familyQueryResult = catalogManager.getFamilyManager().get(studyStr,
                             query, QueryOptions.empty(), sessionId);
                     if (familyQueryResult.getNumResults() == 1) {
                         clinicalAnalysis.setFamily(familyQueryResult.first());
