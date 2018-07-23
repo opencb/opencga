@@ -8,6 +8,7 @@ import org.opencb.hpg.bigdata.analysis.tools.ToolManager;
 import org.opencb.hpg.bigdata.analysis.tools.manifest.Param;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
@@ -53,8 +54,13 @@ public class ToolAnalysis {
         	Query query = new Query();
         	query.put(JobDBAdaptor.QueryParams.UID.key(), jobId);        	
         	Job job = jobManager.get(null, query, QueryOptions.empty(), sessionId).first();
-            long studyId = jobManager.getStudyId(jobId);
-
+            long studyUid = jobManager.getStudyId(jobId);
+            
+            // get the study FQN we need
+            query = new Query();
+            query.put(StudyDBAdaptor.QueryParams.UID.key(), studyUid);
+            String studyFqn = catalogManager.getStudyManager().get(query, QueryOptions.empty(), sessionId).first().getFqn();
+            
             String outDir = (String) job.getAttributes().get(Job.OPENCGA_TMP_DIR);
             Path outDirPath = Paths.get(outDir);
 
@@ -62,7 +68,7 @@ public class ToolAnalysis {
             String execution = job.getExecution();
 
             // Create the OpenCGA output folder
-            fileManager.createFolder(String.valueOf(studyId), (String) job.getAttributes().get(Job.OPENCGA_OUTPUT_DIR),
+            fileManager.createFolder(studyFqn, (String) job.getAttributes().get(Job.OPENCGA_OUTPUT_DIR),
                     new File.FileStatus(), true, "", QueryOptions.empty(), sessionId);
 
             // Convert the input and output files to uris in the filesystem
@@ -76,7 +82,7 @@ public class ToolAnalysis {
                 if (params.containsKey(inputParam.getName())) {
                     // Get the file uri
                     String fileString = params.get(inputParam.getName());
-                    QueryResult<File> fileQueryResult = fileManager.get(String.valueOf(studyId), fileString, options, sessionId);
+                    QueryResult<File> fileQueryResult = fileManager.get(studyFqn, fileString, options, sessionId);
                     if (fileQueryResult.getNumResults() == 0) {
                         throw new CatalogException("File " + fileString + " not found");
                     }
