@@ -68,7 +68,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
         super.open();
 
         try {
-            hBaseManager.createTableIfNeeded(tableName, family, Compression.Algorithm.NONE);
+            hBaseManager.createTableIfNeeded(tableName, family, Compression.Algorithm.SNAPPY);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
