@@ -1,11 +1,13 @@
 package org.opencb.opencga.analysis;
 
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.hpg.bigdata.analysis.exceptions.AnalysisToolException;
 import org.opencb.hpg.bigdata.analysis.tools.ToolManager;
 import org.opencb.hpg.bigdata.analysis.tools.manifest.Param;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
@@ -47,8 +49,10 @@ public class ToolAnalysis {
      */
     public void execute(long jobId, String sessionId) {
         try {
-            // We get the job information.
-            Job job = jobManager.get(jobId, QueryOptions.empty(), sessionId).first();
+            // We get the job information.        	
+        	Query query = new Query();
+        	query.put(JobDBAdaptor.QueryParams.UID.key(), jobId);        	
+        	Job job = jobManager.get(null, query, QueryOptions.empty(), sessionId).first();
             long studyId = jobManager.getStudyId(jobId);
 
             String outDir = (String) job.getAttributes().get(Job.OPENCGA_TMP_DIR);

@@ -591,6 +591,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
+                    case ID:
                     case NAME:
                     case UUID:
                     case USER_ID:
