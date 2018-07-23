@@ -697,21 +697,21 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     public QueryResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false);
-        return rank(fileCollection, bsonQuery, field, QueryParams.ID.key(), numResults, asc);
+        return rank(fileCollection, bsonQuery, field, QueryParams.NAME.key(), numResults, asc);
     }
 
     @Override
     public QueryResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false);
-        return groupBy(fileCollection, bsonQuery, field, QueryParams.ID.key(), options);
+        return groupBy(fileCollection, bsonQuery, field, QueryParams.NAME.key(), options);
     }
 
     @Override
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false);
-        return groupBy(fileCollection, bsonQuery, fields, QueryParams.ID.key(), options);
+        return groupBy(fileCollection, bsonQuery, fields, QueryParams.NAME.key(), options);
     }
 
     @Override
@@ -722,7 +722,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
                 .name(), FileAclEntry.FilePermissions.VIEW.name());
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
-        return groupBy(fileCollection, bsonQuery, fields, QueryParams.ID.key(), options);
+        return groupBy(fileCollection, bsonQuery, fields, QueryParams.NAME.key(), options);
     }
 
     @Override

@@ -50,6 +50,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationQueryCommandOptions.ANNOTATION_QUERY_COMMAND;
 
 /**
@@ -81,6 +82,9 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case ANNOTATION_QUERY_COMMAND:
                 queryResponse = annotationQuery();
+                break;
+            case ANNOTATION_METADATA_COMMAND:
+                queryResponse = annotationMetadata();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -127,7 +131,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         VariantCommandOptions.VariantQueryCommandOptions queryCommandOptions = variantCommandOptions.queryVariantCommandOptions;
 
         queryCommandOptions.study = resolveStudy(queryCommandOptions.study);
-        queryCommandOptions.genericVariantQueryOptions.returnStudy = resolveStudy(queryCommandOptions.genericVariantQueryOptions.returnStudy);
+        queryCommandOptions.genericVariantQueryOptions.includeStudy = resolveStudy(queryCommandOptions.genericVariantQueryOptions.includeStudy);
 
         List<String> studies = new ArrayList<>();
         if (cliSession != null && cliSession.getProjectsAndStudies() != null) {
@@ -387,6 +391,15 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         query.put(VariantQueryParam.REGION.key(), cliOptions.region);
         query.put(VariantQueryParam.ID.key(), cliOptions.id);
 
-        return openCGAClient.getVariantClient().annotationQuery(cliOptions.name, query, options);
+        return openCGAClient.getVariantClient().annotationQuery(cliOptions.annotationId, query, options);
+    }
+
+    public QueryResponse<ObjectMap> annotationMetadata() throws IOException {
+        VariantCommandOptions.AnnotationMetadataCommandOptions cliOptions = variantCommandOptions.annotationMetadataCommandOptions;
+
+        QueryOptions options = new QueryOptions();
+        options.putAll(cliOptions.commonOptions.params);
+
+        return openCGAClient.getVariantClient().annotationMetadata(cliOptions.annotationId, cliOptions.project, options);
     }
 }

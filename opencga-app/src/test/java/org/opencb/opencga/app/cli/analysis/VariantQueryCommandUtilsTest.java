@@ -40,14 +40,14 @@ public class VariantQueryCommandUtilsTest {
         AnalysisCliOptionsParser cliOptionsParser = new AnalysisCliOptionsParser();
         VariantCommandOptions.VariantQueryCommandOptions queryVariantsOptions = cliOptionsParser.getVariantCommandOptions().queryVariantCommandOptions;
 
-        queryVariantsOptions.genericVariantQueryOptions.hpo = "HP:0002812";
-        queryVariantsOptions.genericVariantQueryOptions.returnStudy = "1";
+        queryVariantsOptions.genericVariantQueryOptions.trait = "HP:0002812";
+        queryVariantsOptions.genericVariantQueryOptions.includeStudy = "1";
         Map<Long, String> studyIds = Collections.singletonMap(1L, "study");
 
         Query query = VariantQueryCommandUtils.parseQuery(queryVariantsOptions, studyIds, null);
 
 //        System.out.println("query = " + query.toJson());
-        assertEquals("HP:0002812", query.get(VariantQueryParam.ANNOT_HPO.key()));
+        assertEquals("HP:0002812", query.get(VariantQueryParam.ANNOT_TRAIT.key()));
     }
 
 }

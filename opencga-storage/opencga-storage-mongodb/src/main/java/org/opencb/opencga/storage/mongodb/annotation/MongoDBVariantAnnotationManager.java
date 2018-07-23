@@ -46,20 +46,24 @@ public class MongoDBVariantAnnotationManager extends DefaultVariantAnnotationMan
         });
 
         String annotationCollectionName = mongoDbAdaptor.getAnnotationCollectionName(name);
-        mongoDbAdaptor.getVariantsCollection().aggregate(Arrays.asList(
-                match(exists(ANNOTATION_FIELD + '.' + ANNOT_ID_FIELD)),
-                project(include(
-                        CHROMOSOME_FIELD,
-                        START_FIELD,
-                        REFERENCE_FIELD,
-                        ALTERNATE_FIELD,
-                        END_FIELD,
-                        TYPE_FIELD,
-                        SV_FIELD,
-                        RELEASE_FIELD,
-                        ANNOTATION_FIELD,
-                        CUSTOM_ANNOTATION_FIELD)),
-                out(annotationCollectionName)), null);
+        mongoDbAdaptor.getVariantsCollection()
+                .nativeQuery()
+                .aggregate(Arrays.asList(
+                        match(exists(ANNOTATION_FIELD + '.' + ANNOT_ID_FIELD)),
+                        project(include(
+                                CHROMOSOME_FIELD,
+                                START_FIELD,
+                                REFERENCE_FIELD,
+                                ALTERNATE_FIELD,
+                                END_FIELD,
+                                TYPE_FIELD,
+                                SV_FIELD,
+                                RELEASE_FIELD,
+                                ANNOTATION_FIELD,
+                                CUSTOM_ANNOTATION_FIELD)),
+                        out(annotationCollectionName)))
+                .toCollection();
+
     }
 
     @Override

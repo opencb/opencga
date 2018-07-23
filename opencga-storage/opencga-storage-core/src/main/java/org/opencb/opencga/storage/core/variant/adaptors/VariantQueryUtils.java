@@ -66,6 +66,9 @@ public final class VariantQueryUtils {
     public static final String ALL = "all";
     public static final String GT = "GT";
 
+    private static final int LIMIT_DEFAULT = 1000;
+    private static final int LIMIT_MAX = 5000;
+
     public static final QueryParam ANNOT_EXPRESSION_GENES = QueryParam.create("annot_expression_genes", "", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam ANNOT_GO_GENES = QueryParam.create("annot_go_genes", "", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam ANNOT_GENE_REGIONS = QueryParam.create("annot_gene_regions", "", QueryParam.Type.TEXT_ARRAY);
@@ -205,10 +208,10 @@ public final class VariantQueryUtils {
         final String annotation = VariantField.ANNOTATION.fieldName();
         for (String field : queryOptions.getAsStringList(key)) {
             String newField;
-            if (!field.startsWith(annotation + '.')) {
-                newField = annotation + '.' + field;
-            } else {
+            if (field.startsWith(annotation + '.') || field.equals(annotation)) {
                 newField = field;
+            } else {
+                newField = annotation + '.' + field;
             }
 
             if (VariantField.get(newField) == null) {
@@ -566,6 +569,27 @@ public final class VariantQueryUtils {
         List<Integer> studyIds;
         if (studiesList == null) {
             studyIds = studyConfigurationManager.getStudyIds(options);
+            if (studyIds.size() > 1) {
+                Map<Integer, List<Integer>> map = null;
+                if (isIncludeSamplesDefined(query, fields)) {
+                    map = getIncludeSamples(query, options, studyIds,
+                            studyId -> studyConfigurationManager.getStudyConfiguration(studyId, null).first());
+                } else if (isIncludeFilesDefined(query, fields)) {
+                    map = getIncludeFiles(query, studyIds, fields,
+                            studyId -> studyConfigurationManager.getStudyConfiguration(studyId, null).first());
+                }
+                if (map != null) {
+                    List<Integer> studyIdsFromSubFields = new ArrayList<>();
+                    for (Map.Entry<Integer, List<Integer>> entry : map.entrySet()) {
+                        if (!entry.getValue().isEmpty()) {
+                            studyIdsFromSubFields.add(entry.getKey());
+                        }
+                    }
+                    if (!studyIdsFromSubFields.isEmpty()) {
+                        studyIds = studyIdsFromSubFields;
+                    }
+                }
+            }
         } else {
             studyIds = studyConfigurationManager.getStudyIds(studiesList, options);
         }
@@ -1233,5 +1257,27 @@ public final class VariantQueryUtils {
             }
         }
     }
+
+
+    public static QueryOptions addDefaultLimit(QueryOptions queryOptions) {
+        return addDefaultLimit(queryOptions, LIMIT_MAX, LIMIT_DEFAULT);
+    }
+
+    public static QueryOptions addDefaultLimit(QueryOptions queryOptions, int limitMax, int limitDefault) {
+        queryOptions = queryOptions == null ? new QueryOptions() : queryOptions;
+        // Add default limit
+        int limit = getDefaultLimit(queryOptions.getInt(QueryOptions.LIMIT, -1), limitMax, limitDefault);
+        queryOptions.put(QueryOptions.LIMIT,  limit);
+        return queryOptions;
+    }
+
+    public static int getDefaultLimit(int limit, int limitMax, int limitDefault) {
+        if (limit > limitMax) {
+            logger.info("Unable to return more than {} variants. Change limit from {} to {}", limitMax, limit, limitMax);
+        }
+        limit = (limit > 0) ? Math.min(limit, limitMax) : limitDefault;
+        return limit;
+    }
+
 
 }

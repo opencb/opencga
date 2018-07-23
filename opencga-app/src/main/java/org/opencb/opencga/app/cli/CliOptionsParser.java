@@ -47,14 +47,16 @@ public abstract class CliOptionsParser {
     public abstract void printUsage();
 
     protected void printMainUsage() {
-        for (String s : jCommander.getCommands().keySet()) {
-            System.err.printf("%14s  %s\n", s, jCommander.getCommandDescription(s));
-        }
+        printCommands(jCommander);
     }
 
     protected void printCommands(JCommander commander) {
+        int pad = commander.getCommands().keySet().stream().mapToInt(String::length).max().orElse(0);
+        // Set padding between 14 and 40
+        pad = Math.max(14, pad);
+        pad = Math.min(40, pad);
         for (Map.Entry<String, JCommander> entry : commander.getCommands().entrySet()) {
-            System.err.printf("%14s  %s\n", entry.getKey(), commander.getCommandDescription(entry.getKey()));
+            System.err.printf("%" + pad + "s  %s\n", entry.getKey(), commander.getCommandDescription(entry.getKey()));
         }
     }
 
