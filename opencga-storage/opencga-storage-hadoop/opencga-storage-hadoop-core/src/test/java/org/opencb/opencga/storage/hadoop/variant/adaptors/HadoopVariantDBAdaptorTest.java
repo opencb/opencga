@@ -122,32 +122,6 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
         cellBaseUtils = variantStorageEngine.getCellBaseUtils();
     }
 //
-    @Override
-    public VariantQueryResult<Variant> query(Query query, QueryOptions options) {
-        query = preProcessQuery(query);
-        VariantQueryUtils.convertGenesToRegionsQuery(query, cellBaseUtils);
-        return super.query(query, options);
-    }
-
-    protected Query preProcessQuery(Query query) {
-        try {
-            return ((HadoopVariantStorageEngine) variantStorageEngine).preProcessQuery(query);
-        } catch (StorageEngineException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
-    @Override
-    public VariantDBIterator iterator(Query query, QueryOptions options) {
-        query = preProcessQuery(query);
-        return super.iterator(query, options);
-    }
-
-    @Override
-    public Long count(Query query) {
-        query = preProcessQuery(query);
-        return super.count(query);
-    }
     //    @Override
 //    public Map<String, ?> getOtherStorageConfigurationOptions() {
 //        return new ObjectMap(AbstractHadoopVariantStoragePipeline.SKIP_CREATE_PHOENIX_INDEXES, true);
