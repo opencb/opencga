@@ -50,17 +50,17 @@ public class ToolAnalysis {
      */
     public void execute(long jobId, String sessionId) {
         try {
-            // We get the job information.        	
-        	Query query = new Query();
-        	query.put(JobDBAdaptor.QueryParams.UID.key(), jobId);        	
-        	Job job = jobManager.get(null, query, QueryOptions.empty(), sessionId).first();
+            // We get the job information.
+            Query query = new Query();
+            query.put(JobDBAdaptor.QueryParams.UID.key(), jobId);
+            Job job = jobManager.get(null, query, QueryOptions.empty(), sessionId).first();
             long studyUid = jobManager.getStudyId(jobId);
-            
+
             // get the study FQN we need
             query = new Query();
             query.put(StudyDBAdaptor.QueryParams.UID.key(), studyUid);
             String studyFqn = catalogManager.getStudyManager().get(query, QueryOptions.empty(), sessionId).first().getFqn();
-            
+
             String outDir = (String) job.getAttributes().get(Job.OPENCGA_TMP_DIR);
             Path outDirPath = Paths.get(outDir);
 
