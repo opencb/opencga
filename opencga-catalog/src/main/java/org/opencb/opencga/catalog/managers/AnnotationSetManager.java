@@ -586,8 +586,8 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                 if (annotationSetsObject instanceof List) {
                     ObjectMapper jsonObjectMapper = new ObjectMapper();
 
-                    ParamUtils.UpdateAction action = (ParamUtils.UpdateAction) actionMap.getOrDefault(ANNOTATION_SETS,
-                            ParamUtils.UpdateAction.ADD);
+                    ParamUtils.UpdateAction action = ParamUtils.UpdateAction.valueOf(
+                            (String) actionMap.getOrDefault(ANNOTATION_SETS, ParamUtils.UpdateAction.ADD.name()));
 
                     if (action == ParamUtils.UpdateAction.ADD || action == ParamUtils.UpdateAction.SET) {
                         /* We need to validate that the new annotationSets are fine to be stored */
