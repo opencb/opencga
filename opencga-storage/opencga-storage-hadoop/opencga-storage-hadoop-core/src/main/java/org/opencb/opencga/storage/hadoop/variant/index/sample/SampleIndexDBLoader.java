@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
 
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.SAMPLE_INDEX_TABLE_COMPRESSION;
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConverter.toGenotypeColumn;
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConverter.toGenotypeCountColumn;
 
@@ -68,7 +69,8 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
         super.open();
 
         try {
-            hBaseManager.createTableIfNeeded(tableName, family, Compression.Algorithm.SNAPPY);
+            hBaseManager.createTableIfNeeded(tableName, family, Compression.getCompressionAlgorithmByName(
+                    hBaseManager.getConf().get(SAMPLE_INDEX_TABLE_COMPRESSION, Compression.Algorithm.SNAPPY.getName())));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
