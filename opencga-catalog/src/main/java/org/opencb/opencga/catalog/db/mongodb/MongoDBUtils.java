@@ -24,7 +24,6 @@ import com.mongodb.MongoWriteException;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
 import com.mongodb.util.JSON;
-import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
@@ -206,42 +205,6 @@ class MongoDBUtils {
         return document;
     }
 //    static final String TO_REPLACE_DOTS = "\uff0e";
-
-    /**
-     * Merges the key-values from source into target.
-     * @param target target Document.
-     * @param source source Document.
-     */
-    static void mergeDocument(Document target, Document source) {
-        if (source == null || target == null) {
-            return;
-        }
-
-        for (Map.Entry<String, Object> entry : source.entrySet()) {
-            String[] split = StringUtils.split(entry.getKey(), ".");
-            List<String> myKeys = new ArrayList<>(split.length);
-            myKeys.addAll(Arrays.asList(split));
-
-            if (myKeys.size() == 1) {
-                target.put(entry.getKey(), entry.getValue());
-            } else {
-                Document tmpDocument = target;
-                while (myKeys.size() > 0) {
-                    if (myKeys.size() == 1) {
-                        tmpDocument.put(myKeys.get(0), entry.getValue());
-                    } else {
-                        Document auxDocument = (Document) tmpDocument.get(myKeys.get(0));
-                        if (auxDocument == null) {
-                            tmpDocument.put(myKeys.get(0), new Document());
-                            auxDocument = (Document) tmpDocument.get(myKeys.get(0));
-                        }
-                        tmpDocument = auxDocument;
-                        myKeys.remove(0);
-                    }
-                }
-            }
-        }
-    }
 
     /***
      * Scan all the DBObject and replace all the dots in keys with.

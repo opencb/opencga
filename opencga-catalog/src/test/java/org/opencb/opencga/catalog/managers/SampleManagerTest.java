@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.*;
 import static org.opencb.opencga.catalog.db.api.SampleDBAdaptor.QueryParams.ANNOTATION;
 
-public class CatalogSampleManagerTest extends AbstractManagerTest {
+public class SampleManagerTest extends AbstractManagerTest {
 
     @Test
     public void testSampleVersioning() throws CatalogException {
@@ -1110,7 +1110,7 @@ public class CatalogSampleManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    public void testDeleteSample() throws CatalogException, IOException {
+    public void testDeleteSample() throws CatalogException {
         long sampleUid = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_1"), new QueryOptions(),
                 sessionIdUser).first().getUid();
 
