@@ -304,7 +304,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             variantReader = VariantReaderUtils.getVariantReader(Paths.get(inputUri), metadata).then(duplicatedVariantsDetector);
 
             //Remapping ids task
-            Task<Variant, Variant> remapIdsTask = new RemapVariantIdsTask(studyConfiguration, fileId);
+            Task<Variant, Variant> remapIdsTask = new RemapVariantIdsTask(studyConfiguration.getStudyId(), fileId);
 
             //Runner
             ProgressLogger progressLogger = new ProgressLogger("Write variants in VARIANTS collection:", numRecords, 200);
@@ -387,7 +387,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             variantReader = VariantReaderUtils.getVariantReader(input, metadata);
 
             //Remapping ids task
-            Task<Variant, Variant> remapIdsTask = new RemapVariantIdsTask(studyConfiguration, fileId);
+            Task<Variant, Variant> remapIdsTask = new RemapVariantIdsTask(studyConfiguration.getStudyId(), fileId);
 
             //Runner
             ProgressLogger progressLogger = new ProgressLogger("Write variants in STAGE collection:", numRecords, 200);

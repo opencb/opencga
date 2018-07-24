@@ -513,7 +513,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
         checkLoadedVariants(dbAdaptor, studyConfiguration, true, false, false, getExpectedNumLoadedVariants(fileMetadata));
 
-        String fileId = studyConfiguration.getFileIds().get(UriUtils.fileName(smallInputUri)).toString();
+        String fileId = UriUtils.fileName(smallInputUri);
         VariantReader reader = VariantReaderUtils.getVariantReader(Paths.get(etlResult.getTransformResult().getPath()),
                 new VariantFileMetadata(fileId, "").toVariantStudyMetadata(String.valueOf(studyConfiguration.getStudyId())));
 

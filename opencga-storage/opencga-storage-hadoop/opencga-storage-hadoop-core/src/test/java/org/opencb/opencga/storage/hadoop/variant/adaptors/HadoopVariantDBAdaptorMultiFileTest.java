@@ -83,7 +83,7 @@ public class HadoopVariantDBAdaptorMultiFileTest extends VariantDBAdaptorMultiFi
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877")
                 .append(VariantQueryParam.INCLUDE_FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"), options);
         assertEquals(expectedSource, queryResult.getSource());
-        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(withFileId("12877"), withSampleData("NA12877", "GT", containsString("1"))))));
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(withFileId("1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"), withSampleData("NA12877", "GT", containsString("1"))))));
     }
 
     @Test
@@ -111,10 +111,10 @@ public class HadoopVariantDBAdaptorMultiFileTest extends VariantDBAdaptorMultiFi
         assertEquals(expectedSource, queryResult.getSource());
         assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(
                 allOf(
-                        withFileId("12877"),
+                        withFileId("1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"),
                         withSampleData("NA12877", "GT", containsString("1"))),
                 allOf(
-                        withFileId("12878"),
+                        withFileId("1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz"),
                         withSampleData("NA12878", "GT", containsString("1")))))));
     }
 
@@ -144,10 +144,10 @@ public class HadoopVariantDBAdaptorMultiFileTest extends VariantDBAdaptorMultiFi
 
         assertThat(queryResult, everyResult(allVariants, withStudy("S_1", anyOf(
                 allOf(
-                        withFileId("12877"),
+                        withFileId("1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"),
                         withSampleData("NA12877", "GT", containsString("0/1"))),
                 allOf(
-                        withFileId("12878"),
+                        withFileId("1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz"),
                         withSampleData("NA12878", "GT", containsString("1/1")))))));
         assertEquals(expectedSource, queryResult.getSource());
 
@@ -158,10 +158,10 @@ public class HadoopVariantDBAdaptorMultiFileTest extends VariantDBAdaptorMultiFi
 
         assertThat(queryResult, everyResult(allVariants, withStudy("S_1", anyOf(
                 allOf(
-                        withFileId("12877"),
+                        withFileId("1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"),
                         withSampleData("NA12877", "GT", containsString("0/1"))),
                 allOf(
-                        withFileId("12878"),
+                        withFileId("1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz"),
                         withSampleData("NA12878", "GT", containsString("1/1")))))));
         assertEquals(expectedSource, queryResult.getSource());
     }
@@ -187,7 +187,7 @@ public class HadoopVariantDBAdaptorMultiFileTest extends VariantDBAdaptorMultiFi
                 .append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "0/0"), options);
         assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(
                 allOf(
-                        withFileId("12877"),
+                        withFileId("1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"),
                         withSampleData("NA12877", "GT", containsString("0/1"))),
                 withSampleData("NA12878", "GT", containsString("0/0"))))));
         assertEquals(expectedSource, queryResult.getSource());
@@ -214,7 +214,7 @@ public class HadoopVariantDBAdaptorMultiFileTest extends VariantDBAdaptorMultiFi
                 .append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "0/0"), options);
         assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(
                 allOf(
-                        withFileId("12877"),
+                        withFileId("1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"),
                         withSampleData("NA12877", "GT", containsString("0/1"))),
                 anyOf(
                         withSampleData("NA12878", "GT", containsString("0/0")),
@@ -248,7 +248,7 @@ public class HadoopVariantDBAdaptorMultiFileTest extends VariantDBAdaptorMultiFi
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877")
                 .append(VariantQueryParam.INCLUDE_FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"), options);
         assertEquals(expectedSource, queryResult.getSource());
-        assertThat(queryResult, everyResult(allVariants, allOf(anyOf(overlaps(new Region("1:1-12783")), overlaps(new Region("M"))), withStudy("S_1", allOf(withFileId("12877"), withSampleData("NA12877", "GT", containsString("1")))))));
+        assertThat(queryResult, everyResult(allVariants, allOf(anyOf(overlaps(new Region("1:1-12783")), overlaps(new Region("M"))), withStudy("S_1", allOf(withFileId("1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"), withSampleData("NA12877", "GT", containsString("1")))))));
     }
 
     @Test
@@ -275,7 +275,7 @@ public class HadoopVariantDBAdaptorMultiFileTest extends VariantDBAdaptorMultiFi
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877")
                 .append(VariantQueryParam.INCLUDE_FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"), options);
         assertEquals(expectedSource, queryResult.getSource());
-        assertThat(queryResult, everyResult(allVariants, allOf(anyOf(overlaps(new Region("1:1-12783")), overlaps(new Region("M"))), withStudy("S_1", allOf(withFileId("12877"), withSampleData("NA12877", "GT", is("1/1")))))));
+        assertThat(queryResult, everyResult(allVariants, allOf(anyOf(overlaps(new Region("1:1-12783")), overlaps(new Region("M"))), withStudy("S_1", allOf(withFileId("1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"), withSampleData("NA12877", "GT", is("1/1")))))));
     }
 
     @Test
@@ -301,7 +301,7 @@ public class HadoopVariantDBAdaptorMultiFileTest extends VariantDBAdaptorMultiFi
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877")
                 .append(VariantQueryParam.INCLUDE_FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"), options);
         assertEquals(expectedSource, queryResult.getSource());
-        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", withFileId("12877"))));
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", withFileId("1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"))));
     }
 
     @Test
