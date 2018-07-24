@@ -267,7 +267,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                 @QueryParam("study") String studyStr,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", defaultValue = "ADD")
                 @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
-            @ApiParam(value = "params") Map<String, Object> params) {
+            @ApiParam(value = "params") CohortUpdateParameters params) {
         try {
             Map<String, Object> actionMap = new HashMap<>();
 
@@ -278,7 +278,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             actionMap.put(CohortDBAdaptor.UpdateParams.ANNOTATION_SETS.key(), annotationSetsAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
-            return createOkResponse(catalogManager.getCohortManager().update(studyStr, cohortStr, new ObjectMap(params), queryOptions,
+            return createOkResponse(catalogManager.getCohortManager().update(studyStr, cohortStr, params.toObjectMap(), queryOptions,
                     sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -619,6 +619,28 @@ public class CohortWSServer extends OpenCGAWSServer {
         public String samples;
         public List<AnnotationSet> annotationSets;
         public Map<String, Object> attributes;
+    }
+
+    protected static class CohortUpdateParameters {
+        public String id;
+        @Deprecated
+        public String name;
+        public String description;
+        public String samples;
+        public List<AnnotationSet> annotationSets;
+        public Map<String, Object> attributes;
+
+        public ObjectMap toObjectMap() {
+            ObjectMap params = new ObjectMap();
+            params.putIfNotEmpty(CohortDBAdaptor.UpdateParams.ID.key(), id);
+            params.putIfNotEmpty(CohortDBAdaptor.UpdateParams.NAME.key(), name);
+            params.putIfNotEmpty(CohortDBAdaptor.UpdateParams.DESCRIPTION.key(), description);
+            params.putIfNotEmpty(CohortDBAdaptor.UpdateParams.SAMPLES.key(), samples);
+            params.putIfNotNull(CohortDBAdaptor.UpdateParams.ANNOTATION_SETS.key(), annotationSets);
+            params.putIfNotNull(CohortDBAdaptor.UpdateParams.ATTRIBUTES.key(), attributes);
+
+            return params;
+        }
     }
 
 }
