@@ -156,7 +156,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
     public QueryResult<Cohort> update(long cohortId, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
             throws CatalogDBException {
         long startTime = startQuery();
-        update(new Query(QueryParams.UID.key(), cohortId), parameters, variableSetList, QueryOptions.empty());
+        update(new Query(QueryParams.UID.key(), cohortId), parameters, variableSetList, queryOptions);
         return endQuery("Update cohort", startTime, get(cohortId, queryOptions));
     }
 

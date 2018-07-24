@@ -695,8 +695,6 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                             if (StringUtils.isEmpty(annotationSet.getId())) {
                                 throw new CatalogException("Cannot remove annotationSet. Mandatory annotationSet id field is empty");
                             }
-
-
                         }
                     } else {
                         throw new CatalogException("Unrecognised annotationSet action " + action);
