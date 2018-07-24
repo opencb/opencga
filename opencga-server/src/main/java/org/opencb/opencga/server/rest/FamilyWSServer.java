@@ -205,7 +205,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             ObjectMap params = parameters.toFamilyObjectMap();
 
             Map<String, Object> actionMap = new HashMap<>();
-            actionMap.put(FamilyDBAdaptor.UpdateParams.ANNOTATION_SETS.key(), annotationSetsAction.name());
+            actionMap.put(FamilyDBAdaptor.UpdateParams.ANNOTATION_SETS.key(), annotationSetsAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
             QueryResult<Family> queryResult = catalogManager.getFamilyManager().update(studyStr, familyStr, params, queryOptions,
@@ -632,6 +632,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
             ObjectMap params = new ObjectMap(mapper.writeValueAsString(family));
             params.putIfNotNull("members", relatives);
+            params.putIfNotNull(FamilyDBAdaptor.UpdateParams.ANNOTATION_SETS.key(), annotationSets);
 
             // We do this because jackson will always introduce expectedSize = 0
             if (expectedSize == null) {
