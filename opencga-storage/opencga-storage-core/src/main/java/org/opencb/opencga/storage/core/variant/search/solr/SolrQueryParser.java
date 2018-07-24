@@ -340,6 +340,20 @@ public class SolrQueryParser {
             filterList.add(parseCategoryTermValue("traits", query.getString(key)));
         }
 
+        key = VariantQueryParam.ANNOT_CLINICAL_SIGNIFICANCE.key();
+        if (StringUtils.isNotEmpty(query.getString(key))) {
+            String[] clinSig = query.getString(key).split("[,;]");
+            StringBuilder sb = new StringBuilder();
+            sb.append("(").append("traits:\"cs:").append(clinSig[0]).append("\"");
+            for (int i = 1; i < clinSig.length; i++) {
+                sb.append(" OR ").append("traits:\"cs:").append(clinSig[i]).append("\"");
+            }
+            sb.append(")");
+            filterList.add(sb.toString());
+
+            filterList.add(parseCategoryTermValue("traits", "cs:" + query.getString(key)));
+        }
+
         // Sanity check for QUAL and FILTER, only one study is permitted, but multiple files
         String[] studies = null;
         if (StringUtils.isNotEmpty(query.getString(VariantQueryParam.STUDY.key()))) {
