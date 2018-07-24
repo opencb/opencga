@@ -172,14 +172,7 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
         }
 
         // Trim all leading null values
-        for (int i = fileColumn.size() - 1; i >= 0; i--) {
-            if (fileColumn.get(i) != null) {
-                if (i != fileColumn.size() - 1) {
-                    fileColumn = fileColumn.subList(0, i + 1);
-                }
-                break;
-            }
-        }
+        fileColumn = trimLeadingNullValues(fileColumn, HBaseToStudyEntryConverter.FILE_INFO_START_IDX);
 
         return fileColumn;
     }
@@ -258,8 +251,20 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
 //            }
 //            sampleDataIdx++;
 //        }
+        remappedSampleData = trimLeadingNullValues(remappedSampleData, 1);
 
         return remappedSampleData;
+    }
+
+    private List<String> trimLeadingNullValues(List<String> values, int minSize) {
+        int i = values.size() - 1;
+        while (i >= minSize && values.get(i) == null) {
+            i--;
+        }
+        if (i != values.size() - 1) {
+            values = values.subList(0, i + 1);
+        }
+        return values;
     }
 
 }
