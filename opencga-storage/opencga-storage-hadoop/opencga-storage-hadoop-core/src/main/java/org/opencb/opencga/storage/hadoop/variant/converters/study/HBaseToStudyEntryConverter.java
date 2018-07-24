@@ -38,6 +38,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
@@ -364,6 +365,11 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     protected void addMainSampleDataColumn(StudyConfiguration studyConfiguration, StudyEntry studyEntry,
                                            int[] formatsMap, Integer sampleId, List<String> sampleData) {
         sampleData = remapSamplesData(sampleData, formatsMap);
+        Integer gtIdx = studyEntry.getFormatPositions().get("GT");
+        // Replace UNKNOWN_GENOTYPE, if any
+        if (gtIdx != null && sampleData.get(gtIdx).equals(GenotypeClass.UNKNOWN_GENOTYPE)) {
+            sampleData.set(gtIdx, unknownGenotype);
+        }
 
         String sampleName = studyConfiguration.getSampleIds().inverse().get(sampleId);
         studyEntry.addSampleData(sampleName, sampleData);

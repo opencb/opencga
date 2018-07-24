@@ -668,7 +668,7 @@ public class StorageVariantCommandOptions {
     @Parameters(commandNames = {FillGapsCommandOptions.FILL_GAPS_COMMAND}, commandDescription = FillGapsCommandOptions.FILL_GAPS_COMMAND_DESCRIPTION)
     public class FillGapsCommandOptions extends GenericFillGapsOptions {
 
-        public static final String FILL_GAPS_COMMAND = "fill-gaps";
+        public static final String FILL_GAPS_COMMAND = "aggregate-family";
         public static final String FILL_GAPS_COMMAND_DESCRIPTION = "Find variants where not all the samples are present, and fill the empty values.";
 
         @ParametersDelegate
@@ -695,7 +695,7 @@ public class StorageVariantCommandOptions {
     }
 
     public static class GenericFillMissingCommandOptions {
-        public static final String FILL_MISSING_COMMAND = "fill-missing";
+        public static final String FILL_MISSING_COMMAND = "aggregate";
         public static final String FILL_MISSING_COMMAND_DESCRIPTION = "Find variants where not all the samples are present, and fill the empty values, excluding HOM-REF (0/0) values.";
 
         @Parameter(names = {"--resume"}, description = "Resume a previously failed operation")
