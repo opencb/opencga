@@ -52,6 +52,7 @@
 !3 Get File Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/files/$fileId/info |200|Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].result[0].id == '$fileId'|
+| GET | /v1/files/$fileId/info ||Content-Type: application/json||
 
 !3 Delete VIEW_FILES ACL For Study
 !|Table: Rest Fixture | $baseURL |
