@@ -302,6 +302,9 @@ public class CohortWSServer extends OpenCGAWSServer {
                     + "with only the key 'reset' containing the comma separated variables that will be set to the default value"
                     + " when the action is RESET") Map<String, Object> updateParams) {
         try {
+            if (action == null) {
+                action = ParamUtils.CompleteUpdateAction.ADD;
+            }
             return createOkResponse(catalogManager.getCohortManager().updateAnnotations(studyStr, cohortStr, annotationSetId,
                     updateParams, action, queryOptions, sessionId));
         } catch (Exception e) {

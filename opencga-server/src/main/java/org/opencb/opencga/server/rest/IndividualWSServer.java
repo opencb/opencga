@@ -442,6 +442,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     + "with only the key 'reset' containing the comma separated variables that will be set to the default value"
                     + " when the action is RESET") Map<String, Object> updateParams) {
         try {
+            if (action == null) {
+                action = ParamUtils.CompleteUpdateAction.ADD;
+            }
             queryOptions.put(Constants.REFRESH, refresh);
 
             return createOkResponse(catalogManager.getIndividualManager().updateAnnotations(studyStr, individualStr, annotationSetId,
