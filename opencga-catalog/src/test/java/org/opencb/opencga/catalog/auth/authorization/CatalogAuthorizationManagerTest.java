@@ -62,7 +62,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     private final String ownerUser = "owner";
     private final String studyAdminUser1 = "studyAdmin1";
     private final String studyAdminUser2 = "studyAdmin2";
-    private final String memberUser = "member";
+    private final String memberUser = "member_member";
     private final String externalUser = "external";
     private final String password = "1234";
 
