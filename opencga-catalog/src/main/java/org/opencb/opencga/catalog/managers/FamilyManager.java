@@ -435,6 +435,9 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     public QueryResult<Family> updateAnnotations(String studyStr, String familyStr, String annotationSetId,
                                                      Map<String, Object> annotations, ParamUtils.CompleteUpdateAction action,
                                                      QueryOptions options, String token) throws CatalogException {
+        if (annotations == null || annotations.isEmpty()) {
+            return new QueryResult<>(familyStr, -1, -1, -1, "Nothing to do: The map of annotations is empty", "", Collections.emptyList());
+        }
         ObjectMap params = new ObjectMap(AnnotationSetManager.ANNOTATIONS, new AnnotationSet(annotationSetId, "", annotations));
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         options.put(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATIONS, action));
