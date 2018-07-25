@@ -1205,6 +1205,12 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
 
         if (!studyParameters.isEmpty()) {
+            // Update modificationDate param
+            String time = TimeUtils.getTime();
+            Date date = TimeUtils.toDate(time);
+            studyParameters.put(MODIFICATION_DATE, time);
+            studyParameters.put(PRIVATE_MODIFICATION_DATE, date);
+
             Document updates = new Document("$set", studyParameters);
             Long nModified = studyCollection.update(parseQuery(query, false), updates, null).getNumTotalResults();
             return endQuery("Study update", startTime, Collections.singletonList(nModified));

@@ -433,6 +433,14 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
             panelParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
+        if (!panelParameters.isEmpty()) {
+            // Update modificationDate param
+            String time = TimeUtils.getTime();
+            Date date = TimeUtils.toDate(time);
+            panelParameters.put(MODIFICATION_DATE, time);
+            panelParameters.put(PRIVATE_MODIFICATION_DATE, date);
+        }
+
         return panelParameters;
     }
 
