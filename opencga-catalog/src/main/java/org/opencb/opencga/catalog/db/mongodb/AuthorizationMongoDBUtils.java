@@ -279,7 +279,7 @@ public class AuthorizationMongoDBUtils {
         if (permissionList != null) {
             // If _acl was not previously defined, it can be null the first time
             for (String memberPermission : permissionList) {
-                String[] split = StringUtils.split(memberPermission, PERMISSION_DELIMITER, 2);
+                String[] split = memberPermission.split(PERMISSION_DELIMITER, 2);
                 String member = null;
                 if (user.equals(split[0])) {
                     member = "user";

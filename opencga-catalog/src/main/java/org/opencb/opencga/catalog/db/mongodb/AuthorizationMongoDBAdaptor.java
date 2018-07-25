@@ -276,13 +276,12 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             memberSet.addAll(members);
 
             Document document = aggregate.first();
-            List<String> memberList = (List<String>) document.get(QueryParams.ACL.key);
+            List<String> memberList = (List<String>) document.get(QueryParams.ACL.key());
 
             if (memberList != null) {
                 // If _acl was not previously defined, it can be null the first time
                 for (String memberPermission : memberList) {
-                    String[] split = StringUtils.split(memberPermission, PERMISSION_DELIMITER, 2);
-//                    String[] split = memberPermission.split(PERMISSION_DELIMITER, 2);
+                    String[] split = memberPermission.split(PERMISSION_DELIMITER, 2);
                     if (memberSet.isEmpty() || memberSet.contains(split[0])) {
                         if (!permissions.containsKey(split[0])) {
                             permissions.put(split[0], new ArrayList<>());

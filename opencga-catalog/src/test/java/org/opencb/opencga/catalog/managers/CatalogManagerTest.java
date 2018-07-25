@@ -427,6 +427,21 @@ public class CatalogManagerTest extends GenericTest {
         catalogManager.getStudyManager().getGroup("user@1000G:phase1", "test2", sessionIdUser);
     }
 
+    @Test
+    public void testAssignPermissions() throws CatalogException, IOException {
+        catalogManager.getUserManager().create("test", "test", "test@mail.com", "test", null, 100L, "guest", null);
+
+        catalogManager.getStudyManager().createGroup("user@1000G:phase1", "group_cancer_some_thing_else", "test", sessionIdUser);
+        List<QueryResult<StudyAclEntry>> permissions = catalogManager.getStudyManager().updateAcl(
+                Collections.singletonList("user@1000G:phase1"), "@group_cancer_some_thing_else",
+                new Study.StudyAclParams("", AclParams.Action.SET, "view_only"), sessionIdUser);
+        assertEquals("@group_cancer_some_thing_else", permissions.get(0).first().getMember());
+
+        String token = catalogManager.getUserManager().login("test", "test");
+        QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get("user@1000G:phase1", QueryOptions.empty(), token);
+        assertEquals(1, studyQueryResult.getNumResults());
+    }
+
     /**
      * Project methods
      * ***************************
