@@ -55,7 +55,6 @@ public class File extends PrivateStudyUid {
 
     private int release;
     private String creationDate;
-    @Deprecated
     private String modificationDate;
 
     private String description;
@@ -320,9 +319,9 @@ public class File extends PrivateStudyUid {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("File{");
-        sb.append("uuid='").append(uuid).append('\'');
-        sb.append(", id='").append(id).append('\'');
+        sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
+        sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", type=").append(type);
         sb.append(", format=").append(format);
         sb.append(", bioformat=").append(bioformat);
@@ -330,6 +329,7 @@ public class File extends PrivateStudyUid {
         sb.append(", path='").append(path).append('\'');
         sb.append(", release=").append(release);
         sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", status=").append(status);
         sb.append(", external=").append(external);
@@ -450,12 +450,10 @@ public class File extends PrivateStudyUid {
         return this;
     }
 
-    @Deprecated
     public String getModificationDate() {
         return modificationDate;
     }
 
-    @Deprecated
     public File setModificationDate(String modificationDate) {
         this.modificationDate = modificationDate;
         return this;

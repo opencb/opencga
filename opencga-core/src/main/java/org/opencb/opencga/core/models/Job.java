@@ -43,6 +43,7 @@ public class Job extends PrivateStudyUid {
      * Job creation date.
      */
     private String creationDate;
+    private String modificationDate;
     private String description;
 
     /**
@@ -226,17 +227,19 @@ public class Job extends PrivateStudyUid {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Job{");
-        sb.append("uuid='").append(uuid).append('\'');
-        sb.append(", id='").append(id).append('\'');
+        sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
+        sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", userId='").append(userId).append('\'');
         sb.append(", toolId='").append(toolId).append('\'');
         sb.append(", type=").append(type);
         sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", startTime=").append(startTime);
         sb.append(", endTime=").append(endTime);
         sb.append(", execution='").append(execution).append('\'');
+        sb.append(", executable='").append(executable).append('\'');
         sb.append(", commandLine='").append(commandLine).append('\'');
         sb.append(", visited=").append(visited);
         sb.append(", status=").append(status);
@@ -327,6 +330,15 @@ public class Job extends PrivateStudyUid {
 
     public Job setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public Job setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 
