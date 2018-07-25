@@ -1,6 +1,5 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
-import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
