@@ -36,6 +36,7 @@ import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -44,8 +45,10 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.metadata.local.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
@@ -371,12 +374,26 @@ public class VariantHbaseTestUtils {
             FileStudyConfigurationAdaptor.write(studyConfiguration, outDir.resolve("study_configuration_" + studyConfiguration.getStudyName() + ".json"));
             printVariantsFromArchiveTable(dbAdaptor, studyConfiguration, outDir);
             printArchiveTable(studyConfiguration, dbAdaptor, outDir);
+            printVcf(studyConfiguration, dbAdaptor, outDir);
         }
         printMetaTable(dbAdaptor, outDir);
         printSamplesIndexTable(dbAdaptor, outDir);
         printVariantsFromVariantsTable(dbAdaptor, outDir);
         printVariantsFromDBAdaptor(dbAdaptor, outDir);
         HBaseToVariantConverter.setFailOnWrongVariants(old);
+    }
+
+    private static void printVcf(StudyConfiguration studyConfiguration, VariantHadoopDBAdaptor dbAdaptor, Path outDir) throws IOException {
+        try (OutputStream os = new FileOutputStream(outDir.resolve("variant." + studyConfiguration.getStudyName() + ".vcf").toFile())) {
+            Query query = new Query(VariantQueryParam.STUDY.key(), studyConfiguration.getStudyName()).append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), ".");
+            QueryOptions queryOptions = new QueryOptions();
+            DataWriter<Variant> writer = new VariantWriterFactory(dbAdaptor).newDataWriter(VariantWriterFactory.VariantOutputFormat.VCF, os, query, queryOptions);
+            writer.open();
+            writer.pre();
+            writer.write(dbAdaptor.get(query, queryOptions).getResult());
+            writer.post();
+            writer.close();
+        }
     }
 
     private static void printSamplesIndexTable(VariantHadoopDBAdaptor dbAdaptor, Path outDir) throws IOException {

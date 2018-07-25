@@ -26,16 +26,10 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.core.models.Family;
-import org.opencb.opencga.core.models.Individual;
-import org.opencb.opencga.core.models.Sample;
 import org.slf4j.Logger;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Created by jacobo on 12/09/14.
@@ -68,6 +62,8 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     static final String PERMISSION_RULES_APPLIED = "_permissionRulesApplied";
 
     static final String INTERNAL_DELIMITER = "__";
+
+    static final String NATIVE_QUERY = "nativeQuery";
 
     // Possible update actions
     static final String SET = "SET";
@@ -147,67 +143,6 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
                 andBsonList.add(filter);
             }
         }
-    }
-
-    // Auxiliar methods used in family/get and clinicalAnalysis/get to retrieve the whole referenced documents
-    protected Individual getIndividual(Individual individual) {
-        Individual retIndividual = individual;
-        if (individual != null && individual.getUid() > 0) {
-            // Fetch individual information
-            QueryResult<Individual> individualQueryResult = null;
-            try {
-                individualQueryResult = dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(individual.getUid(),
-                        QueryOptions.empty());
-            } catch (CatalogDBException e) {
-                logger.error(e.getMessage(), e);
-            }
-            if (individualQueryResult != null && individualQueryResult.getNumResults() == 1) {
-                retIndividual = individualQueryResult.first();
-
-                // Fetch samples from individual
-                List<Long> samples = individual.getSamples().stream().map(Sample::getUid).collect(Collectors.toList());
-                Query query = new Query(SampleDBAdaptor.QueryParams.UID.key(), samples);
-                try {
-                    QueryResult<Sample> sampleQueryResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, QueryOptions.empty());
-                    retIndividual.setSamples(sampleQueryResult.getResult());
-                } catch (CatalogDBException e) {
-                    logger.error(e.getMessage(), e);
-                }
-            }
-        }
-        return retIndividual;
-    }
-
-    protected Sample getSample(Sample sample) {
-        Sample retSample = sample;
-        if (sample != null && sample.getUid() > 0) {
-            QueryResult<Sample> sampleQueryResult = null;
-            try {
-                sampleQueryResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(sample.getUid(), QueryOptions.empty());
-            } catch (CatalogDBException e) {
-                logger.error(e.getMessage(), e);
-            }
-            if (sampleQueryResult != null && sampleQueryResult.getNumResults() == 1) {
-                retSample = sampleQueryResult.first();
-            }
-        }
-        return retSample;
-    }
-
-    protected Family getFamily(Family family) {
-        Family retFamily = family;
-        if (family != null && family.getUid() > 0) {
-            QueryResult<Family> familyQueryResult = null;
-            try {
-                familyQueryResult = dbAdaptorFactory.getCatalogFamilyDBAdaptor().get(family.getUid(), QueryOptions.empty());
-            } catch (CatalogDBException e) {
-                logger.error(e.getMessage(), e);
-            }
-            if (familyQueryResult != null && familyQueryResult.getNumResults() == 1) {
-                retFamily = familyQueryResult.first();
-            }
-        }
-        return retFamily;
     }
 
     protected QueryResult rank(MongoDBCollection collection, Bson query, String groupByField, String idField, int numResults, boolean asc) {

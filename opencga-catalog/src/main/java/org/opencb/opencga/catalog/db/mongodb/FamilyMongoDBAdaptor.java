@@ -246,16 +246,15 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             return endQuery("Update family", startTime, Collections.singletonList(update.getNumTotalResults()));
         }
 
-        if (!queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
-//            applyAnnotationUpdates(query.getLong(QueryParams.UID.key(), -1L), annotationUpdateMap, true);
-            updateAnnotationSets(query.getLong(QueryParams.UID.key(), -1L), parameters, variableSetList, queryOptions, true);
-            if (!familyParameters.isEmpty()) {
-                QueryResult<UpdateResult> update = familyCollection.update(parseQuery(query, false),
-                        new Document("$set", familyParameters), new QueryOptions("multi", true));
-                return endQuery("Update family", startTime, Collections.singletonList(update.getNumTotalResults()));
-            }
-        } else {
-            return updateAndCreateNewVersion(query, familyParameters, parameters, variableSetList, queryOptions);
+        if (queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
+            createNewVersion(query);
+        }
+
+        updateAnnotationSets(query.getLong(QueryParams.UID.key(), -1L), parameters, variableSetList, queryOptions, true);
+        if (!familyParameters.isEmpty()) {
+            QueryResult<UpdateResult> update = familyCollection.update(parseQuery(query, false),
+                    new Document("$set", familyParameters), new QueryOptions("multi", true));
+            return endQuery("Update family", startTime, Collections.singletonList(update.getNumTotalResults()));
         }
 
         return endQuery("Update family", startTime, new QueryResult<>());
@@ -293,27 +292,29 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         parameters.put(QueryParams.MEMBERS.key(), individualQueryResult.getResult());
     }
 
-    private QueryResult<Long> updateAndCreateNewVersion(Query query, Document familyParameters, ObjectMap parameters,
-                                                        List<VariableSet> variableSetList, QueryOptions queryOptions)
-            throws CatalogDBException {
-        long startTime = startQuery();
-
+    /**
+     * Creates a new version for all the families matching the query.
+     *
+     * @param query Query object.
+     */
+    private void createNewVersion(Query query) throws CatalogDBException {
         QueryResult<Document> queryResult = nativeGet(query, new QueryOptions(QueryOptions.EXCLUDE, "_id"));
-        int release = queryOptions.getInt(Constants.CURRENT_RELEASE, -1);
-        if (release == -1) {
-            throw new CatalogDBException("Internal error. Mandatory " + Constants.CURRENT_RELEASE + " parameter not passed to update "
-                    + "method");
-        }
 
-        for (Document familyDocument : queryResult.getResult()) {
+        for (Document document : queryResult.getResult()) {
             Document updateOldVersion = new Document();
 
-            List<Integer> supportedReleases = (List<Integer>) familyDocument.get(RELEASE_FROM_VERSION);
+            // Current release number
+            int release;
+            List<Integer> supportedReleases = (List<Integer>) document.get(RELEASE_FROM_VERSION);
             if (supportedReleases.size() > 1) {
+                release = supportedReleases.get(supportedReleases.size() - 1);
+
                 // If it contains several releases, it means this is the first update on the current release, so we just need to take the
                 // current release number out
                 supportedReleases.remove(supportedReleases.size() - 1);
             } else {
+                release = supportedReleases.get(0);
+
                 // If it is 1, it means that the previous version being checked was made on this same release as well, so it won't be the
                 // last version of the release
                 updateOldVersion.put(LAST_OF_RELEASE, false);
@@ -323,31 +324,23 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
             // Perform the update on the previous version
             Document queryDocument = new Document()
-                    .append(PRIVATE_STUDY_ID, familyDocument.getLong(PRIVATE_STUDY_ID))
-                    .append(QueryParams.VERSION.key(), familyDocument.getInteger(QueryParams.VERSION.key()))
-                    .append(PRIVATE_UID, familyDocument.getLong(PRIVATE_UID));
+                    .append(PRIVATE_STUDY_ID, document.getLong(PRIVATE_STUDY_ID))
+                    .append(QueryParams.VERSION.key(), document.getInteger(QueryParams.VERSION.key()))
+                    .append(PRIVATE_UID, document.getLong(PRIVATE_UID));
             QueryResult<UpdateResult> updateResult = familyCollection.update(queryDocument, new Document("$set", updateOldVersion), null);
             if (updateResult.first().getModifiedCount() == 0) {
                 throw new CatalogDBException("Internal error: Could not update family");
             }
 
             // We update the information for the new version of the document
-            familyDocument.put(LAST_OF_RELEASE, true);
-            familyDocument.put(LAST_OF_VERSION, true);
-            familyDocument.put(RELEASE_FROM_VERSION, Arrays.asList(release));
-            familyDocument.put(QueryParams.VERSION.key(), familyDocument.getInteger(QueryParams.VERSION.key()) + 1);
-
-            // We apply the updates the user wanted to apply (if any)
-            mergeDocument(familyDocument, familyParameters);
+            document.put(LAST_OF_RELEASE, true);
+            document.put(LAST_OF_VERSION, true);
+            document.put(RELEASE_FROM_VERSION, Arrays.asList(release));
+            document.put(QueryParams.VERSION.key(), document.getInteger(QueryParams.VERSION.key()) + 1);
 
             // Insert the new version document
-            familyCollection.insert(familyDocument, QueryOptions.empty());
-
-//            applyAnnotationUpdates(query.getLong(QueryParams.UID.key(), -1L), annotationUpdateMap, true);
-            updateAnnotationSets(query.getLong(QueryParams.UID.key(), -1L), parameters, variableSetList, queryOptions, true);
+            familyCollection.insert(document, QueryOptions.empty());
         }
-
-        return endQuery("Update family", startTime, Arrays.asList(queryResult.getNumTotalResults()));
     }
 
     private Document parseAndValidateUpdateParams(ObjectMap parameters, Query query) throws CatalogDBException {
@@ -536,7 +529,10 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
     @Override
     public DBIterator nativeIterator(Query query, QueryOptions options) throws CatalogDBException {
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
+        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+        queryOptions.put(NATIVE_QUERY, true);
+
+        MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions);
         return new FamilyMongoDBIterator(mongoCursor, null, null, null, options);
     }
 
@@ -558,9 +554,11 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     @Override
     public DBIterator nativeIterator(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
+        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+        queryOptions.put(NATIVE_QUERY, true);
 
         Document studyDocument = getStudyDocument(query);
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, options, studyDocument, user);
+        MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions, studyDocument, user);
         Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.name(), FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name());
         Function<Document, Document> individualIteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
@@ -599,7 +597,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         }
         qOptions = removeAnnotationProjectionOptions(qOptions);
 
-        if (excludeIndividuals(qOptions)) {
+        if (qOptions.getBoolean(NATIVE_QUERY) || excludeIndividuals(qOptions)) {
             logger.debug("Family get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
             return familyCollection.nativeQuery().find(bson, qOptions).iterator();
         } else {

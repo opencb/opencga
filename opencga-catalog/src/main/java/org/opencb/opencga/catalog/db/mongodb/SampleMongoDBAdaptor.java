@@ -211,43 +211,45 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             return endQuery("Update sample", startTime, Arrays.asList(update.getNumTotalResults()));
         }
 
-        if (!queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
-//            applyAnnotationUpdates(query.getLong(QueryParams.UID.key(), -1L), annotationUpdateMap, true);
-            updateAnnotationSets(query.getLong(QueryParams.UID.key(), -1L), parameters, variableSetList, queryOptions, true);
+        if (queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
+            createNewVersion(query);
+        }
 
-            if (!sampleParameters.isEmpty()) {
-                QueryResult<UpdateResult> update = sampleCollection.update(parseQuery(query, false),
-                        new Document("$set", sampleParameters), new QueryOptions("multi", true));
-                return endQuery("Update sample", startTime, Arrays.asList(update.getNumTotalResults()));
-            }
-        } else {
-            return updateAndCreateNewVersion(query, sampleParameters, parameters, variableSetList, queryOptions);
+        // Perform the update
+        updateAnnotationSets(query.getLong(QueryParams.UID.key(), -1L), parameters, variableSetList, queryOptions, true);
+
+        if (!sampleParameters.isEmpty()) {
+            QueryResult<UpdateResult> update = sampleCollection.update(parseQuery(query, false),
+                    new Document("$set", sampleParameters), new QueryOptions("multi", true));
+            return endQuery("Update sample", startTime, Arrays.asList(update.getNumTotalResults()));
         }
 
         return endQuery("Update sample", startTime, new QueryResult<>());
     }
 
-    private QueryResult<Long> updateAndCreateNewVersion(Query query, Document sampleParameters, ObjectMap parameters,
-                                                        List<VariableSet> variableSetList, QueryOptions queryOptions)
-            throws CatalogDBException {
-        long startTime = startQuery();
-
+    /**
+     * Creates a new version for all the samples matching the query.
+     *
+     * @param query Query object.
+     */
+    private void createNewVersion(Query query) throws CatalogDBException {
         QueryResult<Document> queryResult = nativeGet(query, new QueryOptions(QueryOptions.EXCLUDE, "_id"));
-        int release = queryOptions.getInt(Constants.CURRENT_RELEASE, -1);
-        if (release == -1) {
-            throw new CatalogDBException("Internal error. Mandatory " + Constants.CURRENT_RELEASE + " parameter not passed to update "
-                    + "method");
-        }
 
-        for (Document sampleDocument : queryResult.getResult()) {
+        for (Document document : queryResult.getResult()) {
             Document updateOldVersion = new Document();
 
-            List<Integer> supportedReleases = (List<Integer>) sampleDocument.get(RELEASE_FROM_VERSION);
+            // Current release number
+            int release;
+            List<Integer> supportedReleases = (List<Integer>) document.get(RELEASE_FROM_VERSION);
             if (supportedReleases.size() > 1) {
+                release = supportedReleases.get(supportedReleases.size() - 1);
+
                 // If it contains several releases, it means this is the first update on the current release, so we just need to take the
                 // current release number out
                 supportedReleases.remove(supportedReleases.size() - 1);
             } else {
+                release = supportedReleases.get(0);
+
                 // If it is 1, it means that the previous version being checked was made on this same release as well, so it won't be the
                 // last version of the release
                 updateOldVersion.put(LAST_OF_RELEASE, false);
@@ -257,33 +259,23 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
             // Perform the update on the previous version
             Document queryDocument = new Document()
-                    .append(PRIVATE_STUDY_ID, sampleDocument.getLong(PRIVATE_STUDY_ID))
-                    .append(QueryParams.VERSION.key(), sampleDocument.getInteger(QueryParams.VERSION.key()))
-                    .append(PRIVATE_UID, sampleDocument.getLong(PRIVATE_UID));
+                    .append(PRIVATE_STUDY_ID, document.getLong(PRIVATE_STUDY_ID))
+                    .append(QueryParams.VERSION.key(), document.getInteger(QueryParams.VERSION.key()))
+                    .append(PRIVATE_UID, document.getLong(PRIVATE_UID));
             QueryResult<UpdateResult> updateResult = sampleCollection.update(queryDocument, new Document("$set", updateOldVersion), null);
             if (updateResult.first().getModifiedCount() == 0) {
                 throw new CatalogDBException("Internal error: Could not update sample");
             }
 
             // We update the information for the new version of the document
-            sampleDocument.put(LAST_OF_RELEASE, true);
-            sampleDocument.put(LAST_OF_VERSION, true);
-            sampleDocument.put(RELEASE_FROM_VERSION, Arrays.asList(release));
-            sampleDocument.put(QueryParams.VERSION.key(), sampleDocument.getInteger(QueryParams.VERSION.key()) + 1);
-
-            // We apply the updates the user wanted to apply (if any)
-            mergeDocument(sampleDocument, sampleParameters);
-
-            // TODO: Check refresh references
+            document.put(LAST_OF_RELEASE, true);
+            document.put(LAST_OF_VERSION, true);
+            document.put(RELEASE_FROM_VERSION, Arrays.asList(release));
+            document.put(QueryParams.VERSION.key(), document.getInteger(QueryParams.VERSION.key()) + 1);
 
             // Insert the new version document
-            sampleCollection.insert(sampleDocument, QueryOptions.empty());
-
-//            applyAnnotationUpdates(query.getLong(QueryParams.UID.key(), -1L), annotationUpdateMap, true);
-            updateAnnotationSets(query.getLong(QueryParams.UID.key(), -1L), parameters, variableSetList, queryOptions, true);
+            sampleCollection.insert(document, QueryOptions.empty());
         }
-
-        return endQuery("Update sample", startTime, Arrays.asList(queryResult.getNumTotalResults()));
     }
 
     private Document parseAndValidateUpdateParams(ObjectMap parameters, Query query) throws CatalogDBException {
@@ -650,7 +642,9 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
     @Override
     public DBIterator nativeIterator(Query query, QueryOptions options) throws CatalogDBException {
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
+        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+        queryOptions.put(NATIVE_QUERY, true);
+        MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions);
         return new SampleMongoDBIterator(mongoCursor, null, null, null, options);
     }
 
@@ -671,8 +665,11 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     @Override
     public DBIterator nativeIterator(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
+        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+        queryOptions.put(NATIVE_QUERY, true);
+
         Document studyDocument = getStudyDocument(query);
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, options, studyDocument, user);
+        MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions, studyDocument, user);
         Function<Document, Document> iteratorFilter = (d) ->  filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.name(),
                 SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name());
@@ -713,7 +710,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         qOptions = removeAnnotationProjectionOptions(qOptions);
         qOptions = filterOptions(qOptions, FILTER_ROUTE_SAMPLES);
 
-        if (qOptions.getBoolean("lazy", true) && !isQueryingIndividualFields(finalQuery)) {
+        if (qOptions.getBoolean(NATIVE_QUERY) || qOptions.getBoolean("lazy", true) && !isQueryingIndividualFields(finalQuery)) {
             Bson bson = parseQuery(finalQuery, false, queryForAuthorisedEntries);
             logger.debug("Sample query: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
             return sampleCollection.nativeQuery().find(bson, qOptions).iterator();

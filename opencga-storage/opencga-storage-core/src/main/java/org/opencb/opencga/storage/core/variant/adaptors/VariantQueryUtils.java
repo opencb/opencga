@@ -569,6 +569,27 @@ public final class VariantQueryUtils {
         List<Integer> studyIds;
         if (studiesList == null) {
             studyIds = studyConfigurationManager.getStudyIds(options);
+            if (studyIds.size() > 1) {
+                Map<Integer, List<Integer>> map = null;
+                if (isIncludeSamplesDefined(query, fields)) {
+                    map = getIncludeSamples(query, options, studyIds,
+                            studyId -> studyConfigurationManager.getStudyConfiguration(studyId, null).first());
+                } else if (isIncludeFilesDefined(query, fields)) {
+                    map = getIncludeFiles(query, studyIds, fields,
+                            studyId -> studyConfigurationManager.getStudyConfiguration(studyId, null).first());
+                }
+                if (map != null) {
+                    List<Integer> studyIdsFromSubFields = new ArrayList<>();
+                    for (Map.Entry<Integer, List<Integer>> entry : map.entrySet()) {
+                        if (!entry.getValue().isEmpty()) {
+                            studyIdsFromSubFields.add(entry.getKey());
+                        }
+                    }
+                    if (!studyIdsFromSubFields.isEmpty()) {
+                        studyIds = studyIdsFromSubFields;
+                    }
+                }
+            }
         } else {
             studyIds = studyConfigurationManager.getStudyIds(studiesList, options);
         }
