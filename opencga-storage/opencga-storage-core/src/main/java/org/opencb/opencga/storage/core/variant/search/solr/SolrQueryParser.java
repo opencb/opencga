@@ -322,6 +322,12 @@ public class SolrQueryParser {
             filterList.add(parseCategoryTermValue("traits", query.getString(key)));
         }
 
+        // Gene Trait Name
+        key = VariantQueryParam.ANNOT_GENE_TRAIT_NAME.key();
+        if (StringUtils.isNotEmpty(query.getString(key))) {
+            filterList.add(parseCategoryTermValue("traits", query.getString(key)));
+        }
+
         // hpo
         key = VariantQueryParam.ANNOT_HPO.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
@@ -336,6 +342,12 @@ public class SolrQueryParser {
 
         // traits
         key = VariantQueryParam.ANNOT_TRAIT.key();
+        if (StringUtils.isNotEmpty(query.getString(key))) {
+            filterList.add(parseCategoryTermValue("traits", query.getString(key)));
+        }
+
+        // Protein keywords
+        key = VariantQueryParam.ANNOT_PROTEIN_KEYWORD.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             filterList.add(parseCategoryTermValue("traits", query.getString(key)));
         }
@@ -381,10 +393,9 @@ public class SolrQueryParser {
                     }
                 }
             } else {
-                if (studies != null) {
+                if (studies == null) {
                     logger.info("Ignoring QUAL query, {}. Reason: missing study ID", query.getString(key));
-                }
-                if (studies.length > 1) {
+                } else if (studies.length > 1) {
                     logger.info("Ignoring QUAL query, {}. Reason: only one study is permitted, we have {} studies",
                             query.getString(key), studies.length);
                 }
@@ -403,20 +414,19 @@ public class SolrQueryParser {
                 // Add FILTER filters, (AND for each file, but OR for each FILTER value)
                 for (String file: files) {
                     StringBuilder sb = new StringBuilder();
-                    sb.append("(").append("qual__").append(studies[0]).append("__").append(file).append(":")
-                            .append(filters[0]);
+                    sb.append("(").append("filter__").append(studies[0]).append("__").append(file).append(":\"")
+                            .append(filters[0]).append("\"");
                     for (int i = 1; i < filters.length; i++) {
-                        sb.append(" OR ").append("qual__").append(studies[0]).append("__").append(file).append(":")
-                                .append(filters[i]);
+                        sb.append(" OR ").append("filter__").append(studies[0]).append("__").append(file).append(":\"")
+                                .append(filters[i]).append("\"");
                     }
                     sb.append(")");
                     filterList.add(sb.toString());
                 }
             } else {
-                if (studies != null) {
+                if (studies == null) {
                     logger.info("Ignoring FILTER query, {}. Reason: missing study ID", query.getString(key));
-                }
-                if (studies.length > 1) {
+                } else if (studies.length > 1) {
                     logger.info("Ignoring FILTER query, {}. Reason: only one study is permitted, we have {} studies",
                             query.getString(key), studies.length);
                 }
@@ -450,7 +460,7 @@ public class SolrQueryParser {
                                 }
                                 addOr = true;
                                 sb.append("gt__").append(studies[0]).append("__").append(sampleName.toString())
-                                        .append(":").append(gt);
+                                        .append(":\"").append(gt).append("\"");
                             }
                             sb.append(")");
                         }
@@ -463,10 +473,9 @@ public class SolrQueryParser {
                     logger.info("Ignoring genotype query. {}. Reason: {}", query.getString(key), e.getMessage());
                 }
             } else {
-                if (studies != null) {
+                if (studies == null) {
                     logger.info("Ignoring genotype query, {}. Reason: missing study ID", query.getString(key));
-                }
-                if (studies.length > 1) {
+                } else if (studies.length > 1) {
                     logger.info("Ignoring  genotype query, {}. Reason: only one study is permitted, we have {} studies",
                             query.getString(key), studies.length);
                 }
@@ -553,9 +562,12 @@ public class SolrQueryParser {
         return parseCategoryTermValue(name, value, "", partialSearch);
     }
 
-    public String parseCategoryTermValue(String name, String value, String valuePrefix, boolean partialSearch) {
+    public String parseCategoryTermValue(String name, String val, String valuePrefix, boolean partialSearch) {
         StringBuilder filter = new StringBuilder();
-        if (StringUtils.isNotEmpty(value)) {
+        if (StringUtils.isNotEmpty(val)) {
+            String negation  = "";
+            String value = val.replace("\"", "");
+
             boolean or = value.contains(",");
             boolean and = value.contains(";");
             if (or && and) {
@@ -566,13 +578,31 @@ public class SolrQueryParser {
 
             String[] values = value.split("[,;]");
             if (values.length == 1) {
-                filter.append(name).append(":\"").append(valuePrefix).append(wildcard).append(value).append(wildcard).append("\"");
+                negation = "";
+                if (value.startsWith("!")) {
+                  negation = "-";
+                  value = value.substring(1);
+                }
+                filter.append(negation).append(name).append(":\"").append(valuePrefix).append(wildcard).append(value)
+                        .append(wildcard).append("\"");
             } else {
                 filter.append("(");
-                filter.append(name).append(":\"").append(valuePrefix).append(wildcard).append(values[0]).append(wildcard).append("\"");
+                negation = "";
+                if (values[0].startsWith("!")) {
+                    negation = "-";
+                    values[0] = values[0].substring(1);
+                }
+                filter.append(negation).append(name).append(":\"").append(valuePrefix).append(wildcard)
+                        .append(values[0]).append(wildcard).append("\"");
                 for (int i = 1; i < values.length; i++) {
                     filter.append(logicalComparator);
-                    filter.append(name).append(":\"").append(valuePrefix).append(wildcard).append(values[i]).append(wildcard).append("\"");
+                    negation = "";
+                    if (values[i].startsWith("!")) {
+                        negation = "-";
+                        values[i] = values[i].substring(1);
+                    }
+                    filter.append(negation).append(name).append(":\"").append(valuePrefix).append(wildcard)
+                            .append(values[i]).append(wildcard).append("\"");
                 }
                 filter.append(")");
             }
@@ -909,18 +939,24 @@ public class SolrQueryParser {
         // and now regions
         for (Region region: regions) {
             if (StringUtils.isNotEmpty(region.getChromosome())) {
+                // Clean chromosome
+                String chrom = region.getChromosome();
+                chrom = chrom.replace("chrom", "");
+                chrom = chrom.replace("chrm", "");
+                chrom = chrom.replace("chr", "");
+                chrom = chrom.replace("ch", "");
+
                 if (sb.length() > 0) {
                     sb.append(" OR ");
                 }
                 sb.append("(");
                 if (region.getStart() == 0 && region.getEnd() == Integer.MAX_VALUE) {
-                    sb.append("chromosome:").append(region.getChromosome());
+                    sb.append("chromosome:\"").append(chrom).append("\"");
                 } else if (region.getEnd() == Integer.MAX_VALUE) {
-                    sb.append("chromosome:").append(region.getChromosome())
-                            .append(" AND start:").append(region.getStart());
+                    sb.append("chromosome:\"").append(chrom).append("\" AND start:").append(region.getStart());
                 } else {
-                    sb.append("chromosome:").append(region.getChromosome())
-                            .append(" AND start:[").append(region.getStart()).append(" TO *]")
+                    sb.append("chromosome:\"").append(chrom)
+                            .append("\" AND start:[").append(region.getStart()).append(" TO *]")
                             .append(" AND end:[* TO ").append(region.getEnd()).append("]");
                 }
                 sb.append(")");
@@ -943,7 +979,7 @@ public class SolrQueryParser {
             if (sb.length() > 0) {
                 sb.append(" OR ");
             }
-            sb.append("soAcc:").append(VariantQueryUtils.parseConsequenceType(ct));
+            sb.append("soAcc:\"").append(VariantQueryUtils.parseConsequenceType(ct)).append("\"");
         }
         return sb.toString();
     }
@@ -984,7 +1020,8 @@ public class SolrQueryParser {
                 if (sb.length() > 0) {
                     sb.append(" OR ");
                 }
-                sb.append("geneToSoAcc:").append(gene).append("_").append(VariantQueryUtils.parseConsequenceType(ct));
+                sb.append("geneToSoAcc:\"").append(gene).append("_").append(VariantQueryUtils.parseConsequenceType(ct))
+                        .append("\"");
             }
         }
         return sb.toString();

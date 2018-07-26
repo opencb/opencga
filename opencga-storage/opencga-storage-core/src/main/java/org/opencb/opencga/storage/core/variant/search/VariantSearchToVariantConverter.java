@@ -104,7 +104,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 if (MapUtils.isNotEmpty(map)) {
                     for (String infoName: map.keySet()) {
                         if ("fileCall".equals(infoName)) {
-                            fileEntry.setCall(map.get(key));
+                            fileEntry.setCall(map.get(infoName));
                         } else {
                             fileEntry.getAttributes().put(infoName, map.get(infoName));
                         }
@@ -518,7 +518,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 if (ListUtils.isNotEmpty(studyEntry.getFiles())) {
                     for (FileEntry fileEntry: studyEntry.getFiles()) {
                         // Call is stored in Solr fileInfo with key "fileCall"
-                        Map<String, String> fileInfoMap = new HashMap<>();
+                        Map<String, String> fileInfoMap = new LinkedHashMap<>();
                         if (StringUtils.isNotEmpty(fileEntry.getCall())) {
                             fileInfoMap.put("fileCall", fileEntry.getCall());
                         }
