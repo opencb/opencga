@@ -42,6 +42,7 @@ public interface FileDBAdaptor extends DBAdaptor<File> {
         UUID("uuid", TEXT, ""),
         NAME("name", TEXT_ARRAY, ""),
         TYPE("type", TEXT_ARRAY, ""),
+        CHECKSUM("checksum", TEXT, ""),
         FORMAT("format", TEXT_ARRAY, ""),
         BIOFORMAT("bioformat", TEXT_ARRAY, ""),
         URI("uri", TEXT_ARRAY, ""),

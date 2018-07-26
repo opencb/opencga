@@ -50,6 +50,8 @@ public class File extends PrivateStudyUid {
      */
     private Bioformat bioformat;
 
+    private String checksum;
+
     private URI uri;
     private String path;
 
@@ -86,21 +88,21 @@ public class File extends PrivateStudyUid {
 
     public File(String name, Type type, Format format, Bioformat bioformat, String path, String description, FileStatus status, long size,
                 int release) {
-        this(-1, name, type, format, bioformat, null, path, TimeUtils.getTime(), TimeUtils.getTime(), description, status, false,
-                size, null, new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(), new FileIndex(),
-                Collections.emptyMap(), release, Collections.emptyMap());
+        this(-1, name, type, format, bioformat, null, path, null, TimeUtils.getTime(), TimeUtils.getTime(), description, status,
+                false, size, null, new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(),
+                new FileIndex(), Collections.emptyMap(), release, Collections.emptyMap());
     }
 
     public File(Type type, Format format, Bioformat bioformat, String path, String description, FileStatus status, long size,
                 List<Sample> samples, long jobId, Software software, Map<String, Object> stats, Map<String, Object> attributes) {
-        this(-1, "", type, format, bioformat, null, path, TimeUtils.getTime(), TimeUtils.getTime(), description, status, false,
-                size, software, new Experiment(), samples, new Job().setUid(jobId), Collections.emptyList(), new FileIndex(), stats, -1,
-                attributes);
+        this(-1, "", type, format, bioformat, null, path, null, TimeUtils.getTime(), TimeUtils.getTime(), description, status,
+                false, size, software, new Experiment(), samples, new Job().setUid(jobId), Collections.emptyList(), new FileIndex(), stats,
+                -1, attributes);
     }
 
-    public File(long uid, String name, Type type, Format format, Bioformat bioformat, URI uri, String path, String creationDate,
-                String modificationDate, String description, FileStatus status, boolean external, long size, Software software,
-                Experiment experiment, List<Sample> samples, Job job, List<RelatedFile> relatedFiles, FileIndex index,
+    public File(long uid, String name, Type type, Format format, Bioformat bioformat, URI uri, String path, String checksum,
+                String creationDate, String modificationDate, String description, FileStatus status, boolean external, long size,
+                Software software, Experiment experiment, List<Sample> samples, Job job, List<RelatedFile> relatedFiles, FileIndex index,
                 Map<String, Object> stats, int release, Map<String, Object> attributes) {
         super(uid);
         this.id = StringUtils.isNotEmpty(path) ? StringUtils.replace(path, "/", ":") : path;
@@ -110,6 +112,7 @@ public class File extends PrivateStudyUid {
         this.bioformat = bioformat;
         this.uri = uri;
         this.path = path;
+        this.checksum = checksum;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
         this.description = description;
@@ -328,6 +331,7 @@ public class File extends PrivateStudyUid {
         sb.append(", uri=").append(uri);
         sb.append(", path='").append(path).append('\'');
         sb.append(", release=").append(release);
+        sb.append(", checksum=").append(checksum);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
@@ -429,6 +433,15 @@ public class File extends PrivateStudyUid {
     public File setPath(String path) {
         this.path = path;
         this.id = StringUtils.isNotEmpty(this.path) ? StringUtils.replace(this.path, "/", ":") : this.path;
+        return this;
+    }
+
+    public String getChecksum() {
+        return checksum;
+    }
+
+    public File setChecksum(String checksum) {
+        this.checksum = checksum;
         return this;
     }
 

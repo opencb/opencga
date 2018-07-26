@@ -233,7 +233,9 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         UpdateDocument document = new UpdateDocument();
 
         String[] acceptedParams = {
-                QueryParams.DESCRIPTION.key(), QueryParams.URI.key(), QueryParams.CREATION_DATE.key(), QueryParams.PATH.key() };
+                QueryParams.DESCRIPTION.key(), QueryParams.URI.key(), QueryParams.CREATION_DATE.key(), QueryParams.PATH.key(),
+                QueryParams.CHECKSUM.key(),
+        };
         // Fixme: Add "name", "path" and "ownerId" at some point. At the moment, it would lead to inconsistencies.
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
@@ -825,6 +827,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
                     case TYPE:
                     case FORMAT:
                     case BIOFORMAT:
+                    case CHECKSUM:
                     case URI:
                     case PATH:
                     case MODIFICATION_DATE:

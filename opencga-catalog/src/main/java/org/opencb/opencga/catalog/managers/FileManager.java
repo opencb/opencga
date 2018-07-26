@@ -1249,6 +1249,7 @@ public class FileManager extends ResourceManager<File> {
                 case FORMAT:
                 case BIOFORMAT:
                 case DESCRIPTION:
+                case CHECKSUM:
                 case ATTRIBUTES:
                 case STATS:
                 case JOB_UID:
@@ -2449,8 +2450,8 @@ public class FileManager extends ResourceManager<File> {
 
         // Create the folder in catalog
         File folder = new File(-1, path.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, completeURI,
-                stringPath, TimeUtils.getTime(), TimeUtils.getTime(), "", new File.FileStatus(File.FileStatus.READY),
-                false, 0, null, new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(), null, null,
+                stringPath, null, TimeUtils.getTime(), TimeUtils.getTime(), "", new File.FileStatus(File.FileStatus.READY), false, 0, null,
+                new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(), null, null,
                 catalogManager.getStudyManager().getCurrentRelease(study, userId), null);
         folder.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
         checkHooks(folder, study.getFqn(), HookConfiguration.Stage.CREATE);
@@ -2557,6 +2558,7 @@ public class FileManager extends ResourceManager<File> {
         // FIXME: Implement resync
         boolean resync = params.getBoolean("resync", false);
         String description = params.getString("description", "");
+        String checksum = params.getString(FileDBAdaptor.QueryParams.CHECKSUM.key(), "");
 
         // Because pathDestiny can be null, we will use catalogPath as the virtual destiny where the files will be located in catalog.
         Path catalogPath = Paths.get(pathDestiny);
@@ -2606,9 +2608,9 @@ public class FileManager extends ResourceManager<File> {
                 QueryResult<FileAclEntry> allFileAcls = authorizationManager.getAllFileAcls(study.getUid(), parentFileId, userId, true);
 
                 File subfile = new File(-1, externalPathDestiny.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
-                        File.Bioformat.NONE, normalizedUri, externalPathDestinyStr, TimeUtils.getTime(), TimeUtils.getTime(), description,
-                        new File.FileStatus(File.FileStatus.READY), true, size, null, new Experiment(), Collections.emptyList(), new Job(),
-                        Collections.emptyList(), null, Collections.emptyMap(),
+                        File.Bioformat.NONE, normalizedUri, externalPathDestinyStr, checksum, TimeUtils.getTime(), TimeUtils.getTime(),
+                        description, new File.FileStatus(File.FileStatus.READY), true, size, null, new Experiment(),
+                        Collections.emptyList(), new Job(), Collections.emptyList(), null, Collections.emptyMap(),
                         catalogManager.getStudyManager().getCurrentRelease(study, userId), Collections.emptyMap());
                 subfile.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
                 checkHooks(subfile, study.getFqn(), HookConfiguration.Stage.CREATE);
@@ -2679,11 +2681,11 @@ public class FileManager extends ResourceManager<File> {
                             }
 
                             File folder = new File(-1, dir.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN,
-                                    File.Bioformat.NONE, dir.toUri(), destinyPath, TimeUtils.getTime(), TimeUtils.getTime(),
-                                    description, new File.FileStatus(File.FileStatus.READY), true, 0, null, new Experiment(),
-                                    Collections.emptyList(), new Job(), Collections.emptyList(), null,
-                                    Collections.emptyMap(), catalogManager.getStudyManager().getCurrentRelease(study, userId),
-                                    Collections.emptyMap());
+                                    File.Bioformat.NONE, dir.toUri(), destinyPath, null, TimeUtils.getTime(),
+                                    TimeUtils.getTime(), description, new File.FileStatus(File.FileStatus.READY), true, 0, null,
+                                    new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(),
+                                    null, Collections.emptyMap(),
+                                    catalogManager.getStudyManager().getCurrentRelease(study, userId), Collections.emptyMap());
                             folder.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
                             checkHooks(folder, study.getFqn(), HookConfiguration.Stage.CREATE);
                             QueryResult<File> queryResult = fileDBAdaptor.insert(folder, study.getUid(), new QueryOptions());
@@ -2731,11 +2733,11 @@ public class FileManager extends ResourceManager<File> {
                             }
 
                             File subfile = new File(-1, filePath.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
-                                    File.Bioformat.NONE, filePath.toUri(), destinyPath, TimeUtils.getTime(), TimeUtils.getTime(),
-                                    description, new File.FileStatus(File.FileStatus.READY), true, size, null, new Experiment(),
-                                    Collections.emptyList(), new Job(), Collections.emptyList(), null,
-                                    Collections.emptyMap(), catalogManager.getStudyManager().getCurrentRelease(study, userId),
-                                    Collections.emptyMap());
+                                    File.Bioformat.NONE, filePath.toUri(), destinyPath, null, TimeUtils.getTime(),
+                                    TimeUtils.getTime(), description, new File.FileStatus(File.FileStatus.READY), true, size, null,
+                                    new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(),
+                                    null, Collections.emptyMap(),
+                                    catalogManager.getStudyManager().getCurrentRelease(study, userId), Collections.emptyMap());
                             subfile.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
                             checkHooks(subfile, study.getFqn(), HookConfiguration.Stage.CREATE);
                             QueryResult<File> queryResult = fileDBAdaptor.insert(subfile, study.getUid(), new QueryOptions());

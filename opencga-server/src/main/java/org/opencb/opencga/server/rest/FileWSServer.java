@@ -950,6 +950,7 @@ public class FileWSServer extends OpenCGAWSServer {
             ObjectMap objectMap = new ObjectMap()
                     .append("parents", parents)
                     .append("description", description);
+            objectMap.putIfNotEmpty(FileDBAdaptor.QueryParams.CHECKSUM.key(), checksum);
             List<String> uriList = Arrays.asList(uriStr.split(","));
 
             List<QueryResult<File>> queryResultList = new ArrayList<>();
@@ -1306,6 +1307,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
         public List<String> samples;
 
+        public String checksum;
         public File.Format format;
         public File.Bioformat bioformat;
         public Software software;
@@ -1321,6 +1323,7 @@ public class FileWSServer extends OpenCGAWSServer {
             File file = new File()
                     .setName(name)
                     .setDescription(description)
+                    .setChecksum(checksum)
                     .setFormat(format)
                     .setBioformat(bioformat)
                     .setStats(stats)
