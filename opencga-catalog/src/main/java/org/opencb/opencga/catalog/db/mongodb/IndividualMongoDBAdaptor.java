@@ -597,6 +597,14 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 break;
         }
 
+        if (!document.toFinalUpdateDocument().isEmpty()) {
+            // Update modificationDate param
+            String time = TimeUtils.getTime();
+            Date date = TimeUtils.toDate(time);
+            document.getSet().put(MODIFICATION_DATE, time);
+            document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+        }
+
         return document;
     }
 

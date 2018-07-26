@@ -181,6 +181,12 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         Document updateOperation = document.toFinalUpdateDocument();
 
         if (!updateOperation.isEmpty()) {
+            // Update modificationDate param
+            String time = TimeUtils.getTime();
+            Date date = TimeUtils.toDate(time);
+            updateOperation.put(MODIFICATION_DATE, time);
+            updateOperation.put(PRIVATE_MODIFICATION_DATE, date);
+
             clinicalConverter.validateDocumentToUpdate(updateOperation);
 
             Bson query = Filters.eq(PRIVATE_UID, id);

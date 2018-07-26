@@ -44,6 +44,7 @@ public class Individual extends Annotable {
     private int release;
     private int version;
     private String creationDate;
+    private String modificationDate;
     private Status status;
     private LifeStatus lifeStatus;
     private AffectationStatus affectationStatus;
@@ -186,9 +187,9 @@ public class Individual extends Annotable {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Individual{");
-        sb.append("uuid='").append(uuid).append('\'');
-        sb.append(", id='").append(id).append('\'');
+        sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
+        sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", father=").append(father);
         sb.append(", mother=").append(mother);
         sb.append(", multiples=").append(multiples);
@@ -200,6 +201,7 @@ public class Individual extends Annotable {
         sb.append(", release=").append(release);
         sb.append(", version=").append(version);
         sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", status=").append(status);
         sb.append(", lifeStatus=").append(lifeStatus);
         sb.append(", affectationStatus=").append(affectationStatus);
@@ -358,6 +360,15 @@ public class Individual extends Annotable {
 
     public Individual setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public Individual setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 

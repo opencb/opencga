@@ -272,6 +272,14 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key()};
         filterMapParams(parameters, jobParameters, acceptedMapParams);
 
+        if (!jobParameters.isEmpty()) {
+            // Update modificationDate param
+            String time = TimeUtils.getTime();
+            Date date = TimeUtils.toDate(time);
+            jobParameters.put(MODIFICATION_DATE, time);
+            jobParameters.put(PRIVATE_MODIFICATION_DATE, date);
+        }
+
         return jobParameters;
     }
 

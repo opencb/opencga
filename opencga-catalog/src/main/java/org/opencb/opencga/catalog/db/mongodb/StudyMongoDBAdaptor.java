@@ -573,7 +573,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
 
         // Remove all permission rules that are pending of some actions such as deletion
-        permissionRules.removeIf(permissionRule -> StringUtils.split(permissionRule.getId(), INTERNAL_DELIMITER, 2).length == 2);
+        permissionRules.removeIf(permissionRule ->
+                StringUtils.splitByWholeSeparatorPreserveAllTokens(permissionRule.getId(), INTERNAL_DELIMITER, 2).length == 2);
 
         return new QueryResult<>(String.valueOf(studyId), studyQueryResult.getDbTime(), permissionRules.size(), permissionRules.size(),
                 "", "", permissionRules);
@@ -1204,6 +1205,12 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
 
         if (!studyParameters.isEmpty()) {
+            // Update modificationDate param
+            String time = TimeUtils.getTime();
+            Date date = TimeUtils.toDate(time);
+            studyParameters.put(MODIFICATION_DATE, time);
+            studyParameters.put(PRIVATE_MODIFICATION_DATE, date);
+
             Document updates = new Document("$set", studyParameters);
             Long nModified = studyCollection.update(parseQuery(query, false), updates, null).getNumTotalResults();
             return endQuery("Study update", startTime, Collections.singletonList(nModified));

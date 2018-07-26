@@ -37,6 +37,7 @@ public class Family extends Annotable {
     private List<Individual> members;
 
     private String creationDate;
+    private String modificationDate;
     private FamilyStatus status;
     private int expectedSize;
     private String description;
@@ -105,12 +106,13 @@ public class Family extends Annotable {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Family{");
-        sb.append("uuid='").append(uuid).append('\'');
-        sb.append(", id='").append(id).append('\'');
+        sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
+        sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", phenotypes=").append(phenotypes);
         sb.append(", members=").append(members);
         sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", status=").append(status);
         sb.append(", expectedSize=").append(expectedSize);
         sb.append(", description='").append(description).append('\'');
@@ -185,6 +187,15 @@ public class Family extends Annotable {
 
     public Family setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public Family setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 

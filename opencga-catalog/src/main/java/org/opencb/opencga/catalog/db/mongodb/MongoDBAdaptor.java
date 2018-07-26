@@ -59,6 +59,8 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     static final String RELEASE_FROM_VERSION = "_releaseFromVersion";
     static final String LAST_OF_RELEASE = "_lastOfRelease";
     static final String PRIVATE_CREATION_DATE = "_creationDate";
+    static final String MODIFICATION_DATE = "modificationDate";
+    static final String PRIVATE_MODIFICATION_DATE = "_modificationDate";
     static final String PERMISSION_RULES_APPLIED = "_permissionRulesApplied";
 
     static final String INTERNAL_DELIMITER = "__";

@@ -241,7 +241,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             if (aclList != null) {
                 // If _acl was not previously defined, it can be null the first time
                 for (String memberPermission : aclList) {
-                    String[] split = StringUtils.split(memberPermission, INTERNAL_DELIMITER, 2);
+                    String[] split = StringUtils.splitByWholeSeparatorPreserveAllTokens(memberPermission, INTERNAL_DELIMITER, 2);
 //                    String[] split = memberPermission.split(INTERNAL_DELIMITER, 2);
                     if (memberSet.isEmpty() || memberSet.contains(split[0])) {
                         if (!permissions.get(QueryParams.ACL.key()).containsKey(split[0])) {
@@ -258,7 +258,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             if (userDefinedAcls != null) {
                 // If _acl was not previously defined, it can be null the first time
                 for (String memberPermission : userDefinedAcls) {
-                    String[] split = StringUtils.split(memberPermission, INTERNAL_DELIMITER, 2);
+                    String[] split = StringUtils.splitByWholeSeparatorPreserveAllTokens(memberPermission, INTERNAL_DELIMITER, 2);
 //                    String[] split = memberPermission.split(INTERNAL_DELIMITER, 2);
                     if (memberSet.isEmpty() || memberSet.contains(split[0])) {
                         if (!permissions.get(QueryParams.USER_DEFINED_ACLS.key()).containsKey(split[0])) {

@@ -395,6 +395,14 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
         familyConverter.validateDocumentToUpdate(familyParameters);
 
+        if (!familyParameters.isEmpty()) {
+            // Update modificationDate param
+            String time = TimeUtils.getTime();
+            Date date = TimeUtils.toDate(time);
+            familyParameters.put(MODIFICATION_DATE, time);
+            familyParameters.put(PRIVATE_MODIFICATION_DATE, date);
+        }
+
         return familyParameters;
     }
 
