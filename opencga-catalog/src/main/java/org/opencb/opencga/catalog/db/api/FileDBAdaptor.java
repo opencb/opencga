@@ -34,7 +34,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public interface FileDBAdaptor extends DBAdaptor<File> {
+public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
 
     enum QueryParams implements QueryParam {
         ID("id", TEXT, ""),
@@ -85,6 +85,9 @@ public interface FileDBAdaptor extends DBAdaptor<File> {
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
         STATS("stats", TEXT, ""),
         NSTATS("nstats", DECIMAL, ""),
+
+        ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
+        ANNOTATION("annotation", TEXT_ARRAY, ""),
 
         DIRECTORY("directory", TEXT, ""),
         STUDY_UID("studyUid", INTEGER_ARRAY, ""),

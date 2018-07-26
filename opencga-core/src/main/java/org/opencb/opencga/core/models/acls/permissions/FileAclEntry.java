@@ -35,7 +35,10 @@ public class FileAclEntry extends AbstractAclEntry<FileAclEntry.FilePermissions>
         WRITE,       // If a folder contains this permission for a user, the user will be able to create files under that folder.
         DELETE,
         DOWNLOAD,
-        UPLOAD
+        UPLOAD,
+        WRITE_ANNOTATIONS,
+        VIEW_ANNOTATIONS,
+        DELETE_ANNOTATIONS
     }
 
     public FileAclEntry() {

@@ -178,15 +178,17 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                 break;
         }
 
-        Document updateOperation = document.toFinalUpdateDocument();
-
-        if (!updateOperation.isEmpty()) {
+        if (!document.toFinalUpdateDocument().isEmpty()) {
             // Update modificationDate param
             String time = TimeUtils.getTime();
             Date date = TimeUtils.toDate(time);
-            updateOperation.put(MODIFICATION_DATE, time);
-            updateOperation.put(PRIVATE_MODIFICATION_DATE, date);
+            document.getSet().put(MODIFICATION_DATE, time);
+            document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+        }
 
+        Document updateOperation = document.toFinalUpdateDocument();
+
+        if (!updateOperation.isEmpty()) {
             clinicalConverter.validateDocumentToUpdate(updateOperation);
 
             Bson query = Filters.eq(PRIVATE_UID, id);
