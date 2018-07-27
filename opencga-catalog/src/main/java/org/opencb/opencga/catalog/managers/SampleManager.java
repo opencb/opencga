@@ -390,7 +390,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
                     ObjectMap fileUpdateParams = new ObjectMap()
                             .append(FileDBAdaptor.QueryParams.SAMPLES.key(), remainingSampleList);
-                    catalogManager.getFileManager().unsafeUpdate(study.getUid(), file, fileUpdateParams, QueryOptions.empty(), userId);
+                    catalogManager.getFileManager().unsafeUpdate(study, file, fileUpdateParams, QueryOptions.empty(), userId);
 
                     // If the file has been left orphan, are we intended to delete it as well?
                     if (remainingSampleList.isEmpty() && !"NONE".equals(params.getString(Constants.EMPTY_FILES_ACTION))) {

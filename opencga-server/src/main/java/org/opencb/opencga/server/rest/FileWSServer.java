@@ -41,10 +41,8 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exception.VersionException;
+import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.FileTree;
-import org.opencb.opencga.core.models.Software;
-import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
@@ -123,6 +121,8 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided",
                     example = "id,status", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "lazy", value = "False to return entire job and experiment object", defaultValue = "true",
+                    dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = Constants.FLATTENED_ANNOTATIONS, value = "Flatten the annotations?", defaultValue = "false",
                     dataType = "boolean", paramType = "query")
     })
     public Response info(@ApiParam(value = "Comma separated list of file ids or names up to a maximum of 100")
@@ -555,6 +555,8 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "count", value = "Total number of results", defaultValue = "false", dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = "lazy", value = "False to return entire job and experiment object", defaultValue = "true",
+                    dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = Constants.FLATTENED_ANNOTATIONS, value = "Flatten the annotations?", defaultValue = "false",
                     dataType = "boolean", paramType = "query")
     })
     public Response search(
@@ -578,6 +580,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of sample ids") @QueryParam("samples") String samples,
             @ApiParam(value = "(DEPRECATED) Job id that created the file(s) or folder(s)", hidden = true) @QueryParam("jobId") String jobIdOld,
             @ApiParam(value = "Job id that created the file(s) or folder(s)", required = false) @QueryParam("job.id") String jobId,
+            @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
             @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)", required = false) @DefaultValue("") @QueryParam("attributes") String attributes,
             @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)", required = false) @DefaultValue("")
             @QueryParam("nattributes") String nattributes,
@@ -906,6 +909,8 @@ public class FileWSServer extends OpenCGAWSServer {
                 @QueryParam("study") String studyStr,
             @ApiParam(value = "Action to be performed if the array of samples is being updated.", defaultValue = "ADD")
                 @QueryParam("samplesAction") ParamUtils.UpdateAction samplesAction,
+            @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", defaultValue = "ADD")
+                @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
             @ApiParam(name = "params", value = "Parameters to modify", required = true) FileUpdateParams updateParams) {
         try {
             ObjectMap params = updateParams.toFileObjectMap();
@@ -913,14 +918,47 @@ public class FileWSServer extends OpenCGAWSServer {
             if (samplesAction == null) {
                 samplesAction = ParamUtils.UpdateAction.ADD;
             }
+            if (annotationSetsAction == null) {
+                annotationSetsAction = ParamUtils.UpdateAction.ADD;
+            }
 
             Map<String, Object> actionMap = new HashMap<>();
             actionMap.put(FileDBAdaptor.QueryParams.SAMPLES.key(), samplesAction.name());
+            actionMap.put(FileDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
             QueryResult<File> queryResult = fileManager.update(studyStr, fileIdStr, params, queryOptions, sessionId);
             queryResult.setId("Update file");
             return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{file}/annotationSets/{annotationSet}/annotations/update")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Update annotations from an annotationSet")
+    public Response updateAnnotations(
+            @ApiParam(value = "File id, name or path. Paths must be separated by : instead of /", required = true)
+                @PathParam("file") String fileStr,
+            @ApiParam(value = "Study [[user@]project:]study.") @QueryParam("study") String studyStr,
+            @ApiParam(value = "AnnotationSet id to be updated.") @PathParam("annotationSet") String annotationSetId,
+            @ApiParam(value = "Action to be performed: ADD to add new annotations; REPLACE to replace the value of an already existing "
+                    + "annotation; SET to set the new list of annotations removing any possible old annotations; REMOVE to remove some "
+                    + "annotations; RESET to set some annotations to the default value configured in the corresponding variables of the "
+                    + "VariableSet if any.", defaultValue = "ADD") @QueryParam("action") ParamUtils.CompleteUpdateAction action,
+            @ApiParam(value = "Json containing the map of annotations when the action is ADD, SET or REPLACE, a json with only the key "
+                    + "'remove' containing the comma separated variables to be removed as a value when the action is REMOVE or a json "
+                    + "with only the key 'reset' containing the comma separated variables that will be set to the default value"
+                    + " when the action is RESET") Map<String, Object> updateParams) {
+        try {
+            if (action == null) {
+                action = ParamUtils.CompleteUpdateAction.ADD;
+            }
+
+            return createOkResponse(catalogManager.getFileManager().updateAnnotations(studyStr, fileStr, annotationSetId,
+                    updateParams, action, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -950,6 +988,7 @@ public class FileWSServer extends OpenCGAWSServer {
             ObjectMap objectMap = new ObjectMap()
                     .append("parents", parents)
                     .append("description", description);
+            objectMap.putIfNotEmpty(FileDBAdaptor.QueryParams.CHECKSUM.key(), checksum);
             List<String> uriList = Arrays.asList(uriStr.split(","));
 
             List<QueryResult<File>> queryResultList = new ArrayList<>();
@@ -1088,6 +1127,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Description") @QueryParam("description") String description,
             @ApiParam(value = "Size") @QueryParam("size") String size,
             @ApiParam(value = "Comma separated list of sample ids or names") @QueryParam("samples") String samples,
+            @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
             @ApiParam(value = "Job id that created the file(s) or folder(s)") @QueryParam("job.id") String jobId,
             @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)") @QueryParam("attributes") String attributes,
             @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)")  @QueryParam("nattributes") String nattributes,
@@ -1306,10 +1346,12 @@ public class FileWSServer extends OpenCGAWSServer {
 
         public List<String> samples;
 
+        public String checksum;
         public File.Format format;
         public File.Bioformat bioformat;
         public Software software;
 
+        public List<AnnotationSet> annotationSets;
         public Map<String, Object> stats;
         public Map<String, Object> attributes;
 
@@ -1321,6 +1363,7 @@ public class FileWSServer extends OpenCGAWSServer {
             File file = new File()
                     .setName(name)
                     .setDescription(description)
+                    .setChecksum(checksum)
                     .setFormat(format)
                     .setBioformat(bioformat)
                     .setStats(stats)
@@ -1329,6 +1372,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
             ObjectMap params = new ObjectMap(mapper.writeValueAsString(file));
             params.putIfNotNull("samples", samples);
+            params.putIfNotNull(FileDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSets);
 
             return params;
         }
