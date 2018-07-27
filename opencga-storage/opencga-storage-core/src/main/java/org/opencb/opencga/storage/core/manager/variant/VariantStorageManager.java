@@ -181,6 +181,15 @@ public class VariantStorageManager extends StorageManager {
         return indexOperation.index(studyInfo, outDir, options, sessionId);
     }
 
+    public void searchIndexSamples(String study, List<String> samples, String sessionId)
+            throws StorageEngineException, IOException, VariantSearchException,
+            IllegalAccessException, ClassNotFoundException, InstantiationException, CatalogException {
+        DataStore dataStore = getDataStore(study, sessionId);
+        VariantStorageEngine variantStorageEngine =
+                storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+
+        variantStorageEngine.searchIndexSamples(study, samples);
+    }
 
     public void searchIndex(String study, String sessionId) throws StorageEngineException, IOException, VariantSearchException,
             IllegalAccessException, ClassNotFoundException, InstantiationException, CatalogException {
