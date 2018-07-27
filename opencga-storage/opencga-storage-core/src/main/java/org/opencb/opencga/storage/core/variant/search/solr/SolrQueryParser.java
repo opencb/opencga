@@ -362,8 +362,6 @@ public class SolrQueryParser {
             }
             sb.append(")");
             filterList.add(sb.toString());
-
-            filterList.add(parseCategoryTermValue("traits", "cs:" + query.getString(key)));
         }
 
         // Sanity check for QUAL and FILTER, only one study is permitted, but multiple files
@@ -482,13 +480,17 @@ public class SolrQueryParser {
             }
         }
 
-        logger.debug("query = {}\n", query.toJson());
 
+        StringBuilder sb = new StringBuilder();
         solrQuery.setQuery("*:*");
         filterList.forEach(filter -> {
             solrQuery.addFilterQuery(filter);
-            logger.debug("Solr fq: {}\n", filter);
+            //logger.debug("Solr fq: {}\n", filter);
+            sb.append(filter).append("\n");
         });
+
+        logger.debug("\n\n-----------------------------------------------------\n{}\n\n{}"
+                + "-----------------------------------------------------\n\n", query.toJson(), sb.toString());
 
         return solrQuery;
     }
@@ -871,9 +873,9 @@ public class SolrQueryParser {
                 String rightCloseOperator = ("<<").equals(op) ? "}" : "]";
                 if (StringUtils.isNotEmpty(prefix) && (prefix.startsWith("popFreq_") || prefix.startsWith("stats_"))) {
                     sb.append("(");
-                    sb.append("(* -").append(prefix).append(getSolrFieldName(name)).append(":*)");
-                    sb.append(" OR ");
                     sb.append(prefix).append(getSolrFieldName(name)).append(":[0 TO ").append(value).append(rightCloseOperator);
+                    sb.append(" OR ");
+                    sb.append("(* -").append(prefix).append(getSolrFieldName(name)).append(":*)");
                     sb.append(")");
                 } else {
                     sb.append(prefix).append(getSolrFieldName(name)).append(":[")
