@@ -313,7 +313,6 @@ public class VariantSearchManager {
         }
     }
 
-
     /**-------------------------------------
      *  P R I V A T E    M E T H O D S
      -------------------------------------*/

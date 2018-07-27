@@ -73,14 +73,14 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ANNOT_CLINICAL_SIGNIFICANCE;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ID;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.addDefaultLimit;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName;
 import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager.SEARCH_ENGINE_ID;
 import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchUtils.*;
@@ -264,7 +264,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                            Query query, QueryOptions queryOptions)
             throws IOException, StorageEngineException {
         VariantExporter exporter = newVariantExporter(metadataFactory);
-        preProcessQuery(query);
+        preProcessQuery(query, queryOptions);
         exporter.export(outputFile, outputFormat, query, queryOptions);
     }
 
@@ -564,6 +564,37 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         dbAdaptor.close();
     }
 
+    public void searchIndexSamples(String study, List<String> samples) throws StorageEngineException, IOException, VariantSearchException {
+        VariantDBAdaptor dbAdaptor = getDBAdaptor();
+
+        VariantSearchManager variantSearchManager = getVariantSearchManager();
+        // first, create the collection it it does not exist
+
+        AtomicInteger id = new AtomicInteger();
+        StudyConfiguration sc = getStudyConfigurationManager().lockAndUpdate(study, studyConfiguration -> {
+            id.set(getStudyConfigurationManager().registerSearchIndexSamples(studyConfiguration, samples));
+            return studyConfiguration;
+        });
+
+        String collectionName = buildSamplesIndexCollectionName(this.dbName, sc, id.intValue());
+
+        variantSearchManager.create(collectionName);
+        if (configuration.getSearch().getActive() && variantSearchManager.isAlive(collectionName)) {
+            // then, load variants
+            QueryOptions queryOptions = new QueryOptions();
+            Query query = new Query(VariantQueryParam.STUDY.key(), study)
+                    .append(VariantQueryParam.SAMPLE.key(), samples);
+
+            VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions);
+
+            ProgressLogger progressLogger = new ProgressLogger("Variants loaded in Solr:", () -> dbAdaptor.count(query).first(), 200);
+            variantSearchManager.load(collectionName, iterator, progressLogger);
+        } else {
+            throw new StorageEngineException("Solr is not alive!");
+        }
+        dbAdaptor.close();
+    }
+
     /**
      * Removes a file from the Variant Storage.
      *
@@ -774,8 +805,22 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             options = QueryOptions.empty();
         }
         // TODO: Use CacheManager ?
-        query = preProcessQuery(query);
-        if (doQuerySearchManager(query, options)) {
+        query = preProcessQuery(query, options);
+
+
+        String specificSearchIndexSamples = inferSpecificSearchIndexSamplesCollection(
+                query, options, getStudyConfigurationManager(), dbName);
+        if (specificSearchIndexSamples != null) {
+            try {
+                if (iterator) {
+                    return getVariantSearchManager().iterator(specificSearchIndexSamples, query, options);
+                } else {
+                    return getVariantSearchManager().query(specificSearchIndexSamples, query, options);
+                }
+            } catch (IOException | VariantSearchException e) {
+                throw new VariantQueryException("Error querying Solr", e);
+            }
+        } else if (doQuerySearchManager(query, options)) {
             try {
                 if (iterator) {
                     return getVariantSearchManager().iterator(dbName, query, options);
@@ -876,7 +921,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
     }
 
-    protected Query preProcessQuery(Query originalQuery) throws StorageEngineException {
+    public Query preProcessQuery(Query originalQuery, QueryOptions options) throws StorageEngineException {
         // Copy input query! Do not modify original query!
         Query query = originalQuery == null ? new Query() : new Query(originalQuery);
 
@@ -907,7 +952,15 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             query.put(ANNOT_CLINICAL_SIGNIFICANCE.key(), clinicalSignificanceList);
         }
 
-
+        if (!isValidParam(query, INCLUDE_STUDY) || !isValidParam(query, INCLUDE_SAMPLE) || !isValidParam(query, INCLUDE_FILE)) {
+            VariantQueryUtils.SelectVariantElements selectVariantElements =
+                    parseSelectElements(query, options, getStudyConfigurationManager());
+            query.putIfAbsent(INCLUDE_STUDY.key(), selectVariantElements.getStudies());
+            query.putIfAbsent(INCLUDE_SAMPLE.key(), selectVariantElements.getSamples()
+                    .entrySet().stream().flatMap(e -> e.getValue().stream().map(v -> e.getKey() + ":" + v)).collect(Collectors.toList()));
+            query.putIfAbsent(INCLUDE_FILE.key(), selectVariantElements.getFiles()
+                    .entrySet().stream().flatMap(e -> e.getValue().stream().map(v -> e.getKey() + ":" + v)).collect(Collectors.toList()));
+        }
         return query;
     }
 
@@ -990,7 +1043,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     public QueryResult<Long> count(Query query) throws StorageEngineException {
-        query = preProcessQuery(query);
+        query = preProcessQuery(query, null);
         if (!doQuerySearchManager(query, new QueryOptions(QueryOptions.COUNT, true))) {
             return getDBAdaptor().count(query);
         } else {
