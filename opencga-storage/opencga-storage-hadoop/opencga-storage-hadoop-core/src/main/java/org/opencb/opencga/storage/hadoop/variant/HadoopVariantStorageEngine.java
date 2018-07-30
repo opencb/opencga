@@ -766,8 +766,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public Query preProcessQuery(Query originalQuery) throws StorageEngineException {
-        Query query = super.preProcessQuery(originalQuery);
+    public Query preProcessQuery(Query originalQuery, QueryOptions options) throws StorageEngineException {
+        Query query = super.preProcessQuery(originalQuery, options);
 
         StudyConfigurationManager studyConfigurationManager = getStudyConfigurationManager();
         List<String> studyNames = studyConfigurationManager.getStudyNames(QueryOptions.empty());

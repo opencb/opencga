@@ -63,6 +63,8 @@ public class StudyConfiguration {
     private Set<Integer> calculatedStats;
     private Set<Integer> invalidStats;
 
+    private Map<Integer, Integer> searchIndexedSampleSets;
+
     private List<BatchFileOperation> batches;
 
     private Aggregation aggregation;
@@ -94,6 +96,8 @@ public class StudyConfiguration {
         this.samplesInFiles = new HashMap<>(other.samplesInFiles);
         this.calculatedStats = new LinkedHashSet<>(other.calculatedStats);
         this.invalidStats = new LinkedHashSet<>(other.invalidStats);
+        this.searchIndexedSampleSets = other.searchIndexedSampleSets == null
+                ? new HashMap<>() : new HashMap<>(other.searchIndexedSampleSets);
         this.batches = new ArrayList<>(other.batches.size());
         for (BatchFileOperation batch : other.batches) {
             this.batches.add(new BatchFileOperation(batch));
@@ -136,6 +140,7 @@ public class StudyConfiguration {
         this.samplesInFiles = new HashMap<>();
         this.calculatedStats = new LinkedHashSet<>();
         this.invalidStats = new LinkedHashSet<>();
+        this.searchIndexedSampleSets = new HashMap<>();
         this.batches = new ArrayList<>();
         this.aggregation = Aggregation.NONE;
         this.timeStamp = 0L;
@@ -272,6 +277,15 @@ public class StudyConfiguration {
 
     public void setInvalidStats(Set<Integer> invalidStats) {
         this.invalidStats = invalidStats;
+    }
+
+    public Map<Integer, Integer> getSearchIndexedSampleSets() {
+        return searchIndexedSampleSets;
+    }
+
+    public StudyConfiguration setSearchIndexedSampleSets(Map<Integer, Integer> searchIndexedSampleSets) {
+        this.searchIndexedSampleSets = searchIndexedSampleSets;
+        return this;
     }
 
     public List<BatchFileOperation> getBatches() {

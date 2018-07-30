@@ -85,6 +85,7 @@ public class SolrExternalResource extends ExternalResource {
 
     public VariantSearchManager configure(VariantStorageEngine variantStorageEngine) throws StorageEngineException {
         variantStorageEngine.getConfiguration().getSearch().setMode("core");
+        variantStorageEngine.getConfiguration().getSearch().setActive(true);
         VariantSearchManager variantSearchManager = variantStorageEngine.getVariantSearchManager();
         variantSearchManager.setSolrClient(getSolrClient());
         return variantSearchManager;
