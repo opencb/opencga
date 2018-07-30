@@ -237,7 +237,7 @@ public class DiseasePanelManager extends ResourceManager<DiseasePanel> {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        if (null != studyStr && studyStr.equals(INSTALLATION_PANELS)) {
+        if (INSTALLATION_PANELS.equals(studyStr)) {
             query.append(DiseasePanelDBAdaptor.QueryParams.STUDY_UID.key(), -1);
 
             // Here view permissions won't be checked
