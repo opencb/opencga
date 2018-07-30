@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -494,6 +495,10 @@ public class FileUtils {
      * @throws CatalogException CatalogException
      */
     public File checkFile(String studyStr, File file, boolean calculateChecksum, String sessionId) throws CatalogException {
+        if (!file.getType().equals(File.Type.FILE)) {
+            return file;
+        }
+
         File modifiedFile = file;
         switch (file.getStatus().getName()) {
             case File.FileStatus.READY:
@@ -510,24 +515,13 @@ public class FileUtils {
                     logger.info("File { path:\"" + file.getPath() + "\" } recover tracking from file " + fileUri);
                     logger.info("Set status to " + File.FileStatus.READY);
                     ObjectMap params = getModifiedFileAttributes(file, fileUri, calculateChecksum);
-                    if (params.get(FileDBAdaptor.QueryParams.ATTRIBUTES.key()) != null) {
-                        ObjectMap attributes = new ObjectMap(FileDBAdaptor.QueryParams.ATTRIBUTES.key(),
-                                params.get(FileDBAdaptor.QueryParams.ATTRIBUTES.key()));
-                        catalogManager.getFileManager().update(studyStr, file.getPath(), attributes, new QueryOptions(), sessionId);
-                    }
                     if (params.get(FileDBAdaptor.QueryParams.SIZE.key()) != null) {
                         catalogManager.getFileManager()
                                 .setDiskUsage(studyStr, file.getPath(), params.getLong(FileDBAdaptor.QueryParams.SIZE.key()), sessionId);
+                        params.remove(FileDBAdaptor.QueryParams.SIZE.key());
                     }
-                    if (params.get(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key()) != null) {
-                        catalogManager.getFileManager()
-                                .setModificationDate(studyStr, file.getPath(),
-                                        params.getString(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key()), sessionId);
-                    }
-                    if (params.get(FileDBAdaptor.QueryParams.URI.key()) != null) {
-                        catalogManager.getFileManager()
-                                .setUri(studyStr, file.getPath(), params.getString(FileDBAdaptor.QueryParams.URI.key()), sessionId);
-                        params.remove(FileDBAdaptor.QueryParams.URI.key());
+                    if (!params.isEmpty()) {
+                        catalogManager.getFileManager().update(studyStr, file.getPath(), params, QueryOptions.empty(), sessionId);
                     }
                     // Update status
                     catalogManager.getFileManager().setStatus(studyStr, file.getPath(), File.FileStatus.READY, null, sessionId);
@@ -555,7 +549,7 @@ public class FileUtils {
      * Get a ObjectMap with some fields if they have been modified.
      * size
      * modificationDate
-     * attributes.checksum
+     * checksum
      * uri
      *
      * @param file              file
@@ -593,37 +587,36 @@ public class FileUtils {
 
         //Update file
         if (!parameters.isEmpty()) {    //If there is something to update
-            if (parameters.get(FileDBAdaptor.QueryParams.ATTRIBUTES.key()) != null) {
-                ObjectMap attributes = new ObjectMap(FileDBAdaptor.QueryParams.ATTRIBUTES.key(),
-                        parameters.get(FileDBAdaptor.QueryParams.ATTRIBUTES.key()));
-                catalogManager.getFileManager().update(study.getFqn(), file.getPath(), attributes, new QueryOptions(), sessionId);
-            }
+//            if (parameters.get(FileDBAdaptor.QueryParams.ATTRIBUTES.key()) != null) {
+//                ObjectMap attributes = new ObjectMap(FileDBAdaptor.QueryParams.ATTRIBUTES.key(),
+//                        parameters.get(FileDBAdaptor.QueryParams.ATTRIBUTES.key()));
+//                catalogManager.getFileManager().update(study.getFqn(), file.getPath(), attributes, new QueryOptions(), sessionId);
+//            }
             if (parameters.get(FileDBAdaptor.QueryParams.STATUS_NAME.key()) != null) {
                 catalogManager.getFileManager()
                         .setStatus(study.getFqn(), file.getPath(), parameters.getString(FileDBAdaptor.QueryParams.STATUS_NAME.key()),
                                 null, sessionId);
+                parameters.remove(FileDBAdaptor.QueryParams.STATUS_NAME.key());
             }
             if (parameters.get(FileDBAdaptor.QueryParams.SIZE.key()) != null) {
                 catalogManager.getFileManager()
                         .setDiskUsage(study.getFqn(), file.getPath(), parameters.getLong(FileDBAdaptor.QueryParams.SIZE.key()), sessionId);
+                parameters.remove(FileDBAdaptor.QueryParams.SIZE.key());
             }
-            if (parameters.get(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key()) != null) {
-                catalogManager.getFileManager()
-                        .setModificationDate(study.getFqn(), file.getPath(),
-                                parameters.getString(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key()), sessionId);
+            if (!parameters.isEmpty()) {
+                catalogManager.getFileManager().update(study.getFqn(), file.getPath(), parameters, QueryOptions.empty(), sessionId);
             }
-            if (parameters.get(FileDBAdaptor.QueryParams.URI.key()) != null) {
-                catalogManager.getFileManager()
-                        .setUri(study.getFqn(), file.getPath(), parameters.getString(FileDBAdaptor.QueryParams.URI.key()), sessionId);
-            }
+//            if (parameters.get(FileDBAdaptor.QueryParams.URI.key()) != null) {
+//                catalogManager.getFileManager()
+//                        .setUri(study.getFqn(), file.getPath(), parameters.getString(FileDBAdaptor.QueryParams.URI.key()), sessionId);
+//            }
         }
     }
 
     /**
      * Get a ObjectMap with some fields if they have been modified.
      * size
-     * modificationDate
-     * attributes.checksum
+     * checksum
      * uri
      *
      * @throws CatalogException CatalogException
@@ -635,9 +628,9 @@ public class FileUtils {
         }
         CatalogIOManager catalogIOManager = catalogManager.getCatalogIOManagerFactory().get(fileUri);
 
-        if (checksum != null && !checksum.isEmpty() && !checksum.equals("null")) {
-            if (file.getAttributes() == null || !Objects.equals(file.getAttributes().get("checksum"), checksum)) {
-                parameters.put(FileDBAdaptor.QueryParams.ATTRIBUTES.key(), new ObjectMap("checksum", checksum));
+        if (StringUtils.isNotEmpty(checksum)) {
+            if (file.getChecksum() == null || !checksum.equals(file.getChecksum())) {
+                parameters.put(FileDBAdaptor.QueryParams.CHECKSUM.key(), checksum);
             }
         }
 
@@ -653,11 +646,6 @@ public class FileUtils {
         } catch (CatalogIOException e) {
             e.printStackTrace();
             logger.error("Can't get fileSize", e);
-        }
-
-        String modificationDate = TimeUtils.getTime(catalogIOManager.getModificationDate(fileUri));
-        if (!modificationDate.equals(file.getModificationDate())) {
-            parameters.put(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key(), modificationDate);
         }
 
         return parameters;

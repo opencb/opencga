@@ -411,6 +411,10 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         Document fileDoc = (Document) nativeGet(new Query(QueryParams.UID.key(), fileUid), null).getResult().get(0);
         File file = fileConverter.convertToDataModelType(fileDoc);
 
+        if (file.getType().equals(File.Type.DIRECTORY)) {
+            filePath += filePath.endsWith("/") ? "" : "/";
+        }
+
         long studyId = (long) fileDoc.get(PRIVATE_STUDY_ID);
         long collisionFileId = getId(studyId, filePath);
         if (collisionFileId >= 0) {
@@ -420,7 +424,6 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         if (file.getType().equals(File.Type.DIRECTORY)) {  // recursive over the files inside folder
             QueryResult<File> allFilesInFolder = getAllFilesInFolder(studyId, file.getPath(), null);
             String oldPath = file.getPath();
-            filePath += filePath.endsWith("/") ? "" : "/";
             URI uri = file.getUri();
             String oldUri = uri != null ? uri.toString() : "";
             for (File subFile : allFilesInFolder.getResult()) {
