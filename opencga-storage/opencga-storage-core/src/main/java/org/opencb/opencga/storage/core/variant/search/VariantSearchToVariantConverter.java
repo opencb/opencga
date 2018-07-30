@@ -345,7 +345,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         // Variant trait: CV -- accession -- trait
                         if (!clinVarMap.containsKey(fields[1])) {
                             String clinicalSignificance = "";
-                            if (fields[3].length() > 3) {
+                            if (fields.length > 2 && fields[3].length() > 3) {
                                 clinicalSignificance = fields[3].substring(3);
                             }
                             ClinVar clinVar = new ClinVar(fields[1], clinicalSignificance, new ArrayList<>(), new ArrayList<>(), "");
