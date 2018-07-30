@@ -539,13 +539,14 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public Query preProcessQuery(Query originalQuery) throws StorageEngineException {
-        Query query = super.preProcessQuery(originalQuery);
+    public Query preProcessQuery(Query originalQuery, QueryOptions options) throws StorageEngineException {
+        Query query = super.preProcessQuery(originalQuery, options);
         List<String> studyNames = studyConfigurationManager.getStudyNames(QueryOptions.empty());
         CellBaseUtils cellBaseUtils = getCellBaseUtils();
 
         if (isValidParam(query, VariantQueryParam.STUDY)
                 && studyNames.size() == 1
+                && !isNegated(query.getString(VariantQueryParam.STUDY.key()))
                 && !isValidParam(query, FILE)
                 && !isValidParam(query, SAMPLE)
                 && !isValidParam(query, GENOTYPE)) {
