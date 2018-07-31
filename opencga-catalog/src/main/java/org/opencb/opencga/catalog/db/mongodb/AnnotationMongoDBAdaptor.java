@@ -325,20 +325,35 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
 
                 List<Document> annotationList = (List<Document>) queryResult.first().get(AnnotationSetParams.ANNOTATION_SETS.key());
                 Map<String, String> annotationSetIdVariableSetUidMap = new HashMap<>();
+                // This variable will contain a map of variable set ids pointing to all the annotationSet ids using the variable set
+                Map<String, Set<String>> variableSetAnnotationsets = new HashMap<>();
                 for (Document document : annotationList) {
-                    annotationSetIdVariableSetUidMap.put(document.getString(AnnotationSetParams.ANNOTATION_SET_NAME.key()),
-                            String.valueOf(document.getLong(AnnotationSetParams.VARIABLE_SET_ID.key())));
+                    String variableSetId = String.valueOf(document.getLong(AnnotationSetParams.VARIABLE_SET_ID.key()));
+                    String annSetId = document.getString(AnnotationSetParams.ANNOTATION_SET_NAME.key());
+
+                    annotationSetIdVariableSetUidMap.put(annSetId, variableSetId);
+
+                    if (!variableSetAnnotationsets.containsKey(variableSetId)) {
+                        variableSetAnnotationsets.put(variableSetId, new HashSet<>());
+                    }
+                    variableSetAnnotationsets.get(variableSetId).add(annSetId);
                 }
 
                 for (AnnotationSet annotationSet : annotationSetList) {
-
                     // 1. Remove annotationSet
                     removeAnnotationSet(entryId, annotationSet.getId(), isVersioned);
 
-                    // 2. Unset variable set map uid - id
-                    Map<String, String> variableSetMapToRemove = new HashMap<>();
-                    variableSetMapToRemove.put(annotationSetIdVariableSetUidMap.get(annotationSet.getId()), null);
-                    removePrivateVariableMap(entryId, variableSetMapToRemove, isVersioned);
+                    String variableSetId = annotationSetIdVariableSetUidMap.get(annotationSet.getId());
+                    // Remove the annotation set from the variableSetAnnotationsets
+                    variableSetAnnotationsets.get(variableSetId).remove(annotationSet.getId());
+
+                    // Only if the variableSet is not being annotated by any annotationSet, we can remove the private variableSetMap
+                    if (variableSetAnnotationsets.get(variableSetId).isEmpty()) {
+                        // 2. Unset variable set map uid - id
+                        Map<String, String> variableSetMapToRemove = new HashMap<>();
+                        variableSetMapToRemove.put(variableSetId, null);
+                        removePrivateVariableMap(entryId, variableSetMapToRemove, isVersioned);
+                    }
                 }
 
             }
