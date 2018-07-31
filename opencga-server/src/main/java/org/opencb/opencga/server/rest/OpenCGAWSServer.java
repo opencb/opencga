@@ -37,13 +37,14 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exception.VersionException;
+import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.server.WebServiceException;
+import org.opencb.opencga.server.rest.json.mixin.PrivateUidMixin;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
@@ -86,7 +87,7 @@ public class OpenCGAWSServer {
 
     @DefaultValue("")
     @QueryParam("sid")
-    @ApiParam("Session id")
+    @ApiParam(value = "Session id", hidden = true)
     protected String dummySessionId;
 
     @HeaderParam("Authorization")
@@ -132,6 +133,19 @@ public class OpenCGAWSServer {
         jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
         jsonObjectMapper.addMixIn(Genotype.class, GenotypeJsonMixin.class);
         jsonObjectMapper.addMixIn(Alignment.AlignmentDifference.class, AlignmentDifferenceJsonMixin.class);
+
+        jsonObjectMapper.addMixIn(Project.class, PrivateUidMixin.class);
+        jsonObjectMapper.addMixIn(Study.class, PrivateUidMixin.class);
+        jsonObjectMapper.addMixIn(Sample.class, PrivateUidMixin.class);
+        jsonObjectMapper.addMixIn(Individual.class, PrivateUidMixin.class);
+        jsonObjectMapper.addMixIn(org.opencb.opencga.core.models.File.class, PrivateUidMixin.class);
+        jsonObjectMapper.addMixIn(Cohort.class, PrivateUidMixin.class);
+        jsonObjectMapper.addMixIn(DiseasePanel.class, PrivateUidMixin.class);
+        jsonObjectMapper.addMixIn(Job.class, PrivateUidMixin.class);
+        jsonObjectMapper.addMixIn(VariableSet.class, PrivateUidMixin.class);
+        jsonObjectMapper.addMixIn(Family.class, PrivateUidMixin.class);
+        jsonObjectMapper.addMixIn(ClinicalAnalysis.class, PrivateUidMixin.class);
+
         jsonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         jsonObjectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         jsonObjectWriter = jsonObjectMapper.writer();
@@ -323,9 +337,15 @@ public class OpenCGAWSServer {
                 case Constants.REFRESH:
                     queryOptions.put(Constants.REFRESH, Boolean.parseBoolean(value));
                     break;
-                case "count":
+                case QueryOptions.COUNT:
                     count = Boolean.parseBoolean(value);
                     queryOptions.put(entry.getKey(), count);
+                    break;
+                case Constants.SILENT:
+                    queryOptions.put(entry.getKey(), Boolean.parseBoolean(value));
+                    break;
+                case Constants.FORCE:
+                    queryOptions.put(entry.getKey(), Boolean.parseBoolean(value));
                     break;
                 case Constants.FLATTENED_ANNOTATIONS:
                     queryOptions.put(Constants.FLATTENED_ANNOTATIONS, Boolean.parseBoolean(value));
@@ -359,19 +379,9 @@ public class OpenCGAWSServer {
             query.remove("status");
         }
 
-        if (query.containsKey("variableSet")) {
-            query.put("variableSetId", query.get("variableSet"));
-            query.remove("variableSet");
-        }
-        if (query.containsKey("variableSetId")) {
-            try {
-                AbstractManager.MyResourceId resource = catalogManager.getStudyManager().getVariableSetId(query.getString
-                        ("variableSetId"), query.getString("study"), sessionId);
-                query.put("variableSetId", resource.getResourceId());
-            } catch (CatalogException e) {
-                logger.warn("VariableSetId parameter found, but proper id could not be found: {}", e.getMessage(), e);
-            }
-        }
+        // Remove deprecated fields
+        query.remove("variableSet");
+        query.remove("annotationsetName");
 
         try {
             requestDescription = httpServletRequest.getMethod() + ": " + uriInfo.getAbsolutePath().toString()
@@ -644,4 +654,5 @@ public class OpenCGAWSServer {
             isSingleId(id);
         }
     }
+
 }

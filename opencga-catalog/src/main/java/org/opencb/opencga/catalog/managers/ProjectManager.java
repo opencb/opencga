@@ -35,6 +35,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
 
@@ -62,93 +63,134 @@ public class ProjectManager extends AbstractManager {
         return projectDBAdaptor.getOwnerId(projectId);
     }
 
-    long getId(String userId, String projectStr) throws CatalogException {
-        if (StringUtils.isNumeric(projectStr)) {
-            long projectId = Long.parseLong(projectStr);
-            if (projectId > configuration.getCatalog().getOffset()) {
-                projectDBAdaptor.checkId(projectId);
-                return projectId;
-            }
+    /**
+     * Fetch the project qualifying the projectStr structure as long as userId has permissions to see it.
+     *
+     * @param projectStr string that can contain the full qualified name (owner@projectId) or just the projectId.
+     * @param userId user asking for the project information.
+     * @return a QueryResult containing the project.
+     * @throws CatalogException if multiple projects are found.
+     */
+    Project resolveId(String projectStr, String userId) throws CatalogException {
+        if (StringUtils.isEmpty(userId)) {
+            throw new CatalogException("Missing mandatory parameter userId");
         }
 
-        String userOwner;
-        String projectAlias;
+        String auxProject = "";
+        String auxOwner = "";
+        boolean isUuid = false;
 
-        if (StringUtils.isBlank(projectStr)) {
-            userOwner = userId;
-            projectAlias = null;
-        } else {
-            String[] split = projectStr.split("@");
-            if (split.length == 2) {
-                // user@project
-                userOwner = split[0];
-                projectAlias = split[1];
+        if (StringUtils.isNotEmpty(projectStr)) {
+            if (UUIDUtils.isOpenCGAUUID(projectStr)) {
+                isUuid = true;
             } else {
-                // project
-                userOwner = userId;
-                projectAlias = projectStr;
-            }
-        }
-
-        if (!userOwner.equals(ANONYMOUS) && StringUtils.isNotBlank(projectAlias)) {
-            return projectDBAdaptor.getId(userOwner, projectAlias);
-        } else {
-            // Anonymous user
-            Query query = new Query();
-            if (StringUtils.isNotBlank(projectAlias)) {
-                query.put(ProjectDBAdaptor.QueryParams.ALIAS.key(), projectAlias);
-            }
-            if (!userOwner.equals(ANONYMOUS)) {
-                query.put(ProjectDBAdaptor.QueryParams.USER_ID.key(), userOwner);
-            }
-            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ID.key());
-            QueryResult<Project> projectQueryResult = projectDBAdaptor.get(query, options, userId);
-
-            if (projectQueryResult.getNumResults() != 1) {
-                if (projectQueryResult.getNumResults() == 0) {
-                    throw new CatalogException("No projects found with alias " + projectAlias);
+                String[] split = projectStr.split("@");
+                if (split.length == 1) {
+                    auxProject = projectStr;
+                } else if (split.length == 2) {
+                    auxOwner = split[0];
+                    auxProject = split[1];
                 } else {
-                    throw new CatalogException("More than one project found with alias " + projectAlias);
+                    throw new CatalogException(projectStr + " does not follow the expected pattern [ownerId@projectId]");
                 }
             }
-
-            return projectQueryResult.first().getId();
-        }
-    }
-
-    List<Long> getIds(String userId, String projectStr) throws CatalogException {
-        if (StringUtils.isNumeric(projectStr)) {
-            return Arrays.asList(Long.parseLong(projectStr));
         }
 
-        String userOwner;
-        String projectAlias;
-
-        String[] split = projectStr.split("@");
-        if (split.length == 2) {
-            // user@project
-            userOwner = split[0];
-            projectAlias = split[1];
-        } else {
-            // project
-            userOwner = userId;
-            projectAlias = projectStr;
-        }
-
-        if (!userOwner.equals(ANONYMOUS)) {
-            return Arrays.asList(projectDBAdaptor.getId(userOwner, projectAlias));
-        } else {
-            // Anonymous user
-            Query query = new Query(ProjectDBAdaptor.QueryParams.ALIAS.key(), projectAlias);
-            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ID.key());
-            QueryResult<Project> projectQueryResult = projectDBAdaptor.get(query, options);
-
-            if (projectQueryResult.getNumResults() == 0) {
-                throw new CatalogException("No projects found with alias " + projectAlias);
+        if (!userId.equals(auxOwner)) {
+            // We first query all the studies matching the parameters
+            Query query = new Query();
+            query.putIfNotEmpty(StudyDBAdaptor.QueryParams.OWNER.key(), auxOwner);
+            if (isUuid) {
+                query.putIfNotEmpty(StudyDBAdaptor.QueryParams.PROJECT_UUID.key(), projectStr);
+            } else {
+                query.putIfNotEmpty(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), auxProject);
             }
 
-            return projectQueryResult.getResult().stream().map(project -> project.getId()).collect(Collectors.toList());
+            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key());
+            QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, queryOptions, userId);
+
+//            if (studyQueryResult.getNumResults() == 0) {
+//                throw new CatalogException("Project " + projectStr + " not found or the user " + userId + " does not have permissions to "
+//                        + "view it.");
+//            }
+
+            if (studyQueryResult.getNumResults() > 0) {
+                Set<String> projectFqnSet = new HashSet<>();
+                for (Study study : studyQueryResult.getResult()) {
+                    projectFqnSet.add(StringUtils.split(study.getFqn(), ":")[0]);
+                }
+
+                if (projectFqnSet.size() == 1) {
+                    // We know which project the user is looking for
+                    for (String fqn : projectFqnSet) {
+                        String[] split = StringUtils.split(fqn, "@");
+                        auxOwner = split[0];
+                        auxProject = split[1];
+                    }
+                } else {
+                    // We will prioritise projects owned by the user
+                    List<String> ownedProjects = new ArrayList<>();
+                    for (String fqn : projectFqnSet) {
+                        if (fqn.startsWith(userId + "@")) {
+                            ownedProjects.add(fqn);
+                        }
+                    }
+
+                    if (ownedProjects.size() == 0 || ownedProjects.size() > 1) {
+                        throw new CatalogException("More than one project found. Please, be more specific. The accepted pattern is "
+                                + "[ownerId@projectId]");
+                    } else {
+                        String[] split = StringUtils.split(ownedProjects.get(0), "@");
+                        auxOwner = split[0];
+                        auxProject = split[1];
+                    }
+                }
+            }
         }
+
+//        if (StringUtils.isEmpty(auxOwner)) {
+//            auxOwner = userId;
+//        }
+
+        // We just need to retrieve the project information now
+        Query query = new Query();
+        if (StringUtils.isEmpty(auxProject) && isUuid) {
+            query.put(ProjectDBAdaptor.QueryParams.UUID.key(), projectStr);
+        } else {
+            query.put(ProjectDBAdaptor.QueryParams.ID.key(), auxProject);
+        }
+        query.putIfNotEmpty(ProjectDBAdaptor.QueryParams.USER_ID.key(), auxOwner);
+
+        QueryOptions options = new QueryOptions()
+                .append(QueryOptions.INCLUDE, Arrays.asList(
+                        ProjectDBAdaptor.QueryParams.UID.key(), ProjectDBAdaptor.QueryParams.UUID.key(),
+                        ProjectDBAdaptor.QueryParams.ID.key(), ProjectDBAdaptor.QueryParams.FQN.key(),
+                        ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key()));
+//                .append(QueryOptions.EXCLUDE, "studies");
+
+        QueryResult<Project> projectQueryResult = projectDBAdaptor.get(query, options);
+
+        if (StringUtils.isEmpty(auxOwner) && projectQueryResult.getNumResults() > 0) {
+            String ownProjectFqn = userId + "@" + auxProject;
+            for (Project project : projectQueryResult.getResult()) {
+                // We check if the user owns any of the projects
+                if (ownProjectFqn.equals(project.getFqn())) {
+                    // We return the user's project
+                    return project;
+                }
+            }
+            throw CatalogAuthorizationException.deny(userId, "view", "project", auxProject, null);
+        }
+
+        if (projectQueryResult.getNumResults() == 0) {
+            logger.error("Internal error. Project " + projectStr + " {" + auxOwner + "@" + auxProject + "} not found");
+            throw new CatalogException("Internal error. Project " + projectStr + " not found");
+        } else if (projectQueryResult.getNumResults() > 1) {
+            logger.error("Internal error. More than one project found for " + auxOwner + "@" + auxProject);
+            throw new CatalogException("Internal error: More than one project found for " + projectStr);
+        }
+
+        return projectQueryResult.first();
     }
 
     /**
@@ -164,15 +206,15 @@ public class ProjectManager extends AbstractManager {
         return get(new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "!=" + userId), queryOptions, sessionId);
     }
 
-    public QueryResult<Project> create(String name, String alias, String description, String organization, String scientificName,
+    public QueryResult<Project> create(String id, String name, String description, String organization, String scientificName,
                                        String commonName, String taxonomyCode, String assembly, QueryOptions options, String sessionId)
             throws CatalogException {
 
-        ParamUtils.checkParameter(name, "name");
-        ParamUtils.checkParameter(scientificName, "organism.scientificName");
-        ParamUtils.checkParameter(assembly, "organism.assembly");
-        ParamUtils.checkAlias(alias, "alias", configuration.getCatalog().getOffset());
-        ParamUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkParameter(name, ProjectDBAdaptor.QueryParams.NAME.key());
+        ParamUtils.checkParameter(scientificName, ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key());
+        ParamUtils.checkParameter(assembly, ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key());
+        ParamUtils.checkAlias(id, ProjectDBAdaptor.QueryParams.ID.key());
+        ParamUtils.checkParameter(sessionId, "token");
 
         //Only the user can create a project
         String userId = this.catalogManager.getUserManager().getUserId(sessionId);
@@ -203,16 +245,17 @@ public class ProjectManager extends AbstractManager {
             organism.setCommonName(assembly);
         }
 
-        Project project = new Project(name, alias, description, new Status(), organization, organism, 1);
+        Project project = new Project(id, name, description, new Status(), organization, organism, 1);
 
+        project.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.PROJECT));
         QueryResult<Project> queryResult = projectDBAdaptor.insert(project, userId, options);
         project = queryResult.getResult().get(0);
 
         try {
-            catalogIOManagerFactory.getDefault().createProject(userId, Long.toString(project.getId()));
+            catalogIOManagerFactory.getDefault().createProject(userId, Long.toString(project.getUid()));
         } catch (CatalogIOException e) {
             try {
-                projectDBAdaptor.delete(project.getId());
+                projectDBAdaptor.delete(project.getUid());
             } catch (Exception e1) {
                 logger.error("Error deleting project from catalog after failing creating the folder in the filesystem", e1);
                 throw e;
@@ -220,7 +263,7 @@ public class ProjectManager extends AbstractManager {
             throw e;
         }
         userDBAdaptor.updateUserLastModified(userId);
-        auditManager.recordCreation(AuditRecord.Resource.project, queryResult.first().getId(), userId, queryResult.first(), null, null);
+        auditManager.recordCreation(AuditRecord.Resource.project, queryResult.first().getUid(), userId, queryResult.first(), null, null);
 
         return queryResult;
     }
@@ -234,16 +277,11 @@ public class ProjectManager extends AbstractManager {
      * @return The specified object
      * @throws CatalogException CatalogException
      */
+    @Deprecated
     public QueryResult<Project> get(String projectStr, QueryOptions options, String sessionId) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
-        long projectId = getId(userId, projectStr);
-
-        Query query = new Query(ProjectDBAdaptor.QueryParams.ID.key(), projectId);
-        QueryResult<Project> projectQueryResult = projectDBAdaptor.get(query, options, userId);
-        if (projectQueryResult.getNumResults() <= 0) {
-            throw CatalogAuthorizationException.deny(userId, "view", "project", projectId, "");
-        }
-        return projectQueryResult;
+        Project project = resolveId(projectStr, userId);
+        return projectDBAdaptor.get(project.getUid(), options);
     }
 
     public List<QueryResult<Project>> get(List<String> projectList, QueryOptions options, boolean silent, String sessionId)
@@ -296,7 +334,7 @@ public class ProjectManager extends AbstractManager {
 
             query.remove(ProjectDBAdaptor.QueryParams.STUDY.key());
             if (CollectionUtils.isNotEmpty(idList)) {
-                query.put(ProjectDBAdaptor.QueryParams.STUDY_ID.key(), StringUtils.join(idList, ","));
+                query.put(ProjectDBAdaptor.QueryParams.STUDY_UID.key(), StringUtils.join(idList, ","));
             }
             if (CollectionUtils.isNotEmpty(aliasList)) {
                 query.put(ProjectDBAdaptor.QueryParams.STUDY_ALIAS.key(), StringUtils.join(aliasList, ","));
@@ -321,16 +359,17 @@ public class ProjectManager extends AbstractManager {
         ParamUtils.checkObj(parameters, "Parameters");
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = this.catalogManager.getUserManager().getUserId(sessionId);
-        long projectId = getId(userId, projectStr);
+        Project project = resolveId(projectStr, userId);
+        long projectId = project.getUid();
         authorizationManager.checkCanEditProject(projectId, userId);
 
         QueryResult<Project> queryResult = new QueryResult<>();
-        if (parameters.containsKey("alias")) {
-            rename(projectId, parameters.getString("alias"), sessionId);
+        if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ID.key())) {
+            editId(projectId, parameters.getString(ProjectDBAdaptor.QueryParams.ID.key()), sessionId);
 
             //Clone and remove alias from parameters. Do not modify the original parameter
             parameters = new ObjectMap(parameters);
-            parameters.remove("alias");
+            parameters.remove(ProjectDBAdaptor.QueryParams.ID.key());
         }
 
         // Update organism information only if any of the fields was not properly defined
@@ -388,36 +427,34 @@ public class ProjectManager extends AbstractManager {
         return queryResult;
     }
 
-    public QueryResult<Project> rename(long projectId, String newProjectAlias, String sessionId)
+    public QueryResult<Project> editId(long projectUid, String newProjectId, String sessionId)
             throws CatalogException {
-        ParamUtils.checkAlias(newProjectAlias, "newProjectAlias", configuration.getCatalog().getOffset());
+        ParamUtils.checkAlias(newProjectId, "new project id");
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = this.catalogManager.getUserManager().getUserId(sessionId);
-        authorizationManager.checkCanEditProject(projectId, userId);
+        authorizationManager.checkCanEditProject(projectUid, userId);
 
         userDBAdaptor.updateUserLastModified(userId);
-        projectDBAdaptor.renameAlias(projectId, newProjectAlias);
-        auditManager.recordUpdate(AuditRecord.Resource.project, projectId, userId, new ObjectMap("alias", newProjectAlias), null, null);
-        return projectDBAdaptor.get(projectId, QueryOptions.empty());
+        projectDBAdaptor.editId(projectUid, newProjectId);
+        auditManager.recordUpdate(AuditRecord.Resource.project, projectUid, userId,
+                new ObjectMap(ProjectDBAdaptor.QueryParams.ID.key(), newProjectId), null, null);
+        return projectDBAdaptor.get(projectUid, QueryOptions.empty());
     }
 
     public QueryResult<Integer> incrementRelease(String projectStr, String sessionId) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
-        long projectId = getId(userId, projectStr);
+
+        Project project = resolveId(projectStr, userId);
+        long projectId = project.getUid();
+
         authorizationManager.checkCanEditProject(projectId, userId);
 
         // Obtain the current release number
-        QueryResult<Project> projectQueryResult = projectDBAdaptor.get(projectId, new QueryOptions(QueryOptions.INCLUDE,
-                ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key()));
-        if (projectQueryResult == null || projectQueryResult.getNumResults() == 0) {
-            throw new CatalogException("Internal error: Unexpected situation happened. Current release number not incremented.");
-        }
+        int currentRelease = project.getCurrentRelease();
 
-        int currentRelease = projectQueryResult.first().getCurrentRelease();
         // Check current release has been used at least in one study or file or cohort or individual...
-        QueryResult<Study> allStudiesInProject = studyDBAdaptor.getAllStudiesInProject(projectId, new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.RELEASE.key())));
-        if (allStudiesInProject == null || allStudiesInProject.getNumResults() == 0) {
+        List<Study> allStudiesInProject = project.getStudies();
+        if (allStudiesInProject.isEmpty()) {
             throw new CatalogException("Cannot increment current release number. No studies found for release " + currentRelease);
         }
 
@@ -426,12 +463,11 @@ public class ProjectManager extends AbstractManager {
             QueryResult<Integer> integerQueryResult = projectDBAdaptor.incrementCurrentRelease(projectId);
 
             // Upgrade release in sample, family and individuals
-            QueryResult<Study> studiesInProject = studyDBAdaptor.getAllStudiesInProject(projectId,
-                    new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.ID.key()));
-            for (Study study : studiesInProject.getResult()) {
-                sampleDBAdaptor.updateProjectRelease(study.getId(), integerQueryResult.first());
-                individualDBAdaptor.updateProjectRelease(study.getId(), integerQueryResult.first());
-                familyDBAdaptor.updateProjectRelease(study.getId(), integerQueryResult.first());
+            for (Study study : allStudiesInProject) {
+                sampleDBAdaptor.updateProjectRelease(study.getUid(), integerQueryResult.first());
+                individualDBAdaptor.updateProjectRelease(study.getUid(), integerQueryResult.first());
+                familyDBAdaptor.updateProjectRelease(study.getUid(), integerQueryResult.first());
+                panelDBAdaptor.updateProjectRelease(study.getUid(), integerQueryResult.first());
             }
 
             return integerQueryResult;
@@ -439,15 +475,6 @@ public class ProjectManager extends AbstractManager {
             throw new CatalogException("Cannot increment current release number. The current release " + currentRelease + " has not yet "
                     + "been used in any entry");
         }
-    }
-
-    private int getCurrentRelease(long projectId) throws CatalogException {
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key());
-        QueryResult<Project> projectQueryResult = projectDBAdaptor.get(projectId, options);
-        if (projectQueryResult.getNumResults() == 0) {
-            throw new CatalogException("Internal error. Cannot retrieve current release from project");
-        }
-        return projectQueryResult.first().getCurrentRelease();
     }
 
     public void importReleases(String owner, String inputDirStr, String sessionId) throws CatalogException, IOException {
@@ -483,11 +510,11 @@ public class ProjectManager extends AbstractManager {
         // Reading project
         Map<String, Object> project = (Map<String, Object>) objectMapper.readValue(inputDir.resolve("projects.json").toFile(), Map.class)
                 .get("projects");
-        project.put(ProjectDBAdaptor.QueryParams.ID.key(), ParamUtils.getAsLong(project.get(ProjectDBAdaptor.QueryParams.ID.key())));
+        project.put(ProjectDBAdaptor.QueryParams.UID.key(), ParamUtils.getAsLong(project.get(ProjectDBAdaptor.QueryParams.UID.key())));
         project.put(ProjectDBAdaptor.QueryParams.SIZE.key(), ParamUtils.getAsLong(project.get(ProjectDBAdaptor.QueryParams.SIZE.key())));
 
         // Check the projectId
-        if (projectDBAdaptor.exists((Long) project.get(ProjectDBAdaptor.QueryParams.ID.key()))) {
+        if (projectDBAdaptor.exists((Long) project.get(ProjectDBAdaptor.QueryParams.UID.key()))) {
             throw new CatalogException("The database is not empty. Project " + project.get(ProjectDBAdaptor.QueryParams.NAME.key())
                     + " already exists");
         }
@@ -590,13 +617,22 @@ public class ProjectManager extends AbstractManager {
             }
         }
 
-        long projectId = getId(userId, projectStr);
-        int currentRelease = getCurrentRelease(projectId);
+        QueryOptions options = new QueryOptions()
+                .append(QueryOptions.INCLUDE, Arrays.asList(
+                        ProjectDBAdaptor.QueryParams.UID.key(),
+                        ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key()
+                ))
+                .append(QueryOptions.EXCLUDE, "studies");
+        Project project = resolveId(projectStr, userId);
+
+        long projectId = project.getUid();
+        int currentRelease = project.getCurrentRelease();
+
         release = Math.min(currentRelease, release);
 
         ObjectMapper objectMapper = new ObjectMapper();
 
-        Query query = new Query(ProjectDBAdaptor.QueryParams.ID.key(), projectId);
+        Query query = new Query(ProjectDBAdaptor.QueryParams.UID.key(), projectId);
         DBIterator dbIterator = projectDBAdaptor.nativeIterator(query, QueryOptions.empty());
         exportToFile(dbIterator, outputDir.resolve("projects.json").toFile(), objectMapper, "project");
 
@@ -605,7 +641,7 @@ public class ProjectManager extends AbstractManager {
                 .append(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId)
                 .append(StudyDBAdaptor.QueryParams.RELEASE.key(), "<=" + release);
         QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query,
-                new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.ID.key()));
+                new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.UID.key()));
         if (studyQueryResult.getNumResults() == 0) {
             logger.info("The project does not contain any study under the specified release");
             return;
@@ -613,49 +649,49 @@ public class ProjectManager extends AbstractManager {
         dbIterator = studyDBAdaptor.nativeIterator(query, QueryOptions.empty());
         exportToFile(dbIterator, outputDir.resolve("studies.json").toFile(), objectMapper, "studies");
 
-        List<Long> studyIds = studyQueryResult.getResult().stream().map(Study::getId).collect(Collectors.toList());
+        List<Long> studyIds = studyQueryResult.getResult().stream().map(Study::getUid).collect(Collectors.toList());
 
         query = new Query()
-                .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyIds)
                 .append(SampleDBAdaptor.QueryParams.SNAPSHOT.key(), "<=" + release)
                 .append(Constants.ALL_VERSIONS, true);
         dbIterator = sampleDBAdaptor.nativeIterator(query, QueryOptions.empty());
         exportToFile(dbIterator, outputDir.resolve("samples.json").toFile(), objectMapper, "samples");
 
         query = new Query()
-                .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
+                .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyIds)
                 .append(IndividualDBAdaptor.QueryParams.SNAPSHOT.key(), "<=" + release)
                 .append(Constants.ALL_VERSIONS, true);
         dbIterator = individualDBAdaptor.nativeIterator(query, QueryOptions.empty());
         exportToFile(dbIterator, outputDir.resolve("individuals.json").toFile(), objectMapper, "individuals");
 
         query = new Query()
-                .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
+                .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), studyIds)
                 .append(FamilyDBAdaptor.QueryParams.SNAPSHOT.key(), "<=" + release)
                 .append(Constants.ALL_VERSIONS, true);
         dbIterator = familyDBAdaptor.nativeIterator(query, QueryOptions.empty());
         exportToFile(dbIterator, outputDir.resolve("families.json").toFile(), objectMapper, "families");
 
         query = new Query()
-                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyIds)
                 .append(FileDBAdaptor.QueryParams.RELEASE.key(), "<=" + release);
         dbIterator = fileDBAdaptor.nativeIterator(query, QueryOptions.empty());
         exportToFile(dbIterator, outputDir.resolve("files.json").toFile(), objectMapper, "files");
 
         query = new Query()
-                .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyIds)
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.RELEASE.key(), "<=" + release);
         dbIterator = clinicalDBAdaptor.nativeIterator(query, QueryOptions.empty());
         exportToFile(dbIterator, outputDir.resolve("clinical_analysis.json").toFile(), objectMapper, "clinical analysis");
 
         query = new Query()
-                .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
+                .append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), studyIds)
                 .append(CohortDBAdaptor.QueryParams.RELEASE.key(), "<=" + release);
         dbIterator = cohortDBAdaptor.nativeIterator(query, QueryOptions.empty());
         exportToFile(dbIterator, outputDir.resolve("cohorts.json").toFile(), objectMapper, "cohorts");
 
         query = new Query()
-                .append(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
+                .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyIds)
                 .append(JobDBAdaptor.QueryParams.RELEASE.key(), "<=" + release);
         dbIterator = jobDBAdaptor.nativeIterator(query, QueryOptions.empty());
         exportToFile(dbIterator, outputDir.resolve("jobs.json").toFile(), objectMapper, "jobs");
@@ -709,7 +745,7 @@ public class ProjectManager extends AbstractManager {
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
-//        query.append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+//        query.append(CatalogFileDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
         QueryResult queryResult = null;
         if (count) {
             // We do not need to check for permissions when we show the count of files
@@ -769,15 +805,15 @@ public class ProjectManager extends AbstractManager {
     }
 
     // Return true if currentRelease is found in any entry
-    private boolean checkCurrentReleaseInUse(QueryResult<Study> allStudiesInProject, int currentRelease) throws CatalogDBException {
-        for (Study study : allStudiesInProject.getResult()) {
+    private boolean checkCurrentReleaseInUse(List<Study> allStudiesInProject, int currentRelease) throws CatalogDBException {
+        for (Study study : allStudiesInProject) {
             if (study.getRelease() == currentRelease) {
                 return true;
             }
         }
-        List<Long> studyIds = allStudiesInProject.getResult().stream().map(Study::getId).collect(Collectors.toList());
+        List<Long> studyIds = allStudiesInProject.stream().map(Study::getUid).collect(Collectors.toList());
         Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyIds)
                 .append(FileDBAdaptor.QueryParams.RELEASE.key(), currentRelease);
         if (fileDBAdaptor.count(query).first() > 0) {
             return true;
@@ -797,7 +833,7 @@ public class ProjectManager extends AbstractManager {
         if (jobDBAdaptor.count(query).first() > 0) {
             return true;
         }
-//        if (panelDBAdaptor.count(query).first() > 0) {
+//        if (diseasePanelDBAdaptor.count(query).first() > 0) {
 //            return true;
 //        }
         if (clinicalDBAdaptor.count(query).first() > 0) {

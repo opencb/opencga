@@ -42,7 +42,7 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void createJobTest() throws CatalogDBException {
         Job job = new Job();
 
-        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         job.setName("jobName1");
         System.out.println(catalogJobDBAdaptor.insert(job, studyId, null));
 //        long analysisId = catalogDBAdaptor.getAnalysisId(studyId, "analysis1Alias");
@@ -59,11 +59,11 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void deleteJobTest() throws CatalogException {
-        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
 
-        Job job = catalogJobDBAdaptor.insert(new Job("name", user3.getId(), "", "", "", new File().setId(4), Collections.emptyList(), 1),
+        Job job = catalogJobDBAdaptor.insert(new Job("name", user3.getId(), "", "", "", new File().setUid(4), Collections.emptyList(), 1),
                 studyId, null).first();
-        long jobId = job.getId();
+        long jobId = job.getUid();
         assertEquals(Job.JobStatus.PREPARED, job.getStatus().getName());
         catalogJobDBAdaptor.delete(jobId);
 
@@ -74,7 +74,7 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void getAllJobTest() throws CatalogDBException {
-        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         QueryResult<Job> allJobs = catalogJobDBAdaptor.getAllInStudy(studyId, null);
         System.out.println(allJobs);
     }
@@ -82,11 +82,11 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void getJobTest() throws CatalogException {
-        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
 
-        Job job = catalogJobDBAdaptor.insert(new Job("name", user3.getId(), "", "", "", new File().setId(4), Collections.emptyList(), 1),
+        Job job = catalogJobDBAdaptor.insert(new Job("name", user3.getId(), "", "", "", new File().setUid(4), Collections.emptyList(), 1),
                 studyId, null).first();
-        long jobId = job.getId();
+        long jobId = job.getUid();
 
         job = catalogJobDBAdaptor.get(jobId, null).first();
         System.out.println(job);
@@ -102,14 +102,14 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void SetVisitedJob() throws CatalogException {
-        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
-        Job jobBefore = catalogJobDBAdaptor.insert(new Job("name", user3.getId(), "", "", "", new File().setId(4),
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
+        Job jobBefore = catalogJobDBAdaptor.insert(new Job("name", user3.getId(), "", "", "", new File().setUid(4),
                         Collections.emptyList(), 1), studyId, null).first();
-        long jobId = jobBefore.getId();
+        long jobId = jobBefore.getUid();
         assertTrue(!jobBefore.isVisited());
 
         ObjectMap params = new ObjectMap(JobDBAdaptor.QueryParams.VISITED.key(), true);
-        catalogJobDBAdaptor.update(jobBefore.getId(), params, QueryOptions.empty());
+        catalogJobDBAdaptor.update(jobBefore.getUid(), params, QueryOptions.empty());
 
         Job jobAfter = catalogJobDBAdaptor.get(jobId, null).first();
         assertTrue(jobAfter.isVisited());
@@ -117,7 +117,7 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void getJobsOrderedByDate() throws CatalogDBException {
-        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
 
         // Job with current date
         Job job1 = new Job();
@@ -161,53 +161,30 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
     }
 
     @Test
-    public void extractFilesFromJobs() throws Exception {
-        Job job = new Job();
-        job.setOutDir(new File().setId(5));
-        job.setInput(Arrays.asList(new File().setId(1), new File().setId(2), new File().setId(3), new File().setId(4)));
-        job.setOutput(Arrays.asList(new File().setId(6), new File().setId(7), new File().setId(8), new File().setId(9)));
-        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
-        job.setName("jobName1");
-        QueryResult<Job> insert = catalogJobDBAdaptor.insert(job, studyId, null);
-
-        List<Long> longList = Arrays.asList(1L, 3L, 5L, 6L, 8L);
-        catalogJobDBAdaptor.extractFilesFromJobs(new Query(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId), longList);
-
-        QueryResult<Job> jobQueryResult = catalogJobDBAdaptor.get(insert.first().getId(), QueryOptions.empty());
-        assertEquals(-1L, jobQueryResult.first().getOutDir().getId());
-
-        assertTrue(jobQueryResult.first().getInput().stream().map(File::getId).collect(Collectors.toList()).containsAll(Arrays.asList(2L, 4L)));
-        assertEquals(2, jobQueryResult.first().getInput().size());
-
-        assertTrue(jobQueryResult.first().getOutput().stream().map(File::getId).collect(Collectors.toList()).containsAll(Arrays.asList(7L, 9L)));
-        assertEquals(2, jobQueryResult.first().getOutput().size());
-    }
-
-    @Test
     public void updateInputAndOutputFiles() throws Exception {
         Job job = new Job();
-        job.setOutDir(new File().setId(5));
-        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        job.setOutDir(new File().setUid(5));
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         job.setName("jobName1");
         QueryResult<Job> insert = catalogJobDBAdaptor.insert(job, studyId, null);
 
         List<File> fileInput = Arrays.asList(
-                new File().setId(5L).setName("file1"), new File().setId(6L).setName("file2"), new File().setId(7L).setName("file3")
+                new File().setUid(5L).setName("file1"), new File().setUid(6L).setName("file2"), new File().setUid(7L).setName("file3")
         );
         List<File> fileOutput = Arrays.asList(
-                new File().setId(15L).setName("file1"), new File().setId(16L).setName("file2"), new File().setId(17L).setName("file3")
+                new File().setUid(15L).setName("file1"), new File().setUid(16L).setName("file2"), new File().setUid(17L).setName("file3")
         );
         ObjectMap params = new ObjectMap()
                 .append(JobDBAdaptor.QueryParams.INPUT.key(), fileInput)
                 .append(JobDBAdaptor.QueryParams.OUTPUT.key(), fileOutput);
 
-        QueryResult<Job> update = catalogJobDBAdaptor.update(insert.first().getId(), params, QueryOptions.empty());
+        QueryResult<Job> update = catalogJobDBAdaptor.update(insert.first().getUid(), params, QueryOptions.empty());
         assertEquals(3, update.first().getInput().size());
         assertEquals(3, update.first().getOutput().size());
 
-        assertTrue(Arrays.asList(5L, 6L, 7L).containsAll(update.first().getInput().stream().map(File::getId).collect(Collectors.toList())));
+        assertTrue(Arrays.asList(5L, 6L, 7L).containsAll(update.first().getInput().stream().map(File::getUid).collect(Collectors.toList())));
         assertTrue(Arrays.asList(15L, 16L, 17L)
-                .containsAll(update.first().getOutput().stream().map(File::getId).collect(Collectors.toList())));
+                .containsAll(update.first().getOutput().stream().map(File::getUid).collect(Collectors.toList())));
     }
 
 }

@@ -79,7 +79,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         this.genomeHelper = genomeHelper;
         this.annotationConverter = new HBaseToVariantAnnotationConverter(genomeHelper);
         HBaseToVariantStatsConverter statsConverter = new HBaseToVariantStatsConverter(genomeHelper);
-        this.studyEntryConverter = new HBaseToStudyEntryConverter(genomeHelper, scm, statsConverter);
+        this.studyEntryConverter = new HBaseToStudyEntryConverter(genomeHelper.getColumnFamily(), scm, statsConverter);
     }
 
     /**
@@ -285,7 +285,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
             try {
                 VariantAnnotation annotation = annotationConverter.convert(result);
                 Map<Integer, StudyEntry> studies;
-                if (selectVariantElements.getStudies().isEmpty()) {
+                if (selectVariantElements != null && selectVariantElements.getStudies().isEmpty()) {
                     studies = Collections.emptyMap();
                 } else {
                     studies = studyEntryConverter.convert(result);

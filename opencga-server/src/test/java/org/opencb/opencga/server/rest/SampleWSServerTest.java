@@ -30,7 +30,6 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import java.io.IOException;
 import java.util.Collections;
-import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
 
@@ -42,7 +41,7 @@ public class SampleWSServerTest {
     private static WSServerTestUtils serverTestUtils;
     private WebTarget webTarget;
     private String sessionId;
-    private long studyId;
+    private String studyId = "user@1000G:phase1";
     private long in1;
     private long s1, s2, s3, s4;
 
@@ -66,19 +65,12 @@ public class SampleWSServerTest {
 //        serverTestUtils.setUp();
         webTarget = serverTestUtils.getWebTarget();
         sessionId = OpenCGAWSServer.catalogManager.getUserManager().login("user", CatalogManagerTest.PASSWORD);
-        studyId = OpenCGAWSServer.catalogManager.getStudyManager().getId("user", "1000G:phase1");
-        in1 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, "in1", "f1", (long) -1, (long) -1, null, "", "", "",
-                "", "", Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual.AffectationStatus.UNKNOWN, null,
-                sessionId).first().getId();
-        s1 = OpenCGAWSServer.catalogManager.getSampleManager().create(Long.toString(studyId), "s1", "f1", "", null, false, null, new HashMap<>(), null,
-                null, sessionId).first().getId();
-        s2 = OpenCGAWSServer.catalogManager.getSampleManager().create(Long.toString(studyId), "s2", "f1", "", null, false, null, new
-                        HashMap<>(), null,
-                null, sessionId).first().getId();
-        s3 = OpenCGAWSServer.catalogManager.getSampleManager().create(Long.toString(studyId), "s3", "f1", "", null, false, null, new HashMap<>(), null,
-                null, sessionId).first().getId();
-        s4 = OpenCGAWSServer.catalogManager.getSampleManager().create(Long.toString(studyId), "s4", "f1", "", null, false, null, new HashMap<>(), null,
-                null, sessionId).first().getId();
+        in1 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, new Individual().setId("in1"), null,
+                sessionId).first().getUid();
+        s1 = OpenCGAWSServer.catalogManager.getSampleManager().create(studyId, new Sample().setId("s1"), null, sessionId).first().getUid();
+        s2 = OpenCGAWSServer.catalogManager.getSampleManager().create(studyId, new Sample().setId("s2"), null, sessionId).first().getUid();
+        s3 = OpenCGAWSServer.catalogManager.getSampleManager().create(studyId, new Sample().setId("s3"), null, sessionId).first().getUid();
+        s4 = OpenCGAWSServer.catalogManager.getSampleManager().create(studyId, new Sample().setId("s4"), null, sessionId).first().getUid();
     }
 
     @After
@@ -90,14 +82,14 @@ public class SampleWSServerTest {
     @Test
     public void search() throws IOException {
         String json = webTarget.path("samples").path("search").queryParam("sid", sessionId)
-                .queryParam(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                .queryParam(SampleDBAdaptor.QueryParams.NAME.key(), "s1")
+                .queryParam(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .queryParam(SampleDBAdaptor.QueryParams.ID.key(), "s1")
                 .request().get(String.class);
 
         QueryResult<Sample> queryResult = WSServerTestUtils.parseResult(json, Sample.class).getResponse().get(0);
         assertEquals(1, queryResult.getNumTotalResults());
         Sample sample = queryResult.first();
-        assertEquals("s1", sample.getName());
+        assertEquals("s1", sample.getId());
 
 //        json = webTarget.path("samples").path("search").queryParam("sid", sessionId)
 //                .queryParam(CatalogSampleDBAdaptor.SampleFilterOption.studyId.toString(), studyId)
@@ -113,7 +105,7 @@ public class SampleWSServerTest {
                 .queryParam("individualId", in1).queryParam("sid", sessionId).request().get(String.class);
 
         Sample sample = WSServerTestUtils.parseResult(json, Sample.class).getResponse().get(0).first();
-        assertEquals(in1, sample.getIndividual().getId());
+        assertEquals(in1, sample.getIndividual().getUid());
     }
 
     @Test
@@ -125,7 +117,7 @@ public class SampleWSServerTest {
                 .request().post(Entity.json(entity), String.class);
 
         Sample sample = WSServerTestUtils.parseResult(json, Sample.class).getResponse().get(0).first();
-        assertEquals(entity.individualId, sample.getIndividual().getId());
+        assertEquals(entity.individualId, sample.getIndividual().getUid());
         assertEquals(entity.attributes, sample.getAttributes());
     }
 

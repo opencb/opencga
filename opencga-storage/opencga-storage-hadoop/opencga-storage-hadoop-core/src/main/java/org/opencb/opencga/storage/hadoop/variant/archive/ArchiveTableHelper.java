@@ -28,7 +28,6 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
@@ -68,7 +67,7 @@ public class ArchiveTableHelper extends GenomeHelper {
 
     public ArchiveTableHelper(Configuration conf, String metaTableName) throws IOException {
         super(conf);
-        fileId = conf.getInt(VariantStorageEngine.Options.FILE_ID.key(), 0);
+        fileId = conf.getInt(HadoopVariantStorageEngine.FILE_ID, 0);
 
         try (HBaseVariantFileMetadataDBAdaptor metadataManager = new HBaseVariantFileMetadataDBAdaptor(null, metaTableName, conf)) {
             VariantFileMetadata meta = metadataManager.getVariantFileMetadata(getStudyId(), fileId, null);

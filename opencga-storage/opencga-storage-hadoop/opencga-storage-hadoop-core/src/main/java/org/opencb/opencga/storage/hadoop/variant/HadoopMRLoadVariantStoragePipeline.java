@@ -23,7 +23,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
-import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
@@ -50,10 +49,10 @@ public class HadoopMRLoadVariantStoragePipeline extends HadoopVariantStoragePipe
     public HadoopMRLoadVariantStoragePipeline(
             StorageConfiguration configuration,
             VariantHadoopDBAdaptor dbAdaptor, MRExecutor mrExecutor,
-            Configuration conf, HBaseCredentials archiveCredentials,
+            Configuration conf,
             VariantReaderUtils variantReaderUtils, ObjectMap options) {
         super(configuration, dbAdaptor, variantReaderUtils,
-                options, archiveCredentials, mrExecutor, conf);
+                options, mrExecutor, conf);
         throw new IllegalStateException("Unable to load from hdfs using a MR job");
     }
 
@@ -104,12 +103,12 @@ public class HadoopMRLoadVariantStoragePipeline extends HadoopVariantStoragePipe
         Class execClass = ArchiveDriver.class;
         String executable = hadoopRoute + " jar " + jar + " " + execClass.getName();
         String args = ArchiveDriver.buildCommandLineArgs(input, vcfMeta,
-                archiveTableCredentials.toString(), archiveTableCredentials.getTable(), studyId,
+                variantsTableCredentials.toString(), getArchiveTable(), studyId,
                 fileId, options);
 
         long startTime = System.currentTimeMillis();
         logger.info("------------------------------------------------------");
-        logger.info("Loading file {} into archive table '{}'", fileId, archiveTableCredentials.getTable());
+        logger.info("Loading file {} into archive table '{}'", fileId, getArchiveTable());
         logger.debug(executable + " " + args);
         logger.info("------------------------------------------------------");
         int exitValue = mrExecutor.run(executable, args);
@@ -118,7 +117,7 @@ public class HadoopMRLoadVariantStoragePipeline extends HadoopVariantStoragePipe
         logger.info("Total time: {}s", (System.currentTimeMillis() - startTime) / 1000.0);
         if (exitValue != 0) {
             throw new StorageEngineException("Error loading file " + input + " into archive table \""
-                    + archiveTableCredentials.getTable() + "\"");
+                    + getArchiveTable() + "\"");
         }
     }
 

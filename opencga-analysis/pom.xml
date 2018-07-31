@@ -38,37 +38,6 @@
         <dependency>
             <groupId>org.opencb.hpg-bigdata</groupId>
             <artifactId>hpg-bigdata-analysis</artifactId>
-            <version>${hpg-bigdata.version}</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>hadoop-bam</artifactId>
-                    <groupId>org.seqdoop</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>hbase-client</artifactId>
-                    <groupId>org.apache.hbase</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>hadoop-client</artifactId>
-                    <groupId>org.apache.hadoop</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>hbase-server</artifactId>
-                    <groupId>org.apache.hbase</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>avro-mapred</artifactId>
-                    <groupId>org.apache.avro</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>com.sun.jersey</artifactId>
-                    <groupId>jersey-json</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>com.sun.jersey</artifactId>
-                    <groupId>jersey-server</groupId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>

@@ -42,7 +42,8 @@ public class JobWSServer extends OpenCGAWSServer {
 
     private JobManager jobManager;
 
-    public JobWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
+    public JobWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
+            throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
         jobManager = catalogManager.getJobManager();
     }
@@ -52,8 +53,10 @@ public class JobWSServer extends OpenCGAWSServer {
         public InputJob() {
         }
 
-        public InputJob(String name, String toolName, String description, long startTime, long endTime, String commandLine, Status status,
-                        String outDirId, List<Long> input, Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes) {
+        public InputJob(String id, String name, String toolName, String description, long startTime, long endTime, String commandLine,
+                        Status status, String outDirId, List<String> input, Map<String, Object> attributes, Map<String, Object>
+                                resourceManagerAttributes) {
+            this.id = id;
             this.name = name;
             this.toolName = toolName;
             this.description = description;
@@ -70,6 +73,7 @@ public class JobWSServer extends OpenCGAWSServer {
         enum Status {READY, ERROR}
 
         @ApiModelProperty(required = true)
+        public String id;
         public String name;
         @ApiModelProperty(required = true)
         public String toolName;
@@ -85,8 +89,8 @@ public class JobWSServer extends OpenCGAWSServer {
         public String outDirId;
         @ApiModelProperty(required = true)
         public String outDir;
-        public List<Long> input;
-        public List<Long> output;
+        public List<String> input;
+        public List<String> output;
         public Map<String, Object> attributes;
         public Map<String, Object> resourceManagerAttributes;
 
@@ -100,45 +104,51 @@ public class JobWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Register an executed job with POST method", position = 1,
             notes = "Registers a job that has been previously run outside catalog into catalog. <br>"
                     + "Required values: [name, toolName, commandLine, outDirId]", response = Job.class)
-    public Response createJobPOST(@ApiParam(value = "DEPRECATED: studyId", hidden = true) @QueryParam("studyId") String studyIdStr,
-                                  @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                  @QueryParam("study") String studyStr,
-                                  @ApiParam(value = "job", required = true) InputJob job) {
+    public Response createJobPOST(
+            @ApiParam(value = "DEPRECATED: studyId", hidden = true) @QueryParam("studyId") String studyIdStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+            @QueryParam("study") String studyStr,
+            @ApiParam(value = "job", required = true) InputJob inputJob) {
         try {
-            ObjectUtils.defaultIfNull(job, new InputJob());
+            inputJob = ObjectUtils.defaultIfNull(inputJob, new InputJob());
 
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
-            if (StringUtils.isNotEmpty(job.outDirId) && StringUtils.isEmpty(job.outDir)) {
-                job.outDir = job.outDirId;
+            if (StringUtils.isNotEmpty(inputJob.outDirId) && StringUtils.isEmpty(inputJob.outDir)) {
+                inputJob.outDir = inputJob.outDirId;
             }
-            String userId = catalogManager.getUserManager().getUserId(sessionId);
-            long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+
             Job.JobStatus jobStatus;
-            if (Job.JobStatus.isValid(job.status.toString())) {
-                jobStatus = new Job.JobStatus(job.status.toString(), job.statusMessage);
+            if (Job.JobStatus.isValid(inputJob.status.toString())) {
+                jobStatus = new Job.JobStatus(inputJob.status.toString(), inputJob.statusMessage);
             } else {
                 jobStatus = new Job.JobStatus();
-                jobStatus.setMessage(job.statusMessage);
+                jobStatus.setMessage(inputJob.statusMessage);
             }
-            long outDir = catalogManager.getFileManager().getId(job.outDir, Long.toString(studyId), sessionId).getResourceId();
-            QueryResult<Job> result = catalogManager.getJobManager().create(studyId, job.name, job.toolName, job.description, job
-                            .execution, job.params, job.commandLine, null, outDir, parseToListOfFiles(job.input), parseToListOfFiles(job.output),
-                    job.attributes, job.resourceManagerAttributes, jobStatus, job.startTime, job.endTime, queryOptions, sessionId);
+
+            String jobId = StringUtils.isEmpty(inputJob.id) ? inputJob.name : inputJob.id;
+            String jobName = StringUtils.isEmpty(inputJob.name) ? jobId : inputJob.name;
+            Job job = new Job(-1, jobId, jobName, "", inputJob.toolName, null, "", inputJob.description, inputJob.startTime,
+                    inputJob.endTime, inputJob.execution, "", inputJob.commandLine, false, jobStatus, -1,
+                    new File().setPath(inputJob.outDir), parseToListOfFiles(inputJob.input),
+                    parseToListOfFiles(inputJob.output), Collections.emptyList(), inputJob.params, -1, inputJob.attributes,
+                    inputJob.resourceManagerAttributes);
+
+            QueryResult<Job> result = catalogManager.getJobManager().create(studyStr, job, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
-    private List<File> parseToListOfFiles(List<Long> longList) {
+    private List<File> parseToListOfFiles(List<String> longList) {
         if (longList == null || longList.isEmpty()) {
             return Collections.emptyList();
         }
         List<File> fileList = new ArrayList<>(longList.size());
-        for (Long myLong : longList) {
-            fileList.add(new File().setId(myLong));
+        for (String myLong : longList) {
+            fileList.add(new File().setPath(myLong));
         }
         return fileList;
     }
@@ -188,6 +198,7 @@ public class JobWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
         try {
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
+            query.remove("study");
 
             if (StringUtils.isNotEmpty(studyId)) {
                 studyStr = studyId;
@@ -215,33 +226,39 @@ public class JobWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{jobId}/visit")
     @ApiOperation(value = "Increment job visits", position = 3)
-    public Response visit(@ApiParam(value = "jobId", required = true) @PathParam("jobId") long jobId) {
+    public Response visit(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+            @QueryParam("study") String studyStr,
+            @ApiParam(value = "jobId", required = true) @PathParam("jobId") String jobId) {
         try {
-            return createOkResponse(catalogManager.getJobManager().visit(jobId, sessionId));
+            return createOkResponse(catalogManager.getJobManager().visit(studyStr, jobId, sessionId));
         } catch (CatalogException e) {
             return createErrorResponse(e);
         }
     }
-//
-//    @GET
-//    @Path("/{jobIds}/delete")
-//    @ApiOperation(value = "Delete job [WARNING]", position = 4,
-//            notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
-//                    "planned to be fully implemented and tested in version 1.4.0")
-//    public Response delete(@ApiParam(value = "Comma separated list of job ids or names up to a maximum of 100", required = true) @PathParam("jobIds")
-//                                   String jobIds,
-//                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-//                           @QueryParam("study") String studyStr) {
-////                           @ApiParam(value = "deleteFiles", required = false) @DefaultValue("true")
-////                                @QueryParam("deleteFiles") boolean deleteFiles) {
-//        try {
-////            QueryOptions options = new QueryOptions(JobManager.DELETE_FILES, deleteFiles);
-//            List<QueryResult<Job>> delete = catalogManager.getJobManager().delete(studyStr, jobIds, queryOptions, sessionId);
-//            return createOkResponse(delete);
-//        } catch (CatalogException | IOException e) {
-//            return createErrorResponse(e);
-//        }
-//    }
+
+    @DELETE
+    @Path("/delete")
+    @ApiOperation(value = "Delete existing jobs")
+    public Response delete(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+            @QueryParam("study") String studyStr,
+            @ApiParam(value = "id") @DefaultValue("") @QueryParam("id") String id,
+            @ApiParam(value = "name") @QueryParam("name") String name,
+            @ApiParam(value = "tool name") @QueryParam("toolName") String tool,
+            @ApiParam(value = "status") @QueryParam("status") String status,
+            @ApiParam(value = "ownerId") @QueryParam("ownerId") String ownerId,
+            @ApiParam(value = "date") @QueryParam("date") String date,
+            @ApiParam(value = "Comma separated list of input file ids") @QueryParam("inputFiles") String inputFiles,
+            @ApiParam(value = "Comma separated list of output file ids") @QueryParam("outputFiles") String outputFiles,
+            @ApiParam(value = "Release value") @QueryParam("release") String release) {
+        try {
+            query.remove("study");
+            return createOkResponse(jobManager.delete(studyStr, query, queryOptions, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
 
     @GET
     @Path("/groupBy")
@@ -265,6 +282,9 @@ public class JobWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "creationDate", required = false) @DefaultValue("")
                             @QueryParam("creationDate") String creationDate) {
         try {
+            query.remove("study");
+            query.remove("fields");
+
             if (StringUtils.isEmpty(fields)) {
                 throw new CatalogException("Empty fields parameter.");
             }
@@ -284,7 +304,7 @@ public class JobWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(jobIdsStr);
-                return createOkResponse(jobManager.getAcls(null, idList, member, silent, sessionId));
+            return createOkResponse(jobManager.getAcls(null, idList, member, silent, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

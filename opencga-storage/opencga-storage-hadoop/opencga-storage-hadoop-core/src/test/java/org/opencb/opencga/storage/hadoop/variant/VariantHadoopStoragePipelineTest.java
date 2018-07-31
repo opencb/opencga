@@ -35,8 +35,8 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
@@ -77,7 +77,6 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
         studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
         etlResult = VariantStorageBaseTest.runDefaultETL(inputUri, variantStorageManager, studyConfiguration,
                 new ObjectMap(Options.TRANSFORM_FORMAT.key(), "proto")
-                        .append(Options.FILE_ID.key(), FILE_ID)
                         .append(Options.ANNOTATE.key(), true)
                         .append(Options.CALCULATE_STATS.key(), false)
         );
@@ -142,7 +141,7 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
     }
 
     @Test
-    public void getVariantByGene() {
+    public void getVariantByGene() throws StorageEngineException {
 
         // Group by Gene
         HashMap<String, Long> genesCount = new HashMap<>();
@@ -167,7 +166,7 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
         //Count for each gene
         for (Map.Entry<String, Long> entry : genesCount.entrySet()) {
             System.out.println("Gene " + entry.getKey() + " in " + entry.getValue() + " variants");
-            QueryResult<Long> queryResult = dbAdaptor.count(new Query(VariantQueryParam.GENE.key(), entry.getKey()));
+            QueryResult<Long> queryResult = variantStorageEngine.count(new Query(VariantQueryParam.GENE.key(), entry.getKey()));
             System.out.println("queryResult.getDbTime() = " + queryResult.getDbTime());
             long count = queryResult.first();
             assertEquals(entry.getValue().longValue(), count);
@@ -279,4 +278,5 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
         System.out.println("print variants at = " + outDir);
         VariantHbaseTestUtils.printVariants(studyConfiguration, dbAdaptor, outDir);
     }
+
 }

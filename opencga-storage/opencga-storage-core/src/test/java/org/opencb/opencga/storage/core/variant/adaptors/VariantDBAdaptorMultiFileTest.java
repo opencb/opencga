@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.core.variant.adaptors;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -61,7 +62,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
                 studyConfiguration.getSampleIds().put("NA" + fileId, fileId);
                 if (inputFiles.size() == 4) {
                     dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
-                    options.put(VariantStorageEngine.Options.STUDY_ID.key(), studyId);
+                    options.put(VariantStorageEngine.Options.STUDY.key(), "S_" + studyId);
                     storageEngine.getOptions().putAll(options);
                     storageEngine.getOptions().put(VariantStorageEngine.Options.RELEASE.key(), release++);
                     storageEngine.index(inputFiles.subList(0, 2), outputUri, true, true, true);
@@ -520,6 +521,14 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
         assertThat(queryResult, everyResult(allVariants, withStudy("S_1", withFileId("12877",
                 with(QUAL, fileEntry -> fileEntry.getAttributes().get(QUAL), allOf(notNullValue(), with("", Double::valueOf, lt(50))))))));
+
+        query = new Query()
+                .append(VariantQueryParam.QUAL.key(), "<<5")
+                .append(VariantQueryParam.FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz");
+        queryResult = dbAdaptor.get(query, options);
+        System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", withFileId("12877",
+                with(QUAL, fileEntry -> fileEntry.getAttributes().get(QUAL), anyOf(with("", Double::valueOf, lt(5)), nullValue()))))));
 
         query = new Query()
                 .append(VariantQueryParam.QUAL.key(), "<50")

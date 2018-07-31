@@ -16,8 +16,8 @@
 
 package org.opencb.opencga.core.models;
 
-import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.acls.AclParams;
 
 import java.util.*;
 
@@ -26,8 +26,10 @@ import java.util.*;
  */
 public class Sample extends Annotable {
 
-    private long id;
+    private String id;
+    @Deprecated
     private String name;
+    private String uuid;
     private String source;
     @Deprecated
     private Individual individual;
@@ -41,6 +43,7 @@ public class Sample extends Annotable {
     private boolean somatic;
     private List<OntologyTerm> phenotypes;
 
+    @Deprecated
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
 
@@ -48,16 +51,15 @@ public class Sample extends Annotable {
     public Sample() {
     }
 
-    public Sample(long id, String name, String source, Individual individual, String description, int release) {
-        this(id, name, source, individual, description, "", false, release, 1, new LinkedList<>(),
-                new ArrayList<>(), new HashMap<>(), new HashMap<>());
+    public Sample(String id, String source, Individual individual, String description, int release) {
+        this(id, source, individual, description, "", false, release, 1, new LinkedList<>(), new ArrayList<>(), new HashMap<>(),
+                new HashMap<>());
     }
 
-    public Sample(long id, String name, String source, Individual individual, String description, String type, boolean somatic, int release,
+    public Sample(String id, String source, Individual individual, String description, String type, boolean somatic, int release,
                   int version, List<AnnotationSet> annotationSets, List<OntologyTerm> phenotypeList, Map<String, Object> stats,
                   Map<String, Object> attributes) {
         this.id = id;
-        this.name = name;
         this.source = source;
         this.version = version;
         this.individual = individual;
@@ -76,10 +78,9 @@ public class Sample extends Annotable {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Sample{");
-        sb.append("id=").append(id);
-        sb.append(", name='").append(name).append('\'');
+        sb.append("uuid='").append(uuid).append('\'');
+        sb.append(", id='").append(id).append('\'');
         sb.append(", source='").append(source).append('\'');
-        sb.append(", individual=").append(individual);
         sb.append(", release=").append(release);
         sb.append(", version=").append(version);
         sb.append(", creationDate='").append(creationDate).append('\'');
@@ -104,9 +105,11 @@ public class Sample extends Annotable {
             return false;
         }
         Sample sample = (Sample) o;
-        return id == sample.id
-                && release == sample.release
+        return release == sample.release
+                && version == sample.version
                 && somatic == sample.somatic
+                && Objects.equals(uuid, sample.uuid)
+                && Objects.equals(id, sample.id)
                 && Objects.equals(name, sample.name)
                 && Objects.equals(source, sample.source)
                 && Objects.equals(individual, sample.individual)
@@ -115,28 +118,52 @@ public class Sample extends Annotable {
                 && Objects.equals(description, sample.description)
                 && Objects.equals(type, sample.type)
                 && Objects.equals(phenotypes, sample.phenotypes)
+                && Objects.equals(stats, sample.stats)
                 && Objects.equals(attributes, sample.attributes);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, source, individual, release, creationDate, status,
-                description, type, somatic, phenotypes, attributes);
+        return Objects.hash(uuid, id, name, source, individual, release, version, creationDate, status,
+                description, type, somatic, phenotypes, stats, attributes);
     }
 
-    public long getId() {
+    @Override
+    public Sample setUid(long uid) {
+        super.setUid(uid);
+        return this;
+    }
+
+    @Override
+    public Sample setStudyUid(long studyUid) {
+        super.setStudyUid(studyUid);
+        return this;
+    }
+
+    public String getUuid() {
+        return uuid;
+    }
+
+    public Sample setUuid(String uuid) {
+        this.uuid = uuid;
+        return this;
+    }
+
+    public String getId() {
         return id;
     }
 
-    public Sample setId(long id) {
+    public Sample setId(String id) {
         this.id = id;
         return this;
     }
 
+    @Deprecated
     public String getName() {
         return name;
     }
 
+    @Deprecated
     public Sample setName(String name) {
         this.name = name;
         return this;

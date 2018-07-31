@@ -25,7 +25,7 @@ public class FillGapsTaskUtilsTest {
 
 
     @Test
-    public void testgetOverlappingVariants() {
+    public void testGetOverlappingVariants() {
         FillGapsTask a = new FillGapsTask(new StudyConfiguration(1, "a"), new GenomeHelper(new Configuration()), true);
 
         VcfSliceProtos.VcfSlice vcfSlice = buildVcfSlice("17:29113:T:C", "17:29185:A:G", "17:29190-29189::AAAAAAAA", "17:29464:G:");
@@ -49,7 +49,7 @@ public class FillGapsTaskUtilsTest {
 
 
     @Test
-    public void testgetOverlappingVariants2() {
+    public void testGetOverlappingVariants2() {
         FillGapsTask a = new FillGapsTask(new StudyConfiguration(1, "a"), new GenomeHelper(new Configuration()), true);
 
         VcfSliceProtos.VcfSlice vcfSlice = buildVcfSlice(

@@ -101,6 +101,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     private final ObjectMap loadStats = new ObjectMap();
     private final Logger logger = LoggerFactory.getLogger(MongoDBVariantStoragePipeline.class);
     private MongoDBVariantWriteResult writeResult;
+    private List<Integer> fileIds;
 
     public MongoDBVariantStoragePipeline(StorageConfiguration configuration, String storageEngineId,
                                          VariantMongoDBAdaptor dbAdaptor) {
@@ -247,7 +248,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 //        boolean compressGenotypes = options.getBoolean(Options.COMPRESS_GENOTYPES.key(), false);
 //        boolean compressGenotypes = defaultGenotype != null && !defaultGenotype.isEmpty();
 
-        final int fileId = options.getInt(Options.FILE_ID.key());
+        final int fileId = getFileId();
 
         logger.info("Loading variants...");
         long start = System.currentTimeMillis();
@@ -358,7 +359,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     }
 
     public void stage(URI inputUri) throws StorageEngineException {
-        final int fileId = options.getInt(Options.FILE_ID.key());
+        final int fileId = getFileId();
 
         if (!options.getBoolean(STAGE.key(), false)) {
             // Do not stage!
@@ -508,7 +509,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
     public void stageSuccess(VariantFileMetadata metadata) throws StorageEngineException {
         // Stage loading finished. Save VariantSource and update BatchOperation
-        int fileId = options.getInt(Options.FILE_ID.key());
+        int fileId = getFileId();
         metadata.setId(String.valueOf(fileId));
 
         getStudyConfigurationManager()
@@ -546,7 +547,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             throws StorageEngineException {
 
         long start = System.currentTimeMillis();
-        options.put(Options.FILE_ID.key(), fileIds);
+        this.fileIds = fileIds;
 
         StudyConfiguration studyConfiguration = preMerge(fileIds);
 
@@ -675,8 +676,8 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     }
 
     private StudyConfiguration preMerge(List<Integer> fileIds) throws StorageEngineException {
-        int studyId = getStudyId();
-        return dbAdaptor.getStudyConfigurationManager().lockAndUpdate(studyId, studyConfiguration -> {
+        return dbAdaptor.getStudyConfigurationManager().lockAndUpdate(getStudyId(), studyConfiguration -> {
+            studyConfiguration = checkExistsStudyConfiguration(studyConfiguration);
             for (Integer fileId : fileIds) {
                 if (studyConfiguration.getIndexedFiles().contains(fileId)) {
                     throw StorageEngineException.alreadyLoaded(fileId, studyConfiguration);
@@ -754,7 +755,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     public URI postLoad(URI input, URI output) throws StorageEngineException {
 
         if (options.getBoolean(MERGE.key()) || options.getBoolean(DIRECT_LOAD.key(), DIRECT_LOAD.defaultValue())) {
-            return super.postLoad(input, output);
+            return postLoad(input, output, fileIds);
         } else {
             return input;
         }

@@ -25,7 +25,7 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
@@ -40,7 +40,7 @@ import java.util.Collections;
  * Created by mh719 on 21/11/2016.
  */
 @Deprecated
-public class VariantTableStatsDriver extends AbstractAnalysisTableDriver {
+public class VariantTableStatsDriver extends AbstractVariantsTableDriver {
 
     private final Logger logger = LoggerFactory.getLogger(VariantTableStatsDriver.class);
 
@@ -50,11 +50,6 @@ public class VariantTableStatsDriver extends AbstractAnalysisTableDriver {
 
     public VariantTableStatsDriver(Configuration conf) {
         super(conf);
-    }
-
-    @Override
-    protected void parseAndValidateParameters() {
-        // nothing to do
     }
 
     @Override

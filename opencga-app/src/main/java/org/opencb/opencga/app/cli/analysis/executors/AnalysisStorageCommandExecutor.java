@@ -69,6 +69,6 @@ public abstract class AnalysisStorageCommandExecutor extends AnalysisCommandExec
                 ".alias"), sessionId)
                 .getResult()
                 .stream()
-                .collect(Collectors.toMap(Study::getId, Study::getAlias));
+                .collect(Collectors.toMap(Study::getUid, Study::getId));
     }
 }

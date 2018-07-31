@@ -33,6 +33,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.AnnotationConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.Annotable;
 import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.Variable;
@@ -49,8 +50,7 @@ import java.util.regex.Pattern;
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.addCompQueryFilter;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.getOperator;
-import static org.opencb.opencga.catalog.managers.AnnotationSetManager.ANNOTATION_SETS;
-import static org.opencb.opencga.catalog.managers.AnnotationSetManager.ANNOTATION_SET_ACTION;
+import static org.opencb.opencga.catalog.managers.AnnotationSetManager.*;
 
 /**
  * Created by pfurio on 07/07/16.
@@ -71,6 +71,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
 
     public enum AnnotationSetParams implements QueryParam {
         ANNOTATION_SETS("customAnnotationSets", TEXT_ARRAY, ""),
+        PRIVATE_VARIABLE_SET_MAP("_vsMap", TEXT_ARRAY, ""),
 
         // The variables stored as will appear inside the array
         ID("id", TEXT, ""),
@@ -130,17 +131,15 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
         }
     }
 
-    public QueryResult<AnnotationSet> createAnnotationSet(long id, VariableSet variableSet, AnnotationSet annotationSet)
+    public void createAnnotationSetForMigration(Object id, VariableSet variableSet, AnnotationSet annotationSet)
             throws CatalogDBException {
-
-        long startTime = startQuery();
         // Check if there already exists an annotation set with the same name
         QueryResult<Long> count = getCollection().count(
                 new Document()
-                        .append(AnnotationSetParams.ANNOTATION_SET_NAME.key(), annotationSet.getName())
-                        .append(PRIVATE_ID, id));
+                        .append(AnnotationSetParams.ANNOTATION_SET_NAME.key(), annotationSet.getId())
+                        .append("_id", id));
         if (count.first() > 0) {
-            throw CatalogDBException.alreadyExists("AnnotationSet", "name", annotationSet.getName());
+            throw CatalogDBException.alreadyExists("AnnotationSet", "name", annotationSet.getId());
         }
 
         if (variableSet.isUnique()) {
@@ -148,28 +147,29 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
             count = getCollection().count(
                     new Document()
                             .append(AnnotationSetParams.ANNOTATION_SETS_VARIABLE_SET_ID.key(), annotationSet.getVariableSetId())
-                            .append(PRIVATE_ID, id));
+                            .append("_id", id));
             if (count.first() > 0) {
                 throw new CatalogDBException("Repeated annotation for a unique VariableSet");
             }
         }
 
-        List<Document> documentList = annotationConverter.annotationToDB(variableSet, annotationSet.getName(),
+        List<Document> documentList = annotationConverter.annotationToDB(variableSet, annotationSet.getId(),
                 annotationSet.getAnnotations());
 
         // Insert the annotation set in the database
         Bson query = Filters.and(
-                Filters.eq(PRIVATE_ID, id),
-                Filters.eq(AnnotationSetParams.ANNOTATION_SET_NAME.key(), new Document("$ne", annotationSet.getName()))
+                Filters.eq("_id", id),
+                Filters.eq(AnnotationSetParams.ANNOTATION_SET_NAME.key(), new Document("$ne", annotationSet.getId()))
         );
-        Bson update = new Document("$addToSet", new Document(AnnotationSetParams.ANNOTATION_SETS.key(),
-                new Document("$each", documentList)));
+        Bson update = new Document()
+                .append("$addToSet", new Document(AnnotationSetParams.ANNOTATION_SETS.key(), new Document("$each", documentList)))
+                .append("$set", new Document(AnnotationSetParams.PRIVATE_VARIABLE_SET_MAP.key() + "." + variableSet.getUid(),
+                        variableSet.getId()));
         QueryResult<UpdateResult> queryResult = getCollection().update(query, update, null);
 
         if (queryResult.first().getModifiedCount() != 1) {
-            throw CatalogDBException.alreadyExists("AnnotationSet", "name", annotationSet.getName());
+            throw CatalogDBException.alreadyExists("AnnotationSet", "name", annotationSet.getId());
         }
-        return endQuery("Create annotation set", startTime, getAnnotationSet(id, annotationSet.getName()));
     }
 
     /**
@@ -228,6 +228,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
             if (includeAnnotation) {
                 // We need to specify we need to include the annotation sets in order to filter them properly afterwards with the converters
                 finalProjectionList.add(AnnotationSetParams.ANNOTATION_SETS.key());
+                finalProjectionList.add(AnnotationSetParams.PRIVATE_VARIABLE_SET_MAP.key());
             }
 
             if (finalProjectionList.isEmpty()) {
@@ -251,73 +252,6 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
             return false;
         }
         return query.containsKey(Constants.ANNOTATION);
-    }
-
-    public ObjectMap prepareAnnotationUpdate(long entryId, ObjectMap parameters, List<VariableSet> variableSetList)
-            throws CatalogDBException {
-        ObjectMap retMap = new ObjectMap()
-                .append(AnnotationSetManager.Action.DELETE_ANNOTATION.name(), parameters.getString(Constants.DELETE_ANNOTATION))
-                .append(AnnotationSetManager.Action.DELETE_ANNOTATION_SET.name(), parameters.getString(Constants.DELETE_ANNOTATION_SET));
-
-        if (!parameters.containsKey(ANNOTATION_SETS) || parameters.get(ANNOTATION_SETS) == null) {
-            return retMap;
-        }
-
-        List<AnnotationSet> annotationSetList = (List<AnnotationSet>) parameters.get(ANNOTATION_SETS);
-        if (annotationSetList == null || annotationSetList.isEmpty() || variableSetList.isEmpty()) {
-            return retMap;
-        }
-
-        Map<String, AnnotationSetManager.Action> annotationSetAction =
-                (Map<String, AnnotationSetManager.Action>) parameters.get(ANNOTATION_SET_ACTION);
-
-        Map<Long, VariableSet> variableSetMap = new HashMap<>();
-        for (VariableSet variableSet : variableSetList) {
-            variableSetMap.put(variableSet.getId(), variableSet);
-        }
-
-        List<Document> createAnnotations = new ArrayList<>();
-        List<Document> updateAnnotations = new ArrayList<>();
-
-        for (AnnotationSet annotationSet : annotationSetList) {
-            List<Document> documentList = annotationConverter.annotationToDB(variableSetMap.get(annotationSet.getVariableSetId()),
-                    annotationSet);
-
-            switch (annotationSetAction.get(annotationSet.getName())) {
-                case CREATE:
-                    // Check if there already exists an annotation set with the same name
-                    QueryResult<Long> count = getCollection().count(
-                            new Document()
-                                    .append(AnnotationSetParams.ANNOTATION_SET_NAME.key(), annotationSet.getName())
-                                    .append(PRIVATE_ID, entryId));
-                    if (count.first() > 0) {
-                        throw CatalogDBException.alreadyExists("AnnotationSet", "name", annotationSet.getName());
-                    }
-
-                    if (variableSetMap.get(annotationSet.getVariableSetId()).isUnique()) {
-                        // Check if the variableset has been already annotated with a different annotation set
-                        count = getCollection().count(
-                                new Document()
-                                        .append(AnnotationSetParams.ANNOTATION_SETS_VARIABLE_SET_ID.key(), annotationSet.getVariableSetId())
-                                        .append(PRIVATE_ID, entryId));
-                        if (count.first() > 0) {
-                            throw new CatalogDBException("Repeated annotation for a unique VariableSet");
-                        }
-                    }
-
-                    createAnnotations.addAll(documentList);
-                    break;
-                case UPDATE:
-                    updateAnnotations.addAll(documentList);
-                    break;
-                default:
-                    throw new CatalogDBException("Unknown AnnotationSet action found: " + annotationSetAction.get(annotationSet.getName()));
-            }
-        }
-
-        return retMap
-                .append(AnnotationSetManager.Action.CREATE.name(), createAnnotations)
-                .append(AnnotationSetManager.Action.UPDATE.name(), updateAnnotations);
     }
 
     private QueryResult<? extends Annotable> convertToDataModelQueryResult(QueryResult<Document> documentQueryResult,
@@ -346,219 +280,247 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                 annotableList);
     }
 
-    public void applyAnnotationUpdates(Long entryId, ObjectMap annotationUpdateMap, boolean isVersioned) throws CatalogDBException {
-        if (entryId <= 0 || annotationUpdateMap.isEmpty()) {
-            return;
-        }
+    public void updateAnnotationSets(long entryId, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions options,
+                                     boolean isVersioned) throws CatalogDBException {
+        if (parameters.containsKey(ANNOTATION_SETS)) {
+            List<AnnotationSet> annotationSetList = (List<AnnotationSet>) parameters.get(ANNOTATION_SETS);
 
-        List<Document> documentList = (List<Document>) annotationUpdateMap.get(AnnotationSetManager.Action.CREATE.name());
-        if (documentList != null && !documentList.isEmpty()) {
-            // Insert the annotation set in the database
-            Document query = new Document(PRIVATE_ID, entryId);
-            if (isVersioned) {
-                query.append(LAST_OF_VERSION, true);
-            }
-            Bson update = new Document("$addToSet", new Document(AnnotationSetParams.ANNOTATION_SETS.key(),
-                    new Document("$each", documentList)));
-            getCollection().update(query, update, null);
-        }
+            Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
+            ParamUtils.UpdateAction action = (ParamUtils.UpdateAction) actionMap.getOrDefault(ANNOTATION_SETS,
+                    ParamUtils.UpdateAction.ADD);
 
-        documentList = (List<Document>) annotationUpdateMap.get(AnnotationSetManager.Action.UPDATE.name());
-        if (documentList != null && !documentList.isEmpty()) {
-            // We go annotation per annotation
-            for (Document document : documentList) {
-                String annotationId = document.getString(AnnotationSetParams.ID.key());
-                Object annotationValue = document.get(AnnotationSetParams.VALUE.key());
-                String annotationName = document.getString(AnnotationSetParams.ANNOTATION_SET_NAME.key());
-                long variableSetId = document.getLong(AnnotationSetParams.VARIABLE_SET_ID.key());
-
-                Document queryDocument = new Document()
-                        .append(PRIVATE_ID, entryId)
-                        .append(AnnotationSetParams.ANNOTATION_SETS.key(),
-                                new Document("$elemMatch", new Document()
-                                        .append(AnnotationSetParams.ID.key(), annotationId)
-                                        .append(AnnotationSetParams.VARIABLE_SET_ID.key(), variableSetId)
-                                        .append(AnnotationSetParams.ANNOTATION_SET_NAME.key(), annotationName)));
-                if (isVersioned) {
-                    queryDocument.append(LAST_OF_VERSION, true);
-                }
-
-                String annotationPrivateId = annotationConverter.getAnnotationPrivateId(String.valueOf(variableSetId), annotationName,
-                        annotationId);
-
-                // We make a first attempt trying only to update the value of the annotation
-                Document updateDocument = new Document("$set", new Document()
-                        .append(AnnotationSetParams.ANNOTATION_SETS.key() + ".$." + AnnotationSetParams.VALUE.key(), annotationValue)
-                        .append(AnnotationSetParams.ANNOTATION_SETS.key() + ".$." + annotationPrivateId, annotationValue)
-                );
-
-                QueryResult<UpdateResult> update = getCollection().update(queryDocument, updateDocument, null);
-
-                if (update.first().getMatchedCount() == 0) {
-                    // That annotation did not exist already, so we need to add that new annotation to the array
-                    queryDocument = new Document()
-                            .append(PRIVATE_ID, entryId)
-                            .append(AnnotationSetParams.ANNOTATION_SETS.key(), new Document("$not",
-                                    new Document("$elemMatch", new Document()
-                                            .append(AnnotationSetParams.ID.key(), annotationId)
-                                            .append(AnnotationSetParams.VARIABLE_SET_ID.key(), variableSetId)
-                                            .append(AnnotationSetParams.ANNOTATION_SET_NAME.key(), annotationName))));
-                    if (isVersioned) {
-                        queryDocument.append(LAST_OF_VERSION, true);
-                    }
-
-                    updateDocument = new Document("$push", new Document(AnnotationSetParams.ANNOTATION_SETS.key(), document));
-
-                    update = getCollection().update(queryDocument, updateDocument, null);
-
-                    if (update.first().getMatchedCount() == 0) {
-                        throw new CatalogDBException("Internal error. No matching entry to update annotations");
-                    }
-                    if (update.first().getModifiedCount() == 0) {
-                        throw new CatalogDBException("Internal error. Could not add new annotation to annotationSet");
-                    }
-                }
-            }
-        }
-
-        String annotationSetToRemove = (String) annotationUpdateMap.get(AnnotationSetManager.Action.DELETE_ANNOTATION_SET.name());
-        if (StringUtils.isNotEmpty(annotationSetToRemove)) {
-            Document queryDocument = new Document(PRIVATE_ID, entryId);
-            if (isVersioned) {
-                queryDocument.append(LAST_OF_VERSION, true);
+            if (annotationSetList == null) {
+                return;
             }
 
-            Bson pull = Updates.pull(AnnotationSetParams.ANNOTATION_SETS.key(),
-                    new Document(AnnotationSetParams.ANNOTATION_SET_NAME.key(), annotationSetToRemove));
+            // Create or remove a new annotation set
+            if (action == ParamUtils.UpdateAction.ADD || action == ParamUtils.UpdateAction.SET) {
+                // 1. Check the annotation set ids are not in use
+                validateNewAnnotations(entryId, annotationSetList, variableSetList, isVersioned);
 
-            QueryResult<UpdateResult> update = getCollection().update(queryDocument, pull, new QueryOptions("multi", true));
-            if (update.first().getModifiedCount() < 1) {
-                throw new CatalogDBException("Could not delete the annotation set");
+                // 2. Obtain the list of documents that need to be inserted
+                List<Document> annotationDocumentList = getNewAnnotationList(annotationSetList, variableSetList);
+
+                if (action == ParamUtils.UpdateAction.SET) {
+                    // 2.1 Remove all the existing annotations
+                    removeAllAnnotationSets(entryId, isVersioned);
+                }
+
+                // 3. Insert the list of documents
+                addNewAnnotations(entryId, annotationDocumentList, isVersioned);
+
+                // 4. Set variable set map uid - id
+                addPrivateVariableMap(entryId, getPrivateVariableMapToSet(annotationSetList, variableSetList), isVersioned);
+            } else if (action == ParamUtils.UpdateAction.REMOVE) {
+                // Action = REMOVE
+
+                // 0. Obtain the annotationSet to be removed to know the variableSet being annotated
+                QueryResult<Document> queryResult = nativeGet(new Query(PRIVATE_UID, entryId), new QueryOptions(QueryOptions.INCLUDE,
+                        ANNOTATION_SETS));
+
+                if (queryResult.getNumResults() != 1) {
+                    throw new CatalogDBException("Unexpected error. Could not obtain the entry information. The annotationSet could "
+                            + "not be removed.");
+                }
+
+                List<Document> annotationList = (List<Document>) queryResult.first().get(AnnotationSetParams.ANNOTATION_SETS.key());
+                Map<String, String> annotationSetIdVariableSetUidMap = new HashMap<>();
+                for (Document document : annotationList) {
+                    annotationSetIdVariableSetUidMap.put(document.getString(AnnotationSetParams.ANNOTATION_SET_NAME.key()),
+                            String.valueOf(document.getLong(AnnotationSetParams.VARIABLE_SET_ID.key())));
+                }
+
+                for (AnnotationSet annotationSet : annotationSetList) {
+
+                    // 1. Remove annotationSet
+                    removeAnnotationSet(entryId, annotationSet.getId(), isVersioned);
+
+                    // 2. Unset variable set map uid - id
+                    Map<String, String> variableSetMapToRemove = new HashMap<>();
+                    variableSetMapToRemove.put(annotationSetIdVariableSetUidMap.get(annotationSet.getId()), null);
+                    removePrivateVariableMap(entryId, variableSetMapToRemove, isVersioned);
+                }
+
             }
+        } else if (parameters.containsKey(ANNOTATIONS)) {
+            // Update annotation
+            AnnotationSet annotationSet = (AnnotationSet) parameters.get(ANNOTATIONS);
+
+            // 1. Get list of annotations to be inserted
+            List<Document> annotationDocumentList = getNewAnnotationList(Collections.singletonList(annotationSet), variableSetList);
+
+            // 2. Remove all the existing annotations of the annotation set
+            removeAnnotationSet(entryId, annotationSet.getId(), isVersioned);
+
+            // 3. Add new list of annotations
+            addNewAnnotations(entryId, annotationDocumentList, isVersioned);
+        }
+    }
+
+    private void removePrivateVariableMap(long entryId, Map<String, String> privateVariableMapToSet, boolean isVersioned)
+            throws CatalogDBException {
+        Document queryDocument = new Document(PRIVATE_UID, entryId);
+        if (isVersioned) {
+            queryDocument.append(LAST_OF_VERSION, true);
         }
 
-        String annotationToRemoveList = (String) annotationUpdateMap.get(AnnotationSetManager.Action.DELETE_ANNOTATION.name());
-        if (StringUtils.isNotEmpty(annotationToRemoveList)) {
-            for (String annotationToRemove : StringUtils.split(annotationToRemoveList, ",")) {
-                String[] split = StringUtils.split(annotationToRemove, ":");
-                if (split.length != 2) {
-                    throw new CatalogDBException("Cannot delete annotation " + annotationToRemove
-                            + ". The format is annotationSetName:variable.");
-                }
-                String annotationSetName = split[0];
-                String variable = split[1];
+        for (Map.Entry<String, String> entry : privateVariableMapToSet.entrySet()) {
+            // We only want to remove the private variable map if it is not currently in use by any annotation set
+            queryDocument.append(AnnotationSetParams.VARIABLE_SET_ID.key(), new Document("$ne", Long.parseLong(entry.getKey())));
 
-                Document queryDocument = new Document()
-                        .append(PRIVATE_ID, entryId)
-                        .append(AnnotationSetParams.ANNOTATION_SETS.key(), new Document("$elemMatch",
-                                new Document()
-                                        .append(AnnotationSetParams.ANNOTATION_SET_NAME.key(), annotationSetName)
-                                        .append(AnnotationSetParams.ID.key(), Pattern.compile("^" + variable))));
-                if (isVersioned) {
-                    queryDocument.append(LAST_OF_VERSION, true);
-                }
+            Bson unset = Updates.unset(AnnotationSetParams.PRIVATE_VARIABLE_SET_MAP.key() + "." + entry.getKey());
 
-                Bson pull = Updates.pull(AnnotationSetParams.ANNOTATION_SETS.key(), new Document()
-                        .append(AnnotationSetParams.ANNOTATION_SET_NAME.key(), annotationSetName)
-                        .append(AnnotationSetParams.ID.key(), Pattern.compile("^" + variable)));
-
-                QueryResult<UpdateResult> update = getCollection().update(queryDocument, pull, new QueryOptions("multi", true));
-                if (update.first().getMatchedCount() > 0 && update.first().getModifiedCount() < 1) {
-                    throw new CatalogDBException("Could not delete the annotation " + annotationToRemove);
-                }
+            QueryResult<UpdateResult> update = getCollection().update(queryDocument, unset, new QueryOptions());
+            if (update.first().getModifiedCount() < 1 && update.first().getMatchedCount() == 1) {
+                throw new CatalogDBException("Could not remove private map information");
             }
         }
     }
-//
-//    public QueryResult<AnnotationSet> updateAnnotationSet(long id, VariableSet variableSet, AnnotationSet annotationSet)
-//            throws CatalogDBException {
-//        long startTime = startQuery();
-//
-//        Map<String, Object> annotations = annotationSet.getAnnotations();
-//        List<Document> documentList = annotationConverter.annotationToDB(variableSet, annotationSet.getName(), annotations);
-//
-//        // We go annotation per annotation
-//        for (Document document : documentList) {
-//            String annotationId = document.getString(AnnotationSetParams.ID.key());
-//            Object annotationValue = document.get(AnnotationSetParams.VALUE.key());
-//            String annotationName = document.getString(AnnotationSetParams.ANNOTATION_SET_NAME.key());
-//            long variableSetId = document.getLong(AnnotationSetParams.VARIABLE_SET_ID.key());
-//
-//            Document queryDocument = new Document()
-//                    .append(PRIVATE_ID, id)
-//                    .append(AnnotationSetParams.ANNOTATION_SETS.key(),
-//                            new Document("$elemMatch", new Document()
-//                                    .append(AnnotationSetParams.ID.key(), annotationId)
-//                                    .append(AnnotationSetParams.VARIABLE_SET_ID.key(), variableSetId)
-//                                    .append(AnnotationSetParams.ANNOTATION_SET_NAME.key(), annotationName)));
-//
-//            // We make a first attempt trying only to update the value of the annotation
-//            Document updateDocument = new Document("$set",
-//                    new Document(AnnotationSetParams.ANNOTATION_SETS.key() + ".$." + AnnotationSetParams.VALUE.key(), annotationValue));
-//
-//            QueryResult<UpdateResult> update = getCollection().update(queryDocument, updateDocument, null);
-//
-//            if (update.first().getMatchedCount() == 0) {
-//                // That annotation did not exist already, so we need to add that new annotation to the array
-//                queryDocument = new Document()
-//                        .append(PRIVATE_ID, id)
-//                        .append(AnnotationSetParams.ANNOTATION_SETS.key(), new Document("$not",
-//                                new Document("$elemMatch", new Document()
-//                                        .append(AnnotationSetParams.ID.key(), annotationId)
-//                                        .append(AnnotationSetParams.VARIABLE_SET_ID.key(), variableSetId)
-//                                        .append(AnnotationSetParams.ANNOTATION_SET_NAME.key(), annotationName))));
-//
-//                updateDocument = new Document("$push", new Document(AnnotationSetParams.ANNOTATION_SETS.key(), document));
-//
-//                update = getCollection().update(queryDocument, updateDocument, null);
-//
-//                if (update.first().getMatchedCount() == 0) {
-//                    throw new CatalogDBException("Internal error. No matching entry to update annotations");
-//                }
-//                if (update.first().getModifiedCount() == 0) {
-//                    throw new CatalogDBException("Internal error. Could not add new annotation to annotationSet");
-//                }
-//            }
-//
-//        }
-//
-//        // If documentList size is lower than the size of annotations, that must be because there are some annotations that are
-//        // intended to be removed
-//        if (documentList.size() < annotations.size()) {
-//
-//            Set<String> annotationKeysSet = documentList.stream()
-//                    .map(x -> x.getString(AnnotationSetParams.ID.key()))
-//                    .collect(Collectors.toSet());
-//
-//            for (Map.Entry<String, Object> annotationEntry : annotations.entrySet()) {
-//                String annotationKey = annotationEntry.getKey();
-//
-//                if (!annotationKeysSet.contains(annotationKey)) {
-//                    // Remove this annotation from mongo
-//                    Document queryDocument = new Document()
-//                            .append(PRIVATE_ID, id)
-//                            .append(AnnotationSetParams.ANNOTATION_SETS.key(),
-//                                    new Document("$elemMatch", new Document()
-//                                            .append(AnnotationSetParams.ID.key(), annotationKey)
-//                                            .append(AnnotationSetParams.VARIABLE_SET_ID.key(), variableSet.getId())
-//                                            .append(AnnotationSetParams.ANNOTATION_SET_NAME.key(), annotationSet.getName())));
-//
-//                    Document pull = new Document("$pull",
-//                            new Document(AnnotationSetParams.ANNOTATION_SETS.key(),
-//                                    new Document()
-//                                            .append(AnnotationSetParams.ID.key(), annotationKey)
-//                                            .append(AnnotationSetParams.VARIABLE_SET_ID.key(), variableSet.getId())
-//                                            .append(AnnotationSetParams.ANNOTATION_SET_NAME.key(), annotationSet.getName())
-//                            ));
-//
-//                    getCollection().update(queryDocument, pull, null);
-//
-//                }
-//            }
-//        }
-//
-//        return endQuery("Update annotation set", startTime, getAnnotationSet(id, annotationSet.getName(), null));
-//    }
+
+    private void addPrivateVariableMap(long entryId, Map<String, String> variableMap, boolean isVersioned) throws CatalogDBException {
+        Document queryDocument = new Document(PRIVATE_UID, entryId);
+        if (isVersioned) {
+            queryDocument.append(LAST_OF_VERSION, true);
+        }
+
+        List<Bson> setMap = new ArrayList<>(variableMap.size());
+        for (Map.Entry<String, String> entry : variableMap.entrySet()) {
+            setMap.add(Updates.set(AnnotationSetParams.PRIVATE_VARIABLE_SET_MAP.key() + "." + entry.getKey(), entry.getValue()));
+        }
+
+        QueryResult<UpdateResult> update = getCollection().update(queryDocument, Updates.combine(setMap), new QueryOptions("multi", true));
+        if (update.first().getModifiedCount() < 1 && update.first().getMatchedCount() == 0) {
+            throw new CatalogDBException("Could not add new private map information");
+        }
+    }
+
+    private Map<String, String> getPrivateVariableMapToSet(List<AnnotationSet> annotationSetList, List<VariableSet> variableSetList) {
+        Map<String, VariableSet> variableSetMap = new HashMap<>();
+        for (VariableSet variableSet : variableSetList) {
+            variableSetMap.put(variableSet.getId(), variableSet);
+        }
+
+        Map<String, String> privateVariableMap = new HashMap<>();
+        for (AnnotationSet annotationSet : annotationSetList) {
+            VariableSet variableSet = variableSetMap.get(annotationSet.getVariableSetId());
+            privateVariableMap.put(String.valueOf(variableSet.getUid()), variableSet.getId());
+        }
+
+        return privateVariableMap;
+    }
+
+    private void removeAllAnnotationSets(long entryId, boolean isVersioned) throws CatalogDBException {
+        Document queryDocument = new Document(PRIVATE_UID, entryId);
+        if (isVersioned) {
+            queryDocument.append(LAST_OF_VERSION, true);
+        }
+
+        // We empty the annotation sets list and the private map
+        Bson bsonUpdate = Updates.combine(
+                Updates.set(AnnotationSetParams.ANNOTATION_SETS.key(), Collections.emptyList()),
+                Updates.set(AnnotationSetParams.PRIVATE_VARIABLE_SET_MAP.key(), Collections.emptyMap())
+        );
+
+        QueryResult<UpdateResult> update = getCollection().update(queryDocument, bsonUpdate, new QueryOptions());
+        if (update.first().getModifiedCount() < 1 && update.first().getMatchedCount() == 0) {
+            throw new CatalogDBException("Could not remove all annotationSets");
+        }
+    }
+
+    private void addNewAnnotations(long entryId, List<Document> annotationDocumentList, boolean isVersioned) throws CatalogDBException {
+        Document queryDocument = new Document(PRIVATE_UID, entryId);
+        if (isVersioned) {
+            queryDocument.append(LAST_OF_VERSION, true);
+        }
+
+        Bson push = Updates.addEachToSet(AnnotationSetParams.ANNOTATION_SETS.key(), annotationDocumentList);
+
+        QueryResult<UpdateResult> update = getCollection().update(queryDocument, push, new QueryOptions("multi", true));
+        if (update.first().getModifiedCount() < 1) {
+            throw new CatalogDBException("Could not add new annotations");
+        }
+    }
+
+    private void removeAnnotationSet(long entryId, String annotationSetId, boolean isVersioned) throws CatalogDBException {
+        Document queryDocument = new Document(PRIVATE_UID, entryId);
+        if (isVersioned) {
+            queryDocument.append(LAST_OF_VERSION, true);
+        }
+
+        Bson pull = Updates.pull(AnnotationSetParams.ANNOTATION_SETS.key(),
+                new Document(AnnotationSetParams.ANNOTATION_SET_NAME.key(), annotationSetId));
+
+        QueryResult<UpdateResult> update = getCollection().update(queryDocument, pull, new QueryOptions("multi", true));
+        if (update.first().getModifiedCount() < 1) {
+            throw new CatalogDBException("Could not delete the annotation set");
+        }
+    }
+
+    private void validateNewAnnotations(long entryId, List<AnnotationSet> annotationSetList, List<VariableSet> variableSetList,
+                                        boolean isVersioned) throws CatalogDBException {
+        // 1. Check for duplicates in the list of annotation sets
+        Set<String> annotationSetIds = new HashSet<>();
+        for (AnnotationSet annotationSet : annotationSetList) {
+            if (annotationSetIds.contains(annotationSet.getId())) {
+                throw new CatalogDBException("Found more than one annotationSet with same id " + annotationSet.getId());
+            }
+            annotationSetIds.add(annotationSet.getId());
+        }
+
+        Map<String, VariableSet> variableSetMap = new HashMap<>();
+        for (VariableSet variableSet : variableSetList) {
+            variableSetMap.put(variableSet.getId(), variableSet);
+        }
+
+        for (AnnotationSet annotationSet : annotationSetList) {
+            // Check if there already exists an annotation set with the same id
+            Document query = new Document()
+                    .append(AnnotationSetParams.ANNOTATION_SET_NAME.key(), annotationSet.getId())
+                    .append(PRIVATE_UID, entryId);
+            if (isVersioned) {
+                query.put(LAST_OF_VERSION, true);
+            }
+
+            QueryResult<Long> count = getCollection().count(query);
+            if (count.first() > 0) {
+                throw CatalogDBException.alreadyExists("AnnotationSet", "id", annotationSet.getId());
+            }
+
+            VariableSet variableSet = variableSetMap.get(annotationSet.getVariableSetId());
+            if (variableSet.isUnique()) {
+                query = new Document()
+                        .append(AnnotationSetParams.ANNOTATION_SETS_VARIABLE_SET_ID.key(), annotationSet.getVariableSetId())
+                        .append(PRIVATE_UID, entryId);
+                if (isVersioned) {
+                    query.put(LAST_OF_VERSION, true);
+                }
+
+                // Check if the variableSet has been already annotated with a different annotation set
+                count = getCollection().count(query);
+                if (count.first() > 0) {
+                    throw new CatalogDBException("Repeated annotation for a unique VariableSet");
+                }
+            }
+        }
+
+    }
+
+    private List<Document> getNewAnnotationList(List<AnnotationSet> annotationSetList, List<VariableSet> variableSetList) {
+        List<Document> annotationList = new ArrayList<>();
+
+        Map<String, VariableSet> variableSetMap = new HashMap<>();
+        for (VariableSet variableSet : variableSetList) {
+            variableSetMap.put(variableSet.getId(), variableSet);
+        }
+
+        // Convert the annotations to the list of documents
+        for (AnnotationSet annotationSet : annotationSetList) {
+            VariableSet variableSet = variableSetMap.get(annotationSet.getVariableSetId());
+            annotationList.addAll(annotationConverter.annotationToDB(variableSet, annotationSet));
+        }
+
+        return annotationList;
+    }
 
     public QueryResult<Long> addVariableToAnnotations(long variableSetId, Variable variable) throws CatalogDBException {
         long startTime = startQuery();
@@ -568,7 +530,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
         setOfVariables.add(variable);
 
         VariableSet variableSet = new VariableSet()
-                .setId(variableSetId)
+                .setUid(variableSetId)
                 .setVariables(setOfVariables);
 
         // This can actually be a list of more than 1 element if the new variable added is an object. In such a case, we could have
@@ -637,7 +599,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
 ////
 ////                // Build a query to look for the particular annotations
 ////                Bson bsonQuery = Filters.and(
-////                        Filters.eq(PRIVATE_ID, entityId),
+////                        Filters.eq(PRIVATE_UID, entityId),
 ////                        Filters.eq(AnnotationSetParams.ANNOTATION_SETS_NAME.key(), annotationSetName),
 ////                        Filters.eq(AnnotationSetParams.ANNOTATION_SETS_ANNOTATIONS_NAME.key(), oldName)
 ////                );
@@ -662,7 +624,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
 ////                Document annotation = new Document(newName, value);
 ////
 ////                bsonQuery = Filters.and(
-////                        Filters.eq(PRIVATE_ID, entityId),
+////                        Filters.eq(PRIVATE_UID, entityId),
 ////                        Filters.eq(AnnotationSetParams.ANNOTATION_SETS_NAME.key(), annotationSetName)
 ////                );
 ////

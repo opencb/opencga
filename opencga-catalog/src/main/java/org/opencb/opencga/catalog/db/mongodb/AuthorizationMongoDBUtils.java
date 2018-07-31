@@ -158,7 +158,7 @@ public class AuthorizationMongoDBUtils {
         // If user does not exist in the members group, the user will not have any permission
         if (!isUserInMembers(study, user)) {
             throw new CatalogAuthorizationException("User " + user + " does not have any permissions in study "
-                    + study.getString(StudyDBAdaptor.QueryParams.ALIAS.key()));
+                    + study.getString(StudyDBAdaptor.QueryParams.ID.key()));
         }
 
         boolean isAnonymousPresent = false;

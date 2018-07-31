@@ -28,8 +28,10 @@ import java.util.Objects;
  */
 public class Cohort extends Annotable {
 
-    private long id;
+    private String id;
+    @Deprecated
     private String name;
+    private String uuid;
     private Study.Type type;
     private String creationDate;
     private CohortStatus status;
@@ -38,6 +40,7 @@ public class Cohort extends Annotable {
     private List<Sample> samples;
     private Family family;
 
+    @Deprecated
     private Map<String, Object> stats;
     private int release;
     private Map<String, Object> attributes;
@@ -46,23 +49,22 @@ public class Cohort extends Annotable {
     public Cohort() {
     }
 
-    public Cohort(String name, Study.Type type, String creationDate, String description, List<Sample> samples, int release,
+    public Cohort(String id, Study.Type type, String creationDate, String description, List<Sample> samples, int release,
                   Map<String, Object> attributes) {
-        this(-1, name, type, creationDate, new CohortStatus(), description, samples, null, Collections.emptyList(),
+        this(id, type, creationDate, new CohortStatus(), description, samples, null, Collections.emptyList(),
                 Collections.emptyMap(), release, attributes);
     }
 
-    public Cohort(String name, Study.Type type, String creationDate, String description, List<Sample> samples,
+    public Cohort(String id, Study.Type type, String creationDate, String description, List<Sample> samples,
                   List<AnnotationSet> annotationSetList, int release, Map<String, Object> attributes) {
-        this(-1, name, type, creationDate, new CohortStatus(), description, samples, null, annotationSetList,
+        this(id, type, creationDate, new CohortStatus(), description, samples, null, annotationSetList,
                 Collections.emptyMap(), release, attributes);
     }
 
-    public Cohort(long id, String name, Study.Type type, String creationDate, CohortStatus status, String description, List<Sample> samples,
-                  Family family, List<AnnotationSet> annotationSets, Map<String, Object> stats, int release,
-                  Map<String, Object> attributes) {
+    public Cohort(String id, Study.Type type, String creationDate, CohortStatus status, String description, List<Sample> samples,
+                  Family family, List<AnnotationSet> annotationSets, Map<String, Object> stats, int release, Map<String,
+            Object> attributes) {
         this.id = id;
-        this.name = name;
         this.type = type;
         this.creationDate = creationDate;
         this.status = status;
@@ -164,38 +166,63 @@ public class Cohort extends Annotable {
         }
     }
 
+
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Cohort{");
-        sb.append("id=").append(id);
-        sb.append(", name='").append(name).append('\'');
+        sb.append("uuid='").append(uuid).append('\'');
+        sb.append(", id='").append(id).append('\'');
         sb.append(", type=").append(type);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", status=").append(status);
         sb.append(", description='").append(description).append('\'');
         sb.append(", samples=").append(samples);
         sb.append(", family=").append(family);
-        sb.append(", annotationSets=").append(annotationSets);
         sb.append(", stats=").append(stats);
         sb.append(", release=").append(release);
         sb.append(", attributes=").append(attributes);
+        sb.append(", annotationSets=").append(annotationSets);
         sb.append('}');
         return sb.toString();
     }
 
-    public long getId() {
+    @Override
+    public Cohort setUid(long uid) {
+        super.setUid(uid);
+        return this;
+    }
+
+    @Override
+    public Cohort setStudyUid(long studyUid) {
+        super.setStudyUid(studyUid);
+        return this;
+    }
+
+    public String getUuid() {
+        return uuid;
+    }
+
+    public Cohort setUuid(String uuid) {
+        this.uuid = uuid;
+        return this;
+    }
+
+    public String getId() {
         return id;
     }
 
-    public Cohort setId(long id) {
+    public Cohort setId(String id) {
         this.id = id;
         return this;
     }
 
+    @Deprecated
     public String getName() {
         return name;
     }
 
+    @Deprecated
     public Cohort setName(String name) {
         this.name = name;
         return this;
@@ -291,7 +318,9 @@ public class Cohort extends Annotable {
             return false;
         }
         Cohort cohort = (Cohort) o;
-        return id == cohort.id
+        return release == cohort.release
+                && Objects.equals(uuid, cohort.uuid)
+                && Objects.equals(id, cohort.id)
                 && Objects.equals(name, cohort.name)
                 && type == cohort.type
                 && Objects.equals(creationDate, cohort.creationDate)
@@ -305,7 +334,7 @@ public class Cohort extends Annotable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, type, creationDate, status, description, samples, family, stats, attributes);
+        return Objects.hash(uuid, id, name, type, creationDate, status, description, samples, family, stats, release, attributes);
     }
 
 }

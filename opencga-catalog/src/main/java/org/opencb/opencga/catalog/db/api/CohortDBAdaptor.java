@@ -23,7 +23,7 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.core.models.Cohort;
 import org.opencb.opencga.core.models.VariableSet;
 
@@ -39,7 +39,9 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
 
     enum QueryParams implements QueryParam {
-        ID("id", DECIMAL, ""),
+        ID("id", TEXT, ""),
+        UID("uid", DECIMAL, ""),
+        UUID("uuid", TEXT, ""),
         NAME("name", TEXT, ""),
         TYPE("type", TEXT, ""),
         CREATION_DATE("creationDate", DATE, ""),
@@ -51,7 +53,7 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
         RELEASE("release", INTEGER, ""),
 
         SAMPLES("samples", TEXT_ARRAY, ""),
-        SAMPLE_IDS("samples.id", INTEGER, ""),
+        SAMPLE_UIDS("samples.uid", INTEGER, ""),
 
         ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
 //        VARIABLE_NAME("variableName", TEXT, ""),
@@ -66,7 +68,7 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
         NSTATS("nstats", DECIMAL, "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
         BSTATS("bstats", BOOLEAN, "Format: <key><operation><true|false> where <operation> is [==|!=]"),
 
-        STUDY_ID("studyId", DECIMAL, ""),
+        STUDY_UID("studyUid", INTEGER_ARRAY, ""),
         STUDY("study", INTEGER_ARRAY, ""); // Alias to studyId in the database. Only for the webservices.
 
         private static Map<String, QueryParams> map;
@@ -112,14 +114,14 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
     }
 
     enum UpdateParams {
+        ID(QueryParams.ID.key()),
         NAME(QueryParams.NAME.key()),
         CREATION_DATE(QueryParams.CREATION_DATE.key()),
         DESCRIPTION(QueryParams.DESCRIPTION.key()),
         SAMPLES(QueryParams.SAMPLES.key()),
         ATTRIBUTES(QueryParams.ATTRIBUTES.key()),
         ANNOTATION_SETS(QueryParams.ANNOTATION_SETS.key()),
-        DELETE_ANNOTATION(Constants.DELETE_ANNOTATION),
-        DELETE_ANNOTATION_SET(Constants.DELETE_ANNOTATION_SET);
+        ANNOTATIONS(AnnotationSetManager.ANNOTATIONS);
 
         private static Map<String, UpdateParams> map;
         static {
@@ -145,7 +147,7 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
     }
 
     default boolean exists(long cohortId) throws CatalogDBException {
-        return count(new Query(QueryParams.ID.key(), cohortId)).first() > 0;
+        return count(new Query(QueryParams.UID.key(), cohortId)).first() > 0;
     }
 
     default void checkId(long cohortId) throws CatalogDBException {

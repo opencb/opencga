@@ -17,6 +17,8 @@
 package org.opencb.opencga.app.cli.admin.executors;
 
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.analysis.demo.AnalysisDemo;
@@ -25,6 +27,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.monitor.MonitorService;
 import org.opencb.opencga.catalog.utils.CatalogDemo;
+import org.opencb.opencga.core.models.DiseasePanel;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
 import javax.ws.rs.client.Client;
@@ -33,10 +36,13 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * Created by imedina on 02/03/15.
@@ -54,7 +60,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
 
     @Override
     public void execute() throws Exception {
-        logger.debug("Executing variant command line");
+        logger.debug("Executing catalog admin command line");
 
         String subCommandString = catalogCommandOptions.getParsedSubCommand();
         switch (subCommandString) {
@@ -79,6 +85,9 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
             case "daemon":
                 daemons();
                 break;
+            case "diseasePanel":
+                diseasePanels();
+                break;
             default:
                 logger.error("Subcommand not valid");
                 break;
@@ -101,8 +110,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         CatalogDemo.createDemoDatabase(configuration, catalogCommandOptions.demoCatalogCommandOptions.force);
         CatalogManager catalogManager = new CatalogManager(configuration);
         sessionId = catalogManager.getUserManager().login("user1", "user1_pass");
-        AnalysisDemo.insertPedigreeFile(catalogManager, configuration.getCatalog().getOffset() + 6L, Paths.get(this.appHome)
-                        .resolve("examples/20130606_g1k.ped"), sessionId);
+        AnalysisDemo.insertPedigreeFile(catalogManager, Paths.get(this.appHome).resolve("examples/20130606_g1k.ped"), sessionId);
     }
 
     private void export() throws CatalogException, IOException {
@@ -162,13 +170,11 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         return mongoDataStoreManager.exists(database);
     }
 
-    private void delete() throws CatalogException, URISyntaxException {
-        setCatalogDatabaseCredentials(catalogCommandOptions.deleteCatalogCommandOptions.databaseHost,
-                catalogCommandOptions.deleteCatalogCommandOptions.prefix, catalogCommandOptions.deleteCatalogCommandOptions.databaseUser,
-                catalogCommandOptions.deleteCatalogCommandOptions.databasePassword,
-                catalogCommandOptions.deleteCatalogCommandOptions.commonOptions.adminPassword);
+    private void delete() throws CatalogException, URISyntaxException, IOException {
+        validateConfiguration(catalogCommandOptions.deleteCatalogCommandOptions, catalogCommandOptions.commonOptions);
 
         CatalogManager catalogManager = new CatalogManager(configuration);
+        catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
 
         if (!checkDatabaseExists(catalogManager.getCatalogDatabase())) {
             throw new CatalogException("The database " + catalogManager.getCatalogDatabase() + " does not exist.");
@@ -179,24 +185,27 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
     }
 
     private void index() throws CatalogException, IOException {
-        setCatalogDatabaseCredentials(catalogCommandOptions.indexCatalogCommandOptions.databaseHost,
-                catalogCommandOptions.indexCatalogCommandOptions.prefix, catalogCommandOptions.indexCatalogCommandOptions.databaseUser,
-                catalogCommandOptions.indexCatalogCommandOptions.databasePassword,
-                catalogCommandOptions.indexCatalogCommandOptions.commonOptions.adminPassword);
+        validateConfiguration(catalogCommandOptions.indexCatalogCommandOptions, catalogCommandOptions.commonOptions);
 
         CatalogManager catalogManager = new CatalogManager(configuration);
+        String token = catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
+
         if (!checkDatabaseExists(catalogManager.getCatalogDatabase())) {
             throw new CatalogException("The database " + catalogManager.getCatalogDatabase() + " does not exist.");
         }
 
         logger.info("\nChecking and installing non-existing indexes in {} in {}\n",
                 catalogManager.getCatalogDatabase(), configuration.getCatalog().getDatabase().getHosts());
-        String token = catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
 
         catalogManager.installIndexes(token);
     }
 
     private void daemons() throws Exception {
+        validateConfiguration(catalogCommandOptions.daemonCatalogCommandOptions, catalogCommandOptions.commonOptions);
+
+        CatalogManager catalogManager = new CatalogManager(configuration);
+        catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
+
         if (catalogCommandOptions.daemonCatalogCommandOptions.start) {
             // Server crated and started
             MonitorService monitorService =
@@ -216,6 +225,74 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
                     .path("stop");
             Response response = target.request().get();
             logger.info(response.toString());
+        }
+    }
+
+    private void diseasePanels() throws CatalogException, IOException {
+        validateConfiguration(catalogCommandOptions.diseasePanelCatalogCommandOptions, catalogCommandOptions.commonOptions);
+
+        try (CatalogManager catalogManager = new CatalogManager(configuration)) {
+            String token = catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
+
+            if (StringUtils.isNotEmpty(catalogCommandOptions.diseasePanelCatalogCommandOptions.panelImport)) {
+                importPanels(catalogManager, token);
+            } else if (StringUtils.isNotEmpty(catalogCommandOptions.diseasePanelCatalogCommandOptions.delete)) {
+                deletePanels(catalogManager, token);
+            } else {
+                logger.error("Expected --import or --delete parameter. Nothing to do.");
+            }
+        }
+
+    }
+
+    private void importPanels(CatalogManager catalogManager, String token) throws IOException {
+        Path path = Paths.get(catalogCommandOptions.diseasePanelCatalogCommandOptions.panelImport);
+
+        if (path.toFile().isDirectory()) {
+            // Load all the json files from the directory
+            try (Stream<Path> paths = Files.walk(path)) {
+                paths
+                        .filter(Files::isRegularFile)
+                        .forEach(filePath -> {
+                            // Import the panel file
+                            DiseasePanel panel;
+                            try {
+                                panel = DiseasePanel.load(FileUtils.openInputStream(filePath.toFile()));
+                            } catch (IOException e) {
+                                logger.error("Could not load file {}", filePath.toString());
+                                return;
+                            }
+                            try {
+                                catalogManager.getDiseasePanelManager().create(panel,
+                                        catalogCommandOptions.diseasePanelCatalogCommandOptions.overwrite, token);
+                                logger.info("Disease panel {} imported", panel.getId());
+                            } catch (CatalogException e) {
+                                logger.error("Could not import {} - {}", panel.getId(), e.getMessage());
+                            }
+                        });
+            }
+        } else {
+            // Import the panel file
+            DiseasePanel panel = DiseasePanel.load(FileUtils.openInputStream(path.toFile()));
+            try {
+                catalogManager.getDiseasePanelManager().create(panel, catalogCommandOptions.diseasePanelCatalogCommandOptions.overwrite,
+                        token);
+                logger.info("Disease panel {} imported", panel.getId());
+            } catch (CatalogException e) {
+                logger.error("Could not import {} - {}", panel.getId(), e.getMessage());
+            }
+        }
+    }
+
+    private void deletePanels(CatalogManager catalogManager, String token) {
+        String[] panelIds = catalogCommandOptions.diseasePanelCatalogCommandOptions.delete.split(",");
+        for (String panelId : panelIds) {
+            try {
+                catalogManager.getDiseasePanelManager().delete(panelId, token);
+                logger.info("Panel {} deleted", panelId);
+            } catch (CatalogException e) {
+                logger.error("Could not delete panel {} - {}", panelId, e.getMessage());
+            }
         }
     }
 

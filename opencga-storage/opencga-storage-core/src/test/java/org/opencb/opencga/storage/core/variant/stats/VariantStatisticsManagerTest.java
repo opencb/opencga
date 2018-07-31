@@ -16,31 +16,35 @@
 
 package org.opencb.opencga.storage.core.variant.stats;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
+import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.biodata.tools.variant.stats.VariantStatsCalculator;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngineTest;
-import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.CoreMatchers.hasItem;
+import static org.junit.Assert.*;
 
 /**
  * Created by hpccoll1 on 01/06/15.
@@ -77,12 +81,9 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
     @Test
     public void calculateStatsMultiCohortsTest() throws Exception {
         //Calculate stats for 2 cohorts at one time
-        VariantStatisticsManager vsm = variantStorageEngine.newVariantStatisticsManager();
-
         checkCohorts(dbAdaptor, studyConfiguration);
 
-        Integer fileId = studyConfiguration.getFileIds().get(Paths.get(inputUri).getFileName().toString());
-        QueryOptions options = new QueryOptions(VariantStorageEngine.Options.FILE_ID.key(), fileId);
+        QueryOptions options = new QueryOptions();
         options.put(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100);
         Iterator<String> iterator = studyConfiguration.getSampleIds().keySet().iterator();
 
@@ -96,14 +97,11 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
         cohort2.add(iterator.next());
 
         Map<String, Set<String>> cohorts = new HashMap<>();
-        Map<String, Integer> cohortIds = new HashMap<>();
         cohorts.put("cohort1", cohort1);
         cohorts.put("cohort2", cohort2);
-        cohortIds.put("cohort1", 10);
-        cohortIds.put("cohort2", 11);
 
         //Calculate stats
-        stats(vsm, options, studyConfiguration, cohorts, cohortIds, dbAdaptor, outputUri.resolve("cohort1.cohort2.stats"));
+        stats(options, studyConfiguration, cohorts, outputUri.resolve("cohort1.cohort2.stats"));
 
         checkCohorts(dbAdaptor, studyConfiguration);
     }
@@ -111,11 +109,9 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
     @Test
     public void calculateStatsSeparatedCohortsTest() throws Exception {
         //Calculate stats for 2 cohorts separately
-        VariantStatisticsManager vsm = variantStorageEngine.newVariantStatisticsManager();
 
         String studyName = studyConfiguration.getStudyName();
-        Integer fileId = studyConfiguration.getFileIds().get(Paths.get(inputUri).getFileName().toString());
-        QueryOptions options = new QueryOptions(VariantStorageEngine.Options.FILE_ID.key(), fileId);
+        QueryOptions options = new QueryOptions();
         options.put(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100);
         Iterator<String> iterator = studyConfiguration.getSampleIds().keySet().iterator();
         StudyConfiguration studyConfiguration;
@@ -127,17 +123,15 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
         cohort1.add(iterator.next());
 
         Map<String, Set<String>> cohorts;
-        Map<String, Integer> cohortIds;
 
         cohorts = new HashMap<>();
-        cohortIds = new HashMap<>();
         cohorts.put("cohort1", cohort1);
-        cohortIds.put("cohort1", 10);
 
         //Calculate stats for cohort1
-        studyConfiguration = stats(vsm, options, studyConfiguration, cohorts, cohortIds, dbAdaptor, outputUri.resolve("cohort1.stats"));
+        studyConfiguration = stats(options, studyConfiguration, cohorts, outputUri.resolve("cohort1.stats"));
 
-        assertTrue(studyConfiguration.getCalculatedStats().contains(10));
+        int cohort1Id = studyConfiguration.getCohortIds().get("cohort1");
+        assertThat(studyConfiguration.getCalculatedStats(), hasItem(cohort1Id));
         checkCohorts(dbAdaptor, studyConfiguration);
 
         /** Create second cohort **/
@@ -147,25 +141,34 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
         cohort2.add(iterator.next());
 
         cohorts = new HashMap<>();
-        cohortIds = new HashMap<>();
         cohorts.put("cohort2", cohort2);
-        cohortIds.put("cohort2", 11);
 
         //Calculate stats for cohort2
-        studyConfiguration = stats(vsm, options, studyConfiguration, cohorts, cohortIds, dbAdaptor, outputUri.resolve("cohort2.stats"));
+        studyConfiguration = stats(options, studyConfiguration, cohorts, outputUri.resolve("cohort2.stats"));
 
-        assertTrue(studyConfiguration.getCalculatedStats().contains(10));
-        assertTrue(studyConfiguration.getCalculatedStats().contains(11));
+        int cohort2Id = studyConfiguration.getCohortIds().get("cohort2");
+        assertThat(studyConfiguration.getCalculatedStats(), hasItem(cohort1Id));
+        assertThat(studyConfiguration.getCalculatedStats(), hasItem(cohort2Id));
+
         checkCohorts(dbAdaptor, studyConfiguration);
 
         //Try to recalculate stats for cohort2. Will fail
         studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyName, QueryOptions.empty()).first();
         thrown.expect(StorageEngineException.class);
-        stats(vsm, options, studyConfiguration, cohorts, cohortIds, dbAdaptor, outputUri.resolve("cohort2.stats"));
+        stats(options, studyConfiguration, cohorts, outputUri.resolve("cohort2.stats"));
 
     }
 
-    public StudyConfiguration stats(VariantStatisticsManager vsm, QueryOptions options, StudyConfiguration studyConfiguration, Map<String, Set<String>> cohorts, Map<String, Integer> cohortIds, VariantDBAdaptor dbAdaptor, URI resolve) throws IOException, StorageEngineException {
+    public StudyConfiguration stats(QueryOptions options, StudyConfiguration studyConfiguration, Map<String, Set<String>> cohorts,
+                                    URI output) throws IOException, StorageEngineException {
+        options.put(DefaultVariantStatisticsManager.OUTPUT, output.toString());
+        variantStorageEngine.calculateStats(studyConfiguration.getStudyName(), cohorts, options);
+        return dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+    }
+
+    public static StudyConfiguration stats(VariantStatisticsManager vsm, QueryOptions options, StudyConfiguration studyConfiguration,
+                                           Map<String, Set<String>> cohorts, Map<String, Integer> cohortIds, VariantDBAdaptor dbAdaptor,
+                                           URI resolve) throws IOException, StorageEngineException {
         if (vsm instanceof DefaultVariantStatisticsManager) {
             DefaultVariantStatisticsManager dvsm = (DefaultVariantStatisticsManager) vsm;
             URI stats = dvsm.createStats(dbAdaptor, resolve, cohorts, cohortIds, studyConfiguration, options);
@@ -182,20 +185,51 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
         return dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
     }
 
-    private static void checkCohorts(VariantDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration) {
-        for (Variant variant : dbAdaptor) {
+    static void checkCohorts(VariantDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration) {
+        for (VariantDBIterator iterator = dbAdaptor.iterator(new Query(), null);
+             iterator.hasNext(); ) {
+            Variant variant = iterator.next();
             for (StudyEntry sourceEntry : variant.getStudies()) {
-                Map<String, VariantStats> cohortStats = sourceEntry.getStats();
-                String calculatedCohorts = cohortStats.keySet().toString();
+                Map<String, VariantStats> cohortsStats = sourceEntry.getStats();
+                String calculatedCohorts = cohortsStats.keySet().toString();
                 for (Map.Entry<String, Integer> entry : studyConfiguration.getCohortIds().entrySet()) {
+                    if (!studyConfiguration.getCalculatedStats().contains(entry.getValue())) {
+                        continue;
+                    }
                     assertTrue("CohortStats should contain stats for cohort " + entry.getKey() + ". Only contains stats for " +
                                     calculatedCohorts,
-                            cohortStats.containsKey(entry.getKey()));    //Check stats are calculated
+                            cohortsStats.containsKey(entry.getKey()));    //Check stats are calculated
 
-                    assertEquals("Stats have less genotypes than expected.",
+                    VariantStats cohortStats = cohortsStats.get(entry.getKey());
+                    assertEquals("Stats for cohort " + entry.getKey() + " have less genotypes than expected. "
+                                    + cohortStats.getGenotypesCount(),
                             studyConfiguration.getCohorts().get(entry.getValue()).size(),  //Check numGenotypes are correct (equals to
                             // the number of samples)
-                            cohortStats.get(entry.getKey()).getGenotypesCount().values().stream().reduce(0, (a, b) -> a + b).intValue());
+                            cohortStats.getGenotypesCount().values().stream().reduce(0, (a, b) -> a + b).intValue());
+
+                    HashMap<Genotype, Integer> genotypeCount = new HashMap<>();
+                    for (Integer sampleId : studyConfiguration.getCohorts().get(entry.getValue())) {
+                        String sampleName = studyConfiguration.getSampleIds().inverse().get(sampleId);
+                        String gt = sourceEntry.getSampleData(sampleName, "GT");
+                        genotypeCount.compute(new Genotype(gt), (key, value) -> value == null ? 1 : value + 1);
+                    }
+
+                    VariantStats stats = VariantStatsCalculator.calculate(variant, genotypeCount);
+
+                    stats.getGenotypesCount().entrySet().removeIf(e -> e.getValue() == 0);
+                    stats.getGenotypesFreq().entrySet().removeIf(e -> e.getValue() == 0);
+                    cohortStats.getGenotypesCount().entrySet().removeIf(e -> e.getValue() == 0);
+                    cohortStats.getGenotypesFreq().entrySet().removeIf(e -> e.getValue() == 0);
+
+                    assertEquals(stats.getGenotypesCount(), cohortStats.getGenotypesCount());
+                    assertEquals(stats.getGenotypesFreq(), cohortStats.getGenotypesFreq());
+                    assertEquals(stats.getMaf(), cohortStats.getMaf());
+                    if (StringUtils.isNotEmpty(stats.getMafAllele()) || StringUtils.isNotEmpty(cohortStats.getMafAllele())) {
+                        assertEquals(stats.getMafAllele(), cohortStats.getMafAllele());
+                    }
+                    assertEquals(stats.getMgf(), cohortStats.getMgf());
+                    assertEquals(stats.getRefAlleleFreq(), cohortStats.getRefAlleleFreq());
+                    assertEquals(stats.getAltAlleleFreq(), cohortStats.getAltAlleleFreq());
                 }
             }
         }

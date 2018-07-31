@@ -48,7 +48,7 @@ public class SGEExecutor extends AbstractExecutor {
         try {
             status = SgeManager.status(Objects.toString(job.getResourceManagerAttributes().get(Job.JOB_SCHEDULER_NAME)));
         } catch (Exception e) {
-            logger.error("Could not obtain the status of the job {} from SGE. Error: {}", job.getId(), e.getMessage());
+            logger.error("Could not obtain the status of the job {} from SGE. Error: {}", job.getUid(), e.getMessage());
             return Job.JobStatus.UNKNOWN;
         }
 

@@ -31,27 +31,35 @@ public class PanelCommandOptions {
 
     public CreateCommandOptions createCommandOptions;
     public InfoCommandOptions infoCommandOptions;
+    public SearchCommandOptions searchCommandOptions;
 
     public AclCommandOptions.AclsCommandOptions aclsCommandOptions;
     public AclCommandOptions.AclsUpdateCommandOptions aclsUpdateCommandOptions;
 
     public JCommander jCommander;
     public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
+    public GeneralCliOptions.DataModelOptions commonDataModelOptions;
+    public GeneralCliOptions.NumericOptions commonNumericOptions;
 
-    public PanelCommandOptions(GeneralCliOptions.CommonCommandOptions commonCommandOptions, JCommander jCommander) {
+    public PanelCommandOptions(GeneralCliOptions.CommonCommandOptions commonCommandOptions,
+                               GeneralCliOptions.DataModelOptions dataModelOptions, GeneralCliOptions.NumericOptions numericOptions,
+                               JCommander jCommander) {
 
         this.commonCommandOptions = commonCommandOptions;
+        this.commonDataModelOptions = dataModelOptions;
+        this.commonNumericOptions = numericOptions;
         this.jCommander = jCommander;
 
         this.createCommandOptions = new CreateCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
+        this.searchCommandOptions = new SearchCommandOptions();
 
         AclCommandOptions aclCommandOptions = new AclCommandOptions(commonCommandOptions);
         this.aclsCommandOptions = aclCommandOptions.getAclsCommandOptions();
         this.aclsUpdateCommandOptions = aclCommandOptions.getAclsUpdateCommandOptions();
     }
 
-    class BasePanelsCommand {
+    class BasePanelsCommand extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -89,14 +97,53 @@ public class PanelCommandOptions {
 
     }
 
-    @Parameters(commandNames = {"info"}, commandDescription = "Get cohort information")
+    @Parameters(commandNames = {"info"}, commandDescription = "Get panel information")
     public class InfoCommandOptions extends BasePanelsCommand {
+        @ParametersDelegate
+        public GeneralCliOptions.DataModelOptions dataModelOptions = commonDataModelOptions;
+    }
 
-        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
-        public String include;
+    @Parameters(commandNames = {"search"}, commandDescription = "Search for panels")
+    public class SearchCommandOptions extends GeneralCliOptions.StudyOption {
 
-        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
-        public String exclude;
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public GeneralCliOptions.DataModelOptions dataModelOptions = commonDataModelOptions;
+
+        @ParametersDelegate
+        public GeneralCliOptions.NumericOptions numericOptions = commonNumericOptions;
+
+        @Parameter(names = {"--name"}, description = "name", arity = 1)
+        public String name;
+
+        @Parameter(names = {"--phenotypes"}, description = "phenotypes", arity = 1)
+        public String phenotypes;
+
+        @Parameter(names = {"--variants"}, description = "variants", arity = 1)
+        public String variants;
+
+        @Parameter(names = {"--regions"}, description = "regions", arity = 1)
+        public String regions;
+
+        @Parameter(names = {"--genes"}, description = "genes", arity = 1)
+        public String genes;
+
+        @Parameter(names = {"--description"}, description = "description", arity = 1)
+        public String description;
+
+        @Parameter(names = {"--author"}, description = "author", arity = 1)
+        public String author;
+
+        @Parameter(names = {"--creationDate"}, description = "creationDate", arity = 1)
+        public String creationDate;
+
+        @Parameter(names = {"--release"}, description = "release", arity = 1)
+        public String release;
+
+        @Parameter(names = {"--snapshot"}, description = "snapshot", arity = 1)
+        public Integer snapshot;
     }
 
 }

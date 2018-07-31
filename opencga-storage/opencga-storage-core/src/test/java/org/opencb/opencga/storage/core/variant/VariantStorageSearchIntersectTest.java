@@ -105,7 +105,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
 
         //Calculate stats
         if (params.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key(), true)) {
-            QueryOptions options = new QueryOptions(VariantStorageEngine.Options.STUDY_ID.key(), STUDY_ID)
+            QueryOptions options = new QueryOptions(VariantStorageEngine.Options.STUDY.key(), STUDY_NAME)
                     .append(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100)
                     .append(DefaultVariantStatisticsManager.OUTPUT, outputUri)
                     .append(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME, "cohort1.cohort2.stats");

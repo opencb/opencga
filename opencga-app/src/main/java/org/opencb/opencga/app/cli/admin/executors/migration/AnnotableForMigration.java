@@ -10,23 +10,23 @@ import java.util.List;
 
 public class AnnotableForMigration {
 
-    private long id;
+    private long uid;
     private List<OldAnnotationSet> annotationSets;
 
     public AnnotableForMigration() {
     }
 
-    public AnnotableForMigration(long id, List<OldAnnotationSet> annotationSets) {
-        this.id = id;
+    public AnnotableForMigration(long uid, List<OldAnnotationSet> annotationSets) {
+        this.uid = uid;
         this.annotationSets = annotationSets;
     }
 
-    public long getId() {
-        return id;
+    public long getUid() {
+        return uid;
     }
 
-    public AnnotableForMigration setId(long id) {
-        this.id = id;
+    public AnnotableForMigration setUid(long uid) {
+        this.uid = uid;
         return this;
     }
 
@@ -42,7 +42,7 @@ public class AnnotableForMigration {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("AnnotableForMigration{");
-        sb.append("id=").append(id);
+        sb.append("uid=").append(uid);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append('}');
         return sb.toString();

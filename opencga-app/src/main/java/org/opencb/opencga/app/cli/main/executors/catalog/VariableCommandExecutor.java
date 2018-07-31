@@ -91,7 +91,7 @@ public class VariableCommandExecutor extends OpencgaCommandExecutor {
         params.put(VariableSetParams.UNIQUE.key(), variableCommandOptions.createCommandOptions.unique);
         params.put(VariableSetParams.CONFIDENTIAL.key(), variableCommandOptions.createCommandOptions.confidential);
         params.putIfNotEmpty(VariableSetParams.DESCRIPTION.key(), variableCommandOptions.createCommandOptions.description);
-        params.putIfNotEmpty(VariableSetParams.NAME.key(), variableCommandOptions.createCommandOptions.name);
+        params.putIfNotEmpty(VariableSetParams.ID.key(), variableCommandOptions.createCommandOptions.name);
 
         ObjectMapper mapper = new ObjectMapper();
         ObjectMap variables = mapper.readValue(new File(variableCommandOptions.createCommandOptions.jsonFile), ObjectMap.class);
@@ -118,7 +118,7 @@ public class VariableCommandExecutor extends OpencgaCommandExecutor {
         query.put(SampleDBAdaptor.QueryParams.STUDY.key(), resolveStudy(variableCommandOptions.searchCommandOptions.study));
 
         QueryOptions queryOptions = new QueryOptions();
-        queryOptions.putIfNotEmpty(VariableSetParams.NAME.key(), variableCommandOptions.searchCommandOptions.name);
+        queryOptions.putIfNotEmpty(VariableSetParams.ID.key(), variableCommandOptions.searchCommandOptions.name);
         queryOptions.putIfNotEmpty(VariableSetParams.DESCRIPTION.key(), variableCommandOptions.searchCommandOptions.description);
         queryOptions.putIfNotEmpty(VariableSetParams.ATTRIBUTES.key(), variableCommandOptions.searchCommandOptions.attributes);
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, variableCommandOptions.searchCommandOptions.include);
@@ -135,7 +135,7 @@ public class VariableCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Updating variable");
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotNull(VariableSetParams.NAME.key(), variableCommandOptions.updateCommandOptions.name);
+        params.putIfNotNull(VariableSetParams.ID.key(), variableCommandOptions.updateCommandOptions.name);
         params.putIfNotNull(VariableSetParams.DESCRIPTION.key(), variableCommandOptions.updateCommandOptions.description);
 
 //        Object variables = null;

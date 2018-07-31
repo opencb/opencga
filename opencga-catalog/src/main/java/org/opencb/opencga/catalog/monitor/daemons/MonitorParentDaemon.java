@@ -118,13 +118,13 @@ public abstract class MonitorParentDaemon implements Runnable {
         try {
             executorManager.execute(job, token);
         } catch (Exception e) {
-            logger.error("Error executing job {}.", job.getId(), e);
+            logger.error("Error executing job {}.", job.getUid(), e);
         }
     }
 
     void checkQueuedJob(Job job, Path tempJobFolder, CatalogIOManager catalogIOManager) {
 
-        Path tmpOutdirPath = getJobTemporaryFolder(job.getId(), tempJobFolder);
+        Path tmpOutdirPath = getJobTemporaryFolder(job.getUid(), tempJobFolder);
         if (!tmpOutdirPath.toFile().exists()) {
             logger.warn("Attempting to create the temporal output directory again");
             try {
@@ -136,10 +136,10 @@ public abstract class MonitorParentDaemon implements Runnable {
             String status = executorManager.status(tmpOutdirPath, job);
             if (!status.equalsIgnoreCase(Job.JobStatus.UNKNOWN) && !status.equalsIgnoreCase(Job.JobStatus.QUEUED)) {
                 try {
-                    logger.info("Updating job {} from {} to {}", job.getId(), Job.JobStatus.QUEUED, Job.JobStatus.RUNNING);
-                    setNewStatus(job.getId(), Job.JobStatus.RUNNING, "The job is running");
+                    logger.info("Updating job {} from {} to {}", job.getUid(), Job.JobStatus.QUEUED, Job.JobStatus.RUNNING);
+                    setNewStatus(job.getUid(), Job.JobStatus.RUNNING, "The job is running");
                 } catch (CatalogException e) {
-                    logger.warn("Could not update job {} to status running", job.getId());
+                    logger.warn("Could not update job {} to status running", job.getUid());
                 }
             }
         }
@@ -160,9 +160,9 @@ public abstract class MonitorParentDaemon implements Runnable {
 
         ObjectMap params = new ObjectMap(JobDBAdaptor.QueryParams.ATTRIBUTES.key(), job.getAttributes());
         try {
-            dbAdaptorFactory.getCatalogJobDBAdaptor().update(job.getId(), params, QueryOptions.empty());
+            dbAdaptorFactory.getCatalogJobDBAdaptor().update(job.getUid(), params, QueryOptions.empty());
         } catch (CatalogException e) {
-            logger.error("Could not remove session id from attributes of job {}. ", job.getId(), e);
+            logger.error("Could not remove session id from attributes of job {}. ", job.getUid(), e);
         }
     }
 

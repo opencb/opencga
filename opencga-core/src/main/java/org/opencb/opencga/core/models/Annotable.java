@@ -21,8 +21,9 @@ import java.util.List;
 /**
  * Created by pfurio on 07/07/16.
  */
-public abstract class Annotable {
+public abstract class Annotable extends PrivateStudyUid {
 
+    private String id;
     protected List<AnnotationSet> annotationSets;
 
     public List<AnnotationSet> getAnnotationSets() {
@@ -34,4 +35,12 @@ public abstract class Annotable {
         return this;
     }
 
+    public String getId() {
+        return id;
+    }
+
+    public Annotable setId(String id) {
+        this.id = id;
+        return this;
+    }
 }

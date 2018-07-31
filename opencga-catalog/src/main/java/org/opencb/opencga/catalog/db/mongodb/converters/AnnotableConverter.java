@@ -16,6 +16,8 @@ import java.util.Map;
 public class AnnotableConverter<T extends Annotable> extends GenericDocumentComplexConverter<T> {
 
     private static final String ANNOTATION_SETS = AnnotationMongoDBAdaptor.AnnotationSetParams.ANNOTATION_SETS.key();
+    private static final String PRIVATE_VS_MAP =  AnnotationMongoDBAdaptor.AnnotationSetParams.PRIVATE_VARIABLE_SET_MAP.key();
+
     private AnnotationConverter annotationConverter;
 
     public AnnotableConverter(Class<T> clazz) {
@@ -27,10 +29,12 @@ public class AnnotableConverter<T extends Annotable> extends GenericDocumentComp
     public Document convertToStorageType(T object, List<VariableSet> variableSetList) {
         List<Document> documentList = new ArrayList<>();
 
+        Document privateVariableSetMap = new Document();
+
         if (variableSetList != null && !variableSetList.isEmpty() && object.getAnnotationSets() != null
                 && !object.getAnnotationSets().isEmpty()) {
 
-            Map<Long, VariableSet> variableSetMap = new HashMap<>();
+            Map<String, VariableSet> variableSetMap = new HashMap<>();
             for (VariableSet variableSet : variableSetList) {
                 variableSetMap.put(variableSet.getId(), variableSet);
             }
@@ -39,6 +43,7 @@ public class AnnotableConverter<T extends Annotable> extends GenericDocumentComp
                 VariableSet variableSet = variableSetMap.get(annotationSet.getVariableSetId());
                 if (variableSet != null) {
                     documentList.addAll(annotationConverter.annotationToDB(variableSet, annotationSet));
+                    privateVariableSetMap.put(String.valueOf(variableSet.getUid()), variableSet.getId());
                 }
             }
         }
@@ -47,13 +52,14 @@ public class AnnotableConverter<T extends Annotable> extends GenericDocumentComp
         Document document = super.convertToStorageType(object);
 
         document.put(ANNOTATION_SETS, documentList);
+        document.put(PRIVATE_VS_MAP, privateVariableSetMap);
 
         return document;
     }
 
     public T convertToDataModelType(Document document, QueryOptions queryOptions) {
         List<AnnotationSet> annotationSets = annotationConverter.fromDBToAnnotation((List<Document>) document.get(ANNOTATION_SETS),
-                queryOptions);
+                (Document) document.get(AnnotationMongoDBAdaptor.AnnotationSetParams.PRIVATE_VARIABLE_SET_MAP.key()), queryOptions);
         T t = super.convertToDataModelType(document);
         t.setAnnotationSets(annotationSets);
         return t;

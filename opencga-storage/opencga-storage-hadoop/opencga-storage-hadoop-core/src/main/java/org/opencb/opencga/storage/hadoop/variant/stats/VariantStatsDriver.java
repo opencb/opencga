@@ -8,7 +8,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
-import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantSqlQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
@@ -23,9 +23,9 @@ import java.util.Collection;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class VariantStatsDriver extends AbstractAnalysisTableDriver {
+public class VariantStatsDriver extends AbstractVariantsTableDriver {
     public static final String STATS_INPUT = "stats.input";
-    public static final String STATS_INPUT_DEFAULT = "phoenix";
+    public static final String STATS_INPUT_DEFAULT = "native";
     private static final String STATS_OPERATION_NAME = "stats";
 
     private Collection<Integer> cohorts;
@@ -39,13 +39,14 @@ public class VariantStatsDriver extends AbstractAnalysisTableDriver {
     }
 
     @Override
-    protected void parseAndValidateParameters() {
+    protected void parseAndValidateParameters() throws IOException {
+        super.parseAndValidateParameters();
         cohorts = VariantStatsMapper.getCohorts(getConf());
     }
 
     @Override
-    protected Class<VariantStatsMapper> getMapperClass() {
-        return VariantStatsMapper.class;
+    protected Class<VariantStatsFromResultMapper> getMapperClass() {
+        return VariantStatsFromResultMapper.class;
     }
 
     @Override
@@ -61,15 +62,23 @@ public class VariantStatsDriver extends AbstractAnalysisTableDriver {
         QueryOptions queryOptions = VariantStatisticsManager.buildIncludeExclude();
         LOG.info("Query : " + query.toJson());
 
-        if (getConf().get(STATS_INPUT, STATS_INPUT_DEFAULT).equalsIgnoreCase("phoenix")) {
+        if (getConf().get(STATS_INPUT, STATS_INPUT_DEFAULT).equalsIgnoreCase("native")) {
+            // Some of the filters in query are not supported by VariantHBaseQueryParser
+            Scan scan = new VariantHBaseQueryParser(getHelper(), getStudyConfigurationManager()).parseQuery(query, queryOptions);
+
+            LOG.info(scan.toString());
+
+            // input
+            VariantMapReduceUtil.initTableMapperJob(job, variantTableName, variantTableName, scan, VariantStatsFromResultMapper.class);
+        } else if (getConf().get(STATS_INPUT, STATS_INPUT_DEFAULT).equalsIgnoreCase("phoenix")) {
             // Sql
-            String sql = new VariantSqlQueryParser(getHelper(), getAnalysisTable(), getStudyConfigurationManager())
+            String sql = new VariantSqlQueryParser(getHelper(), getVariantsTable(), getStudyConfigurationManager())
                     .parse(query, queryOptions).getSql();
 
             LOG.info(sql);
 
             // input
-            VariantMapReduceUtil.initVariantMapperJobFromPhoenix(job, variantTableName, sql, getMapperClass());
+            VariantMapReduceUtil.initVariantMapperJobFromPhoenix(job, variantTableName, sql, VariantStatsMapper.class);
         } else {
             // scan
             // TODO: Improve filter!
@@ -78,7 +87,7 @@ public class VariantStatsDriver extends AbstractAnalysisTableDriver {
 
             LOG.info(scan.toString());
             // input
-            VariantMapReduceUtil.initVariantMapperJobFromHBase(job, variantTableName, scan, getMapperClass());
+            VariantMapReduceUtil.initVariantMapperJobFromHBase(job, variantTableName, scan, VariantStatsMapper.class);
         }
         VariantMapReduceUtil.configureVariantConverter(job.getConfiguration(), false, true, true,
                 VariantStatisticsManager.UNKNOWN_GENOTYPE);

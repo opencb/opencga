@@ -31,12 +31,7 @@ public class Status {
     public static final String READY = "READY";
 
     /**
-     * TRASHED name means that the object is marked as deleted although is still available in the database.
-     */
-    public static final String TRASHED = "TRASHED";
-
-    /**
-     * DELETED name means that the object is marked as removed, so it will get completely removed from the database ASAP.
+     * DELETED name means that the object is marked as removed, so it can be completely removed from the database with a clean action.
      */
     public static final String DELETED = "DELETED";
 
@@ -95,7 +90,7 @@ public class Status {
     }
 
     public static boolean isValid(String status) {
-        if (status != null && (status.equals(READY) || status.equals(TRASHED) || status.equals(DELETED))) {
+        if (status != null && (status.equals(READY) || status.equals(DELETED))) {
             return true;
         }
         return false;

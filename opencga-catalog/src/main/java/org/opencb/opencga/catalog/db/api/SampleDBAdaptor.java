@@ -23,6 +23,7 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.VariableSet;
@@ -39,11 +40,13 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
 
     enum QueryParams implements QueryParam {
-        ID("id", INTEGER_ARRAY, ""),
-        NAME("name", TEXT_ARRAY, ""),
+        ID("id", TEXT, ""),
+        UID("uid", INTEGER, ""),
+        UUID("uuid", TEXT, ""),
+        NAME("name", TEXT, ""),
         SOURCE("source", TEXT_ARRAY, ""),
         INDIVIDUAL("individual", TEXT, ""),
-        INDIVIDUAL_ID("individual.id", INTEGER_ARRAY, ""),
+        INDIVIDUAL_UID("individual.uid", INTEGER_ARRAY, ""),
         DESCRIPTION("description", TEXT, ""),
         TYPE("type", TEXT, ""),
         SOMATIC("somatic", BOOLEAN, ""),
@@ -60,7 +63,7 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         VERSION("version", INTEGER, ""), // Version of the sample
         CREATION_DATE("creationDate", DATE, ""),
 
-        STUDY_ID("studyId", INTEGER_ARRAY, ""),
+        STUDY_UID("studyUid", INTEGER_ARRAY, ""),
         STUDY("study", INTEGER_ARRAY, ""), // Alias to studyId in the database. Only for the webservices.
 
         PHENOTYPES("phenotypes", TEXT_ARRAY, ""),
@@ -68,7 +71,6 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         PHENOTYPES_NAME("phenotypes.name", TEXT, ""),
         PHENOTYPES_SOURCE("phenotypes.source", TEXT, ""),
 
-        VARIABLE_SET_ID("variableSetId", INTEGER, ""),
         ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
         ANNOTATION_SET_NAME("annotationSetName", TEXT_ARRAY, ""),
         ANNOTATION(Constants.ANNOTATION, TEXT_ARRAY, "");
@@ -116,6 +118,7 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
     }
 
     enum UpdateParams {
+        ID(QueryParams.ID.key()),
         NAME(QueryParams.NAME.key()),
         SOURCE(QueryParams.SOURCE.key()),
         INDIVIDUAL(QueryParams.INDIVIDUAL.key()),
@@ -126,8 +129,7 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         STATS(QueryParams.STATS.key()),
         ATTRIBUTES(QueryParams.ATTRIBUTES.key()),
         ANNOTATION_SETS(QueryParams.ANNOTATION_SETS.key()),
-        DELETE_ANNOTATION(Constants.DELETE_ANNOTATION),
-        DELETE_ANNOTATION_SET(Constants.DELETE_ANNOTATION_SET);
+        ANNOTATIONS(AnnotationSetManager.ANNOTATIONS);
 
         private static Map<String, UpdateParams> map;
         static {
@@ -153,7 +155,7 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
     }
 
     default boolean exists(long sampleId) throws CatalogDBException {
-        return count(new Query(QueryParams.ID.key(), sampleId)).first() > 0;
+        return count(new Query(QueryParams.UID.key(), sampleId)).first() > 0;
     }
 
     default void checkId(long sampleId) throws CatalogDBException {

@@ -52,10 +52,9 @@ public class ToolAnalysisTest extends GenericTest {
         catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.FULL, null, null);
         sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
 
-        long projectId = catalogManager.getProjectManager().create("Project about some genomes", "1000G", "", "ACME", "Homo sapiens", null,
-                null, "GRCh38", new QueryOptions(), sessionIdUser).first().getId();
-        catalogManager.getStudyManager().create(String.valueOf(projectId), "Phase 1", "phase1", Study.Type.TRIO, null, "Done", null, null,
-                null, null, null, null, null, null, sessionIdUser);
+        long projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "ACME", "Homo sapiens", null,
+                null, "GRCh38", new QueryOptions(), sessionIdUser).first().getUid();
+        catalogManager.getStudyManager().create(String.valueOf(projectId), "phase1", null, "Phase 1", Study.Type.TRIO, null, "Done", null, null, null, null, null, null, null, null, sessionIdUser);
     }
 
 
@@ -70,8 +69,7 @@ public class ToolAnalysisTest extends GenericTest {
         Path toolDir = Paths.get(getClass().getResource("/tools").toURI());
         Path tmp = Paths.get("/tmp");
 
-        Long studyId = catalogManager.getStudyManager().getId("user", STUDY);
-        catalogManager.getFileManager().link(testBam.toUri(), "bams/", studyId, new ObjectMap("parents", true), sessionIdUser);
+        catalogManager.getFileManager().link(STUDY, testBam.toUri(), "bams/", new ObjectMap("parents", true), sessionIdUser);
 
         Map<String, String> params = new HashMap<>();
         params.put("input", "test.bam");
@@ -82,7 +80,7 @@ public class ToolAnalysisTest extends GenericTest {
 
         catalogManager.getConfiguration().setToolDir(toolDir.toString());
         ToolAnalysis toolAnalysis = new ToolAnalysis(catalogManager.getConfiguration());
-        toolAnalysis.execute(jobQueryResult.first().getId(), sessionIdUser);
+        toolAnalysis.execute(jobQueryResult.first().getUid(), sessionIdUser);
 
         ObjectReader reader = new ObjectMapper().reader(Status.class);
         Status status = reader.readValue(tmp.resolve("status.json").toFile());

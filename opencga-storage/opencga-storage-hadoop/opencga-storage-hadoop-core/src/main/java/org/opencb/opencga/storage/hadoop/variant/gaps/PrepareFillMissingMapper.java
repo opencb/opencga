@@ -8,13 +8,13 @@ import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.types.PInteger;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
-import org.opencb.opencga.storage.hadoop.variant.mr.AnalysisTableMapReduceHelper;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,9 +48,9 @@ public class PrepareFillMissingMapper extends TableMapper<ImmutableBytesWritable
         indexedFiles = getIndexedFiles(context.getConfiguration());
         allFileBatches = indexedFiles.stream().map(rowKeyFactory::getFileBatch).collect(Collectors.toSet());
         fillMissingColumn = VariantPhoenixHelper.getFillMissingColumn(helper.getStudyId());
-        timestamp = context.getConfiguration().getLong(AbstractAnalysisTableDriver.TIMESTAMP, 0);
+        timestamp = context.getConfiguration().getLong(AbstractVariantsTableDriver.TIMESTAMP, 0);
         if (timestamp <= 0) {
-            throw new IllegalArgumentException(AbstractAnalysisTableDriver.TIMESTAMP + " not defined!");
+            throw new IllegalArgumentException(AbstractVariantsTableDriver.TIMESTAMP + " not defined!");
         }
         fillAllFiles = FillGapsFromArchiveMapper.isOverwrite(context.getConfiguration());
     }
@@ -80,16 +80,16 @@ public class PrepareFillMissingMapper extends TableMapper<ImmutableBytesWritable
             put.addColumn(family, column, lastFileBytes);
             context.write(EMPTY_IMMUTABLE_BYTES, put);
             if (!newVariant) {
-                context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "UPDATE_VARIANT_BATCH_" + fileBatch).increment(1);
+                context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "UPDATE_VARIANT_BATCH_" + fileBatch).increment(1);
             }
         }
-        context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "PUT").increment(fileBatches.size());
+        context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "PUT").increment(fileBatches.size());
         if (newVariant) {
-            context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "NEW_VARIANT").increment(1);
+            context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "NEW_VARIANT").increment(1);
         } else {
-            context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "UPDATE_VARIANT").increment(1);
+            context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "UPDATE_VARIANT").increment(1);
         }
-        context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "VARIANTS").increment(1);
+        context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "VARIANTS").increment(1);
     }
 
     private Collection<Integer> buildFileBatches(Integer lastFile) {
