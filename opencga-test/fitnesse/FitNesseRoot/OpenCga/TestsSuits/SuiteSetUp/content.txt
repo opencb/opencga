@@ -13,6 +13,8 @@
 |restfixture.display.actual.on.right | false |
 |http.client.connection.timeout| 100000|
 
+#|let|user|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5).concat("-",Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)).concat(".",Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5))||
+
 !3 Generate Random Variables 
 !|Table: Rest Fixture | http://bioinfoint.hpc.cam.ac.uk/|
 |let|user|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5).concat("-",Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)).concat(".",Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5))||

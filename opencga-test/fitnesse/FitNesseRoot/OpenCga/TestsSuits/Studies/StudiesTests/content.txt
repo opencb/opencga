@@ -69,13 +69,13 @@
 
 !3 Get Studies Info With One Invalid Entry And Silent False
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$lStudyId,$studyId,000/info?sid=$sessionId|403|Content-Type: application/json |jsonbody.response[0].errorMsg == "DEPRECATED: org.opencb.opencga.catalog.exceptions.CatalogException: No study found or the user $user does not have permissions to view any."|
+| GET | /v1/studies/$lStudyId,$studyId,000/info?sid=$sessionId|403|Content-Type: application/json |jsonbody.response[0].errorMsg == "DEPRECATED: org.opencb.opencga.catalog.exceptions.CatalogException: No study found given '000' or the user '$user'  does not have permissions to view any."|
 | GET | /v1/studies/$lStudyId,$studyId,000/info?sid=$sessionId||Content-Type: application/json ||
+| GET | /v1/studies/$lStudyId,$studyId,000/info?sid=$sessionId&silent=false||Content-Type: application/json ||
 
 !3 Get Studies Info With One Invalid Entry And Silent True
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/11111,$lStudyId,$studyId/info?sid=$sessionId&silent=true|200|Content-Type: application/json |jsonbody.response[0].errorMsg == "org.opencb.opencga.catalog.exceptions.CatalogException: No study found or the user $user does not have permissions to view any."|
-| GET | /v1/studies/11111,$lStudyId,$studyId/info?sid=$sessionId&silent=true|200|Content-Type: application/json ||
+| GET | /v1/studies/11111,$lStudyId,$studyId/info?sid=$sessionId&silent=true|200|Content-Type: application/json |jsonbody.response[0].errorMsg == "org.opencb.opencga.catalog.exceptions.CatalogException: No study found given '11111' or the user '$user'  does not have permissions to view any."|
 
 !3 Get Study ACL
 !|Table: Rest Fixture | $baseURL |

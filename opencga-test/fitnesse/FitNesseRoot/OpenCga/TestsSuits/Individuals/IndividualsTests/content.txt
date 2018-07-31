@@ -372,17 +372,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 !3 Search Annotation Set By Annotation
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/individuals/search?sid=$sessionId&study=$study&annotation=annotationSet=Testing||Content-Type: application/json |jsonbody.response[0].result[0].annotationSets.length == 2|
@@ -395,7 +384,7 @@
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/individuals/search?sid=$sessionId&study=$study&annotation=annotationSet=$aS1&exclude=annotationSet.Testing||  Content-Type: application/json |jsonbody.response[0].result[0].annotationSets.length == 1 && jsonbody.response[0].result[0].annotationSets[0].name == "$aS1"|
 
-!3 Update Variable in An Annotation   XXXX
+!3 Update Variable in An Annotation   
 !|Table: Rest Fixture | $baseURL |
 | setBody |{"var_int": "545"}|
 |setHeader|Content-Type:application/json|
