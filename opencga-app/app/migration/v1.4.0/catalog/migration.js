@@ -470,7 +470,8 @@ function getMostSignificantBits(entity, date) {
     var internalVersion = Long.fromNumber(0);
     var entityBin = Long.fromNumber(0xff & Entity[entity]);
 
-    return timeLow.shiftLeft(32).or(timeMid.shiftLeft(16).or(uuidVersion.shiftLeft(12).or(internalVersion.shiftLeft(8).or(entityBin))));
+    return timeLow.shiftLeft(32).toUnsigned().or(timeMid.shiftLeft(16).toUnsigned().or(uuidVersion.shiftLeft(12).toUnsigned()
+        .or(internalVersion.shiftLeft(8).toUnsigned().or(entityBin))));
 }
 
 function getLeastSignificantBits() {
@@ -483,7 +484,7 @@ function getLeastSignificantBits() {
 }
 
 function padLeft(hexString, length) {
-    if (hexString.length == length) {
+    if (hexString.length === length) {
         return hexString
     }
 
