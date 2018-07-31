@@ -27,6 +27,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.models.Study;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -122,7 +123,7 @@ public class ExecutionOutputRecorder {
                      QueryOptions.empty(), userToken).first();
              parameters.append(JobDBAdaptor.QueryParams.OUT_DIR.key(), outDir);
         } catch (CatalogException e) {
-            logger.error("Cannot find file {}. Error: {}", job.getOutDir().getId(), e.getMessage());
+            logger.error("Cannot find file {}. Error: {}", job.getOutDir().getUid(), e.getMessage());
             throw e;
         }
 
@@ -130,7 +131,8 @@ public class ExecutionOutputRecorder {
         List<File> files;
         try {
             logger.info("Scanning files from {} to move to {}", outDir.getPath(), tmpOutdirPath);
-            files = fileScanner.scan(outDir, tmpOutDirUri, fileScannerPolicy, calculateChecksum, true, uri -> true, job.getId(), sessionId);
+            files = fileScanner.scan(outDir, tmpOutDirUri, fileScannerPolicy, calculateChecksum, true, uri -> true, job.getUid(),
+                    sessionId);
         } catch (IOException e) {
             logger.warn("IOException when scanning temporal directory. Error: {}", e.getMessage());
             throw e;
@@ -169,10 +171,10 @@ public class ExecutionOutputRecorder {
         parameters.put(JobDBAdaptor.QueryParams.OUTPUT.key(), files);
         parameters.put(JobDBAdaptor.QueryParams.END_TIME.key(), System.currentTimeMillis());
         try {
-            catalogManager.getJobManager().update(job.getId(), parameters, null, this.sessionId);
+            catalogManager.getJobManager().update(job.getUid(), parameters, null, this.sessionId);
         } catch (CatalogException e) {
-            logger.error("Critical error. Could not update job output files from job {} with output {}. Error: {}", job.getId(),
-                    StringUtils.join(files.stream().map(File::getId).collect(Collectors.toList()), ","), e.getMessage());
+            logger.error("Critical error. Could not update job output files from job {} with output {}. Error: {}", job.getUid(),
+                    StringUtils.join(files.stream().map(File::getUid).collect(Collectors.toList()), ","), e.getMessage());
             throw e;
         }
 
@@ -212,9 +214,9 @@ public class ExecutionOutputRecorder {
         // TODO: Create output directory in catalog
         File outDir;
         try {
-            outDir = catalogManager.getFileManager().get(job.getOutDir().getId(), new QueryOptions(), sessionId).getResult().get(0);
+            outDir = catalogManager.getFileManager().get(job.getOutDir().getUid(), new QueryOptions(), sessionId).getResult().get(0);
         } catch (CatalogException e) {
-            logger.error("Cannot find file {}. Error: {}", job.getOutDir().getId(), e.getMessage());
+            logger.error("Cannot find file {}. Error: {}", job.getOutDir().getUid(), e.getMessage());
             throw e;
         }
 
@@ -222,7 +224,8 @@ public class ExecutionOutputRecorder {
         List<File> files;
         try {
             logger.info("Scanning files from {} to move to {}", outDir.getPath(), tmpOutdirPath);
-            files = fileScanner.scan(outDir, tmpOutDirUri, fileScannerPolicy, calculateChecksum, true, uri -> true, job.getId(), sessionId);
+            files = fileScanner.scan(outDir, tmpOutDirUri, fileScannerPolicy, calculateChecksum, true, uri -> true, job.getUid(),
+                    sessionId);
         } catch (IOException e) {
             logger.warn("IOException when scanning temporal directory. Error: {}", e.getMessage());
             throw e;
@@ -261,10 +264,10 @@ public class ExecutionOutputRecorder {
         parameters.put(JobDBAdaptor.QueryParams.OUTPUT.key(), files);
         parameters.put(JobDBAdaptor.QueryParams.END_TIME.key(), System.currentTimeMillis());
         try {
-            catalogManager.getJobManager().update(job.getId(), parameters, null, this.sessionId);
+            catalogManager.getJobManager().update(job.getUid(), parameters, null, this.sessionId);
         } catch (CatalogException e) {
-            logger.error("Critical error. Could not update job output files from job {} with output {}. Error: {}", job.getId(),
-                    StringUtils.join(files.stream().map(File::getId).collect(Collectors.toList()), ","), e.getMessage());
+            logger.error("Critical error. Could not update job output files from job {} with output {}. Error: {}", job.getUid(),
+                    StringUtils.join(files.stream().map(File::getUid).collect(Collectors.toList()), ","), e.getMessage());
             throw e;
         }
 
@@ -286,7 +289,8 @@ public class ExecutionOutputRecorder {
             }
 //            ObjectMap params = new ObjectMap(JobDBAdaptor.QueryParams.STATUS.key(), jobStatus);
 //            catalogManager.getJobManager().update(job.getId(), params, new QueryOptions(), sessionId);
-            catalogManager.getJobManager().setStatus(Long.toString(job.getId()), jobStatus.getName(), jobStatus.getMessage(), sessionId);
+            Study study = catalogManager.getJobManager().getStudy(job, sessionId);
+            catalogManager.getJobManager().setStatus(study.getFqn(), job.getId(), jobStatus.getName(), jobStatus.getMessage(), sessionId);
         } else {
             logger.error("This code should never be executed.");
             throw new CatalogException("Job status = null");

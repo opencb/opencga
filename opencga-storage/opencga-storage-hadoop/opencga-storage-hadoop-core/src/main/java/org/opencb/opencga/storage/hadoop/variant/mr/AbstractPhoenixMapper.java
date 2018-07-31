@@ -34,13 +34,13 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class AbstractPhoenixMapper<PHOENIXIN, KEYOUT, VALUEOUT> extends Mapper<NullWritable, PHOENIXIN, KEYOUT, VALUEOUT> {
     private Logger LOG = LoggerFactory.getLogger(this.getClass());
-    private final AtomicReference<AnalysisTableMapReduceHelper> mrHelper = new AtomicReference<>();
+    private final AtomicReference<VariantsTableMapReduceHelper> mrHelper = new AtomicReference<>();
 
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
         super.setup(context);
-        mrHelper.set(new AnalysisTableMapReduceHelper(context));
+        mrHelper.set(new VariantsTableMapReduceHelper(context));
     }
 
     @Override
@@ -49,7 +49,7 @@ public class AbstractPhoenixMapper<PHOENIXIN, KEYOUT, VALUEOUT> extends Mapper<N
         getMrHelper().close();
     }
 
-    public AnalysisTableMapReduceHelper getMrHelper() {
+    public VariantsTableMapReduceHelper getMrHelper() {
         return mrHelper.get();
     }
 

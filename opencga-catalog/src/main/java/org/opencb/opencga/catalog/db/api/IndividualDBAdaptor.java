@@ -24,7 +24,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.VariableSet;
 
@@ -40,18 +40,21 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> {
 
     enum QueryParams implements QueryParam {
-        ID("id", INTEGER_ARRAY, ""),
+        ID("id", TEXT, ""),
+        UID("uid", INTEGER_ARRAY, ""),
+        UUID("uuid", TEXT, ""),
         NAME("name", TEXT, ""),
         FATHER("father", TEXT, ""),
         MOTHER("mother", TEXT, ""),
-        FATHER_ID("father.id", DECIMAL, ""),
-        MOTHER_ID("mother.id", DECIMAL, ""),
+        FATHER_UID("father.uid", DECIMAL, ""),
+        MOTHER_UID("mother.uid", DECIMAL, ""),
         MULTIPLES("multiples", TEXT, ""),
-        FAMILY("family", TEXT, ""),
         SEX("sex", TEXT, ""),
         SAMPLES("samples", TEXT_ARRAY, ""),
-        SAMPLES_ID("samples.id", INTEGER_ARRAY, ""),
+        SAMPLE_UIDS("samples.uid", INTEGER_ARRAY, ""),
+        SAMPLE_VERSION("samples.version", INTEGER, ""),
         ETHNICITY("ethnicity", TEXT, ""),
+        STATUS("status", TEXT_ARRAY, ""),
         STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
@@ -77,7 +80,7 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
 
-        STUDY_ID("studyId", INTEGER_ARRAY, ""),
+        STUDY_UID("studyUid", INTEGER_ARRAY, ""),
         STUDY("study", INTEGER_ARRAY, ""), // Alias to studyId in the database. Only for the webservices.
         ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
         VARIABLE_SET_ID("variableSetId", DECIMAL, ""),
@@ -127,6 +130,7 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
     }
 
     enum UpdateParams {
+        ID(QueryParams.ID.key()),
         NAME(QueryParams.NAME.key()),
         DATE_OF_BIRTH(QueryParams.DATE_OF_BIRTH.key()),
         KARYOTYPIC_SEX(QueryParams.KARYOTYPIC_SEX.key()),
@@ -134,8 +138,8 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         MULTIPLES(QueryParams.MULTIPLES.key()),
         ATTRIBUTES(QueryParams.ATTRIBUTES.key()),
         SAMPLES(QueryParams.SAMPLES.key()),
-        FATHER(QueryParams.FATHER.key()),
-        MOTHER(QueryParams.MOTHER.key()),
+        FATHER_ID(QueryParams.FATHER_UID.key()),
+        MOTHER_ID(QueryParams.MOTHER_UID.key()),
         ETHNICITY(QueryParams.ETHNICITY.key()),
         POPULATION_DESCRIPTION(QueryParams.POPULATION_DESCRIPTION.key()),
         POPULATION_NAME(QueryParams.POPULATION_NAME.key()),
@@ -144,8 +148,7 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         LIFE_STATUS(QueryParams.LIFE_STATUS.key()),
         AFFECTATION_STATUS(QueryParams.AFFECTATION_STATUS.key()),
         ANNOTATION_SETS(QueryParams.ANNOTATION_SETS.key()),
-        DELETE_ANNOTATION(Constants.DELETE_ANNOTATION),
-        DELETE_ANNOTATION_SET(Constants.DELETE_ANNOTATION_SET);
+        ANNOTATIONS(AnnotationSetManager.ANNOTATIONS);
 
         private static Map<String, UpdateParams> map;
         static {
@@ -171,7 +174,7 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
     }
 
     default boolean exists(long sampleId) throws CatalogDBException {
-        return count(new Query(QueryParams.ID.key(), sampleId)).first() > 0;
+        return count(new Query(QueryParams.UID.key(), sampleId)).first() > 0;
     }
 
     default void checkId(long individualId) throws CatalogDBException {

@@ -116,17 +116,17 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
                     projects = openCGAClient.getUserClient().getProjects(new QueryOptions("shared", true));
                 }
                 for (Project project : projects.getResponse().get(0).getResult()) {
-                    if (!studies.containsKey(project.getAlias())) {
-                        studies.put(project.getAlias(), new ArrayList<>());
+                    if (!studies.containsKey(project.getId())) {
+                        studies.put(project.getId(), new ArrayList<>());
                     }
 
                     for (Study study : project.getStudies()) {
-                        studies.get(project.getAlias()).add(study.getAlias());
+                        studies.get(project.getId()).add(study.getId());
                     }
                 }
                 // write CLI session file
                 saveCliSessionFile(user, sessionId, studies);
-                System.out.println("You have been logged correctly. This is your new token " + sessionId);
+                System.out.println("You have been logged in correctly. This is your new token " + sessionId);
             }
         } else {
             String sessionId = usersCommandOptions.commonCommandOptions.sessionId;

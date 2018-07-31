@@ -18,6 +18,7 @@ package org.opencb.opencga.server.rest;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.*;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -29,6 +30,7 @@ import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.FileScanner;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
@@ -53,7 +55,8 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     private StudyManager studyManager;
 
-    public StudyWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
+    public StudyWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
+            throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
         studyManager = catalogManager.getStudyManager();
     }
@@ -62,12 +65,17 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/create")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Create a new study", response = Study.class)
-    public Response createStudyPOST(@ApiParam(value = "Project id or alias", required = true) @QueryParam("projectId") String projectIdStr,
-                                    @ApiParam(value = "study", required = true) StudyParams study) {
+    public Response createStudyPOST(
+            @ApiParam(value = "DEPRECATED: Project id") @QueryParam("projectId") String projectIdStr,
+            @ApiParam(value = "Project id", required = true) @QueryParam("project") String project,
+            @ApiParam(value = "study", required = true) StudyCreateParams study) {
         try {
-            ObjectUtils.defaultIfNull(study, new StudyParams());
-            return createOkResponse(catalogManager.getStudyManager().create(projectIdStr, study.name, study.alias, study
-                    .type, null, study.description, null, null, null, null, null, study.stats, study.attributes, queryOptions, sessionId));
+            String projectId = StringUtils.isEmpty(project) ? projectIdStr : project;
+            study = ObjectUtils.defaultIfNull(study, new StudyCreateParams());
+
+            String studyId = StringUtils.isEmpty(study.id) ? study.alias : study.id;
+            return createOkResponse(catalogManager.getStudyManager().create(projectId, studyId, study.alias, study.name, study.type, null,
+                    study.description, null, null, null, null, null, study.stats, study.attributes, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -88,9 +96,11 @@ public class StudyWSServer extends OpenCGAWSServer {
     })
     public Response getAllStudies(
             @Deprecated @ApiParam(value = "Project id or alias", hidden = true) @QueryParam("projectId") String projectId,
-            @ApiParam(value = "Project id or alias", required = true) @QueryParam("project") String projectStr,
+            @ApiParam(value = "Project id", required = true) @QueryParam("project") String projectStr,
             @ApiParam(value = "Study name") @QueryParam("name") String name,
+            @ApiParam(value = "Study id") @QueryParam("id") String id,
             @ApiParam(value = "Study alias") @QueryParam("alias") String alias,
+            @ApiParam(value = "Study full qualified name") @QueryParam("fqn") String fqn,
             @ApiParam(value = "Type of study: CASE_CONTROL, CASE_SET...") @QueryParam("type") String type,
             @ApiParam(value = "Creation date") @QueryParam("creationDate") String creationDate,
             @ApiParam(value = "Status") @QueryParam("status") String status,
@@ -123,10 +133,8 @@ public class StudyWSServer extends OpenCGAWSServer {
                                  @ApiParam(value = "JSON containing the params to be updated.", required = true) StudyParams updateParams) {
         try {
             ObjectUtils.defaultIfNull(updateParams, new StudyParams());
-            String userId = catalogManager.getUserManager().getUserId(sessionId);
-            long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-            QueryResult queryResult = catalogManager.getStudyManager().update(String.valueOf((Long) studyId), new ObjectMap
-                    (jsonObjectMapper.writeValueAsString(updateParams)), null, sessionId);
+            QueryResult queryResult = catalogManager.getStudyManager().update(studyStr,
+                    new ObjectMap(jsonObjectMapper.writeValueAsString(updateParams)), null, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -180,7 +188,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{study}/files")
-    @ApiOperation(value = "Fetch files in study [DEPRECATED]", response = File[].class,
+    @ApiOperation(value = "Fetch files in study [DEPRECATED]", response = File[].class, hidden = true,
             notes = "The use of this webservice is discouraged. The whole functionality is replicated in the files/search endpoint.")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Set which fields are included in the response, e.g.: name,alias...",
@@ -215,9 +223,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "Numerical attributes") @QueryParam("nattributes") String nattributes) {
         try {
             isSingleId(studyStr);
-            String userId = catalogManager.getUserManager().getUserId(sessionId);
-            long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-            QueryResult queryResult = catalogManager.getFileManager().get(studyId, query, queryOptions, sessionId);
+            QueryResult queryResult = catalogManager.getFileManager().get(studyStr, query, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -226,7 +232,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{study}/samples")
-    @ApiOperation(value = "Fetch samples in study [DEPRECATED]", response = Sample[].class,
+    @ApiOperation(value = "Fetch samples in study [DEPRECATED]", response = Sample[].class, hidden = true,
             notes = "The use of this webservice is discouraged. The whole functionality is replicated in the samples/search endpoint.")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Set which fields are included in the response, e.g.: name,alias...",
@@ -248,9 +254,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                                   @ApiParam(value = "variableSet") @QueryParam("variableSet") String variableSet,
                                   @ApiParam(value = "annotation") @QueryParam("annotation") String annotation) {
         try {
-            String userId = catalogManager.getUserManager().getUserId(sessionId);
-            long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-            QueryResult queryResult = catalogManager.getSampleManager().get(studyId, query, queryOptions, sessionId);
+            QueryResult queryResult = catalogManager.getSampleManager().get(studyStr, query, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -259,7 +263,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{study}/jobs")
-    @ApiOperation(value = "Return filtered jobs in study [DEPRECATED]", position = 9,
+    @ApiOperation(value = "Return filtered jobs in study [DEPRECATED]", position = 9, hidden = true,
             notes = "The use of this webservice is discouraged. The whole functionality is replicated in the jobs/search endpoint.",
             response = Job[].class)
     @ApiImplicitParams({
@@ -360,9 +364,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             required = true) @PathParam("study") String studyStr) {
         try {
             isSingleId(studyStr);
-            String userId = catalogManager.getUserManager().getUserId(sessionId);
-            long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-            Study study = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), null, sessionId).first();
+            Study study = catalogManager.getStudyManager().get(studyStr, null, sessionId).first();
             FileScanner fileScanner = new FileScanner(catalogManager);
 
             /* Resync files */
@@ -391,20 +393,65 @@ public class StudyWSServer extends OpenCGAWSServer {
     }
 
     @POST
+    @Path("/{study}/groups/update")
+    @ApiOperation(value = "Add or remove a group")
+    public Response updateGroupPOST(
+            @ApiParam(value = "Study [[user@]project:]study") @PathParam("study") String studyStr,
+            @ApiParam(value = "Action to be performed: ADD or REMOVE a group", defaultValue = "ADD", required = true)
+                @QueryParam("action") ParamUtils.BasicUpdateAction action,
+            @ApiParam(value = "JSON containing the parameters", required = true) GroupCreateParams params) {
+        try {
+            if (action == null) {
+                throw new CatalogException("Missing mandatory action parameter");
+            }
+            QueryResult group;
+            if (action == ParamUtils.BasicUpdateAction.ADD) {
+                group = catalogManager.getStudyManager().createGroup(studyStr, params.name, params.users, sessionId);
+            } else {
+                group = catalogManager.getStudyManager().deleteGroup(studyStr, params.name, sessionId);
+            }
+            return createOkResponse(group);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{study}/groups/{group}/users/update")
+    @ApiOperation(value = "Add, set or remove users from an existing group")
+    public Response updateUsersFromGroupPOST(
+            @ApiParam(value = "Study [[user@]project:]study") @PathParam("study") String studyStr,
+            @ApiParam(value = "Group name") @PathParam("group") String groupId,
+            @ApiParam(value = "Action to be performed: ADD, SET or REMOVE users to/from a group", defaultValue = "ADD", required = true)
+                @QueryParam("action") GroupParams.Action action,
+            @ApiParam(value = "JSON containing the parameters", required = true) Users users) {
+        try {
+            if (action == null) {
+                throw new CatalogException("Missing mandatory action parameter");
+            }
+
+            GroupParams params = new GroupParams(users.users, action);
+            return createOkResponse(catalogManager.getStudyManager().updateGroup(studyStr, groupId, params, sessionId));
+
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    public static class Users {
+        public String users;
+    }
+
+
+    @POST
     @Path("/{study}/groups/create")
-    @ApiOperation(value = "Create a group", position = 14)
+    @ApiOperation(value = "Create a group [DEPRECATED]", position = 14)
     public Response createGroupPOST(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
             @PathParam("study") String studyStr,
             @ApiParam(value = "JSON containing the parameters", required = true) GroupCreateParams params) {
-        ObjectUtils.defaultIfNull(params, new GroupCreateParams());
+        params = ObjectUtils.defaultIfNull(params, new GroupCreateParams());
 
-        if (StringUtils.isNotEmpty(params.groupId) && StringUtils.isEmpty(params.name)) {
-            params.name = params.groupId;
-        }
-        if (StringUtils.isEmpty(params.name)) {
-            return createErrorResponse(new CatalogException("groupId key missing."));
-        }
         try {
             QueryResult group = catalogManager.getStudyManager().createGroup(studyStr, params.name, params.users, sessionId);
             return createOkResponse(group);
@@ -415,7 +462,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/{study}/groups/{group}/update")
-    @ApiOperation(value = "Updates the members of the group")
+    @ApiOperation(value = "Updates the members of the group [DEPRECATED]", hidden = true)
     public Response addMembersToGroupPOST(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
             @PathParam("study") String studyStr,
@@ -434,7 +481,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/{study}/groups/members/update")
-    @ApiOperation(value = "Add/Remove users with access to study")
+    @ApiOperation(value = "Add/Remove users with access to study [DEPRECATED]", hidden = true)
     public Response registerUsersToStudy(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
             @PathParam("study") String studyStr,
@@ -452,7 +499,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/{study}/groups/admins/update")
-    @ApiOperation(value = "Add/Remove users with administrative permissions to the study.",
+    @ApiOperation(value = "Add/Remove users with administrative permissions to the study. [DEPRECATED]", hidden = true,
             notes = "Only the owner of the study will be able to run this webservice")
     public Response registerAdministrativeUsersToStudy(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
@@ -471,7 +518,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{study}/groups/{group}/delete")
-    @ApiOperation(value = "Delete the group", position = 17, notes = "Delete the group selected from the study.")
+    @ApiOperation(value = "Delete the group [DEPRECATED]", position = 17, hidden = true, notes = "Delete the group selected from the study.")
     public Response deleteMembersFromGroup(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
             @PathParam("study") String studyStr,
@@ -489,57 +536,64 @@ public class StudyWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Fetch permission rules")
     public Response getPermissionRules(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
-                @PathParam("study") String studyStr,
-            @ApiParam(value = "Entry where the permission rules should be applied to", required = true) @QueryParam("entry")
-                    Study.Entry entry) {
+            @PathParam("study") String studyStr,
+            @ApiParam(value = "Entity where the permission rules should be applied to", required = true) @QueryParam("entity") Study.Entity
+                    entity) {
         try {
             isSingleId(studyStr);
-            return createOkResponse(catalogManager.getStudyManager().getPermissionRules(studyStr, entry, sessionId));
+            return createOkResponse(catalogManager.getStudyManager().getPermissionRules(studyStr, entity, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
     @POST
-    @Path("/{study}/permissionRules/{entry}/create")
-    @ApiOperation(value = "Create a new permission rule")
-    public Response createPermissionRules(
-            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
-                @PathParam("study") String studyStr,
-            @ApiParam(value = "Entry where the permission rules should be applied to", required = true) @PathParam("entry")
-                    Study.Entry entry,
-            @ApiParam(value = "JSON containing the permission rule", required = true) PermissionRule params) {
+    @Path("/{study}/permissionRules/update")
+    @ApiOperation(value = "Add or remove a permission rule")
+    public Response updatePermissionRules(
+            @ApiParam(value = "Study [[user@]project:]study") @PathParam("study") String studyStr,
+            @ApiParam(value = "Entity where the permission rules should be applied to", required = true) @QueryParam("entity")
+                    Study.Entity entity,
+            @ApiParam(value = "Action to be performed: ADD to add a new permission rule; REMOVE to remove all permissions assigned by an "
+                    + "existing permission rule (even if it overlaps any manual permission); REVERT to remove all permissions assigned by"
+                    + " an existing permission rule (keep manual overlaps); NONE to remove an existing permission rule without removing "
+                    + "any permissions that could have been assigned already by the permission rule.", required = true,
+                    defaultValue = "ADD")
+            @QueryParam("action") PermissionRuleAction action,
+            @ApiParam(value = "JSON containing the permission rule to be created or removed.", required = true) PermissionRule params) {
         try {
-            ObjectUtils.defaultIfNull(params, new PermissionRule());
-
-            isSingleId(studyStr);
-            return createOkResponse(catalogManager.getStudyManager().createPermissionRule(studyStr, entry, params, sessionId));
+            if (action == null) {
+                return createErrorResponse(new CatalogException("Missing mandatory action parameter"));
+            }
+            if (action == PermissionRuleAction.ADD) {
+                return createOkResponse(catalogManager.getStudyManager().createPermissionRule(studyStr, entity, params, sessionId));
+            } else {
+                PermissionRule.DeleteAction deleteAction;
+                switch (action) {
+                    case REVERT:
+                        deleteAction = PermissionRule.DeleteAction.REVERT;
+                        break;
+                    case NONE:
+                        deleteAction = PermissionRule.DeleteAction.NONE;
+                        break;
+                    case REMOVE:
+                    default:
+                        deleteAction = PermissionRule.DeleteAction.REMOVE;
+                        break;
+                }
+                catalogManager.getStudyManager().markDeletedPermissionRule(studyStr, entity, params.getId(), deleteAction, sessionId);
+                return createOkResponse(new QueryResult<>(params.getId()));
+            }
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
-    @DELETE
-    @Path("/{study}/permissionRules/{entry}/delete")
-    @ApiOperation(value = "Delete an existing permission rule")
-    public Response deletePermissionRules(
-            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
-            @PathParam("study") String studyStr,
-            @ApiParam(value = "Entry where the permission rules should be applied to", required = true) @PathParam("entry")
-                    Study.Entry entry,
-            @ApiParam(value = "Permission rule id to be deleted", required = true) @QueryParam("permissionRuleId")
-                    String permissionRuleId,
-            @ApiParam(value = "Extra action to be performed when removing the permission rule: REMOVE - Remove all permissions assigned "
-                    + "by the permission rule (even if it overlaps any manual permission); REVERT - Remove all permissions assigned by the"
-                    + " permission rule (keep manual overlaps); NONE - Don't touch any permissions assigned by the permission rule.",
-                    defaultValue = "REMOVE") @QueryParam("action") PermissionRule.DeleteAction action) {
-        try {
-            isSingleId(studyStr);
-            catalogManager.getStudyManager().markDeletedPermissionRule(studyStr, entry, permissionRuleId, action, sessionId);
-            return createOkResponse(new QueryResult<>(permissionRuleId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+    public enum PermissionRuleAction {
+        ADD,
+        REMOVE,
+        REVERT,
+        NONE
     }
 
     @GET
@@ -640,6 +694,129 @@ public class StudyWSServer extends OpenCGAWSServer {
         }
     }
 
+    @GET
+    @Path("/{study}/variableSets")
+    @ApiOperation(value = "Fetch variableSets from a study")
+    public Response getVariableSets(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
+                @PathParam("study") String studyStr,
+            @ApiParam(value = "Id of the variableSet to be retrieved. If no id is passed, it will show all the variableSets of the study")
+                @QueryParam("id") String variableSetId) {
+        try {
+            QueryResult<VariableSet> queryResult;
+            if (StringUtils.isEmpty(variableSetId)) {
+                QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.VARIABLE_SET.key());
+                QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get(studyStr, options, sessionId);
+
+                if (studyQueryResult.getNumResults() == 1) {
+                    queryResult = new QueryResult<>(studyStr, studyQueryResult.getDbTime(),
+                            studyQueryResult.first().getVariableSets().size(), studyQueryResult.first().getVariableSets().size(),
+                            studyQueryResult.getWarningMsg(), studyQueryResult.getErrorMsg(), studyQueryResult.first().getVariableSets());
+                } else {
+                    queryResult = new QueryResult<>(studyStr);
+                }
+            } else {
+                queryResult = catalogManager.getStudyManager().getVariableSet(studyStr, variableSetId, queryOptions, sessionId);
+            }
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{study}/variableSets/update")
+    @ApiOperation(value = "Add or remove a variableSet")
+    public Response createOrRemoveVariableSets(
+            @ApiParam(value = "Study [[user@]project:]study") @PathParam("study") String studyStr,
+            @ApiParam(value = "Action to be performed: ADD or REMOVE a variableSet", defaultValue = "ADD", required = true)
+                @QueryParam("action") ParamUtils.BasicUpdateAction action,
+            @ApiParam(value = "JSON containing the VariableSet to be created or removed.", required = true) VariableSetParameters params) {
+        try {
+            if (action == null) {
+                return createErrorResponse(new CatalogException("Missing mandatory action parameter"));
+            }
+
+            QueryResult<VariableSet> queryResult;
+            if (action == ParamUtils.BasicUpdateAction.ADD) {
+                // Fix variable set params to support 1.3.x
+                // TODO: Remove in version 2.0.0
+                params.id = StringUtils.isNotEmpty(params.id) ? params.id : params.name;
+                for (Variable variable : params.variables) {
+                    fixVariable(variable);
+                }
+
+                queryResult = catalogManager.getStudyManager().createVariableSet(studyStr, params.id, params.name, params.unique,
+                        params.confidential, params.description, null, params.variables, sessionId);
+            } else {
+                queryResult = catalogManager.getStudyManager().deleteVariableSet(studyStr, params.id, sessionId);
+            }
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{study}/variableSets/{variableSet}/update")
+    @ApiOperation(value = "Update fields of an existing VariableSet [PENDING]", hidden = true)
+    public Response updateVariableSets(
+            @ApiParam(value = "Study [[user@]project:]study") @PathParam("study") String studyStr,
+            @ApiParam(value = "VariableSet id of the VariableSet to be updated") @PathParam("variableSet") String variableSetId,
+            @ApiParam(value = "JSON containing the fields of the VariableSet to update.", required = true) UpdateableVariableSetParameters params) {
+        return createErrorResponse(new NotImplementedException("Pending of implementation"));
+    }
+
+    @POST
+    @Path("/{study}/variableSets/{variableSet}/variables/update")
+    @ApiOperation(value = "Add or remove variables to a VariableSet")
+    public Response updateVariablesFromVariableSet(
+            @ApiParam(value = "Study [[user@]project:]study") @PathParam("study") String studyStr,
+            @ApiParam(value = "VariableSet id of the VariableSet to be updated") @PathParam("variableSet") String variableSetId,
+            @ApiParam(value = "Action to be performed: ADD or REMOVE a variable", defaultValue = "ADD", required = true)
+                @QueryParam("action") ParamUtils.BasicUpdateAction action,
+            @ApiParam(value = "JSON containing the variable to be added or removed. For removing, only the variable id will be needed.",
+                    required = true) Variable variable) {
+        try {
+            if (action == null) {
+                return createErrorResponse(new CatalogException("Missing mandatory action parameter"));
+            }
+
+            QueryResult<VariableSet> queryResult;
+            if (action == ParamUtils.BasicUpdateAction.ADD) {
+                queryResult = catalogManager.getStudyManager().addFieldToVariableSet(studyStr, variableSetId, variable, sessionId);
+            } else {
+                queryResult = catalogManager.getStudyManager().removeFieldFromVariableSet(studyStr, variableSetId, variable.getId(),
+                        sessionId);
+            }
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    private static class VariableSetParameters {
+        public Boolean unique;
+        public Boolean confidential;
+        public String id;
+        public String name;
+        public String description;
+        public List<Variable> variables;
+    }
+
+    private static class UpdateableVariableSetParameters {
+
+    }
+
+    private void fixVariable(Variable variable) {
+        variable.setId(StringUtils.isNotEmpty(variable.getId()) ? variable.getId() : variable.getName());
+        if (variable.getVariableSet() != null && variable.getVariableSet().size() > 0) {
+            for (Variable variable1 : variable.getVariableSet()) {
+                fixVariable(variable1);
+            }
+        }
+    }
+
     public static class StudyAcl extends AclParams {
         public String study;
         public String template;
@@ -662,11 +839,13 @@ public class StudyWSServer extends OpenCGAWSServer {
         }
     }
 
+    public static class StudyCreateParams extends StudyParams {
+        public String id;
+    }
+
     public static class GroupCreateParams {
         @JsonProperty(required = true)
         public String name;
-        @Deprecated
-        public String groupId;
         public String users;
     }
 

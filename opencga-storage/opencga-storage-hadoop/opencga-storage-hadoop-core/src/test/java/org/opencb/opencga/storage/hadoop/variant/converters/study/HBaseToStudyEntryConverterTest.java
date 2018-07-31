@@ -52,7 +52,8 @@ public class HBaseToStudyEntryConverterTest {
 
         scm.updateStudyConfiguration(sc, null);
 
-        converter = new HBaseToStudyEntryConverter(new GenomeHelper(new Configuration()), scm, null);
+        final GenomeHelper genomeHelper = new GenomeHelper(new Configuration());
+        converter = new HBaseToStudyEntryConverter(genomeHelper.getColumnFamily(), scm, null);
 
     }
 

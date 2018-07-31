@@ -13,7 +13,7 @@ import org.apache.phoenix.schema.types.PInteger;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
@@ -160,7 +160,7 @@ public class FillMissingFromArchiveTask extends AbstractFillFromArchiveTask {
         FilterList filterList = new FilterList(FilterList.Operator.MUST_PASS_ONE);
         filterList.addFilter(new FilterList(FilterList.Operator.MUST_PASS_ALL,
                 new ColumnPrefixFilter(VARIANT_COLUMN_B_PREFIX),
-                new TimestampsFilter(Arrays.asList(conf.getLong(AbstractAnalysisTableDriver.TIMESTAMP, 0)))
+                new TimestampsFilter(Arrays.asList(conf.getLong(AbstractVariantsTableDriver.TIMESTAMP, 0)))
         ));
         for (Integer fileId : fileIds) {
             if (fileBatch == null || archiveRowKeyFactory.getFileBatch(fileId) == fileBatch) {

@@ -4,10 +4,10 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
-import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapper;
 
@@ -30,7 +30,7 @@ public class FillGapsMapper extends VariantMapper<ImmutableBytesWritable, Mutati
         HBaseManager hBaseManager = new HBaseManager(configuration);
         VariantTableHelper helper = new VariantTableHelper(configuration);
 
-        String archiveTableName = Bytes.toString(helper.getArchiveTable());
+        String archiveTableName = context.getConfiguration().get(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME);
         Collection<Integer> samples = FillGapsFromArchiveMapper.getSamples(configuration);
 
         StudyConfiguration studyConfiguration = helper.readStudyConfiguration();

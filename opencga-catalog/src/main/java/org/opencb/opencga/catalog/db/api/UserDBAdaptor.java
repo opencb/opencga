@@ -85,7 +85,7 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
     QueryResult resetPassword(String userId, String email, String newCryptPass) throws CatalogDBException;
 
     // Config operations
-    QueryResult setConfig(String userId, String name, ObjectMap config) throws CatalogDBException;
+    QueryResult setConfig(String userId, String name, Map<String, Object> config) throws CatalogDBException;
 
     QueryResult<Long> deleteConfig(String userId, String name) throws CatalogDBException;
 
@@ -114,9 +114,9 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
 
         PROJECTS("projects", TEXT_ARRAY, ""),
-        PROJECT_ID("projects.id", INTEGER_ARRAY, ""),
+        PROJECTS_UID("projects.uid", INTEGER_ARRAY, ""),
+        PROJECTS_ID("projects.id", INTEGER_ARRAY, ""),
         PROJECT_NAME("projects.name", TEXT_ARRAY, ""),
-        PROJECT_ALIAS("projects.alias", TEXT_ARRAY, ""),
         PROJECT_ORGANIZATION("projects.organization", TEXT_ARRAY, ""),
         PROJECT_STATUS("projects.status", TEXT_ARRAY, ""),
         PROJECT_LAST_MODIFIED("projects.lastModified", TEXT_ARRAY, ""),

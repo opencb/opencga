@@ -30,12 +30,12 @@ public class CatalogUtilsTest {
 
     @Test
     public void parseSampleAnnotationQuery() throws Exception {
-        Query query = CatalogUtils.parseSampleAnnotationQuery("age>20;" + SampleDBAdaptor.QueryParams.PHENOTYPES.key() + "=hpo:123,hpo:456;" + SampleDBAdaptor.QueryParams.NAME.key() + "=smith", SampleDBAdaptor.QueryParams::getParam);
+        Query query = CatalogUtils.parseSampleAnnotationQuery("age>20;" + SampleDBAdaptor.QueryParams.PHENOTYPES.key() + "=hpo:123,hpo:456;" + SampleDBAdaptor.QueryParams.ID.key() + "=smith", SampleDBAdaptor.QueryParams::getParam);
 
         assertEquals(3, query.size());
 
-        assertTrue(query.containsKey(SampleDBAdaptor.QueryParams.NAME.key()));
-        assertEquals("=smith", query.getString(SampleDBAdaptor.QueryParams.NAME.key()));
+        assertTrue(query.containsKey(SampleDBAdaptor.QueryParams.ID.key()));
+        assertEquals("=smith", query.getString(SampleDBAdaptor.QueryParams.ID.key()));
 
         assertTrue(query.containsKey(SampleDBAdaptor.QueryParams.ANNOTATION.key()));
         assertEquals("annotation.age>20", query.getString(SampleDBAdaptor.QueryParams.ANNOTATION.key()));

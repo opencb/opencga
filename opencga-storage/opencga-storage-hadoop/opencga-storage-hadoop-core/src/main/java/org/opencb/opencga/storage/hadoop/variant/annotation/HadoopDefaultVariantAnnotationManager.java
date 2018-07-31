@@ -92,7 +92,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
     }
 
     @Override
-    public void createAnnotationSnapshot(String name, ObjectMap inputOptions) throws StorageEngineException, VariantAnnotatorException {
+    public void saveAnnotation(String name, ObjectMap inputOptions) throws StorageEngineException, VariantAnnotatorException {
         QueryOptions options = getOptions(inputOptions);
 
         ProjectMetadata projectMetadata = dbAdaptor.getStudyConfigurationManager().lockAndUpdateProject(project -> {
@@ -116,7 +116,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
     }
 
     @Override
-    public void deleteAnnotationSnapshot(String name, ObjectMap inputOptions) throws StorageEngineException, VariantAnnotatorException {
+    public void deleteAnnotation(String name, ObjectMap inputOptions) throws StorageEngineException, VariantAnnotatorException {
         QueryOptions options = getOptions(inputOptions);
 
         ProjectMetadata.VariantAnnotationMetadata saved = dbAdaptor.getStudyConfigurationManager().getProjectMetadata().first()

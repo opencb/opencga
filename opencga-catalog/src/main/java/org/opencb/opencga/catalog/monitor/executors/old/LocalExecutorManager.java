@@ -114,7 +114,7 @@ public class LocalExecutorManager implements ExecutorManager {
             com.setErrorOutputStream(ioManager.createOutputStream(serr, false));
         }
 
-        final long jobId = job.getId();
+        final long jobId = job.getUid();
 
         Thread hook = new Thread(() -> {
 //            try {
@@ -131,7 +131,7 @@ public class LocalExecutorManager implements ExecutorManager {
         });
 
         logger.info("==========================================");
-        logger.info("Executing job {}({})", job.getName(), job.getId());
+        logger.info("Executing job {}({})", job.getName(), job.getUid());
         logger.debug("Executing commandLine {}", job.getCommandLine());
         logger.info("==========================================");
         System.err.println();
@@ -142,11 +142,11 @@ public class LocalExecutorManager implements ExecutorManager {
 
         System.err.println();
         logger.info("==========================================");
-        logger.info("Finished job {}({})", job.getName(), job.getId());
+        logger.info("Finished job {}({})", job.getName(), job.getUid());
         logger.info("==========================================");
 
         closeOutputStreams(com);
-        return catalogManager.getJobManager().get(job.getId(), new QueryOptions(), sessionId);
+        return catalogManager.getJobManager().get(job.getUid(), new QueryOptions(), sessionId);
 //        return postExecuteCommand(job, com, null);
     }
 
@@ -237,7 +237,7 @@ public class LocalExecutorManager implements ExecutorManager {
             parameters.put("resourceManagerAttributes", new ObjectMap("executionInfo", executionInfo));
         }
 //        parameters.put(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.DONE);
-        catalogManager.getJobManager().update(job.getId(), parameters, null, sessionId);
+        catalogManager.getJobManager().update(job.getUid(), parameters, null, sessionId);
 
 //        /** Record output **/
 //        ExecutionOutputRecorder outputRecorder = new ExecutionOutputRecorder(catalogManager, sessionId);
@@ -260,12 +260,12 @@ public class LocalExecutorManager implements ExecutorManager {
 //            parameters.put(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.ERROR);
             parameters.put(JobDBAdaptor.QueryParams.ERROR.key(), error);
             parameters.put(JobDBAdaptor.QueryParams.ERROR_DESCRIPTION.key(), Job.ERROR_DESCRIPTIONS.get(error));
-            catalogManager.getJobManager().update(job.getId(), parameters, null, sessionId);
+            catalogManager.getJobManager().update(job.getUid(), parameters, null, sessionId);
             objectMapper.writer().writeValue(outdir.resolve(JOB_STATUS_FILE).toFile(), new Job.JobStatus(Job.JobStatus.ERROR,
                     "Job finished with error."));
         }
 
-        return catalogManager.getJobManager().get(job.getId(), new QueryOptions(), sessionId);
+        return catalogManager.getJobManager().get(job.getUid(), new QueryOptions(), sessionId);
     }
 
     protected void closeOutputStreams(Command com) {

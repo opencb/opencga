@@ -115,7 +115,7 @@ public class NewVariantMetadataMigration {
         List<Project> projects = catalogManager.getProjectManager().get(new Query(), new QueryOptions(
                 QueryOptions.INCLUDE, Arrays.asList(
                 ProjectDBAdaptor.QueryParams.NAME.key(),
-                ProjectDBAdaptor.QueryParams.ALIAS.key()
+                ProjectDBAdaptor.QueryParams.ID.key()
         )), sessionId).getResult();
 
         Set<DataStore> dataStores = new HashSet<>();
@@ -132,7 +132,7 @@ public class NewVariantMetadataMigration {
                     migrateMetadataFiles(sessionId, metadataFilesQuery, study);
                 }
 
-                DataStore dataStore = StorageOperation.getDataStore(catalogManager, study, File.Bioformat.VARIANT, sessionId);
+                DataStore dataStore = StorageOperation.getDataStore(catalogManager, study.getFqn(), File.Bioformat.VARIANT, sessionId);
                 dataStores.add(dataStore);
             }
         }

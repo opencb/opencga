@@ -27,7 +27,6 @@ import org.opencb.opencga.app.cli.main.executors.catalog.commons.AnnotationComma
 import org.opencb.opencga.app.cli.main.options.CohortCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
-import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.Cohort;
 import org.opencb.opencga.core.models.Sample;
@@ -121,7 +120,7 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
 
         Query query = new Query();
         query.putIfNotEmpty(CohortDBAdaptor.QueryParams.STUDY.key(), resolveStudy(commandOptions.study));
-        query.putIfNotEmpty(CohortDBAdaptor.QueryParams.NAME.key(), commandOptions.name);
+        query.putIfNotEmpty(CohortDBAdaptor.QueryParams.ID.key(), commandOptions.name);
         query.putIfNotNull(CohortDBAdaptor.QueryParams.TYPE.key(), commandOptions.type);
         query.putIfNotNull(CohortDBAdaptor.QueryParams.STATUS.key(), commandOptions.status);
         query.putIfNotEmpty(CohortDBAdaptor.QueryParams.SAMPLES.key(), commandOptions.samples);
@@ -145,7 +144,7 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Creating a new cohort");
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(CohortDBAdaptor.QueryParams.NAME.key(), cohortsCommandOptions.createCommandOptions.name);
+        params.putIfNotEmpty(CohortDBAdaptor.QueryParams.ID.key(), cohortsCommandOptions.createCommandOptions.name);
         params.putIfNotEmpty(CohortDBAdaptor.QueryParams.SAMPLES.key(), cohortsCommandOptions.createCommandOptions.sampleIds);
         params.putIfNotNull(CohortDBAdaptor.QueryParams.TYPE.key(), cohortsCommandOptions.createCommandOptions.type);
         params.putIfNotEmpty(CohortDBAdaptor.QueryParams.DESCRIPTION.key(), cohortsCommandOptions.createCommandOptions.description);
@@ -183,7 +182,7 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Updating cohort");
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(CohortDBAdaptor.QueryParams.NAME.key(), cohortsCommandOptions.updateCommandOptions.name);
+        params.putIfNotEmpty(CohortDBAdaptor.QueryParams.ID.key(), cohortsCommandOptions.updateCommandOptions.name);
         params.putIfNotEmpty(CohortDBAdaptor.QueryParams.CREATION_DATE.key(), cohortsCommandOptions.updateCommandOptions.creationDate);
         params.putIfNotEmpty(CohortDBAdaptor.QueryParams.DESCRIPTION.key(), cohortsCommandOptions.updateCommandOptions.description);
         params.putIfNotEmpty(CohortDBAdaptor.QueryParams.SAMPLES.key(), cohortsCommandOptions.updateCommandOptions.samples);
@@ -205,8 +204,8 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap params = new ObjectMap();
         params.putIfNotEmpty(CohortDBAdaptor.QueryParams.STUDY.key(), resolveStudy(cohortsCommandOptions.groupByCommandOptions.study));
-        params.putIfNotEmpty(CohortDBAdaptor.QueryParams.ID.key(), cohortsCommandOptions.groupByCommandOptions.id);
-        params.putIfNotEmpty(CohortDBAdaptor.QueryParams.NAME.key(), cohortsCommandOptions.groupByCommandOptions.name);
+        params.putIfNotEmpty(CohortDBAdaptor.QueryParams.UID.key(), cohortsCommandOptions.groupByCommandOptions.id);
+        params.putIfNotEmpty(CohortDBAdaptor.QueryParams.ID.key(), cohortsCommandOptions.groupByCommandOptions.name);
         params.putIfNotEmpty(CohortDBAdaptor.QueryParams.TYPE.key(), cohortsCommandOptions.groupByCommandOptions.type);
         params.putIfNotEmpty(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), cohortsCommandOptions.groupByCommandOptions.status);
         params.putIfNotEmpty(CohortDBAdaptor.QueryParams.CREATION_DATE.key(), cohortsCommandOptions.groupByCommandOptions.creationDate);

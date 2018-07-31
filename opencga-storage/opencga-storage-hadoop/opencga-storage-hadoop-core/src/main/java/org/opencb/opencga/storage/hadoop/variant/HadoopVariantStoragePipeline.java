@@ -91,7 +91,6 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngi
 public abstract class HadoopVariantStoragePipeline extends VariantStoragePipeline {
     protected final VariantHadoopDBAdaptor dbAdaptor;
     protected final Configuration conf;
-    protected final HBaseCredentials archiveTableCredentials;
     protected final HBaseCredentials variantsTableCredentials;
     protected MRExecutor mrExecutor = null;
 
@@ -101,15 +100,19 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
             StorageConfiguration configuration,
             VariantHadoopDBAdaptor dbAdaptor,
             VariantReaderUtils variantReaderUtils, ObjectMap options,
-            HBaseCredentials archiveCredentials, MRExecutor mrExecutor,
+            MRExecutor mrExecutor,
             Configuration conf) {
         super(configuration, STORAGE_ENGINE_ID, dbAdaptor, variantReaderUtils, options);
-        this.archiveTableCredentials = archiveCredentials;
         this.mrExecutor = mrExecutor;
         this.dbAdaptor = dbAdaptor;
         this.variantsTableCredentials = dbAdaptor == null ? null : dbAdaptor.getCredentials();
         this.conf = new Configuration(conf);
 
+    }
+
+    @Override
+    public VariantHadoopDBAdaptor getDBAdaptor() {
+        return dbAdaptor;
     }
 
     @Override
@@ -297,10 +300,10 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
         super.preLoad(input, output);
 
         try {
-            ArchiveTableHelper.createArchiveTableIfNeeded(dbAdaptor.getGenomeHelper(), archiveTableCredentials.getTable(),
+            ArchiveTableHelper.createArchiveTableIfNeeded(dbAdaptor.getGenomeHelper(), getArchiveTable(),
                     dbAdaptor.getConnection());
         } catch (IOException e) {
-            throw new StorageHadoopException("Issue creating table " + archiveTableCredentials.getTable(), e);
+            throw new StorageHadoopException("Issue creating table " + getArchiveTable(), e);
         }
         try {
             VariantTableHelper.createVariantTableIfNeeded(dbAdaptor.getGenomeHelper(), variantsTableCredentials.getTable(),
@@ -369,7 +372,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
         try {
             int studyId = getStudyId();
             VariantFileMetadata fileMetadata = readVariantFileMetadata(input);
-
+            fileMetadata.setId(String.valueOf(getFileId()));
             scm.updateVariantFileMetadata(studyId, fileMetadata);
             dbAdaptor.getVariantFileMetadataDBAdaptor().updateLoadedFilesSummary(studyId, Collections.singletonList(getFileId()));
         } catch (IOException e) {
@@ -498,4 +501,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
         // Do not close VariantDBAdaptor
     }
 
+    protected String getArchiveTable() throws StorageEngineException {
+        return getDBAdaptor().getArchiveTableName(getStudyId());
+    }
 }

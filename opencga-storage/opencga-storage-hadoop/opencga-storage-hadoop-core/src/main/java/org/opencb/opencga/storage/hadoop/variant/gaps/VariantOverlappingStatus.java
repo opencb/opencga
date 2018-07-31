@@ -15,6 +15,14 @@ public enum VariantOverlappingStatus {
      */
     REFERENCE("R"),
     /**
+     * There was a gap in the original file.
+     */
+    GAP("G"),
+    /**
+     *
+     */
+    MULTI("M"),
+    /**
      * This variant is present on this file.
      */
     NONE("N");

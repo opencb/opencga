@@ -37,7 +37,7 @@ public interface DatasetDBAdaptor extends DBAdaptor<Dataset> {
 
     enum QueryParams implements QueryParam {
 
-        ID("id", DOUBLE, ""),
+        ID("id", INTEGER, ""),
         NAME("name", TEXT, ""),
         CREATION_DATE("creationDate", DATE, ""),
         DESCRIPTION("description", TEXT, ""),

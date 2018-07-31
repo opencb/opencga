@@ -33,13 +33,13 @@ import java.util.concurrent.atomic.AtomicReference;
  * Created by mh719 on 06/12/2016.
  */
 public abstract class AbstractHBaseVariantMapper<KEYOUT, VALUEOUT> extends TableMapper<KEYOUT, VALUEOUT> {
-    private final AtomicReference<AnalysisTableMapReduceHelper> mrHelper = new AtomicReference<>();
+    private final AtomicReference<VariantsTableMapReduceHelper> mrHelper = new AtomicReference<>();
 
     @Override
     protected void setup(Mapper<ImmutableBytesWritable, Result, KEYOUT, VALUEOUT>.Context context) throws IOException,
             InterruptedException {
         super.setup(context);
-        mrHelper.set(new AnalysisTableMapReduceHelper(context));
+        mrHelper.set(new VariantsTableMapReduceHelper(context));
     }
 
     @Override
@@ -48,7 +48,7 @@ public abstract class AbstractHBaseVariantMapper<KEYOUT, VALUEOUT> extends Table
         getMrHelper().close();
     }
 
-    public AnalysisTableMapReduceHelper getMrHelper() {
+    public VariantsTableMapReduceHelper getMrHelper() {
         return mrHelper.get();
     }
 

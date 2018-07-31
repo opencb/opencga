@@ -1,7 +1,9 @@
 package org.opencb.opencga.app.cli.admin.executors.migration;
 
 import com.mongodb.client.MongoCursor;
+import com.mongodb.client.model.Updates;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -11,8 +13,8 @@ import org.opencb.opencga.catalog.db.mongodb.AnnotationMongoDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidator;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.VariableSet;
 import org.slf4j.Logger;
@@ -33,8 +35,8 @@ public class AnnotationSetMigration {
     private GenericDocumentComplexConverter<AnnotableForMigration> converter;
     private final Logger logger = LoggerFactory.getLogger(AnnotationSetMigration.class);
 
-    public AnnotationSetMigration(Configuration configuration) throws CatalogDBException {
-        this.dbAdaptorFactory = new MongoDBAdaptorFactory(configuration);
+    public AnnotationSetMigration(CatalogManager catalogManager) throws CatalogDBException {
+        this.dbAdaptorFactory = new MongoDBAdaptorFactory(catalogManager.getConfiguration());
         this.variableSetMap = new HashMap<>();
         this.converter = new GenericDocumentComplexConverter<>(AnnotableForMigration.class);
     }
@@ -64,15 +66,15 @@ public class AnnotationSetMigration {
     private void migrateAnnotations(AnnotationMongoDBAdaptor dbAdaptor, MongoDBCollection collection, MongoCursor<Document> iterator)
             throws CatalogException {
 
-        Document update = new Document("$unset", new Document("annotationSets", ""));
+        Bson update = Updates.unset("annotationSets");
 
         while(iterator.hasNext()) {
             Document next = iterator.next();
             AnnotableForMigration annotable = converter.convertToDataModelType(next);
 
             // Remove old annotationSets field from the entry
-            Document query = new Document("id", annotable.getId());
-            collection.update(query, update, new QueryOptions("multi", true));
+            Document query = new Document("_id", next.get("_id"));
+            collection.update(query, update, new QueryOptions());
 
             List<ObjectMap> annotationSetAsMap = annotable.getAnnotationSetAsMap();
 
@@ -84,24 +86,18 @@ public class AnnotationSetMigration {
 
                     VariableSet variableSet = getVariableSet(variableSetId);
 
-                    AnnotationSet annotationSet = new AnnotationSet(annotationSetName, variableSetId, annotations, Collections.emptyMap());
-                    CatalogAnnotationsValidator.checkAnnotationSet(variableSet, annotationSet, null);
+                    AnnotationSet annotationSet = new AnnotationSet(annotationSetName, variableSet.getId(), annotations,
+                            Collections.emptyMap());
+                    CatalogAnnotationsValidator.checkAnnotationSet(variableSet, annotationSet, null, true);
 
-                    QueryResult<AnnotationSet> annotationSetQR = dbAdaptor.createAnnotationSet(annotable.getId(), variableSet,
-                            annotationSet);
-
-
-                    if (annotationSetQR.getNumResults() == 0) {
-                        throw new CatalogException("Migration of annotation set " + annotationSetName + " from entry " + annotable.getId()
-                                + "failed.");
-                    }
+                    dbAdaptor.createAnnotationSetForMigration(next.get("_id"), variableSet, annotationSet);
                 }
             } catch (CatalogException e) {
                 update = new Document()
                         .append("$set", new Document("annotationSets", next.get("annotationSets")))
-                        .append("$unset", AnnotationMongoDBAdaptor.AnnotationSetParams.ANNOTATION_SETS.key());
+                        .append("$unset", new Document(AnnotationMongoDBAdaptor.AnnotationSetParams.ANNOTATION_SETS.key(), ""));
                 // Restore annotations
-                collection.update(query, update, new QueryOptions("multi", true));
+                collection.update(query, update, new QueryOptions());
 
                 throw e;
             }
@@ -129,5 +125,4 @@ public class AnnotationSetMigration {
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("annotationSets", "id", "_studyId"));
         return sampleCollection.nativeQuery().find(queryDocument, options).iterator();
     }
-
 }

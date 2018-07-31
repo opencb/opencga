@@ -48,21 +48,19 @@ import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
-import org.opencb.opencga.storage.core.metadata.local.FileStudyConfigurationAdaptor;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantSolrIterator;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSolrIterator;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 
 import java.io.*;
@@ -72,13 +70,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.CreateAnnotationSnapshotCommandOptions.COPY_ANNOTATION_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.DeleteAnnotationSnapshotCommandOptions.DELETE_ANNOTATION_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationSaveCommandOptions.ANNOTATION_SAVE_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationDeleteCommandOptions.ANNOTATION_DELETE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillMissingCommandOptions.FILL_MISSING_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.QueryAnnotationCommandOptions.QUERY_ANNOTATION_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationQueryCommandOptions.ANNOTATION_QUERY_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
 
 /**
@@ -158,20 +156,25 @@ public class VariantCommandExecutor extends CommandExecutor {
                         variantCommandOptions.annotateVariantsCommandOptions.dbName);
                 annotation();
                 break;
-            case COPY_ANNOTATION_COMMAND:
-                configure(variantCommandOptions.createAnnotationSnapshotCommandOptions.commonOptions,
-                        variantCommandOptions.createAnnotationSnapshotCommandOptions.dbName);
-                copyAnnotation();
+            case ANNOTATION_SAVE_COMMAND:
+                configure(variantCommandOptions.annotationSaveCommandOptions.commonOptions,
+                        variantCommandOptions.annotationSaveCommandOptions.dbName);
+                annotationSave();
                 break;
-            case DELETE_ANNOTATION_COMMAND:
-                configure(variantCommandOptions.deleteAnnotationSnapshotCommandOptions.commonOptions,
-                        variantCommandOptions.deleteAnnotationSnapshotCommandOptions.dbName);
-                deleteAnnotation();
+            case ANNOTATION_DELETE_COMMAND:
+                configure(variantCommandOptions.annotationDeleteCommandOptions.commonOptions,
+                        variantCommandOptions.annotationDeleteCommandOptions.dbName);
+                annotationDelete();
                 break;
-            case QUERY_ANNOTATION_COMMAND:
-                configure(variantCommandOptions.queryAnnotationCommandOptions.commonOptions,
-                        variantCommandOptions.queryAnnotationCommandOptions.dbName);
-                queryAnnotation();
+            case ANNOTATION_QUERY_COMMAND:
+                configure(variantCommandOptions.annotationQueryCommandOptions.commonOptions,
+                        variantCommandOptions.annotationQueryCommandOptions.dbName);
+                annotationQuery();
+                break;
+            case ANNOTATION_METADATA_COMMAND:
+                configure(variantCommandOptions.annotationMetadataCommandOptions.commonOptions,
+                        variantCommandOptions.annotationMetadataCommandOptions.dbName);
+                annotationMetadata();
                 break;
             case "stats":
                 configure(variantCommandOptions.statsVariantsCommandOptions.commonOptions,
@@ -244,10 +247,8 @@ public class VariantCommandExecutor extends CommandExecutor {
         /** Add CLi options to the variant options **/
         ObjectMap params = storageConfiguration.getVariant().getOptions();
         params.put(VariantStorageEngine.Options.MERGE_MODE.key(), indexVariantsCommandOptions.merge);
-        params.put(VariantStorageEngine.Options.STUDY_NAME.key(), indexVariantsCommandOptions.studyName);
-        params.put(VariantStorageEngine.Options.STUDY_ID.key(), indexVariantsCommandOptions.studyId);
-        params.put(VariantStorageEngine.Options.FILE_ID.key(), indexVariantsCommandOptions.fileId);
-        params.put(VariantStorageEngine.Options.SAMPLE_IDS.key(), indexVariantsCommandOptions.sampleIds);
+        params.put(VariantStorageEngine.Options.STUDY.key(), indexVariantsCommandOptions.study);
+        params.put(VariantStorageEngine.Options.STUDY_TYPE.key(), indexVariantsCommandOptions.studyType);
         params.put(VariantStorageEngine.Options.CALCULATE_STATS.key(), indexVariantsCommandOptions.calculateStats);
         params.put(VariantStorageEngine.Options.INCLUDE_STATS.key(), indexVariantsCommandOptions.includeStats);
         params.put(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(), indexVariantsCommandOptions.excludeGenotype);
@@ -261,9 +262,9 @@ public class VariantCommandExecutor extends CommandExecutor {
             params.put(VariantAnnotationManager.ANNOTATOR, indexVariantsCommandOptions.annotator);
         }
         params.put(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, indexVariantsCommandOptions.overwriteAnnotations);
-        if (indexVariantsCommandOptions.studyConfigurationFile != null && !indexVariantsCommandOptions.studyConfigurationFile.isEmpty()) {
-            params.put(FileStudyConfigurationAdaptor.STUDY_CONFIGURATION_PATH, indexVariantsCommandOptions.studyConfigurationFile);
-        }
+//        if (indexVariantsCommandOptions.studyConfigurationFile != null && !indexVariantsCommandOptions.studyConfigurationFile.isEmpty()) {
+//            params.put(FileStudyConfigurationAdaptor.STUDY_CONFIGURATION_PATH, indexVariantsCommandOptions.studyConfigurationFile);
+//        }
         params.put(VariantStorageEngine.Options.RESUME.key(), indexVariantsCommandOptions.resume);
         params.put(VariantStorageEngine.Options.LOAD_SPLIT_DATA.key(), indexVariantsCommandOptions.loadSplitData);
         params.put(VariantStorageEngine.Options.POST_LOAD_CHECK_SKIP.key(), indexVariantsCommandOptions.skipPostLoadCheck);
@@ -464,26 +465,26 @@ public class VariantCommandExecutor extends CommandExecutor {
         variantStorageEngine.annotate(query, options);
     }
 
-    private void copyAnnotation() throws VariantAnnotatorException, StorageEngineException {
-        StorageVariantCommandOptions.CreateAnnotationSnapshotCommandOptions cliOptions = variantCommandOptions.createAnnotationSnapshotCommandOptions;
+    private void annotationSave() throws VariantAnnotatorException, StorageEngineException {
+        StorageVariantCommandOptions.AnnotationSaveCommandOptions cliOptions = variantCommandOptions.annotationSaveCommandOptions;
 
         ObjectMap options = storageConfiguration.getVariant().getOptions();
         options.putAll(cliOptions.commonOptions.params);
 
-        variantStorageEngine.createAnnotationSnapshot(cliOptions.name, options);
+        variantStorageEngine.saveAnnotation(cliOptions.annotationId, options);
     }
 
-    private void deleteAnnotation() throws VariantAnnotatorException, StorageEngineException {
-        StorageVariantCommandOptions.DeleteAnnotationSnapshotCommandOptions cliOptions = variantCommandOptions.deleteAnnotationSnapshotCommandOptions;
+    private void annotationDelete() throws VariantAnnotatorException, StorageEngineException {
+        StorageVariantCommandOptions.AnnotationDeleteCommandOptions cliOptions = variantCommandOptions.annotationDeleteCommandOptions;
 
         ObjectMap options = storageConfiguration.getVariant().getOptions();
         options.putAll(cliOptions.commonOptions.params);
 
-        variantStorageEngine.deleteAnnotationSnapshot(cliOptions.name, options);
+        variantStorageEngine.deleteAnnotation(cliOptions.annotationId, options);
     }
 
-    private void queryAnnotation() throws VariantAnnotatorException, StorageEngineException, IOException {
-        StorageVariantCommandOptions.QueryAnnotationCommandOptions cliOptions  = variantCommandOptions.queryAnnotationCommandOptions;
+    private void annotationQuery() throws VariantAnnotatorException, StorageEngineException, IOException {
+        StorageVariantCommandOptions.AnnotationQueryCommandOptions cliOptions  = variantCommandOptions.annotationQueryCommandOptions;
 
         QueryOptions options = new QueryOptions();
         options.put(QueryOptions.LIMIT, cliOptions.limit);
@@ -496,7 +497,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         query.put(VariantQueryParam.REGION.key(), cliOptions.region);
         query.put(VariantQueryParam.ID.key(), cliOptions.id);
 
-        QueryResult<VariantAnnotation> queryResult = variantStorageEngine.getAnnotation(cliOptions.name, query, options);
+        QueryResult<VariantAnnotation> queryResult = variantStorageEngine.getAnnotation(cliOptions.annotationId, query, options);
 
         // WRITE
         ObjectMapper objectMapper = new ObjectMapper();
@@ -513,18 +514,39 @@ public class VariantCommandExecutor extends CommandExecutor {
         }
     }
 
+    private void annotationMetadata() throws VariantAnnotatorException, StorageEngineException, IOException {
+        StorageVariantCommandOptions.AnnotationMetadataCommandOptions cliOptions  = variantCommandOptions.annotationMetadataCommandOptions;
+
+
+        QueryResult<ProjectMetadata.VariantAnnotationMetadata> result = variantStorageEngine.getAnnotationMetadata(cliOptions.annotationId);
+
+        // WRITE
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
+        objectMapper.configure(SerializationFeature.CLOSE_CLOSEABLE, false);
+        ObjectWriter writer = objectMapper.writer();
+//        ObjectWriter writer = objectMapper.writerWithDefaultPrettyPrinter();
+        SequenceWriter sequenceWriter = writer.writeValues(System.out);
+        for (ProjectMetadata.VariantAnnotationMetadata metadata : result.getResult()) {
+            sequenceWriter.write(metadata);
+            sequenceWriter.flush();
+//            writer.writeValue(System.out, annotation);
+            System.out.println();
+        }
+    }
+
     private void stats() throws IOException, URISyntaxException, StorageEngineException, IllegalAccessException, InstantiationException,
             ClassNotFoundException {
         StorageVariantCommandOptions.VariantStatsCommandOptions statsVariantsCommandOptions = variantCommandOptions.statsVariantsCommandOptions;
 
-        ObjectMap options = storageConfiguration.getVariant().getOptions();
+        QueryOptions options = new QueryOptions(storageConfiguration.getVariant().getOptions());
         options.put(VariantStorageEngine.Options.OVERWRITE_STATS.key(), statsVariantsCommandOptions.overwriteStats);
         options.put(VariantStorageEngine.Options.UPDATE_STATS.key(), statsVariantsCommandOptions.updateStats);
-        options.putIfNotEmpty(VariantStorageEngine.Options.FILE_ID.key(), statsVariantsCommandOptions.fileId);
-        options.put(VariantStorageEngine.Options.STUDY_ID.key(), statsVariantsCommandOptions.studyId);
-        if (statsVariantsCommandOptions.studyConfigurationFile != null && !statsVariantsCommandOptions.studyConfigurationFile.isEmpty()) {
-            options.put(FileStudyConfigurationAdaptor.STUDY_CONFIGURATION_PATH, statsVariantsCommandOptions.studyConfigurationFile);
-        }
+//        options.putIfNotEmpty(VariantStorageEngine.Options.FILE_ID.key(), statsVariantsCommandOptions.file);
+        options.put(VariantStorageEngine.Options.STUDY.key(), statsVariantsCommandOptions.study);
+//        if (statsVariantsCommandOptions.studyConfigurationFile != null && !statsVariantsCommandOptions.studyConfigurationFile.isEmpty()) {
+//            options.put(FileStudyConfigurationAdaptor.STUDY_CONFIGURATION_PATH, statsVariantsCommandOptions.studyConfigurationFile);
+//        }
         options.put(VariantQueryParam.REGION.key(), statsVariantsCommandOptions.region);
         options.put(VariantStorageEngine.Options.RESUME.key(), statsVariantsCommandOptions.resume);
 
@@ -533,15 +555,17 @@ public class VariantCommandExecutor extends CommandExecutor {
         }
 
         Map<String, Set<String>> cohorts = null;
+        List<String> cohortNames = null;
         if (statsVariantsCommandOptions.cohort != null && !statsVariantsCommandOptions.cohort.isEmpty()) {
             cohorts = new LinkedHashMap<>(statsVariantsCommandOptions.cohort.size());
             for (Map.Entry<String, String> entry : statsVariantsCommandOptions.cohort.entrySet()) {
                 List<String> samples = Arrays.asList(entry.getValue().split(","));
                 if (samples.size() == 1 && samples.get(0).isEmpty()) {
-                    samples = new ArrayList<>();
+                    samples = Collections.emptyList();
                 }
-                cohorts.put(entry.getKey(), new HashSet<>(samples));
+                cohorts.put(entry.getKey(), new LinkedHashSet<>(samples));
             }
+            cohortNames = new ArrayList<>(cohorts.keySet());
         }
 
         options.put(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), statsVariantsCommandOptions.aggregated);
@@ -557,57 +581,26 @@ public class VariantCommandExecutor extends CommandExecutor {
             }
         }
 
-        /**
-         * Create DBAdaptor
-         */
-        VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
-//        dbAdaptor.setConstantSamples(Integer.toString(statsVariantsCommandOptions.fileId));    // TODO jmmut: change to studyId when we
-// remove fileId
-        StudyConfiguration studyConfiguration = variantStorageEngine.getStudyConfigurationManager()
-                .getStudyConfiguration(statsVariantsCommandOptions.studyId, new QueryOptions(options)).first();
-        if (studyConfiguration == null) {
-            studyConfiguration = new StudyConfiguration(Integer.parseInt(statsVariantsCommandOptions.studyId), statsVariantsCommandOptions.dbName);
-        }
-        /**
-         * Create and load stats
-         */
         URI outputUri = UriUtils.createUri(statsVariantsCommandOptions.fileName == null ? "" : statsVariantsCommandOptions.fileName);
         URI directoryUri = outputUri.resolve(".");
-        String filename = outputUri.equals(directoryUri) ? VariantStoragePipeline.buildFilename(studyConfiguration.getStudyName(), Integer.parseInt(statsVariantsCommandOptions.fileId))
+        String studyName = statsVariantsCommandOptions.study;
+        String filename = outputUri.equals(directoryUri)
+                ? VariantStoragePipeline.buildFilename(studyName, 0)
                 : Paths.get(outputUri.getPath()).getFileName().toString();
+        filename += '.' + TimeUtils.getTime();
+        outputUri = outputUri.resolve(filename);
+        options.put(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME, filename);
+        options.put(DefaultVariantStatisticsManager.OUTPUT, outputUri.toString());
+
 //        assertDirectoryExists(directoryUri);
-        DefaultVariantStatisticsManager variantStatisticsManager = new DefaultVariantStatisticsManager(dbAdaptor);
 
-        boolean doCreate = true;
-        boolean doLoad = true;
-//        doCreate = statsVariantsCommandOptions.create;
-//        doLoad = statsVariantsCommandOptions.load != null;
-//        if (!statsVariantsCommandOptions.create && statsVariantsCommandOptions.load == null) {
-//            doCreate = doLoad = true;
-//        } else if (statsVariantsCommandOptions.load != null) {
-//            filename = statsVariantsCommandOptions.load;
-//        }
-
-        try {
-
-            Map<String, Integer> cohortIds = statsVariantsCommandOptions.cohortIds.entrySet().stream()
-                    .collect(Collectors.toMap(Map.Entry::getKey, e -> Integer.parseInt(e.getValue())));
-
-            QueryOptions queryOptions = new QueryOptions(options);
-            if (doCreate) {
-                filename += "." + TimeUtils.getTime();
-                outputUri = outputUri.resolve(filename);
-                outputUri = variantStatisticsManager.createStats(dbAdaptor, outputUri, cohorts, cohortIds,
-                        studyConfiguration, queryOptions);
-            }
-
-            if (doLoad) {
-                outputUri = outputUri.resolve(filename);
-                variantStatisticsManager.loadStats(dbAdaptor, outputUri, studyConfiguration, queryOptions);
-            }
-        } catch (Exception e) {   // file not found? wrong file id or study id? bad parameters to ParallelTaskRunner?
-            e.printStackTrace();
-            logger.error(e.getMessage());
+        /*
+         * Create and load stats
+         */
+        if (cohorts == null || cohorts.values().stream().allMatch(Set::isEmpty)) {
+            variantStorageEngine.calculateStats(studyName, cohortNames, options);
+        } else {
+            variantStorageEngine.calculateStats(studyName, cohorts, options);
         }
     }
 
@@ -639,7 +632,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 //            options.put(VariantStorageEngine.Options.DB_NAME.key(), exportVariantsCommandOptions.dbName);
 //        }
 //        options.putIfNotEmpty(VariantStorageEngine.Options.FILE_ID.key(), exportVariantsCommandOptions.fileId);
-//        options.put(VariantStorageEngine.Options.STUDY_ID.key(), exportVariantsCommandOptions.studyId);
+//        options.put(VariantStorageEngine.Options.STUDY_UID.key(), exportVariantsCommandOptions.studyId);
 //        if (exportVariantsCommandOptions.studyConfigurationFile != null && !exportVariantsCommandOptions.studyConfigurationFile.isEmpty()) {
 //            options.put(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, exportVariantsCommandOptions.studyConfigurationFile);
 //        }

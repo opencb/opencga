@@ -240,7 +240,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         Query query = new Query();
         query.putIfNotEmpty(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), studiesCommandOptions.searchCommandOptions.project);
         query.putIfNotEmpty(StudyDBAdaptor.QueryParams.NAME.key(), studiesCommandOptions.searchCommandOptions.name);
-        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.ALIAS.key(), studiesCommandOptions.searchCommandOptions.alias);
+        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.ID.key(), studiesCommandOptions.searchCommandOptions.alias);
         query.putIfNotEmpty(StudyDBAdaptor.QueryParams.CREATION_DATE.key(), studiesCommandOptions.searchCommandOptions.creationDate);
         query.putIfNotEmpty(StudyDBAdaptor.QueryParams.STATUS_NAME.key(), studiesCommandOptions.searchCommandOptions.status);
         query.putIfNotEmpty(StudyDBAdaptor.QueryParams.ATTRIBUTES.key(), studiesCommandOptions.searchCommandOptions.attributes);
@@ -285,7 +285,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         studiesCommandOptions.filesCommandOptions.study = getSingleValidStudy(studiesCommandOptions.filesCommandOptions.study);
 
         QueryOptions queryOptions = new QueryOptions();
-        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.ID.key(), studiesCommandOptions.filesCommandOptions.file);
+        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.UID.key(), studiesCommandOptions.filesCommandOptions.file);
         queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.NAME.key(), studiesCommandOptions.filesCommandOptions.name);
         queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.PATH.key(), studiesCommandOptions.filesCommandOptions.path);
         queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.TYPE.key(), studiesCommandOptions.filesCommandOptions.type);
@@ -298,8 +298,8 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
                 studiesCommandOptions.filesCommandOptions.modificationDate);
         queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.DESCRIPTION.key(), studiesCommandOptions.filesCommandOptions.description);
         queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.SIZE.key(), studiesCommandOptions.filesCommandOptions.size);
-        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), studiesCommandOptions.filesCommandOptions.sampleIds);
-        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.JOB_ID.key(), studiesCommandOptions.filesCommandOptions.jobId);
+        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(), studiesCommandOptions.filesCommandOptions.sampleIds);
+        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.JOB_UID.key(), studiesCommandOptions.filesCommandOptions.jobId);
         queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.ATTRIBUTES.key(), studiesCommandOptions.filesCommandOptions.attributes);
         queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.NATTRIBUTES.key(), studiesCommandOptions.filesCommandOptions.nattributes);
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, studiesCommandOptions.filesCommandOptions.dataModelOptions.include);
@@ -344,9 +344,9 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         studiesCommandOptions.samplesCommandOptions.study = getSingleValidStudy(studiesCommandOptions.samplesCommandOptions.study);
 
         QueryOptions queryOptions = new QueryOptions();
-        queryOptions.putIfNotEmpty(SampleDBAdaptor.QueryParams.NAME.key(), studiesCommandOptions.samplesCommandOptions.name);
+        queryOptions.putIfNotEmpty(SampleDBAdaptor.QueryParams.ID.key(), studiesCommandOptions.samplesCommandOptions.name);
         queryOptions.putIfNotEmpty(SampleDBAdaptor.QueryParams.SOURCE.key(), studiesCommandOptions.samplesCommandOptions.source);
-        queryOptions.putIfNotEmpty(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), studiesCommandOptions.samplesCommandOptions.individual);
+        queryOptions.putIfNotEmpty(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key(), studiesCommandOptions.samplesCommandOptions.individual);
 
         queryOptions.putIfNotEmpty(SampleDBAdaptor.QueryParams.ANNOTATION.key(), studiesCommandOptions.samplesCommandOptions.annotation);
 

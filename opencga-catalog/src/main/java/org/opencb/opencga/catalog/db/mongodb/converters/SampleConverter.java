@@ -17,29 +17,48 @@
 package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import org.bson.Document;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.VariableSet;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by pfurio on 19/01/16.
  */
 public class SampleConverter extends AnnotableConverter<Sample> {
 
+    private IndividualConverter individualConverter;
+
     public SampleConverter() {
         super(Sample.class);
+        individualConverter = new IndividualConverter();
     }
-
 
     @Override
     public Document convertToStorageType(Sample object, List<VariableSet> variableSetList) {
         Document document = super.convertToStorageType(object, variableSetList);
         document.remove(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key());
 
-        document.put("id", document.getInteger("id").longValue());
+        document.put("uid", object.getUid());
+        document.put("studyUid", object.getStudyUid());
         document.put("individual", new Document());
         return document;
+    }
+
+    @Override
+    public Sample convertToDataModelType(Document document, QueryOptions options) {
+        Sample sample = super.convertToDataModelType(document, options);
+        if (sample.getAttributes() != null && sample.getAttributes().containsKey("individual")) {
+            Object individual = sample.getAttributes().get("individual");
+            if (individual instanceof Map) {
+                sample.getAttributes().put("individual", individualConverter.convertToDataModelType(
+                        (Document) ((Document) document.get(SampleDBAdaptor.QueryParams.ATTRIBUTES.key())).get("individual")
+                ));
+            }
+        }
+        return sample;
     }
 }

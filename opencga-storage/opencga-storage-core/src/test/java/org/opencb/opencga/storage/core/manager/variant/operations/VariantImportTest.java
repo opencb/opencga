@@ -22,6 +22,8 @@ import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.Variable;
 import org.opencb.opencga.storage.core.manager.variant.AbstractVariantStorageOperationTest;
@@ -32,6 +34,7 @@ import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationAdap
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -54,15 +57,34 @@ public class VariantImportTest extends AbstractVariantStorageOperationTest {
 
         indexFile(getSmallFile(), new QueryOptions(VariantStorageEngine.Options.CALCULATE_STATS.key(), true), outputId);
 
-        catalogManager.getStudyManager().createVariableSet(studyId, "vs1", false, false, "", null, Arrays.asList(
+        catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, Arrays.asList(
                 new Variable("name", "", "", Variable.VariableType.TEXT, null, true, false, null, 0, null, null, null, null),
                 new Variable("age", "", "", Variable.VariableType.INTEGER, null, true, false, null, 0, null, null, null, null),
                 new Variable("other", "", "", Variable.VariableType.TEXT, "unknown", false, false, null, 0, null, null, null, null)), sessionId);
 
-        catalogManager.getSampleManager().createAnnotationSet("NA19600", String.valueOf(studyId), "vs1", "as1", new ObjectMap("name", "NA19600").append("age", 30), sessionId);
-        catalogManager.getSampleManager().createAnnotationSet("NA19660", String.valueOf(studyId), "vs1", "as1", new ObjectMap("name", "NA19660").append("age", 35).append("other", "unknown"), sessionId);
-        catalogManager.getSampleManager().createAnnotationSet("NA19660", String.valueOf(studyId), "vs1", "as2", new ObjectMap("name", "NA19660").append("age", 35).append("other", "asdf"), sessionId);
-
+        catalogManager.getSampleManager().update(studyId, "NA19600", new ObjectMap()
+                        .append(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(new ObjectMap()
+                                .append(AnnotationSetManager.ID, "as1")
+                                .append(AnnotationSetManager.VARIABLE_SET_ID, "vs1")
+                                .append(AnnotationSetManager.ANNOTATIONS, new ObjectMap("name", "NA19600").append("age", 30)))
+                        ),
+                QueryOptions.empty(), sessionId);
+        catalogManager.getSampleManager().update(studyId, "NA19660", new ObjectMap()
+                        .append(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(new ObjectMap()
+                                .append(AnnotationSetManager.ID, "as1")
+                                .append(AnnotationSetManager.VARIABLE_SET_ID, "vs1")
+                                .append(AnnotationSetManager.ANNOTATIONS, new ObjectMap("name", "NA19660").append("age", 35)
+                                        .append("other", "unknown")))
+                        ),
+                QueryOptions.empty(), sessionId);
+        catalogManager.getSampleManager().update(studyId, "NA19660", new ObjectMap()
+                        .append(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(new ObjectMap()
+                                .append(AnnotationSetManager.ID, "as2")
+                                .append(AnnotationSetManager.VARIABLE_SET_ID, "vs1")
+                                .append(AnnotationSetManager.ANNOTATIONS, new ObjectMap("name", "NA19660").append("age", 35)
+                                        .append("other", "asdf")))
+                        ),
+                QueryOptions.empty(), sessionId);
     }
 
     @Test
@@ -70,11 +92,11 @@ public class VariantImportTest extends AbstractVariantStorageOperationTest {
 
         String export = Paths.get(opencga.createTmpOutdir(studyId, "_EXPORT_", sessionId)).resolve("export.json.gz").toString();
 
-        variantManager.exportData(export, VariantOutputFormat.JSON_GZ, String.valueOf(studyId), sessionId);
+        variantManager.exportData(export, VariantOutputFormat.JSON_GZ, studyId, sessionId);
 
         DummyStudyConfigurationAdaptor.clear();
 
-        variantManager.importData(URI.create(export), String.valueOf(studyId2), sessionId);
+        variantManager.importData(URI.create(export), studyId2, sessionId);
 
     }
 
@@ -84,7 +106,7 @@ public class VariantImportTest extends AbstractVariantStorageOperationTest {
         String export = Paths.get(opencga.createTmpOutdir(studyId, "_EXPORT_", sessionId)).resolve("export.avro").toString();
 
         List<Sample> samples = catalogManager.getSampleManager().get(studyId, new Query(), new QueryOptions(), sessionId).getResult();
-        List<String> someSamples = samples.stream().limit(samples.size() / 2).map(Sample::getName).collect(Collectors.toList());
+        List<String> someSamples = samples.stream().limit(samples.size() / 2).map(Sample::getId).collect(Collectors.toList());
         Query query = new Query(VariantQueryParam.INCLUDE_STUDY.key(), studyId)
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), someSamples);
         QueryOptions queryOptions = new QueryOptions();
@@ -92,7 +114,7 @@ public class VariantImportTest extends AbstractVariantStorageOperationTest {
 
         DummyStudyConfigurationAdaptor.clear();
 
-        variantManager.importData(URI.create(export), String.valueOf(studyId2), sessionId);
+        variantManager.importData(URI.create(export), studyId2, sessionId);
 
     }
 }

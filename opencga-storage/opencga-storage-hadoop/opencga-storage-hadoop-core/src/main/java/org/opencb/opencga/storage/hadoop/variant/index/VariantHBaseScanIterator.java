@@ -21,7 +21,7 @@ import org.apache.hadoop.hbase.client.ResultScanner;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
@@ -48,7 +48,7 @@ public class VariantHBaseScanIterator extends VariantDBIterator {
     private Iterator<Result> resultIterator;
     private final HBaseToVariantConverter<Result> converter;
     private long limit = Long.MAX_VALUE;
-    private long count = 0;
+    private int count = 0;
 
     public VariantHBaseScanIterator(Iterator<ResultScanner> resultScanners, GenomeHelper genomeHelper, StudyConfigurationManager scm,
                                     QueryOptions options, String unknownGenotype, List<String> formats,
@@ -112,6 +112,11 @@ public class VariantHBaseScanIterator extends VariantDBIterator {
         if (currentResultScanner != null) {
             currentResultScanner.close();
         }
+    }
+
+    @Override
+    public int getCount() {
+        return count;
     }
 
     public long getLimit() {

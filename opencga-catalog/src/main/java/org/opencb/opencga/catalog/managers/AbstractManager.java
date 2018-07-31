@@ -16,35 +16,31 @@
 
 package org.opencb.opencga.catalog.managers;
 
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
-import org.opencb.opencga.core.models.Group;
-import org.opencb.opencga.core.models.Project;
-import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.Group;
+import org.opencb.opencga.core.models.PrivateStudyUid;
+import org.opencb.opencga.core.models.Study;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Created by hpccoll1 on 12/05/15.
  */
 public abstract class AbstractManager {
 
-    protected static Logger logger = LoggerFactory.getLogger(AbstractManager.class);
+    protected static Logger logger;
     protected final AuthorizationManager authorizationManager;
     protected final AuditManager auditManager;
     protected final CatalogIOManagerFactory catalogIOManagerFactory;
@@ -63,11 +59,13 @@ public abstract class AbstractManager {
     protected final FamilyDBAdaptor familyDBAdaptor;
     protected final DatasetDBAdaptor datasetDBAdaptor;
     protected final JobDBAdaptor jobDBAdaptor;
-    protected final PanelDBAdaptor panelDBAdaptor;
+    protected final DiseasePanelDBAdaptor panelDBAdaptor;
     protected final ClinicalAnalysisDBAdaptor clinicalDBAdaptor;
 
     protected static final String ROOT = "admin";
     protected static final String ANONYMOUS = "*";
+
+    protected static final String INTERNAL_DELIMITER = "__";
 
     AbstractManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                            DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
@@ -91,6 +89,8 @@ public abstract class AbstractManager {
         this.catalogManager = catalogManager;
 
         projectDBAdaptor = catalogDBAdaptorFactory.getCatalogProjectDbAdaptor();
+
+        logger = LoggerFactory.getLogger(this.getClass());
     }
 
     /**
@@ -138,64 +138,6 @@ public abstract class AbstractManager {
     }
 
     /**
-     * Retrieve the list of study ids given some options parameters.
-     *
-     * @param parameters Object map containing the user/project/study where possible.
-     * @return a list of study ids.
-     * @throws CatalogException when no project or study id could be found.
-     */
-    @Deprecated
-    protected List<Long> getStudyIds(ObjectMap parameters) throws CatalogException {
-        String ownerId = (String) parameters.get("user");
-        String aliasProject = (String) parameters.get("project");
-        String aliasStudy = (String) parameters.get("study");
-
-        if (ownerId.equalsIgnoreCase(ANONYMOUS)) {
-            return new LinkedList<>();
-        }
-
-        if (aliasStudy != null && StringUtils.isNumeric(aliasStudy)) {
-            return Arrays.asList(Long.parseLong(aliasStudy));
-        }
-
-        List<Long> projectIds = new ArrayList<>();
-        if (aliasProject != null) {
-            if (StringUtils.isNumeric(aliasProject)) {
-                projectIds = Arrays.asList(Long.parseLong(aliasProject));
-            } else {
-                long projectId = projectDBAdaptor.getId(ownerId, aliasProject);
-                if (projectId == -1) {
-                    throw new CatalogException("Error: Could not retrieve any project for the user " + ownerId);
-                }
-                projectIds.add(projectId);
-            }
-        } else {
-            QueryResult<Project> allProjects = projectDBAdaptor.get(ownerId,
-                    new QueryOptions(QueryOptions.INCLUDE, "projects.id"));
-            if (allProjects.getNumResults() > 0) {
-                projectIds.addAll(allProjects.getResult().stream().map(Project::getId).collect(Collectors.toList()));
-            } else {
-                throw new CatalogException("Error: Could not retrieve any project for the user " + ownerId);
-            }
-        }
-
-        Query query = new Query(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectIds);
-        if (aliasStudy != null) {
-            query.append(StudyDBAdaptor.QueryParams.ALIAS.key(), aliasStudy);
-        }
-        QueryOptions qOptions = new QueryOptions(QueryOptions.INCLUDE, "projects.studies.id");
-        QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, qOptions);
-        List<Long> studyIds = new ArrayList<>();
-        if (studyQueryResult.getNumResults() > 0) {
-            studyIds.addAll(studyQueryResult.getResult().stream().map(Study::getId).collect(Collectors.toList()));
-        } else {
-            throw new CatalogException("Error: Could not retrieve any study id for the user " + ownerId);
-        }
-
-        return studyIds;
-    }
-
-    /**
      * Checks if the list of members are all valid.
      *
      * The "members" can be:
@@ -238,6 +180,91 @@ public abstract class AbstractManager {
         }
     }
 
+    public static class MyResource<T extends PrivateStudyUid> {
+        private String user;
+        private Study study;
+        private T resource;
+
+        public MyResource() {
+        }
+
+        public MyResource(String user, Study study, T resource) {
+            this.user = user;
+            this.study = study;
+            this.resource = resource;
+        }
+
+        public String getUser() {
+            return user;
+        }
+
+        public MyResource setUser(String user) {
+            this.user = user;
+            return this;
+        }
+
+        public Study getStudy() {
+            return study;
+        }
+
+        public MyResource setStudy(Study study) {
+            this.study = study;
+            return this;
+        }
+
+        public T getResource() {
+            return resource;
+        }
+
+        public MyResource setResource(T resource) {
+            this.resource = resource;
+            return this;
+        }
+    }
+
+    public static class MyResources<T> {
+        private String user;
+        private Study study;
+        private List<T> resourceList;
+
+        public MyResources() {
+        }
+
+        public MyResources(String user, Study study, List<T> resourceList) {
+            this.user = user;
+            this.study = study;
+            this.resourceList = resourceList;
+        }
+
+        public String getUser() {
+            return user;
+        }
+
+        public MyResources setUser(String user) {
+            this.user = user;
+            return this;
+        }
+
+        public Study getStudy() {
+            return study;
+        }
+
+        public MyResources setStudy(Study study) {
+            this.study = study;
+            return this;
+        }
+
+        public List<T> getResourceList() {
+            return resourceList;
+        }
+
+        public MyResources setResourceList(List<T> resourceList) {
+            this.resourceList = resourceList;
+            return this;
+        }
+    }
+
+    @Deprecated
     public static class MyResourceId {
         private String user;
         private long studyId;
@@ -280,6 +307,7 @@ public abstract class AbstractManager {
         }
     }
 
+    @Deprecated
     public static class MyResourceIds {
         private String user;
         private long studyId;

@@ -40,7 +40,8 @@ public class CohortConverter extends AnnotableConverter<Cohort> {
         Document document = super.convertToStorageType(object, variableSetList);
         document.remove(CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key());
 
-        document.put("id", document.getInteger("id").longValue());
+        document.put("uid", object.getUid());
+        document.put("studyUid", object.getStudyUid());
         document.put("samples", convertSamplesToDocument(object.getSamples()));
         return document;
     }
@@ -49,11 +50,11 @@ public class CohortConverter extends AnnotableConverter<Cohort> {
         if (sampleList == null || sampleList.isEmpty()) {
             return Collections.emptyList();
         }
-        List<Document> samples = new ArrayList(sampleList.size());
+        List<Document> samples = new ArrayList<>(sampleList.size());
         for (Sample sample : sampleList) {
-            long sampleId = sample != null ? (sample.getId() == 0 ? -1L : sample.getId()) : -1L;
+            long sampleId = sample != null ? (sample.getUid() == 0 ? -1L : sample.getUid()) : -1L;
             if (sampleId > 0) {
-                samples.add(new Document("id", sampleId));
+                samples.add(new Document("uid", sampleId));
             }
         }
         return samples;

@@ -28,9 +28,9 @@ import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.commons.test.GenericTest;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
 
 import java.io.IOException;
@@ -59,7 +59,7 @@ public class MongoDBAdaptorTest extends GenericTest {
     JobDBAdaptor catalogJobDBAdaptor;
     StudyDBAdaptor catalogStudyDBAdaptor;
     IndividualDBAdaptor catalogIndividualDBAdaptor;
-    PanelDBAdaptor catalogPanelDBAdaptor;
+    DiseasePanelDBAdaptor catalogPanelDBAdaptor;
 
     private Configuration configuration;
 
@@ -124,9 +124,8 @@ public class MongoDBAdaptorTest extends GenericTest {
          * Let's init the database with some basic data to perform each of the tests
          */
         user1 = new User("jcoll", "Jacobo Coll", "jcoll@ebi", "1234", "", null, User.UserStatus.READY, "", 100, 1000,
-                Arrays.<Project>asList(new Project("project", "P1", "", new Status(), "", null, 1), new Project("project", "P2", "", new
-                        Status(),
-                        "", null, 1), new Project("project", "P3", "", new Status(), "", null, 1)),
+                Arrays.<Project>asList(new Project("P1", "project", "", new Status(), "", null, 1), new Project("P2", "project", "",
+                        new Status(), "", null, 1), new Project("P3", "project", "", new Status(), "", null, 1)),
                 Collections.<Tool>emptyList(), new HashMap<>(), new HashMap<>());
         QueryResult createUser = catalogUserDBAdaptor.insert(user1, null);
         assertNotNull(createUser.getResult());
@@ -136,29 +135,30 @@ public class MongoDBAdaptorTest extends GenericTest {
         assertNotNull(createUser.getResult());
 
         user3 = new User("imedina", "Nacho", "nacho@gmail", "2222", "SPAIN", null, User.UserStatus.READY, "", 1222, 122222,
-                Arrays.asList(new Project(-1, "90 GigaGenomes", "90G", null, "very long description", "Spain", null, new Status
-                        (), "", 0, Arrays.asList(new Study(-1, "Study name", "ph1", Study.Type.CONTROL_SET, "", "", new Status(),
+                Arrays.asList(new Project("pr1", "90 GigaGenomes", null, "very long description", "Spain", null, new Status(), "", 0,
+                                Arrays.asList(new Study("name", "Study name", "ph1", Study.Type.CONTROL_SET, "", "", new Status(),
                                 "", 0, "", Arrays.asList(new Group("@members", Collections.emptyList())), Collections.<Experiment>emptyList(),
                                 Arrays.asList(
-                                        new File("data/", File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, "data/", "", new File.FileStatus(File.FileStatus.READY), 1000, 1),
-                                        new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "data/file" +
-                                                ".vcf", "", new File.FileStatus(File.FileStatus.READY), 1000, 1)
-                                ), Collections.<Job>emptyList(), new LinkedList<Individual>(), new LinkedList<Sample>(), new LinkedList<Dataset>(), new
-                                LinkedList<Cohort>(), Collections.emptyList(), new LinkedList<VariableSet>(), null, null, null, 1, Collections.<String, Object>emptyMap(), Collections.<String,
-                                Object>emptyMap()
+                                        new File("data/", File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, "data/", "",
+                                                new File.FileStatus(File.FileStatus.READY), 1000, 1),
+                                        new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "data/file.vcf", "",
+                                                new File.FileStatus(File.FileStatus.READY), 1000, 1)
+                                ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
+                                        Collections.emptyList(), new LinkedList<>(), null, null, null, 1, Collections.emptyMap(),
+                                        Collections.emptyMap()
                         )
-                ), Collections.emptyMap(), Collections.<String, Object>emptyMap(), 1)
-                ),
-                Collections.<Tool>emptyList(), new HashMap<>(), new HashMap<>());
+                ), Collections.emptyMap(), Collections.emptyMap(), 1)
+                ), Collections.emptyList(), new HashMap<>(), new HashMap<>());
         createUser = catalogUserDBAdaptor.insert(user3, null);
         assertNotNull(createUser.getResult());
 
         user4 = new User("pfurio", "Pedro", "pfurio@blabla", "pfuriopass", "Organization", null, User.UserStatus.READY, "", 0, 50000,
-                Arrays.asList(new Project(-1, "lncRNAs", "lncRNAs", null, "My description", "My org", null, new Status(), "", 0,
+                Arrays.asList(new Project("pr", "lncRNAs", null, "My description", "My org", null, new Status(), "", 0,
                         Arrays.asList(
-                                new Study(-1, "spongeScan", "sponges", Study.Type.COLLECTION, "", "", new Status(), "", 0, "", Arrays
-                                        .asList(new Group("@members", Collections.emptyList())), null, Arrays.asList(
-                                                new File("data/", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.NONE, "data/", "Description", new File.FileStatus(File.FileStatus.READY), 10, 1),
+                                new Study("spongeScan", "spongeScan", "sponges", Study.Type.COLLECTION, "", "", new Status(), "", 0, "",
+                                        Arrays.asList(new Group("@members", Collections.emptyList())), null, Arrays.asList(
+                                                new File("data/", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.NONE, "data/",
+                                                        "Description", new File.FileStatus(File.FileStatus.READY), 10, 1),
                                                 new File("file1.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
                                                         File.Bioformat.NONE, "data/file1.txt", "Description",
                                                         new File.FileStatus(File.FileStatus.READY), 100, 1),
@@ -168,19 +168,24 @@ public class MongoDBAdaptorTest extends GenericTest {
                                                 new File("alignment.bam", File.Type.FILE, File.Format.BAM, File.Bioformat.ALIGNMENT,
                                                         "data/alignment.bam", "Tophat alignment file",
                                                         new File.FileStatus(File.FileStatus.READY), 5000, 1)
-                                                ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new
-                                        LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, null, null, 1, Collections.emptyMap(), Collections.emptyMap()
+                                                ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
+                                        new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, null, null, 1,
+                                        Collections.emptyMap(), Collections.emptyMap()
                                 ),
-                                new Study(-1, "MINECO", "mineco", Study.Type.COLLECTION, "", "", new Status(), "", 0, "", Arrays.asList(new Group("@members", Collections.emptyList())), null,
+                                new Study("mineco", "MINECO", "mineco", Study.Type.COLLECTION, "", "", new Status(), "", 0, "",
+                                        Arrays.asList(new Group("@members", Collections.emptyList())), null,
                                         Arrays.asList(
-                                                new File("data/", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.NONE, "data/", "Description", new File.FileStatus(File.FileStatus.READY), 10, 1),
+                                                new File("data/", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.NONE, "data/",
+                                                        "Description", new File.FileStatus(File.FileStatus.READY), 10, 1),
                                                 new File("m_file1.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
                                                         File.Bioformat.NONE, "data/file1.txt", "Description",
                                                         new File.FileStatus(File.FileStatus.READY), 100, 1),
                                                 new File("m_alignment.bam", File.Type.FILE, File.Format.BAM, File.Bioformat.ALIGNMENT,
                                                         "data/alignment.bam", "Tophat alignment file",
                                                         new File.FileStatus(File.FileStatus.READY), 5000, 1)
-                                        ), Collections.<Job>emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, null, null, 1, Collections.emptyMap(), Collections.emptyMap())
+                                        ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
+                                        new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, null, null, 1,
+                                        Collections.emptyMap(), Collections.emptyMap())
                         ), Collections.emptyMap(), Collections.emptyMap(), 1)
                 ),
                 Collections.<Tool>emptyList(), new HashMap<>(), new HashMap<>());

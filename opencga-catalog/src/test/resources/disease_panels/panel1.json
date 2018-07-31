@@ -1,0 +1,137 @@
+{
+    "genes": [
+        {
+            "name": "CACNB2",
+            "confidence": "HighEvidence",
+            "id": "ENSG00000165995"
+        },
+        {
+            "name": "GPD1L",
+            "confidence": "HighEvidence",
+            "id": "ENSG00000152642"
+        },
+        {
+            "name": "HCN4",
+            "confidence": "HighEvidence",
+            "id": "ENSG00000138622"
+        },
+        {
+            "name": "KCNE3",
+            "confidence": "HighEvidence",
+            "id": "ENSG00000175538"
+        },
+        {
+            "name": "SCN10A",
+            "confidence": "HighEvidence",
+            "id": "ENSG00000185313"
+        },
+        {
+            "name": "SCN1B",
+            "confidence": "HighEvidence",
+            "id": "ENSG00000105711"
+        },
+        {
+            "name": "SCN3B",
+            "confidence": "HighEvidence",
+            "id": "ENSG00000166257"
+        },
+        {
+            "name": "SCN5A",
+            "confidence": "HighEvidence",
+            "id": "ENSG00000183873"
+        },
+        {
+            "name": "TRPM4",
+            "confidence": "HighEvidence",
+            "id": "ENSG00000130529"
+        },
+        {
+            "name": "ABCC9",
+            "confidence": "LowEvidence",
+            "id": "ENSG00000069431"
+        },
+        {
+            "name": "ANK2",
+            "confidence": "LowEvidence",
+            "id": "ENSG00000145362"
+        },
+        {
+            "name": "CACNA1C",
+            "confidence": "LowEvidence",
+            "id": "ENSG00000151067"
+        },
+        {
+            "name": "CACNA2D1",
+            "confidence": "LowEvidence",
+            "id": "ENSG00000153956"
+        },
+        {
+            "name": "CAV3",
+            "confidence": "LowEvidence",
+            "id": "ENSG00000182533"
+        },
+        {
+            "name": "DLG1",
+            "confidence": "LowEvidence",
+            "id": "ENSG00000075711"
+        },
+        {
+            "name": "KCND3",
+            "confidence": "LowEvidence",
+            "id": "ENSG00000171385"
+        },
+        {
+            "name": "KCNE5",
+            "confidence": "LowEvidence",
+            "id": "ENSG00000176076"
+        },
+        {
+            "name": "KCNH2",
+            "confidence": "LowEvidence",
+            "id": "ENSG00000055118"
+        },
+        {
+            "name": "KCNJ8",
+            "confidence": "LowEvidence",
+            "id": "ENSG00000121361"
+        },
+        {
+            "name": "PKP2",
+            "confidence": "LowEvidence",
+            "id": "ENSG00000057294"
+        },
+        {
+            "name": "RANGRF",
+            "confidence": "LowEvidence",
+            "id": "ENSG00000108961"
+        },
+        {
+            "name": "SCN2B",
+            "confidence": "LowEvidence",
+            "id": "ENSG00000149575"
+        },
+        {
+            "name": "SLMAP",
+            "confidence": "LowEvidence",
+            "id": "ENSG00000163681"
+        }
+    ],
+    "creationDate": "2018-07-06",
+    "author": "",
+    "id": "55a3a78122c1fc6711b0c6b5",
+    "name": "Brugada syndrome",
+    "source": {
+        "version": "1.7",
+        "project": "PanelApp (GEL)",
+        "id": "55a3a78122c1fc6711b0c6b5"
+    },
+    "description": "Cardiac arrhythmia (Cardiovascular disorders)",
+    "attributes": {
+        "DiseaseSubGroup": "Cardiac arrhythmia",
+        "DiseaseGroup": "Cardiovascular disorders"
+    },
+    "variants": [],
+    "phenotypes": [],
+    "regions": [],
+    "version": 1
+}

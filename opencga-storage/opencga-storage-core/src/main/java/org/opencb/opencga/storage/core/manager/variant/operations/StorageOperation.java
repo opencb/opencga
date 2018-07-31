@@ -18,9 +18,12 @@ package org.opencb.opencga.storage.core.manager.variant.operations;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.variant.metadata.Aggregation;
+import org.opencb.biodata.tools.variant.stats.AggregationUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -41,7 +44,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 
 import static org.opencb.opencga.catalog.monitor.executors.AbstractExecutor.*;
@@ -93,51 +98,25 @@ public abstract class StorageOperation {
         return options != null && StringUtils.isNotEmpty(options.getString(CATALOG_PATH));
     }
 
-    protected Long getCatalogOutdirId(long studyId, ObjectMap options, String sessionId) throws CatalogException {
-        return getCatalogOutdirId(Long.toString(studyId), options, sessionId);
-    }
-
-    protected Long getCatalogOutdirId(String studyStr, ObjectMap options, String sessionId) throws CatalogException {
-        Long catalogOutDirId;
+    protected String getCatalogOutdirId(String studyStr, ObjectMap options, String sessionId) throws CatalogException {
+        String catalogOutDirId;
         if (isCatalogPathDefined(options)) {
             String catalogOutDirIdStr = options.getString(CATALOG_PATH);
-            catalogOutDirId = catalogManager.getFileManager().getId(catalogOutDirIdStr, studyStr, sessionId).getResourceId();
-            if (catalogOutDirId <= 0) {
-                throw new CatalogException("Output directory " + catalogOutDirIdStr + " could not be found within catalog.");
-            }
+            catalogOutDirId = catalogManager.getFileManager()
+                    .getUid(catalogOutDirIdStr, studyStr, sessionId).getResource().getId();
         } else {
             catalogOutDirId = null;
         }
         return catalogOutDirId;
     }
 
-    public StudyConfiguration updateStudyConfiguration(String sessionId, long studyId, DataStore dataStore)
-            throws IOException, CatalogException, StorageEngineException {
-
-        updateStudyConfigurationFromCatalog(sessionId, studyId, dataStore, null);
-        return updateCatalogFromStudyConfiguration(sessionId, studyId, dataStore);
-    }
-
-    public void updateStudyConfigurationFromCatalog(String sessionId, long studyId, DataStore dataStore, List<Long> filesToIndex)
-            throws IOException, CatalogException, StorageEngineException {
-
-        CatalogStudyConfigurationFactory studyConfigurationFactory = new CatalogStudyConfigurationFactory(catalogManager);
-        StudyConfigurationManager studyConfigurationManager = getVariantStorageEngine(dataStore).getStudyConfigurationManager();
-        try {
-            // Update StudyConfiguration. Add new elements and so
-            studyConfigurationFactory.updateStudyConfigurationFromCatalog(studyId, filesToIndex, studyConfigurationManager, sessionId);
-        } catch (StorageEngineException e) {
-            throw new StorageEngineException("Unable to update StudyConfiguration", e);
-        }
-    }
-
-    public StudyConfiguration updateCatalogFromStudyConfiguration(String sessionId, long studyId, DataStore dataStore)
+    public StudyConfiguration updateCatalogFromStudyConfiguration(String sessionId, String study, DataStore dataStore)
             throws IOException, CatalogException, StorageEngineException {
 
         CatalogStudyConfigurationFactory studyConfigurationFactory = new CatalogStudyConfigurationFactory(catalogManager);
         StudyConfigurationManager studyConfigurationManager = getVariantStorageEngine(dataStore).getStudyConfigurationManager();
 
-        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration((int) studyId, null).first();
+        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(study, null).first();
         if (studyConfiguration != null) {
             // Update Catalog file and cohort status.
             studyConfigurationFactory.updateCatalogFromStudyConfiguration(studyConfiguration, sessionId);
@@ -166,8 +145,9 @@ public abstract class StorageOperation {
             });
     }
 
-    protected List<File> copyResults(Path tmpOutdirPath, long catalogPathOutDir, String sessionId) throws CatalogException, IOException {
-        File outDir = catalogManager.getFileManager().get(catalogPathOutDir, new QueryOptions(), sessionId).first();
+    protected List<File> copyResults(Path tmpOutdirPath, String study, String catalogPathOutDir, String sessionId)
+            throws CatalogException, IOException {
+        File outDir = catalogManager.getFileManager().get(study, catalogPathOutDir, new QueryOptions(), sessionId).first();
 
         FileScanner fileScanner = new FileScanner(catalogManager);
 //        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(tmpOutdirPath.toUri());
@@ -199,27 +179,27 @@ public abstract class StorageOperation {
     }
 
     public Job.JobStatus readJobStatus(Path outdir) throws IOException {
-        return objectMapper.reader(Job.JobStatus.class).readValue(outdir.resolve(JOB_STATUS_FILE).toFile());
+        return objectMapper.readerFor(Job.JobStatus.class).readValue(outdir.resolve(JOB_STATUS_FILE).toFile());
     }
 
     public void writeJobStatus(Path outdir, Job.JobStatus jobStatus) throws IOException {
         objectMapper.writer().writeValue(outdir.resolve(JOB_STATUS_FILE).toFile(), jobStatus);
     }
 
-    public static DataStore getDataStore(CatalogManager catalogManager, long studyId, File.Bioformat bioformat, String sessionId)
+    public static DataStore getDataStore(CatalogManager catalogManager, String studyStr, File.Bioformat bioformat, String sessionId)
             throws CatalogException {
-        Study study = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), new QueryOptions(), sessionId).first();
+        Study study = catalogManager.getStudyManager().get(studyStr, new QueryOptions(), sessionId).first();
         return getDataStore(catalogManager, study, bioformat, sessionId);
     }
 
-    public static DataStore getDataStore(CatalogManager catalogManager, Study study, File.Bioformat bioformat, String sessionId)
+    private static DataStore getDataStore(CatalogManager catalogManager, Study study, File.Bioformat bioformat, String sessionId)
             throws CatalogException {
         DataStore dataStore;
         if (study.getDataStores() != null && study.getDataStores().containsKey(bioformat)) {
             dataStore = study.getDataStores().get(bioformat);
         } else {
-            long projectId = catalogManager.getStudyManager().getProjectId(study.getId());
-            dataStore = getDataStoreByProjectId(catalogManager, String.valueOf(projectId), bioformat, sessionId);
+            String projectId = catalogManager.getStudyManager().getProjectFqn(study.getFqn());
+            dataStore = getDataStoreByProjectId(catalogManager, projectId, bioformat, sessionId);
         }
         return dataStore;
     }
@@ -229,19 +209,19 @@ public abstract class StorageOperation {
             throws CatalogException {
         DataStore dataStore;
         QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(ProjectDBAdaptor.QueryParams.ALIAS.key(), ProjectDBAdaptor.QueryParams.DATASTORES.key()));
+                Arrays.asList(ProjectDBAdaptor.QueryParams.ID.key(), ProjectDBAdaptor.QueryParams.DATASTORES.key()));
         Project project = catalogManager.getProjectManager().get(projectStr, queryOptions, sessionId).first();
         if (project.getDataStores() != null && project.getDataStores().containsKey(bioformat)) {
             dataStore = project.getDataStores().get(bioformat);
         } else { //get default datastore
             //Must use the UserByStudyId instead of the file owner.
-            String userId = catalogManager.getProjectManager().getOwner(project.getId());
+            String userId = catalogManager.getProjectManager().getOwner(project.getUid());
             // Replace possible dots at the userId. Usually a special character in almost all databases. See #532
             userId = userId.replace('.', '_');
 
             String databasePrefix = catalogManager.getConfiguration().getDatabasePrefix();
 
-            String dbName = buildDatabaseName(databasePrefix, userId, project.getAlias());
+            String dbName = buildDatabaseName(databasePrefix, userId, project.getId());
             dataStore = new DataStore(StorageEngineFactory.get().getDefaultStorageManagerName(), dbName);
         }
         return dataStore;
@@ -302,5 +282,54 @@ public abstract class StorageOperation {
             return projectMetadata;
         });
     }
+
+
+    /**
+     * If the study is aggregated and a mapping file is provided, pass it to
+     * and create in catalog the cohorts described in the mapping file.
+     *
+     * If the study aggregation was not defined, updateStudy with the provided aggregation type
+     *
+     * @param studyId   StudyId where calculate stats
+     * @param options   Options
+     * @param sessionId Users sessionId
+     * @return          Effective study aggregation type
+     * @throws CatalogException if something is wrong with catalog
+     */
+    public Aggregation getAggregation(String studyId, QueryOptions options, String sessionId) throws CatalogException {
+        QueryOptions include = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.ATTRIBUTES.key());
+        Study study = catalogManager.getStudyManager().get(studyId, include, sessionId).first();
+        Aggregation argsAggregation = options.get(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), Aggregation.class, Aggregation.NONE);
+        Object studyAggregationObj = study.getAttributes().get(VariantStorageEngine.Options.AGGREGATED_TYPE.key());
+        Aggregation studyAggregation = null;
+        if (studyAggregationObj != null) {
+            studyAggregation = AggregationUtils.valueOf(studyAggregationObj.toString());
+        }
+
+        final Aggregation aggregation;
+        if (AggregationUtils.isAggregated(argsAggregation)) {
+            if (studyAggregation != null && !studyAggregation.equals(argsAggregation)) {
+                // FIXME: Throw an exception?
+                logger.warn("Calculating statistics with aggregation " + argsAggregation + " instead of " + studyAggregation);
+            }
+            aggregation = argsAggregation;
+            // If studyAggregation is not define, update study aggregation
+            if (studyAggregation == null) {
+                //update study aggregation
+                Map<String, Aggregation> attributes = Collections.singletonMap(VariantStorageEngine.Options.AGGREGATED_TYPE.key(),
+                        argsAggregation);
+                ObjectMap parameters = new ObjectMap("attributes", attributes);
+                catalogManager.getStudyManager().update(studyId, parameters, null, sessionId);
+            }
+        } else {
+            if (studyAggregation == null) {
+                aggregation = Aggregation.NONE;
+            } else {
+                aggregation = studyAggregation;
+            }
+        }
+        return aggregation;
+    }
+
 
 }

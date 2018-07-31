@@ -43,6 +43,7 @@ import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
 import org.opencb.opencga.storage.core.manager.variant.operations.VariantFileIndexerStorageOperation;
+import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -59,11 +60,12 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.*;
 
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.CreateAnnotationSnapshotCommandOptions.COPY_ANNOTATION_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.DeleteAnnotationSnapshotCommandOptions.DELETE_ANNOTATION_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationSaveCommandOptions.ANNOTATION_SAVE_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationDeleteCommandOptions.ANNOTATION_DELETE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillMissingCommandOptions.FILL_MISSING_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.QueryAnnotationCommandOptions.QUERY_ANNOTATION_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationQueryCommandOptions.ANNOTATION_QUERY_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
 import static org.opencb.opencga.storage.core.manager.variant.operations.VariantFileIndexerStorageOperation.LOAD;
 import static org.opencb.opencga.storage.core.manager.variant.operations.VariantFileIndexerStorageOperation.TRANSFORM;
@@ -75,7 +77,6 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
 
     //    private AnalysisCliOptionsParser.VariantCommandOptions variantCommandOptions;
     private VariantCommandOptions variantCommandOptions;
-    private VariantStorageEngine variantStorageEngine;
 
     public VariantCommandExecutor(VariantCommandOptions variantCommandOptions) {
         super(variantCommandOptions.commonCommandOptions);
@@ -120,14 +121,17 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
             case "annotate":
                 annotate();
                 break;
-            case COPY_ANNOTATION_COMMAND:
-                copyAnnotation();
+            case ANNOTATION_SAVE_COMMAND:
+                annotationSave();
                 break;
-            case DELETE_ANNOTATION_COMMAND:
-                deleteAnnotation();
+            case ANNOTATION_DELETE_COMMAND:
+                annotationDelete();
                 break;
-            case QUERY_ANNOTATION_COMMAND:
-                queryAnnotation();
+            case ANNOTATION_QUERY_COMMAND:
+                annotationQuery();
+                break;
+            case ANNOTATION_METADATA_COMMAND:
+                annotationMetadata();
                 break;
             case FILL_GAPS_COMMAND:
                 fillGaps();
@@ -156,10 +160,8 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         params.putIfNotEmpty(IbsAnalysis.OUTDIR, cliOptions.outdir);
 
         String userId1 = catalogManager.getUserManager().getUserId(sessionId);
-        new PluginExecutor(catalogManager, sessionId).execute(IbsAnalysis.class, "default", catalogManager.getStudyManager().getId
-                (userId1, cliOptions.study), params);
-
-
+        new PluginExecutor(catalogManager, sessionId).execute(IbsAnalysis.class, "default", catalogManager.getStudyManager().resolveId
+                (cliOptions.study, userId1).getUid(), params);
     }
 
 
@@ -174,7 +176,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         queryCliOptions.commonOptions.outputFormat = exportCliOptions.commonOptions.outputFormat.toLowerCase().replace("tsv", "stats");
         queryCliOptions.project = exportCliOptions.project;
         queryCliOptions.study = exportCliOptions.study;
-        queryCliOptions.genericVariantQueryOptions.returnStudy = exportCliOptions.study;
+        queryCliOptions.genericVariantQueryOptions.includeStudy = exportCliOptions.study;
         queryCliOptions.numericOptions.limit = exportCliOptions.numericOptions.limit;
 //        queryCliOptions.sort = true;
         queryCliOptions.numericOptions.skip = exportCliOptions.numericOptions.skip;
@@ -183,7 +185,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         queryCliOptions.output = exportCliOptions.output;
         queryCliOptions.genericVariantQueryOptions.gene = exportCliOptions.gene;
         queryCliOptions.numericOptions.count = exportCliOptions.numericOptions.count;
-        queryCliOptions.genericVariantQueryOptions.returnSample = VariantQueryUtils.NONE;
+        queryCliOptions.genericVariantQueryOptions.includeSample = VariantQueryUtils.NONE;
         queryCliOptions.dataModelOptions.include = String.join(",",
                 VariantField.CHROMOSOME.fieldName(),
                 VariantField.START.fieldName(),
@@ -332,7 +334,6 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
                 .append(VariantStorageEngine.Options.RESUME.key(), cliOptions.genericVariantStatsOptions.resume)
                 .append(VariantQueryParam.REGION.key(), cliOptions.genericVariantStatsOptions.region)
                 .append(StorageOperation.CATALOG_PATH, cliOptions.catalogPath);
-        options.putIfNotEmpty(VariantStorageEngine.Options.FILE_ID.key(), cliOptions.genericVariantStatsOptions.fileId);
 
         options.putAll(cliOptions.commonOptions.params);
 
@@ -370,30 +371,30 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         variantManager.annotate(cliOptions.project, cliOptions.study, query, cliOptions.outdir, options, sessionId);
     }
 
-    private void copyAnnotation() throws IllegalAccessException, StorageEngineException, InstantiationException, VariantAnnotatorException, CatalogException, ClassNotFoundException {
-        VariantCommandOptions.CreateAnnotationSnapshotCommandOptions cliOptions = variantCommandOptions.createAnnotationSnapshotCommandOptions;
+    private void annotationSave() throws IllegalAccessException, StorageEngineException, InstantiationException, VariantAnnotatorException, CatalogException, ClassNotFoundException {
+        VariantCommandOptions.AnnotationSaveCommandOptions cliOptions = variantCommandOptions.annotationSaveSnapshotCommandOptions;
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
         QueryOptions options = new QueryOptions();
         options.putAll(cliOptions.commonOptions.params);
 
 
-        variantManager.createAnnotationSnapshot(cliOptions.project, cliOptions.name, options, sessionId);
+        variantManager.saveAnnotation(cliOptions.project, cliOptions.annotationId, options, sessionId);
     }
 
-    private void deleteAnnotation() throws IllegalAccessException, StorageEngineException, InstantiationException, VariantAnnotatorException, CatalogException, ClassNotFoundException {
-        VariantCommandOptions.CreateAnnotationSnapshotCommandOptions cliOptions = variantCommandOptions.createAnnotationSnapshotCommandOptions;
+    private void annotationDelete() throws IllegalAccessException, StorageEngineException, InstantiationException, VariantAnnotatorException, CatalogException, ClassNotFoundException {
+        VariantCommandOptions.AnnotationSaveCommandOptions cliOptions = variantCommandOptions.annotationSaveSnapshotCommandOptions;
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
         QueryOptions options = new QueryOptions();
         options.putAll(cliOptions.commonOptions.params);
 
 
-        variantManager.deleteAnnotationSnapshot(cliOptions.project, cliOptions.name, options, sessionId);
+        variantManager.deleteAnnotation(cliOptions.project, cliOptions.annotationId, options, sessionId);
     }
 
-    private void queryAnnotation() throws CatalogException, IOException, StorageEngineException {
-        VariantCommandOptions.QueryAnnotationCommandOptions cliOptions = variantCommandOptions.queryAnnotationCommandOptions;
+    private void annotationQuery() throws CatalogException, IOException, StorageEngineException {
+        VariantCommandOptions.AnnotationQueryCommandOptions cliOptions = variantCommandOptions.annotationQueryCommandOptions;
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
         QueryOptions options = new QueryOptions();
@@ -408,7 +409,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         query.put(VariantQueryParam.REGION.key(), cliOptions.region);
         query.put(VariantQueryParam.ID.key(), cliOptions.id);
 
-        QueryResult<VariantAnnotation> queryResult = variantManager.getAnnotation(cliOptions.name, query, options, sessionId);
+        QueryResult<VariantAnnotation> queryResult = variantManager.getAnnotation(cliOptions.annotationId, query, options, sessionId);
 
         // WRITE
         ObjectMapper objectMapper = new ObjectMapper();
@@ -419,6 +420,28 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         SequenceWriter sequenceWriter = writer.writeValues(System.out);
         for (VariantAnnotation annotation : queryResult.getResult()) {
             sequenceWriter.write(annotation);
+            sequenceWriter.flush();
+//            writer.writeValue(System.out, annotation);
+            System.out.println();
+        }
+    }
+
+    private void annotationMetadata() throws CatalogException, IOException, StorageEngineException {
+        VariantCommandOptions.AnnotationMetadataCommandOptions cliOptions = variantCommandOptions.annotationMetadataCommandOptions;
+        VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
+
+        QueryResult<ProjectMetadata.VariantAnnotationMetadata> result =
+                variantManager.getAnnotationMetadata(cliOptions.annotationId, cliOptions.project, sessionId);
+
+        // WRITE
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
+        objectMapper.configure(SerializationFeature.CLOSE_CLOSEABLE, false);
+        ObjectWriter writer = objectMapper.writer();
+//        ObjectWriter writer = objectMapper.writerWithDefaultPrettyPrinter();
+        SequenceWriter sequenceWriter = writer.writeValues(System.out);
+        for (ProjectMetadata.VariantAnnotationMetadata metadata : result.getResult()) {
+            sequenceWriter.write(metadata);
             sequenceWriter.flush();
 //            writer.writeValue(System.out, annotation);
             System.out.println();
@@ -518,7 +541,6 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
 
         String userId1 = catalogManager.getUserManager().getUserId(sessionId);
         new PluginExecutor(catalogManager, sessionId)
-                .execute(VariantHistogramAnalysis.class, "default", catalogManager.getStudyManager().getId(userId1, cliOptions.study), params);
-
+                .execute(VariantHistogramAnalysis.class, "default", catalogManager.getStudyManager().resolveId(cliOptions.study, userId1).getUid(), params);
     }
 }
