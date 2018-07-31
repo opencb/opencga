@@ -177,6 +177,8 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)") @QueryParam("attributes") String attributes,
             @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)") @QueryParam("nattributes") String nattributes) {
         try {
+            query.remove("study");
+
             QueryResult<ClinicalAnalysis> queryResult;
             if (count) {
                 queryResult = clinicalManager.count(studyStr, query, sessionId);
