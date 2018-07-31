@@ -27,6 +27,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.AnnotationSetManager;
@@ -409,7 +410,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
             Map<String, Object> actionMap = new HashMap<>();
             actionMap.put(IndividualDBAdaptor.UpdateParams.SAMPLES.key(), samplesAction.name());
-            actionMap.put(IndividualDBAdaptor.UpdateParams.ANNOTATION_SETS.key(), annotationSetsAction.name());
+            actionMap.put(IndividualDBAdaptor.UpdateParams.ANNOTATION_SETS.key(), annotationSetsAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
             QueryResult<Individual> queryResult = catalogManager.getIndividualManager().update(studyStr, individualStr, params,
@@ -744,6 +745,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             if (parentalConsanguinity == null) {
                 params.remove("parentalConsanguinity");
             }
+            params.putIfNotNull(IndividualDBAdaptor.UpdateParams.ANNOTATION_SETS.key(), annotationSets);
             params.putIfNotNull("samples", samples);
 
             return params;

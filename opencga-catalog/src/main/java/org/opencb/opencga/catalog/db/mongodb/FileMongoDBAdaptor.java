@@ -544,7 +544,10 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
 
     @Override
     public DBIterator nativeIterator(Query query, QueryOptions options) throws CatalogDBException {
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
+        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+        queryOptions.put(NATIVE_QUERY, true);
+
+        MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions);
         return new FileMongoDBIterator<>(mongoCursor, null, null, null);
     }
 
@@ -563,8 +566,11 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     @Override
     public DBIterator nativeIterator(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
+        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+        queryOptions.put(NATIVE_QUERY, true);
+
         Document studyDocument = getStudyDocument(query);
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, options, studyDocument, user);
+        MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions, studyDocument, user);
 
         Function<Document, Document> sampleIteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.name(), SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name());
@@ -601,79 +607,84 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         }
         qOptions = filterOptions(qOptions, FILTER_ROUTE_FILES);
 
-        List<Bson> aggregationStages = new ArrayList<>();
+        if (qOptions.getBoolean(NATIVE_QUERY)) {
+            logger.debug("File query: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+            return fileCollection.nativeQuery().find(bson, qOptions).iterator();
+        } else {
+            List<Bson> aggregationStages = new ArrayList<>();
 
-        // 1. Match the query parameters
-        aggregationStages.add(Aggregates.match(bson));
+            // 1. Match the query parameters
+            aggregationStages.add(Aggregates.match(bson));
 
-        CollectionUtils.addIgnoreNull(aggregationStages, MongoDBQueryUtils.getSkip(qOptions));
-        CollectionUtils.addIgnoreNull(aggregationStages, MongoDBQueryUtils.getLimit(qOptions));
+            CollectionUtils.addIgnoreNull(aggregationStages, MongoDBQueryUtils.getSkip(qOptions));
+            CollectionUtils.addIgnoreNull(aggregationStages, MongoDBQueryUtils.getLimit(qOptions));
 
-        // 2. Unwind the array of samples within file
-        aggregationStages.add(Aggregates.unwind("$" + QueryParams.SAMPLES.key(),
-                new UnwindOptions().preserveNullAndEmptyArrays(true)));
+            // 2. Unwind the array of samples within file
+            aggregationStages.add(Aggregates.unwind("$" + QueryParams.SAMPLES.key(),
+                    new UnwindOptions().preserveNullAndEmptyArrays(true)));
 
-        // 3. Lookup with samples
-        List<Bson> lookupMatchList = new ArrayList<>();
+            // 3. Lookup with samples
+            List<Bson> lookupMatchList = new ArrayList<>();
 
-        lookupMatchList.add(
-                Filters.expr(Filters.and(Arrays.asList(
-                        new Document("$eq", Arrays.asList("$" + SampleDBAdaptor.QueryParams.UID.key(), "$$sampleUid")),
-                        new Document("$eq", Arrays.asList("$" + LAST_OF_VERSION, true))
-                ))));
-        if (studyDocument != null && user != null) {
-            // Get the document query needed to check the sample permissions as well
-            queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
-                    StudyAclEntry.StudyPermissions.VIEW_SAMPLES.name(), SampleAclEntry.SamplePermissions.VIEW.name());
-            if (!queryForAuthorisedEntries.isEmpty()) {
-                lookupMatchList.add(queryForAuthorisedEntries);
+            lookupMatchList.add(
+                    Filters.expr(Filters.and(Arrays.asList(
+                            new Document("$eq", Arrays.asList("$" + SampleDBAdaptor.QueryParams.UID.key(), "$$sampleUid")),
+                            new Document("$eq", Arrays.asList("$" + LAST_OF_VERSION, true))
+                    ))));
+            if (studyDocument != null && user != null) {
+                // Get the document query needed to check the sample permissions as well
+                queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
+                        StudyAclEntry.StudyPermissions.VIEW_SAMPLES.name(), SampleAclEntry.SamplePermissions.VIEW.name());
+                if (!queryForAuthorisedEntries.isEmpty()) {
+                    lookupMatchList.add(queryForAuthorisedEntries);
+                }
             }
+
+            Bson lookupMatch = lookupMatchList.size() > 1
+                    ? Filters.and(lookupMatchList)
+                    : lookupMatchList.get(0);
+
+            lookupMatch = Aggregates.lookup("sample",
+                    Arrays.asList(
+                            new Variable("sampleUid", "$" + QueryParams.SAMPLE_UIDS.key())
+                    ), Collections.singletonList(Aggregates.match(lookupMatch)),
+                    QueryParams.SAMPLES.key()
+            );
+
+            // 3. Lookup with samples
+            aggregationStages.add(lookupMatch);
+
+            // 4, we unwind the samples array again to be able to move the root to a new dummy field
+            aggregationStages.add(Aggregates.unwind("$" + QueryParams.SAMPLES.key(),
+                    new UnwindOptions().preserveNullAndEmptyArrays(true)));
+
+            // 5. We copy the whole document to a new dummy field (dummy)
+            aggregationStages.add(Aggregates.addFields(new Field<>("dummy", "$$ROOT")));
+
+            // 6. We take out the samples field to be able to perform the group
+            aggregationStages.add(Aggregates.project(Projections.exclude("dummy." + QueryParams.SAMPLES.key())));
+
+            // 7. We group by the whole document
+            aggregationStages.add(Aggregates.group("$dummy",
+                    Accumulators.push(QueryParams.SAMPLES.key(), "$" + QueryParams.SAMPLES.key())));
+
+            // 8. We add the new grouped samples field to the dummy field
+            aggregationStages.add(Aggregates.addFields(new Field<>("_id." + QueryParams.SAMPLES.key(), "$" + QueryParams.SAMPLES.key())));
+
+            // 9. Lastly, we replace the root document extracting everything from _id
+            aggregationStages.add(Aggregates.replaceRoot("$_id"));
+
+            CollectionUtils.addIgnoreNull(aggregationStages, MongoDBQueryUtils.getSort(qOptions));
+            CollectionUtils.addIgnoreNull(aggregationStages, MongoDBQueryUtils.getProjection(qOptions));
+
+            logger.debug("File get: lookup match : {}",
+                    aggregationStages.stream()
+                            .map(x -> x.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()).toString())
+                            .collect(Collectors.joining(", "))
+            );
+
+            return fileCollection.nativeQuery().aggregate(aggregationStages, qOptions).iterator();
         }
-
-        Bson lookupMatch = lookupMatchList.size() > 1
-                ? Filters.and(lookupMatchList)
-                : lookupMatchList.get(0);
-
-        lookupMatch = Aggregates.lookup("sample",
-                Arrays.asList(
-                        new Variable("sampleUid", "$" + QueryParams.SAMPLE_UIDS.key())
-                ), Collections.singletonList(Aggregates.match(lookupMatch)),
-                QueryParams.SAMPLES.key()
-        );
-
-        // 3. Lookup with samples
-        aggregationStages.add(lookupMatch);
-
-        // 4, we unwind the samples array again to be able to move the root to a new dummy field
-        aggregationStages.add(Aggregates.unwind("$" + QueryParams.SAMPLES.key(),
-                new UnwindOptions().preserveNullAndEmptyArrays(true)));
-
-        // 5. We copy the whole document to a new dummy field (dummy)
-        aggregationStages.add(Aggregates.addFields(new Field<>("dummy", "$$ROOT")));
-
-        // 6. We take out the samples field to be able to perform the group
-        aggregationStages.add(Aggregates.project(Projections.exclude("dummy." + QueryParams.SAMPLES.key())));
-
-        // 7. We group by the whole document
-        aggregationStages.add(Aggregates.group("$dummy",
-                Accumulators.push(QueryParams.SAMPLES.key(), "$" + QueryParams.SAMPLES.key())));
-
-        // 8. We add the new grouped samples field to the dummy field
-        aggregationStages.add(Aggregates.addFields(new Field<>("_id." + QueryParams.SAMPLES.key(), "$" + QueryParams.SAMPLES.key())));
-
-        // 9. Lastly, we replace the root document extracting everything from _id
-        aggregationStages.add(Aggregates.replaceRoot("$_id"));
-
-        CollectionUtils.addIgnoreNull(aggregationStages, MongoDBQueryUtils.getSort(qOptions));
-        CollectionUtils.addIgnoreNull(aggregationStages, MongoDBQueryUtils.getProjection(qOptions));
-
-        logger.debug("File get: lookup match : {}",
-                aggregationStages.stream()
-                        .map(x -> x.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()).toString())
-                        .collect(Collectors.joining(", "))
-        );
-
-        return fileCollection.nativeQuery().aggregate(aggregationStages, qOptions).iterator();
     }
 
     private void filterOutDeleted(Query query) {

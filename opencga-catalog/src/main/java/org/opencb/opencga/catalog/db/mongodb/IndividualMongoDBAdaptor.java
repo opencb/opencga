@@ -402,26 +402,77 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             return endQuery("Update individual", startTime, Arrays.asList(update.getNumTotalResults()));
         }
 
+        if (queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
+            createNewVersion(query);
+        }
 
-        if (!queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
-//            applyAnnotationUpdates(query.getLong(QueryParams.UID.key(), -1L), annotationUpdateMap, true);
-            updateAnnotationSets(query.getLong(QueryParams.UID.key(), -1L), parameters, variableSetList, queryOptions, true);
-            Document individualUpdate = updateDocument.toFinalUpdateDocument();
-            if (!individualUpdate.isEmpty()) {
-                Bson finalQuery = parseQuery(query, false);
-                logger.debug("Individual update: query : {}, update: {}",
-                        finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                        individualUpdate.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        updateAnnotationSets(query.getLong(QueryParams.UID.key(), -1L), parameters, variableSetList, queryOptions, true);
 
-                QueryResult<UpdateResult> update = individualCollection.update(parseQuery(query, false), individualUpdate,
-                        new QueryOptions("multi", true));
-                return endQuery("Update individual", startTime, Arrays.asList(update.getNumTotalResults()));
-            }
-        } else {
-            return updateAndCreateNewVersion(query, updateDocument, parameters, variableSetList, queryOptions);
+        Document individualUpdate = updateDocument.toFinalUpdateDocument();
+        if (!individualUpdate.isEmpty()) {
+            Bson finalQuery = parseQuery(query, false);
+            logger.debug("Individual update: query : {}, update: {}",
+                    finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                    individualUpdate.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
+            QueryResult<UpdateResult> update = individualCollection.update(parseQuery(query, false), individualUpdate,
+                    new QueryOptions("multi", true));
+            return endQuery("Update individual", startTime, Arrays.asList(update.getNumTotalResults()));
         }
 
         return endQuery("Update individual", startTime, new QueryResult<>());
+    }
+
+    /**
+     * Creates a new version for all the samples matching the query.
+     *
+     * @param query Query object.
+     */
+    private void createNewVersion(Query query) throws CatalogDBException {
+        QueryResult<Document> queryResult = nativeGet(query, new QueryOptions(QueryOptions.EXCLUDE, "_id"));
+
+        for (Document document : queryResult.getResult()) {
+            Document updateOldVersion = new Document();
+
+            // Current release number
+            int release;
+            List<Integer> supportedReleases = (List<Integer>) document.get(RELEASE_FROM_VERSION);
+            if (supportedReleases.size() > 1) {
+                release = supportedReleases.get(supportedReleases.size() - 1);
+
+                // If it contains several releases, it means this is the first update on the current release, so we just need to take the
+                // current release number out
+                supportedReleases.remove(supportedReleases.size() - 1);
+            } else {
+                release = supportedReleases.get(0);
+
+                // If it is 1, it means that the previous version being checked was made on this same release as well, so it won't be the
+                // last version of the release
+                updateOldVersion.put(LAST_OF_RELEASE, false);
+            }
+            updateOldVersion.put(RELEASE_FROM_VERSION, supportedReleases);
+            updateOldVersion.put(LAST_OF_VERSION, false);
+
+            // Perform the update on the previous version
+            Document queryDocument = new Document()
+                    .append(PRIVATE_STUDY_ID, document.getLong(PRIVATE_STUDY_ID))
+                    .append(QueryParams.VERSION.key(), document.getInteger(QueryParams.VERSION.key()))
+                    .append(PRIVATE_UID, document.getLong(PRIVATE_UID));
+            QueryResult<UpdateResult> updateResult = individualCollection.update(queryDocument, new Document("$set", updateOldVersion),
+                    null);
+            if (updateResult.first().getModifiedCount() == 0) {
+                throw new CatalogDBException("Internal error: Could not update individual");
+            }
+
+            // We update the information for the new version of the document
+            document.put(LAST_OF_RELEASE, true);
+            document.put(LAST_OF_VERSION, true);
+            document.put(RELEASE_FROM_VERSION, Arrays.asList(release));
+            document.put(QueryParams.VERSION.key(), document.getInteger(QueryParams.VERSION.key()) + 1);
+
+            // Insert the new version document
+            individualCollection.insert(document, QueryOptions.empty());
+        }
     }
 
     private void updateToLastSampleVersions(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
@@ -458,72 +509,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         // Add SET action for samples
         queryOptions.putIfAbsent(Constants.ACTIONS, new HashMap<>());
         queryOptions.getMap(Constants.ACTIONS).put(UpdateParams.SAMPLES.key(), SET);
-    }
-
-    private QueryResult<Long> updateAndCreateNewVersion(Query query, UpdateDocument updateDocument,  ObjectMap parameters,
-                                                        List<VariableSet> variableSetList, QueryOptions queryOptions)
-            throws CatalogDBException {
-        long startTime = startQuery();
-
-        // TODO: Make this possible. At the moment it is difficult because we need to push or pull anything in Java and the object are
-        // TODO: not quite the same
-        if (!updateDocument.getPull().isEmpty() || !updateDocument.getAddToSet().isEmpty() || !updateDocument.getPullAll().isEmpty()
-                || !updateDocument.getPush().isEmpty()) {
-            throw new CatalogDBException("Adding or removing new data to arrays is not allowed with the version increment at the moment. "
-                    + "Please do two calls: 1. Increment version only, 2. Update any fields with version increment set to false.");
-        }
-
-        QueryResult<Document> queryResult = nativeGet(query, new QueryOptions(QueryOptions.EXCLUDE, "_id"));
-        int release = queryOptions.getInt(Constants.CURRENT_RELEASE, -1);
-        if (release == -1) {
-            throw new CatalogDBException("Internal error. Mandatory " + Constants.CURRENT_RELEASE + " parameter not passed to update "
-                    + "method");
-        }
-
-        for (Document individualDocument : queryResult.getResult()) {
-            Document updateOldVersion = new Document();
-
-            List<Integer> supportedReleases = (List<Integer>) individualDocument.get(RELEASE_FROM_VERSION);
-            if (supportedReleases.size() > 1) {
-                // If it contains several releases, it means this is the first update on the current release, so we just need to take the
-                // current release number out
-                supportedReleases.remove(supportedReleases.size() - 1);
-            } else {
-                // If it is 1, it means that the previous version being checked was made on this same release as well, so it won't be the
-                // last version of the release
-                updateOldVersion.put(LAST_OF_RELEASE, false);
-            }
-            updateOldVersion.put(RELEASE_FROM_VERSION, supportedReleases);
-            updateOldVersion.put(LAST_OF_VERSION, false);
-
-            // Perform the update on the previous version
-            Document queryDocument = new Document()
-                    .append(PRIVATE_STUDY_ID, individualDocument.getLong(PRIVATE_STUDY_ID))
-                    .append(QueryParams.VERSION.key(), individualDocument.getInteger(QueryParams.VERSION.key()))
-                    .append(PRIVATE_UID, individualDocument.getLong(PRIVATE_UID));
-            QueryResult<UpdateResult> updateResult = individualCollection.update(queryDocument, new Document("$set", updateOldVersion),
-                    null);
-            if (updateResult.first().getModifiedCount() == 0) {
-                throw new CatalogDBException("Internal error: Could not update individual");
-            }
-
-            // We update the information for the new version of the document
-            individualDocument.put(LAST_OF_RELEASE, true);
-            individualDocument.put(LAST_OF_VERSION, true);
-            individualDocument.put(RELEASE_FROM_VERSION, Arrays.asList(release));
-            individualDocument.put(QueryParams.VERSION.key(), individualDocument.getInteger(QueryParams.VERSION.key()) + 1);
-
-            // We apply the updates the user wanted to apply (if any)
-            mergeDocument(individualDocument, updateDocument.getSet());
-
-            // Insert the new version document
-            individualCollection.insert(individualDocument, QueryOptions.empty());
-
-//            applyAnnotationUpdates(query.getLong(QueryParams.UID.key(), -1L), annotationUpdateMap, true);
-            updateAnnotationSets(query.getLong(QueryParams.UID.key(), -1L), parameters, variableSetList, queryOptions, true);
-        }
-
-        return endQuery("Update individual", startTime, Arrays.asList(queryResult.getNumTotalResults()));
     }
 
     private UpdateDocument parseAndValidateUpdateParams(ObjectMap parameters, Query query, QueryOptions queryOptions)
@@ -811,7 +796,10 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
     @Override
     public DBIterator nativeIterator(Query query, QueryOptions options) throws CatalogDBException {
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
+        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+        queryOptions.put(NATIVE_QUERY, true);
+
+        MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions);
         return new IndividualMongoDBIterator(mongoCursor, null, null, null, options);
     }
 
@@ -832,8 +820,11 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     @Override
     public DBIterator nativeIterator(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
+        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+        queryOptions.put(NATIVE_QUERY, true);
+
         Document studyDocument = getStudyDocument(query);
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, options, studyDocument, user);
+        MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions, studyDocument, user);
         Function<Document, Document> iteratorFilter = (d) ->  filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS.name(),
                 IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name());
@@ -874,7 +865,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         qOptions = removeAnnotationProjectionOptions(qOptions);
         qOptions = filterOptions(qOptions, FILTER_ROUTE_INDIVIDUALS);
 
-        if (excludeSamples(qOptions)) {
+        if (qOptions.getBoolean(NATIVE_QUERY) || excludeSamples(qOptions)) {
             logger.debug("Individual get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
             return individualCollection.nativeQuery().find(bson, qOptions).iterator();
         } else {

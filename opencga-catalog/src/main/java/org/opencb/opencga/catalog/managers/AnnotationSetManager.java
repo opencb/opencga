@@ -588,6 +588,8 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
 
                     ParamUtils.UpdateAction action = (ParamUtils.UpdateAction) actionMap.getOrDefault(ANNOTATION_SETS,
                             ParamUtils.UpdateAction.ADD);
+//                    ParamUtils.UpdateAction action = ParamUtils.UpdateAction.valueOf(
+//                            (String) actionMap.getOrDefault(ANNOTATION_SETS, ParamUtils.UpdateAction.ADD.name()));
 
                     if (action == ParamUtils.UpdateAction.ADD || action == ParamUtils.UpdateAction.SET) {
                         /* We need to validate that the new annotationSets are fine to be stored */
@@ -693,8 +695,6 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                             if (StringUtils.isEmpty(annotationSet.getId())) {
                                 throw new CatalogException("Cannot remove annotationSet. Mandatory annotationSet id field is empty");
                             }
-
-
                         }
                     } else {
                         throw new CatalogException("Unrecognised annotationSet action " + action);
