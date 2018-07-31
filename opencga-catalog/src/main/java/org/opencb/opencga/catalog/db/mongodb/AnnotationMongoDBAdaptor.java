@@ -327,6 +327,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                 Map<String, String> annotationSetIdVariableSetUidMap = new HashMap<>();
                 // This variable will contain a map of variable set ids pointing to all the annotationSet ids using the variable set
                 Map<String, Set<String>> variableSetAnnotationsets = new HashMap<>();
+                Set<String> existingAnnotationSets = new HashSet<>();
                 for (Document document : annotationList) {
                     String variableSetId = String.valueOf(document.getLong(AnnotationSetParams.VARIABLE_SET_ID.key()));
                     String annSetId = document.getString(AnnotationSetParams.ANNOTATION_SET_NAME.key());
@@ -337,9 +338,14 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                         variableSetAnnotationsets.put(variableSetId, new HashSet<>());
                     }
                     variableSetAnnotationsets.get(variableSetId).add(annSetId);
+                    existingAnnotationSets.add(annSetId);
                 }
 
                 for (AnnotationSet annotationSet : annotationSetList) {
+                    if (!existingAnnotationSets.contains(annotationSet.getId())) {
+                        throw new CatalogDBException("Could not delete: AnnotationSet " + annotationSet.getId() + " not found");
+                    }
+
                     // 1. Remove annotationSet
                     removeAnnotationSet(entryId, annotationSet.getId(), isVersioned);
 

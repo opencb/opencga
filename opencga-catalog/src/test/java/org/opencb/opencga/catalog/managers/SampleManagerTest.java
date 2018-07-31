@@ -230,6 +230,10 @@ public class SampleManagerTest extends AbstractManagerTest {
         QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager()
                 .removeAnnotationSet(studyFqn, s_1, "annotation2", QueryOptions.empty(), sessionIdUser);
         assertEquals(1, sampleQueryResult.first().getAnnotationSets().size());
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("not found");
+        catalogManager.getSampleManager().removeAnnotationSet(studyFqn, s_1, "non_existing", QueryOptions.empty(), sessionIdUser);
     }
 
     @Test
