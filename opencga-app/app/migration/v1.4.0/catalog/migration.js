@@ -24,7 +24,7 @@ var Base64={_keyStr:"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456
 
 
 print("Migrating clinical analysis");
-migrateCollection("clinical", {"uuid": {$exists: false}}, {}, function(bulk, doc) {
+migrateCollection("clinical", {"uuid": {$exists: false}}, {attributes: 0, annotationSets: 0}, function(bulk, doc) {
     var setChanges = {};
     var unsetChanges = {};
     addPermissionRules(doc, setChanges);
@@ -92,7 +92,7 @@ migrateCollection("clinical", {"uuid": {$exists: false}}, {}, function(bulk, doc
 });
 
 print("\nMigrating cohort");
-migrateCollection("cohort", {"uuid": {$exists: false}}, {}, function(bulk, doc) {
+migrateCollection("cohort", {"uuid": {$exists: false}}, {attributes: 0, annotationSets: 0}, function(bulk, doc) {
     var setChanges = {};
     var unsetChanges = {};
     addPermissionRules(doc, setChanges);
@@ -122,7 +122,7 @@ migrateCollection("cohort", {"uuid": {$exists: false}}, {}, function(bulk, doc) 
 });
 
 print("\nMigrating family");
-migrateCollection("family", {"uuid": {$exists: false}}, {}, function(bulk, doc) {
+migrateCollection("family", {"uuid": {$exists: false}}, {attributes: 0, annotationSets: 0}, function(bulk, doc) {
     var setChanges = {
         "expectedSize": -1 // #823
     };
@@ -154,7 +154,7 @@ migrateCollection("family", {"uuid": {$exists: false}}, {}, function(bulk, doc) 
 });
 
 print("\nMigrating file");
-migrateCollection("file", {"uuid": {$exists: false}}, {}, function(bulk, doc) {
+migrateCollection("file", {"uuid": {$exists: false}}, {attributes: 0, stats: 0}, function(bulk, doc) {
     var setChanges = {
         "customAnnotationSets": [], // #823
         "checksum": ""              // #823
@@ -202,7 +202,7 @@ migrateCollection("file", {"uuid": {$exists: false}}, {}, function(bulk, doc) {
 });
 
 print("\nMigrating individual");
-migrateCollection("individual", {"uuid": {$exists: false}}, {}, function(bulk, doc) {
+migrateCollection("individual", {"uuid": {$exists: false}}, {attributes: 0, annotationSets: 0}, function(bulk, doc) {
     var setChanges = {};
     var unsetChanges = {};
     addPermissionRules(doc, setChanges);
@@ -249,7 +249,7 @@ migrateCollection("individual", {"uuid": {$exists: false}}, {}, function(bulk, d
 });
 
 print("\nMigrating job");
-migrateCollection("job", {"uuid": {$exists: false}}, {}, function(bulk, doc) {
+migrateCollection("job", {"uuid": {$exists: false}}, {attributes: 0}, function(bulk, doc) {
     var setChanges = {};
     var unsetChanges = {};
     addPermissionRules(doc, setChanges);
@@ -316,7 +316,7 @@ migrateCollection("job", {"uuid": {$exists: false}}, {}, function(bulk, doc) {
 });
 
 print("\nMigrating sample");
-migrateCollection("sample", {"uuid": {$exists: false}}, {}, function(bulk, doc) {
+migrateCollection("sample", {"uuid": {$exists: false}}, {attributes: 0, annotationSets: 0}, function(bulk, doc) {
     var setChanges = {};
     var unsetChanges = {};
 
@@ -339,7 +339,7 @@ migrateCollection("sample", {"uuid": {$exists: false}}, {}, function(bulk, doc) 
 var projectUidFqnMap = {};
 
 print("\nMigrating user");
-migrateCollection("user", {"uuid": {$exists: false}}, {}, function(bulk, doc) {
+migrateCollection("user", {"uuid": {$exists: false}}, {attributes: 0}, function(bulk, doc) {
     if (typeof doc.projects !== "undefined" && doc.projects.length > 0) {
         var changes = {};
 
@@ -372,7 +372,7 @@ migrateCollection("user", {"uuid": {$exists: false}}, {}, function(bulk, doc) {
 });
 
 print("\nMigrating study");
-migrateCollection("study", {"uuid": {$exists: false}}, {}, function(bulk, doc) {
+migrateCollection("study", {"uuid": {$exists: false}}, {attributes: 0}, function(bulk, doc) {
     var setChanges = {
         "permissionRules": {}       // #745
     };
@@ -409,6 +409,9 @@ migrateCollection("study", {"uuid": {$exists: false}}, {}, function(bulk, doc) {
     bulk.find({"_id": doc._id}).updateOne({"$set": setChanges, "$unset": unsetChanges});
 });
 print("");
+
+// Update metadata version
+db.metadata.update({}, {"$set": {"version": "1.4.0"}});
 
 // Ticket #745 - Add permission rules
 function addPermissionRules(doc, changes) {
