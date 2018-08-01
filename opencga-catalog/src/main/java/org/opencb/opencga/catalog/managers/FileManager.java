@@ -660,7 +660,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 }
             }
         } catch (Exception e) {
-            logger.error("Error uploading file {}", file.getName());
+            logger.error("Error uploading file {}", file.getName(), e);
 
             // Clean temporal directory
             ioManager.deleteDirectory(tempFilePath.getParent().toUri());
@@ -683,7 +683,7 @@ public class FileManager extends AnnotationSetManager<File> {
                     .setMetadataInformation(fileQueryResult.first(), null, null, sessionId, false);
             fileQueryResult.setResult(Collections.singletonList(fileMetadata));
         } catch (Exception e) {
-            logger.error("Error uploading file {}", file.getName());
+            logger.error("Error uploading file {}", file.getName(), e);
 
             // Clean temporal directory
             ioManager.deleteDirectory(tempFilePath.getParent().toUri());
