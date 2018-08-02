@@ -187,6 +187,7 @@ public class JobManager extends ResourceManager<Job> {
         job.setAttributes(ParamUtils.defaultObject(job.getAttributes(), HashMap::new));
         job.setUserId(userId);
         job.setRelease(catalogManager.getStudyManager().getCurrentRelease(study, userId));
+        job.setOutDir(job.getOutDir() != null && StringUtils.isNotEmpty(job.getOutDir().getPath()) ? job.getOutDir() : null);
 
         // FIXME check inputFiles? is a null conceptually valid?
 //        URI tmpOutDirUri = createJobOutdir(studyId, randomString, sessionId);
