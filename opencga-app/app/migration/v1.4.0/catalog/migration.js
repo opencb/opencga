@@ -203,7 +203,15 @@ migrateCollection("file", {"uuid": {$exists: false}}, {attributes: 0, stats: 0},
 
 print("\nMigrating individual");
 migrateCollection("individual", {"uuid": {$exists: false}}, {attributes: 0, annotationSets: 0}, function(bulk, doc) {
-    var setChanges = {};
+    var setChanges = {
+        location: {  // #823
+            address: null,
+            postalCode: null,
+            city: null,
+            state: null,
+            country: null
+        }
+    };
     var unsetChanges = {};
     addPermissionRules(doc, setChanges);
     addPrivateCreationDateAndModificationDate(doc, setChanges);

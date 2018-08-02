@@ -27,7 +27,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.AnnotationSetManager;
@@ -662,6 +661,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
         public String father;
         public String mother;
         public Multiples multiples;
+        public Location location;
 
         public Individual.Sex sex;
         public String ethnicity;
@@ -688,8 +688,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
             String individualId = StringUtils.isEmpty(id) ? name : id;
             String individualName = StringUtils.isEmpty(name) ? individualId : name;
             return new Individual(individualId, individualName, new Individual().setId(father), new Individual().setId(mother), multiples,
-                    sex, karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth, null,
-                    parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes)
+                    location, sex, karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth,
+                    null, parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes)
                     .setAttributes(attributes);
         }
     }
@@ -711,8 +711,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
             String individualId = StringUtils.isEmpty(id) ? name : id;
             String individualName = StringUtils.isEmpty(name) ? individualId : name;
             return new Individual(individualId, individualName, new Individual().setId(father), new Individual().setId(mother), multiples,
-                    sex, karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth, sampleList,
-                    parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes)
+                    location, sex, karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth,
+                    sampleList, parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes)
                     .setAttributes(attributes);
         }
     }
@@ -731,6 +731,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     .setFather(father != null ? new Individual().setId(father) : null)
                     .setMother(mother != null ? new Individual().setId(mother) : null)
                     .setMultiples(multiples)
+                    .setLocation(location)
                     .setSex(sex)
                     .setKaryotypicSex(karyotypicSex)
                     .setEthnicity(ethnicity)

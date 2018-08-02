@@ -518,6 +518,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
         public String father;
         public String mother;
         public Multiples multiples;
+        public Location location;
 
         public Individual.Sex sex;
         public String ethnicity;
@@ -545,9 +546,9 @@ public class FamilyWSServer extends OpenCGAWSServer {
             String individualId = StringUtils.isEmpty(id) ? name : id;
             String individualName = StringUtils.isEmpty(name) ? individualId : name;
             return new Individual(individualId, individualName, father != null ? new Individual().setId(father) : null,
-                    mother != null ? new Individual().setId(mother) : null, multiples, sex,
-                    karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth, null,
-                    parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes)
+                    mother != null ? new Individual().setId(mother) : null, multiples, location,
+                    sex, karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth,
+                    null, parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes)
                     .setAttributes(attributes);
         }
 
@@ -562,6 +563,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
                     .setMother(mother != null ? new Individual().setId(mother) : null)
                     .setMultiples(multiples)
                     .setSex(sex)
+                    .setLocation(location)
                     .setKaryotypicSex(karyotypicSex)
                     .setEthnicity(ethnicity)
                     .setPopulation(population)
