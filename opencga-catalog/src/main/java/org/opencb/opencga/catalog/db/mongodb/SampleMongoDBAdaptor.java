@@ -776,7 +776,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
                 // 3rd, we unwind the samples array again to be able to move the root to a new dummy field
                 aggregationStages.add(Aggregates.unwind("$" + IndividualDBAdaptor.QueryParams.SAMPLES.key(),
-                        new UnwindOptions().preserveNullAndEmptyArrays(true)));
+                        new UnwindOptions().preserveNullAndEmptyArrays(false)));
 
                 // 4. We copy the whole individual document in samples.attributes.individual
                 aggregationStages.add(Aggregates.addFields(
