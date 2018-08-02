@@ -367,9 +367,7 @@
 
 !3 Search Annotation Set By Annotation With Exclude
 !| Table: Rest Fixture | $baseURL |
-| GET | /v1/families/search?sid=$sessionId&study=$study&annotation=annotationSet=$aS1&exclude=annotationSet.$aS2 | | Content-Type: application/json | jsonbody.response[0].result[0].annotationSets.length == 1 && jsonbody.response[0].result[0].annotationSets[0].name == "$aS2" |
-| GET | /v1/families/search?sid=$sessionId&study=$study&annotation=annotationSet=$aS1&exclude=annotationSet.$aS2 | | Content-Type: application/json ||
-
+| GET | /v1/families/search?sid=$sessionId&study=$study&annotation=annotationSet=$aS1&exclude=annotationSet.$aS2 | | Content-Type: application/json | jsonbody.response[0].result[0].annotationSets.length == 1 && jsonbody.response[0].result[0].annotationSets[0].name == "$aS1" |
 
 !3 Update Variable in An Annotation 
 !|Table: Rest Fixture | $baseURL |

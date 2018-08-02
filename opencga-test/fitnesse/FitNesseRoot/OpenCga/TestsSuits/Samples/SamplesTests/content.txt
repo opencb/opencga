@@ -500,7 +500,7 @@
 
 !3 Delete All Samples
 !|Table: Rest Fixture | $baseURL |
-| DELETE | /v1/samples/delete?sid=$sessionId&study=$study&id=$sampleId,$sampleId2,$dummySample|200|  Content-Type: application/json ||
+| DELETE | /v1/samples/delete?sid=$sessionId&study=$study&id=$sampleId,$sampleId2,$dummySample&force=true|200|  Content-Type: application/json ||
 
 !3 Search First Deleted Sample 
 !|Table: Rest Fixture | $baseURL |

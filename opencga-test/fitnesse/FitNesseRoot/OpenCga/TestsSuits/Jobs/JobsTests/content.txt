@@ -84,8 +84,7 @@
 
 !3 Find Info About Multiple Jobs With One Invalid Entry
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/jobs/$jobId,$jobId2,000/info?sid=$sessionId&study=$study|500|  Content-Type: application/json |jsonbody.error == "Job id '0' does not exist"|
-| GET | /v1/jobs/$jobId,$jobId2,000/info?sid=$sessionId&study=$study|500|  Content-Type: application/json ||
+| GET | /v1/jobs/$jobId,$jobId2,000/info?sid=$sessionId&study=$study|500|  Content-Type: application/json |jsonbody.error == "Job 000 not found"|
 
 !3 Find Info About Multiple Jobs With One Invalid Entry And Silent True
 !|Table: Rest Fixture | $baseURL |
@@ -137,8 +136,7 @@
 
 !3 Get ACL For Multiple Jobs With One Invalid Entry
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/jobs/$jobId,000,$jobId2/acl?sid=$sessionId&study=$study|500|  Content-Type: application/json |jsonbody.error == "Job id '0' does not exist"|
-| GET | /v1/jobs/$jobId,000,$jobId2/acl?sid=$sessionId&study=$study|500|  Content-Type: application/json ||
+| GET | /v1/jobs/$jobId,000,$jobId2/acl?sid=$sessionId&study=$study|500|  Content-Type: application/json |jsonbody.error == "Job 000 not found"|
 
 !3 Get ACL For Multiple Jobs With One Invalid Entry And Silent True
 !|Table: Rest Fixture | $baseURL |
@@ -154,7 +152,7 @@
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/jobs/$jobId/acl?sid=$sessionId&study=$study&name=$jobName1|200|  Content-Type: application/json |jsonbody.error == ''|
 
-!3 (Negative) Delete Job ( Mix of TWO jobs, jobID1 and jobName2 )
+!3 Delete Job ( Mix of TWO jobs, jobID1 and jobName2 )
 !|Table: Rest Fixture | $baseURL |
 | DELETE | /v1/jobs/delete?sid=$sessionId&study=$study&name=$jobName2*&id=$jobId|200|  Content-Type: application/json ||
 
@@ -171,9 +169,9 @@
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/jobs/search?sid=$sessionId&study=$study&name=$jobName2|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].name == '$jobName2'|
 
-!3 (Negative) Delete Job ( Mix of TWO jobs, one ID and one Name
+!3 (Negative) Delete Job ( Mix of TWO jobs, one ID and one Name)
 !|Table: Rest Fixture | $baseURL |
-| DELETE | /v1/jobs/delete?sid=$sessionId&study=$study&name=$jobName2&id=$jobId1|200|  Content-Type: application/json ||
+| DELETE | /v1/jobs/delete?sid=$sessionId&study=$study&name=$jobName2&id=$jobId1|500|  Content-Type: application/json ||
 
 !3 Delete Second Job
 !|Table: Rest Fixture | $baseURL |
