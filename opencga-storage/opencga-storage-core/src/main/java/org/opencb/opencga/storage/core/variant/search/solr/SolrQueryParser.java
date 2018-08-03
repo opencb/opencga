@@ -24,6 +24,7 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.CollectionUtils;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -63,7 +64,10 @@ public class SolrQueryParser {
         includeMap.put("end", "end");
         includeMap.put("type", "type");
 
-        includeMap.put("studies", "studies,stats__*,gt_*,filter_*,qual_*,fileInfo_*,sampleFormat_*");
+        // Remove from this map fileInfo__* and sampleFormat__*, they will be processed with include-file,
+        // include-sample, include-genotype...
+        //includeMap.put("studies", "studies,stats__*,gt_*,filter_*,qual_*,fileInfo_*,sampleFormat_*");
+        includeMap.put("studies", "studies,stats__*,filter_*,qual_*");
         includeMap.put("studies.stats", "studies,stats__*");
 
         includeMap.put("annotation", "genes,soAcc,geneToSoAcc,biotypes,sift,siftDesc,polyphen,polyphenDesc,popFreq__*,xrefs,"
@@ -480,14 +484,22 @@ public class SolrQueryParser {
             }
         }
 
-
+        // For debugging
         StringBuilder sb = new StringBuilder();
+
+        // Create Solr query, adding filter queries and fields to show
         solrQuery.setQuery("*:*");
         filterList.forEach(filter -> {
             solrQuery.addFilterQuery(filter);
-            //logger.debug("Solr fq: {}\n", filter);
             sb.append(filter).append("\n");
         });
+        // Add Solr fields from the variant includes,i.e.: include-sample, include-format,...
+        List<String> solrFieldsToInclude = getSolrFieldsFromVariantIncludes(query, Arrays.asList(studies));
+        if (ListUtils.isNotEmpty(solrFieldsToInclude)) {
+            for (String solrField: solrFieldsToInclude) {
+                solrQuery.addField(solrField);
+            }
+        }
 
         logger.debug("\n\n-----------------------------------------------------\n{}\n\n{}"
                 + "-----------------------------------------------------\n\n", query.toJson(), sb.toString());
@@ -582,8 +594,8 @@ public class SolrQueryParser {
             if (values.length == 1) {
                 negation = "";
                 if (value.startsWith("!")) {
-                  negation = "-";
-                  value = value.substring(1);
+                    negation = "-";
+                    value = value.substring(1);
                 }
                 filter.append(negation).append(name).append(":\"").append(valuePrefix).append(wildcard).append(value)
                         .append(wildcard).append("\"");
@@ -1254,5 +1266,62 @@ public class SolrQueryParser {
             includeWithMandatory[includes.length + i] = mandatoryIncludeFields[i];
         }
         return includeWithMandatory;
+    }
+
+    /**
+     * Get the Solr fields to be included in the Solr query (fl parameter) from the variant query, i.e.: include-file,
+     * include-format, include-sample, include-study and include-genotype.
+     *
+     * @param query Variant query
+     * @return      List of Solr fields to be included in the Solr query
+     */
+    private List<String> getSolrFieldsFromVariantIncludes(Query query, List<String> studies) {
+        List<String> solrFields = new ArrayList<>();
+
+        if (ListUtils.isEmpty(studies)) {
+            return solrFields;
+        }
+
+        if (StringUtils.isNotEmpty(query.getString(VariantQueryParam.INCLUDE_FILE.key()))) {
+            List<String> includeFiles;
+            includeFiles = Arrays.asList(query.getString(VariantQueryParam.INCLUDE_FILE.key()).split("[,;]"));
+            for (String includeFile: includeFiles) {
+                for (String studyId: studies) {
+                    solrFields.add("fileinfo__" + studyId + "__" + includeFile);
+                }
+            }
+        } else {
+            solrFields.add("fileinfo__*");
+        }
+
+        if (StringUtils.isNotEmpty(query.getString(VariantQueryParam.INCLUDE_SAMPLE.key()))) {
+            List<String> includeSamples;
+            includeSamples = Arrays.asList(query.getString(VariantQueryParam.INCLUDE_SAMPLE.key()).split("[,;]"));
+            if (query.getBoolean(VariantQueryParam.INCLUDE_GENOTYPE.key())) {
+                for (String includeSample: includeSamples) {
+                    for (String studyId : studies) {
+                        solrFields.add("gt__" + studyId + "__" + includeSample);
+                    }
+                }
+            } else {
+                for (String includeSample: includeSamples) {
+                    for (String studyId : studies) {
+                        solrFields.add("sampleFormat__" + studyId + "__" + includeSample);
+                    }
+                }
+            }
+        } else {
+            for (String studyId: studies) {
+                if (query.getBoolean(VariantQueryParam.INCLUDE_GENOTYPE.key())) {
+                    solrFields.add("sampleFormat__" + studyId + "__sampleName");
+                    solrFields.add("gt__" + studyId + "__*");
+                } else {
+                    // Include sample data for each sample, and list of formats and sample names
+                    solrFields.add("sampleFormat__" + studyId + "__*");
+                }
+            }
+        }
+
+        return solrFields;
     }
 }

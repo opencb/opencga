@@ -121,23 +121,46 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 // Sample names
                 String json = variantSearchModel.getSampleFormat().get("sampleFormat__" + studyId + "__sampleName");
                 List<String> sampleNames = (List<String>) jsonToObject(json, genericList.getClass());
-                Map<String, Integer> samplePosition = new HashMap<>();
-                for (int i = 0; i < sampleNames.size(); i++) {
-                    samplePosition.put(sampleNames.get(i), i);
-                }
-                studyEntry.setSamplesPosition(samplePosition);
 
                 // Format
                 json = variantSearchModel.getSampleFormat().get("sampleFormat__" + studyId + "__format");
-                List<String> formats = (List<String>) jsonToObject(json, genericList.getClass());
-                studyEntry.setFormat(formats);
+                if (StringUtils.isNotEmpty(json)) {
+                    List<String> formats = (List<String>) jsonToObject(json, genericList.getClass());
+                    studyEntry.setFormat(formats);
+                }
 
                 // Sample data
                 studyEntry.setSamplesData(new ArrayList());
+                Map<String, Integer> samplePosition = new HashMap<>();
+//                for (int i = 0; i < sampleNames.size(); i++) {
+//                    samplePosition.put(sampleNames.get(i), i);
+//                }
+//                studyEntry.setSamplesPosition(samplePosition);
+                boolean onlyGT = false;
+                int pos = 0;
                 for (String sampleName: sampleNames) {
                     json = variantSearchModel.getSampleFormat().get("sampleFormat__" + studyId + "__" + sampleName);
-                    List<String> sd = (List<String>) jsonToObject(json, genericList.getClass());
-                    studyEntry.getSamplesData().add(sd);
+                    if (StringUtils.isNotEmpty(json)) {
+                        List<String> sd = (List<String>) jsonToObject(json, genericList.getClass());
+                        studyEntry.getSamplesData().add(sd);
+                        samplePosition.put(sampleName, pos++);
+                    } else {
+                        String gt = variantSearchModel.getGt().get("gt__" + studyId + "__" + sampleName);
+                        if (StringUtils.isNotEmpty(gt)) {
+                            onlyGT = true;
+                            List<String> sd = new ArrayList<>();
+                            sd.add(gt);
+                            studyEntry.getSamplesData().add(sd);
+                            samplePosition.put(sampleName, pos++);
+                        }
+                    }
+                }
+                if (MapUtils.isNotEmpty(samplePosition)) {
+                    studyEntry.setSamplesPosition(samplePosition);
+                }
+                if (onlyGT) {
+                    studyEntry.setFormat(new ArrayList<>());
+                    studyEntry.getFormat().add("GT");
                 }
             }
         }
