@@ -76,6 +76,9 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
         DELETE_FILES(FileAclEntry.FilePermissions.DELETE.name(), FILE),
         DOWNLOAD_FILES(FileAclEntry.FilePermissions.DOWNLOAD.name(), FILE),
         UPLOAD_FILES(FileAclEntry.FilePermissions.UPLOAD.name(), FILE),
+        WRITE_FILE_ANNOTATIONS(FileAclEntry.FilePermissions.WRITE_ANNOTATIONS.name(), FILE),
+        VIEW_FILE_ANNOTATIONS(FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name(), FILE),
+        DELETE_FILE_ANNOTATIONS(FileAclEntry.FilePermissions.DELETE_ANNOTATIONS.name(), FILE),
 
         // JOBS
         VIEW_JOBS(JobAclEntry.JobPermissions.VIEW.name(), JOB),

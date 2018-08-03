@@ -15,6 +15,10 @@ migrateCollection("user", {"projects" : { $exists: true, $ne: [] } }, {projects:
     bulk.find({"_id": doc._id}).updateOne({"$set": {"projects": projects}});
 });
 
+migrateCollection("project", {"_creationDate" : { $exists: false } }, {creationDate: 1}, function(bulk, doc) {
+    bulk.find({"_id": doc._id}).updateOne({"$set": {"_creationDate": stringToDate(doc.creationDate)}});
+});
+
 migrateCollection("study", {"_creationDate" : { $exists: false } }, {creationDate: 1}, function(bulk, doc) {
     bulk.find({"_id": doc._id}).updateOne({"$set": {"_creationDate": stringToDate(doc.creationDate)}});
 });

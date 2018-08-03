@@ -32,6 +32,7 @@ public class Project extends PrivateFields {
     private String alias;
     private String fqn;
     private String creationDate;
+    private String modificationDate;
     private String description;
     private String organization;
     private Organism organism;
@@ -168,11 +169,13 @@ public class Project extends PrivateFields {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Project{");
-        sb.append("uuid='").append(uuid).append('\'');
-        sb.append(", id='").append(id).append('\'');
+        sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
+        sb.append(", uuid='").append(uuid).append('\'');
+        sb.append(", alias='").append(alias).append('\'');
         sb.append(", fqn='").append(fqn).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", organization='").append(organization).append('\'');
         sb.append(", organism=").append(organism);
@@ -244,6 +247,15 @@ public class Project extends PrivateFields {
 
     public Project setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public Project setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 

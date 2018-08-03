@@ -37,6 +37,7 @@ public class Sample extends Annotable {
     private int release;
     private int version;
     private String creationDate;
+    private String modificationDate;
     private Status status;
     private String description;
     private String type;
@@ -84,6 +85,7 @@ public class Sample extends Annotable {
         sb.append(", release=").append(release);
         sb.append(", version=").append(version);
         sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", status=").append(status);
         sb.append(", description='").append(description).append('\'');
         sb.append(", type='").append(type).append('\'');
@@ -193,6 +195,15 @@ public class Sample extends Annotable {
 
     public Sample setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public Sample setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 

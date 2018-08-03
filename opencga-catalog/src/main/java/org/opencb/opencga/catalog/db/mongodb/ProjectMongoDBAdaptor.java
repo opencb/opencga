@@ -34,10 +34,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
-import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
-import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.ProjectConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -245,14 +242,14 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
 
-        Bson projectParameters = new Document();
+        Document projectParameters = new Document();
 
         String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.CREATION_DATE.key(), QueryParams.DESCRIPTION.key(),
                 QueryParams.ORGANIZATION.key(), QueryParams.LAST_MODIFIED.key(), QueryParams.ORGANISM_SCIENTIFIC_NAME.key(),
                 QueryParams.ORGANISM_COMMON_NAME.key(), QueryParams.ORGANISM_ASSEMBLY.key(), };
         for (String s : acceptedParams) {
             if (parameters.containsKey(s)) {
-                ((Document) projectParameters).put("projects.$." + s, parameters.getString(s));
+                projectParameters.put("projects.$." + s, parameters.getString(s));
             }
         }
         String[] acceptedIntParams = {QueryParams.SIZE.key(), QueryParams.ORGANISM_TAXONOMY_CODE.key(), };
@@ -260,26 +257,32 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             if (parameters.containsKey(s)) {
                 int anInt = parameters.getInt(s, Integer.MIN_VALUE);
                 if (anInt != Integer.MIN_VALUE) {
-                    ((Document) projectParameters).put("projects.$." + s, anInt);
+                    projectParameters.put("projects.$." + s, anInt);
                 }
             }
         }
         Map<String, Object> attributes = parameters.getMap(QueryParams.ATTRIBUTES.key());
         if (attributes != null) {
             for (Map.Entry<String, Object> entry : attributes.entrySet()) {
-                ((Document) projectParameters).put("projects.$.attributes." + entry.getKey(), entry.getValue());
+                projectParameters.put("projects.$.attributes." + entry.getKey(), entry.getValue());
             }
 //            projectParameters.put("projects.$.attributes", attributes);
         }
 
         if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
-            ((Document) projectParameters).put("projects.$." + QueryParams.STATUS_NAME.key(),
-                    parameters.get(QueryParams.STATUS_NAME.key()));
-            ((Document) projectParameters).put("projects.$." + QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
+            projectParameters.put("projects.$." + QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
+            projectParameters.put("projects.$." + QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
         QueryResult<UpdateResult> updateResult = new QueryResult<>();
-        if (!((Document) projectParameters).isEmpty()) {
+        if (!projectParameters.isEmpty()) {
+
+            // Update modificationDate param
+            String time = TimeUtils.getTime();
+            Date date = TimeUtils.toDate(time);
+            projectParameters.put(MODIFICATION_DATE, time);
+            projectParameters.put(PRIVATE_MODIFICATION_DATE, date);
+
             Bson bsonQuery = parseQuery(query);
             Bson updates = new Document("$set", projectParameters);
             // Fixme: Updates

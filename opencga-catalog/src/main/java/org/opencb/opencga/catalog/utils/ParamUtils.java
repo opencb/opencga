@@ -165,6 +165,7 @@ public class ParamUtils {
         ADD,
         SET,
         REMOVE,
-        RESET
+        RESET,
+        REPLACE
     }
 }

@@ -60,6 +60,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.*;
 
+import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationSaveCommandOptions.ANNOTATION_SAVE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationDeleteCommandOptions.ANNOTATION_DELETE_COMMAND;
@@ -112,8 +113,8 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
             case "index":
                 index();
                 break;
-            case "index-search":
-                indexSearch();
+            case SECONDARY_INDEX_COMMAND:
+                secondaryIndex();
                 break;
             case "stats":
                 stats();
@@ -295,26 +296,23 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         variantManager.index(cliOptions.study, cliOptions.fileId, cliOptions.outdir, queryOptions, sessionId);
     }
 
-    private void indexSearch() throws CatalogException, AnalysisExecutionException, IOException, ClassNotFoundException, StorageEngineException,
+    private void secondaryIndex() throws CatalogException, AnalysisExecutionException, IOException, ClassNotFoundException, StorageEngineException,
             InstantiationException, IllegalAccessException, URISyntaxException, VariantSearchException {
-        VariantCommandOptions.VariantIndexSearchCommandOptions cliOptions = variantCommandOptions.variantIndexSearchCommandOptions;
+        VariantCommandOptions.VariantSecondaryIndexCommandOptions cliOptions = variantCommandOptions.variantSecondaryIndexCommandOptions;
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.putAll(cliOptions.commonOptions.params);
 
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
-        String project = StringUtils.isEmpty(cliOptions.project) ? cliOptions.projectId : cliOptions.project;
-
-        Query query = new Query();
-        query.putIfNotEmpty(VariantCatalogQueryUtils.PROJECT.key(), project);
-        query.putIfNotEmpty(VariantQueryParam.STUDY.key(), cliOptions.study);
-        query.putIfNotEmpty(VariantQueryParam.REGION.key(), cliOptions.region);
-        query.putIfNotEmpty(VariantQueryParam.GENE.key(), cliOptions.gene);
-        query.putIfNotEmpty(VariantQueryParam.SAMPLE.key(), cliOptions.sample);
-        query.putIfNotEmpty(VariantQueryParam.FILE.key(), cliOptions.file);
-        query.putIfNotEmpty(VariantQueryParam.COHORT.key(), cliOptions.cohort);
-        variantManager.searchIndex(query, queryOptions, sessionId);
+        if (StringUtils.isNotEmpty(cliOptions.sample)) {
+            variantManager.searchIndexSamples(cliOptions.study, Arrays.asList(cliOptions.sample.split(",")), sessionId);
+        } else {
+            Query query = new Query();
+            query.putIfNotEmpty(VariantCatalogQueryUtils.PROJECT.key(), cliOptions.project);
+            query.putIfNotEmpty(VariantQueryParam.REGION.key(), cliOptions.region);
+            variantManager.searchIndex(query, queryOptions, sessionId);
+        }
     }
 
     private void stats() throws CatalogException, AnalysisExecutionException, IOException, ClassNotFoundException,

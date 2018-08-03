@@ -20,6 +20,7 @@ import com.mongodb.MongoClient;
 import com.mongodb.MongoWriteException;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.*;
+import com.mongodb.client.model.Variable;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import org.apache.commons.collections.CollectionUtils;
@@ -32,7 +33,11 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
-import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.FileConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.FileMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -40,14 +45,13 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.core.models.Status;
+import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -63,7 +67,7 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 /**
  * Created by pfurio on 08/01/16.
  */
-public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor {
+public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implements FileDBAdaptor {
 
     private final MongoDBCollection fileCollection;
     private FileConverter fileConverter;
@@ -81,11 +85,13 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         this.fileConverter = new FileConverter();
     }
 
-    /**
-     *
-     * @return MongoDB connection to the file collection.
-     */
-    public MongoDBCollection getFileCollection() {
+    @Override
+    protected AnnotableConverter<? extends Annotable> getConverter() {
+        return fileConverter;
+    }
+
+    @Override
+    protected MongoDBCollection getCollection() {
         return fileCollection;
     }
 
@@ -169,18 +175,42 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     }
 
     @Override
-    public QueryResult<File> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public QueryResult<AnnotationSet> getAnnotationSet(long id, @Nullable String annotationSetName) throws CatalogDBException {
+        QueryOptions queryOptions = new QueryOptions();
+        List<String> includeList = new ArrayList<>();
+
+        if (StringUtils.isNotEmpty(annotationSetName)) {
+            includeList.add(Constants.ANNOTATION_SET_NAME + "." + annotationSetName);
+        } else {
+            includeList.add(QueryParams.ANNOTATION_SETS.key());
+        }
+        queryOptions.put(QueryOptions.INCLUDE, includeList);
+
+        QueryResult<File> fileQueryResult = get(id, queryOptions);
+        if (fileQueryResult.first().getAnnotationSets().isEmpty()) {
+            return new QueryResult<>("Get annotation set", fileQueryResult.getDbTime(), 0, 0, fileQueryResult.getWarningMsg(),
+                    fileQueryResult.getErrorMsg(), Collections.emptyList());
+        } else {
+            List<AnnotationSet> annotationSets = fileQueryResult.first().getAnnotationSets();
+            int size = annotationSets.size();
+            return new QueryResult<>("Get annotation set", fileQueryResult.getDbTime(), size, size, fileQueryResult.getWarningMsg(),
+                    fileQueryResult.getErrorMsg(), annotationSets);
+        }
+    }
+
+    @Override
+    public QueryResult<File> update(long id, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
+            throws CatalogDBException {
         long startTime = startQuery();
         Bson query = parseQuery(new Query(QueryParams.UID.key(), id), false);
         UpdateDocument tmpUpdateDocument = getValidatedUpdateParams(parameters, queryOptions);
-        Document updateDocument = tmpUpdateDocument.toFinalUpdateDocument();
 
-        if (updateDocument.isEmpty()) {
-            logger.debug("The map of parameters to update file is empty. Originally it contained {}", parameters.safeToString());
-        } else {
+        updateAnnotationSets(id, parameters, variableSetList, queryOptions, false);
+
+        Document updateDocument = tmpUpdateDocument.toFinalUpdateDocument();
+        if (!updateDocument.isEmpty()) {
             logger.debug("Update file. Query: {}, Update: {}", query.toBsonDocument(Document.class,
                     MongoClient.getDefaultCodecRegistry()), updateDocument);
-
 
             QueryResult<UpdateResult> update = fileCollection.update(query, updateDocument, new QueryOptions("multi", true));
             if (update.first().getMatchedCount() == 0) {
@@ -193,7 +223,8 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     }
 
     @Override
-    public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public QueryResult<Long> update(Query query, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
+            throws CatalogDBException {
         long startTime = startQuery();
 
         // If the user wants to change the diskUsages of the file(s), we first make a query to obtain the old values.
@@ -207,6 +238,9 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         // We perform the update.
         Bson queryBson = parseQuery(query, false);
         UpdateDocument tmpUpdateDocument = getValidatedUpdateParams(parameters, queryOptions);
+
+        updateAnnotationSets(query.getLong(QueryParams.UID.key(), -1L), parameters, variableSetList, queryOptions, false);
+
         Document updateDocument = tmpUpdateDocument.toFinalUpdateDocument();
 
         if (!updateDocument.isEmpty()) {
@@ -229,12 +263,23 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         return endQuery("Update file", startTime, Collections.singletonList(0L));
     }
 
+    @Override
+    public QueryResult<File> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+        return update(id, parameters, Collections.emptyList(), queryOptions);
+    }
+
+    @Override
+    public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+        return update(query, parameters, Collections.emptyList(), queryOptions);
+    }
+
     private UpdateDocument getValidatedUpdateParams(ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         UpdateDocument document = new UpdateDocument();
 
         String[] acceptedParams = {
-                QueryParams.DESCRIPTION.key(), QueryParams.URI.key(), QueryParams.CREATION_DATE.key(),
-                QueryParams.MODIFICATION_DATE.key(), QueryParams.PATH.key(), };
+                QueryParams.DESCRIPTION.key(), QueryParams.URI.key(), QueryParams.CREATION_DATE.key(), QueryParams.PATH.key(),
+                QueryParams.CHECKSUM.key(),
+        };
         // Fixme: Add "name", "path" and "ownerId" at some point. At the moment, it would lead to inconsistencies.
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
@@ -325,6 +370,15 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
 
         String[] acceptedObjectParams = {QueryParams.INDEX.key(), QueryParams.SOFTWARE.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
+
+        if (!document.toFinalUpdateDocument().isEmpty()) {
+            // Update modificationDate param
+            String time = TimeUtils.getTime();
+            Date date = TimeUtils.toDate(time);
+
+            document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
+            document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+        }
 
         return document;
     }
@@ -539,7 +593,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     @Override
     public DBIterator<File> iterator(Query query, QueryOptions options) throws CatalogDBException {
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
-        return new FileMongoDBIterator<>(mongoCursor, fileConverter, null, null);
+        return new FileMongoDBIterator<>(mongoCursor, fileConverter, null, null, options);
     }
 
     @Override
@@ -548,7 +602,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         queryOptions.put(NATIVE_QUERY, true);
 
         MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions);
-        return new FileMongoDBIterator<>(mongoCursor, null, null, null);
+        return new FileMongoDBIterator<>(mongoCursor, null, null, null, queryOptions);
     }
 
     @Override
@@ -557,10 +611,13 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         Document studyDocument = getStudyDocument(query);
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options, studyDocument, user);
 
+        Function<Document, Document> iteratorFilter = (d) ->  filterAnnotationSets(studyDocument, d, user,
+                StudyAclEntry.StudyPermissions.VIEW_FILE_ANNOTATIONS.name(),
+                FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name());
         Function<Document, Document> sampleIteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.name(), SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name());
 
-        return new FileMongoDBIterator<>(mongoCursor, fileConverter, null, sampleIteratorFilter);
+        return new FileMongoDBIterator<>(mongoCursor, fileConverter, iteratorFilter, sampleIteratorFilter, options);
     }
 
     @Override
@@ -572,10 +629,13 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         Document studyDocument = getStudyDocument(query);
         MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions, studyDocument, user);
 
+        Function<Document, Document> iteratorFilter = (d) ->  filterAnnotationSets(studyDocument, d, user,
+                StudyAclEntry.StudyPermissions.VIEW_FILE_ANNOTATIONS.name(),
+                FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name());
         Function<Document, Document> sampleIteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.name(), SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name());
 
-        return new FileMongoDBIterator<>(mongoCursor, null, null, sampleIteratorFilter);
+        return new FileMongoDBIterator<>(mongoCursor, null, iteratorFilter, sampleIteratorFilter, options);
     }
 
     private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {
@@ -605,6 +665,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         } else {
             qOptions = new QueryOptions();
         }
+        qOptions = removeAnnotationProjectionOptions(qOptions);
         qOptions = filterOptions(qOptions, FILTER_ROUTE_FILES);
 
         if (qOptions.getBoolean(NATIVE_QUERY)) {
@@ -729,8 +790,15 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         Document studyDocument = getStudyDocument(query);
-        Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user, StudyAclEntry.StudyPermissions.VIEW_FILES
-                .name(), FileAclEntry.FilePermissions.VIEW.name());
+        Document queryForAuthorisedEntries;
+        if (containsAnnotationQuery(query)) {
+            queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
+                    StudyAclEntry.StudyPermissions.VIEW_FILE_ANNOTATIONS.name(),
+                    FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name());
+        } else {
+            queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
+                    StudyAclEntry.StudyPermissions.VIEW_FILES.name(), FileAclEntry.FilePermissions.VIEW.name());
+        }
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
         return groupBy(fileCollection, bsonQuery, fields, QueryParams.NAME.key(), options);
@@ -740,8 +808,15 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     public QueryResult groupBy(Query query, String field, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         Document studyDocument = getStudyDocument(query);
-        Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user, StudyAclEntry.StudyPermissions.VIEW_FILES
-                .name(), FileAclEntry.FilePermissions.VIEW.name());
+        Document queryForAuthorisedEntries;
+        if (containsAnnotationQuery(query)) {
+            queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
+                    StudyAclEntry.StudyPermissions.VIEW_FILE_ANNOTATIONS.name(),
+                    FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name());
+        } else {
+            queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
+                    StudyAclEntry.StudyPermissions.VIEW_FILES.name(), FileAclEntry.FilePermissions.VIEW.name());
+        }
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
         return groupBy(fileCollection, bsonQuery, field, QueryParams.NAME.key(), options);
@@ -765,6 +840,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
 
     protected Bson parseQuery(Query query, boolean isolated, Document authorisation) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
+        Document annotationDocument = null;
 
         if (isolated) {
             andBsonList.add(new Document("$isolated", 1));
@@ -779,6 +855,9 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
             QueryParams queryParam = QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
                     : QueryParams.getParam(key);
             if (queryParam == null) {
+                if (Constants.PRIVATE_ANNOTATION_PARAM_TYPES.equals(entry.getKey())) {
+                    continue;
+                }
                 throw new CatalogDBException("Unexpected parameter " + entry.getKey() + ". The parameter does not exist or cannot be "
                         + "queried for.");
             }
@@ -796,6 +875,12 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
                         String regExPath = "~^" + value + "[^/]+/?$";
                         Query pathQuery = new Query(QueryParams.PATH.key(), regExPath);
                         addAutoOrQuery(QueryParams.PATH.key(), QueryParams.PATH.key(), pathQuery, QueryParams.PATH.type(), andBsonList);
+                        break;
+                    case ANNOTATION:
+                        if (annotationDocument == null) {
+                            annotationDocument = createAnnotationQuery(query.getString(QueryParams.ANNOTATION.key()),
+                                    query.get(Constants.PRIVATE_ANNOTATION_PARAM_TYPES, ObjectMap.class));
+                        }
                         break;
                     case ATTRIBUTES:
                         addAutoOrQuery(entry.getKey(), entry.getKey(), query, queryParam.type(), andBsonList);
@@ -817,6 +902,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
                     case TYPE:
                     case FORMAT:
                     case BIOFORMAT:
+                    case CHECKSUM:
                     case URI:
                     case PATH:
                     case MODIFICATION_DATE:
@@ -856,6 +942,9 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
             }
         }
 
+        if (annotationDocument != null && !annotationDocument.isEmpty()) {
+            andBsonList.add(annotationDocument);
+        }
         if (authorisation != null && authorisation.size() > 0) {
             andBsonList.add(authorisation);
         }

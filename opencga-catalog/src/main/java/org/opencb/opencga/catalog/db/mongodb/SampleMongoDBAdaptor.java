@@ -330,6 +330,14 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             sampleParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
+        if (!sampleParameters.isEmpty()) {
+            // Update modificationDate param
+            String time = TimeUtils.getTime();
+            Date date = TimeUtils.toDate(time);
+            sampleParameters.put(MODIFICATION_DATE, time);
+            sampleParameters.put(PRIVATE_MODIFICATION_DATE, date);
+        }
+
         return sampleParameters;
     }
 
