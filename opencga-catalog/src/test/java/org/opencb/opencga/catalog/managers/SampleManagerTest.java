@@ -690,7 +690,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals(1, samples.size());
 
         query.put(SampleDBAdaptor.QueryParams.ANNOTATION.key(), vs1.getId() + ":nestedObject.stringList=lo,lu,LL;" + vs1.getId()
-                        + ":nestedObject.object.string=my value");
+                + ":nestedObject.object.string=my value");
         samples = catalogManager.getSampleManager().get(studyFqn, query, null, sessionIdUser).getResult();
         assertEquals(1, samples.size());
 
@@ -1106,6 +1106,64 @@ public class SampleManagerTest extends AbstractManagerTest {
         sampleQueryResult = catalogManager.getSampleManager().search(studyFqn,
                 new Query().append(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), "Individual2"), QueryOptions.empty(), sessionIdUser);
         assertEquals(0, sampleQueryResult.getNumResults());
+    }
+
+    @Test
+    public void searchSamplesDifferentVersions() throws CatalogException {
+        catalogManager.getSampleManager().create(studyFqn, new Sample().setId("sample1"), QueryOptions.empty(), sessionIdUser);
+        catalogManager.getSampleManager().create(studyFqn, new Sample().setId("sample2"), QueryOptions.empty(), sessionIdUser);
+        catalogManager.getSampleManager().create(studyFqn, new Sample().setId("sample3"), QueryOptions.empty(), sessionIdUser);
+
+        // Generate 4 versions of sample1
+        catalogManager.getSampleManager().update(studyFqn, "sample1", new ObjectMap(), new QueryOptions(Constants.INCREMENT_VERSION, true),
+                sessionIdUser);
+        catalogManager.getSampleManager().update(studyFqn, "sample1", new ObjectMap(), new QueryOptions(Constants.INCREMENT_VERSION, true),
+                sessionIdUser);
+        catalogManager.getSampleManager().update(studyFqn, "sample1", new ObjectMap(), new QueryOptions(Constants.INCREMENT_VERSION, true),
+                sessionIdUser);
+
+        // Generate 3 versions of sample2
+        catalogManager.getSampleManager().update(studyFqn, "sample2", new ObjectMap(), new QueryOptions(Constants.INCREMENT_VERSION, true),
+                sessionIdUser);
+        catalogManager.getSampleManager().update(studyFqn, "sample2", new ObjectMap(), new QueryOptions(Constants.INCREMENT_VERSION, true),
+                sessionIdUser);
+
+        // Generate 1 versions of sample3
+        catalogManager.getSampleManager().update(studyFqn, "sample3", new ObjectMap(), new QueryOptions(Constants.INCREMENT_VERSION, true),
+                sessionIdUser);
+
+        Query query = new Query()
+                .append(SampleDBAdaptor.QueryParams.ID.key(), "sample1,sample2,sample3")
+                .append(SampleDBAdaptor.QueryParams.VERSION.key(), "3,2,1");
+        QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().get(studyFqn, query, QueryOptions.empty(), sessionIdUser);
+        assertEquals(3, sampleQueryResult.getNumResults());
+        for (Sample sample : sampleQueryResult.getResult()) {
+            switch (sample.getId()) {
+                case "sample1":
+                    assertEquals(3, sample.getVersion());
+                    break;
+                case "sample2":
+                    assertEquals(2, sample.getVersion());
+                    break;
+                case "sample3":
+                    assertEquals(1, sample.getVersion());
+                    break;
+                default:
+                    fail("One of the three samples above should always be present");
+            }
+        }
+
+        query.put(SampleDBAdaptor.QueryParams.VERSION.key(), "2");
+        sampleQueryResult = catalogManager.getSampleManager().get(studyFqn, query, QueryOptions.empty(), sessionIdUser);
+        assertEquals(3, sampleQueryResult.getNumResults());
+        sampleQueryResult.getResult().forEach(
+                s -> assertEquals(2, s.getVersion())
+        );
+
+        query.put(SampleDBAdaptor.QueryParams.VERSION.key(), "1,2");
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("size of the array");
+        catalogManager.getSampleManager().get(studyFqn, query, QueryOptions.empty(), sessionIdUser);
     }
 
     @Test

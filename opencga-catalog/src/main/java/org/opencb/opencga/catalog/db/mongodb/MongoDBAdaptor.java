@@ -26,6 +26,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.slf4j.Logger;
 
@@ -45,6 +46,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     static final String PRIVATE_PROJECT_UUID = PRIVATE_PROJECT + '.' + PRIVATE_UUID;
     static final String PRIVATE_OWNER_ID = "_ownerId";
     static final String PRIVATE_STUDY_ID = "studyUid";
+    private static final String VERSION = "version";
 
     static final String FILTER_ROUTE_PROJECTS = "projects.";
     static final String FILTER_ROUTE_STUDIES = "projects.studies.";
@@ -319,6 +321,70 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         }
 
         return document;
+    }
+
+    /**
+     * Generate complex query where [{id - version}, {id2 - version2}] pairs will be queried.
+     *
+     * @param query Query object.
+     * @param bsonQueryList Final bson query object.
+     * @throws CatalogDBException If the size of the array of ids does not match the size of the array of version.
+     * @return a boolean indicating whether the complex query was generated or not.
+     */
+    boolean generateUidVersionQuery(Query query, List<Bson> bsonQueryList) throws CatalogDBException {
+        if (!query.containsKey(VERSION) || query.getAsIntegerList(VERSION).size() == 1) {
+               return false;
+        }
+        if (!query.containsKey(PRIVATE_UID) && !query.containsKey(PRIVATE_ID) && !query.containsKey(PRIVATE_UUID)) {
+            return false;
+        }
+        int numIds = 0;
+        numIds += query.containsKey(PRIVATE_ID) ? 1 : 0;
+        numIds += query.containsKey(PRIVATE_UID) ? 1 : 0;
+        numIds += query.containsKey(PRIVATE_UUID) ? 1 : 0;
+
+        if (numIds > 1) {
+            List<Integer> versionList = query.getAsIntegerList(VERSION);
+            if (versionList.size() > 1) {
+                throw new CatalogDBException("Cannot query by more than one version when more than one id type is being queried");
+            }
+            return false;
+        }
+
+        String idQueried = PRIVATE_UID;
+        idQueried = query.containsKey(PRIVATE_ID) ? PRIVATE_ID : idQueried;
+        idQueried = query.containsKey(PRIVATE_UUID) ? PRIVATE_UUID : idQueried;
+
+        List idList;
+        if (PRIVATE_UID.equals(idQueried)) {
+            idList = query.getAsLongList(PRIVATE_UID);
+        } else {
+            idList = query.getAsStringList(idQueried);
+        }
+        List<Integer> versionList = query.getAsIntegerList(VERSION);
+
+        if (versionList.size() > 1 && versionList.size() != idList.size()) {
+            throw new CatalogDBException("The size of the array of versions should match the size of the array of ids to be queried");
+        }
+
+        List<Bson> samplesQuery = new ArrayList<>();
+        for (int i = 0; i < idList.size(); i++) {
+            samplesQuery.add(new Document()
+                    .append(idQueried, idList.get(i))
+                    .append(VERSION, versionList.get(i))
+            );
+        }
+
+        if (!samplesQuery.isEmpty()) {
+            bsonQueryList.add(Filters.or(samplesQuery));
+
+            query.remove(idQueried);
+            query.remove(VERSION);
+
+            return true;
+        }
+
+        return false;
     }
 
     protected void unmarkPermissionRule(MongoDBCollection collection, long studyId, String permissionRuleId) {
