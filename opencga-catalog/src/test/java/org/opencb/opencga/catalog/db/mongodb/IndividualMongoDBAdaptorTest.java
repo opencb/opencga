@@ -284,47 +284,6 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
 //    }
 
     @Test
-    public void testDeleteIndividual() throws Exception {
-        long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        long individualId = catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "in1", Individual.Sex
-                .UNKNOWN, "", null, 1, Collections.emptyList(), null), null).first().getUid();
-        long individualId2 = catalogIndividualDBAdaptor.insert(studyId, new Individual("in2", "in2", Individual.Sex
-                .UNKNOWN, "", null, 1, Collections.emptyList(), null), null).first().getUid();
-
-        catalogIndividualDBAdaptor.delete(individualId2, new QueryOptions());
-        catalogIndividualDBAdaptor.delete(individualId, new QueryOptions());
-//        catalogIndividualDBAdaptor.deleteIndividual(individualId2, null);
-//        catalogIndividualDBAdaptor.deleteIndividual(individualId, null);
-
-    }
-
-    @Test
-    public void testDeleteIndividualInUse() throws Exception {
-        long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        Individual mother = catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "in1", Individual.Sex
-                .UNKNOWN, "", null, 1, Collections.emptyList(), null), null).first();
-        catalogIndividualDBAdaptor.insert(studyId, new Individual("in2", "in2", null, mother, null, null, Individual.Sex.UNKNOWN, null,
-                "", null, null, null, "", null, true, 1, Collections.emptyList(), null), null).first().getUid();
-
-        thrown.expect(CatalogDBException.class);
-        catalogIndividualDBAdaptor.delete(mother.getUid(), new QueryOptions());
-
-    }
-
-    @Test
-    public void testDeleteIndividualInUseAsSample() throws Exception {
-        long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        long sampleUid = catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyId, new Sample().setId("sample").setUid(5L).setVersion(1),
-                QueryOptions.empty()).first().getUid();
-        long individualId = catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "in1", Individual.Sex.UNKNOWN, "",
-                null, 1, Collections.emptyList(), null)
-                        .setSamples(Arrays.asList(new Sample().setUid(sampleUid).setVersion(1))), null).first().getUid();
-
-        thrown.expect(CatalogDBException.class);
-        catalogIndividualDBAdaptor.delete(individualId, new QueryOptions());
-    }
-
-    @Test
     public void testGetStudyIdByIndividualId() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         long individualId = catalogIndividualDBAdaptor.insert(studyId, new Individual(), null).first().getUid();

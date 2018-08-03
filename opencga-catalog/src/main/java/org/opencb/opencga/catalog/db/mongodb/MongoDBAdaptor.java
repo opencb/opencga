@@ -26,8 +26,10 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
+import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.slf4j.Logger;
 
 import java.util.*;
@@ -67,7 +69,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
 
     static final String INTERNAL_DELIMITER = "__";
 
-    static final String NATIVE_QUERY = "nativeQuery";
+    public static final String NATIVE_QUERY = "nativeQuery";
 
     // Possible update actions
     static final String SET = "SET";
@@ -385,6 +387,47 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         }
 
         return false;
+    }
+
+    /**
+     * Removes any sample projects made. This method should be called by any entity containing samples such as Individual, File or cohort.
+     *
+     * @param options current query options object.
+     * @return new QueryOptions after removing the inner sample projections.
+     */
+    protected QueryOptions removeSampleProjections(QueryOptions options) {
+        QueryOptions queryOptions = ParamUtils.defaultObject(options, QueryOptions::new);
+
+        if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
+            List<String> includeList = queryOptions.getAsStringList(QueryOptions.INCLUDE);
+            List<String> newInclude = new ArrayList<>(includeList.size());
+            for (String include : includeList) {
+                if (!include.startsWith(IndividualDBAdaptor.QueryParams.SAMPLES.key() + ".")) {
+                    newInclude.add(include);
+                }
+            }
+            if (newInclude.isEmpty()) {
+                queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(PRIVATE_ID, IndividualDBAdaptor.QueryParams.SAMPLES.key()));
+            } else {
+                queryOptions.put(QueryOptions.INCLUDE, newInclude);
+            }
+        }
+        if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
+            List<String> excludeList = queryOptions.getAsStringList(QueryOptions.EXCLUDE);
+            List<String> newExclude = new ArrayList<>(excludeList.size());
+            for (String exclude : excludeList) {
+                if (!exclude.startsWith(IndividualDBAdaptor.QueryParams.SAMPLES.key() + ".")) {
+                    newExclude.add(exclude);
+                }
+            }
+            if (newExclude.isEmpty()) {
+                queryOptions.remove(QueryOptions.EXCLUDE);
+            } else {
+                queryOptions.put(QueryOptions.EXCLUDE, newExclude);
+            }
+        }
+
+        return queryOptions;
     }
 
     protected void unmarkPermissionRule(MongoDBCollection collection, long studyId, String permissionRuleId) {

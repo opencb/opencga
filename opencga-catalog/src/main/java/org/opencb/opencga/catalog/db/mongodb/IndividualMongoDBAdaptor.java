@@ -41,7 +41,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.IndividualAclEntry;
@@ -132,7 +131,10 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
         individualCollection.insert(individualDocument, null);
 
-        return endQuery("createIndividual", startQuery, get(individualId, options));
+        Query query = new Query()
+                .append(QueryParams.STUDY_UID.key(), studyId)
+                .append(QueryParams.UID.key(), individualId);
+        return endQuery("createIndividual", startQuery, get(query, options));
     }
 
 //    @Override
@@ -363,6 +365,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             throw new CatalogDBException("Could not update individual with id " + id);
         }
         Query query = new Query()
+                .append(QueryParams.STUDY_UID.key(), getStudyId(id))
                 .append(QueryParams.UID.key(), id)
                 .append(QueryParams.STATUS_NAME.key(), "!=EMPTY");
         return endQuery("Update individual", startTime, get(query, queryOptions));
@@ -630,53 +633,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     }
 
     @Override
-    public QueryResult<Individual> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
-        long startTime = startQuery();
-        checkId(id);
-        // Check the file is active
-        Query query = new Query(QueryParams.UID.key(), id).append(QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!="
-                + File.FileStatus.DELETED);
-        if (count(query).first() == 0) {
-            query.put(QueryParams.STATUS_NAME.key(), Status.DELETED);
-            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.STATUS_NAME.key());
-            Individual individual = get(query, options).first();
-            throw new CatalogDBException("The individual {" + id + "} was already " + individual.getStatus().getName());
-        }
-
-        // If we don't find the force parameter, we check first if the individual could be deleted.
-        if (!queryOptions.containsKey(FORCE) || !queryOptions.getBoolean(FORCE)) {
-            checkCanDelete(id);
-        }
-
-        if (queryOptions.containsKey(FORCE) && queryOptions.getBoolean(FORCE)) {
-            deleteReferences(id);
-        }
-
-        // Change the status of the project to deleted
-        setStatus(id, Status.DELETED);
-
-        query = new Query(QueryParams.UID.key(), id)
-                .append(QueryParams.STATUS_NAME.key(), Status.DELETED);
-
-        return endQuery("Delete individual", startTime, get(query, queryOptions));
-    }
-
-    @Override
-    public QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
-        throw new UnsupportedOperationException("Delete not yet implemented");
-    }
-
-    @Override
-    public QueryResult<Individual> remove(long id, QueryOptions queryOptions) throws CatalogDBException {
-        throw new UnsupportedOperationException("Remove not yet implemented.");
-    }
-
-    @Override
-    public QueryResult<Long> remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
-        throw new UnsupportedOperationException("Remove not yet implemented.");
-    }
-
-    @Override
     public QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
         query.put(QueryParams.STATUS_NAME.key(), Status.DELETED);
@@ -891,8 +847,11 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         } else {
             qOptions = new QueryOptions();
         }
+
         qOptions = removeSampleProjections(qOptions);
         qOptions = removeAnnotationProjectionOptions(qOptions);
+
+        // FIXME we should be able to remove this now safely
         qOptions = filterOptions(qOptions, FILTER_ROUTE_INDIVIDUALS);
 
         logger.debug("Individual get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
@@ -1168,41 +1127,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         count = dbAdaptorFactory.getCatalogSampleDBAdaptor()
                 .update(query, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key(), -1), QueryOptions.empty()).first();
         logger.debug("Individual id {} extracted from {} samples", individualId, count);
-    }
-
-    private QueryOptions removeSampleProjections(QueryOptions options) {
-        QueryOptions queryOptions = ParamUtils.defaultObject(options, QueryOptions::new);
-
-        if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
-            List<String> includeList = queryOptions.getAsStringList(QueryOptions.INCLUDE);
-            List<String> newInclude = new ArrayList<>(includeList.size());
-            for (String include : includeList) {
-                if (!include.startsWith(QueryParams.SAMPLES.key() + ".")) {
-                    newInclude.add(include);
-                }
-            }
-            if (newInclude.isEmpty()) {
-                queryOptions.put(QueryOptions.INCLUDE, PRIVATE_ID);
-            } else {
-                queryOptions.put(QueryOptions.INCLUDE, newInclude);
-            }
-        }
-        if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
-            List<String> excludeList = queryOptions.getAsStringList(QueryOptions.EXCLUDE);
-            List<String> newExclude = new ArrayList<>(excludeList.size());
-            for (String exclude : excludeList) {
-                if (!exclude.startsWith(QueryParams.SAMPLES.key() + ".")) {
-                    newExclude.add(exclude);
-                }
-            }
-            if (newExclude.isEmpty()) {
-                queryOptions.remove(QueryOptions.EXCLUDE);
-            } else {
-                queryOptions.put(QueryOptions.EXCLUDE, newExclude);
-            }
-        }
-
-        return queryOptions;
     }
 
 }

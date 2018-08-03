@@ -8,7 +8,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.IndividualMongoDBAdaptor;
-import org.opencb.opencga.catalog.db.mongodb.SampleMongoDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -20,9 +19,10 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.function.Function;
 
+import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.NATIVE_QUERY;
+
 public class IndividualMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
 
-    private Logger logger;
     private long studyUid;
     private String user;
 
@@ -30,18 +30,21 @@ public class IndividualMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
     private QueryOptions sampleQueryOptions;
 
     private Queue<Document> individualListBuffer;
+
+    private Logger logger;
+
     private static final int BUFFER_SIZE = 100;
 
     public IndividualMongoDBIterator(MongoCursor mongoCursor, AnnotableConverter<? extends Annotable> converter,
-                                 Function<Document, Document> filter, SampleMongoDBAdaptor sampleMongoDBAdaptor,
-                                 long studyUid, String user, QueryOptions options) {
+                                     Function<Document, Document> filter, SampleDBAdaptor sampleMongoDBAdaptor,
+                                     long studyUid, String user, QueryOptions options) {
         super(mongoCursor, converter, filter, options);
 
         this.user = user;
         this.studyUid = studyUid;
 
         this.sampleDBAdaptor = sampleMongoDBAdaptor;
-        this.sampleQueryOptions = generateSampleQueryOptions();
+        this.sampleQueryOptions = createSampleQueryOptions();
 
         this.individualListBuffer = new LinkedList<>();
         this.logger = LoggerFactory.getLogger(IndividualMongoDBIterator.class);
@@ -49,7 +52,7 @@ public class IndividualMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
 
     @Override
     public E next() {
-        Document next = getNext();
+        Document next = individualListBuffer.remove();
 
         if (filter != null) {
             next = filter.apply(next);
@@ -65,35 +68,32 @@ public class IndividualMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
     @Override
     public boolean hasNext() {
         if (individualListBuffer.isEmpty()) {
-            refillIndividualBuffer();
+            fetchNextBatch();
         }
         return !individualListBuffer.isEmpty();
     }
 
-    private Document getNext() {
-        return individualListBuffer.remove();
-    }
-
-    private void refillIndividualBuffer() {
+    private void fetchNextBatch() {
         Set<String> sampleVersions = new HashSet<>();
 
-        // Get next 100 documents
-        int cont = 0;
-        while (mongoCursor.hasNext() && cont < BUFFER_SIZE) {
-            Document next = (Document) mongoCursor.next();
+        // Get next BUFFER_SIZE documents
+        int counter = 0;
+        while (mongoCursor.hasNext() && counter < BUFFER_SIZE) {
+            Document individualDocument = (Document) mongoCursor.next();
 
-            individualListBuffer.add(next);
-            cont++;
+            individualListBuffer.add(individualDocument);
+            counter++;
 
             // Extract all the samples
-            Object samples = next.get(IndividualMongoDBAdaptor.QueryParams.SAMPLES.key());
-            if (samples != null) {
+            Object samples = individualDocument.get(IndividualMongoDBAdaptor.QueryParams.SAMPLES.key());
+            if (samples != null && !options.getBoolean(NATIVE_QUERY)) {
                 List<Document> sampleList = (List<Document>) samples;
                 if (!sampleList.isEmpty()) {
                     sampleList.forEach(s -> {
                         String uid = String.valueOf(s.get("uid"));
                         String version = String.valueOf(s.get("version"));
 
+                        // TODO we store in a Set to try to reduce the number of keys to be queried, maybe this is not needed?
                         sampleVersions.add(uid + "__" + version);
                     });
                 }
@@ -129,12 +129,14 @@ public class IndividualMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
 
             // Map each sample uid - version to the sample entry
             Map<String, Document> sampleMap = new HashMap<>(sampleList.size());
-            sampleList.forEach(s -> sampleMap.put(String.valueOf(s.get("uid")) + "__" + String.valueOf(s.get("version")), s));
+            sampleList.forEach(sample ->
+                    sampleMap.put(String.valueOf(sample.get("uid")) + "__" + String.valueOf(sample.get("version")), sample)
+            );
 
             // Add the samples obtained to the corresponding individuals
-            individualListBuffer.forEach(i -> {
+            individualListBuffer.forEach(individual -> {
                 List<Document> tmpSampleList = new ArrayList<>();
-                List<Document> samples = (List<Document>) i.get(IndividualMongoDBAdaptor.QueryParams.SAMPLES.key());
+                List<Document> samples = (List<Document>) individual.get(IndividualMongoDBAdaptor.QueryParams.SAMPLES.key());
 
                 samples.forEach(s -> {
                         String uid = String.valueOf(s.get("uid"));
@@ -147,13 +149,13 @@ public class IndividualMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
                         }
                 });
 
-                i.put(IndividualMongoDBAdaptor.QueryParams.SAMPLES.key(), tmpSampleList);
+                individual.put(IndividualMongoDBAdaptor.QueryParams.SAMPLES.key(), tmpSampleList);
             });
         }
     }
 
-    private QueryOptions generateSampleQueryOptions() {
-        QueryOptions queryOptions = new QueryOptions("lazy", true);
+    private QueryOptions createSampleQueryOptions() {
+        QueryOptions queryOptions = new QueryOptions(NATIVE_QUERY, true);
 
         if (options.containsKey(QueryOptions.INCLUDE)) {
             List<String> currentIncludeList = options.getAsStringList(QueryOptions.INCLUDE);
