@@ -72,8 +72,6 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
 
     QueryResult<Study> get(long studyId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException;
-
     void updateStudyLastModified(long studyId) throws CatalogDBException;
 
 //    @Deprecated

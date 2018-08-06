@@ -436,8 +436,11 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     public QueryResult<Family> updateAnnotations(String studyStr, String familyStr, String annotationSetId,
-                                                 Map<String, Object> annotations, ParamUtils.CompleteUpdateAction action,
-                                                 QueryOptions options, String token) throws CatalogException {
+                                                     Map<String, Object> annotations, ParamUtils.CompleteUpdateAction action,
+                                                     QueryOptions options, String token) throws CatalogException {
+        if (annotations == null || annotations.isEmpty()) {
+            return new QueryResult<>(familyStr, -1, -1, -1, "Nothing to do: The map of annotations is empty", "", Collections.emptyList());
+        }
         ObjectMap params = new ObjectMap(AnnotationSetManager.ANNOTATIONS, new AnnotationSet(annotationSetId, "", annotations));
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         options.put(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATIONS, action));
@@ -480,7 +483,10 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                     FamilyAclEntry.FamilyPermissions.UPDATE);
         }
 
-        QueryResult<Family> familyQueryResult = familyDBAdaptor.get(familyId, new QueryOptions());
+        Query query = new Query()
+                .append(FamilyDBAdaptor.QueryParams.UID.key(), familyId)
+                .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), resource.getStudy().getUid());
+        QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, new QueryOptions());
         if (familyQueryResult.getNumResults() == 0) {
             throw new CatalogException("Family " + familyId + " not found");
         }

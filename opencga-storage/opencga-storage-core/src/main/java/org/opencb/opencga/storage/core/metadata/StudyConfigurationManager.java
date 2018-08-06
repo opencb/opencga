@@ -864,6 +864,38 @@ public class StudyConfigurationManager implements AutoCloseable {
         }
     }
 
+    public int registerSearchIndexSamples(StudyConfiguration studyConfiguration, List<String> samples) throws StorageEngineException {
+        if (samples == null || samples.isEmpty()) {
+            throw new StorageEngineException("Missing samples to index");
+        }
+
+        List<Integer> sampleIds = new ArrayList<>(samples.size());
+
+        List<String> alreadyIndexedSamples = new ArrayList<>();
+
+        for (String sample : samples) {
+            Integer sampleId = getSampleIdFromStudy(sample, studyConfiguration);
+            if (sampleId == null) {
+                throw VariantQueryException.sampleNotFound(sample, studyConfiguration.getStudyName());
+            }
+            sampleIds.add(sampleId);
+            if (studyConfiguration.getSearchIndexedSampleSets().containsKey(sampleId)) {
+                alreadyIndexedSamples.add(sample);
+            }
+        }
+
+        if (!alreadyIndexedSamples.isEmpty()) {
+            throw new StorageEngineException("Samples " + alreadyIndexedSamples + " already in search index");
+        }
+
+        int id = newSearchIndexSamplesId(studyConfiguration);
+        for (Integer sampleId : sampleIds) {
+            studyConfiguration.getSearchIndexedSampleSets().put(sampleId, id);
+        }
+
+        return id;
+    }
+
     /**
      * Check if the StudyConfiguration is correct.
      *
@@ -973,6 +1005,10 @@ public class StudyConfigurationManager implements AutoCloseable {
 
     protected int newStudyId() throws StorageEngineException {
         return projectDBAdaptor.generateId(null, "study");
+    }
+
+    protected int newSearchIndexSamplesId(StudyConfiguration studyConfiguration) throws StorageEngineException {
+        return projectDBAdaptor.generateId(studyConfiguration, "searchIndexSamples");
     }
 
 

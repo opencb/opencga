@@ -113,7 +113,11 @@ public class StudyManager extends AbstractManager {
         QueryResult<Study> studyQueryResult = smartResolutor(studyStr, userId);
 
         if (studyQueryResult.getNumResults() > 1) {
-            throw new CatalogException("More than one study found given '" + studyStr + "'. Please, be more specific."
+            String studyMessage = "";
+            if (StringUtils.isNotEmpty(studyStr)) {
+                studyMessage = " given '" + studyStr + "'";
+            }
+            throw new CatalogException("More than one study found" + studyMessage + ". Please, be more specific."
                     + " The accepted pattern is [ownerId@projectId:studyId]");
         }
 
@@ -174,8 +178,12 @@ public class StudyManager extends AbstractManager {
         if (studyQueryResult.getNumResults() == 0) {
             studyQueryResult = studyDBAdaptor.get(query, options);
             if (studyQueryResult.getNumResults() == 0) {
-                throw new CatalogException("No study found given '" + studyStr + "' "
-                        + "or the user '" + userId + "'  does not have permissions to view any.");
+                String studyMessage = "";
+                if (StringUtils.isNotEmpty(studyStr)) {
+                    studyMessage = " given '" + studyStr + "'";
+                }
+                throw new CatalogException("No study found" + studyMessage + " or the user '" + userId
+                        + "'  does not have permissions to view any.");
             } else {
                 throw CatalogAuthorizationException.deny(userId, "view", "study", studyQueryResult.first().getFqn(), null);
             }

@@ -35,6 +35,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
+import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTask;
 import org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus;
@@ -85,6 +86,10 @@ public class VariantSqlQueryParser {
         SQL_OPERATOR.put("=~", "LIKE");
         SQL_OPERATOR.put("~", "LIKE");
         SQL_OPERATOR.put("!", "!=");
+        SQL_OPERATOR.put(">>", ">");
+        SQL_OPERATOR.put(">>=", ">=");
+        SQL_OPERATOR.put("<<", "<");
+        SQL_OPERATOR.put("<<=", "<=");
     }
 
     public static class VariantPhoenixSQLQuery {
@@ -351,15 +356,43 @@ public class VariantSqlQueryParser {
             regionFilters.add(getVariantFilter(variantQueryXref.getVariants()));
         }
 
-        // Ask cellbase for gene region?
+        boolean onlyGeneRegionFilter = regionFilters.isEmpty();
         if (!variantQueryXref.getGenes().isEmpty()) {
+            List<String> geneRegionFilters = new ArrayList<>();
             if (isValidParam(query, ANNOT_GENE_REGIONS)) {
                 for (Region region : Region.parseRegions(query.getString(ANNOT_GENE_REGIONS.key()))) {
-                    regionFilters.add(getRegionFilter(region));
+                    geneRegionFilters.add(getRegionFilter(region));
                 }
             } else {
                 throw new VariantQueryException("Error building query by genes '" + variantQueryXref.getGenes()
                         + "', missing gene regions");
+            }
+            if (isValidParam(query, ANNOT_CONSEQUENCE_TYPE)) {
+                List<String> genes = variantQueryXref.getGenes();
+                List<String> soList = query.getAsStringList(ANNOT_CONSEQUENCE_TYPE.key());
+                Set<String> gnSoSet = new HashSet<>(genes.size() * soList.size());
+                List<String> gnSoFilters = new ArrayList<>(genes.size() * soList.size());
+                for (String gene : genes) {
+                    for (String so : soList) {
+                        int soNumber = parseConsequenceType(so);
+                        gnSoSet.add(VariantAnnotationToPhoenixConverter.buildGeneSO(gene, soNumber));
+                    }
+                }
+                for (String gnSo : gnSoSet) {
+                    gnSoFilters.add(buildFilter(VariantColumn.GENE_SO, "=", gnSo));
+                }
+
+                regionFilters.add(appendFilters(Arrays.asList(
+                        appendFilters(geneRegionFilters, QueryOperation.OR),
+                        appendFilters(gnSoFilters, QueryOperation.OR)), QueryOperation.AND));
+
+                if (onlyGeneRegionFilter) {
+                    // If there are only gene region filter, remove ConsequenceType filter
+                    query.remove(ANNOT_CONSEQUENCE_TYPE.key());
+                }
+
+            } else {
+                regionFilters.addAll(geneRegionFilters);
             }
         }
 
@@ -674,6 +707,15 @@ public class VariantSqlQueryParser {
 
                             double parsedValue = parseDouble(qual, QUAL, qualValue);
                             sb.append(parseNumericOperator(op)).append(' ').append(parsedValue);
+
+                            if (op.startsWith(">>") || op.startsWith("<<")) {
+                                sb.append(" OR \"");
+                                buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue(), sb);
+                                sb.append('"');
+
+                                // Arrays in SQL are 1-based.
+                                sb.append('[').append(HBaseToStudyEntryConverter.FILE_QUAL_IDX + 1).append("] IS NULL");
+                            }
                         }
                         sb.append(" ) ");
                     }
@@ -877,6 +919,24 @@ public class VariantSqlQueryParser {
                 return VariantColumn.POLYPHEN;
             } else {
                 return VariantColumn.POLYPHEN_DESC;
+            }
+        }, null, null, null, filters, op -> op.contains(">") ? 2 : op.contains("<") ? 1 : -1);
+
+        addQueryFilter(query, ANNOT_PROTEIN_SUBSTITUTION, (keyOpValue, rawValue) -> {
+            if (keyOpValue[0].equalsIgnoreCase("sift")) {
+                if (NumberUtils.isParsable(keyOpValue[2])) {
+                    return VariantColumn.SIFT;
+                } else {
+                    return VariantColumn.SIFT_DESC;
+                }
+            } else if (keyOpValue[0].equalsIgnoreCase("polyphen")) {
+                if (NumberUtils.isParsable(keyOpValue[2])) {
+                    return VariantColumn.POLYPHEN;
+                } else {
+                    return VariantColumn.POLYPHEN_DESC;
+                }
+            } else {
+                throw VariantQueryException.malformedParam(ANNOT_PROTEIN_SUBSTITUTION, Arrays.toString(keyOpValue));
             }
         }, null, null, null, filters, op -> op.contains(">") ? 2 : op.contains("<") ? 1 : -1);
 
@@ -1112,7 +1172,8 @@ public class VariantSqlQueryParser {
                 Column column = columnParser.apply(keyOpValue, rawValue);
 
 
-                String op = parseOperator(keyOpValue[1]);
+//                String op = parseOperator(keyOpValue[1]);
+                String op = keyOpValue[1];
                 if (operatorParser != null) {
                     op = operatorParser.apply(op);
                 }
@@ -1182,6 +1243,7 @@ public class VariantSqlQueryParser {
             sqlType = sqlType.replace(" ARRAY", "");
             arrayPosition = "[" + idx + "]";
         }
+        boolean orNull = op.startsWith(">>") || op.startsWith("<<");
         switch (sqlType) {
             case "VARCHAR":
                 parsedValue = checkStringValue((String) value);
@@ -1245,6 +1307,9 @@ public class VariantSqlQueryParser {
             default:
                 throw new VariantQueryException("Unsupported column type " + column.getPDataType().getSqlTypeName()
                         + " for column " + column);
+        }
+        if (orNull) {
+            sb.append(" OR \"").append(column).append("\" IS NULL");
         }
         if (StringUtils.isNotEmpty(extra)) {
             sb.append(' ').append(extra).append(" )");
@@ -1343,12 +1408,20 @@ public class VariantSqlQueryParser {
         switch (op) {
             case ">":
                 return "<=";
+            case ">>":
+                return "<<=";
             case ">=":
                 return "<";
+            case ">>=":
+                return "<<";
             case "<":
                 return ">=";
+            case "<<":
+                return ">>=";
             case "<=":
                 return ">";
+            case "<<=":
+                return ">>";
             case "":
             case "=":
             case "==":

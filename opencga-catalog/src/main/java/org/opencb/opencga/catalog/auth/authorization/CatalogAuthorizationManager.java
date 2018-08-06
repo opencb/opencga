@@ -337,6 +337,15 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             case UPLOAD:
                 studyPermission = StudyAclEntry.StudyPermissions.UPLOAD_FILES;
                 break;
+            case VIEW_ANNOTATIONS:
+                studyPermission = StudyAclEntry.StudyPermissions.VIEW_FILE_ANNOTATIONS;
+                break;
+            case WRITE_ANNOTATIONS:
+                studyPermission = StudyAclEntry.StudyPermissions.WRITE_FILE_ANNOTATIONS;
+                break;
+            case DELETE_ANNOTATIONS:
+                studyPermission = StudyAclEntry.StudyPermissions.DELETE_FILE_ANNOTATIONS;
+                break;
             default:
                 throw new CatalogAuthorizationException("Permission " + permission.toString() + " not found");
         }

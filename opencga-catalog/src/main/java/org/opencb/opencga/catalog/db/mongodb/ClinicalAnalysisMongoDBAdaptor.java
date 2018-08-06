@@ -178,6 +178,14 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                 break;
         }
 
+        if (!document.toFinalUpdateDocument().isEmpty()) {
+            // Update modificationDate param
+            String time = TimeUtils.getTime();
+            Date date = TimeUtils.toDate(time);
+            document.getSet().put(MODIFICATION_DATE, time);
+            document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+        }
+
         Document updateOperation = document.toFinalUpdateDocument();
 
         if (!updateOperation.isEmpty()) {
@@ -326,6 +334,30 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     }
 
     @Override
+    public QueryResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException {
+        long startTime = startQuery();
+        List<Document> documentList = new ArrayList<>();
+        QueryResult<Document> queryResult;
+        try (DBIterator<Document> dbIterator = nativeIterator(query, options, user)) {
+            while (dbIterator.hasNext()) {
+                documentList.add(dbIterator.next());
+            }
+        }
+        queryResult = endQuery("Native get", startTime, documentList);
+
+        if (options != null && options.getBoolean(QueryOptions.SKIP_COUNT, false)) {
+            return queryResult;
+        }
+
+        // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
+        if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
+            QueryResult<Long> count = count(query);
+            queryResult.setNumTotalResults(count.first());
+        }
+        return queryResult;
+    }
+
+    @Override
     public DBIterator<ClinicalAnalysis> iterator(Query query, QueryOptions options) throws CatalogDBException {
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
         return new MongoDBIterator<>(mongoCursor, clinicalConverter);
@@ -333,7 +365,10 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
     @Override
     public DBIterator nativeIterator(Query query, QueryOptions options) throws CatalogDBException {
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
+        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+        queryOptions.put(NATIVE_QUERY, true);
+
+        MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions);
         return new MongoDBIterator<>(mongoCursor);
     }
 
@@ -348,8 +383,11 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     @Override
     public DBIterator nativeIterator(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
+        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+        queryOptions.put(NATIVE_QUERY, true);
+
         Document studyDocument = getStudyDocument(query);
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, options, studyDocument, user);
+        MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions, studyDocument, user);
         return new MongoDBIterator<>(mongoCursor);
     }
 

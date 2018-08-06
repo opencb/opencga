@@ -15,12 +15,13 @@ import io.jsonwebtoken.impl.Base64UrlCodec;
 public class UUIDUtilsTest {
 	
 	@Test
-	public void checkSingleCGAUUID() throws ParseException {
-	    Date date = (new SimpleDateFormat("dd/MM/yyyy")).parse("28/02/1953");
+	public void checkSingleCGAUUID() throws ParseException {		
+		SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy zzz");
+		Date date = formatter.parse("28/02/1953 GMT");    	
 	    UUIDUtils.Entity entity = UUIDUtils.Entity.INDIVIDUAL;
 	    String uuid = UUIDUtils.generateOpenCGAUUID(entity, date);
 	    String uuidStr = new String(Base64UrlCodec.BASE64URL.decodeToString(uuid));
-	    String uuidStrToCompare = "431c8d80-ff84-0006-0001-";
+	    String uuidStrToCompare = "43537c00-ff84-0006-0001-";
 	    assertEquals(uuidStr.substring(0, uuidStrToCompare.length()), uuidStrToCompare);
     }
 

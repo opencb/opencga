@@ -58,7 +58,6 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static htsjdk.samtools.SAMFileHeader.GroupOrder.query;
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
 
 /**
@@ -394,7 +393,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
                     ObjectMap fileUpdateParams = new ObjectMap()
                             .append(FileDBAdaptor.QueryParams.SAMPLES.key(), remainingSampleList);
-                    catalogManager.getFileManager().unsafeUpdate(study.getUid(), file, fileUpdateParams, QueryOptions.empty(), userId);
+                    catalogManager.getFileManager().unsafeUpdate(study, file, fileUpdateParams, QueryOptions.empty(), userId);
 
                     // If the file has been left orphan, are we intended to delete it as well?
                     if (remainingSampleList.isEmpty() && !"NONE".equals(params.getString(Constants.EMPTY_FILES_ACTION))) {
@@ -554,8 +553,10 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     public QueryResult<Sample> updateAnnotations(String studyStr, String sampleStr, String annotationSetId, Map<String, Object> annotations,
-                                                 ParamUtils.CompleteUpdateAction action, QueryOptions options, String token)
-            throws CatalogException {
+                                  ParamUtils.CompleteUpdateAction action, QueryOptions options, String token) throws CatalogException {
+        if (annotations == null || annotations.isEmpty()) {
+            return new QueryResult<>(sampleStr, -1, -1, -1, "Nothing to do: The map of annotations is empty", "", Collections.emptyList());
+        }
         ObjectMap params = new ObjectMap(AnnotationSetManager.ANNOTATIONS, new AnnotationSet(annotationSetId, "", annotations));
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         options.put(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATIONS, action));

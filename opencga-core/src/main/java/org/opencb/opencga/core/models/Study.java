@@ -35,6 +35,7 @@ public class Study extends PrivateFields {
     private String alias;
     private Type type;
     private String creationDate;
+    private String modificationDate;
     private String description;
     private Status status;
     private String lastModified;
@@ -152,12 +153,13 @@ public class Study extends PrivateFields {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Study{");
-        sb.append("uuid='").append(uuid).append('\'');
-        sb.append(", id='").append(id).append('\'');
+        sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
+        sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", alias='").append(alias).append('\'');
         sb.append(", type=").append(type);
         sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", status=").append(status);
         sb.append(", lastModified='").append(lastModified).append('\'');
@@ -241,6 +243,15 @@ public class Study extends PrivateFields {
 
     public Study setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public Study setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 

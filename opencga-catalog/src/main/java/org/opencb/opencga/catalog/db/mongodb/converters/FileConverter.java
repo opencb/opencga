@@ -17,7 +17,6 @@
 package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import org.bson.Document;
-import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Sample;
 
@@ -28,7 +27,7 @@ import java.util.List;
 /**
  * Created by pfurio on 19/01/16.
  */
-public class FileConverter extends GenericDocumentComplexConverter<File> {
+public class FileConverter extends AnnotableConverter<File> {
 
     public FileConverter() {
         super(File.class);

@@ -1,7 +1,7 @@
 function migrateCollectionDifferentCollection(inputCollection, outputCollection, query, projection, migrateFunc) {
     var bulk = db.getCollection(outputCollection).initializeOrderedBulkOp();
     var count = 0;
-    var bulkSize = 500;
+    var bulkSize = 1000;
     db.getCollection(inputCollection).find(query,projection).forEach(function(doc) {
         migrateFunc(bulk, doc);
         if ( bulk.nUpdateOps + bulk.nInsertOps + bulk.nRemoveOps >= bulkSize ) {

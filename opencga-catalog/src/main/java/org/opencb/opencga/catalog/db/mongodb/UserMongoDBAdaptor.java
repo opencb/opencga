@@ -371,6 +371,11 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     }
 
     @Override
+    public QueryResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException {
+        throw new NotImplementedException("Get not implemented for user");
+    }
+
+    @Override
     public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
         Map<String, Object> userParameters = new HashMap<>();

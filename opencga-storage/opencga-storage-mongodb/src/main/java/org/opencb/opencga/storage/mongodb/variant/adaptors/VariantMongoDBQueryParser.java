@@ -1145,14 +1145,38 @@ public class VariantMongoDBQueryParser {
             case "<":
                 builder.and(key).lessThan(Double.parseDouble(obj));
                 break;
+            case "<<":
+                builder.and(new BasicDBObject("$or", Arrays.asList(
+                        QueryBuilder.start(key).lessThan(Double.parseDouble(obj)).get(),
+                        QueryBuilder.start(key).exists(false).get()
+                )));
+                break;
             case "<=":
                 builder.and(key).lessThanEquals(Double.parseDouble(obj));
+                break;
+            case "<<=":
+                builder.and(new BasicDBObject("$or", Arrays.asList(
+                        QueryBuilder.start(key).lessThanEquals(Double.parseDouble(obj)).get(),
+                        QueryBuilder.start(key).exists(false).get()
+                )));
                 break;
             case ">":
                 builder.and(key).greaterThan(Double.parseDouble(obj));
                 break;
+            case ">>":
+                builder.and(new BasicDBObject("$or", Arrays.asList(
+                        QueryBuilder.start(key).greaterThan(Double.parseDouble(obj)).get(),
+                        QueryBuilder.start(key).exists(false).get()
+                )));
+                break;
             case ">=":
                 builder.and(key).greaterThanEquals(Double.parseDouble(obj));
+                break;
+            case ">>=":
+                builder.and(new BasicDBObject("$or", Arrays.asList(
+                        QueryBuilder.start(key).greaterThanEquals(Double.parseDouble(obj)).get(),
+                        QueryBuilder.start(key).exists(false).get()
+                )));
                 break;
             case "=":
             case "==":
@@ -1175,7 +1199,7 @@ public class VariantMongoDBQueryParser {
         return builder;
     }
 
-    private QueryBuilder addStringCompQueryFilter(String key, String value, QueryBuilder builder) {
+    private QueryBuilder addStringCompQueryFilter(VariantQueryParam param, String key, String value, QueryBuilder builder) {
         String[] split = splitOperator(value);
         String op = split[1];
         String obj = split[2];
@@ -1192,9 +1216,10 @@ public class VariantMongoDBQueryParser {
             case "":
             case "=":
             case "==":
-            default:
                 builder.and(key).is(obj);
                 break;
+            default:
+                throw VariantQueryException.malformedParam(param, value, "Unsupported operator " + op);
         }
         return builder;
     }
@@ -1267,7 +1292,7 @@ public class VariantMongoDBQueryParser {
             } else if (allowDescriptionFilter) {
                 // Query by description
                 key += '.' + DocumentToVariantAnnotationConverter.SCORE_DESCRIPTION_FIELD;
-                addStringCompQueryFilter(key, scoreValue, scoreBuilder);
+                addStringCompQueryFilter(scoreParam, key, scoreValue, scoreBuilder);
             } else {
                 throw VariantQueryException.malformedParam(scoreParam, value);
             }
@@ -1325,17 +1350,25 @@ public class VariantMongoDBQueryParser {
                 //new IllegalArgumentException("Bad population frequency filter: " + elem);
             }
             String study = split[0];
-            String population = split[1];
-            String[] populationFrequency = splitOperator(population);
-            logger.debug("populationFrequency = " + Arrays.toString(populationFrequency));
+            String populationFrequency = split[1];
+            String[] populationFrequencySplit = splitOperator(populationFrequency);
+            String population = populationFrequencySplit[0];
+            String operator = populationFrequencySplit[1];
+            String numValue = populationFrequencySplit[2];
+            if (operator.startsWith(">>") || operator.startsWith("<<")) {
+                // Remove first char
+                operator = operator.substring(1);
+            }
+
+            logger.debug("populationFrequency = " + Arrays.toString(populationFrequencySplit));
 
             QueryBuilder frequencyBuilder = new QueryBuilder();
             frequencyBuilder.and(DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_STUDY_FIELD).is(study);
-            frequencyBuilder.and(DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_POP_FIELD).is(populationFrequency[0]);
+            frequencyBuilder.and(DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_POP_FIELD).is(population);
             Document studyPopFilter = new Document(frequencyBuilder.get().toMap());
-            addFilter.accept(populationFrequency[1] + populationFrequency[2], frequencyBuilder);
+            addFilter.accept(operator + numValue, frequencyBuilder);
             BasicDBObject elemMatch = new BasicDBObject(key, new BasicDBObject("$elemMatch", frequencyBuilder.get()));
-            if (populationFrequency[1].startsWith("<")) {
+            if (operator.startsWith("<")) {
                 BasicDBObject orNotExistsAnyPopulation = new BasicDBObject(key, new BasicDBObject("$exists", false));
                 BasicDBObject orNotExistsPopulation =
                         new BasicDBObject(key, new BasicDBObject("$not", new BasicDBObject("$elemMatch", studyPopFilter)));

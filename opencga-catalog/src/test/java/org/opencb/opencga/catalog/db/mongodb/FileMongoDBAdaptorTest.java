@@ -44,7 +44,7 @@ import static org.junit.Assert.*;
 public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
-    public void createFileToStudyTest() throws CatalogException, IOException {
+    public void createFileToStudyTest() throws CatalogException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         assertTrue(studyId >= 0);
         File file;

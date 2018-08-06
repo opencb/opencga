@@ -32,16 +32,19 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnno
 
 import java.util.List;
 
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.CreateAnnotationSnapshotCommandOptions.COPY_ANNOTATION_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.CreateAnnotationSnapshotCommandOptions.COPY_ANNOTATION_COMMAND_DESCRIPTION;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.DeleteAnnotationSnapshotCommandOptions.DELETE_ANNOTATION_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.DeleteAnnotationSnapshotCommandOptions.DELETE_ANNOTATION_COMMAND_DESCRIPTION;
+import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND_DESCRIPTION;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationSaveCommandOptions.ANNOTATION_SAVE_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationSaveCommandOptions.ANNOTATION_SAVE_COMMAND_DESCRIPTION;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationDeleteCommandOptions.ANNOTATION_DELETE_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationDeleteCommandOptions.ANNOTATION_DELETE_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillMissingCommandOptions.FILL_MISSING_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillMissingCommandOptions.FILL_MISSING_COMMAND_DESCRIPTION;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.QueryAnnotationCommandOptions.QUERY_ANNOTATION_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.QueryAnnotationCommandOptions.QUERY_ANNOTATION_COMMAND_DESCRIPTION;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationQueryCommandOptions.ANNOTATION_QUERY_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationQueryCommandOptions.ANNOTATION_QUERY_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.PROJECT_DESC;
@@ -54,15 +57,16 @@ import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQuer
 public class VariantCommandOptions {
 
     public final VariantIndexCommandOptions indexVariantCommandOptions;
-    public final VariantIndexSearchCommandOptions variantIndexSearchCommandOptions;
+    public final VariantSecondaryIndexCommandOptions variantSecondaryIndexCommandOptions;
     public final VariantRemoveCommandOptions variantRemoveCommandOptions;
 //    public final QueryVariantCommandOptionsOld queryVariantCommandOptionsOld;
     public final VariantQueryCommandOptions queryVariantCommandOptions;
     public final VariantStatsCommandOptions statsVariantCommandOptions;
     public final VariantAnnotateCommandOptions annotateVariantCommandOptions;
-    public final CreateAnnotationSnapshotCommandOptions createAnnotationSnapshotCommandOptions;
-    public final DeleteAnnotationSnapshotCommandOptions deleteAnnotationSnapshotCommandOptions;
-    public final QueryAnnotationCommandOptions queryAnnotationCommandOptions;
+    public final AnnotationSaveCommandOptions annotationSaveSnapshotCommandOptions;
+    public final AnnotationDeleteCommandOptions annotationDeleteCommandOptions;
+    public final AnnotationQueryCommandOptions annotationQueryCommandOptions;
+    public final AnnotationMetadataCommandOptions annotationMetadataCommandOptions;
     public final FillGapsCommandOptions fillGapsVariantCommandOptions;
     public final FillMissingCommandOptions fillMissingCommandOptions;
     public final VariantExportStatsCommandOptions exportVariantStatsCommandOptions;
@@ -84,15 +88,16 @@ public class VariantCommandOptions {
         this.jCommander = jCommander;
 
         this.indexVariantCommandOptions = new VariantIndexCommandOptions();
-        this.variantIndexSearchCommandOptions = new VariantIndexSearchCommandOptions();
+        this.variantSecondaryIndexCommandOptions = new VariantSecondaryIndexCommandOptions();
         this.variantRemoveCommandOptions = new VariantRemoveCommandOptions();
 //        this.queryVariantCommandOptionsOld = new QueryVariantCommandOptionsOld();
         this.queryVariantCommandOptions = new VariantQueryCommandOptions();
         this.statsVariantCommandOptions = new VariantStatsCommandOptions();
         this.annotateVariantCommandOptions = new VariantAnnotateCommandOptions();
-        this.createAnnotationSnapshotCommandOptions = new CreateAnnotationSnapshotCommandOptions();
-        this.deleteAnnotationSnapshotCommandOptions = new DeleteAnnotationSnapshotCommandOptions();
-        this.queryAnnotationCommandOptions = new QueryAnnotationCommandOptions();
+        this.annotationSaveSnapshotCommandOptions = new AnnotationSaveCommandOptions();
+        this.annotationDeleteCommandOptions = new AnnotationDeleteCommandOptions();
+        this.annotationQueryCommandOptions = new AnnotationQueryCommandOptions();
+        this.annotationMetadataCommandOptions = new AnnotationMetadataCommandOptions();
         this.fillGapsVariantCommandOptions = new FillGapsCommandOptions();
         this.fillMissingCommandOptions = new FillMissingCommandOptions();
         this.exportVariantStatsCommandOptions = new VariantExportStatsCommandOptions();
@@ -126,33 +131,22 @@ public class VariantCommandOptions {
         public String catalogPath = null;
     }
 
-    @Parameters(commandNames = {"index-search"}, commandDescription = "Index variants file")
-    public class VariantIndexSearchCommandOptions extends GeneralCliOptions.StudyOption {
+    @Parameters(commandNames = {SECONDARY_INDEX_COMMAND}, commandDescription = "Creates a secondary index using a search engine")
+    public class VariantSecondaryIndexCommandOptions extends GeneralCliOptions.StudyOption {
 
+        public static final String SECONDARY_INDEX_COMMAND = "secondary-index";
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"-p", "--project"}, description = "Project to index.", arity = 1)
         public String project;
 
-        @Deprecated
-        @Parameter(names = {"--project-id"}, description = "Project to index. DEPRECATED: Use --project", arity = 1)
-        public String projectId;
-
         @Parameter(names = {"-r", "--region"}, description = VariantQueryParam.REGION_DESCR)
         public String region;
 
-        @Parameter(names = {"-g", "--gene"}, description = VariantQueryParam.GENE_DESCR)
-        public String gene;
-
-        @Parameter(names = {"--file"}, description = VariantQueryParam.FILE_DESCR, arity = 1)
-        public String file;
-
-        @Parameter(names = {"--sample"}, description = VariantQueryParam.SAMPLE_DESCR, arity = 1)
+        @Parameter(names = {"--sample"}, description = "Samples to index."
+                + " If provided, all sample data will be added to the secondary index.", arity = 1)
         public String sample;
-
-        @Parameter(names = {"--cohort"}, description = VariantQueryParam.COHORT_DESCR, arity = 1)
-        public String cohort;
     }
 
     @Deprecated
@@ -551,8 +545,8 @@ public class VariantCommandOptions {
         public String catalogPath;
     }
 
-    @Parameters(commandNames = {COPY_ANNOTATION_COMMAND}, commandDescription = COPY_ANNOTATION_COMMAND_DESCRIPTION)
-    public class CreateAnnotationSnapshotCommandOptions extends StorageVariantCommandOptions.GenericCreateAnnotationSnapshotCommandOptions {
+    @Parameters(commandNames = {ANNOTATION_SAVE_COMMAND}, commandDescription = ANNOTATION_SAVE_COMMAND_DESCRIPTION)
+    public class AnnotationSaveCommandOptions extends StorageVariantCommandOptions.GenericAnnotationSaveCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -561,8 +555,8 @@ public class VariantCommandOptions {
         public String project;
     }
 
-    @Parameters(commandNames = {DELETE_ANNOTATION_COMMAND}, commandDescription = DELETE_ANNOTATION_COMMAND_DESCRIPTION)
-    public class DeleteAnnotationSnapshotCommandOptions extends StorageVariantCommandOptions.GenericDeleteAnnotationSnapshotCommandOptions {
+    @Parameters(commandNames = {ANNOTATION_DELETE_COMMAND}, commandDescription = ANNOTATION_DELETE_COMMAND_DESCRIPTION)
+    public class AnnotationDeleteCommandOptions extends StorageVariantCommandOptions.GenericAnnotationDeleteCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -572,8 +566,8 @@ public class VariantCommandOptions {
 
     }
 
-    @Parameters(commandNames = {QUERY_ANNOTATION_COMMAND}, commandDescription = QUERY_ANNOTATION_COMMAND_DESCRIPTION)
-    public class QueryAnnotationCommandOptions extends StorageVariantCommandOptions.GenericQueryAnnotationCommandOptions {
+    @Parameters(commandNames = {ANNOTATION_QUERY_COMMAND}, commandDescription = ANNOTATION_QUERY_COMMAND_DESCRIPTION)
+    public class AnnotationQueryCommandOptions extends StorageVariantCommandOptions.GenericAnnotationQueryCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -589,6 +583,16 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--limit"}, description = "Limit the number of returned elements.", required = false, arity = 1)
         public int limit;
+    }
+
+    @Parameters(commandNames = {ANNOTATION_METADATA_COMMAND}, commandDescription = ANNOTATION_METADATA_COMMAND_DESCRIPTION)
+    public class AnnotationMetadataCommandOptions extends StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-p", "--project"}, description = PROJECT_DESC, arity = 1)
+        public String project;
     }
 
     @Deprecated

@@ -18,12 +18,10 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCursor;
-import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -32,7 +30,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
@@ -48,7 +45,6 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.FamilyAclEntry;
-import org.opencb.opencga.core.models.acls.permissions.IndividualAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.slf4j.LoggerFactory;
 
@@ -127,7 +123,11 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
         familyCollection.insert(familyObject, null);
 
-        return endQuery("createFamily", startTime, get(familyId, options));
+        Query query = new Query()
+                .append(QueryParams.UID.key(), familyId)
+                .append(QueryParams.STUDY_UID.key(), getStudyId(familyId));
+
+        return endQuery("createFamily", startTime, get(query, options));
     }
 
     @Override
@@ -217,6 +217,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         }
         Query query = new Query()
                 .append(QueryParams.UID.key(), id)
+                .append(QueryParams.STUDY_UID.key(), getStudyId(id))
                 .append(QueryParams.STATUS_NAME.key(), "!=EMPTY");
         return endQuery("Update family", startTime, get(query, queryOptions));
     }
@@ -246,16 +247,15 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             return endQuery("Update family", startTime, Collections.singletonList(update.getNumTotalResults()));
         }
 
-        if (!queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
-//            applyAnnotationUpdates(query.getLong(QueryParams.UID.key(), -1L), annotationUpdateMap, true);
-            updateAnnotationSets(query.getLong(QueryParams.UID.key(), -1L), parameters, variableSetList, queryOptions, true);
-            if (!familyParameters.isEmpty()) {
-                QueryResult<UpdateResult> update = familyCollection.update(parseQuery(query, false),
-                        new Document("$set", familyParameters), new QueryOptions("multi", true));
-                return endQuery("Update family", startTime, Collections.singletonList(update.getNumTotalResults()));
-            }
-        } else {
-            return updateAndCreateNewVersion(query, familyParameters, parameters, variableSetList, queryOptions);
+        if (queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
+            createNewVersion(query);
+        }
+
+        updateAnnotationSets(query.getLong(QueryParams.UID.key(), -1L), parameters, variableSetList, queryOptions, true);
+        if (!familyParameters.isEmpty()) {
+            QueryResult<UpdateResult> update = familyCollection.update(parseQuery(query, false),
+                    new Document("$set", familyParameters), new QueryOptions("multi", true));
+            return endQuery("Update family", startTime, Collections.singletonList(update.getNumTotalResults()));
         }
 
         return endQuery("Update family", startTime, new QueryResult<>());
@@ -293,27 +293,29 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         parameters.put(QueryParams.MEMBERS.key(), individualQueryResult.getResult());
     }
 
-    private QueryResult<Long> updateAndCreateNewVersion(Query query, Document familyParameters, ObjectMap parameters,
-                                                        List<VariableSet> variableSetList, QueryOptions queryOptions)
-            throws CatalogDBException {
-        long startTime = startQuery();
-
+    /**
+     * Creates a new version for all the families matching the query.
+     *
+     * @param query Query object.
+     */
+    private void createNewVersion(Query query) throws CatalogDBException {
         QueryResult<Document> queryResult = nativeGet(query, new QueryOptions(QueryOptions.EXCLUDE, "_id"));
-        int release = queryOptions.getInt(Constants.CURRENT_RELEASE, -1);
-        if (release == -1) {
-            throw new CatalogDBException("Internal error. Mandatory " + Constants.CURRENT_RELEASE + " parameter not passed to update "
-                    + "method");
-        }
 
-        for (Document familyDocument : queryResult.getResult()) {
+        for (Document document : queryResult.getResult()) {
             Document updateOldVersion = new Document();
 
-            List<Integer> supportedReleases = (List<Integer>) familyDocument.get(RELEASE_FROM_VERSION);
+            // Current release number
+            int release;
+            List<Integer> supportedReleases = (List<Integer>) document.get(RELEASE_FROM_VERSION);
             if (supportedReleases.size() > 1) {
+                release = supportedReleases.get(supportedReleases.size() - 1);
+
                 // If it contains several releases, it means this is the first update on the current release, so we just need to take the
                 // current release number out
                 supportedReleases.remove(supportedReleases.size() - 1);
             } else {
+                release = supportedReleases.get(0);
+
                 // If it is 1, it means that the previous version being checked was made on this same release as well, so it won't be the
                 // last version of the release
                 updateOldVersion.put(LAST_OF_RELEASE, false);
@@ -323,31 +325,23 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
             // Perform the update on the previous version
             Document queryDocument = new Document()
-                    .append(PRIVATE_STUDY_ID, familyDocument.getLong(PRIVATE_STUDY_ID))
-                    .append(QueryParams.VERSION.key(), familyDocument.getInteger(QueryParams.VERSION.key()))
-                    .append(PRIVATE_UID, familyDocument.getLong(PRIVATE_UID));
+                    .append(PRIVATE_STUDY_ID, document.getLong(PRIVATE_STUDY_ID))
+                    .append(QueryParams.VERSION.key(), document.getInteger(QueryParams.VERSION.key()))
+                    .append(PRIVATE_UID, document.getLong(PRIVATE_UID));
             QueryResult<UpdateResult> updateResult = familyCollection.update(queryDocument, new Document("$set", updateOldVersion), null);
             if (updateResult.first().getModifiedCount() == 0) {
                 throw new CatalogDBException("Internal error: Could not update family");
             }
 
             // We update the information for the new version of the document
-            familyDocument.put(LAST_OF_RELEASE, true);
-            familyDocument.put(LAST_OF_VERSION, true);
-            familyDocument.put(RELEASE_FROM_VERSION, Arrays.asList(release));
-            familyDocument.put(QueryParams.VERSION.key(), familyDocument.getInteger(QueryParams.VERSION.key()) + 1);
-
-            // We apply the updates the user wanted to apply (if any)
-            mergeDocument(familyDocument, familyParameters);
+            document.put(LAST_OF_RELEASE, true);
+            document.put(LAST_OF_VERSION, true);
+            document.put(RELEASE_FROM_VERSION, Arrays.asList(release));
+            document.put(QueryParams.VERSION.key(), document.getInteger(QueryParams.VERSION.key()) + 1);
 
             // Insert the new version document
-            familyCollection.insert(familyDocument, QueryOptions.empty());
-
-//            applyAnnotationUpdates(query.getLong(QueryParams.UID.key(), -1L), annotationUpdateMap, true);
-            updateAnnotationSets(query.getLong(QueryParams.UID.key(), -1L), parameters, variableSetList, queryOptions, true);
+            familyCollection.insert(document, QueryOptions.empty());
         }
-
-        return endQuery("Update family", startTime, Arrays.asList(queryResult.getNumTotalResults()));
     }
 
     private Document parseAndValidateUpdateParams(ObjectMap parameters, Query query) throws CatalogDBException {
@@ -401,6 +395,14 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         }
 
         familyConverter.validateDocumentToUpdate(familyParameters);
+
+        if (!familyParameters.isEmpty()) {
+            // Update modificationDate param
+            String time = TimeUtils.getTime();
+            Date date = TimeUtils.toDate(time);
+            familyParameters.put(MODIFICATION_DATE, time);
+            familyParameters.put(PRIVATE_MODIFICATION_DATE, date);
+        }
 
         return familyParameters;
     }
@@ -496,6 +498,30 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     }
 
     @Override
+    public QueryResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException {
+        long startTime = startQuery();
+        List<Document> documentList = new ArrayList<>();
+        QueryResult<Document> queryResult;
+        try (DBIterator<Document> dbIterator = nativeIterator(query, options, user)) {
+            while (dbIterator.hasNext()) {
+                documentList.add(dbIterator.next());
+            }
+        }
+        queryResult = endQuery("Native get", startTime, documentList);
+
+        if (options != null && options.getBoolean(QueryOptions.SKIP_COUNT, false)) {
+            return queryResult;
+        }
+
+        // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
+        if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
+            QueryResult<Long> count = count(query);
+            queryResult.setNumTotalResults(count.first());
+        }
+        return queryResult;
+    }
+
+    @Override
     public QueryResult<Family> get(long familyId, QueryOptions options) throws CatalogDBException {
         checkId(familyId);
         Query query = new Query(QueryParams.UID.key(), familyId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
@@ -531,13 +557,18 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     @Override
     public DBIterator<Family> iterator(Query query, QueryOptions options) throws CatalogDBException {
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
-        return new FamilyMongoDBIterator<>(mongoCursor, familyConverter, null, null, options);
+        return new FamilyMongoDBIterator<>(mongoCursor, familyConverter, null, dbAdaptorFactory.getCatalogIndividualDBAdaptor(),
+                query.getLong(PRIVATE_STUDY_ID), null, options);
     }
 
     @Override
     public DBIterator nativeIterator(Query query, QueryOptions options) throws CatalogDBException {
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
-        return new FamilyMongoDBIterator(mongoCursor, null, null, null, options);
+        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+        queryOptions.put(NATIVE_QUERY, true);
+
+        MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions);
+        return new FamilyMongoDBIterator(mongoCursor, null, null, dbAdaptorFactory.getCatalogIndividualDBAdaptor(),
+                query.getLong(PRIVATE_STUDY_ID), null, options);
     }
 
     @Override
@@ -548,26 +579,23 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.name(), FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name());
 
-        Function<Document, Document> individualIteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
-                StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS.name(),
-                IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name());
-
-        return new FamilyMongoDBIterator<>(mongoCursor, familyConverter, iteratorFilter, individualIteratorFilter, options);
+        return new FamilyMongoDBIterator<>(mongoCursor, familyConverter, iteratorFilter, dbAdaptorFactory.getCatalogIndividualDBAdaptor(),
+                query.getLong(PRIVATE_STUDY_ID), user, options);
     }
 
     @Override
     public DBIterator nativeIterator(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
+        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+        queryOptions.put(NATIVE_QUERY, true);
 
         Document studyDocument = getStudyDocument(query);
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, options, studyDocument, user);
+        MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions, studyDocument, user);
         Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.name(), FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name());
-        Function<Document, Document> individualIteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
-                StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS.name(),
-                IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name());
 
-        return new FamilyMongoDBIterator(mongoCursor, null, iteratorFilter, individualIteratorFilter, options);
+        return new FamilyMongoDBIterator(mongoCursor, null, iteratorFilter, dbAdaptorFactory.getCatalogIndividualDBAdaptor(),
+                query.getLong(PRIVATE_STUDY_ID), user, options);
     }
 
     private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {
@@ -597,93 +625,11 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         } else {
             qOptions = new QueryOptions();
         }
+        qOptions = removeInnerProjections(qOptions, QueryParams.MEMBERS.key());
         qOptions = removeAnnotationProjectionOptions(qOptions);
 
-        if (excludeIndividuals(qOptions)) {
-            logger.debug("Family get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-            return familyCollection.nativeQuery().find(bson, qOptions).iterator();
-        } else {
-            List<Bson> aggregationStages = new ArrayList<>();
-
-            aggregationStages.add(Aggregates.match(bson));
-
-            CollectionUtils.addIgnoreNull(aggregationStages, MongoDBQueryUtils.getSkip(qOptions));
-            CollectionUtils.addIgnoreNull(aggregationStages, MongoDBQueryUtils.getLimit(qOptions));
-
-            // 1st, we unwind the array of members to be able to perform the lookup as it doesn't work over arrays
-            aggregationStages.add(new Document("$unwind", new Document()
-                    .append("path", "$" + QueryParams.MEMBERS.key())
-                    .append("preserveNullAndEmptyArrays", true)
-            ));
-
-            List<Document> lookupMatchList = new ArrayList<>();
-            lookupMatchList.add(
-                    new Document("$expr",
-                            new Document("$and", Arrays.asList(
-                                    new Document("$eq", Arrays.asList("$" + IndividualDBAdaptor.QueryParams.UID.key(), "$$individualUid")),
-                                    new Document("$eq", Arrays.asList("$" + IndividualDBAdaptor.QueryParams.VERSION.key(),
-                                            "$$individualVersion"))
-                            ))));
-            if (studyDocument != null && user != null) {
-                // Get the document query needed to check the individual permissions as well
-                queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
-                        StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS.name(), IndividualAclEntry.IndividualPermissions.VIEW.name());
-                if (!queryForAuthorisedEntries.isEmpty()) {
-                    lookupMatchList.add(queryForAuthorisedEntries);
-                }
-            }
-            Document lookupMatch = lookupMatchList.size() > 1
-                    ? new Document("$and", lookupMatchList)
-                    : lookupMatchList.get(0);
-
-            lookupMatch = new Document("$lookup", new Document()
-                    .append("from", "individual")
-                    .append("let", new Document()
-                            .append("individualUid", "$" + QueryParams.MEMBER_UID.key())
-                            .append("individualVersion", "$" + QueryParams.MEMBER_VERSION.key())
-                    )
-                    .append("pipeline", Collections.singletonList(new Document("$match", lookupMatch)))
-                    .append("as", QueryParams.MEMBERS.key())
-            );
-            aggregationStages.add(lookupMatch);
-
-            // 3rd, we unwind the members array again to be able to move the root to a new dummy field
-            aggregationStages.add(new Document("$unwind", new Document()
-                    .append("path", "$" + QueryParams.MEMBERS.key())
-                    .append("preserveNullAndEmptyArrays", true)
-            ));
-
-            // 4. We copy the whole document to a new dummy field (dummy)
-            aggregationStages.add(new Document("$addFields", new Document("dummy", "$$ROOT")));
-
-            // 5. We take out the members field to be able to perform the group
-            aggregationStages.add(new Document("$project", new Document("dummy." + QueryParams.MEMBERS.key(), 0)));
-
-            // 6. We group by the whole document
-            aggregationStages.add(new Document("$group",
-                    new Document()
-                            .append("_id", "$dummy")
-                            .append(QueryParams.MEMBERS.key(), new Document("$push", "$" + QueryParams.MEMBERS.key()))
-            ));
-
-            // 7. We add the new grouped members field to the dummy field
-            aggregationStages.add(new Document("$addFields", new Document("_id." + QueryParams.MEMBERS.key(),
-                    "$" + QueryParams.MEMBERS.key())));
-
-            // 8. Lastly, we replace the root document extracting everything from _id
-            aggregationStages.add(new Document("$replaceRoot", new Document("newRoot", "$_id")));
-
-            CollectionUtils.addIgnoreNull(aggregationStages, MongoDBQueryUtils.getSort(qOptions));
-            CollectionUtils.addIgnoreNull(aggregationStages, MongoDBQueryUtils.getProjection(qOptions));
-
-            logger.debug("Family get: lookup match : {}",
-                    aggregationStages.stream()
-                            .map(x -> x.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()).toString())
-                            .collect(Collectors.joining(", "))
-            );
-
-            return familyCollection.nativeQuery().aggregate(aggregationStages).iterator();
-        }
+        logger.debug("Family query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        return familyCollection.nativeQuery().find(bson, qOptions).iterator();
     }
 
     @Override
@@ -813,15 +759,19 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         List<Bson> andBsonList = new ArrayList<>();
         Document annotationDocument = null;
 
+        Query queryCopy = new Query(query);
+
         if (isolated) {
             andBsonList.add(new Document("$isolated", 1));
         }
 
-        fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), query);
-        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), query);
-        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), query);
+        fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), queryCopy);
+        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), queryCopy);
+        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), queryCopy);
 
-        for (Map.Entry<String, Object> entry : query.entrySet()) {
+        boolean uidVersionQueryFlag = generateUidVersionQuery(queryCopy, andBsonList);
+
+        for (Map.Entry<String, Object> entry : queryCopy.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
             QueryParams queryParam = QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
                     : QueryParams.getParam(key);
@@ -835,36 +785,36 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             try {
                 switch (queryParam) {
                     case UID:
-                        addOrQuery(PRIVATE_UID, queryParam.key(), query, queryParam.type(), andBsonList);
+                        addOrQuery(PRIVATE_UID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case STUDY_UID:
-                        addOrQuery(PRIVATE_STUDY_ID, queryParam.key(), query, queryParam.type(), andBsonList);
+                        addOrQuery(PRIVATE_STUDY_ID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case ATTRIBUTES:
-                        addAutoOrQuery(entry.getKey(), entry.getKey(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(entry.getKey(), entry.getKey(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case BATTRIBUTES:
                         String mongoKey = entry.getKey().replace(QueryParams.BATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(mongoKey, entry.getKey(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case NATTRIBUTES:
                         mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(mongoKey, entry.getKey(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case PHENOTYPES:
-                        addOntologyQueryFilter(queryParam.key(), queryParam.key(), query, andBsonList);
+                        addOntologyQueryFilter(queryParam.key(), queryParam.key(), queryCopy, andBsonList);
                         break;
                     case ANNOTATION:
                         if (annotationDocument == null) {
-                            annotationDocument = createAnnotationQuery(query.getString(QueryParams.ANNOTATION.key()),
-                                    query.get(Constants.PRIVATE_ANNOTATION_PARAM_TYPES, ObjectMap.class));
+                            annotationDocument = createAnnotationQuery(queryCopy.getString(QueryParams.ANNOTATION.key()),
+                                    queryCopy.get(Constants.PRIVATE_ANNOTATION_PARAM_TYPES, ObjectMap.class));
                         }
                         break;
                     case SNAPSHOT:
-                        addAutoOrQuery(RELEASE_FROM_VERSION, queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(RELEASE_FROM_VERSION, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case CREATION_DATE:
-                        addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case MEMBER_UID:
                     case UUID:
@@ -881,7 +831,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                     case STATUS_MSG:
                     case STATUS_DATE:
 //                    case ANNOTATION_SETS:
-                        addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     default:
                         throw new CatalogDBException("Cannot query by parameter " + queryParam.key());
@@ -890,14 +840,14 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                 if (e instanceof CatalogDBException) {
                     throw e;
                 } else {
-                    throw new CatalogDBException("Error parsing query : " + query.toJson(), e);
+                    throw new CatalogDBException("Error parsing query : " + queryCopy.toJson(), e);
                 }
             }
         }
 
         // If the user doesn't look for a concrete version...
-        if (!query.getBoolean(Constants.ALL_VERSIONS) && !query.containsKey(QueryParams.VERSION.key())) {
-            if (query.containsKey(QueryParams.SNAPSHOT.key())) {
+        if (!uidVersionQueryFlag && !queryCopy.getBoolean(Constants.ALL_VERSIONS) && !queryCopy.containsKey(QueryParams.VERSION.key())) {
+            if (queryCopy.containsKey(QueryParams.SNAPSHOT.key())) {
                 // If the user looks for anything from some release, we will try to find the latest from the release (snapshot)
                 andBsonList.add(Filters.eq(LAST_OF_RELEASE, true));
             } else {

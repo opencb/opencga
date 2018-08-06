@@ -85,7 +85,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
             case "daemon":
                 daemons();
                 break;
-            case "diseasePanel":
+            case "disease-panel":
                 diseasePanels();
                 break;
             default:

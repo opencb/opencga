@@ -167,7 +167,7 @@ public class FamilyManagerTest extends GenericTest {
                         + IndividualDBAdaptor.QueryParams.NAME.key()),
                 token);
         assertEquals(1, familyQueryResult.getNumResults());
-        assertEquals(null, familyQueryResult.first().getId());
+        assertEquals(null, familyQueryResult.first().getName());
         assertEquals(2, familyQueryResult.first().getMembers().size());
         assertEquals(null, familyQueryResult.first().getMembers().get(0).getId());
         assertEquals(null, familyQueryResult.first().getMembers().get(1).getId());

@@ -43,6 +43,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     private List<Interpretation> interpretations;
 
     private String creationDate;
+    private String modificationDate;
     private Status status;
     private int release;
     private Map<String, Object> attributes;
@@ -83,9 +84,9 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClinicalAnalysis{");
-        sb.append("uuid='").append(uuid).append('\'');
-        sb.append(", id='").append(id).append('\'');
+        sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
+        sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", type=").append(type);
         sb.append(", disease=").append(disease);
@@ -95,6 +96,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         sb.append(", family=").append(family);
         sb.append(", interpretations=").append(interpretations);
         sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", status=").append(status);
         sb.append(", release=").append(release);
         sb.append(", attributes=").append(attributes);
@@ -219,6 +221,15 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     public ClinicalAnalysis setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public ClinicalAnalysis setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 

@@ -20,6 +20,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
@@ -151,6 +152,32 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
     }
 
     @Test
+    public void testFillGapsConflictingFiles() throws Exception {
+        StudyConfiguration studyConfiguration = load(new QueryOptions(), Arrays.asList(getResourceUri("gaps/file1.genome.vcf"), getResourceUri("gaps/file2.genome.vcf")));
+
+        HadoopVariantStorageEngine variantStorageEngine = (HadoopVariantStorageEngine) this.variantStorageEngine;
+
+        VariantHadoopDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
+        List<Integer> sampleIds = new ArrayList<>(studyConfiguration.getSampleIds().values());
+        sampleIds.sort(Integer::compareTo);
+
+        fillGaps(variantStorageEngine, studyConfiguration, sampleIds);
+        printVariants(dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first(), dbAdaptor, newOutputUri());
+        checkFillGaps(studyConfiguration, dbAdaptor, sampleIds, Collections.singleton("1:10020:A:T"));
+        checkSampleIndexTable(dbAdaptor);
+
+        Variant variantGap = dbAdaptor.get(new Query(VariantQueryParam.ID.key(), "1:10020:A:T"), null).first();
+        assertEquals("0/1", variantGap.getStudies().get(0).getSampleData("s1", "GT"));
+        assertEquals(GenotypeClass.UNKNOWN_GENOTYPE, variantGap.getStudies().get(0).getSampleData("s2", "GT"));
+
+        Variant variantMulti = dbAdaptor.get(new Query(VariantQueryParam.ID.key(), "1:10012:TTT:-"), null).first();
+        assertEquals("<*>", variantMulti.getStudies().get(0).getSecondaryAlternates().get(0).getAlternate());
+        assertEquals("0/1", variantMulti.getStudies().get(0).getSampleData("s1", "GT"));
+        assertEquals("2/2", variantMulti.getStudies().get(0).getSampleData("s2", "GT"));
+
+    }
+
+    @Test
     public void testFillMissingPlatinumFiles() throws Exception {
         ObjectMap options = new ObjectMap()
                 .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
@@ -245,10 +272,6 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
 
     private StudyConfiguration loadPlatinum(ObjectMap extraParams, int from, int to) throws Exception {
 
-        StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
-        HadoopVariantStorageEngine variantStorageManager = getVariantStorageEngine();
-        VariantHadoopDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor();
-
         List<URI> inputFiles = new LinkedList<>();
 
         for (int fileId = from; fileId <= to; fileId++) {
@@ -256,10 +279,20 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
             inputFiles.add(getResourceUri(fileName));
         }
 
+        return load(extraParams, inputFiles);
+    }
+
+    private StudyConfiguration load(ObjectMap extraParams, List<URI> inputFiles) throws Exception {
+        StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
+        HadoopVariantStorageEngine variantStorageManager = getVariantStorageEngine();
+        VariantHadoopDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor();
+
         ObjectMap options = variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
         options.put(VariantStorageEngine.Options.STUDY.key(), studyConfiguration.getStudyName());
+        options.put(VariantStorageEngine.Options.GVCF.key(), true);
         options.put(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, true);
         options.put(HadoopVariantStorageEngine.HADOOP_LOAD_ARCHIVE_BATCH_SIZE, 1);
+        options.put(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
         options.putAll(extraParams);
         List<StoragePipelineResult> index = variantStorageManager.index(inputFiles, outputUri, true, true, true);
 
@@ -275,6 +308,10 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
     }
 
     protected void checkFillGaps(StudyConfiguration studyConfiguration, VariantHadoopDBAdaptor dbAdaptor, List<Integer> sampleIds) {
+        checkFillGaps(studyConfiguration, dbAdaptor, sampleIds, Collections.singleton("1:10178:-:C"));
+    }
+
+    protected void checkFillGaps(StudyConfiguration studyConfiguration, VariantHadoopDBAdaptor dbAdaptor, List<Integer> sampleIds, Set<String> variantsWithGaps) {
         for (Variant variant : dbAdaptor) {
             boolean anyUnknown = false;
             boolean allUnknown = true;
@@ -284,14 +321,11 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
                 allUnknown &= unknown;
             }
             // Fail if any, but not all samples are unknown
-            try {
-                Assert.assertFalse(variant.toString(), anyUnknown && !allUnknown);
-//            Assert.assertTrue(allUnknown || !anyUnknown);
-            } catch (AssertionError e) {
-                if (variant.toString().equals("1:10178:-:C")) {
+            if (anyUnknown && !allUnknown) {
+                if (variantsWithGaps.contains(variant.toString())) {
                     System.out.println("Gaps in variant " + variant);
                 } else {
-                    throw e;
+                    Assert.fail("Gaps in variant " + variant);
                 }
             }
         }
@@ -330,7 +364,9 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
         for (String sample : StudyConfiguration.getIndexedSamples(sc).keySet()) {
             VariantQueryResult<Variant> queryResult = dbAdaptor.get(new Query(VariantQueryParam.SAMPLE.key(), sample)
                     .append(VariantQueryParam.INCLUDE_SAMPLE.key(), VariantQueryUtils.ALL).append(VariantQueryParam.INCLUDE_FILE.key(), VariantQueryUtils.ALL), new QueryOptions());
-            assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withSampleData(sample, "GT", anyOf(containsString("1"), containsString("2"), containsString("3"))))));
+            assertThat(queryResult, everyResult(allVariants,
+                    withStudy(STUDY_NAME,
+                            withSampleData(sample, "GT", anyOf(containsString("1"), containsString("2"), containsString("3"))))));
         }
     }
 

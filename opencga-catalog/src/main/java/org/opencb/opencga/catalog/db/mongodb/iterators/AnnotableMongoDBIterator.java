@@ -4,6 +4,7 @@ import com.mongodb.client.MongoCursor;
 import org.bson.Document;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.Annotable;
 
 import java.util.function.Function;
@@ -28,7 +29,7 @@ public class AnnotableMongoDBIterator<E> extends MongoDBIterator<E> {
     public AnnotableMongoDBIterator(MongoCursor mongoCursor, AnnotableConverter<? extends Annotable> converter,
                                     Function<Document, Document> filter, QueryOptions options) {
         super(mongoCursor, null, filter);
-        this.options = options;
+        this.options = ParamUtils.defaultObject(options, QueryOptions::new);
         this.converter = converter;
     }
 
