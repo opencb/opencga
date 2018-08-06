@@ -480,7 +480,10 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                     FamilyAclEntry.FamilyPermissions.UPDATE);
         }
 
-        QueryResult<Family> familyQueryResult = familyDBAdaptor.get(familyId, new QueryOptions());
+        Query query = new Query()
+                .append(FamilyDBAdaptor.QueryParams.UID.key(), familyId)
+                .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), resource.getStudy().getUid());
+        QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, new QueryOptions());
         if (familyQueryResult.getNumResults() == 0) {
             throw new CatalogException("Family " + familyId + " not found");
         }

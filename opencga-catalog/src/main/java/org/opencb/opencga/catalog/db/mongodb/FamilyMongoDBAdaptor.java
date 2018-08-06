@@ -18,12 +18,10 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCursor;
-import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -32,7 +30,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
@@ -48,7 +45,6 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.FamilyAclEntry;
-import org.opencb.opencga.core.models.acls.permissions.IndividualAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.slf4j.LoggerFactory;
 
@@ -127,7 +123,11 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
         familyCollection.insert(familyObject, null);
 
-        return endQuery("createFamily", startTime, get(familyId, options));
+        Query query = new Query()
+                .append(QueryParams.UID.key(), familyId)
+                .append(QueryParams.STUDY_UID.key(), getStudyId(familyId));
+
+        return endQuery("createFamily", startTime, get(query, options));
     }
 
     @Override
@@ -217,6 +217,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         }
         Query query = new Query()
                 .append(QueryParams.UID.key(), id)
+                .append(QueryParams.STUDY_UID.key(), getStudyId(id))
                 .append(QueryParams.STATUS_NAME.key(), "!=EMPTY");
         return endQuery("Update family", startTime, get(query, queryOptions));
     }
@@ -556,7 +557,8 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     @Override
     public DBIterator<Family> iterator(Query query, QueryOptions options) throws CatalogDBException {
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
-        return new FamilyMongoDBIterator<>(mongoCursor, familyConverter, null, null, options);
+        return new FamilyMongoDBIterator<>(mongoCursor, familyConverter, null, dbAdaptorFactory.getCatalogIndividualDBAdaptor(),
+                query.getLong(PRIVATE_STUDY_ID), null, options);
     }
 
     @Override
@@ -565,7 +567,8 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         queryOptions.put(NATIVE_QUERY, true);
 
         MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions);
-        return new FamilyMongoDBIterator(mongoCursor, null, null, null, options);
+        return new FamilyMongoDBIterator(mongoCursor, null, null, dbAdaptorFactory.getCatalogIndividualDBAdaptor(),
+                query.getLong(PRIVATE_STUDY_ID), null, options);
     }
 
     @Override
@@ -576,11 +579,8 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.name(), FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name());
 
-        Function<Document, Document> individualIteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
-                StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS.name(),
-                IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name());
-
-        return new FamilyMongoDBIterator<>(mongoCursor, familyConverter, iteratorFilter, individualIteratorFilter, options);
+        return new FamilyMongoDBIterator<>(mongoCursor, familyConverter, iteratorFilter, dbAdaptorFactory.getCatalogIndividualDBAdaptor(),
+                query.getLong(PRIVATE_STUDY_ID), user, options);
     }
 
     @Override
@@ -593,11 +593,9 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions, studyDocument, user);
         Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.name(), FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name());
-        Function<Document, Document> individualIteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
-                StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS.name(),
-                IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name());
 
-        return new FamilyMongoDBIterator(mongoCursor, null, iteratorFilter, individualIteratorFilter, options);
+        return new FamilyMongoDBIterator(mongoCursor, null, iteratorFilter, dbAdaptorFactory.getCatalogIndividualDBAdaptor(),
+                query.getLong(PRIVATE_STUDY_ID), user, options);
     }
 
     private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {
@@ -627,93 +625,11 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         } else {
             qOptions = new QueryOptions();
         }
+        qOptions = removeInnerProjections(qOptions, QueryParams.MEMBERS.key());
         qOptions = removeAnnotationProjectionOptions(qOptions);
 
-        if (qOptions.getBoolean(NATIVE_QUERY) || excludeIndividuals(qOptions)) {
-            logger.debug("Family get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-            return familyCollection.nativeQuery().find(bson, qOptions).iterator();
-        } else {
-            List<Bson> aggregationStages = new ArrayList<>();
-
-            aggregationStages.add(Aggregates.match(bson));
-
-            CollectionUtils.addIgnoreNull(aggregationStages, MongoDBQueryUtils.getSkip(qOptions));
-            CollectionUtils.addIgnoreNull(aggregationStages, MongoDBQueryUtils.getLimit(qOptions));
-
-            // 1st, we unwind the array of members to be able to perform the lookup as it doesn't work over arrays
-            aggregationStages.add(new Document("$unwind", new Document()
-                    .append("path", "$" + QueryParams.MEMBERS.key())
-                    .append("preserveNullAndEmptyArrays", true)
-            ));
-
-            List<Document> lookupMatchList = new ArrayList<>();
-            lookupMatchList.add(
-                    new Document("$expr",
-                            new Document("$and", Arrays.asList(
-                                    new Document("$eq", Arrays.asList("$" + IndividualDBAdaptor.QueryParams.UID.key(), "$$individualUid")),
-                                    new Document("$eq", Arrays.asList("$" + IndividualDBAdaptor.QueryParams.VERSION.key(),
-                                            "$$individualVersion"))
-                            ))));
-            if (studyDocument != null && user != null) {
-                // Get the document query needed to check the individual permissions as well
-                queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
-                        StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS.name(), IndividualAclEntry.IndividualPermissions.VIEW.name());
-                if (!queryForAuthorisedEntries.isEmpty()) {
-                    lookupMatchList.add(queryForAuthorisedEntries);
-                }
-            }
-            Document lookupMatch = lookupMatchList.size() > 1
-                    ? new Document("$and", lookupMatchList)
-                    : lookupMatchList.get(0);
-
-            lookupMatch = new Document("$lookup", new Document()
-                    .append("from", "individual")
-                    .append("let", new Document()
-                            .append("individualUid", "$" + QueryParams.MEMBER_UID.key())
-                            .append("individualVersion", "$" + QueryParams.MEMBER_VERSION.key())
-                    )
-                    .append("pipeline", Collections.singletonList(new Document("$match", lookupMatch)))
-                    .append("as", QueryParams.MEMBERS.key())
-            );
-            aggregationStages.add(lookupMatch);
-
-            // 3rd, we unwind the members array again to be able to move the root to a new dummy field
-            aggregationStages.add(new Document("$unwind", new Document()
-                    .append("path", "$" + QueryParams.MEMBERS.key())
-                    .append("preserveNullAndEmptyArrays", true)
-            ));
-
-            // 4. We copy the whole document to a new dummy field (dummy)
-            aggregationStages.add(new Document("$addFields", new Document("dummy", "$$ROOT")));
-
-            // 5. We take out the members field to be able to perform the group
-            aggregationStages.add(new Document("$project", new Document("dummy." + QueryParams.MEMBERS.key(), 0)));
-
-            // 6. We group by the whole document
-            aggregationStages.add(new Document("$group",
-                    new Document()
-                            .append("_id", "$dummy")
-                            .append(QueryParams.MEMBERS.key(), new Document("$push", "$" + QueryParams.MEMBERS.key()))
-            ));
-
-            // 7. We add the new grouped members field to the dummy field
-            aggregationStages.add(new Document("$addFields", new Document("_id." + QueryParams.MEMBERS.key(),
-                    "$" + QueryParams.MEMBERS.key())));
-
-            // 8. Lastly, we replace the root document extracting everything from _id
-            aggregationStages.add(new Document("$replaceRoot", new Document("newRoot", "$_id")));
-
-            CollectionUtils.addIgnoreNull(aggregationStages, MongoDBQueryUtils.getSort(qOptions));
-            CollectionUtils.addIgnoreNull(aggregationStages, MongoDBQueryUtils.getProjection(qOptions));
-
-            logger.debug("Family get: lookup match : {}",
-                    aggregationStages.stream()
-                            .map(x -> x.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()).toString())
-                            .collect(Collectors.joining(", "))
-            );
-
-            return familyCollection.nativeQuery().aggregate(aggregationStages).iterator();
-        }
+        logger.debug("Family query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        return familyCollection.nativeQuery().find(bson, qOptions).iterator();
     }
 
     @Override

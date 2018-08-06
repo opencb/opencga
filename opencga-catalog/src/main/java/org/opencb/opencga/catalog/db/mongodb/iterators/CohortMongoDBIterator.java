@@ -45,7 +45,7 @@ public class CohortMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
         this.sampleQueryOptions = createSampleQueryOptions();
 
         this.cohortListBuffer = new LinkedList<>();
-        this.logger = LoggerFactory.getLogger(FileMongoDBIterator.class);
+        this.logger = LoggerFactory.getLogger(CohortMongoDBIterator.class);
     }
 
     @Override

@@ -26,7 +26,6 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
-import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -390,24 +389,26 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     }
 
     /**
-     * Removes any sample projects made. This method should be called by any entity containing samples such as Individual, File or cohort.
+     * Removes any other entity projections made. This method should be called by any entity containing inner entities:
+     * Family -> Individual; Individual -> Sample; File -> Sample; Cohort -> Sample
      *
      * @param options current query options object.
-     * @return new QueryOptions after removing the inner sample projections.
+     * @param projectionKey Projection key to be removed from the query options.
+     * @return new QueryOptions after removing the inner projectionKey projections.
      */
-    protected QueryOptions removeSampleProjections(QueryOptions options) {
+    protected QueryOptions removeInnerProjections(QueryOptions options, String projectionKey) {
         QueryOptions queryOptions = ParamUtils.defaultObject(options, QueryOptions::new);
 
         if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
             List<String> includeList = queryOptions.getAsStringList(QueryOptions.INCLUDE);
             List<String> newInclude = new ArrayList<>(includeList.size());
             for (String include : includeList) {
-                if (!include.startsWith(IndividualDBAdaptor.QueryParams.SAMPLES.key() + ".")) {
+                if (!include.startsWith(projectionKey + ".")) {
                     newInclude.add(include);
                 }
             }
             if (newInclude.isEmpty()) {
-                queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(PRIVATE_ID, IndividualDBAdaptor.QueryParams.SAMPLES.key()));
+                queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(PRIVATE_ID, projectionKey));
             } else {
                 queryOptions.put(QueryOptions.INCLUDE, newInclude);
             }
@@ -416,7 +417,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
             List<String> excludeList = queryOptions.getAsStringList(QueryOptions.EXCLUDE);
             List<String> newExclude = new ArrayList<>(excludeList.size());
             for (String exclude : excludeList) {
-                if (!exclude.startsWith(IndividualDBAdaptor.QueryParams.SAMPLES.key() + ".")) {
+                if (!exclude.startsWith(projectionKey + ".")) {
                     newExclude.add(exclude);
                 }
             }

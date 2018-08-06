@@ -588,7 +588,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         } else {
             qOptions = new QueryOptions();
         }
-        qOptions = removeSampleProjections(qOptions);
+        qOptions = removeInnerProjections(qOptions, QueryParams.SAMPLES.key());
         qOptions = removeAnnotationProjectionOptions(qOptions);
         qOptions = filterOptions(qOptions, FILTER_ROUTE_COHORTS);
 
