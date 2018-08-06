@@ -6,6 +6,10 @@
 |let|sAlias|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 |let|groupId|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 |let|emptyGroup|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|VS1|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|VS2|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|vsName1|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|vsName2|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 
 !3 Create Study 
 !|Table: Rest Fixture | $baseURL |
@@ -369,4 +373,50 @@
 !3 Get All Permission Rules For CLINICAL ANALYSES 
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/studies/$studyId/permissionRules?entity=CLINICAL_ANALYSES&sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '0'|
+
+!3 Create Variable Set  
+!|Table: Rest Fixture  | $baseURL |
+| setBody |  {"id" : "$VS1","unique": false, "confidential" : "false",  "name": "$vsName1",  "description": "string",  "variables": [{ "id" : "var_int", "name": "V1", "type" : "INTEGER", "required" : true,"multiValue": false }, {"id" : "var_double", "name": "V2", "type" : "DOUBLE", "defaultValue" : "20.5" , "required" : false,"multiValue": false }]}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/studies/$study/variableSets/update?sid=$sessionId&action=ADD |200| Content-Type : application/json||
+|let|variableSetId1|js|response.jsonbody.response[0].result[0].id||
+
+!3 Create Nested Variable Set 2
+!|Table: Rest Fixture  | $baseURL |
+| setBody |  { "id" : "$VS2", "unique": false, "confidential" : "false",  "name": "$vsName2",  "description": "string",  "variables": [{"id" : "outer_var", "name": "V11", "type" : "OBJECT", "required" : true,"multiValue": true , "variableSet" : [{"id" : "inner_first_var","name": "V1", "type" : "DOUBLE", "defaultValue" : "20.5" , "required" : false,"multiValue": false }, {"id" : "inner_second_var","name": "V2", "type" : "INTEGER", "defaultValue" : "20" , "required" : false,"multiValue": false }] }]}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/studies/$study/variableSets/update?sid=$sessionId&study=$study |200| Content-Type : application/json||
+|let|variableSetId2|js|response.jsonbody.response[0].result[0].id||
+
+!3 Create  Variable Set  Without Ids
+!|Table: Rest Fixture  | $baseURL |
+| setBody |  { "unique": false, "confidential" : "false",  "name": "studyVSTest",  "description": "string",  "variables": [{"name": "outer_var", "type" : "OBJECT", "required" : true,"multiValue": true , "variableSet" : [{"name": "inner_first_var_name_test", "type" : "DOUBLE", "defaultValue" : "20.5" , "required" : false,"multiValue": false }, {"name": "inner_second_var_name_test", "type" : "INTEGER", "defaultValue" : "20" , "required" : false,"multiValue": false }] }]}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/studies/$study/variableSets/update?sid=$sessionId&study=$study&action=ADD |200| Content-Type : application/json||
+
+!3 Add Variable TO A Variable Set 
+!|Table: Rest Fixture  | $baseURL |
+| setBody |{ "id" : "var_add_int", "name": "V1", "type" : "INTEGER", "required" : true,"multiValue": false }|
+| setHeader|Content-Type:application/json|
+| POST | /v1/studies/$study/variableSets/$variableSetId1/variables/update?sid=$sessionId&study=$study&action=ADD |200| Content-Type : application/json|jsonbody.response[0].result[0].variables.length == 3|
+
+!3 Remove Variable From A Variable Set 
+!|Table: Rest Fixture  | $baseURL |
+| setBody |{ "id" : "var_int"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/studies/$study/variableSets/$variableSetId1/variables/update?sid=$sessionId&study=$study&action=REMOVE |200| Content-Type : application/json|jsonbody.response[0].result[0].variables.length == 2|
+
+!3 Remove Variable Set1  XXX
+!|Table: Rest Fixture  | $baseURL |
+| setBody |  {"id":"$variableSetId1"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/studies/$study/variableSets/update?sid=$sessionId&study=$study&action=REMOVE |200| Content-Type : application/json|jsonbody.response[0].result[0].id == "$variableSetId1"|
+
+!3 Get Removed Variable Set1 
+!|Table: Rest Fixture  | $baseURL |
+| setHeader|Content-Type:application/json|
+| GET | /v1/studies/$study/variableSets?sid=$sessionId&id=$variableSetId1 |500| Content-Type : application/json|jsonbody.error == 'Variable set $variableSetId1 not found in study $study'|
+
+
+
 
