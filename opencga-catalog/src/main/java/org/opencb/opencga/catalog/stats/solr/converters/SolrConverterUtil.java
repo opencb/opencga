@@ -20,8 +20,8 @@ public class SolrConverterUtil {
             for (AnnotationSet annotationSet : annotationSets) {
                 for (String annotationKey : annotationSet.getAnnotations().keySet()) {
                     Object value = annotationSet.getAnnotations().get(annotationKey);
-                    result.put("annotations" + type(value) + annotationSet.getName() + "__" + annotationSet.getVariableSetId()
-                            + "__" + annotationKey, value);
+                    result.put("annotations" + type(value) + annotationSet.getName() + "." + annotationSet.getVariableSetId()
+                            + "." + annotationKey, value);
                 }
             }
         }
@@ -50,6 +50,8 @@ public class SolrConverterUtil {
             return "__d__";
         } else if (object instanceof Object) {
             return "__o__";
+        } else if (object instanceof Object) {
+            return "__a__";
         }
         return "__o__";
     }
