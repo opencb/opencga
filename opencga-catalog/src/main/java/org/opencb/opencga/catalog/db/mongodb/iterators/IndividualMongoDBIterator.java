@@ -90,8 +90,8 @@ public class IndividualMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
                 List<Document> sampleList = (List<Document>) samples;
                 if (!sampleList.isEmpty()) {
                     sampleList.forEach(s -> {
-                        String uid = String.valueOf(s.get("uid"));
-                        String version = String.valueOf(s.get("version"));
+                        String uid = String.valueOf(s.get(IndividualDBAdaptor.QueryParams.UID.key()));
+                        String version = String.valueOf(s.get(IndividualDBAdaptor.QueryParams.VERSION.key()));
 
                         // TODO we store in a Set to try to reduce the number of keys to be queried, maybe this is not needed?
                         sampleVersions.add(uid + "__" + version);
@@ -130,7 +130,8 @@ public class IndividualMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
             // Map each sample uid - version to the sample entry
             Map<String, Document> sampleMap = new HashMap<>(sampleList.size());
             sampleList.forEach(sample ->
-                    sampleMap.put(String.valueOf(sample.get("uid")) + "__" + String.valueOf(sample.get("version")), sample)
+                    sampleMap.put(String.valueOf(sample.get(IndividualDBAdaptor.QueryParams.UID.key())) + "__"
+                            + String.valueOf(sample.get(IndividualDBAdaptor.QueryParams.VERSION.key())), sample)
             );
 
             // Add the samples obtained to the corresponding individuals
@@ -139,8 +140,8 @@ public class IndividualMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
                 List<Document> samples = (List<Document>) individual.get(IndividualMongoDBAdaptor.QueryParams.SAMPLES.key());
 
                 samples.forEach(s -> {
-                        String uid = String.valueOf(s.get("uid"));
-                        String version = String.valueOf(s.get("version"));
+                        String uid = String.valueOf(s.get(IndividualDBAdaptor.QueryParams.UID.key()));
+                        String version = String.valueOf(s.get(IndividualDBAdaptor.QueryParams.VERSION.key()));
                         String key = uid + "__" + version;
 
                         // If the samples has been returned... (it might have not been fetched due to permissions issues)
@@ -166,8 +167,8 @@ public class IndividualMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
                 }
             }
             if (!includeList.isEmpty()) {
-                includeList.add("version");
-                includeList.add("uid");
+                includeList.add(IndividualDBAdaptor.QueryParams.VERSION.key());
+                includeList.add(IndividualDBAdaptor.QueryParams.UID.key());
                 queryOptions.put(QueryOptions.INCLUDE, includeList);
             }
         }
@@ -177,7 +178,8 @@ public class IndividualMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
             for (String exclude : currentExcludeList) {
                 if (exclude.startsWith(IndividualDBAdaptor.QueryParams.SAMPLES.key() + ".")) {
                     String replace = exclude.replace(IndividualDBAdaptor.QueryParams.SAMPLES.key() + ".", "");
-                    if (!"version".equals(replace) && !"uid".equals(replace)) {
+                    if (!IndividualDBAdaptor.QueryParams.VERSION.key().equals(replace)
+                            && !IndividualDBAdaptor.QueryParams.UID.key().equals(replace)) {
                         excludeList.add(replace);
                     }
                 }
