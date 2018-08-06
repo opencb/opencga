@@ -48,6 +48,7 @@ import org.opencb.opencga.storage.core.manager.StorageManager;
 import org.opencb.opencga.storage.core.manager.models.StudyInfo;
 import org.opencb.opencga.storage.core.manager.variant.metadata.CatalogVariantMetadataFactory;
 import org.opencb.opencga.storage.core.manager.variant.operations.*;
+import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.variant.BeaconResponse;
@@ -64,13 +65,13 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
+import static org.opencb.commons.datastore.core.QueryOptions.empty;
 import static org.opencb.opencga.catalog.db.api.StudyDBAdaptor.QueryParams.FQN;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.addDefaultLimit;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.getDefaultLimit;
 
 public class VariantStorageManager extends StorageManager {
-
-    public static final int LIMIT_DEFAULT = 1000;
-    public static final int LIMIT_MAX = 5000;
 
     private final VariantCatalogQueryUtils catalogUtils;
 
@@ -180,6 +181,15 @@ public class VariantStorageManager extends StorageManager {
         return indexOperation.index(studyInfo, outDir, options, sessionId);
     }
 
+    public void searchIndexSamples(String study, List<String> samples, String sessionId)
+            throws StorageEngineException, IOException, VariantSearchException,
+            IllegalAccessException, ClassNotFoundException, InstantiationException, CatalogException {
+        DataStore dataStore = getDataStore(study, sessionId);
+        VariantStorageEngine variantStorageEngine =
+                storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+
+        variantStorageEngine.searchIndexSamples(study, samples);
+    }
 
     public void searchIndex(String study, String sessionId) throws StorageEngineException, IOException, SolrException,
             IllegalAccessException, ClassNotFoundException, InstantiationException, CatalogException {
@@ -243,11 +253,7 @@ public class VariantStorageManager extends StorageManager {
         return annotOperation.annotateVariants(project, studiesList, query, outDir, sessionId, config);
     }
 
-    public void deleteAnnotation(String annotationId, String studyId, String sessionId) {
-        throw new UnsupportedOperationException();
-    }
-
-    public void createAnnotationSnapshot(String project, String annotationName, ObjectMap params, String sessionId)
+    public void saveAnnotation(String project, String annotationName, ObjectMap params, String sessionId)
             throws StorageEngineException, VariantAnnotatorException, CatalogException, IllegalAccessException, InstantiationException,
             ClassNotFoundException {
 
@@ -257,10 +263,10 @@ public class VariantStorageManager extends StorageManager {
 
         StorageOperation.updateProjectMetadata(catalogManager, variantStorageEngine.getStudyConfigurationManager(), project, sessionId);
 
-        variantStorageEngine.createAnnotationSnapshot(annotationName, params);
+        variantStorageEngine.saveAnnotation(annotationName, params);
     }
 
-    public void deleteAnnotationSnapshot(String project, String annotationName, ObjectMap params, String sessionId)
+    public void deleteAnnotation(String project, String annotationName, ObjectMap params, String sessionId)
             throws StorageEngineException, VariantAnnotatorException, CatalogException, IllegalAccessException,
             InstantiationException, ClassNotFoundException {
 
@@ -270,13 +276,19 @@ public class VariantStorageManager extends StorageManager {
 
         StorageOperation.updateProjectMetadata(catalogManager, variantStorageEngine.getStudyConfigurationManager(), project, sessionId);
 
-        variantStorageEngine.deleteAnnotationSnapshot(annotationName, params);
+        variantStorageEngine.deleteAnnotation(annotationName, params);
     }
 
     public QueryResult<VariantAnnotation> getAnnotation(String name, Query query, QueryOptions options, String sessionId)
             throws StorageEngineException, CatalogException, IOException {
         QueryOptions finalOptions = VariantQueryUtils.validateAnnotationQueryOptions(options);
         return secure(query, finalOptions, sessionId, (engine) -> engine.getAnnotation(name, query, finalOptions));
+    }
+
+    public QueryResult<ProjectMetadata.VariantAnnotationMetadata> getAnnotationMetadata(String name, String project, String sessionId)
+            throws StorageEngineException, CatalogException, IOException {
+        Query query = new Query(VariantCatalogQueryUtils.PROJECT.key(), project);
+        return secure(query, empty(), sessionId, (engine) -> engine.getAnnotationMetadata(name));
     }
 
     public void stats(String study, List<String> cohorts, String outDir, ObjectMap config, String sessionId)
@@ -557,25 +569,6 @@ public class VariantStorageManager extends StorageManager {
     }
 
     // Some aux methods
-
-    private int addDefaultLimit(QueryOptions queryOptions) {
-        return addDefaultLimit(queryOptions, LIMIT_MAX, LIMIT_DEFAULT);
-    }
-
-    private int addDefaultLimit(QueryOptions queryOptions, int limitMax, int limitDefault) {
-        // Add default limit
-        int limit = getDefaultLimit(queryOptions.getInt(QueryOptions.LIMIT, -1), limitMax, limitDefault);
-        queryOptions.put(QueryOptions.LIMIT,  limit);
-        return limit;
-    }
-
-    private int getDefaultLimit(int limit, int limitMax, int limitDefault) {
-        if (limit > limitMax) {
-            logger.info("Unable to return more than {} variants. Change limit from {} to {}", limitMax, limit, limitMax);
-        }
-        limit = (limit > 0) ? Math.min(limit, limitMax) : limitDefault;
-        return limit;
-    }
 
     private String[] getRegions(Query query) {
         String[] regions;

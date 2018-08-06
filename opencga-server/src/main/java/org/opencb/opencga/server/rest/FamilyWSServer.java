@@ -205,7 +205,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             ObjectMap params = parameters.toFamilyObjectMap();
 
             Map<String, Object> actionMap = new HashMap<>();
-            actionMap.put(FamilyDBAdaptor.UpdateParams.ANNOTATION_SETS.key(), annotationSetsAction.name());
+            actionMap.put(FamilyDBAdaptor.UpdateParams.ANNOTATION_SETS.key(), annotationSetsAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
             QueryResult<Family> queryResult = catalogManager.getFamilyManager().update(studyStr, familyStr, params, queryOptions,
@@ -224,20 +224,22 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Family id", required = true) @PathParam("family") String familyStr,
             @ApiParam(value = "Study [[user@]project:]study.") @QueryParam("study") String studyStr,
             @ApiParam(value = "AnnotationSet id to be updated.") @PathParam("annotationSet") String annotationSetId,
-            @ApiParam(value = "Action to be performed: ADD to add new annotations; SET to set the new list of annotations removing any "
-                    + "possible old annotations; REMOVE to remove some annotations; RESET to set some annotations to the default value "
-                    + "configured in the corresponding variables of the VariableSet if any.", defaultValue = "ADD")
-            @QueryParam("action") ParamUtils.CompleteUpdateAction action,
+            @ApiParam(value = "Action to be performed: ADD to add new annotations; REPLACE to replace the value of an already existing "
+                    + "annotation; SET to set the new list of annotations removing any possible old annotations; REMOVE to remove some "
+                    + "annotations; RESET to set some annotations to the default value configured in the corresponding variables of the "
+                    + "VariableSet if any.", defaultValue = "ADD") @QueryParam("action") ParamUtils.CompleteUpdateAction action,
             @ApiParam(value = "Create a new version of family", defaultValue = "false") @QueryParam(Constants.INCREMENT_VERSION)
                     boolean incVersion,
             @ApiParam(value = "Update all the individual references from the family to point to their latest versions",
                     defaultValue = "false") @QueryParam("updateSampleVersion") boolean refresh,
-            @ApiParam(value = "Json containing the map of annotations when the action is ADD or SET, a json with only the key "
+            @ApiParam(value = "Json containing the map of annotations when the action is ADD, SET or REPLACE, a json with only the key "
                     + "'remove' containing the comma separated variables to be removed as a value when the action is REMOVE or a json "
                     + "with only the key 'reset' containing the comma separated variables that will be set to the default value"
-                    + " when the action is RESET"
-            ) Map<String, Object> updateParams) {
+                    + " when the action is RESET") Map<String, Object> updateParams) {
         try {
+            if (action == null) {
+                action = ParamUtils.CompleteUpdateAction.ADD;
+            }
             queryOptions.put(Constants.REFRESH, refresh);
 
             return createOkResponse(catalogManager.getFamilyManager().updateAnnotations(studyStr, familyStr, annotationSetId,
@@ -516,6 +518,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
         public String father;
         public String mother;
         public Multiples multiples;
+        public Location location;
 
         public Individual.Sex sex;
         public String ethnicity;
@@ -543,9 +546,9 @@ public class FamilyWSServer extends OpenCGAWSServer {
             String individualId = StringUtils.isEmpty(id) ? name : id;
             String individualName = StringUtils.isEmpty(name) ? individualId : name;
             return new Individual(individualId, individualName, father != null ? new Individual().setId(father) : null,
-                    mother != null ? new Individual().setId(mother) : null, multiples, sex,
-                    karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth, null,
-                    parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes)
+                    mother != null ? new Individual().setId(mother) : null, multiples, location,
+                    sex, karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth,
+                    null, parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes)
                     .setAttributes(attributes);
         }
 
@@ -560,6 +563,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
                     .setMother(mother != null ? new Individual().setId(mother) : null)
                     .setMultiples(multiples)
                     .setSex(sex)
+                    .setLocation(location)
                     .setKaryotypicSex(karyotypicSex)
                     .setEthnicity(ethnicity)
                     .setPopulation(population)
@@ -632,6 +636,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
             ObjectMap params = new ObjectMap(mapper.writeValueAsString(family));
             params.putIfNotNull("members", relatives);
+            params.putIfNotNull(FamilyDBAdaptor.UpdateParams.ANNOTATION_SETS.key(), annotationSets);
 
             // We do this because jackson will always introduce expectedSize = 0
             if (expectedSize == null) {

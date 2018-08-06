@@ -203,14 +203,26 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     public VariantQueryResult<Variant> query(Query query, QueryOptions options) {
+        query = preProcessQuery(query, options);
         return dbAdaptor.get(query, options);
     }
 
     public VariantDBIterator iterator(Query query, QueryOptions options) {
+        query = preProcessQuery(query, options);
         return dbAdaptor.iterator(query, options);
     }
 
+    protected Query preProcessQuery(Query query, QueryOptions options) {
+        try {
+            query = variantStorageEngine.preProcessQuery(query, options);
+        } catch (StorageEngineException e) {
+            throw VariantQueryException.internalException(e);
+        }
+        return query;
+    }
+
     public Long count(Query query) {
+        query = preProcessQuery(query, null);
         return dbAdaptor.count(query).first();
     }
 
@@ -391,48 +403,50 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     @Test
     public void testGetAllVariants_population_maf() {
-        final PopulationFrequency defaultPopulation = new PopulationFrequency(null, null, null, null, 0F, 0F, 0F, 0F, 0F);
         Query baseQuery = new Query();
 
-        Query query = new Query(baseQuery)
-                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), GENOMES_PHASE_3 + ":AFR<=0.0501");
+        Query query = new Query(baseQuery).append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),
+                GENOMES_PHASE_3 + ":AFR<=0.0501");
         queryResult = query(query, options);
-        filterPopulation(map -> (Math.min(map.getOrDefault(GENOMES_PHASE_3 + ":AFR", defaultPopulation).getRefAlleleFreq(),
-                map.getOrDefault(GENOMES_PHASE_3 + ":AFR", defaultPopulation).getAltAlleleFreq()) <= 0.0501));
+//        filterPopulation(map -> (Math.min(map.getOrDefault(GENOMES_PHASE_3 + ":AFR", defaultPopulation).getRefAlleleFreq(),
+//                map.getOrDefault(GENOMES_PHASE_3 + ":AFR", defaultPopulation).getAltAlleleFreq()) <= 0.0501));
+        assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasPopMaf(GENOMES_PHASE_3, "AFR", lte(0.05001)))));
 
-        query = new Query(baseQuery)
-                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), ESP_6500 + ":AA>0.0501");
+        query = new Query(baseQuery).append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),
+                ESP_6500 + ":AA>0.0501");
         queryResult = query(query, options);
-        filterPopulation(map -> (map.containsKey(ESP_6500 + ":AA") && Math.min(map.get(ESP_6500 + ":AA").getRefAlleleFreq(),
-                map.get(ESP_6500 + ":AA").getAltAlleleFreq()) > 0.0501));
+//        filterPopulation(map -> (map.containsKey(ESP_6500 + ":AA") && Math.min(map.get(ESP_6500 + ":AA").getRefAlleleFreq(),
+//                map.get(ESP_6500 + ":AA").getAltAlleleFreq()) > 0.0501));
+        assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasPopMaf(ESP_6500, "AA", gt(0.05001)))));
 
-        query = new Query(baseQuery)
-                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),GENOMES_PHASE_3 + ":AFR<=0.0501");
+        query = new Query(baseQuery).append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),
+                GENOMES_PHASE_3 + ":ALL<=0.0501");
         queryResult = query(query, options);
-        filterPopulation(map -> (Math.min(map.getOrDefault(GENOMES_PHASE_3 + ":AFR", defaultPopulation).getRefAlleleFreq(),
-                map.getOrDefault(GENOMES_PHASE_3 + ":AFR", defaultPopulation).getAltAlleleFreq()) <= 0.0501));
+//        filterPopulation(map -> (Math.min(map.getOrDefault(GENOMES_PHASE_3 + ":ALL", defaultPopulation).getRefAlleleFreq(),
+//                map.getOrDefault(GENOMES_PHASE_3 + ":ALL", defaultPopulation).getAltAlleleFreq()) <= 0.0501));
+        assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasPopMaf(GENOMES_PHASE_3, "ALL", lt(0.05001)))));
 
-        query = new Query(baseQuery)
-                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),GENOMES_PHASE_3 + ":ALL<=0.0501");
+        query = new Query(baseQuery).append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),
+                ESP_6500 + ":AA>0.0501" + AND + GENOMES_PHASE_3 + ":AFR<=0.0501");
         queryResult = query(query, options);
-        filterPopulation(map -> (Math.min(map.getOrDefault(GENOMES_PHASE_3 + ":ALL", defaultPopulation).getRefAlleleFreq(),
-                map.getOrDefault(GENOMES_PHASE_3 + ":ALL", defaultPopulation).getAltAlleleFreq()) <= 0.0501));
+//        filterPopulation(map -> (map.containsKey(ESP_6500 + ":AA") && Math.min(map.get(ESP_6500 + ":AA").getRefAlleleFreq(),
+//                map.get(ESP_6500 + ":AA").getAltAlleleFreq()) > 0.0501
+//                && Math.min(map.getOrDefault(GENOMES_PHASE_3 + ":AFR", defaultPopulation).getRefAlleleFreq(),
+//                map.getOrDefault(GENOMES_PHASE_3 + ":AFR", defaultPopulation).getAltAlleleFreq()) <= 0.0501));
+        assertThat(queryResult, everyResult(allVariants, hasAnnotation(allOf(
+                hasPopMaf(ESP_6500, "AA", gt(0.0501)),
+                hasPopMaf(GENOMES_PHASE_3, "AFR", lte(0.0501))))));
 
-        query = new Query(baseQuery)
-                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), ESP_6500 + ":AA>0.0501;" + GENOMES_PHASE_3 + ":AFR<=0.0501");
+        query = new Query(baseQuery).append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),
+                ESP_6500 + ":AA>0.0501" + OR + GENOMES_PHASE_3 + ":AFR<=0.0501");
         queryResult = query(query, options);
-        filterPopulation(map -> (map.containsKey(ESP_6500 + ":AA") && Math.min(map.get(ESP_6500 + ":AA").getRefAlleleFreq(),
-                map.get(ESP_6500 + ":AA").getAltAlleleFreq()) > 0.0501
-                && Math.min(map.getOrDefault(GENOMES_PHASE_3 + ":AFR", defaultPopulation).getRefAlleleFreq(),
-                map.getOrDefault(GENOMES_PHASE_3 + ":AFR", defaultPopulation).getAltAlleleFreq()) <= 0.0501));
-
-        query = new Query(baseQuery)
-                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), ESP_6500 + ":AA>0.0501," + GENOMES_PHASE_3 + ":AFR<=0.0501");
-        queryResult = query(query, options);
-        filterPopulation(map -> (map.containsKey(ESP_6500 + ":AA") && Math.min(map.get(ESP_6500 + ":AA").getRefAlleleFreq(),
-                map.get(ESP_6500 + ":AA").getAltAlleleFreq()) > 0.0501
-                || Math.min(map.getOrDefault(GENOMES_PHASE_3 + ":AFR", defaultPopulation).getRefAlleleFreq(),
-                map.getOrDefault(GENOMES_PHASE_3 + ":AFR", defaultPopulation).getAltAlleleFreq()) <= 0.0501));
+//        filterPopulation(map -> (map.containsKey(ESP_6500 + ":AA") && Math.min(map.get(ESP_6500 + ":AA").getRefAlleleFreq(),
+//                map.get(ESP_6500 + ":AA").getAltAlleleFreq()) > 0.0501
+//                || Math.min(map.getOrDefault(GENOMES_PHASE_3 + ":AFR", defaultPopulation).getRefAlleleFreq(),
+//                map.getOrDefault(GENOMES_PHASE_3 + ":AFR", defaultPopulation).getAltAlleleFreq()) <= 0.0501));
+        assertThat(queryResult, everyResult(allVariants, hasAnnotation(anyOf(
+                hasPopMaf(ESP_6500, "AA", gt(0.0501)),
+                hasPopMaf(GENOMES_PHASE_3, "AFR", lte(0.0501))))));
 
     }
 
@@ -1008,6 +1022,22 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
             queryResult = query(new Query(ANNOT_POLYPHEN.key(), q), null);
             assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasAnyPolyphen(m))));
+
+            queryResult = query(new Query(ANNOT_PROTEIN_SUBSTITUTION.key(), "polyphen" + q), null);
+            assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasAnyPolyphen(m))));
+
+            queryResult = query(new Query(ANNOT_PROTEIN_SUBSTITUTION.key(), "sift" + q), null);
+            assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasAnySift(m))));
+
+            // Duplicate operator
+            q = q.charAt(0) + q;
+            System.out.println("q = " + q);
+
+            queryResult = query(new Query(ANNOT_PROTEIN_SUBSTITUTION.key(), "polyphen" + q), null);
+            assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasPolyphen(anyOf(hasItem(m), isEmpty())))));
+
+            queryResult = query(new Query(ANNOT_PROTEIN_SUBSTITUTION.key(), "sift" + q), null);
+            assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasSift(anyOf(hasItem(m), isEmpty())))));
         }
 
         Query query = new Query(ANNOT_POLYPHEN.key(), "sift>0.5");
@@ -1026,10 +1056,14 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         for (String p : Arrays.asList("benign", "possibly damaging", "probably damaging", "unknown")) {
             queryResult = query(new Query(ANNOT_POLYPHEN.key(), p), null);
             assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasAnyPolyphenDesc(equalTo(p)))));
+            queryResult = query(new Query(ANNOT_PROTEIN_SUBSTITUTION.key(), "polyphen=" + p), null);
+            assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasAnyPolyphenDesc(equalTo(p)))));
         }
 
         for (String s : Arrays.asList("deleterious", "tolerated")) {
             queryResult = query(new Query(ANNOT_SIFT.key(), s), null);
+            assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasAnySiftDesc(equalTo(s)))));
+            queryResult = query(new Query(ANNOT_PROTEIN_SUBSTITUTION.key(), "sift=" + s), null);
             assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasAnySiftDesc(equalTo(s)))));
         }
     }
@@ -1046,6 +1080,33 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         checkFunctionalScore(new Query(ANNOT_FUNCTIONAL_SCORE.key(), "cadd_raw<0.5"), s1 -> s1 < 0.5, "cadd_raw");
 
         checkFunctionalScore(new Query(ANNOT_FUNCTIONAL_SCORE.key(), "cadd_scaled<=0.5"), s -> s <= 0.5, "cadd_scaled");
+
+//        checkFunctionalScore(new Query(ANNOT_FUNCTIONAL_SCORE.key(), "cadd_scaled<<0.5"), s -> s < 0.5, "cadd_scaled");
+
+        checkScore(new Query(ANNOT_FUNCTIONAL_SCORE.key(), "cadd_scaled<<0.5"),
+                ((Predicate<List<Score>>) scores -> scores.stream()
+                        .anyMatch(s -> s.getSource().equalsIgnoreCase("cadd_scaled") && s.getScore() < 0.5))
+                        .or(List::isEmpty),
+                VariantAnnotation::getFunctionalScore);
+
+        checkScore(new Query(ANNOT_FUNCTIONAL_SCORE.key(), "cadd_scaled<<=0.5"),
+                ((Predicate<List<Score>>) scores -> scores.stream()
+                        .anyMatch(s -> s.getSource().equalsIgnoreCase("cadd_scaled") && s.getScore() <= 0.5))
+                        .or(List::isEmpty),
+                VariantAnnotation::getFunctionalScore);
+
+        checkScore(new Query(ANNOT_FUNCTIONAL_SCORE.key(), "cadd_raw>>0.5"),
+                ((Predicate<List<Score>>) scores -> scores.stream()
+                        .anyMatch(s -> s.getSource().equalsIgnoreCase("cadd_raw") && s.getScore() > 0.5))
+                        .or(List::isEmpty),
+                VariantAnnotation::getFunctionalScore);
+
+        checkScore(new Query(ANNOT_FUNCTIONAL_SCORE.key(), "cadd_raw>>=0.5"),
+                ((Predicate<List<Score>>) scores -> scores.stream()
+                        .anyMatch(s -> s.getSource().equalsIgnoreCase("cadd_raw") && s.getScore() >= 0.5))
+                        .or(List::isEmpty),
+                VariantAnnotation::getFunctionalScore);
+
     }
 
     @Test
@@ -1086,6 +1147,25 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
                 ((Predicate<List<Score>>) scores -> scores.stream().anyMatch(s -> s.getSource().equalsIgnoreCase("gerp") && s.getScore() <= 0.5))
                         .and(scores -> scores.stream().anyMatch(s -> s.getSource().equalsIgnoreCase("phastCons") && s.getScore() < 0.5)),
                 VariantAnnotation::getConservation);
+
+        checkScore(new Query(ANNOT_CONSERVATION.key(), "gerp<<0.5"),
+                scores ->
+                        scores.stream().anyMatch(s -> s.getSource().equalsIgnoreCase("gerp") && s.getScore() < 0.5)
+                                || scores.stream().noneMatch(s -> s.getSource().equalsIgnoreCase("gerp")),
+                VariantAnnotation::getConservation);
+
+        checkScore(new Query(ANNOT_CONSERVATION.key(), "phastCons>>=0.5"),
+                scores ->
+                        scores.stream().anyMatch(s -> s.getSource().equalsIgnoreCase("phastCons") && s.getScore() >= 0.5)
+                                || scores.stream().noneMatch(s -> s.getSource().equalsIgnoreCase("phastCons")),
+                VariantAnnotation::getConservation);
+
+        checkScore(new Query(ANNOT_CONSERVATION.key(), "gerp<<=0.5;phastCons<0.5"),
+                scores -> (scores.stream().anyMatch(s -> s.getSource().equalsIgnoreCase("gerp") && s.getScore() <= 0.5)
+                        || scores.stream().noneMatch(s -> s.getSource().equalsIgnoreCase("gerp")))
+                        && scores.stream().anyMatch(s -> s.getSource().equalsIgnoreCase("phastCons") && s.getScore() < 0.5),
+                VariantAnnotation::getConservation);
+
     }
 
     @Test
@@ -1118,11 +1198,18 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     public void checkScore(Query query, Predicate<List<Score>> scorePredicate, Function<VariantAnnotation, List<Score>> mapper) {
         QueryResult<Variant> result = query(query, null);
-        long expected = countScore(allVariants, scorePredicate, mapper);
-        long actual = countScore(result, scorePredicate, mapper);
-        assertTrue("Expecting a query returning some value.", expected > 0);
-        assertEquals(expected, result.getNumResults());
-        assertEquals(expected, actual);
+        Collection<Variant> expected = filterByScore(allVariants, scorePredicate, mapper);
+        Collection<Variant> filteredResult = filterByScore(result, scorePredicate, mapper);
+        TreeSet<Variant> actual = new TreeSet<>(Comparator.comparing(Variant::getChromosome).thenComparing(Variant::getStart).thenComparing(Variant::toString));
+        actual.addAll(result.getResult());
+        if (expected.size()!=actual.size()) {
+            System.out.println("expected = " + expected);
+            System.out.println("actual   = " + actual);
+        }
+        assertTrue("Expecting a query returning some value.", expected.size() > 0);
+        assertEquals(expected.size(), result.getNumResults());
+        assertEquals(expected.size(), actual.size());
+        assertEquals(expected.size(), filteredResult.size());
     }
 
     private long countConservationScore(String source, QueryResult<Variant> variantQueryResult, Predicate<Double> doublePredicate) {
@@ -1138,16 +1225,21 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     private long countScore(QueryResult<Variant> variantQueryResult, Predicate<List<Score>> predicate, Function<VariantAnnotation, List<Score>> mapper) {
-        long c = 0;
+        return filterByScore(variantQueryResult, predicate, mapper).size();
+    }
+
+    private Collection<Variant> filterByScore(QueryResult<Variant> variantQueryResult, Predicate<List<Score>> predicate, Function<VariantAnnotation, List<Score>> mapper) {
+        TreeSet<Variant> variants = new TreeSet<>(Comparator.comparing(Variant::getChromosome).thenComparing(Variant::getStart).thenComparing(Variant::toString));
         for (Variant variant : variantQueryResult.getResult()) {
             List<Score> list = mapper.apply(variant.getAnnotation());
-            if (list != null) {
-                if (predicate.test(list)) {
-                    c++;
-                }
+            if (list == null) {
+                list = Collections.emptyList();
+            }
+            if (predicate.test(list)) {
+                variants.add(variant);
             }
         }
-        return c;
+        return variants;
     }
 
     @Test

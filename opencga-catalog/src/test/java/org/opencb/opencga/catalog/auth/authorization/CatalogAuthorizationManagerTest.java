@@ -62,7 +62,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     private final String ownerUser = "owner";
     private final String studyAdminUser1 = "studyAdmin1";
     private final String studyAdminUser2 = "studyAdmin2";
-    private final String memberUser = "member";
+    private final String memberUser = "member_member";
     private final String externalUser = "external";
     private final String password = "1234";
 
@@ -154,11 +154,8 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         false, null, QueryOptions.empty(), ownerSessionId).first().getPath();
         data_d1_d2_d3_d4 = catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data/d1/d2/d3/d4/").toString(),
                 null, false, null, QueryOptions.empty(), ownerSessionId).first().getPath();
-        QueryResult<File> queryResult = catalogManager.getFileManager().create(studyFqn, File.Type.FILE, File.Format.PLAIN,
-                File.Bioformat.NONE, "data/d1/d2/d3/d4/my.txt", null, "", new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, 
-                null, false, null, null, ownerSessionId);
-        new FileUtils(catalogManager).upload(new ByteArrayInputStream(("file content").getBytes()), queryResult.first(), ownerSessionId,
-                false, false, true);
+        QueryResult<File> queryResult = catalogManager.getFileManager().create(studyFqn, new File().setPath("data/d1/d2/d3/d4/my.txt"),
+                false, "file content", null, ownerSessionId);
 
         // Add studyAdminUser1 and studyAdminUser2 to admin group and admin role.
         catalogManager.getStudyManager().updateGroup(studyFqn, groupAdmin, new GroupParams(studyAdminUser1 + "," + studyAdminUser2,

@@ -409,7 +409,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
             Map<String, Object> actionMap = new HashMap<>();
             actionMap.put(IndividualDBAdaptor.UpdateParams.SAMPLES.key(), samplesAction.name());
-            actionMap.put(IndividualDBAdaptor.UpdateParams.ANNOTATION_SETS.key(), annotationSetsAction.name());
+            actionMap.put(IndividualDBAdaptor.UpdateParams.ANNOTATION_SETS.key(), annotationSetsAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
             QueryResult<Individual> queryResult = catalogManager.getIndividualManager().update(studyStr, individualStr, params,
@@ -428,20 +428,22 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Individual id", required = true) @PathParam("individual") String individualStr,
             @ApiParam(value = "Study [[user@]project:]study.") @QueryParam("study") String studyStr,
             @ApiParam(value = "AnnotationSet id to be updated.") @PathParam("annotationSet") String annotationSetId,
-            @ApiParam(value = "Action to be performed: ADD to add new annotations; SET to set the new list of annotations removing any "
-                    + "possible old annotations; REMOVE to remove some annotations; RESET to set some annotations to the default value "
-                    + "configured in the corresponding variables of the VariableSet if any.", defaultValue = "ADD")
-                @QueryParam("action") ParamUtils.CompleteUpdateAction action,
+            @ApiParam(value = "Action to be performed: ADD to add new annotations; REPLACE to replace the value of an already existing "
+                    + "annotation; SET to set the new list of annotations removing any possible old annotations; REMOVE to remove some "
+                    + "annotations; RESET to set some annotations to the default value configured in the corresponding variables of the "
+                    + "VariableSet if any.", defaultValue = "ADD") @QueryParam("action") ParamUtils.CompleteUpdateAction action,
             @ApiParam(value = "Create a new version of individual", defaultValue = "false") @QueryParam(Constants.INCREMENT_VERSION)
                     boolean incVersion,
             @ApiParam(value = "Update all the sample references from the individual to point to their latest versions",
                     defaultValue = "false") @QueryParam("updateSampleVersion") boolean refresh,
-            @ApiParam(value = "Json containing the map of annotations when the action is ADD or SET, a json with only the key "
+            @ApiParam(value = "Json containing the map of annotations when the action is ADD, SET or REPLACE, a json with only the key "
                     + "'remove' containing the comma separated variables to be removed as a value when the action is REMOVE or a json "
                     + "with only the key 'reset' containing the comma separated variables that will be set to the default value"
-                    + " when the action is RESET"
-            ) Map<String, Object> updateParams) {
+                    + " when the action is RESET") Map<String, Object> updateParams) {
         try {
+            if (action == null) {
+                action = ParamUtils.CompleteUpdateAction.ADD;
+            }
             queryOptions.put(Constants.REFRESH, refresh);
 
             return createOkResponse(catalogManager.getIndividualManager().updateAnnotations(studyStr, individualStr, annotationSetId,
@@ -659,6 +661,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
         public String father;
         public String mother;
         public Multiples multiples;
+        public Location location;
 
         public Individual.Sex sex;
         public String ethnicity;
@@ -685,8 +688,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
             String individualId = StringUtils.isEmpty(id) ? name : id;
             String individualName = StringUtils.isEmpty(name) ? individualId : name;
             return new Individual(individualId, individualName, new Individual().setId(father), new Individual().setId(mother), multiples,
-                    sex, karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth, null,
-                    parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes)
+                    location, sex, karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth,
+                    null, parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes)
                     .setAttributes(attributes);
         }
     }
@@ -708,8 +711,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
             String individualId = StringUtils.isEmpty(id) ? name : id;
             String individualName = StringUtils.isEmpty(name) ? individualId : name;
             return new Individual(individualId, individualName, new Individual().setId(father), new Individual().setId(mother), multiples,
-                    sex, karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth, sampleList,
-                    parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes)
+                    location, sex, karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth,
+                    sampleList, parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes)
                     .setAttributes(attributes);
         }
     }
@@ -728,6 +731,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     .setFather(father != null ? new Individual().setId(father) : null)
                     .setMother(mother != null ? new Individual().setId(mother) : null)
                     .setMultiples(multiples)
+                    .setLocation(location)
                     .setSex(sex)
                     .setKaryotypicSex(karyotypicSex)
                     .setEthnicity(ethnicity)
@@ -744,6 +748,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             if (parentalConsanguinity == null) {
                 params.remove("parentalConsanguinity");
             }
+            params.putIfNotNull(IndividualDBAdaptor.UpdateParams.ANNOTATION_SETS.key(), annotationSets);
             params.putIfNotNull("samples", samples);
 
             return params;

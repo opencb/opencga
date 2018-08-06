@@ -29,7 +29,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.*;
 
 /**
@@ -107,7 +106,7 @@ public class CellBaseUtils {
             }
             return regions;
         } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            throw VariantQueryException.internalException(e);
         }
     }
 
@@ -123,7 +122,7 @@ public class CellBaseUtils {
                 }
             }
         } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            throw VariantQueryException.internalException(e);
         }
         return genes;
     }
@@ -148,7 +147,7 @@ public class CellBaseUtils {
                     }
                 }
             } catch (IOException e) {
-                throw new UncheckedIOException(e);
+                throw VariantQueryException.internalException(e);
             }
         }
         return genes;

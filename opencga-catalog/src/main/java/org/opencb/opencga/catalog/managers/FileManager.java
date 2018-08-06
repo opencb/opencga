@@ -52,16 +52,14 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.HookConfiguration;
 import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
@@ -77,7 +75,7 @@ import static org.opencb.opencga.catalog.utils.FileMetadataReader.VARIANT_FILE_S
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class FileManager extends ResourceManager<File> {
+public class FileManager extends AnnotationSetManager<File> {
 
     private static final QueryOptions INCLUDE_STUDY_URI;
     private static final QueryOptions INCLUDE_FILE_URI_PATH;
@@ -444,7 +442,7 @@ public class FileManager extends ResourceManager<File> {
         return create(study, file, parents, content, options, sessionId);
     }
 
-    QueryResult<File> create(Study study, File file, boolean parents, String content, QueryOptions options, String sessionId)
+    public QueryResult<File> register(Study study, File file, boolean parents, QueryOptions options, String sessionId)
             throws CatalogException {
         String userId = userManager.getUserId(sessionId);
         long studyId = study.getUid();
@@ -477,7 +475,7 @@ public class FileManager extends ResourceManager<File> {
                 throw new CatalogException("Sample { id: " + sample.getUid() + "} does not exist.");
             }
         }
-        if (file.getJob().getUid() > 0 && !jobDBAdaptor.exists(file.getJob().getUid())) {
+        if (file.getJob() != null && file.getJob().getUid() > 0 && !jobDBAdaptor.exists(file.getJob().getUid())) {
             throw new CatalogException("Job { id: " + file.getJob().getUid() + "} does not exist.");
         }
         file.setStats(ParamUtils.defaultObject(file.getStats(), HashMap::new));
@@ -537,7 +535,7 @@ public class FileManager extends ResourceManager<File> {
                 File parentFile = new File(File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, parentPath, "",
                         new File.FileStatus(File.FileStatus.READY), 0, file.getSamples(), -1, null, Collections.emptyMap(),
                         Collections.emptyMap());
-                parentFileId = create(study, parentFile, parents, null, options, sessionId).first().getUid();
+                parentFileId = register(study, parentFile, parents, options, sessionId).first().getUid();
             } else {
                 throw new CatalogDBException("Directory not found " + parentPath);
             }
@@ -553,17 +551,6 @@ public class FileManager extends ResourceManager<File> {
             }
         }
 
-        if (Objects.equals(file.getStatus().getName(), File.FileStatus.READY)) {
-            CatalogIOManager ioManager = catalogIOManagerFactory.get(uri);
-            if (file.getType() == File.Type.DIRECTORY) {
-                ioManager.createDirectory(uri, parents);
-            } else {
-                content = content != null ? content : "";
-                InputStream inputStream = new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));
-                ioManager.createFile(uri, inputStream);
-            }
-        }
-
         file.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
         checkHooks(file, study.getFqn(), HookConfiguration.Stage.CREATE);
         QueryResult<File> queryResult = fileDBAdaptor.insert(file, studyId, options);
@@ -575,10 +562,139 @@ public class FileManager extends ResourceManager<File> {
         }
 
         auditManager.recordCreation(AuditRecord.Resource.file, queryResult.first().getUid(), userId, queryResult.first(), null, null);
-
         matchUpVariantFiles(study.getFqn(), queryResult.getResult(), sessionId);
 
         return queryResult;
+    }
+
+    private QueryResult<File> create(Study study, File file, boolean parents, String content, QueryOptions options, String sessionId)
+            throws CatalogException {
+        QueryResult<File> queryResult = register(study, file, parents, options, sessionId);
+
+        if (file.getType() == File.Type.FILE && StringUtils.isNotEmpty(content)) {
+            CatalogIOManager ioManager = catalogIOManagerFactory.getDefault();
+            // We set parents to true because the file has been successfully registered, which means the directories are already registered
+            // in catalog
+            ioManager.createDirectory(Paths.get(file.getUri()).getParent().toUri(), true);
+            InputStream inputStream = new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));
+            ioManager.createFile(file.getUri(), inputStream);
+
+            // Update file parameters
+            ObjectMap params = new ObjectMap()
+                    .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY)
+                    .append(FileDBAdaptor.QueryParams.SIZE.key(), ioManager.getFileSize(file.getUri()));
+            queryResult = fileDBAdaptor.update(file.getUid(), params, QueryOptions.empty());
+        }
+
+        return queryResult;
+    }
+
+    /**
+     * Upload a file in Catalog.
+     *
+     * @param studyStr study where the file will be uploaded.
+     * @param fileInputStream Input stream of the file to be uploaded.
+     * @param file File object containing at least the basic metada necessary for a successful upload: path
+     * @param overwrite Overwrite the current file if any.
+     * @param parents boolean indicating whether unexisting parent folders should also be created automatically.
+     * @param sessionId session id of the user performing the upload.
+     * @return a QueryResult with the file uploaded.
+     * @throws CatalogException if the user does not have permissions or any other unexpected issue happens.
+     */
+    public QueryResult<File> upload(String studyStr, InputStream fileInputStream, File file, boolean overwrite, boolean parents,
+                                    String sessionId) throws CatalogException {
+        // Check basic parameters
+        ParamUtils.checkObj(file, "file");
+        ParamUtils.checkParameter(file.getPath(), FileDBAdaptor.QueryParams.PATH.key());
+
+        if (StringUtils.isEmpty(file.getName())) {
+            file.setName(Paths.get(file.getPath()).toFile().getName());
+        }
+
+        ParamUtils.checkObj(fileInputStream, "file input stream");
+
+        QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get(studyStr,
+                new QueryOptions(QueryOptions.EXCLUDE, Arrays.asList(StudyDBAdaptor.QueryParams.VARIABLE_SET.key(),
+                        StudyDBAdaptor.QueryParams.ATTRIBUTES.key())), sessionId);
+        if (studyQueryResult.getNumResults() == 0) {
+            throw new CatalogException("Study " + studyStr + " not found");
+        }
+        Study study = studyQueryResult.first();
+
+        QueryResult<File> parentFolders = getParents(false, QueryOptions.empty(), file.getPath(), study.getUid());
+        if (parentFolders.getNumResults() == 0) {
+            // There always must be at least the root folder
+            throw new CatalogException("Unexpected error happened.");
+        }
+
+        String userId = userManager.getUserId(sessionId);
+
+        // Check permissions over the most internal path
+        authorizationManager.checkFilePermission(study.getUid(), parentFolders.first().getUid(), userId,
+                FileAclEntry.FilePermissions.UPLOAD);
+        authorizationManager.checkFilePermission(study.getUid(), parentFolders.first().getUid(), userId,
+                FileAclEntry.FilePermissions.WRITE);
+
+        // We obtain the basic studyPath where we will upload the file temporarily
+        java.nio.file.Path studyPath = Paths.get(study.getUri());
+        java.nio.file.Path tempFilePath = studyPath.resolve("tmp_" + file.getName()).resolve(file.getName());
+        logger.info("Uploading file... Temporal file path: {}", tempFilePath.toString());
+
+        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().getDefault();
+
+        // Create the temporal directory and upload the file
+        try {
+            if (!Files.exists(tempFilePath.getParent())) {
+                logger.debug("Creating temporal folder: {}", tempFilePath.getParent());
+                Files.createDirectory(tempFilePath.getParent());
+            }
+
+            // Start uploading the file to the temporal directory
+            int read;
+            byte[] bytes = new byte[1024];
+
+            // Upload the file to a temporary folder
+            try (OutputStream out = new FileOutputStream(new java.io.File(tempFilePath.toString()))) {
+                while ((read = fileInputStream.read(bytes)) != -1) {
+                    out.write(bytes, 0, read);
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Error uploading file {}", file.getName(), e);
+
+            // Clean temporal directory
+            ioManager.deleteDirectory(tempFilePath.getParent().toUri());
+
+            throw new CatalogException("Error uploading file " + file.getName(), e);
+        }
+
+        // Register the file in catalog
+        QueryResult<File> fileQueryResult;
+        try {
+            fileQueryResult = catalogManager.getFileManager().register(study, file, parents, QueryOptions.empty(), sessionId);
+
+            // Create the directories where the file will be placed (if they weren't created before)
+            ioManager.createDirectory(Paths.get(fileQueryResult.first().getUri()).getParent().toUri(), true);
+
+            new org.opencb.opencga.catalog.managers.FileUtils(catalogManager).upload(tempFilePath.toUri(), fileQueryResult.first(),
+                null, sessionId, false, overwrite, true, true, Long.MAX_VALUE);
+
+            File fileMetadata = new FileMetadataReader(catalogManager)
+                    .setMetadataInformation(fileQueryResult.first(), null, null, sessionId, false);
+            fileQueryResult.setResult(Collections.singletonList(fileMetadata));
+        } catch (Exception e) {
+            logger.error("Error uploading file {}", file.getName(), e);
+
+            // Clean temporal directory
+            ioManager.deleteDirectory(tempFilePath.getParent().toUri());
+
+            throw new CatalogException("Error uploading file " + file.getName(), e);
+        }
+
+        // Clean temporal directory
+        ioManager.deleteDirectory(tempFilePath.getParent().toUri());
+
+        return fileQueryResult;
     }
 
     /*
@@ -598,6 +714,8 @@ public class FileManager extends ResourceManager<File> {
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
         query.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
+        // Fix query if it contains any annotation
+        fixQueryAnnotationSearch(study.getUid(), query);
         fixQueryObject(study, query, sessionId);
 
         QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, options, userId);
@@ -709,6 +827,8 @@ public class FileManager extends ResourceManager<File> {
         String userId = userManager.getUserId(sessionId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
+        // Fix query if it contains any annotation
+        fixQueryAnnotationSearch(study.getUid(), query);
         fixQueryObject(study, query, sessionId);
         query.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
@@ -733,6 +853,8 @@ public class FileManager extends ResourceManager<File> {
         String userId = userManager.getUserId(sessionId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
+        // Fix query if it contains any annotation
+        fixQueryAnnotationSearch(study.getUid(), query);
         // The samples introduced could be either ids or names. As so, we should use the smart resolutor to do this.
         fixQueryObject(study, query, sessionId);
 
@@ -766,7 +888,9 @@ public class FileManager extends ResourceManager<File> {
             userId = catalogManager.getUserManager().getUserId(sessionId);
             study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
-            fixQueryObject(study, query, sessionId);
+            // Fix query if it contains any annotation
+            fixQueryAnnotationSearch(study.getUid(), finalQuery);
+            fixQueryObject(study, finalQuery, sessionId);
             finalQuery.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
@@ -1183,6 +1307,31 @@ public class FileManager extends ResourceManager<File> {
         return false;
     }
 
+    public QueryResult<File> updateAnnotations(String studyStr, String fileStr, String annotationSetId,
+                                               Map<String, Object> annotations, ParamUtils.CompleteUpdateAction action,
+                                               QueryOptions options, String token) throws CatalogException {
+        if (annotations == null || annotations.isEmpty()) {
+            return new QueryResult<>(fileStr, -1, -1, -1, "Nothing to do: The map of annotations is empty", "", Collections.emptyList());
+        }
+        ObjectMap params = new ObjectMap(AnnotationSetManager.ANNOTATIONS, new AnnotationSet(annotationSetId, "", annotations));
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        options.put(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATIONS, action));
+
+        return update(studyStr, fileStr, params, options, token);
+    }
+
+    public QueryResult<File> removeAnnotations(String studyStr, String fileStr, String annotationSetId,
+                                               List<String> annotations, QueryOptions options, String token) throws CatalogException {
+        return updateAnnotations(studyStr, fileStr, annotationSetId, new ObjectMap("remove", StringUtils.join(annotations, ",")),
+                ParamUtils.CompleteUpdateAction.REMOVE, options, token);
+    }
+
+    public QueryResult<File> resetAnnotations(String studyStr, String fileStr, String annotationSetId, List<String> annotations,
+                                              QueryOptions options, String token) throws CatalogException {
+        return updateAnnotations(studyStr, fileStr, annotationSetId, new ObjectMap("reset", StringUtils.join(annotations, ",")),
+                ParamUtils.CompleteUpdateAction.RESET, options, token);
+    }
+
     @Override
     public QueryResult<File> update(String studyStr, String entryStr, ObjectMap parameters, QueryOptions options, String sessionId)
             throws CatalogException {
@@ -1194,7 +1343,18 @@ public class FileManager extends ResourceManager<File> {
         String userId = userManager.getUserId(sessionId);
         File file = resource.getResource();
 
-        authorizationManager.checkFilePermission(resource.getStudy().getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
+        // Check permissions...
+        // Only check write annotation permissions if the user wants to update the annotation sets
+        if (parameters.containsKey(FileDBAdaptor.QueryParams.ANNOTATION_SETS.key())) {
+            authorizationManager.checkFilePermission(resource.getStudy().getUid(), resource.getResource().getUid(), resource.getUser(),
+                    FileAclEntry.FilePermissions.WRITE_ANNOTATIONS);
+        }
+        // Only check update permissions if the user wants to update anything apart from the annotation sets
+        if ((parameters.size() == 1 && !parameters.containsKey(FileDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
+                || parameters.size() > 1) {
+            authorizationManager.checkFilePermission(resource.getStudy().getUid(), file.getUid(), userId,
+                    FileAclEntry.FilePermissions.WRITE);
+        }
 
         checkUpdateParams(parameters);
 
@@ -1222,10 +1382,10 @@ public class FileManager extends ResourceManager<File> {
             rename(studyStr, file.getPath(), parameters.getString(FileDBAdaptor.QueryParams.NAME.key()), sessionId);
         }
 
-        return unsafeUpdate(resource.getStudy().getUid(), file, parameters, options, userId);
+        return unsafeUpdate(resource.getStudy(), file, parameters, options, userId);
     }
 
-    QueryResult<File> unsafeUpdate(long studyId, File file, ObjectMap parameters, QueryOptions options, String userId)
+    QueryResult<File> unsafeUpdate(Study study, File file, ObjectMap parameters, QueryOptions options, String userId)
             throws CatalogException {
         if (isRootFolder(file)) {
             throw new CatalogException("Cannot modify root folder");
@@ -1233,8 +1393,11 @@ public class FileManager extends ResourceManager<File> {
 
         checkUpdateParams(parameters);
 
-        String ownerId = studyDBAdaptor.getOwnerId(studyId);
-        fileDBAdaptor.update(file.getUid(), parameters, options);
+        MyResource<File> resource = new MyResource<>(userId, study, file);
+        List<VariableSet> variableSetList = checkUpdateAnnotationsAndExtractVariableSets(resource, parameters, options, fileDBAdaptor);
+
+        String ownerId = studyDBAdaptor.getOwnerId(study.getUid());
+        fileDBAdaptor.update(file.getUid(), parameters, variableSetList, options);
         QueryResult<File> queryResult = fileDBAdaptor.get(file.getUid(), options);
         auditManager.recordUpdate(AuditRecord.Resource.file, file.getUid(), userId, parameters, null, null);
         userDBAdaptor.updateUserLastModified(ownerId);
@@ -1249,11 +1412,14 @@ public class FileManager extends ResourceManager<File> {
                 case FORMAT:
                 case BIOFORMAT:
                 case DESCRIPTION:
+                case CHECKSUM:
                 case ATTRIBUTES:
                 case STATS:
                 case JOB_UID:
                 case SOFTWARE:
                 case SAMPLES:
+                case ANNOTATION_SETS:
+                case ANNOTATION:
                     break;
                 default:
                     throw new CatalogException("Parameter '" + queryParam + "' cannot be changed.");
@@ -1556,7 +1722,9 @@ public class FileManager extends ResourceManager<File> {
             case DIRECTORY:
                 if (!isExternal) {  //Only rename non external files
                     catalogIOManager = catalogIOManagerFactory.get(oldUri); // TODO? check if something in the subtree is not READY?
-                    catalogIOManager.rename(oldUri, newUri);   // io.move() 1
+                    if (catalogIOManager.exists(oldUri)) {
+                        catalogIOManager.rename(oldUri, newUri);   // io.move() 1
+                    }
                 }
                 result = fileDBAdaptor.rename(file.getUid(), newPath, newUri.toString(), null);
                 auditManager.recordUpdate(AuditRecord.Resource.file, file.getUid(), userId, new ObjectMap("path", newPath)
@@ -1907,10 +2075,10 @@ public class FileManager extends ResourceManager<File> {
                         .map(String::valueOf)
                         .collect(Collectors.toList());
                 return authorizationManager.setAcls(resource.getStudy().getUid(), resource.getResourceList().stream().map(File::getUid)
-                                .collect(Collectors.toList()), members, permissions, allFilePermissions, Entity.FILE);
+                        .collect(Collectors.toList()), members, permissions, allFilePermissions, Entity.FILE);
             case ADD:
                 return authorizationManager.addAcls(resource.getStudy().getUid(), resource.getResourceList().stream().map(File::getUid)
-                                .collect(Collectors.toList()), members, permissions, Entity.FILE);
+                        .collect(Collectors.toList()), members, permissions, Entity.FILE);
             case REMOVE:
                 return authorizationManager.removeAcls(resource.getResourceList().stream().map(File::getUid).collect(Collectors.toList()),
                         members, permissions, Entity.FILE);
@@ -2451,10 +2619,10 @@ public class FileManager extends ResourceManager<File> {
         URI completeURI = Paths.get(studyURI).resolve(path).toUri();
 
         // Create the folder in catalog
-        File folder = new File(-1, path.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, completeURI,
-                stringPath, TimeUtils.getTime(), TimeUtils.getTime(), "", new File.FileStatus(File.FileStatus.READY),
-                false, 0, null, new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(), null, null,
-                catalogManager.getStudyManager().getCurrentRelease(study, userId), null);
+        File folder = new File(path.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, completeURI,
+                stringPath, null, TimeUtils.getTime(), TimeUtils.getTime(), "", new File.FileStatus(File.FileStatus.READY), false, 0, null,
+                new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(), null,
+                catalogManager.getStudyManager().getCurrentRelease(study, userId), Collections.emptyList(), null, null);
         folder.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
         checkHooks(folder, study.getFqn(), HookConfiguration.Stage.CREATE);
         QueryResult<File> queryResult = fileDBAdaptor.insert(folder, study.getUid(), new QueryOptions());
@@ -2560,6 +2728,7 @@ public class FileManager extends ResourceManager<File> {
         // FIXME: Implement resync
         boolean resync = params.getBoolean("resync", false);
         String description = params.getString("description", "");
+        String checksum = params.getString(FileDBAdaptor.QueryParams.CHECKSUM.key(), "");
 
         // Because pathDestiny can be null, we will use catalogPath as the virtual destiny where the files will be located in catalog.
         Path catalogPath = Paths.get(pathDestiny);
@@ -2578,8 +2747,8 @@ public class FileManager extends ResourceManager<File> {
                     URI studyURI = study.getUri();
                     createParents(study, userId, studyURI, catalogPath, true);
                     // Create them in the disk
-                    URI directory = Paths.get(studyURI).resolve(catalogPath).toUri();
-                    catalogIOManagerFactory.get(directory).createDirectory(directory, true);
+//                    URI directory = Paths.get(studyURI).resolve(catalogPath).toUri();
+//                    catalogIOManagerFactory.get(directory).createDirectory(directory, true);
                 } else {
                     throw new CatalogException("The path " + catalogPath + " does not exist in catalog.");
                 }
@@ -2608,11 +2777,12 @@ public class FileManager extends ResourceManager<File> {
                 // We obtain the permissions set in the parent folder and set them to the file or folder being created
                 QueryResult<FileAclEntry> allFileAcls = authorizationManager.getAllFileAcls(study.getUid(), parentFileId, userId, true);
 
-                File subfile = new File(-1, externalPathDestiny.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
-                        File.Bioformat.NONE, normalizedUri, externalPathDestinyStr, TimeUtils.getTime(), TimeUtils.getTime(), description,
-                        new File.FileStatus(File.FileStatus.READY), true, size, null, new Experiment(), Collections.emptyList(), new Job(),
-                        Collections.emptyList(), null, Collections.emptyMap(),
-                        catalogManager.getStudyManager().getCurrentRelease(study, userId), Collections.emptyMap());
+                File subfile = new File(externalPathDestiny.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
+                        File.Bioformat.NONE, normalizedUri, externalPathDestinyStr, checksum, TimeUtils.getTime(), TimeUtils.getTime(),
+                        description, new File.FileStatus(File.FileStatus.READY), true, size, null, new Experiment(),
+                        Collections.emptyList(), new Job(), Collections.emptyList(), null,
+                        catalogManager.getStudyManager().getCurrentRelease(study, userId), Collections.emptyList(), Collections.emptyMap(),
+                        Collections.emptyMap());
                 subfile.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
                 checkHooks(subfile, study.getFqn(), HookConfiguration.Stage.CREATE);
                 QueryResult<File> queryResult = fileDBAdaptor.insert(subfile, study.getUid(), new QueryOptions());
@@ -2681,12 +2851,12 @@ public class FileManager extends ResourceManager<File> {
                                 throw new RuntimeException(e);
                             }
 
-                            File folder = new File(-1, dir.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN,
-                                    File.Bioformat.NONE, dir.toUri(), destinyPath, TimeUtils.getTime(), TimeUtils.getTime(),
-                                    description, new File.FileStatus(File.FileStatus.READY), true, 0, null, new Experiment(),
-                                    Collections.emptyList(), new Job(), Collections.emptyList(), null,
-                                    Collections.emptyMap(), catalogManager.getStudyManager().getCurrentRelease(study, userId),
-                                    Collections.emptyMap());
+                            File folder = new File(dir.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN,
+                                    File.Bioformat.NONE, dir.toUri(), destinyPath, null, TimeUtils.getTime(),
+                                    TimeUtils.getTime(), description, new File.FileStatus(File.FileStatus.READY), true, 0, null,
+                                    new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(),
+                                    null, catalogManager.getStudyManager().getCurrentRelease(study, userId), Collections.emptyList(),
+                                    Collections.emptyMap(), Collections.emptyMap());
                             folder.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
                             checkHooks(folder, study.getFqn(), HookConfiguration.Stage.CREATE);
                             QueryResult<File> queryResult = fileDBAdaptor.insert(folder, study.getUid(), new QueryOptions());
@@ -2733,12 +2903,12 @@ public class FileManager extends ResourceManager<File> {
                                 throw new RuntimeException(e);
                             }
 
-                            File subfile = new File(-1, filePath.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
-                                    File.Bioformat.NONE, filePath.toUri(), destinyPath, TimeUtils.getTime(), TimeUtils.getTime(),
-                                    description, new File.FileStatus(File.FileStatus.READY), true, size, null, new Experiment(),
-                                    Collections.emptyList(), new Job(), Collections.emptyList(), null,
-                                    Collections.emptyMap(), catalogManager.getStudyManager().getCurrentRelease(study, userId),
-                                    Collections.emptyMap());
+                            File subfile = new File(filePath.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
+                                    File.Bioformat.NONE, filePath.toUri(), destinyPath, null, TimeUtils.getTime(),
+                                    TimeUtils.getTime(), description, new File.FileStatus(File.FileStatus.READY), true, size, null,
+                                    new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(),
+                                    null, catalogManager.getStudyManager().getCurrentRelease(study, userId), Collections.emptyList(),
+                                    Collections.emptyMap(), Collections.emptyMap());
                             subfile.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
                             checkHooks(subfile, study.getFqn(), HookConfiguration.Stage.CREATE);
                             QueryResult<File> queryResult = fileDBAdaptor.insert(subfile, study.getUid(), new QueryOptions());
@@ -2916,7 +3086,10 @@ public class FileManager extends ResourceManager<File> {
                                 } else {
                                     values = Collections.singletonList(hookConfiguration.getWhat());
                                 }
-                                List<String> tagsCopy = new ArrayList<>(file.getTags());
+                                List<String> tagsCopy = new ArrayList<>();
+                                if (file.getTags() != null) {
+                                    tagsCopy.addAll(file.getTags());
+                                }
                                 tagsCopy.addAll(values);
                                 file.setTags(tagsCopy);
                                 break;
@@ -3071,11 +3244,11 @@ public class FileManager extends ResourceManager<File> {
             myPath = myPath.substring(0, myPath.length() - 1);
         }
 
+        // We first look for any file called the same way the directory needs to be called
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), myPath);
         QueryResult<Long> fileQueryResult = fileDBAdaptor.count(query);
-
         if (fileQueryResult.first() > 0) {
             return CheckPath.FILE_EXISTS;
         }

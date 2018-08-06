@@ -99,11 +99,8 @@ public class AbstractManagerTest extends GenericTest {
         catalogManager.getFileManager().update(studyFqn, testFolder.getPath(), new ObjectMap("attributes", attributes), new QueryOptions(),
                 sessionIdUser);
 
-        QueryResult<File> queryResult2 = catalogManager.getFileManager().create(studyFqn, File.Type.FILE, File.Format.PLAIN,
-                File.Bioformat.NONE, testFolder.getPath() + "test_1K.txt.gz", null, "", new File.FileStatus(File.FileStatus.STAGE), 0, -1,
-                null, -1, null, null, false, null, null, sessionIdUser);
-
-        new FileUtils(catalogManager).upload(new ByteArrayInputStream(StringUtils.randomString(1000).getBytes()), queryResult2.first(), sessionIdUser, false, false, true);
+        QueryResult<File> queryResult2 = catalogManager.getFileManager().create(studyFqn,
+                new File().setPath(testFolder.getPath() + "test_1K.txt.gz"), false, StringUtils.randomString(1000), null, sessionIdUser);
 
         File fileTest1k = catalogManager.getFileManager().get(studyFqn, queryResult2.first().getPath(), null, sessionIdUser).first();
         attributes = new ObjectMap();
@@ -114,11 +111,10 @@ public class AbstractManagerTest extends GenericTest {
         catalogManager.getFileManager().update(studyFqn, fileTest1k.getPath(), new ObjectMap("attributes", attributes), new QueryOptions(),
                 sessionIdUser);
 
-        QueryResult<File> queryResult1 = catalogManager.getFileManager().create(studyFqn, File.Type.FILE, File.Format.PLAIN,
-                File.Bioformat.DATAMATRIX_EXPRESSION, testFolder.getPath() + "test_0.5K.txt", null, "",
-                new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, false, null, null, sessionIdUser);
-        new FileUtils(catalogManager).upload(new ByteArrayInputStream(StringUtils.randomString(500).getBytes()), queryResult1.first(),
-                sessionIdUser, false, false, true);
+        QueryResult<File> queryResult1 = catalogManager.getFileManager().create(studyFqn,
+                new File().setPath(testFolder.getPath() + "test_0.5K.txt").setBioformat(File.Bioformat.DATAMATRIX_EXPRESSION), false,
+                StringUtils.randomString(500), null, sessionIdUser);
+
         File fileTest05k = catalogManager.getFileManager().get(studyFqn, queryResult1.first().getPath(), null, sessionIdUser).first();
         attributes = new ObjectMap();
         attributes.put("field", "valuable");
@@ -128,11 +124,10 @@ public class AbstractManagerTest extends GenericTest {
         catalogManager.getFileManager().update(studyFqn, fileTest05k.getPath(), new ObjectMap("attributes", attributes), new QueryOptions(),
                 sessionIdUser);
 
-        QueryResult<File> queryResult = catalogManager.getFileManager().create(studyFqn, File.Type.FILE, File.Format.IMAGE,
-                File.Bioformat.NONE, testFolder.getPath() + "test_0.1K.png", null, "", new File.FileStatus(File.FileStatus.STAGE), 0, -1,
-                null, -1, null, null, false, null, null, sessionIdUser);
-        new FileUtils(catalogManager).upload(new ByteArrayInputStream(StringUtils.randomString(100).getBytes()), queryResult.first(),
-                sessionIdUser, false, false, true);
+        QueryResult<File> queryResult = catalogManager.getFileManager().create(studyFqn,
+                new File().setPath(testFolder.getPath() + "test_0.1K.png").setFormat(File.Format.IMAGE), false,
+                StringUtils.randomString(100), null, sessionIdUser);
+
         File test01k = catalogManager.getFileManager().get(studyFqn, queryResult.first().getPath(), null, sessionIdUser).first();
         attributes = new ObjectMap();
         attributes.put("field", "other");
@@ -212,7 +207,7 @@ public class AbstractManagerTest extends GenericTest {
 
     /* TYPE_FILE UTILS */
     public static java.io.File createDebugFile() throws IOException {
-        String fileTestName = "/tmp/fileTest " + StringUtils.randomString(5);
+        String fileTestName = "/tmp/fileTest_" + StringUtils.randomString(5);
         return createDebugFile(fileTestName);
     }
 

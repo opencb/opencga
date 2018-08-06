@@ -32,11 +32,9 @@ import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.File;
 
-import java.io.ByteArrayInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -118,15 +116,10 @@ public class FileMetadataReaderTest {
 
     @Test
     public void testGetBasicMetadata() throws CatalogException, IOException {
-        byte[] bytes = StringUtils.randomString(1000).getBytes();
-        QueryResult<File> queryResult = catalogManager.getFileManager().create(study.getFqn(), File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, folder.getPath() + "test.txt", null, "", new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, false, null, null, sessionIdUser);
+        File file = catalogManager.getFileManager().create(study.getFqn(), new File().setPath(folder.getPath() + "test.txt"), false,
+                StringUtils.randomString(1000), null, sessionIdUser).first();
 
-        new FileUtils(catalogManager).upload(new ByteArrayInputStream(bytes), queryResult.first(), sessionIdUser, false, false, true);
-
-        File file = catalogManager.getFileManager().get(study.getFqn(), queryResult.first().getPath(), null, sessionIdUser).first();
-
-        assertEquals(bytes.length, file.getSize());
-
+        assertEquals(1000, file.getSize());
         String creationDate = file.getCreationDate();
         String modificationDate = file.getModificationDate();
 
@@ -144,32 +137,16 @@ public class FileMetadataReaderTest {
         file = FileMetadataReader.get(catalogManager).
                 setMetadataInformation(file, null, null, sessionIdUser, false);
 
-        assertEquals(bytes.length + bytes2.length, file.getSize());
+        assertEquals(1000 + bytes2.length, file.getSize());
         assertTrue(TimeUtils.toDate(modificationDate).getTime() < TimeUtils.toDate(file.getModificationDate()).getTime());
         assertEquals(creationDate, file.getCreationDate());
-
     }
 
     @Test
-    public void testGetMetadataFromVcf()
-            throws CatalogException {
-        QueryResult<File> fileQueryResult = catalogManager.getFileManager().create(study.getFqn(), File.Type.FILE, File
-                .Format.PLAIN, File.Bioformat.NONE, folder.getPath() + VCF_FILE_NAME, null, "", null, 0, -1, null, (long) -1, null, null,
-                false, null, null, sessionIdUser);
+    public void testGetMetadataFromVcf() throws CatalogException, FileNotFoundException {
+        File file = catalogManager.getFileManager().upload(study.getFqn(), new FileInputStream(Paths.get(vcfFileUri).toFile()),
+                new File().setPath(folder.getPath() + VCF_FILE_NAME), false, false, sessionIdUser).first();
 
-        File file = fileQueryResult.first();
-
-        assertEquals(File.FileStatus.STAGE, file.getStatus().getName());
-        assertEquals(File.Format.PLAIN, file.getFormat());
-        assertEquals(File.Bioformat.NONE, file.getBioformat());
-        assertNull(file.getAttributes().get(VARIANT_FILE_METADATA));
-        assertEquals(0, file.getSamples().size());
-        assertEquals(0, file.getSize());
-
-        new FileUtils(catalogManager).
-                upload(vcfFileUri, file, null, sessionIdUser, false, false, true, true, Integer.MAX_VALUE);
-
-        file = catalogManager.getFileManager().get(study.getFqn(), file.getPath(), null, sessionIdUser).first();
         assertTrue(file.getSize() > 0);
 
         file = FileMetadataReader.get(catalogManager).
@@ -181,7 +158,7 @@ public class FileMetadataReaderTest {
         assertNotNull(file.getAttributes().get(VARIANT_FILE_METADATA));
         assertEquals(4, file.getSamples().size());
         assertEquals(expectedSampleNames, ((Map<String, Object>) file.getAttributes().get(VARIANT_FILE_METADATA)).get("sampleIds"));
-        List<Sample> samples = catalogManager.getSampleManager().get(study.getFqn(),
+        catalogManager.getSampleManager().get(study.getFqn(),
                 new Query(SampleDBAdaptor.QueryParams.ID.key(),
                         file.getSamples().stream().map(Sample::getId).collect(Collectors.toList())), new QueryOptions(),
                 sessionIdUser).getResult();
@@ -191,7 +168,7 @@ public class FileMetadataReaderTest {
 
 
     @Test
-    public void testGetMetadataFromVcfWithAlreadyExistingSamples() throws CatalogException {
+    public void testGetMetadataFromVcfWithAlreadyExistingSamples() throws CatalogException, FileNotFoundException {
         //Create the samples in the same order than in the file
         for (String sampleName : expectedSampleNames) {
             catalogManager.getSampleManager().create(study.getFqn(), sampleName, "", "", null, false, null, new HashMap<>(), Collections
@@ -201,7 +178,7 @@ public class FileMetadataReaderTest {
     }
 
     @Test
-    public void testGetMetadataFromVcfWithAlreadyExistingSamplesUnsorted() throws CatalogException {
+    public void testGetMetadataFromVcfWithAlreadyExistingSamplesUnsorted() throws CatalogException, FileNotFoundException {
         //Create samples in a different order than the file order
         catalogManager.getSampleManager().create(study.getFqn(), expectedSampleNames.get(2), "", "", null, false, null, new
                 HashMap<>(), Collections.emptyMap(), new QueryOptions(), sessionIdUser);
@@ -214,7 +191,7 @@ public class FileMetadataReaderTest {
     }
 
     @Test
-    public void testGetMetadataFromVcfWithSomeExistingSamples() throws CatalogException {
+    public void testGetMetadataFromVcfWithSomeExistingSamples() throws CatalogException, FileNotFoundException {
         catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId(expectedSampleNames.get(2)), new QueryOptions(),
                 sessionIdUser);
         catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId(expectedSampleNames.get(0)), new QueryOptions(),
@@ -224,53 +201,32 @@ public class FileMetadataReaderTest {
     }
 
     @Test
-    public void testDoNotOverwriteSampleIds() throws CatalogException {
-        File file = catalogManager.getFileManager().create(study.getFqn(), File.Type.FILE, File.Format.PLAIN, File
-                .Bioformat.NONE, folder.getPath() + VCF_FILE_NAME, null, "", null, 0, -1, null, (long) -1, null, null, false, null, null,
-                sessionIdUser).first();
-
-        new FileUtils(catalogManager).
-                upload(vcfFileUri, file, null, sessionIdUser, false, false, true, true, Integer.MAX_VALUE);
-
-        //Add a sampleId
-        String sampleId = catalogManager.getSampleManager().create(study.getFqn(), "Bad_Sample", "Air", "", null, false,
-                null, new HashMap<>(), null, null, sessionIdUser).first().getId();
-        catalogManager.getFileManager().update(study.getFqn(), file.getPath(), new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(),
-                        Collections.singletonList(sampleId)), new QueryOptions(), sessionIdUser);
-
-        file = catalogManager.getFileManager().get(study.getFqn(), file.getPath(), null, sessionIdUser).first();
-        assertEquals(1, file.getSamples().size());
-        assertEquals(sampleId, file.getSamples().get(0).getId());
-
-        file = FileMetadataReader.get(catalogManager).
-                setMetadataInformation(file, null, null, sessionIdUser, false);
-
+    public void testDoNotOverwriteSampleIds() throws CatalogException, FileNotFoundException {
+        File file = catalogManager.getFileManager().upload(study.getFqn(), new FileInputStream(Paths.get(vcfFileUri).toFile()),
+                new File().setPath(folder.getPath() + VCF_FILE_NAME), false, false, sessionIdUser).first();
         assertEquals(File.FileStatus.READY, file.getStatus().getName());
         assertEquals(File.Format.VCF, file.getFormat());
         assertEquals(File.Bioformat.VARIANT, file.getBioformat());
         assertNotNull(file.getAttributes().get(VARIANT_FILE_METADATA));
-        assertEquals(1, file.getSamples().size());
-        assertTrue(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()).contains(sampleId));
+        assertEquals(4, file.getSamples().size());
+
+        //Add a sampleId
+        String sampleId = catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId("Bad_Sample"), null, sessionIdUser)
+                .first().getId();
+        catalogManager.getFileManager().update(study.getFqn(), file.getPath(), new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(),
+                        Collections.singletonList(sampleId)), new QueryOptions(), sessionIdUser);
+
+        file = catalogManager.getFileManager().get(study.getFqn(), file.getPath(), null, sessionIdUser).first();
+        assertEquals(5, file.getSamples().size());
+        assertEquals(sampleId, file.getSamples().get(4).getId());
     }
 
     @Test
     public void testGetMetadataFromBam()
-            throws CatalogException {
+            throws CatalogException, FileNotFoundException {
 
-        File file = catalogManager.getFileManager().create(study.getFqn(), File.Type.FILE, File.Format.PLAIN, File
-                .Bioformat.NONE, folder.getPath() + BAM_FILE_NAME, null, "", null, 0, -1, null, (long) -1, null, null, false, null, null,
-                sessionIdUser).first();
-
-        assertEquals(File.FileStatus.STAGE, file.getStatus().getName());
-        assertEquals(File.Format.PLAIN, file.getFormat());
-        assertEquals(File.Bioformat.NONE, file.getBioformat());
-        assertNull(file.getAttributes().get(VARIANT_FILE_METADATA));
-        assertEquals(0, file.getSamples().size());
-        assertEquals(0, file.getSize());
-
-        new FileUtils(catalogManager).upload(bamFileUri, file, null, sessionIdUser, false, false, true, true, Integer.MAX_VALUE);
-
-        file = catalogManager.getFileManager().get(study.getFqn(), file.getPath(), null, sessionIdUser).first();
+        File file = catalogManager.getFileManager().upload(study.getFqn(), new FileInputStream(Paths.get(bamFileUri).toFile()),
+                new File().setPath(folder.getPath() + BAM_FILE_NAME), false, false, sessionIdUser).first();
 
         assertTrue(file.getSize() > 0);
 

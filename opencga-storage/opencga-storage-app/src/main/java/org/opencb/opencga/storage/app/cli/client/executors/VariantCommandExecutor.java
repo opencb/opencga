@@ -48,6 +48,7 @@ import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
+import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -70,11 +71,12 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Function;
 
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.CreateAnnotationSnapshotCommandOptions.COPY_ANNOTATION_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.DeleteAnnotationSnapshotCommandOptions.DELETE_ANNOTATION_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationSaveCommandOptions.ANNOTATION_SAVE_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationDeleteCommandOptions.ANNOTATION_DELETE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillMissingCommandOptions.FILL_MISSING_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.QueryAnnotationCommandOptions.QUERY_ANNOTATION_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationQueryCommandOptions.ANNOTATION_QUERY_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
 
 /**
@@ -154,20 +156,25 @@ public class VariantCommandExecutor extends CommandExecutor {
                         variantCommandOptions.annotateVariantsCommandOptions.dbName);
                 annotation();
                 break;
-            case COPY_ANNOTATION_COMMAND:
-                configure(variantCommandOptions.createAnnotationSnapshotCommandOptions.commonOptions,
-                        variantCommandOptions.createAnnotationSnapshotCommandOptions.dbName);
-                copyAnnotation();
+            case ANNOTATION_SAVE_COMMAND:
+                configure(variantCommandOptions.annotationSaveCommandOptions.commonOptions,
+                        variantCommandOptions.annotationSaveCommandOptions.dbName);
+                annotationSave();
                 break;
-            case DELETE_ANNOTATION_COMMAND:
-                configure(variantCommandOptions.deleteAnnotationSnapshotCommandOptions.commonOptions,
-                        variantCommandOptions.deleteAnnotationSnapshotCommandOptions.dbName);
-                deleteAnnotation();
+            case ANNOTATION_DELETE_COMMAND:
+                configure(variantCommandOptions.annotationDeleteCommandOptions.commonOptions,
+                        variantCommandOptions.annotationDeleteCommandOptions.dbName);
+                annotationDelete();
                 break;
-            case QUERY_ANNOTATION_COMMAND:
-                configure(variantCommandOptions.queryAnnotationCommandOptions.commonOptions,
-                        variantCommandOptions.queryAnnotationCommandOptions.dbName);
-                queryAnnotation();
+            case ANNOTATION_QUERY_COMMAND:
+                configure(variantCommandOptions.annotationQueryCommandOptions.commonOptions,
+                        variantCommandOptions.annotationQueryCommandOptions.dbName);
+                annotationQuery();
+                break;
+            case ANNOTATION_METADATA_COMMAND:
+                configure(variantCommandOptions.annotationMetadataCommandOptions.commonOptions,
+                        variantCommandOptions.annotationMetadataCommandOptions.dbName);
+                annotationMetadata();
                 break;
             case "stats":
                 configure(variantCommandOptions.statsVariantsCommandOptions.commonOptions,
@@ -458,26 +465,26 @@ public class VariantCommandExecutor extends CommandExecutor {
         variantStorageEngine.annotate(query, options);
     }
 
-    private void copyAnnotation() throws VariantAnnotatorException, StorageEngineException {
-        StorageVariantCommandOptions.CreateAnnotationSnapshotCommandOptions cliOptions = variantCommandOptions.createAnnotationSnapshotCommandOptions;
+    private void annotationSave() throws VariantAnnotatorException, StorageEngineException {
+        StorageVariantCommandOptions.AnnotationSaveCommandOptions cliOptions = variantCommandOptions.annotationSaveCommandOptions;
 
         ObjectMap options = storageConfiguration.getVariant().getOptions();
         options.putAll(cliOptions.commonOptions.params);
 
-        variantStorageEngine.createAnnotationSnapshot(cliOptions.name, options);
+        variantStorageEngine.saveAnnotation(cliOptions.annotationId, options);
     }
 
-    private void deleteAnnotation() throws VariantAnnotatorException, StorageEngineException {
-        StorageVariantCommandOptions.DeleteAnnotationSnapshotCommandOptions cliOptions = variantCommandOptions.deleteAnnotationSnapshotCommandOptions;
+    private void annotationDelete() throws VariantAnnotatorException, StorageEngineException {
+        StorageVariantCommandOptions.AnnotationDeleteCommandOptions cliOptions = variantCommandOptions.annotationDeleteCommandOptions;
 
         ObjectMap options = storageConfiguration.getVariant().getOptions();
         options.putAll(cliOptions.commonOptions.params);
 
-        variantStorageEngine.deleteAnnotationSnapshot(cliOptions.name, options);
+        variantStorageEngine.deleteAnnotation(cliOptions.annotationId, options);
     }
 
-    private void queryAnnotation() throws VariantAnnotatorException, StorageEngineException, IOException {
-        StorageVariantCommandOptions.QueryAnnotationCommandOptions cliOptions  = variantCommandOptions.queryAnnotationCommandOptions;
+    private void annotationQuery() throws VariantAnnotatorException, StorageEngineException, IOException {
+        StorageVariantCommandOptions.AnnotationQueryCommandOptions cliOptions  = variantCommandOptions.annotationQueryCommandOptions;
 
         QueryOptions options = new QueryOptions();
         options.put(QueryOptions.LIMIT, cliOptions.limit);
@@ -490,7 +497,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         query.put(VariantQueryParam.REGION.key(), cliOptions.region);
         query.put(VariantQueryParam.ID.key(), cliOptions.id);
 
-        QueryResult<VariantAnnotation> queryResult = variantStorageEngine.getAnnotation(cliOptions.name, query, options);
+        QueryResult<VariantAnnotation> queryResult = variantStorageEngine.getAnnotation(cliOptions.annotationId, query, options);
 
         // WRITE
         ObjectMapper objectMapper = new ObjectMapper();
@@ -501,6 +508,27 @@ public class VariantCommandExecutor extends CommandExecutor {
         SequenceWriter sequenceWriter = writer.writeValues(System.out);
         for (VariantAnnotation annotation : queryResult.getResult()) {
             sequenceWriter.write(annotation);
+            sequenceWriter.flush();
+//            writer.writeValue(System.out, annotation);
+            System.out.println();
+        }
+    }
+
+    private void annotationMetadata() throws VariantAnnotatorException, StorageEngineException, IOException {
+        StorageVariantCommandOptions.AnnotationMetadataCommandOptions cliOptions  = variantCommandOptions.annotationMetadataCommandOptions;
+
+
+        QueryResult<ProjectMetadata.VariantAnnotationMetadata> result = variantStorageEngine.getAnnotationMetadata(cliOptions.annotationId);
+
+        // WRITE
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
+        objectMapper.configure(SerializationFeature.CLOSE_CLOSEABLE, false);
+        ObjectWriter writer = objectMapper.writer();
+//        ObjectWriter writer = objectMapper.writerWithDefaultPrettyPrinter();
+        SequenceWriter sequenceWriter = writer.writeValues(System.out);
+        for (ProjectMetadata.VariantAnnotationMetadata metadata : result.getResult()) {
+            sequenceWriter.write(metadata);
             sequenceWriter.flush();
 //            writer.writeValue(System.out, annotation);
             System.out.println();

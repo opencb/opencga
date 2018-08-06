@@ -267,7 +267,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                 @QueryParam("study") String studyStr,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", defaultValue = "ADD")
                 @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
-            @ApiParam(value = "params") Map<String, Object> params) {
+            @ApiParam(value = "params") CohortUpdateParameters params) {
         try {
             Map<String, Object> actionMap = new HashMap<>();
 
@@ -275,10 +275,10 @@ public class CohortWSServer extends OpenCGAWSServer {
                 annotationSetsAction = ParamUtils.UpdateAction.ADD;
             }
 
-            actionMap.put(CohortDBAdaptor.UpdateParams.ANNOTATION_SETS.key(), annotationSetsAction.name());
+            actionMap.put(CohortDBAdaptor.UpdateParams.ANNOTATION_SETS.key(), annotationSetsAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
-            return createOkResponse(catalogManager.getCohortManager().update(studyStr, cohortStr, new ObjectMap(params), queryOptions,
+            return createOkResponse(catalogManager.getCohortManager().update(studyStr, cohortStr, params.toObjectMap(), queryOptions,
                     sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -293,16 +293,18 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Cohort id", required = true) @PathParam("cohort") String cohortStr,
             @ApiParam(value = "Study [[user@]project:]study.") @QueryParam("study") String studyStr,
             @ApiParam(value = "AnnotationSet id to be updated.") @PathParam("annotationSet") String annotationSetId,
-            @ApiParam(value = "Action to be performed: ADD to add new annotations; SET to set the new list of annotations removing any "
-                    + "possible old annotations; REMOVE to remove some annotations; RESET to set some annotations to the default value "
-                    + "configured in the corresponding variables of the VariableSet if any.", defaultValue = "ADD")
-            @QueryParam("action") ParamUtils.CompleteUpdateAction action,
-            @ApiParam(value = "Json containing the map of annotations when the action is ADD or SET, a json with only the key "
+            @ApiParam(value = "Action to be performed: ADD to add new annotations; REPLACE to replace the value of an already existing "
+                    + "annotation; SET to set the new list of annotations removing any possible old annotations; REMOVE to remove some "
+                    + "annotations; RESET to set some annotations to the default value configured in the corresponding variables of the "
+                    + "VariableSet if any.", defaultValue = "ADD") @QueryParam("action") ParamUtils.CompleteUpdateAction action,
+            @ApiParam(value = "Json containing the map of annotations when the action is ADD, SET or REPLACE, a json with only the key "
                     + "'remove' containing the comma separated variables to be removed as a value when the action is REMOVE or a json "
                     + "with only the key 'reset' containing the comma separated variables that will be set to the default value"
-                    + " when the action is RESET"
-            ) Map<String, Object> updateParams) {
+                    + " when the action is RESET") Map<String, Object> updateParams) {
         try {
+            if (action == null) {
+                action = ParamUtils.CompleteUpdateAction.ADD;
+            }
             return createOkResponse(catalogManager.getCohortManager().updateAnnotations(studyStr, cohortStr, annotationSetId,
                     updateParams, action, queryOptions, sessionId));
         } catch (Exception e) {
@@ -619,6 +621,28 @@ public class CohortWSServer extends OpenCGAWSServer {
         public String samples;
         public List<AnnotationSet> annotationSets;
         public Map<String, Object> attributes;
+    }
+
+    protected static class CohortUpdateParameters {
+        public String id;
+        @Deprecated
+        public String name;
+        public String description;
+        public String samples;
+        public List<AnnotationSet> annotationSets;
+        public Map<String, Object> attributes;
+
+        public ObjectMap toObjectMap() {
+            ObjectMap params = new ObjectMap();
+            params.putIfNotEmpty(CohortDBAdaptor.UpdateParams.ID.key(), id);
+            params.putIfNotEmpty(CohortDBAdaptor.UpdateParams.NAME.key(), name);
+            params.putIfNotEmpty(CohortDBAdaptor.UpdateParams.DESCRIPTION.key(), description);
+            params.putIfNotEmpty(CohortDBAdaptor.UpdateParams.SAMPLES.key(), samples);
+            params.putIfNotNull(CohortDBAdaptor.UpdateParams.ANNOTATION_SETS.key(), annotationSets);
+            params.putIfNotNull(CohortDBAdaptor.UpdateParams.ATTRIBUTES.key(), attributes);
+
+            return params;
+        }
     }
 
 }

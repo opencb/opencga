@@ -298,7 +298,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         validateAnnotationQuery(query);
 
         byte[] annotationColumn;
-        if (name.equals(VariantAnnotationManager.LATEST)) {
+        if (name.equals(VariantAnnotationManager.CURRENT)) {
             annotationColumn = VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes();
         } else {
             ProjectMetadata.VariantAnnotationMetadata saved = getStudyConfigurationManager().getProjectMetadata().first().

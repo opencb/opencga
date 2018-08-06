@@ -170,6 +170,9 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     public static final String ARCHIVE_FILE_BATCH_SIZE = "opencga.archive.file_batch_size";
     public static final int DEFAULT_ARCHIVE_FILE_BATCH_SIZE = 1000;
 
+    // Sample index table configuration
+    public static final String SAMPLE_INDEX_TABLE_COMPRESSION = "opencga.sample-index.table.compression";
+
     public static final String EXTERNAL_MR_EXECUTOR = "opencga.external.mr.executor";
     public static final String STATS_LOCAL = "stats.local";
 
@@ -763,9 +766,10 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public Query preProcessQuery(Query originalQuery, StudyConfigurationManager studyConfigurationManager) throws StorageEngineException {
-        // Copy input query! Do not modify original query!
-        Query query = originalQuery == null ? new Query() : new Query(originalQuery);
+    public Query preProcessQuery(Query originalQuery, QueryOptions options) throws StorageEngineException {
+        Query query = super.preProcessQuery(originalQuery, options);
+
+        StudyConfigurationManager studyConfigurationManager = getStudyConfigurationManager();
         List<String> studyNames = studyConfigurationManager.getStudyNames(QueryOptions.empty());
         CellBaseUtils cellBaseUtils = getCellBaseUtils();
 

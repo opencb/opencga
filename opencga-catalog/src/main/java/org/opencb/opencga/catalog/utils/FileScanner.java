@@ -31,6 +31,7 @@ import org.opencb.opencga.core.models.Study;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Paths;
@@ -216,7 +217,10 @@ public class FileScanner {
         Study study = catalogManager.getFileManager().getStudy(directory, sessionId);
 
         long createFilesTime = 0, uploadFilesTime = 0, metadataReadTime = 0;
-        Stream<URI> uris = catalogManager.getCatalogIOManagerFactory().get(directoryToScan).listFilesStream(directoryToScan);
+        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(directoryToScan);
+        Stream<URI> uris = ioManager.exists(directoryToScan)
+                ? catalogManager.getCatalogIOManagerFactory().get(directoryToScan).listFilesStream(directoryToScan)
+                : Stream.empty();
         List<File> files = new LinkedList<>();
         FileMetadataReader fileMetadataReader = FileMetadataReader.get(catalogManager);
         Iterator<URI> iterator = uris.iterator();
@@ -236,6 +240,7 @@ public class FileScanner {
             Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), filePath);
             QueryResult<File> searchFile = catalogManager.getFileManager().get(study.getFqn(), query, null, sessionId);
             File file = null;
+            boolean overwrite = true;
             boolean returnFile = false;
             if (searchFile.getNumResults() != 0) {
                 File existingFile = searchFile.first();
@@ -247,6 +252,7 @@ public class FileScanner {
                         catalogManager.getFileManager().delete(study.getFqn(),
                                 new Query(FileDBAdaptor.QueryParams.UID.key(), existingFile.getUid()),
                                 new ObjectMap(FileManager.SKIP_TRASH, true), sessionId);
+                        overwrite = false;
                         break;
                     case REPLACE:
                         file = existingFile;
@@ -268,17 +274,26 @@ public class FileScanner {
                             null, QueryOptions.empty(), sessionId).first();
                 } else {
                     start = System.currentTimeMillis();
-                    File.Format format = FileUtils.detectFormat(uri);
-                    File.Bioformat bioformat = FileUtils.detectBioformat(uri);
-                    file = catalogManager.getFileManager().create(study.getFqn(), File.Type.FILE, format, bioformat, filePath,
-                            null, "", null, 0, -1, null, jobId, null, null, true, null, null, sessionId).first();
-                    end = System.currentTimeMillis();
-                    createFileTime = end - start;
-                    createFilesTime += createFileTime;
 
-                    /** Moves the file to the read output **/
-                    start = System.currentTimeMillis();
-                    catalogFileUtils.upload(uri, file, null, sessionId, false, false, deleteSource, calculateChecksum);
+                    String checksum = null;
+                    if (calculateChecksum) {
+                        checksum = ioManager.calculateChecksum(uri);
+                    }
+
+                    file = catalogManager.getFileManager().upload(study.getFqn(), new FileInputStream(Paths.get(uri).toFile()),
+                            new File().setPath(filePath).setChecksum(checksum), overwrite, true, sessionId).first();
+//                    file = catalogManager.getFileManager().register(study,
+//                            new File()
+//                                    .setUri(uri)
+//                                    .setPath(filePath)
+//                                    .setChecksum(checksum)
+//                                    .setStatus(new File.FileStatus(File.FileStatus.READY)),
+//                            true, QueryOptions.empty(), sessionId).first();
+
+                    if (deleteSource) {
+                        ioManager.deleteFile(uri);
+                    }
+
                     end = System.currentTimeMillis();
                     uploadFileTime = end - start;
                     uploadFilesTime += uploadFileTime;
@@ -293,7 +308,29 @@ public class FileScanner {
                         returnFile = true;      //Return file because was missing
                     }
                     long start = System.currentTimeMillis();
-                    catalogFileUtils.upload(uri, file, null, sessionId, true, true, deleteSource, calculateChecksum);
+
+                    if (calculateChecksum) {
+                        String checksum = ioManager.calculateChecksum(uri);
+                        catalogManager.getFileManager().update(study.getFqn(), filePath,
+                                new ObjectMap(FileDBAdaptor.QueryParams.CHECKSUM.key(), checksum), QueryOptions.empty(), sessionId);
+                    }
+
+                    catalogManager.getFileManager().setStatus(study.getFqn(), filePath, File.FileStatus.READY, "", sessionId);
+                    file = catalogManager.getFileManager().get(study.getFqn(), filePath, QueryOptions.empty(), sessionId).first();
+//
+//                    file = catalogManager.getFileManager().register(study,
+//                            new File()
+//                                    .setUri(uri)
+//                                    .setPath(filePath)
+//                                    .setChecksum(checksum)
+//                                    .setStatus(new File.FileStatus(File.FileStatus.READY)),
+//                            true, QueryOptions.empty(), sessionId).first();
+//
+//                    if (deleteSource) {
+//                        ioManager.deleteFile(uri);
+//                    }
+
+//                    catalogFileUtils.upload(uri, file, null, sessionId, true, true, deleteSource, calculateChecksum);
                     long end = System.currentTimeMillis();
                     uploadFilesTime += end - start;
                 }

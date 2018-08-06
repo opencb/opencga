@@ -27,12 +27,10 @@ import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -64,7 +62,7 @@ public class CatalogUtils {
      *                 cases, they will be treated as annotations.
      * @return A query object.
      */
-    protected static Query parseSampleAnnotationQuery(String value, Function<String, QueryParam> getParam) {
+    public static Query parseSampleAnnotationQuery(String value, Function<String, QueryParam> getParam) {
 
         Query query = new Query();
 
@@ -103,29 +101,36 @@ public class CatalogUtils {
      * @throws CatalogException if there is an error with catalog
      */
     public List<String> getStudies(Query query, String sessionId) throws CatalogException {
+        // If param PROJECT is valid, use it
+        if (isValidParam(query, VariantCatalogQueryUtils.PROJECT)) {
+            String project = query.getString(VariantCatalogQueryUtils.PROJECT.key());
+            return catalogManager.getStudyManager()
+                    .get(project, new Query(), new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key()), sessionId)
+                    .getResult()
+                    .stream()
+                    .map(Study::getFqn)
+                    .collect(Collectors.toList());
+        }
         List<String> studies = VariantQueryUtils.getIncludeStudiesList(query, Collections.singleton(VariantField.STUDIES));
-        if (studies == null) {
-            if (isValidParam(query, VariantCatalogQueryUtils.PROJECT)) {
-                String project = query.getString(VariantCatalogQueryUtils.PROJECT.key());
-                return catalogManager.getStudyManager()
-                        .get(project, new Query(), new QueryOptions(StudyDBAdaptor.QueryParams.FQN.key()), sessionId)
-                        .getResult()
-                        .stream()
-                        .map(Study::getFqn)
-                        .collect(Collectors.toList());
+        // If studies is null or empty, INCLUDE_STUDY is all or none. Check STUDY param
+        if (studies == null || studies.isEmpty()) {
+            if (isValidParam(query, VariantQueryParam.STUDY)) {
+                studies = VariantQueryUtils.getIncludeStudiesList(
+                        new Query(VariantQueryParam.STUDY.key(), query.get(VariantQueryParam.STUDY.key())),
+                        Collections.singleton(VariantField.STUDIES));
             } else {
+                // Get all studies from user.
                 String userId = catalogManager.getUserManager().getUserId(sessionId);
                 return catalogManager.getStudyManager().resolveIds(Collections.emptyList(), userId)
                         .stream()
                         .map(Study::getFqn)
                         .collect(Collectors.toList());
             }
-        } else {
-            return catalogManager.getStudyManager().resolveIds(studies, catalogManager.getUserManager().getUserId(sessionId))
-                    .stream()
-                    .map(Study::getFqn)
-                    .collect(Collectors.toList());
         }
+        return catalogManager.getStudyManager().resolveIds(studies, catalogManager.getUserManager().getUserId(sessionId))
+                .stream()
+                .map(Study::getFqn)
+                .collect(Collectors.toList());
     }
 
     public Project getProjectFromQuery(Query query, String sessionId, QueryOptions options) throws CatalogException {
@@ -152,7 +157,14 @@ public class CatalogUtils {
         if (studies.isEmpty()) {
             throw new CatalogException("Missing StudyId. Unable to get any variant!");
         } else {
-            return studies.get(0);
+            String study = studies.get(0);
+            Set<String> projectFqn = studies.stream().map(s -> s.split(":")[0]).collect(Collectors.toSet());
+            if (projectFqn.size() == 1) {
+                return study;
+            } else {
+                throw new CatalogException("Multiple projects found: " + projectFqn + ". "
+                        + "Please, specify one project.");
+            }
         }
     }
 

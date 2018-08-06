@@ -73,8 +73,8 @@ public class UUIDUtils {
         long timeMid = (time >>> 32) & 0xffffL;
         // long timeHigh = (time >>> 48) & 0xffffL;
 
-        long uuidVersion = /*0xff &*/ 0;
-        long internalVersion = /*0xff &*/ 0;
+        long uuidVersion = /*0xf &*/ 0;
+        long internalVersion = /*0xf &*/ 0;
         long entityBin = 0xffL & (long)entity.getMask();
 
         return (timeLow << 32) | (timeMid << 16) | (uuidVersion << 12) | (internalVersion << 8) | entityBin;

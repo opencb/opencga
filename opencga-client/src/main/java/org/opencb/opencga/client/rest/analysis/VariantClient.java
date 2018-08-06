@@ -71,12 +71,26 @@ public class VariantClient extends AbstractParentClient {
         return execute(VARIANT_URL, "query", params, GET, Variant.class);
     }
 
-    public QueryResponse<VariantAnnotation> queryAnnotation(String name, ObjectMap params, QueryOptions options) throws IOException {
+    public QueryResponse<VariantAnnotation> annotationQuery(String annotationId, ObjectMap params, QueryOptions options)
+            throws IOException {
         if (options != null) {
             params = new ObjectMap(params);
             params.putAll(options);
         }
-        return execute(VARIANT_URL, "annotation/" + name + "/query", params, GET, VariantAnnotation.class);
+        params.put("annotationId", annotationId);
+        return execute(VARIANT_URL, "annotation/query", params, GET, VariantAnnotation.class);
+    }
+
+    public QueryResponse<ObjectMap> annotationMetadata(String annotationId, String project, QueryOptions options)
+            throws IOException {
+        if (options != null) {
+            options = new QueryOptions(options);
+        } else {
+            options = new QueryOptions();
+        }
+        options.put("annotationId", annotationId);
+        options.put("project", project);
+        return execute(VARIANT_URL, "annotation/metadata", options, GET, ObjectMap.class);
     }
 
     public VariantQueryResult<Variant> query2(ObjectMap params, QueryOptions options) throws IOException {

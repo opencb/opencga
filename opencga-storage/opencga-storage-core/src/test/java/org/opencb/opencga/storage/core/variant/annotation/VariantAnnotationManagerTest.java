@@ -99,19 +99,19 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
                 .append(VARIANT_ANNOTATOR_CLASSNAME, TestAnnotator.class.getName())
                 .append(ANNOTATOR, VariantAnnotatorFactory.AnnotationSource.OTHER);
 
-        variantStorageEngine.createAnnotationSnapshot("v0", new ObjectMap());
+        variantStorageEngine.saveAnnotation("v0", new ObjectMap());
         variantStorageEngine.annotate(new Query(), new ObjectMap(TestAnnotator.ANNOT_KEY, "v1").append(OVERWRITE_ANNOTATIONS, true));
-        variantStorageEngine.createAnnotationSnapshot("v1", new ObjectMap());
+        variantStorageEngine.saveAnnotation("v1", new ObjectMap());
         variantStorageEngine.annotate(new Query(), new ObjectMap(TestAnnotator.ANNOT_KEY, "v2").append(OVERWRITE_ANNOTATIONS, true));
-        variantStorageEngine.createAnnotationSnapshot("v2", new ObjectMap());
+        variantStorageEngine.saveAnnotation("v2", new ObjectMap());
         variantStorageEngine.annotate(new Query(), new ObjectMap(TestAnnotator.ANNOT_KEY, "v3").append(OVERWRITE_ANNOTATIONS, true));
 
         assertEquals(0, variantStorageEngine.getAnnotation("v0", null, null).getResult().size());
         checkAnnotationSnapshot(variantStorageEngine, "v1", "v1");
         checkAnnotationSnapshot(variantStorageEngine, "v2", "v2");
-        checkAnnotationSnapshot(variantStorageEngine, VariantAnnotationManager.LATEST, "v3");
+        checkAnnotationSnapshot(variantStorageEngine, VariantAnnotationManager.CURRENT, "v3");
 
-        variantStorageEngine.deleteAnnotationSnapshot("v1", new ObjectMap());
+        variantStorageEngine.deleteAnnotation("v1", new ObjectMap());
 
         testQueries(variantStorageEngine);
 
