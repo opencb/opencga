@@ -2,6 +2,8 @@ package org.opencb.opencga.catalog.utils;
 
 import io.jsonwebtoken.impl.Base64UrlCodec;
 
+import java.nio.BufferUnderflowException;
+import java.nio.ByteBuffer;
 import java.util.Date;
 import java.util.Random;
 import java.util.UUID;
@@ -19,7 +21,7 @@ public class UUIDUtils {
     //                                     ----
     //              version (1 hex digit) + internal version (1 hex digit) + entity (2 hex digit)
 
-    public static final Pattern UUID_PATTERN = Pattern.compile("[0-9a-f]{8}-[0-9a-f]{4}-0[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}");
+    public static final Pattern UUID_PATTERN = Pattern.compile("[0-9a-f]{8}-[0-9a-f]{4}-00[0-9a-f]{2}-[0-9a-f]{4}-[0-9a-f]{12}");
 
     public enum Entity {
         PROJECT(1),
@@ -52,16 +54,28 @@ public class UUIDUtils {
         long mostSignificantBits = getMostSignificantBits(date, entity);
         long leastSignificantBits = getLeastSignificantBits();
 
-        UUID uuid = new UUID(mostSignificantBits, leastSignificantBits);
-
-        return new String(Base64UrlCodec.BASE64URL.encode(uuid.toString().getBytes()));
+//        UUID uuid = new UUID(mostSignificantBits, leastSignificantBits);
+        ByteBuffer byteBuffer = ByteBuffer.allocate(Long.BYTES * 2);
+        byteBuffer.putLong(mostSignificantBits);
+        byteBuffer.putLong(leastSignificantBits);
+        return Base64UrlCodec.BASE64URL.encode(byteBuffer.array());
     }
 
     public static boolean isOpenCGAUUID(String token) {
-        if (token.length() == 48) {
-            String uuid = new String(Base64UrlCodec.BASE64URL.decodeToString(token));
-            Matcher matcher = UUID_PATTERN.matcher(uuid);
-            return matcher.find();
+        if (token.length() == 22) {
+            ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES * 2);
+            buffer.put(Base64UrlCodec.BASE64URL.decode(token));
+            buffer.flip(); //need flip
+            try {
+                long mostSignificantBits = buffer.getLong();
+                long leastSignificantBits = buffer.getLong();
+
+                String uuid = new UUID(mostSignificantBits, leastSignificantBits).toString();
+                Matcher matcher = UUID_PATTERN.matcher(uuid);
+                return matcher.find();
+            } catch (BufferUnderflowException e) {
+                return false;
+            }
         }
         return false;
     }

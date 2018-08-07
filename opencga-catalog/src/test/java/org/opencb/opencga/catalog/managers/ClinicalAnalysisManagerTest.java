@@ -120,11 +120,15 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(1, dummyEnvironment.getNumResults());
         assertEquals(0, dummyEnvironment.first().getInterpretations().size());
 
-        assertEquals(catalogManager.getFamilyManager().getUid("family", STUDY, sessionIdUser).getResource().getUid(),
-                dummyEnvironment.first().getFamily().getUid());
-        assertEquals(catalogManager.getIndividualManager().getUid("child1", STUDY, sessionIdUser).getResource().getUid(),
-                dummyEnvironment.first().getSubjects().get(0).getUid());
+        assertEquals("family", dummyEnvironment.first().getFamily().getId());
+        assertEquals(5, dummyEnvironment.first().getFamily().getMembers().size());
+
+        assertEquals(1, dummyEnvironment.first().getSubjects().size());
+        assertEquals("child1", dummyEnvironment.first().getSubjects().get(0).getId());
+
         assertEquals(1, dummyEnvironment.first().getSubjects().get(0).getSamples().size());
+        assertEquals("sample2", dummyEnvironment.first().getSubjects().get(0).getSamples().get(0).getId());
+
         assertEquals(catalogManager.getSampleManager().getUid("sample2", STUDY, sessionIdUser).getResource().getUid(),
                 dummyEnvironment.first().getSubjects().get(0).getSamples().get(0).getUid());
     }
