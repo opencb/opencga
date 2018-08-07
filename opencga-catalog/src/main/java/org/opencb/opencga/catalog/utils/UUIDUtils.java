@@ -2,6 +2,7 @@ package org.opencb.opencga.catalog.utils;
 
 import io.jsonwebtoken.impl.Base64UrlCodec;
 
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.util.Date;
 import java.util.Random;
@@ -65,12 +66,16 @@ public class UUIDUtils {
             ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES * 2);
             buffer.put(Base64UrlCodec.BASE64URL.decode(token));
             buffer.flip(); //need flip
-            long mostSignificantBits = buffer.getLong();
-            long leastSignificantBits = buffer.getLong();
+            try {
+                long mostSignificantBits = buffer.getLong();
+                long leastSignificantBits = buffer.getLong();
 
-            String uuid = new UUID(mostSignificantBits, leastSignificantBits).toString();
-            Matcher matcher = UUID_PATTERN.matcher(uuid);
-            return matcher.find();
+                String uuid = new UUID(mostSignificantBits, leastSignificantBits).toString();
+                Matcher matcher = UUID_PATTERN.matcher(uuid);
+                return matcher.find();
+            } catch (BufferUnderflowException e) {
+                return false;
+            }
         }
         return false;
     }
