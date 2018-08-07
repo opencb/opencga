@@ -403,14 +403,20 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
             List<String> includeList = queryOptions.getAsStringList(QueryOptions.INCLUDE);
             List<String> newInclude = new ArrayList<>(includeList.size());
+            boolean projectionKeyExcluded = false;
             for (String include : includeList) {
                 if (!include.startsWith(projectionKey + ".")) {
                     newInclude.add(include);
+                } else {
+                    projectionKeyExcluded = true;
                 }
             }
             if (newInclude.isEmpty()) {
                 queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(PRIVATE_ID, projectionKey));
             } else {
+                if (projectionKeyExcluded) {
+                    newInclude.add(projectionKey);
+                }
                 queryOptions.put(QueryOptions.INCLUDE, newInclude);
             }
         }

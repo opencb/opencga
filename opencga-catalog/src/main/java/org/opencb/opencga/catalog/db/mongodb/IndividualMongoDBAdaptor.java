@@ -661,7 +661,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     @Override
     public QueryResult<Individual> get(long individualId, QueryOptions options) throws CatalogDBException {
         checkId(individualId);
-        Query query = new Query(QueryParams.UID.key(), individualId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
+        Query query = new Query(QueryParams.UID.key(), individualId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED)
+                .append(QueryParams.STUDY_UID.key(), getStudyId(individualId));
         return get(query, options);
     }
 

@@ -1875,7 +1875,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 throw new CatalogException("Cannot send to index. No files could be found to be indexed.");
             }
 
-            params.put("outdir", Long.toString(outDir.getUid()));
+            params.put("outdir", outDir.getId());
             params.put("sid", sessionId);
 
         } else if (type.equals("BAM")) {
@@ -1921,7 +1921,7 @@ public class FileManager extends AnnotationSetManager<File> {
             throw new CatalogException("Cannot send to index. No files could be found to be indexed.");
         }
 
-        String fileIds = fileIdList.stream().map(File::getUid).map(l -> Long.toString(l)).collect(Collectors.joining(","));
+        String fileIds = fileIdList.stream().map(File::getId).collect(Collectors.joining(","));
         params.put("file", fileIds);
         List<File> outputList = outDir.getUid() > 0 ? Arrays.asList(outDir) : Collections.emptyList();
         ObjectMap attributes = new ObjectMap();
