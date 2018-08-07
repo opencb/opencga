@@ -1217,5 +1217,25 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 ));
             }
         });
+
+
+        search = individualManager.search(studyFqn, new Query(), new QueryOptions(QueryOptions.INCLUDE, "id,creationDate,samples.id"),
+                sessionIdUser);
+        assertEquals(2, search.getNumResults());
+        search.getResult().forEach(i -> {
+            assertTrue(org.apache.commons.lang3.StringUtils.isNotEmpty(i.getCreationDate()));
+            assertTrue(org.apache.commons.lang3.StringUtils.isEmpty(i.getName()));
+            assertEquals(3, i.getSamples().size());
+            assertTrue(org.apache.commons.lang3.StringUtils.isEmpty(i.getSamples().get(0).getCreationDate()));
+            if (i.getId().equals("individual1")) {
+                assertTrue(Arrays.asList("sample1", "sample2", "sample3").containsAll(
+                        i.getSamples().stream().map(Sample::getId).collect(Collectors.toList())
+                ));
+            } else {
+                assertTrue(Arrays.asList("sample4", "sample5", "sample6").containsAll(
+                        i.getSamples().stream().map(Sample::getId).collect(Collectors.toList())
+                ));
+            }
+        });
     }
 }
