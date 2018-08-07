@@ -1219,6 +1219,8 @@ public class StudyManager extends AbstractManager {
 
     private Boolean indexCohort(CatalogSolrManager catalogSolrManager, Query query,
                                 QueryOptions queryOptions) throws CatalogException, IOException {
+
+        queryOptions.add(QueryOptions.INCLUDE, "uid, studyUid, type, creationDate, status, release, annotations, samples.uid");
         catalogSolrManager.insertCatalogCollection(this.cohortDBAdaptor.iterator(query,
                 queryOptions), new CatalogCohortToSolrCohortConverter(), CatalogSolrManager.COHORT_SOLR_COLLECTION);
         return true;

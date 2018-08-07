@@ -263,7 +263,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         for (Object study : studies) {
             Document st = (Document) study;
-            String id = st.getString(PRIVATE_ID);
+            String id = st.getString(PRIVATE_FQN).replace(":", "_");
             Object object = st.getLong(PRIVATE_UID);
             long uid = object instanceof Number ? ((Number) object).longValue() : Long.parseLong(object.toString());
             allStudiesIdAndUids.put(uid, id);
