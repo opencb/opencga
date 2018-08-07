@@ -524,7 +524,8 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     @Override
     public QueryResult<Family> get(long familyId, QueryOptions options) throws CatalogDBException {
         checkId(familyId);
-        Query query = new Query(QueryParams.UID.key(), familyId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
+        Query query = new Query(QueryParams.UID.key(), familyId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED)
+                .append(QueryParams.STUDY_UID.key(), getStudyId(familyId));
         return get(query, options);
     }
 

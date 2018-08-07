@@ -162,7 +162,8 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
     @Override
     public QueryResult<DiseasePanel> get(long panelUid, QueryOptions options) throws CatalogDBException {
         checkUid(panelUid);
-        Query query = new Query(QueryParams.UID.key(), panelUid).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
+        Query query = new Query(QueryParams.UID.key(), panelUid).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED)
+                .append(QueryParams.STUDY_UID.key(), getStudyId(panelUid));
         return get(query, options);
     }
 

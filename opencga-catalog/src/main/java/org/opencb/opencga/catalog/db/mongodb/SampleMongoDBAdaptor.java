@@ -566,7 +566,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     @Override
     public QueryResult<Sample> get(long sampleId, QueryOptions options) throws CatalogDBException {
         checkId(sampleId);
-        Query query = new Query(QueryParams.UID.key(), sampleId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
+        Query query = new Query(QueryParams.UID.key(), sampleId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED)
+                .append(QueryParams.STUDY_UID.key(), getStudyId(sampleId));
         return get(query, options);
     }
 

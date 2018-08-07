@@ -416,6 +416,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
     public QueryResult<Cohort> get(long cohortId, QueryOptions options) throws CatalogDBException {
         Query query = new Query()
                 .append(QueryParams.UID.key(), cohortId)
+                .append(QueryParams.STUDY_UID.key(), getStudyId(cohortId))
                 .append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
         return get(query, options);
     }
