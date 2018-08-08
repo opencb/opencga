@@ -497,12 +497,18 @@ public class SolrQueryParser {
             solrQuery.addFilterQuery(filter);
             sb.append(filter).append("\n");
         });
-        // Add Solr fields from the variant includes,i.e.: include-sample, include-format,...
-        List<String> solrFieldsToInclude = getSolrFieldsFromVariantIncludes(query, Arrays.asList(studies));
-        if (ListUtils.isNotEmpty(solrFieldsToInclude)) {
-            for (String solrField: solrFieldsToInclude) {
-                solrQuery.addField(solrField);
+
+        if (studies != null) {
+            // Add Solr fields from the variant includes, i.e.: include-sample, include-format,...
+            List<String> solrFieldsToInclude = getSolrFieldsFromVariantIncludes(query, Arrays.asList(studies));
+            if (ListUtils.isNotEmpty(solrFieldsToInclude)) {
+                for (String solrField : solrFieldsToInclude) {
+                    solrQuery.addField(solrField);
+                }
             }
+        } else {
+            solrQuery.addField("fileInfo_*");
+            solrQuery.addField("sampleFormat_*");
         }
 
         logger.debug("\n\n-----------------------------------------------------\n{}\n\n{}"
