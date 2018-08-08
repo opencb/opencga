@@ -108,7 +108,8 @@ public class ClinicalAnalysisMongoDBIterator<E> extends MongoDBIterator<E>  {
 
             // Extract all the subjects
             Object members = clinicalDocument.get(ClinicalAnalysisDBAdaptor.QueryParams.SUBJECTS.key());
-            if (members != null && !options.getBoolean(NATIVE_QUERY)) {
+            if (members != null && !options.getBoolean(NATIVE_QUERY)
+                    && !options.getBoolean(NATIVE_QUERY + "_" + ClinicalAnalysisDBAdaptor.QueryParams.SUBJECTS.key())) {
                 List<Document> memberList = (List<Document>) members;
                 if (!memberList.isEmpty()) {
                     memberList.forEach(subject -> memberSet.add(subject.getLong(UID)));
@@ -117,19 +118,22 @@ public class ClinicalAnalysisMongoDBIterator<E> extends MongoDBIterator<E>  {
 
             // Extract the family uid
             Object family = clinicalDocument.get(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key());
-            if (family != null && !options.getBoolean(NATIVE_QUERY)) {
+            if (family != null && !options.getBoolean(NATIVE_QUERY)
+                    && !options.getBoolean(NATIVE_QUERY + "_" + ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key())) {
                 familySet.add(((Document) family).getLong(UID));
             }
 
             // Extract the somatic uid
             Object somatic = clinicalDocument.get(ClinicalAnalysisDBAdaptor.QueryParams.SOMATIC.key());
-            if (somatic != null && !options.getBoolean(NATIVE_QUERY)) {
+            if (somatic != null && !options.getBoolean(NATIVE_QUERY)
+                    && !options.getBoolean(NATIVE_QUERY + "_" + ClinicalAnalysisDBAdaptor.QueryParams.SOMATIC.key())) {
                 somaticSet.add(((Document) somatic).getLong(UID));
             }
 
             // Extract the germline uid
             Object germline = clinicalDocument.get(ClinicalAnalysisDBAdaptor.QueryParams.GERMLINE.key());
-            if (germline != null && !options.getBoolean(NATIVE_QUERY)) {
+            if (germline != null && !options.getBoolean(NATIVE_QUERY)
+                    && !options.getBoolean(NATIVE_QUERY + "_" + ClinicalAnalysisDBAdaptor.QueryParams.GERMLINE.key())) {
                 germlineSet.add(((Document) germline).getLong(UID));
             }
         }
@@ -293,9 +297,19 @@ public class ClinicalAnalysisMongoDBIterator<E> extends MongoDBIterator<E>  {
                 }
             }
             if (!includeList.isEmpty()) {
-                includeList.add(VERSION);
-                includeList.add(UID);
-                queryOptions.put(QueryOptions.INCLUDE, includeList);
+                // If we only have include uid or version, there is no need for an additional query so we will set current options to
+                // native query
+                boolean includeAdditionalFields = includeList.stream().anyMatch(
+                        field -> !field.equals(VERSION) && !field.equals(UID)
+                );
+                if (includeAdditionalFields) {
+                    includeList.add(VERSION);
+                    includeList.add(UID);
+                    queryOptions.put(QueryOptions.INCLUDE, includeList);
+                } else {
+                    // User wants to include fields already retrieved
+                    options.put(NATIVE_QUERY + "_" + fieldProjectionKey, true);
+                }
             }
         }
         if (options.containsKey(QueryOptions.EXCLUDE)) {

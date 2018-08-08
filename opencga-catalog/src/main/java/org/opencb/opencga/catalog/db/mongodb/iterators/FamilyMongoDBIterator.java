@@ -168,9 +168,20 @@ public class FamilyMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
                 }
             }
             if (!includeList.isEmpty()) {
-                includeList.add(FamilyDBAdaptor.QueryParams.VERSION.key());
-                includeList.add(FamilyDBAdaptor.QueryParams.UID.key());
-                queryOptions.put(QueryOptions.INCLUDE, includeList);
+                // If we only have include uid or version, there is no need for an additional query so we will set current options to
+                // native query
+                boolean includeAdditionalFields = includeList.stream().anyMatch(
+                        field -> !field.equals(IndividualDBAdaptor.QueryParams.VERSION.key())
+                                && !field.equals(IndividualDBAdaptor.QueryParams.UID.key())
+                );
+                if (includeAdditionalFields) {
+                    includeList.add(IndividualDBAdaptor.QueryParams.VERSION.key());
+                    includeList.add(IndividualDBAdaptor.QueryParams.UID.key());
+                    queryOptions.put(QueryOptions.INCLUDE, includeList);
+                } else {
+                    // User wants to include fields already retrieved
+                    options.put(NATIVE_QUERY, true);
+                }
             }
         }
         if (options.containsKey(QueryOptions.EXCLUDE)) {
