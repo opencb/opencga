@@ -167,9 +167,20 @@ public class IndividualMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
                 }
             }
             if (!includeList.isEmpty()) {
-                includeList.add(IndividualDBAdaptor.QueryParams.VERSION.key());
-                includeList.add(IndividualDBAdaptor.QueryParams.UID.key());
-                queryOptions.put(QueryOptions.INCLUDE, includeList);
+                // If we only have include uid or version, there is no need for an additional query so we will set current options to
+                // native query
+                boolean includeAdditionalFields = includeList.stream().anyMatch(
+                        field -> !field.equals(SampleDBAdaptor.QueryParams.VERSION.key())
+                                && !field.equals(SampleDBAdaptor.QueryParams.UID.key())
+                );
+                if (includeAdditionalFields) {
+                    includeList.add(SampleDBAdaptor.QueryParams.VERSION.key());
+                    includeList.add(SampleDBAdaptor.QueryParams.UID.key());
+                    queryOptions.put(QueryOptions.INCLUDE, includeList);
+                } else {
+                    // User wants to include fields already retrieved
+                    options.put(NATIVE_QUERY, true);
+                }
             }
         }
         if (options.containsKey(QueryOptions.EXCLUDE)) {

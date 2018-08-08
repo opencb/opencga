@@ -86,6 +86,17 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         long startTime = startQuery();
 
         this.dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
+        List<Bson> filterList = new ArrayList<>();
+        filterList.add(Filters.eq(QueryParams.ID.key(), job.getId()));
+        filterList.add(Filters.eq(PRIVATE_STUDY_ID, studyId));
+        filterList.add(Filters.eq(QueryParams.STATUS_NAME.key(), Status.READY));
+
+        Bson bson = Filters.and(filterList);
+        QueryResult<Long> count = jobCollection.count(bson);
+
+        if (count.getResult().get(0) > 0) {
+            throw new CatalogDBException("Job { id: '" + job.getId() + "'} already exists.");
+        }
 
         long jobId = getNewId();
         job.setUid(jobId);
