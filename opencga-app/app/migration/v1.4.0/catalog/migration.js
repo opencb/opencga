@@ -152,9 +152,11 @@ migrateCollection("cohort", {"uuid": {$exists: false}}, {attributes: 0, annotati
     /* uid and uuid migration: #819 */
     setChanges["uid"] = doc["id"];
     setChanges["id"] = doc["name"];
+    setChanges["version"] = NumberInt(doc["version"]);
     setChanges["studyUid"] = doc["_studyId"];
     setChanges["uuid"] = generateOpenCGAUUID("COHORT", setChanges["_creationDate"]);
 
+    unsetChanges["acl"] = "";
     unsetChanges["_studyId"] = "";
 
     // Check samples
@@ -163,6 +165,7 @@ migrateCollection("cohort", {"uuid": {$exists: false}}, {attributes: 0, annotati
             var sample = doc.samples[i];
 
             sample["uid"] = sample["id"];
+            sample["version"] = NumberInt(sample["version"]);
             delete sample["id"];
         }
         setChanges["samples"] = doc.samples;
@@ -217,9 +220,11 @@ migrateCollection("file", {"uuid": {$exists: false}}, {attributes: 0, stats: 0},
     /* uid and uuid migration: #819 */
     setChanges["uid"] = doc["id"];
     setChanges["studyUid"] = doc["_studyId"];
+    setChanges["version"] = NumberInt(doc["version"]);
     setChanges["id"] = doc["path"].replace(/\//g, ":");
     setChanges["uuid"] = generateOpenCGAUUID("FILE", setChanges["_creationDate"]);
 
+    unsetChanges["acl"] = "";
     unsetChanges["_studyId"] = "";
 
     // Check samples
@@ -271,23 +276,23 @@ migrateCollection("individual", {"uuid": {$exists: false}}, {attributes: 0, anno
     setChanges["uid"] = doc["id"];
     setChanges["id"] = doc["name"];
     setChanges["studyUid"] = doc["_studyId"];
+    setChanges["version"] = NumberInt(doc["version"]);
     setChanges["uuid"] = generateOpenCGAUUID("INDIVIDUAL", setChanges["_creationDate"]);
 
+    unsetChanges["acl"] = "";
     unsetChanges["_studyId"] = "";
 
     // Check father
     if (typeof doc.father !== "undefined" && typeof doc.father.id !== "undefined") {
         setChanges["father"] = {
-            "uid": doc.father.id,
-            "version": doc.father.version
+            "uid": doc.father.id
         }
     }
 
     // Check mother
     if (typeof doc.mother !== "undefined" && typeof doc.mother.id !== "undefined") {
         setChanges["mother"] = {
-            "uid": doc.mother.id,
-            "version": doc.mother.version
+            "uid": doc.mother.id
         }
     }
 
@@ -297,6 +302,7 @@ migrateCollection("individual", {"uuid": {$exists: false}}, {attributes: 0, anno
             var sample = doc.samples[i];
 
             sample["uid"] = sample["id"];
+            sample["version"] = NumberInt(sample["version"]);
             delete sample["id"];
         }
 
@@ -320,6 +326,7 @@ migrateCollection("job", {"uuid": {$exists: false}}, {attributes: 0}, function(b
     setChanges["studyUid"] = doc["_studyId"];
     setChanges["uuid"] = generateOpenCGAUUID("JOB", setChanges["_creationDate"]);
 
+    unsetChanges["acl"] = "";
     unsetChanges["_studyId"] = "";
 
     // Check input
@@ -349,24 +356,21 @@ migrateCollection("job", {"uuid": {$exists: false}}, {attributes: 0}, function(b
     // Check outDir
     if (typeof doc.outDir !== "undefined" && typeof doc.outDir.id !== "undefined") {
         setChanges["outDir"] = {
-            "uid": doc.outDir.id,
-            "version": doc.outDir.version
+            "uid": doc.outDir.id
         }
     }
 
     // Check stdOutput
     if (typeof doc.stdOutput !== "undefined" && typeof doc.stdOutput.id !== "undefined") {
         setChanges["stdOutput"] = {
-            "uid": doc.stdOutput.id,
-            "version": doc.stdOutput.version
+            "uid": doc.stdOutput.id
         }
     }
 
     // Check stdError
     if (typeof doc.stdError !== "undefined" && typeof doc.stdError.id !== "undefined") {
         setChanges["stdError"] = {
-            "uid": doc.stdError.id,
-            "version": doc.stdError.version
+            "uid": doc.stdError.id
         }
     }
     /* end uid and uuid migration: #819 */
@@ -385,9 +389,11 @@ migrateCollection("sample", {"uuid": {$exists: false}}, {attributes: 0, annotati
     /* uid and uuid migration: #819 */
     setChanges["uid"] = doc["id"];
     setChanges["id"] = doc["name"];
+    setChanges["version"] = NumberInt(doc["version"]);
     setChanges["studyUid"] = doc["_studyId"];
     setChanges["uuid"] = generateOpenCGAUUID("SAMPLE", setChanges["_creationDate"]);
 
+    unsetChanges["acl"] = "";
     unsetChanges["_studyId"] = "";
     /* end uid and uuid migration: #819 */
 
@@ -450,6 +456,7 @@ migrateCollection("study", {"uuid": {$exists: false}}, {attributes: 0}, function
     setChanges["uuid"] = generateOpenCGAUUID("STUDY", setChanges["_creationDate"]);
 
     unsetChanges["_projectId"] = "";
+    unsetChanges["acl"] = "";
 
     // Check variableSets
     if (typeof doc.variableSets !== "undefined" && doc.variableSets.length > 0) {
