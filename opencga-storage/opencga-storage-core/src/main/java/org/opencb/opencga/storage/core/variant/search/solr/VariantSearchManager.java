@@ -169,7 +169,7 @@ public class VariantSearchManager {
      * @param collection        Collection name
      * @param variantDBIterator Iterator to retrieve the variants to load
      * @param progressLogger    Progress logger
-     * @throws IOException            IOException
+     * @throws IOException      IOException
      * @throws VariantSearchException VariantSearchException
      */
     public void load(String collection, VariantDBIterator variantDBIterator, ProgressLogger progressLogger)
@@ -583,7 +583,7 @@ public class VariantSearchManager {
                             counts.put(name, (long) response.getFacetQuery().get(name));
                             name = list.get(1);
                             counts.put(name, (long) response.getFacetQuery().get(name));
-                            name = list.get(0) + "__" + list.get(1);
+                            name = list.get(0) + VariantSearchUtils.SEPARATOR + list.get(1);
                             counts.put(name, (long) response.getFacetQuery().get(name));
                             intersection.setCounts(counts);
 
@@ -598,13 +598,14 @@ public class VariantSearchManager {
                             counts.put(name, (long) response.getFacetQuery().get(name));
                             name = list.get(2);
                             counts.put(name, (long) response.getFacetQuery().get(name));
-                            name = list.get(0) + "__" + list.get(1);
+                            name = list.get(0) + VariantSearchUtils.SEPARATOR + list.get(1);
                             counts.put(name, (long) response.getFacetQuery().get(name));
-                            name = list.get(0) + "__" + list.get(2);
+                            name = list.get(0) + VariantSearchUtils.SEPARATOR + list.get(2);
                             counts.put(name, (long) response.getFacetQuery().get(name));
-                            name = list.get(1) + "__" + list.get(2);
+                            name = list.get(1) + VariantSearchUtils.SEPARATOR + list.get(2);
                             counts.put(name, (long) response.getFacetQuery().get(name));
-                            name = list.get(0) + "__" + list.get(1) + "__" + list.get(2);
+                            name = list.get(0) + VariantSearchUtils.SEPARATOR + list.get(1)
+                                    + VariantSearchUtils.SEPARATOR + list.get(2);
                             counts.put(name, (long) response.getFacetQuery().get(name));
                             intersection.setCounts(counts);
 

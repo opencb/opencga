@@ -39,6 +39,8 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils
  */
 public class VariantSearchUtils {
 
+    public static final String SEPARATOR = "__";
+
     public static final Set<VariantQueryParam> UNSUPPORTED_QUERY_PARAMS = Collections.unmodifiableSet(new HashSet<>(
             Arrays.asList(VariantQueryParam.FILE,
                     VariantQueryParam.FILTER,

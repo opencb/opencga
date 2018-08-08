@@ -67,13 +67,13 @@ public class SolrQueryParser {
         // Remove from this map fileInfo__* and sampleFormat__*, they will be processed with include-file,
         // include-sample, include-genotype...
         //includeMap.put("studies", "studies,stats__*,gt_*,filter_*,qual_*,fileInfo_*,sampleFormat_*");
-        includeMap.put("studies", "studies,stats__*,filter_*,qual_*");
-        includeMap.put("studies.stats", "studies,stats__*");
+        includeMap.put("studies", "studies,stats_*,filter_*,qual_*");
+        includeMap.put("studies.stats", "studies,stats_*");
 
-        includeMap.put("annotation", "genes,soAcc,geneToSoAcc,biotypes,sift,siftDesc,polyphen,polyphenDesc,popFreq__*,xrefs,"
+        includeMap.put("annotation", "genes,soAcc,geneToSoAcc,biotypes,sift,siftDesc,polyphen,polyphenDesc,popFreq_*,xrefs,"
                 + "phastCons,phylop,gerp,caddRaw,caddScaled,traits");
         includeMap.put("annotation.consequenceTypes", "genes,soAcc,geneToSoAcc,biotypes,sift,siftDesc,polyphen,polyphenDesc");
-        includeMap.put("annotation.populationFrequencies", "popFreq__*");
+        includeMap.put("annotation.populationFrequencies", "popFreq_*");
         includeMap.put("annotation.xrefs", "xrefs");
         includeMap.put("annotation.conservation", "phastCons,phylop,gerp");
         includeMap.put("annotation.functionalScore", "caddRaw,caddScaled");
@@ -391,7 +391,8 @@ public class SolrQueryParser {
                 } else {
                     // Add QUAL filters, (AND)
                     for (String file: files) {
-                        filterList.add(parseNumericValue("qual__" + studies[0] + "__" + file, quals[0]));
+                        filterList.add(parseNumericValue("qual" + VariantSearchUtils.SEPARATOR + studies[0]
+                                + VariantSearchUtils.SEPARATOR + file, quals[0]));
                     }
                 }
             } else {
@@ -416,11 +417,13 @@ public class SolrQueryParser {
                 // Add FILTER filters, (AND for each file, but OR for each FILTER value)
                 for (String file: files) {
                     StringBuilder sb = new StringBuilder();
-                    sb.append("(").append("filter__").append(studies[0]).append("__").append(file).append(":\"")
-                            .append(filters[0]).append("\"");
+                    sb.append("(").append("filter").append(VariantSearchUtils.SEPARATOR).append(studies[0])
+                            .append(VariantSearchUtils.SEPARATOR).append(file).append(":\"").append(filters[0])
+                            .append("\"");
                     for (int i = 1; i < filters.length; i++) {
-                        sb.append(" OR ").append("filter__").append(studies[0]).append("__").append(file).append(":\"")
-                                .append(filters[i]).append("\"");
+                        sb.append(" OR ").append("filter").append(VariantSearchUtils.SEPARATOR).append(studies[0])
+                                .append(VariantSearchUtils.SEPARATOR).append(file).append(":\"").append(filters[i])
+                                .append("\"");
                     }
                     sb.append(")");
                     filterList.add(sb.toString());
@@ -461,7 +464,8 @@ public class SolrQueryParser {
                                     sb.append(" OR ");
                                 }
                                 addOr = true;
-                                sb.append("gt__").append(studies[0]).append("__").append(sampleName.toString())
+                                sb.append("gt").append(VariantSearchUtils.SEPARATOR).append(studies[0])
+                                        .append(VariantSearchUtils.SEPARATOR).append(sampleName.toString())
                                         .append(":\"").append(gt).append("\"");
                             }
                             sb.append(")");
@@ -723,7 +727,8 @@ public class SolrQueryParser {
                     String[] freqValue = getMafOrRefFrequency(type, matcher.group(3), matcher.group(4));
 
                     // concat expression, e.g.: value:[0 TO 12]
-                    sb.append(getRange(name + "__" + matcher.group(1) + "__", matcher.group(2), freqValue[0], freqValue[1]));
+                    sb.append(getRange(name + VariantSearchUtils.SEPARATOR + matcher.group(1)
+                            + VariantSearchUtils.SEPARATOR, matcher.group(2), freqValue[0], freqValue[1]));
                 } else {
                     // error
                     throw new IllegalArgumentException("Invalid expression " +  value);
@@ -737,7 +742,8 @@ public class SolrQueryParser {
                         String[] freqValue = getMafOrRefFrequency(type, matcher.group(3), matcher.group(4));
 
                         // concat expression, e.g.: value:[0 TO 12]
-                        list.add(getRange(name + "__" + matcher.group(1) + "__", matcher.group(2), freqValue[0], freqValue[1]));
+                        list.add(getRange(name + VariantSearchUtils.SEPARATOR + matcher.group(1)
+                                + VariantSearchUtils.SEPARATOR, matcher.group(2), freqValue[0], freqValue[1]));
                     } else {
                         throw new IllegalArgumentException("Invalid expression " +  value);
                     }
@@ -1189,23 +1195,23 @@ public class SolrQueryParser {
                 error = false;
                 solrQuery.addFacetQuery("{!key=" + splitB[0] + "}" + splitA[0] + ":" + splitB[0]);
                 solrQuery.addFacetQuery("{!key=" + splitB[1] + "}" + splitA[0] + ":" + splitB[1]);
-                solrQuery.addFacetQuery("{!key=" + splitB[0] + "__" + splitB[1] + "}" + splitA[0] + ":" + splitB[0]
-                        + " AND " + splitA[0] + ":" + splitB[1]);
+                solrQuery.addFacetQuery("{!key=" + splitB[0] + VariantSearchUtils.SEPARATOR + splitB[1] + "}"
+                        + splitA[0] + ":" + splitB[0] + " AND " + splitA[0] + ":" + splitB[1]);
 
             } else if (splitB.length == 3) {
                 error = false;
                 solrQuery.addFacetQuery("{!key=" + splitB[0] + "}" + splitA[0] + ":" + splitB[0]);
                 solrQuery.addFacetQuery("{!key=" + splitB[1] + "}" + splitA[0] + ":" + splitB[1]);
                 solrQuery.addFacetQuery("{!key=" + splitB[2] + "}" + splitA[0] + ":" + splitB[2]);
-                solrQuery.addFacetQuery("{!key=" + splitB[0] + "__" + splitB[1] + "}" + splitA[0] + ":" + splitB[0]
-                        + " AND " + splitA[0] + ":" + splitB[1]);
-                solrQuery.addFacetQuery("{!key=" + splitB[0] + "__" + splitB[2] + "}" + splitA[0] + ":" + splitB[0]
-                        + " AND " + splitA[0] + ":" + splitB[2]);
-                solrQuery.addFacetQuery("{!key=" + splitB[1] + "__" + splitB[2] + "}" + splitA[0] + ":" + splitB[1]
-                        + " AND " + splitA[0] + ":" + splitB[2]);
-                solrQuery.addFacetQuery("{!key=" + splitB[0] + "__" + splitB[1] + "__" + splitB[2] + "}" + splitA[0]
-                        + ":" + splitB[0] + " AND " + splitA[0]
-                        + ":" + splitB[1] + " AND " + splitA[0] + ":" + splitB[2]);
+                solrQuery.addFacetQuery("{!key=" + splitB[0] + VariantSearchUtils.SEPARATOR + splitB[1] + "}"
+                        + splitA[0] + ":" + splitB[0] + " AND " + splitA[0] + ":" + splitB[1]);
+                solrQuery.addFacetQuery("{!key=" + splitB[0] + VariantSearchUtils.SEPARATOR + splitB[2] + "}"
+                        + splitA[0] + ":" + splitB[0] + " AND " + splitA[0] + ":" + splitB[2]);
+                solrQuery.addFacetQuery("{!key=" + splitB[1] + VariantSearchUtils.SEPARATOR + splitB[2] + "}"
+                        + splitA[0] + ":" + splitB[1] + " AND " + splitA[0] + ":" + splitB[2]);
+                solrQuery.addFacetQuery("{!key=" + splitB[0] + VariantSearchUtils.SEPARATOR + splitB[1]
+                        + VariantSearchUtils.SEPARATOR + splitB[2] + "}" + splitA[0] + ":" + splitB[0]
+                        + " AND " + splitA[0] + ":" + splitB[1] + " AND " + splitA[0] + ":" + splitB[2]);
             }
         }
 
@@ -1287,11 +1293,12 @@ public class SolrQueryParser {
             includeFiles = Arrays.asList(query.getString(VariantQueryParam.INCLUDE_FILE.key()).split("[,;]"));
             for (String includeFile: includeFiles) {
                 for (String studyId: studies) {
-                    solrFields.add("fileinfo__" + studyId + "__" + includeFile);
+                    solrFields.add("fileinfo" + VariantSearchUtils.SEPARATOR + studyId + VariantSearchUtils.SEPARATOR
+                            + includeFile);
                 }
             }
         } else {
-            solrFields.add("fileinfo__*");
+            solrFields.add("fileinfo" + VariantSearchUtils.SEPARATOR + "*");
         }
 
         if (StringUtils.isNotEmpty(query.getString(VariantQueryParam.INCLUDE_SAMPLE.key()))) {
@@ -1300,24 +1307,28 @@ public class SolrQueryParser {
             if (query.getBoolean(VariantQueryParam.INCLUDE_GENOTYPE.key())) {
                 for (String includeSample: includeSamples) {
                     for (String studyId : studies) {
-                        solrFields.add("gt__" + studyId + "__" + includeSample);
+                        solrFields.add("gt" + VariantSearchUtils.SEPARATOR + studyId + VariantSearchUtils.SEPARATOR
+                                + includeSample);
                     }
                 }
             } else {
                 for (String includeSample: includeSamples) {
                     for (String studyId : studies) {
-                        solrFields.add("sampleFormat__" + studyId + "__" + includeSample);
+                        solrFields.add("sampleFormat" + VariantSearchUtils.SEPARATOR + studyId
+                                + VariantSearchUtils.SEPARATOR + includeSample);
                     }
                 }
             }
         } else {
             for (String studyId: studies) {
                 if (query.getBoolean(VariantQueryParam.INCLUDE_GENOTYPE.key())) {
-                    solrFields.add("sampleFormat__" + studyId + "__sampleName");
-                    solrFields.add("gt__" + studyId + "__*");
+                    solrFields.add("sampleFormat" + VariantSearchUtils.SEPARATOR + studyId
+                            + VariantSearchUtils.SEPARATOR + "sampleName");
+                    solrFields.add("gt" + VariantSearchUtils.SEPARATOR + studyId + VariantSearchUtils.SEPARATOR + "*");
                 } else {
                     // Include sample data for each sample, and list of formats and sample names
-                    solrFields.add("sampleFormat__" + studyId + "__*");
+                    solrFields.add("sampleFormat" + VariantSearchUtils.SEPARATOR + studyId
+                            + VariantSearchUtils.SEPARATOR + "*");
                 }
             }
         }
