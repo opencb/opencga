@@ -498,21 +498,24 @@ public class SolrQueryParser {
             sb.append(filter).append("\n");
         });
 
-        if (studies != null) {
-            // Add Solr fields from the variant includes, i.e.: include-sample, include-format,...
-            List<String> solrFieldsToInclude = getSolrFieldsFromVariantIncludes(query, Arrays.asList(studies));
-            if (ListUtils.isNotEmpty(solrFieldsToInclude)) {
-                for (String solrField : solrFieldsToInclude) {
-                    solrQuery.addField(solrField);
-                }
+        // Add Solr fields from the variant includes, i.e.: include-sample, include-format,...
+        List<String> solrFieldsToInclude = getSolrFieldsFromVariantIncludes(query);
+        if (ListUtils.isNotEmpty(solrFieldsToInclude)) {
+            for (String solrField : solrFieldsToInclude) {
+                solrQuery.addField(solrField);
             }
         } else {
             solrQuery.addField("fileInfo_*");
             solrQuery.addField("sampleFormat_*");
         }
 
-        logger.debug("\n\n-----------------------------------------------------\n{}\n\n{}"
-                + "-----------------------------------------------------\n\n", query.toJson(), sb.toString());
+        logger.debug("\n\n-----------------------------------------------------\n"
+                + query.toJson()
+                + "\n\n"
+                + sb.toString()
+                + "\n\n"
+                + solrQuery.getFields()
+                + "\n-----------------------------------------------------\n\n");
 
         return solrQuery;
     }
@@ -1287,12 +1290,14 @@ public class SolrQueryParser {
      * @param query Variant query
      * @return      List of Solr fields to be included in the Solr query
      */
-    private List<String> getSolrFieldsFromVariantIncludes(Query query, List<String> studies) {
+    private List<String> getSolrFieldsFromVariantIncludes(Query query) {
         List<String> solrFields = new ArrayList<>();
 
-        if (ListUtils.isEmpty(studies)) {
+        List<String> studies = null;
+        if (StringUtils.isEmpty(query.getString(VariantQueryParam.INCLUDE_STUDY.key()))) {
             return solrFields;
         }
+        studies = Arrays.asList(query.getString(VariantQueryParam.INCLUDE_STUDY.key()).split("[,;]"));
 
         if (StringUtils.isNotEmpty(query.getString(VariantQueryParam.INCLUDE_FILE.key()))) {
             List<String> includeFiles;
