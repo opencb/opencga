@@ -512,7 +512,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
         QueryOptions qOptions;
         if (options != null) {
-            qOptions = options;
+            qOptions = new QueryOptions(options);
         } else {
             qOptions = new QueryOptions();
         }

@@ -1533,15 +1533,15 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
-        if (options.containsKey(QueryOptions.INCLUDE)) {
-            options = new QueryOptions(options);
-            List<String> includeList = new ArrayList<>(options.getAsStringList(QueryOptions.INCLUDE));
+        QueryOptions qOptions = new QueryOptions(options);
+        if (qOptions.containsKey(QueryOptions.INCLUDE)) {
+            List<String> includeList = new ArrayList<>(qOptions.getAsStringList(QueryOptions.INCLUDE));
             includeList.add("_ownerId");
             includeList.add("_acl");
             includeList.add(QueryParams.GROUPS.key());
-            options.put(QueryOptions.INCLUDE, includeList);
+            qOptions.put(QueryOptions.INCLUDE, includeList);
         }
-        options = filterOptions(options, FILTER_ROUTE_STUDIES);
+        qOptions = filterOptions(qOptions, FILTER_ROUTE_STUDIES);
 
         if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
             query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
@@ -1550,7 +1550,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         logger.debug("Study native get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
 
-        return studyCollection.nativeQuery().find(bson, options).iterator();
+        return studyCollection.nativeQuery().find(bson, qOptions).iterator();
     }
 
     @Override

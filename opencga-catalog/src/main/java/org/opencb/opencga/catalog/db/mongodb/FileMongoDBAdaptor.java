@@ -690,7 +690,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
         QueryOptions qOptions;
         if (options != null) {
-            qOptions = options;
+            qOptions = new QueryOptions(options);
         } else {
             qOptions = new QueryOptions();
         }

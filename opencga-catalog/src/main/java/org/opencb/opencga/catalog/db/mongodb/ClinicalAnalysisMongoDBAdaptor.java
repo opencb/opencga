@@ -402,7 +402,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
         QueryOptions qOptions;
         if (options != null) {
-            qOptions = options;
+            qOptions = new QueryOptions(options);
         } else {
             qOptions = new QueryOptions();
         }
