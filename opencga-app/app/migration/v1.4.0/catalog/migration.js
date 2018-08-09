@@ -106,8 +106,7 @@ migrateCollection("clinical", {"uuid": {$exists: false}}, {attributes: 0, annota
     // Check family
     if (typeof doc.family !== "undefined" && typeof doc.family.id !== "undefined") {
         setChanges["family"] = {
-            "uid": doc.family.id,
-            "version": doc.family.version
+            "uid": doc.family.id
         };
     }
 
@@ -152,7 +151,6 @@ migrateCollection("cohort", {"uuid": {$exists: false}}, {attributes: 0, annotati
     /* uid and uuid migration: #819 */
     setChanges["uid"] = doc["id"];
     setChanges["id"] = doc["name"];
-    setChanges["version"] = NumberInt(doc["version"]);
     setChanges["studyUid"] = doc["_studyId"];
     setChanges["uuid"] = generateOpenCGAUUID("COHORT", setChanges["_creationDate"]);
 
@@ -165,7 +163,6 @@ migrateCollection("cohort", {"uuid": {$exists: false}}, {attributes: 0, annotati
             var sample = doc.samples[i];
 
             sample["uid"] = sample["id"];
-            sample["version"] = NumberInt(sample["version"]);
             delete sample["id"];
         }
         setChanges["samples"] = doc.samples;
@@ -187,6 +184,7 @@ migrateCollection("family", {"uuid": {$exists: false}}, {attributes: 0, annotati
     setChanges["uid"] = doc["id"];
     setChanges["id"] = doc["name"];
     setChanges["studyUid"] = doc["_studyId"];
+    setChanges["version"] = NumberInt(doc["version"]);
     setChanges["uuid"] = generateOpenCGAUUID("FAMILY", setChanges["_creationDate"]);
 
     unsetChanges["_studyId"] = "";
@@ -197,6 +195,7 @@ migrateCollection("family", {"uuid": {$exists: false}}, {attributes: 0, annotati
             var member = doc.members[i];
 
             member["uid"] = member["id"];
+            member["version"] = NumberInt(member["version"]);
             delete member["id"];
         }
 
@@ -220,7 +219,6 @@ migrateCollection("file", {"uuid": {$exists: false}}, {attributes: 0, stats: 0},
     /* uid and uuid migration: #819 */
     setChanges["uid"] = doc["id"];
     setChanges["studyUid"] = doc["_studyId"];
-    setChanges["version"] = NumberInt(doc["version"]);
     setChanges["id"] = doc["path"].replace(/\//g, ":");
     setChanges["uuid"] = generateOpenCGAUUID("FILE", setChanges["_creationDate"]);
 
