@@ -1251,8 +1251,8 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "CreationDate") @QueryParam("creationDate") String creationDate,
             @ApiParam(value = "Status") @QueryParam("status") String status,
             @ApiParam(value = "Release") @QueryParam("release") int release,
-            @ApiParam(value = "Formart") @QueryParam("formart") String formart,
-            @ApiParam(value = "Bioformart") @QueryParam("bioformart") String bioformart,
+            @ApiParam(value = "Format") @QueryParam("format") String format,
+            @ApiParam(value = "Bioformat") @QueryParam("bioformat") String bioformat,
             @ApiParam(value = "Size") @QueryParam("size") int size,
             @ApiParam(value = "Samples") @QueryParam("samples") int samples,
 

@@ -28,7 +28,7 @@ public class FileSolrModel {
     private String format;
 
     @Field
-    private String bioformart;
+    private String bioformat;
 
     @Field
     private int release;
@@ -73,7 +73,7 @@ public class FileSolrModel {
         sb.append(", name='").append(name).append('\'');
         sb.append(", type='").append(type).append('\'');
         sb.append(", format='").append(format).append('\'');
-        sb.append(", bioformart='").append(bioformart).append('\'');
+        sb.append(", bioformat='").append(bioformat).append('\'');
         sb.append(", release=").append(release);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", status='").append(status).append('\'');
@@ -133,12 +133,12 @@ public class FileSolrModel {
         return this;
     }
 
-    public String getBioformart() {
-        return bioformart;
+    public String getBioformat() {
+        return bioformat;
     }
 
-    public FileSolrModel setBioformart(String bioformart) {
-        this.bioformart = bioformart;
+    public FileSolrModel setBioformat(String bioformat) {
+        this.bioformat = bioformat;
         return this;
     }
 

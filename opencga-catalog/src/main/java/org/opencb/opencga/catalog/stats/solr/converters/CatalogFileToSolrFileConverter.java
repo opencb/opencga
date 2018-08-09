@@ -31,7 +31,7 @@ public class CatalogFileToSolrFileConverter implements ComplexTypeConverter<File
             fileSolrModel.setFormat(file.getFormat().name());
         }
         if (file.getBioformat() != null) {
-            fileSolrModel.setBioformart(file.getBioformat().name());
+            fileSolrModel.setBioformat(file.getBioformat().name());
         }
         fileSolrModel.setRelease(file.getRelease());
         fileSolrModel.setCreationDate(file.getCreationDate());
