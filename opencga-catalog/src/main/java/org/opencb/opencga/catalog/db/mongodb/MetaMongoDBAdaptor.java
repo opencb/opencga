@@ -165,8 +165,6 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
         Document metadataObject = getMongoDBDocument(metadata, "Metadata");
         metadataObject.put(PRIVATE_ID, MongoDBAdaptorFactory.METADATA_OBJECT_ID);
         Document adminDocument = getMongoDBDocument(admin, "Admin");
-        adminDocument.put("algorithm", "HS256");
-        adminDocument.put("secretKey", "222");
         metadataObject.put("admin", adminDocument);
 
         metaCollection.insert(metadataObject, null);

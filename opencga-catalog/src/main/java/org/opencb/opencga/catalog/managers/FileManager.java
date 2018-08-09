@@ -2506,7 +2506,7 @@ public class FileManager extends AnnotationSetManager<File> {
 
     public FacetedQueryResult facet(Query query, QueryOptions queryOptions, String sessionId) throws IOException, CatalogDBException {
 
-        CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);
+        CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager, null);
         String collection = catalogManager.getConfiguration().getDatabasePrefix() + "_"
                 + CatalogSolrManager.FILE_SOLR_COLLECTION;
 

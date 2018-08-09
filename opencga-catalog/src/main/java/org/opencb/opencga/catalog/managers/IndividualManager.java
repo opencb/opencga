@@ -921,7 +921,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
     public FacetedQueryResult facet(Query query, QueryOptions queryOptions, String sessionId) throws IOException, CatalogDBException {
 
-        CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);
+        CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager, null);
         String collection = catalogManager.getConfiguration().getDatabasePrefix() + "_"
                 + CatalogSolrManager.INDIVIDUAL_CONF_SET;
 

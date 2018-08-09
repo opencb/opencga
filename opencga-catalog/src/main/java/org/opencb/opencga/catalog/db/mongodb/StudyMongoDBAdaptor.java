@@ -256,22 +256,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public Map<Long, String> getAllStudiesIdAndUid() throws CatalogDBException {
-        Map<Long, String> allStudiesIdAndUids = new HashMap<>();
-
-        List studies = nativeGet(new Query(), new QueryOptions()).getResult();
-
-        for (Object study : studies) {
-            Document st = (Document) study;
-            String id = st.getString(PRIVATE_FQN).replace(":", "_");
-            Object object = st.getLong(PRIVATE_UID);
-            long uid = object instanceof Number ? ((Number) object).longValue() : Long.parseLong(object.toString());
-            allStudiesIdAndUids.put(uid, id);
-        }
-        return allStudiesIdAndUids;
-    }
-
-    @Override
     public String getOwnerId(long studyId) throws CatalogDBException {
         Query query = new Query(QueryParams.UID.key(), studyId);
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, PRIVATE_OWNER_ID);

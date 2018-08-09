@@ -72,7 +72,7 @@ public class CatalogSolrManager {
 
     private Logger logger;
 
-    public CatalogSolrManager(CatalogManager catalogManager) throws SolrException, CatalogDBException {
+    public CatalogSolrManager(CatalogManager catalogManager, Map<Long, String> studiesIdMap) throws SolrException, CatalogDBException {
         this.catalogManager = catalogManager;
         SearchConfiguration searchConfiguration = catalogManager.getConfiguration().getCatalog().getSearch();
         this.solrManager = new SolrManager(searchConfiguration.getHost(), searchConfiguration.getMode(), searchConfiguration.getTimeout());
@@ -89,7 +89,9 @@ public class CatalogSolrManager {
             createCatalogSolrCores();
         }
 
-        STUDIES_UID_TO_ID = catalogManager.getStudyManager().getAllStudiesIdAndUid();
+        if (studiesIdMap != null) {
+            STUDIES_UID_TO_ID = studiesIdMap;
+        }
 
         logger = LoggerFactory.getLogger(CatalogSolrManager.class);
     }

@@ -711,7 +711,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
     public FacetedQueryResult facet(Query query, QueryOptions queryOptions, String sessionId) throws IOException, CatalogDBException {
 
-        CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);
+        CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager, null);
         String collection = catalogManager.getConfiguration().getDatabasePrefix() + "_"
                 + CatalogSolrManager.COHORT_SOLR_COLLECTION;
 
