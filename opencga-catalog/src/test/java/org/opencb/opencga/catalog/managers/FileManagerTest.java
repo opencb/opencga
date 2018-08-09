@@ -991,10 +991,15 @@ public class FileManagerTest extends AbstractManagerTest {
                 Arrays.asList(sample1.getId(), sample2.getId())), QueryOptions.empty(), sessionIdUser);
 
         // Fetch the file
-        fileQueryResult = catalogManager.getFileManager().get(studyFqn, "data/test/", QueryOptions.empty(),
+        fileQueryResult = catalogManager.getFileManager().get(studyFqn, "data/test/", new QueryOptions(
+                QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ID.key(), FileDBAdaptor.QueryParams.SAMPLE_UIDS.key())),
                 sessionIdUser);
         assertEquals(1, fileQueryResult.getNumResults());
         assertEquals(2, fileQueryResult.first().getSamples().size());
+        for (Sample sample : fileQueryResult.first().getSamples()) {
+            assertTrue(sample.getUid() > 0);
+            assertTrue(org.apache.commons.lang3.StringUtils.isEmpty(sample.getId()));
+        }
 
         // Update the version of one of the samples
         catalogManager.getSampleManager().update(studyFqn, sample1.getId(), new ObjectMap(),

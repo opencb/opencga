@@ -477,11 +477,13 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
             Variable variable = variableDepthMap.getVariable();
 
             if (variable.getType() == Variable.VariableType.OBJECT) {
-                // We add the new nested variables to the queue
-                for (Variable nestedVariable : variable.getVariableSet()) {
-                    List<String> keys = new ArrayList<>(variableDepthMap.getKeys());
-                    keys.add(variable.getId());
-                    queue.add(new VariableDepthMap(nestedVariable, keys));
+                if (variable.getVariableSet() != null) {
+                    // We add the new nested variables to the queue
+                    for (Variable nestedVariable : variable.getVariableSet()) {
+                        List<String> keys = new ArrayList<>(variableDepthMap.getKeys());
+                        keys.add(variable.getId());
+                        queue.add(new VariableDepthMap(nestedVariable, keys));
+                    }
                 }
             } else {
                 QueryParam.Type type;
