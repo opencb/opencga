@@ -2,6 +2,7 @@ package org.opencb.opencga.server.rest.admin;
 
 import io.swagger.annotations.*;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
@@ -17,6 +18,8 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.List;
+
+import static org.opencb.opencga.catalog.utils.Constants.FLATTENED_ANNOTATIONS;
 
 @Path("/{apiVersion}/admin")
 @Produces(MediaType.APPLICATION_JSON)
@@ -83,15 +86,15 @@ public class AdminWSServer extends OpenCGAWSServer {
     @POST
     @Path("/users/sync")
     @ApiOperation(value = "Synchronise groups of users with LDAP groups", response = Group.class,
-        notes = "Mandatory fields: <b>authOriginId</b>, <b>study</b>, <b>from</b> and <b>to</b><br>"
-                + "<ul>"
-                + "<li><b>authOriginId</b>: Authentication origin id defined in the main Catalog configuration.</li>"
-                + "<li><b>study</b>: Study [[user@]project:]study where the group of users will be synced with the LDAP group.</li>"
-                + "<li><b>from</b>: LDAP group to be synced with a catalog group.</li>"
-                + "<li><b>to</b>: Catalog group that will be synced with the LDAP group.</li>"
-                + "<li><b>force</b>: Boolean to force the synchronisation with already existing Catalog groups that are not yet "
-                +   "synchronised with any other group.</li>"
-                + "</ul>"
+            notes = "Mandatory fields: <b>authOriginId</b>, <b>study</b>, <b>from</b> and <b>to</b><br>"
+                    + "<ul>"
+                    + "<li><b>authOriginId</b>: Authentication origin id defined in the main Catalog configuration.</li>"
+                    + "<li><b>study</b>: Study [[user@]project:]study where the group of users will be synced with the LDAP group.</li>"
+                    + "<li><b>from</b>: LDAP group to be synced with a catalog group.</li>"
+                    + "<li><b>to</b>: Catalog group that will be synced with the LDAP group.</li>"
+                    + "<li><b>force</b>: Boolean to force the synchronisation with already existing Catalog groups that are not yet "
+                    + "synchronised with any other group.</li>"
+                    + "</ul>"
     )
     public Response ldapSync(@ApiParam(value = "JSON containing the parameters", required = true) LDAPSyncParams ldapParams) {
         try {
@@ -139,6 +142,22 @@ public class AdminWSServer extends OpenCGAWSServer {
 
     }
 
+    @POST
+    @Path("/studies/syncSolr")
+    @ApiOperation(value = "Sync Catalog into the Solr")
+    public Response syncSolr(
+            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr) {
+
+        try {
+            // check permissions with sessionId
+            queryOptions.put(FLATTENED_ANNOTATIONS, "true");
+            queryOptions.remove(QueryOptions.LIMIT);
+            return createOkResponse(catalogManager.getStudyManager().indexCatalogIntoSolr(studyStr, query, queryOptions, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
     //    @GET
 //    @Path("/audit/stats")
 //    @ApiOperation(value = "Get some stats from the audit database")
@@ -172,7 +191,7 @@ public class AdminWSServer extends OpenCGAWSServer {
 
     //******************************** DATABASE **********************************//
 
-//    @DELETE
+    //    @DELETE
 //    @Path("/database/clean")
 //    @ApiOperation(value = "Clean database from removed entries", notes = "Completely remove all 'removed' entries from the database")
 //    public Response clean() {

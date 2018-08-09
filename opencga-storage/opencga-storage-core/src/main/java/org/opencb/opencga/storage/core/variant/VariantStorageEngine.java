@@ -21,6 +21,7 @@ import com.google.common.collect.Iterators;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.solr.common.SolrException;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -38,7 +39,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.FacetedQueryResult;
-import org.opencb.opencga.core.SolrException;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngine;
@@ -564,7 +564,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         dbAdaptor.close();
     }
 
-    public void searchIndexSamples(String study, List<String> samples) throws StorageEngineException, IOException, VariantSearchException {
+    public void searchIndexSamples(String study, List<String> samples) throws StorageEngineException, IOException, SolrException {
         VariantDBAdaptor dbAdaptor = getDBAdaptor();
 
         VariantSearchManager variantSearchManager = getVariantSearchManager();
@@ -817,7 +817,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 } else {
                     return getVariantSearchManager().query(specificSearchIndexSamples, query, options);
                 }
-            } catch (IOException | VariantSearchException e) {
+            } catch (IOException | SolrException e) {
                 throw new VariantQueryException("Error querying Solr", e);
             }
         } else if (doQuerySearchManager(query, options)) {

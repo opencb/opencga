@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -27,6 +26,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.Error;
+import org.opencb.commons.datastore.core.result.FacetedQueryResult;
 import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.FileUtils;
@@ -42,6 +42,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.monitor.daemons.IndexDaemon;
+import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -1058,10 +1059,10 @@ public class FileManager extends AnnotationSetManager<File> {
      * - Status -> PENDING_DELETE
      * - Path -> Renamed to {path}__DELETED_{time}
      * - URI -> File or folder name from the file system renamed to {name}__DELETED_{time}
-     *          URI in the database updated accordingly
+     * URI in the database updated accordingly
      *
      * @param studyId study id.
-     * @param file file or folder.
+     * @param file    file or folder.
      * @return a WriteResult object.
      */
     private WriteResult physicalDelete(long studyId, File file, boolean forceDelete) throws CatalogException {
@@ -2338,11 +2339,11 @@ public class FileManager extends AnnotationSetManager<File> {
     /**
      * Method to check if a files matching a query can be deleted. It will only be possible to delete files as long as they are not indexed.
      *
-     * @param query Query object.
+     * @param query          Query object.
      * @param physicalDelete boolean indicating whether the files matching the query should be completely deleted from the file system or
      *                       they should be sent to the trash bin.
-     * @param studyId Study where the query will be applied.
-     * @param userId user for which DELETE permissions will be checked.
+     * @param studyId        Study where the query will be applied.
+     * @param userId         user for which DELETE permissions will be checked.
      * @return the list of files scanned that can be deleted.
      * @throws CatalogException if any of the files cannot be deleted.
      */
@@ -2501,6 +2502,18 @@ public class FileManager extends AnnotationSetManager<File> {
     public DBIterator<File> indexSolr(Query query) throws CatalogException {
         return fileDBAdaptor.iterator(query, null, null);
     }
+
+
+    public FacetedQueryResult facet(Query query, QueryOptions queryOptions, String sessionId) throws IOException, CatalogDBException {
+
+        CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager, null);
+        String collection = catalogManager.getConfiguration().getDatabasePrefix() + "_"
+                + CatalogSolrManager.FILE_SOLR_COLLECTION;
+
+        return catalogSolrManager.facetedQuery(collection, query, queryOptions);
+    }
+
+
     private void updateIndexStatusAfterDeletionOfTransformedFile(long studyId, File file) throws CatalogDBException {
         if (file.getType() == File.Type.FILE && (file.getRelatedFiles() == null || file.getRelatedFiles().isEmpty())) {
             return;
@@ -2698,15 +2711,6 @@ public class FileManager extends AnnotationSetManager<File> {
             // Limit the number of results and only some fields
             QueryOptions queryOptions = new QueryOptions()
                     .append(QueryOptions.LIMIT, 100);
-//                    .append(QueryOptions.INCLUDE, Arrays.asList(
-//                            FileDBAdaptor.QueryParams.ID.key(),
-//                            FileDBAdaptor.QueryParams.NAME.key(),
-//                            FileDBAdaptor.QueryParams.TYPE.key(),
-//                            FileDBAdaptor.QueryParams.PATH.key(),
-//                            FileDBAdaptor.QueryParams.URI.key(),
-//                            FileDBAdaptor.QueryParams.FORMAT.key(),
-//                            FileDBAdaptor.QueryParams.BIOFORMAT.key()
-//                    ));
 
             return fileDBAdaptor.get(query, queryOptions);
         }
@@ -2729,7 +2733,6 @@ public class FileManager extends AnnotationSetManager<File> {
         boolean resync = params.getBoolean("resync", false);
         String description = params.getString("description", "");
         String checksum = params.getString(FileDBAdaptor.QueryParams.CHECKSUM.key(), "");
-
         // Because pathDestiny can be null, we will use catalogPath as the virtual destiny where the files will be located in catalog.
         Path catalogPath = Paths.get(pathDestiny);
 
@@ -2892,7 +2895,6 @@ public class FileManager extends AnnotationSetManager<File> {
                         if (fileDBAdaptor.count(query).first() == 0) {
                             long size = Files.size(filePath);
                             // If the file does not exist, we create it
-
                             String parentPath = getParentPath(destinyPath);
                             long parentFileId = fileDBAdaptor.getId(study.getUid(), parentPath);
                             // We obtain the permissions set in the parent folder and set them to the file or folder being created
@@ -3195,7 +3197,6 @@ public class FileManager extends AnnotationSetManager<File> {
                                     logger.error("Cannot add a value to {} if it is not an array", filterWhere);
                                     continue;
                                 }
-
                                 break;
                             case SET:
                                 if (attributesField == null) {
@@ -3227,7 +3228,6 @@ public class FileManager extends AnnotationSetManager<File> {
                 }
             }
         }
-
     }
 
     private URI getStudyUri(long studyId) throws CatalogException {

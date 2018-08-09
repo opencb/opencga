@@ -24,6 +24,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.*;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
@@ -35,7 +36,6 @@ import org.opencb.commons.datastore.core.result.FacetedQueryResult;
 import org.opencb.commons.datastore.core.result.FacetedQueryResultItem;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.core.SolrException;
 import org.opencb.opencga.core.SolrManager;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
@@ -77,6 +77,7 @@ public class VariantSearchManager {
 
     public enum UseSearchIndex {
         YES, NO, AUTO;
+
         public static UseSearchIndex from(Map<String, Object> options) {
             return options == null || !options.containsKey(USE_SEARCH_INDEX)
                     ? AUTO
@@ -118,6 +119,7 @@ public class VariantSearchManager {
     public void create(String dbName, String configSet) throws SolrException {
         solrManager.create(dbName, configSet);
     }
+
     public void createCore(String coreName, String configSet) throws SolrException {
         solrManager.createCore(coreName, configSet);
     }
@@ -144,7 +146,7 @@ public class VariantSearchManager {
      * @param collection Collection name
      * @param path       Path to the file to load
      * @throws IOException            IOException
-     * @throws SolrException SolrServerException
+     * @throws SolrException          SolrServerException
      * @throws StorageEngineException SolrServerException
      */
     public void load(String collection, Path path) throws IOException, SolrException, StorageEngineException {
@@ -170,13 +172,13 @@ public class VariantSearchManager {
      * @param collection        Collection name
      * @param variantDBIterator Iterator to retrieve the variants to load
      * @param progressLogger    Progress logger
-     * @throws IOException            IOException
+     * @throws IOException   IOException
      * @throws SolrException SolrException
      */
     public void load(String collection, VariantDBIterator variantDBIterator, ProgressLogger progressLogger)
             throws IOException, SolrException {
         if (variantDBIterator == null) {
-            throw new SolrException("VariantDBIterator parameter is null");
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "VariantDBIterator parameter is null");
         }
 
         int count = 0;
@@ -208,7 +210,7 @@ public class VariantSearchManager {
      * @param query        Query
      * @param queryOptions Query options
      * @return List of Variant objects
-     * @throws IOException            IOException
+     * @throws IOException   IOException
      * @throws SolrException SolrException
      */
     public VariantQueryResult<Variant> query(String collection, Query query, QueryOptions queryOptions)
@@ -228,7 +230,7 @@ public class VariantSearchManager {
             return new VariantQueryResult<>("", dbTime,
                     results.size(), solrResponse.getResults().getNumFound(), "", "", results, null, SEARCH_ENGINE_ID);
         } catch (SolrServerException e) {
-            throw new SolrException("Error fetching from Solr", e);
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }
     }
 
@@ -240,7 +242,7 @@ public class VariantSearchManager {
      * @param query        Query
      * @param queryOptions Query options
      * @return List of VariantSearchModel objects
-     * @throws IOException            IOException
+     * @throws IOException   IOException
      * @throws SolrException SolrException
      */
     public VariantQueryResult<VariantSearchModel> nativeQuery(String collection, Query query, QueryOptions queryOptions)
@@ -255,7 +257,7 @@ public class VariantSearchManager {
             return new VariantQueryResult<>("", dbTime,
                     solrResponseBeans.size(), solrResponse.getResults().getNumFound(), "", "", solrResponseBeans, null, SEARCH_ENGINE_ID);
         } catch (SolrServerException e) {
-            throw new SolrException("Error fetching from Solr", e);
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error fetching from Solr", e);
         }
     }
 
@@ -265,7 +267,7 @@ public class VariantSearchManager {
             SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
             return new VariantSolrIterator(solrManager.getSolrClient(), collection, solrQuery);
         } catch (SolrServerException e) {
-            throw new SolrException(e.getMessage(), e);
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
         }
     }
 
@@ -277,7 +279,7 @@ public class VariantSearchManager {
      * @param query        Query
      * @param queryOptions Query options
      * @return Solr VariantSearch iterator
-     * @throws IOException            IOException
+     * @throws IOException   IOException
      * @throws SolrException SolrException
      */
     public VariantSearchSolrIterator nativeIterator(String collection, Query query, QueryOptions queryOptions)
@@ -286,7 +288,7 @@ public class VariantSearchManager {
             SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
             return new VariantSearchSolrIterator(solrManager.getSolrClient(), collection, solrQuery);
         } catch (SolrServerException e) {
-            throw new SolrException(e.getMessage(), e);
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
         }
     }
 
@@ -298,7 +300,7 @@ public class VariantSearchManager {
      * @param query        Query
      * @param queryOptions Query options (contains the facet and facetRange options)
      * @return List of Variant objects
-     * @throws IOException            IOException
+     * @throws IOException   IOException
      * @throws SolrException SolrException
      */
     public FacetedQueryResult facetedQuery(String collection, Query query, QueryOptions queryOptions)
@@ -310,7 +312,7 @@ public class VariantSearchManager {
             FacetedQueryResultItem item = toFacetedQueryResultItem(queryOptions, response);
             return new FacetedQueryResult("", (int) stopWatch.getTime(), 1, 1, "Faceted data from Solr", "", item);
         } catch (SolrServerException e) {
-            throw new SolrException(e.getMessage(), e);
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
         }
     }
 
@@ -321,7 +323,7 @@ public class VariantSearchManager {
      * Insert a list of variants into Solr.
      *
      * @param variants List of variants to insert
-     * @throws IOException            IOException
+     * @throws IOException   IOException
      * @throws SolrException SolrException
      */
     private void insert(String collection, List<Variant> variants) throws IOException, SolrException {
@@ -336,7 +338,7 @@ public class VariantSearchManager {
                         solrManager.getSolrClient().commit(collection);
                     }
                 } catch (SolrServerException e) {
-                    throw new SolrException(e.getMessage(), e);
+                    throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
                 }
             }
         }

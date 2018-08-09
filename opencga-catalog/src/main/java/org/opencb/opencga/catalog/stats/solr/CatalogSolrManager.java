@@ -16,27 +16,34 @@
 
 package org.opencb.opencga.catalog.stats.solr;
 
+import org.apache.commons.lang3.time.StopWatch;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.common.SolrException;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.result.FacetedQueryResult;
+import org.opencb.commons.datastore.core.result.FacetedQueryResultItem;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.stats.solr.converters.CatalogFileToSolrFileConverter;
-import org.opencb.opencga.catalog.stats.solr.converters.CatalogSampleToSolrSampleConverter;
-import org.opencb.opencga.core.SolrException;
+import org.opencb.opencga.catalog.stats.solr.converters.SolrFacetUtil;
 import org.opencb.opencga.core.SolrManager;
 import org.opencb.opencga.core.config.SearchConfiguration;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by wasim on 27/06/18.
@@ -45,37 +52,45 @@ public class CatalogSolrManager {
 
     private CatalogManager catalogManager;
     private SolrManager solrManager;
-//    private StorageConfiguration storageConfiguration;
-    private CatalogSampleToSolrSampleConverter catalogSampleToSolrSampleConverter;
     private int insertBatchSize;
+    private String DATABASE_PREFIX = "opencga";
 
     public static final int DEFAULT_INSERT_BATCH_SIZE = 10000;
-
-    public static final String COHORT_SOLR_COLLECTION = "Catalog_Cohort_Collection";
-    public static final String FILE_SOLR_COLLECTION = "Catalog_FILE_Collection";
-    public static final String FAMILY_SOLR_COLLECTION = "Catalog_Family_Collection";
-    public static final String INDIVIDUAL_SOLR_COLLECTION = "Catalog_Individual_Collection";
-    public static final String SAMPLES_SOLR_COLLECTION = "Catalog_Sample_Collection";
+    public static final String COHORT_SOLR_COLLECTION = "Catalog_Cohort";
+    public static final String FILE_SOLR_COLLECTION = "Catalog_File";
+    public static final String FAMILY_SOLR_COLLECTION = "Catalog_Family";
+    public static final String INDIVIDUAL_SOLR_COLLECTION = "Catalog_Individual";
+    public static final String SAMPLES_SOLR_COLLECTION = "Catalog_Sample";
 
     public static final String COHORT_CONF_SET = "OpenCGACatalogCohortConfSet";
     public static final String FILE_CONF_SET = "OpenCGACatalogFileConfSet";
-    public static final String SAMPLE_CONF_SET = "OpenCGACatalogSampleConfSet";
     public static final String FAMILY_CONF_SET = "OpenCGACatalogFamilyConfSet";
     public static final String INDIVIDUAL_CONF_SET = "OpenCGACatalogIndividualConfSet";
+    public static final String SAMPLE_CONF_SET = "OpenCGACatalogSampleConfSet";
+    public static final Map<String, String> CONFIGS_COLLECTION = new HashMap<>();
+    private Map<Long, String> STUDIES_UID_TO_ID = new HashMap<>();
 
     private Logger logger;
 
-    public CatalogSolrManager(CatalogManager catalogManager) throws SolrException {
+    public CatalogSolrManager(CatalogManager catalogManager, Map<Long, String> studiesIdMap) throws SolrException, CatalogDBException {
         this.catalogManager = catalogManager;
-//        this.storageConfiguration = storageConfiguration;
         SearchConfiguration searchConfiguration = catalogManager.getConfiguration().getCatalog().getSearch();
         this.solrManager = new SolrManager(searchConfiguration.getHost(), searchConfiguration.getMode(), searchConfiguration.getTimeout());
-        this.catalogSampleToSolrSampleConverter = new CatalogSampleToSolrSampleConverter();
-        insertBatchSize = DEFAULT_INSERT_BATCH_SIZE;
+        insertBatchSize = searchConfiguration.getInsertBatchSize() > 0
+                ? searchConfiguration.getInsertBatchSize() : DEFAULT_INSERT_BATCH_SIZE;
+
+        DATABASE_PREFIX = catalogManager.getConfiguration().getDatabasePrefix() + "_";
+
+        populateConfigCollectionMap();
+
         if (searchConfiguration.getMode().equals("cloud")) {
             createCatalogSolrCollections();
         } else {
             createCatalogSolrCores();
+        }
+
+        if (studiesIdMap != null) {
+            STUDIES_UID_TO_ID = studiesIdMap;
         }
 
         logger = LoggerFactory.getLogger(CatalogSolrManager.class);
@@ -110,159 +125,118 @@ public class CatalogSolrManager {
     }
 
     public void createCatalogSolrCollections() throws SolrException {
-        if (!existsCollection(COHORT_SOLR_COLLECTION)) {
-            createCollection(COHORT_SOLR_COLLECTION, COHORT_CONF_SET);
-        }
-        if (!existsCollection(FAMILY_SOLR_COLLECTION)) {
-            createCollection(FAMILY_SOLR_COLLECTION, FAMILY_CONF_SET);
-        }
-        if (!existsCollection(FILE_SOLR_COLLECTION)) {
-            createCollection(FILE_SOLR_COLLECTION, FILE_CONF_SET);
-        }
-        if (!existsCollection(INDIVIDUAL_SOLR_COLLECTION)) {
-            createCollection(INDIVIDUAL_SOLR_COLLECTION, INDIVIDUAL_CONF_SET);
-        }
-        if (!existsCollection(SAMPLES_SOLR_COLLECTION)) {
-            createCollection(SAMPLES_SOLR_COLLECTION, SAMPLE_CONF_SET);
+
+        for (String key : CONFIGS_COLLECTION.keySet()) {
+            if (!existsCollection(key)) {
+                createCollection(key, CONFIGS_COLLECTION.get(key));
+            }
         }
     }
 
     public void createCatalogSolrCores() throws SolrException {
-        if (!existsCore(COHORT_SOLR_COLLECTION)) {
-            createCore(COHORT_SOLR_COLLECTION, COHORT_CONF_SET);
-        }
-        if (!existsCore(FAMILY_SOLR_COLLECTION)) {
-            createCore(FAMILY_SOLR_COLLECTION, FAMILY_CONF_SET);
-        }
-        if (!existsCore(FILE_SOLR_COLLECTION)) {
-            createCore(FILE_SOLR_COLLECTION, FILE_CONF_SET);
-        }
-        if (!existsCore(INDIVIDUAL_SOLR_COLLECTION)) {
-            createCore(INDIVIDUAL_SOLR_COLLECTION, INDIVIDUAL_CONF_SET);
-        }
-        if (!existsCore(SAMPLES_SOLR_COLLECTION)) {
-            createCore(SAMPLES_SOLR_COLLECTION, SAMPLE_CONF_SET);
+
+        for (String key : CONFIGS_COLLECTION.keySet()) {
+            if (!existsCore(key)) {
+                createCore(key, CONFIGS_COLLECTION.get(key));
+            }
         }
     }
 
-    public void indexCatalogSamples(Query query) throws CatalogException, SolrServerException, IOException, SolrException {
-        DBIterator<Sample> iterator = catalogManager.getSampleManager().indexSolr(query);
+    public <T> void insertCatalogCollection(DBIterator<T> iterator, ComplexTypeConverter converter,
+                                            String collectionName) throws CatalogException, IOException, SolrException {
 
         int count = 0;
-        List<Sample> sampleList = new ArrayList<>(insertBatchSize);
+        List<T> records = new ArrayList<>(insertBatchSize);
         while (iterator.hasNext()) {
-            Sample sample = iterator.next();
-            sampleList.add(sample);
+            T record = iterator.next();
+            records.add(record);
             count++;
             if (count % insertBatchSize == 0) {
-                indexSamples(sampleList);
-                sampleList.clear();
+                insertCatalogCollection(records, converter, collectionName);
+                records.clear();
             }
         }
 
-        if (CollectionUtils.isNotEmpty(sampleList)) {
-            indexSamples(sampleList);
+        if (CollectionUtils.isNotEmpty(records)) {
+            insertCatalogCollection(records, converter, collectionName);
         }
     }
 
-
-    public void indexCatalogFiles(Query query) throws CatalogException, SolrServerException, IOException, SolrException {
-
-        DBIterator<File> iterator = catalogManager.getFileManager().indexSolr(query);
-
-        int count = 0;
-        List<File> fileList = new ArrayList<>(insertBatchSize);
-        while (iterator.hasNext()) {
-            File file = iterator.next();
-            fileList.add(file);
-            count++;
-            if (count % insertBatchSize == 0) {
-                indexFiles(fileList);
-                fileList.clear();
-            }
-        }
-
-        if (CollectionUtils.isNotEmpty(fileList)) {
-            indexFiles(fileList);
-        }
-    }
-
- /*   public void indexCatalogCohorts(Query query) throws CatalogException, SolrServerException, IOException, SolrException {
-
-        DBIterator<Cohort> iterator = catalogManager.getCohortManager().indexSolr(query);
-
-        int count = 0;
-        List<Cohort> cohorts = new ArrayList<>(insertBatchSize);
-        while (iterator.hasNext()) {
-            Cohort cohort = iterator.next();
-            cohorts.add(cohort);
-            count++;
-            if (count % insertBatchSize == 0) {
-                indexCohorts(cohorts);
-                cohorts.clear();
-            }
-        }
-
-        if (CollectionUtils.isNotEmpty(cohorts)) {
-            indexCohorts(cohorts);
-        }
-    }*/
-
-    public void indexSamples(List<Sample> samples) throws IOException, SolrServerException, SolrException {
-        CatalogSampleToSolrSampleConverter sampleToSolrSampleConverter = new CatalogSampleToSolrSampleConverter();
-        List<SampleSolrModel> sampleSolrModels = new ArrayList<>();
-
-        for (Sample sample : samples) {
-            sampleSolrModels.add(sampleToSolrSampleConverter.convertToStorageType(sample));
-        }
-
-        UpdateResponse updateResponse;
-        try {
-            updateResponse = solrManager.getSolrClient().addBeans(SAMPLES_SOLR_COLLECTION, sampleSolrModels);
-            if (updateResponse.getStatus() == 0) {
-                solrManager.getSolrClient().commit(SAMPLES_SOLR_COLLECTION);
-            }
-        } catch (SolrServerException e) {
-            throw new SolrException(e.getMessage(), e);
-        }
-    }
-
-    public void indexFiles(List<File> files) throws IOException, SolrServerException, SolrException {
-        CatalogFileToSolrFileConverter fileToSolrFileConverter = new CatalogFileToSolrFileConverter();
-        List<FileSolrModel> fileSolrModels = new ArrayList<>();
-
-        for (File file : files) {
-            fileSolrModels.add(fileToSolrFileConverter.convertToStorageType(file));
-        }
-
-        UpdateResponse updateResponse;
-        try {
-            updateResponse = solrManager.getSolrClient().addBeans(FILE_SOLR_COLLECTION, fileSolrModels);
-            if (updateResponse.getStatus() == 0) {
-                solrManager.getSolrClient().commit(FILE_SOLR_COLLECTION);
-            }
-        } catch (SolrServerException e) {
-            throw new SolrException(e.getMessage(), e);
-        }
-    }
-
-    public <T, M> void indexCatalogCollection(List<T> records, ComplexTypeConverter converter, M solrModelType,
-                                              String collectionName) throws IOException, SolrServerException, SolrException {
+    public <T, M> void insertCatalogCollection(List<T> records, ComplexTypeConverter converter,
+                                               String collectionName) throws IOException, SolrException {
         List<M> solrModels = new ArrayList<>();
 
         for (T record : records) {
-            solrModels.add((M) converter.convertToStorageType(record));
+            M result = (M) converter.convertToStorageType(record);
+            solrModels.add(setStudyId(record, result));
         }
 
         UpdateResponse updateResponse;
         try {
-            updateResponse = solrManager.getSolrClient().addBeans(collectionName, solrModels);
+            updateResponse = solrManager.getSolrClient().addBeans(DATABASE_PREFIX + collectionName, solrModels);
             if (updateResponse.getStatus() == 0) {
-                solrManager.getSolrClient().commit(collectionName);
+                solrManager.getSolrClient().commit(DATABASE_PREFIX + collectionName);
             }
         } catch (SolrServerException e) {
-            throw new SolrException(e.getMessage(), e);
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
         }
+    }
+
+    /**
+     * Return faceted data from a Solr core/collection
+     * according a given query.
+     *
+     * @param collection   Collection name
+     * @param query        Query
+     * @param queryOptions Query options (contains the facet and facetRange options)
+     * @return List of Variant objects
+     * @throws IOException   IOException
+     * @throws SolrException SolrException
+     */
+    public FacetedQueryResult facetedQuery(String collection, Query query, QueryOptions queryOptions)
+            throws IOException, SolrException {
+        StopWatch stopWatch = StopWatch.createStarted();
+        try {
+            CatalogSolrQueryParser catalogSolrQueryParser = new CatalogSolrQueryParser();
+            SolrQuery solrQuery = catalogSolrQueryParser.parse(query, queryOptions);
+            QueryResponse response = solrManager.getSolrClient().query(collection, solrQuery);
+            FacetedQueryResultItem item = SolrFacetUtil.toFacetedQueryResultItem(queryOptions, response);
+            return new FacetedQueryResult("", (int) stopWatch.getTime(), 1, 1, "Faceted data from Solr", "", item);
+        } catch (SolrServerException e) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
+        }
+    }
+
+    //***************** PRIVATE ****************/
+
+    private void populateConfigCollectionMap() {
+        CONFIGS_COLLECTION.put(DATABASE_PREFIX + COHORT_SOLR_COLLECTION, COHORT_CONF_SET);
+        CONFIGS_COLLECTION.put(DATABASE_PREFIX + FILE_SOLR_COLLECTION, FILE_CONF_SET);
+        CONFIGS_COLLECTION.put(DATABASE_PREFIX + FAMILY_SOLR_COLLECTION, FAMILY_CONF_SET);
+        CONFIGS_COLLECTION.put(DATABASE_PREFIX + INDIVIDUAL_SOLR_COLLECTION, INDIVIDUAL_CONF_SET);
+        CONFIGS_COLLECTION.put(DATABASE_PREFIX + SAMPLES_SOLR_COLLECTION, SAMPLE_CONF_SET);
+    }
+
+    private <T, M> M setStudyId(T record, M result) {
+
+        String studyId;
+        if (record instanceof Cohort) {
+            studyId = STUDIES_UID_TO_ID.get(((Cohort) record).getStudyUid());
+            return (M) ((CohortSolrModel) result).setStudyId(studyId);
+        } else if (record instanceof File) {
+            studyId = STUDIES_UID_TO_ID.get(((File) record).getStudyUid());
+            return (M) ((FileSolrModel) result).setStudyId(studyId);
+        } else if (record instanceof Sample) {
+            studyId = STUDIES_UID_TO_ID.get(((Sample) record).getStudyUid());
+            return (M) ((SampleSolrModel) result).setStudyId(studyId);
+        } else if (record instanceof Individual) {
+            studyId = STUDIES_UID_TO_ID.get(((Individual) record).getStudyUid());
+            return (M) ((IndividualSolrModel) result).setStudyId(studyId);
+        } else if (record instanceof Family) {
+            studyId = STUDIES_UID_TO_ID.get(((Family) record).getStudyUid());
+            return (M) ((FamilySolrModel) result).setStudyId(studyId);
+        }
+        return result;
     }
 }
 

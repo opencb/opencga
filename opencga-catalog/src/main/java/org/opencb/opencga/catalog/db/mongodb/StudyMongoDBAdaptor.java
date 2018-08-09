@@ -713,7 +713,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         QueryResult<UpdateResult> queryResult = studyCollection.update(bsonQuery, update, null);
         if (queryResult.first().getModifiedCount() != 1) {
             throw new CatalogDBException("Remove field from Variable Set. Could not remove the field " + name
-                    + " from the variableSet id " +  variableSetId);
+                    + " from the variableSet id " + variableSetId);
         }
 
         // Remove all the annotations from that field
@@ -737,8 +737,9 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     /**
      * Checks if the variable given is present in the variableSet.
+     *
      * @param variableSet Variable set.
-     * @param variableId VariableId that will be checked.
+     * @param variableId  VariableId that will be checked.
      * @throws CatalogDBException when the variableId is not present in the variableSet.
      */
     private void checkVariableInVariableSet(VariableSet variableSet, String variableId) throws CatalogDBException {
@@ -750,8 +751,9 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     /**
      * Checks if the variable given is not present in the variableSet.
+     *
      * @param variableSet Variable set.
-     * @param variableId VariableId that will be checked.
+     * @param variableId  VariableId that will be checked.
      * @throws CatalogDBException when the variableId is present in the variableSet.
      */
     private void checkVariableNotInVariableSet(VariableSet variableSet, String variableId) throws CatalogDBException {
@@ -1646,8 +1648,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                                 && query.getString(QueryParams.ID.key()).equals(query.getString(QueryParams.ALIAS.key()))) {
                             if (!idOrAliasFlag) {
                                 List<Document> orList = Arrays.asList(
-                                    new Document(QueryParams.ID.key(), query.getString(QueryParams.ID.key())),
-                                    new Document(QueryParams.ALIAS.key(), query.getString(QueryParams.ALIAS.key()))
+                                        new Document(QueryParams.ID.key(), query.getString(QueryParams.ID.key())),
+                                        new Document(QueryParams.ALIAS.key(), query.getString(QueryParams.ALIAS.key()))
                                 );
                                 andBsonList.add(new Document("$or", orList));
                                 idOrAliasFlag = true;

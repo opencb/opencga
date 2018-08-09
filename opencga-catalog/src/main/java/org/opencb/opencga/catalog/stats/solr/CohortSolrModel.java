@@ -2,9 +2,7 @@ package org.opencb.opencga.catalog.stats.solr;
 
 import org.apache.solr.client.solrj.beans.Field;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -16,6 +14,9 @@ public class CohortSolrModel {
     private long uid;
 
     @Field
+    private String studyId;
+
+    @Field
     private String type;
 
     @Field
@@ -25,24 +26,15 @@ public class CohortSolrModel {
     private String status;
 
     @Field
-    private String familyUuid;
-
-    @Field
-    private List<String> familyMembersUuid;
-
-    @Field
     private int release;
 
     @Field
-    private List<String> samplesUuid;
-//    private int numSmples;
+    private int samples;
 
     @Field("annotations__*")
     private Map<String, Object> annotations;
 
     public CohortSolrModel() {
-        this.samplesUuid = new ArrayList<>();
-        this.familyMembersUuid = new ArrayList<>();
         this.annotations = new HashMap<>();
     }
 
@@ -50,13 +42,12 @@ public class CohortSolrModel {
     public String toString() {
         final StringBuilder sb = new StringBuilder("CohortSolrModel{");
         sb.append("uid=").append(uid);
+        sb.append(", studyId='").append(studyId).append('\'');
         sb.append(", type='").append(type).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", status='").append(status).append('\'');
-        sb.append(", familyUuid='").append(familyUuid).append('\'');
-        sb.append(", familyMembersUuid=").append(familyMembersUuid);
         sb.append(", release=").append(release);
-        sb.append(", samplesUuid=").append(samplesUuid);
+        sb.append(", samples=").append(samples);
         sb.append(", annotations=").append(annotations);
         sb.append('}');
         return sb.toString();
@@ -68,6 +59,15 @@ public class CohortSolrModel {
 
     public CohortSolrModel setUid(long uid) {
         this.uid = uid;
+        return this;
+    }
+
+    public String getStudyId() {
+        return studyId;
+    }
+
+    public CohortSolrModel setStudyId(String studyId) {
+        this.studyId = studyId;
         return this;
     }
 
@@ -98,24 +98,6 @@ public class CohortSolrModel {
         return this;
     }
 
-    public String getFamilyUuid() {
-        return familyUuid;
-    }
-
-    public CohortSolrModel setFamilyUuid(String familyUuid) {
-        this.familyUuid = familyUuid;
-        return this;
-    }
-
-    public List<String> getFamilyMembersUuid() {
-        return familyMembersUuid;
-    }
-
-    public CohortSolrModel setFamilyMembersUuid(List<String> familyMembersUuid) {
-        this.familyMembersUuid = familyMembersUuid;
-        return this;
-    }
-
     public int getRelease() {
         return release;
     }
@@ -125,12 +107,12 @@ public class CohortSolrModel {
         return this;
     }
 
-    public List<String> getSamplesUuid() {
-        return samplesUuid;
+    public int getSamples() {
+        return samples;
     }
 
-    public CohortSolrModel setSamplesUuid(List<String> samplesUuid) {
-        this.samplesUuid = samplesUuid;
+    public CohortSolrModel setSamples(int samples) {
+        this.samples = samples;
         return this;
     }
 
@@ -142,5 +124,4 @@ public class CohortSolrModel {
         this.annotations = annotations;
         return this;
     }
-
 }

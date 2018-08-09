@@ -27,6 +27,7 @@ import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.vcf.VCFHeader;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.solr.common.SolrException;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.variant.vcf4.VcfUtils;
 import org.opencb.biodata.models.variant.Variant;
@@ -306,7 +307,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         } else {
             try {
                 variantStorageEngine.searchIndex();
-            } catch (VariantSearchException e) {
+            } catch (SolrException e) {
                 e.printStackTrace();
             }
         }

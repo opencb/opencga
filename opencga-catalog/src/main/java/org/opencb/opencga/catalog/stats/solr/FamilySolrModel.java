@@ -16,6 +16,9 @@ public class FamilySolrModel {
     private long uid;
 
     @Field
+    private String studyId;
+
+    @Field
     private String creationDate;
 
     @Field
@@ -25,7 +28,7 @@ public class FamilySolrModel {
     private List<String> phenotypes;
 
     @Field
-    private List<String> familyMembersUuid;
+    private int familyMembers;
 
     @Field
     private int release;
@@ -33,23 +36,24 @@ public class FamilySolrModel {
     @Field
     private int version;
 
-    @Field("annotations_*")
+    @Field("annotations__*")
     private Map<String, Object> annotations;
 
     public FamilySolrModel() {
         this.annotations = new HashMap<>();
         this.phenotypes = new ArrayList<>();
-        this.familyMembersUuid = new ArrayList<>();
     }
+
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("FamilySolrModel{");
         sb.append("uid=").append(uid);
+        sb.append(", studyId='").append(studyId).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", status='").append(status).append('\'');
         sb.append(", phenotypes=").append(phenotypes);
-        sb.append(", familyMembersUuid=").append(familyMembersUuid);
+        sb.append(", familyMembers=").append(familyMembers);
         sb.append(", release=").append(release);
         sb.append(", version=").append(version);
         sb.append(", annotations=").append(annotations);
@@ -63,6 +67,15 @@ public class FamilySolrModel {
 
     public FamilySolrModel setUid(long uid) {
         this.uid = uid;
+        return this;
+    }
+
+    public String getStudyId() {
+        return studyId;
+    }
+
+    public FamilySolrModel setStudyId(String studyId) {
+        this.studyId = studyId;
         return this;
     }
 
@@ -93,12 +106,12 @@ public class FamilySolrModel {
         return this;
     }
 
-    public List<String> getFamilyMembersUuid() {
-        return familyMembersUuid;
+    public int getFamilyMembers() {
+        return familyMembers;
     }
 
-    public FamilySolrModel setFamilyMembersUuid(List<String> familyMembersUuid) {
-        this.familyMembersUuid = familyMembersUuid;
+    public FamilySolrModel setFamilyMembers(int familyMembers) {
+        this.familyMembers = familyMembers;
         return this;
     }
 

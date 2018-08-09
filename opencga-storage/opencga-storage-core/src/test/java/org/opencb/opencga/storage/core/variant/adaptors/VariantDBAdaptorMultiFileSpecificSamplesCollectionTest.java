@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.core.variant.adaptors;
 
+import org.apache.solr.common.SolrException;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Assume;
@@ -64,7 +65,7 @@ public abstract class VariantDBAdaptorMultiFileSpecificSamplesCollectionTest ext
             }
 
             return variantStorageEngine.getVariantSearchManager().query(collection, query, options);
-        } catch (StorageEngineException | VariantSearchException | IOException e) {
+        } catch (StorageEngineException | SolrException | IOException e) {
             e.printStackTrace();
             Assert.fail(e.getMessage());
         }

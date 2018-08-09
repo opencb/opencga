@@ -16,6 +16,9 @@ public class FileSolrModel {
     private long uid;
 
     @Field
+    private String studyId;
+
+    @Field
     private String name;
 
     @Field
@@ -49,16 +52,15 @@ public class FileSolrModel {
     private String experiment;
 
     @Field
-    private List<String> samplesUuid;
+    private int samples;
 
     @Field
     private List<Long> relatedFiles;
 
-    @Field("annotations_*")
+    @Field("annotations__*")
     private Map<String, Object> annotations;
 
     public FileSolrModel() {
-        this.samplesUuid = new ArrayList<>();
         this.relatedFiles = new ArrayList<>();
         this.annotations = new HashMap<>();
     }
@@ -67,6 +69,7 @@ public class FileSolrModel {
     public String toString() {
         final StringBuilder sb = new StringBuilder("FileSolrModel{");
         sb.append("uid=").append(uid);
+        sb.append(", studyId='").append(studyId).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", type='").append(type).append('\'');
         sb.append(", format='").append(format).append('\'');
@@ -78,7 +81,7 @@ public class FileSolrModel {
         sb.append(", size=").append(size);
         sb.append(", software='").append(software).append('\'');
         sb.append(", experiment='").append(experiment).append('\'');
-        sb.append(", samplesUuid=").append(samplesUuid);
+        sb.append(", samples=").append(samples);
         sb.append(", relatedFiles=").append(relatedFiles);
         sb.append(", annotations=").append(annotations);
         sb.append('}');
@@ -91,6 +94,15 @@ public class FileSolrModel {
 
     public FileSolrModel setUid(long uid) {
         this.uid = uid;
+        return this;
+    }
+
+    public String getStudyId() {
+        return studyId;
+    }
+
+    public FileSolrModel setStudyId(String studyId) {
+        this.studyId = studyId;
         return this;
     }
 
@@ -193,12 +205,12 @@ public class FileSolrModel {
         return this;
     }
 
-    public List<String> getSamplesUuid() {
-        return samplesUuid;
+    public int getSamples() {
+        return samples;
     }
 
-    public FileSolrModel setSamplesUuid(List<String> samplesUuid) {
-        this.samplesUuid = samplesUuid;
+    public FileSolrModel setSamples(int samples) {
+        this.samples = samples;
         return this;
     }
 
@@ -220,3 +232,5 @@ public class FileSolrModel {
         return this;
     }
 }
+
+
