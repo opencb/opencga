@@ -56,11 +56,11 @@ public class CatalogSolrManager {
     private String DATABASE_PREFIX = "opencga";
 
     public static final int DEFAULT_INSERT_BATCH_SIZE = 10000;
-    public static final String COHORT_SOLR_COLLECTION = "Catalog_Cohort_Collection";
-    public static final String FILE_SOLR_COLLECTION = "Catalog_File_Collection";
-    public static final String FAMILY_SOLR_COLLECTION = "Catalog_Family_Collection";
-    public static final String INDIVIDUAL_SOLR_COLLECTION = "Catalog_Individual_Collection";
-    public static final String SAMPLES_SOLR_COLLECTION = "Catalog_Sample_Collection";
+    public static final String COHORT_SOLR_COLLECTION = "Catalog_Cohort";
+    public static final String FILE_SOLR_COLLECTION = "Catalog_File";
+    public static final String FAMILY_SOLR_COLLECTION = "Catalog_Family";
+    public static final String INDIVIDUAL_SOLR_COLLECTION = "Catalog_Individual";
+    public static final String SAMPLES_SOLR_COLLECTION = "Catalog_Sample";
 
     public static final String COHORT_CONF_SET = "OpenCGACatalogCohortConfSet";
     public static final String FILE_CONF_SET = "OpenCGACatalogFileConfSet";

@@ -540,8 +540,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     public QueryResult<Individual> updateAnnotations(String studyStr, String individualStr, String annotationSetId,
-                                                 Map<String, Object> annotations, ParamUtils.CompleteUpdateAction action,
-                                                 QueryOptions options, String token) throws CatalogException {
+                                                     Map<String, Object> annotations, ParamUtils.CompleteUpdateAction action,
+                                                     QueryOptions options, String token) throws CatalogException {
         if (annotations == null || annotations.isEmpty()) {
             return new QueryResult<>(individualStr, -1, -1, -1, "Nothing to do: The map of annotations is empty", "",
                     Collections.emptyList());
@@ -923,7 +923,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
         CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager, null);
         String collection = catalogManager.getConfiguration().getDatabasePrefix() + "_"
-                + CatalogSolrManager.INDIVIDUAL_CONF_SET;
+                + CatalogSolrManager.INDIVIDUAL_SOLR_COLLECTION;
 
         return catalogSolrManager.facetedQuery(collection, query, queryOptions);
     }
