@@ -41,6 +41,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
@@ -110,6 +111,10 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         long newFileId = getNewId();
         file.setUid(newFileId);
         file.setStudyUid(studyId);
+        if (StringUtils.isEmpty(file.getUuid())) {
+            file.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
+        }
+
         Document fileDocument = fileConverter.convertToStorageType(file);
         if (StringUtils.isNotEmpty(file.getCreationDate())) {
             fileDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(file.getCreationDate()));

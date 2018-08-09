@@ -37,6 +37,7 @@ import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
@@ -100,6 +101,9 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         long jobId = getNewId();
         job.setUid(jobId);
         job.setStudyUid(studyId);
+        if (StringUtils.isEmpty(job.getUuid())) {
+            job.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.JOB));
+        }
 
         Document jobObject = jobConverter.convertToStorageType(job);
         if (StringUtils.isNotEmpty(job.getCreationDate())) {

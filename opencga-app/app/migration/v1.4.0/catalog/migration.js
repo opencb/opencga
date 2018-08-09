@@ -479,6 +479,104 @@ print("");
 // Update metadata version
 db.metadata.update({}, {"$set": {"version": "1.4.0"}});
 
+// Create all the indexes
+db.user.createIndex({"id": 1}, {"background": true});
+db.user.createIndex({"projects.uid": 1}, {"background": true});
+db.user.createIndex({"projects.uuid": 1}, {"background": true});
+db.user.createIndex({"projects.id": 1, "uid": 1}, {"background": true});
+
+db.study.createIndex({"uid": 1}, {"background": true});
+db.study.createIndex({"uuid": 1}, {"background": true});
+db.study.createIndex({"id": 1, "_project.uid": 1}, {"unique": true, "background": true});
+db.study.createIndex({"status.name": 1}, {"background": true});
+db.study.createIndex({"_acl": 1}, {"background": true});
+db.study.createIndex({"_project.uid": 1}, {"background": true});
+
+db.job.createIndex({"uuid": 1}, {"background": true});
+db.job.createIndex({"uid": 1}, {"background": true});
+db.job.createIndex({"id": 1, "studyUid": 1}, {"unique": true, "background": true});
+db.job.createIndex({"toolId": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.job.createIndex({"status.name": 1, "studyUid": 1}, {"background": true});
+db.job.createIndex({"input.uid": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.job.createIndex({"output.uid": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.job.createIndex({"tags": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.job.createIndex({"_acl": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+
+db.file.createIndex({"uuid": 1}, {"background": true});
+db.file.createIndex({"uid": 1}, {"background": true});
+db.file.createIndex({"id": 1, "studyUid": 1}, {"unique": true, "background": true});
+db.file.createIndex({"path": 1, "studyUid": 1}, {"unique": true, "background": true});
+db.file.createIndex({"name": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.file.createIndex({"type": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.file.createIndex({"format": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.file.createIndex({"bioformat": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.file.createIndex({"uri": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.file.createIndex({"tags": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.file.createIndex({"status.name": 1, "studyUid": 1}, {"background": true});
+db.file.createIndex({"samples.uid": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.file.createIndex({"job.uid": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.file.createIndex({"_acl": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.file.createIndex({"studyUid": 1}, {"background": true});
+db.file.createIndex({"customAnnotationSets.as": 1}, {"background": true});
+db.file.createIndex({"customAnnotationSets.vs": 1}, {"background": true});
+db.file.createIndex({"customAnnotationSets.id": 1, "customAnnotationSets.value": 1}, {"background": true});
+
+db.sample.createIndex({"uuid": 1, "version": 1}, {"unique": true, "background": true});
+db.sample.createIndex({"uid": 1, "version": 1}, {"unique": true, "background": true});
+db.sample.createIndex({"id": 1, "studyUid": 1, "version": 1}, {"unique": true, "background": true});
+db.sample.createIndex({"_acl": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.sample.createIndex({"customAnnotationSets.as": 1}, {"background": true});
+db.sample.createIndex({"customAnnotationSets.vs": 1}, {"background": true});
+db.sample.createIndex({"customAnnotationSets.id": 1, "customAnnotationSets.value": 1}, {"background": true});
+db.sample.createIndex({"status.name": 1, "studyUid": 1}, {"background": true});
+db.sample.createIndex({"phenotypes.id": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.sample.createIndex({"studyUid": 1}, {"background": true});
+db.sample.createIndex({"_lastOfVersion": 1, "studyUid": 1}, {"background": true});
+
+db.individual.createIndex({"uuid": 1, "version": 1}, {"unique": true, "background": true});
+db.individual.createIndex({"uid": 1, "version": 1}, {"unique": true, "background": true});
+db.individual.createIndex({"id": 1, "studyUid": 1, "version": 1}, {"unique": true, "background": true});
+db.individual.createIndex({"name": 1, "studyUid": 1}, {"background": true});
+db.individual.createIndex({"_acl": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.individual.createIndex({"status.name": 1, "studyUid": 1}, {"background": true});
+db.individual.createIndex({"samples.uid": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.individual.createIndex({"phenotypes.id": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.individual.createIndex({"customAnnotationSets.as": 1}, {"background": true});
+db.individual.createIndex({"customAnnotationSets.vs": 1}, {"background": true});
+db.individual.createIndex({"customAnnotationSets.id": 1, "customAnnotationSets.value": 1}, {"background": true});
+db.individual.createIndex({"studyUid": 1}, {"background": true});
+db.individual.createIndex({"_lastOfVersion": 1, "studyUid": 1}, {"background": true});
+
+db.cohort.createIndex({"uuid": 1}, {"background": true});
+db.cohort.createIndex({"uid": 1}, {"background": true});
+db.cohort.createIndex({"id": 1, "studyUid": 1}, {"unique": true, "background": true});
+db.cohort.createIndex({"type": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.cohort.createIndex({"status.name": 1, "studyUid": 1}, {"background": true});
+db.cohort.createIndex({"_acl": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.cohort.createIndex({"customAnnotationSets.as": 1}, {"background": true});
+db.cohort.createIndex({"customAnnotationSets.vs": 1}, {"background": true});
+db.cohort.createIndex({"customAnnotationSets.id": 1, "customAnnotationSets.value": 1}, {"background": true});
+db.cohort.createIndex({"studyUid": 1}, {"background": true});
+
+db.family.createIndex({"uuid": 1, "version": 1}, {"unique": true, "background": true});
+db.family.createIndex({"uid": 1, "version": 1}, {"unique": true, "background": true});
+db.family.createIndex({"id": 1, "studyUid": 1, "version": 1}, {"unique": true, "background": true});
+db.family.createIndex({"name": 1, "studyUid": 1}, {"background": true});
+db.family.createIndex({"members.uid": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.family.createIndex({"_acl": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.family.createIndex({"status.name": 1, "studyUid": 1}, {"background": true});
+db.family.createIndex({"customAnnotationSets.as": 1}, {"background": true});
+db.family.createIndex({"customAnnotationSets.vs": 1}, {"background": true});
+db.family.createIndex({"customAnnotationSets.id": 1, "customAnnotationSets.value": 1}, {"background": true});
+db.family.createIndex({"_lastOfVersion": 1, "studyUid": 1}, {"background": true});
+db.family.createIndex({"studyUid": 1}, {"background": true});
+
+db.diseasePanel.createIndex({"uuid": 1, "version": 1}, {"unique": true, "background": true});
+db.diseasePanel.createIndex({"uid": 1, "version": 1}, {"unique": true, "background": true});
+db.diseasePanel.createIndex({"id": 1, "studyUid": 1, "version": 1}, {"unique": true, "background": true});
+db.diseasePanel.createIndex({"_lastOfVersion": 1, "studyUid": 1}, {"background": true});
+db.diseasePanel.createIndex({"studyUid": 1}, {"background": true});
+
 // Ticket #745 - Add permission rules
 function addPermissionRules(doc, changes) {
     changes["_permissionRulesApplied"] = [];

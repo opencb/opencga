@@ -27,6 +27,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationDBAdaptor;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
@@ -239,8 +240,8 @@ public class AuthorizationMongoDBAdaptorTest {
     public void testPermissionRulesPlusManualPermissions() throws CatalogException {
         // We create a new sample s2
         Sample s2 = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, new Sample("s2", "", new Individual(), "", "", false,
-                1, 1, Collections.emptyList(), new ArrayList<>(), Collections.emptyMap(), Collections.emptyMap()), QueryOptions.empty())
-                .first();
+                1, 1, Collections.emptyList(), new ArrayList<>(), Collections.emptyMap(), Collections.emptyMap()),
+                QueryOptions.empty()).first();
 
         // We create a new permission rule
         PermissionRule pr = new PermissionRule("myPermissionRule", new Query(), Arrays.asList(user3.getId()),

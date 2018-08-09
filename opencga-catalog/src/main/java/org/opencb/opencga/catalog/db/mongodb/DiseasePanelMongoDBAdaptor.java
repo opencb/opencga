@@ -40,6 +40,7 @@ import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.DiseasePanel;
 import org.opencb.opencga.core.models.Status;
@@ -136,6 +137,9 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
         long newPanelId = getNewId();
         panel.setUid(newPanelId);
         panel.setStudyUid(studyId);
+        if (StringUtils.isEmpty(panel.getUuid())) {
+            panel.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.PANEL));
+        }
 
         Document panelDocument = diseasePanelConverter.convertToStorageType(panel);
         // Versioning private parameters
