@@ -1295,8 +1295,9 @@ public class StudyManager extends AbstractManager {
                 SampleDBAdaptor.QueryParams.VERSION.key(), SampleDBAdaptor.QueryParams.CREATION_DATE.key(),
                 SampleDBAdaptor.QueryParams.STATUS.key(), SampleDBAdaptor.QueryParams.TYPE.key(),
                 SampleDBAdaptor.QueryParams.SOMATIC.key(), SampleDBAdaptor.QueryParams.PHENOTYPES.key(),
-                SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key()));
-        //  sampleQueryOptions.put("lazy", false);
+                SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), SampleDBAdaptor.QueryParams.UID.key(),
+                SampleDBAdaptor.QueryParams.ATTRIBUTES.key()));
+        sampleQueryOptions.put("lazy", false);
 
         catalogSolrManager.insertCatalogCollection(this.sampleDBAdaptor.iterator(query,
                 sampleQueryOptions), new CatalogSampleToSolrSampleConverter(), CatalogSolrManager.SAMPLES_SOLR_COLLECTION);
