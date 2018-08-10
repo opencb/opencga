@@ -36,8 +36,6 @@ import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 
 import javax.naming.NamingException;
-import java.io.DataOutputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.*;
@@ -1156,5 +1154,86 @@ public class CatalogManagerTest extends AbstractManagerTest {
         thrown.expectMessage("Invalid date of birth format");
         individualManager.update(studyFqn, individualQueryResult.first().getId(),
                 new ObjectMap(IndividualDBAdaptor.QueryParams.DATE_OF_BIRTH.key(), "198421"), QueryOptions.empty(), sessionIdUser);
+    }
+
+    @Test
+    public void testGetIndividualWithSamples() throws CatalogException {
+        IndividualManager individualManager = catalogManager.getIndividualManager();
+        individualManager.create(studyFqn, new Individual().setId("individual1")
+                .setSamples(Arrays.asList(new Sample().setId("sample1"), new Sample().setId("sample2"), new Sample().setId("sample3"))),
+                QueryOptions.empty(), sessionIdUser);
+        individualManager.create(studyFqn, new Individual().setId("individual2")
+                        .setSamples(Arrays.asList(new Sample().setId("sample4"), new Sample().setId("sample5"), new Sample().setId("sample6"))),
+                QueryOptions.empty(), sessionIdUser);
+
+        QueryResult<Individual> search = individualManager.search(studyFqn, new Query(), QueryOptions.empty(), sessionIdUser);
+        assertEquals(2, search.getNumResults());
+        search.getResult().forEach(i -> {
+            assertEquals(3, i.getSamples().size());
+            assertTrue(org.apache.commons.lang3.StringUtils.isNotEmpty(i.getSamples().get(0).getCreationDate()));
+            if (i.getId().equals("individual1")) {
+                assertTrue(Arrays.asList("sample1", "sample2", "sample3").containsAll(
+                        i.getSamples().stream().map(Sample::getId).collect(Collectors.toList())
+                ));
+            } else {
+                assertTrue(Arrays.asList("sample4", "sample5", "sample6").containsAll(
+                        i.getSamples().stream().map(Sample::getId).collect(Collectors.toList())
+                ));
+            }
+        });
+
+        search = individualManager.search(studyFqn, new Query(), new QueryOptions(QueryOptions.EXCLUDE, "samples.creationDate"),
+                sessionIdUser);
+        assertEquals(2, search.getNumResults());
+        search.getResult().forEach(i -> {
+            assertEquals(3, i.getSamples().size());
+            assertTrue(org.apache.commons.lang3.StringUtils.isEmpty(i.getSamples().get(0).getCreationDate()));
+            if (i.getId().equals("individual1")) {
+                assertTrue(Arrays.asList("sample1", "sample2", "sample3").containsAll(
+                        i.getSamples().stream().map(Sample::getId).collect(Collectors.toList())
+                ));
+            } else {
+                assertTrue(Arrays.asList("sample4", "sample5", "sample6").containsAll(
+                        i.getSamples().stream().map(Sample::getId).collect(Collectors.toList())
+                ));
+            }
+        });
+
+        search = individualManager.search(studyFqn, new Query(), new QueryOptions(QueryOptions.INCLUDE, "samples.id"),
+                sessionIdUser);
+        assertEquals(2, search.getNumResults());
+        search.getResult().forEach(i -> {
+            assertEquals(3, i.getSamples().size());
+            assertTrue(org.apache.commons.lang3.StringUtils.isEmpty(i.getSamples().get(0).getCreationDate()));
+            if (i.getId().equals("individual1")) {
+                assertTrue(Arrays.asList("sample1", "sample2", "sample3").containsAll(
+                        i.getSamples().stream().map(Sample::getId).collect(Collectors.toList())
+                ));
+            } else {
+                assertTrue(Arrays.asList("sample4", "sample5", "sample6").containsAll(
+                        i.getSamples().stream().map(Sample::getId).collect(Collectors.toList())
+                ));
+            }
+        });
+
+
+        search = individualManager.search(studyFqn, new Query(), new QueryOptions(QueryOptions.INCLUDE, "id,creationDate,samples.id"),
+                sessionIdUser);
+        assertEquals(2, search.getNumResults());
+        search.getResult().forEach(i -> {
+            assertTrue(org.apache.commons.lang3.StringUtils.isNotEmpty(i.getCreationDate()));
+            assertTrue(org.apache.commons.lang3.StringUtils.isEmpty(i.getName()));
+            assertEquals(3, i.getSamples().size());
+            assertTrue(org.apache.commons.lang3.StringUtils.isEmpty(i.getSamples().get(0).getCreationDate()));
+            if (i.getId().equals("individual1")) {
+                assertTrue(Arrays.asList("sample1", "sample2", "sample3").containsAll(
+                        i.getSamples().stream().map(Sample::getId).collect(Collectors.toList())
+                ));
+            } else {
+                assertTrue(Arrays.asList("sample4", "sample5", "sample6").containsAll(
+                        i.getSamples().stream().map(Sample::getId).collect(Collectors.toList())
+                ));
+            }
+        });
     }
 }

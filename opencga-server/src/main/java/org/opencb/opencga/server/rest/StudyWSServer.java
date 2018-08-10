@@ -402,7 +402,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "JSON containing the parameters", required = true) GroupCreateParams params) {
         try {
             if (action == null) {
-                throw new CatalogException("Missing mandatory action parameter");
+                action = ParamUtils.BasicUpdateAction.ADD;
             }
             QueryResult group;
             if (action == ParamUtils.BasicUpdateAction.ADD) {
@@ -427,7 +427,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "JSON containing the parameters", required = true) Users users) {
         try {
             if (action == null) {
-                throw new CatalogException("Missing mandatory action parameter");
+                action = GroupParams.Action.ADD;
             }
 
             GroupParams params = new GroupParams(users.users, action);
@@ -563,7 +563,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "JSON containing the permission rule to be created or removed.", required = true) PermissionRule params) {
         try {
             if (action == null) {
-                return createErrorResponse(new CatalogException("Missing mandatory action parameter"));
+                action = PermissionRuleAction.ADD;
             }
             if (action == PermissionRuleAction.ADD) {
                 return createOkResponse(catalogManager.getStudyManager().createPermissionRule(studyStr, entity, params, sessionId));
@@ -734,7 +734,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "JSON containing the VariableSet to be created or removed.", required = true) VariableSetParameters params) {
         try {
             if (action == null) {
-                return createErrorResponse(new CatalogException("Missing mandatory action parameter"));
+                action = ParamUtils.BasicUpdateAction.ADD;
             }
 
             QueryResult<VariableSet> queryResult;
@@ -779,7 +779,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                     required = true) Variable variable) {
         try {
             if (action == null) {
-                return createErrorResponse(new CatalogException("Missing mandatory action parameter"));
+                action = ParamUtils.BasicUpdateAction.ADD;
             }
 
             QueryResult<VariableSet> queryResult;

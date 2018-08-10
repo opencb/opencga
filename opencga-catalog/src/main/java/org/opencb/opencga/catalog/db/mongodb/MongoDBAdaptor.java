@@ -26,7 +26,9 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.slf4j.Logger;
 
 import java.util.*;
@@ -45,6 +47,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     static final String PRIVATE_PROJECT_UUID = PRIVATE_PROJECT + '.' + PRIVATE_UUID;
     static final String PRIVATE_OWNER_ID = "_ownerId";
     static final String PRIVATE_STUDY_ID = "studyUid";
+    private static final String VERSION = "version";
 
     static final String FILTER_ROUTE_PROJECTS = "projects.";
     static final String FILTER_ROUTE_STUDIES = "projects.studies.";
@@ -65,7 +68,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
 
     static final String INTERNAL_DELIMITER = "__";
 
-    static final String NATIVE_QUERY = "nativeQuery";
+    public static final String NATIVE_QUERY = "nativeQuery";
 
     // Possible update actions
     static final String SET = "SET";
@@ -319,6 +322,119 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         }
 
         return document;
+    }
+
+    /**
+     * Generate complex query where [{id - version}, {id2 - version2}] pairs will be queried.
+     *
+     * @param query Query object.
+     * @param bsonQueryList Final bson query object.
+     * @throws CatalogDBException If the size of the array of ids does not match the size of the array of version.
+     * @return a boolean indicating whether the complex query was generated or not.
+     */
+    boolean generateUidVersionQuery(Query query, List<Bson> bsonQueryList) throws CatalogDBException {
+        if (!query.containsKey(VERSION) || query.getAsIntegerList(VERSION).size() == 1) {
+               return false;
+        }
+        if (!query.containsKey(PRIVATE_UID) && !query.containsKey(PRIVATE_ID) && !query.containsKey(PRIVATE_UUID)) {
+            return false;
+        }
+        int numIds = 0;
+        numIds += query.containsKey(PRIVATE_ID) ? 1 : 0;
+        numIds += query.containsKey(PRIVATE_UID) ? 1 : 0;
+        numIds += query.containsKey(PRIVATE_UUID) ? 1 : 0;
+
+        if (numIds > 1) {
+            List<Integer> versionList = query.getAsIntegerList(VERSION);
+            if (versionList.size() > 1) {
+                throw new CatalogDBException("Cannot query by more than one version when more than one id type is being queried");
+            }
+            return false;
+        }
+
+        String idQueried = PRIVATE_UID;
+        idQueried = query.containsKey(PRIVATE_ID) ? PRIVATE_ID : idQueried;
+        idQueried = query.containsKey(PRIVATE_UUID) ? PRIVATE_UUID : idQueried;
+
+        List idList;
+        if (PRIVATE_UID.equals(idQueried)) {
+            idList = query.getAsLongList(PRIVATE_UID);
+        } else {
+            idList = query.getAsStringList(idQueried);
+        }
+        List<Integer> versionList = query.getAsIntegerList(VERSION);
+
+        if (versionList.size() > 1 && versionList.size() != idList.size()) {
+            throw new CatalogDBException("The size of the array of versions should match the size of the array of ids to be queried");
+        }
+
+        List<Bson> samplesQuery = new ArrayList<>();
+        for (int i = 0; i < idList.size(); i++) {
+            samplesQuery.add(new Document()
+                    .append(idQueried, idList.get(i))
+                    .append(VERSION, versionList.get(i))
+            );
+        }
+
+        if (!samplesQuery.isEmpty()) {
+            bsonQueryList.add(Filters.or(samplesQuery));
+
+            query.remove(idQueried);
+            query.remove(VERSION);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Removes any other entity projections made. This method should be called by any entity containing inner entities:
+     * Family -> Individual; Individual -> Sample; File -> Sample; Cohort -> Sample
+     *
+     * @param options current query options object.
+     * @param projectionKey Projection key to be removed from the query options.
+     * @return new QueryOptions after removing the inner projectionKey projections.
+     */
+    protected QueryOptions removeInnerProjections(QueryOptions options, String projectionKey) {
+        QueryOptions queryOptions = ParamUtils.defaultObject(options, QueryOptions::new);
+
+        if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
+            List<String> includeList = queryOptions.getAsStringList(QueryOptions.INCLUDE);
+            List<String> newInclude = new ArrayList<>(includeList.size());
+            boolean projectionKeyExcluded = false;
+            for (String include : includeList) {
+                if (!include.startsWith(projectionKey + ".")) {
+                    newInclude.add(include);
+                } else {
+                    projectionKeyExcluded = true;
+                }
+            }
+            if (newInclude.isEmpty()) {
+                queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(PRIVATE_ID, projectionKey));
+            } else {
+                if (projectionKeyExcluded) {
+                    newInclude.add(projectionKey);
+                }
+                queryOptions.put(QueryOptions.INCLUDE, newInclude);
+            }
+        }
+        if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
+            List<String> excludeList = queryOptions.getAsStringList(QueryOptions.EXCLUDE);
+            List<String> newExclude = new ArrayList<>(excludeList.size());
+            for (String exclude : excludeList) {
+                if (!exclude.startsWith(projectionKey + ".")) {
+                    newExclude.add(exclude);
+                }
+            }
+            if (newExclude.isEmpty()) {
+                queryOptions.remove(QueryOptions.EXCLUDE);
+            } else {
+                queryOptions.put(QueryOptions.EXCLUDE, newExclude);
+            }
+        }
+
+        return queryOptions;
     }
 
     protected void unmarkPermissionRule(MongoDBCollection collection, long studyId, String permissionRuleId) {

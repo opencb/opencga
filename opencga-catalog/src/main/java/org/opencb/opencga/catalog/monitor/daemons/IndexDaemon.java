@@ -268,7 +268,12 @@ public class IndexDaemon extends MonitorParentDaemon {
         job.getParams().put("outdir", path.toString());
 
         if (job.getAttributes().get(INDEX_TYPE).toString().equalsIgnoreCase(VARIANT_TYPE)) {
-            job.getParams().put("path", Long.toString(job.getOutDir().getUid()));
+            try {
+                job.getParams().put("path", dbAdaptorFactory.getCatalogFileDBAdaptor().get(job.getOutDir().getUid(),
+                        QueryOptions.empty()).first().getId());
+            } catch (CatalogDBException e) {
+                e.printStackTrace();
+            }
 
             commandLine.append(" variant index");
             Set<String> knownParams = new HashSet<>(Arrays.asList(

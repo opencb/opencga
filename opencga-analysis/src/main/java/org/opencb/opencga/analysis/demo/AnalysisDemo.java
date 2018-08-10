@@ -30,6 +30,8 @@ import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -43,14 +45,11 @@ public class AnalysisDemo {
     }
 
     public static void insertPedigreeFile(CatalogManager catalogManager, Path inputFile, String sessionId)
-            throws CatalogException, StorageEngineException {
+            throws CatalogException, FileNotFoundException {
         String path = "data/peds";
         URI sourceUri = inputFile.toUri();
-        File file = catalogManager.getFileManager().create("user1@default:study1", File.Type.FILE, File.Format.PED, File.Bioformat
-                .PEDIGREE, Paths.get(path, inputFile.getFileName().toString()).toString(), null, "Description", null, 0, -1, null, (long)
-                -1, null, null, true, null, null, sessionId).first();
-        new FileUtils(catalogManager).upload(sourceUri, file, null, sessionId, false, false, false, false);
-        FileMetadataReader.get(catalogManager).setMetadataInformation(file, null, new QueryOptions(), sessionId, false);
+        File file = catalogManager.getFileManager().upload("user1@default:study1", new FileInputStream(new java.io.File(sourceUri)),
+                new File().setPath(Paths.get(path, inputFile.getFileName().toString()).toString()), false, true, sessionId).first();
 
         // Load samples using the pedigree file
         CatalogSampleAnnotationsLoader catalogSampleAnnotationsLoader = new CatalogSampleAnnotationsLoader(catalogManager);
