@@ -5,7 +5,7 @@
 \alias{studyClient,OpencgaR-method}
 \title{StudyClient methods}
 \usage{
-\S4method{studyClient}{OpencgaR}(OpencgaR, study, action, params = NULL)
+\S4method{studyClient}{OpencgaR}(OpencgaR, study, action, params = NULL, ...)
 }
 \description{
 This function implements the OpenCGA calls for managing Studies

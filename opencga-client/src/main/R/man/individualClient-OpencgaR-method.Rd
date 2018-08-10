@@ -6,7 +6,7 @@
 \title{IndividualClient methods}
 \usage{
 \S4method{individualClient}{OpencgaR}(OpencgaR, individual, action,
-  params = NULL)
+  params = NULL, ...)
 }
 \arguments{
 \item{OpencgaR}{an object OpencgaR generated using initOpencgaR and/or opencgaLogin 

@@ -1,7 +1,7 @@
 Package: opencgaR
 Type: Package
 Title: Querying Opencga Data
-Version: 1.3.0
+Version: 1.3.3
 Author: Marta Bleda <martableda@gmail.com>
 Maintainer: Marta Bleda <martableda@gmail.com>
 Description: Classes and methods for working with Opencga data

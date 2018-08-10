@@ -17,11 +17,17 @@ opencgaR <- setClass("OpencgaR", slots = c(host="character",
                                            version="character",
                                            user="character",
                                            sessionId="character",
+                                           expirationTime="character",
+                                           autoRenew="logical",
+                                           showToken="logical",
                                            swagger="list"),
                                  prototype = prototype(
                                    host="http://bioinfo.hpc.cam.ac.uk/hgva",
                                    version = "v1",
                                    user=NULL,
                                    sessionId=NULL,
+                                   expirationTime=NULL,
+                                   autoRenew=FALSE,
+                                   showToken=FALSE,
                                    swagger=list()))
 
