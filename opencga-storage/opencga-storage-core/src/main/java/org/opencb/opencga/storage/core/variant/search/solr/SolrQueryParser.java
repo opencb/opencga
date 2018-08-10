@@ -112,24 +112,17 @@ public class SolrQueryParser {
         }
         includes = ArrayUtils.removeAllOccurences(includes, "release");
         includes = includeFieldsWithMandatory(includes);
-
         solrQuery.setFields(includes);
 
         if (queryOptions.containsKey(QueryOptions.LIMIT)) {
             solrQuery.setRows(queryOptions.getInt(QueryOptions.LIMIT));
         }
-
         if (queryOptions.containsKey(QueryOptions.SKIP)) {
             solrQuery.setStart(queryOptions.getInt(QueryOptions.SKIP));
         }
-
         if (queryOptions.containsKey(QueryOptions.SORT)) {
             solrQuery.addSort(queryOptions.getString(QueryOptions.SORT), getSortOrder(queryOptions));
         }
-
-        //-------------------------------------
-        // Facet processing
-        //-------------------------------------
 
         // facet fields (query parameter: facet)
         // multiple faceted fields are separated by ";", they can be:
@@ -181,27 +174,35 @@ public class SolrQueryParser {
         }
 
         // consequence types (cts)
+        String ctBoolOp = " OR ";
         if (query.containsKey(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key())
                 && StringUtils.isNotEmpty(query.getString(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key()))) {
             consequenceTypes = Arrays.asList(query.getString(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key()).split("[,;]"));
+            if (query.getString(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key()).contains(";")) {
+                ctBoolOp = " AND ";
+                if (query.getString(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key()).contains(",")) {
+                    ctBoolOp = " OR ";
+                    logger.info("Misuse of consquence type values by mixing ';' and ',': using ',' as default.");
+                }
+            }
         }
 
         // goal: [((xrefs OR regions) AND cts) OR (genes AND cts)] AND ... AND ...
         if (CollectionUtils.isNotEmpty(consequenceTypes)) {
             if (CollectionUtils.isNotEmpty(genes)) {
                 // consequence types and genes
-                String or = buildXrefOrRegionAndConsequenceType(xrefs, regions, consequenceTypes);
+                String or = buildXrefOrRegionAndConsequenceType(xrefs, regions, consequenceTypes, ctBoolOp);
                 if (xrefs.isEmpty() && regions.isEmpty()) {
                     // no xrefs or regions: genes AND cts
-                    filterList.add(buildGeneAndCt(genes, consequenceTypes));
+                    filterList.add(buildGeneAndConsequenceType(genes, consequenceTypes));
                 } else {
                     // otherwise: [((xrefs OR regions) AND cts) OR (genes AND cts)]
-                    filterList.add("(" + or + ") OR (" + buildGeneAndCt(genes, consequenceTypes) + ")");
+                    filterList.add("(" + or + ") OR (" + buildGeneAndConsequenceType(genes, consequenceTypes) + ")");
                 }
             } else {
                 // consequence types but no genes: (xrefs OR regions) AND cts
                 // in this case, the resulting string will never be null, because there are some consequence types!!
-                filterList.add(buildXrefOrRegionAndConsequenceType(xrefs, regions, consequenceTypes));
+                filterList.add(buildXrefOrRegionAndConsequenceType(xrefs, regions, consequenceTypes, ctBoolOp));
             }
         } else {
             // no consequence types: (xrefs OR regions) but we must add "OR genes", i.e.: xrefs OR regions OR genes
@@ -996,17 +997,18 @@ public class SolrQueryParser {
     }
 
     /**
-     * Build an OR-condition with all consequence types from the input list. It uses the VariantDBAdaptorUtils
+     * Build an OR/AND-condition with all consequence types from the input list. It uses the VariantDBAdaptorUtils
      * to parse the consequence type (accession or term) into an integer.
      *
-     * @param cts    List of consequence types
-     * @return       OR-condition string
+     * @param cts   List of consequence types
+     * @param op    Boolean operator (OR / AND)
+     * @return      OR/AND-condition string
      */
-    private String buildConsequenceTypeOr(List<String> cts) {
+    private String buildConsequenceTypeOrAnd(List<String> cts, String op) {
         StringBuilder sb = new StringBuilder();
         for (String ct : cts) {
             if (sb.length() > 0) {
-                sb.append(" OR ");
+                sb.append(" ").append(op).append(" ");
             }
             sb.append("soAcc:\"").append(VariantQueryUtils.parseConsequenceType(ct)).append("\"");
         }
@@ -1021,8 +1023,9 @@ public class SolrQueryParser {
      * @param cts        List of consequence types
      * @return           OR/AND condition string
      */
-    private String buildXrefOrRegionAndConsequenceType(List<String> xrefs, List<Region> regions, List<String> cts) {
-        String orCts = buildConsequenceTypeOr(cts);
+    private String buildXrefOrRegionAndConsequenceType(List<String> xrefs, List<Region> regions, List<String> cts,
+                                                       String ctBoolOp) {
+        String orCts = buildConsequenceTypeOrAnd(cts, ctBoolOp);
         if (xrefs.isEmpty() && regions.isEmpty()) {
             // consequences type but no xrefs, no genes, no regions
             // we must make an OR with all consequences types and add it to the "AND" filter list
@@ -1040,7 +1043,7 @@ public class SolrQueryParser {
      * @param cts      List of consequence types
      * @return         OR/AND condition string
      */
-    private String buildGeneAndCt(List<String> genes, List<String> cts) {
+    private String buildGeneAndConsequenceType(List<String> genes, List<String> cts) {
         // in the VariantSearchModel the (gene AND ct) is modeled in the field: geneToSoAcc:gene_ct
         // and if there are multiple genes and consequence types, we have to build the combination of all of them in a OR expression
         StringBuilder sb = new StringBuilder();
