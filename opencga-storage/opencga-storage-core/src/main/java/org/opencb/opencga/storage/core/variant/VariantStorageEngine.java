@@ -83,7 +83,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName;
 import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager.SEARCH_ENGINE_ID;
-import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchUtils.*;
+import static org.opencb.opencga.storage.core.variant.search.VariantSearchUtils.*;
 
 /**
  * Created by imedina on 13/08/14.

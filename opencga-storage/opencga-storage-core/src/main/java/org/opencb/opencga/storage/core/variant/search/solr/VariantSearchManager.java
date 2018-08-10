@@ -44,6 +44,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBItera
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchModel;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
+import org.opencb.opencga.storage.core.variant.search.VariantSearchUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -583,7 +584,7 @@ public class VariantSearchManager {
                             counts.put(name, (long) response.getFacetQuery().get(name));
                             name = list.get(1);
                             counts.put(name, (long) response.getFacetQuery().get(name));
-                            name = list.get(0) + VariantSearchUtils.SEPARATOR + list.get(1);
+                            name = list.get(0) + VariantSearchUtils.FIELD_SEPARATOR + list.get(1);
                             counts.put(name, (long) response.getFacetQuery().get(name));
                             intersection.setCounts(counts);
 
@@ -598,14 +599,14 @@ public class VariantSearchManager {
                             counts.put(name, (long) response.getFacetQuery().get(name));
                             name = list.get(2);
                             counts.put(name, (long) response.getFacetQuery().get(name));
-                            name = list.get(0) + VariantSearchUtils.SEPARATOR + list.get(1);
+                            name = list.get(0) + VariantSearchUtils.FIELD_SEPARATOR + list.get(1);
                             counts.put(name, (long) response.getFacetQuery().get(name));
-                            name = list.get(0) + VariantSearchUtils.SEPARATOR + list.get(2);
+                            name = list.get(0) + VariantSearchUtils.FIELD_SEPARATOR + list.get(2);
                             counts.put(name, (long) response.getFacetQuery().get(name));
-                            name = list.get(1) + VariantSearchUtils.SEPARATOR + list.get(2);
+                            name = list.get(1) + VariantSearchUtils.FIELD_SEPARATOR + list.get(2);
                             counts.put(name, (long) response.getFacetQuery().get(name));
-                            name = list.get(0) + VariantSearchUtils.SEPARATOR + list.get(1)
-                                    + VariantSearchUtils.SEPARATOR + list.get(2);
+                            name = list.get(0) + VariantSearchUtils.FIELD_SEPARATOR + list.get(1)
+                                    + VariantSearchUtils.FIELD_SEPARATOR + list.get(2);
                             counts.put(name, (long) response.getFacetQuery().get(name));
                             intersection.setCounts(counts);
 

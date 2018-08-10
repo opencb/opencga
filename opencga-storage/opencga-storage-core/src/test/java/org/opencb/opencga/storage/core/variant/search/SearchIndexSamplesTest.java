@@ -19,7 +19,6 @@ import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchUtils;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSolrIterator;
 import org.opencb.opencga.storage.core.variant.solr.SolrExternalResource;
 

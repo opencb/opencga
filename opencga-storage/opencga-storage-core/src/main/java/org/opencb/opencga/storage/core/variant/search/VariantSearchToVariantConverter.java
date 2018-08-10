@@ -33,7 +33,6 @@ import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.common.ArrayUtils;
 import org.opencb.opencga.storage.core.variant.annotation.converters.VariantTraitAssociationToEvidenceEntryConverter;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,7 +92,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         if (MapUtils.isNotEmpty(variantSearchModel.getFileInfo())) {
             for (String key: variantSearchModel.getFileInfo().keySet()) {
                 // key consists of 'fileInfo' + "__" + studyId + "__" + fileId
-                String[] fields = key.split(VariantSearchUtils.SEPARATOR);
+                String[] fields = key.split(VariantSearchUtils.FIELD_SEPARATOR);
                 FileEntry fileEntry = fileEntryMap.get(fields[2]);
                 if (fileEntry == null) {
                     fileEntry = new FileEntry(fields[2], null, new HashMap<>());
@@ -120,13 +119,13 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 StudyEntry studyEntry = studyEntryMap.get(studyId);
 
                 // Sample names
-                String json = variantSearchModel.getSampleFormat().get("sampleFormat" + VariantSearchUtils.SEPARATOR
-                        + studyId + VariantSearchUtils.SEPARATOR + "sampleName");
+                String json = variantSearchModel.getSampleFormat().get("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR
+                        + studyId + VariantSearchUtils.FIELD_SEPARATOR + "sampleName");
                 List<String> sampleNames = (List<String>) jsonToObject(json, genericList.getClass());
 
                 // Format
-                json = variantSearchModel.getSampleFormat().get("sampleFormat" + VariantSearchUtils.SEPARATOR
-                        + studyId + VariantSearchUtils.SEPARATOR + "format");
+                json = variantSearchModel.getSampleFormat().get("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR
+                        + studyId + VariantSearchUtils.FIELD_SEPARATOR + "format");
                 if (StringUtils.isNotEmpty(json)) {
                     List<String> formats = (List<String>) jsonToObject(json, genericList.getClass());
                     studyEntry.setFormat(formats);
@@ -142,15 +141,15 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 boolean onlyGT = false;
                 int pos = 0;
                 for (String sampleName: sampleNames) {
-                    json = variantSearchModel.getSampleFormat().get("sampleFormat" + VariantSearchUtils.SEPARATOR
-                            + studyId + VariantSearchUtils.SEPARATOR + sampleName);
+                    json = variantSearchModel.getSampleFormat().get("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR
+                            + studyId + VariantSearchUtils.FIELD_SEPARATOR + sampleName);
                     if (StringUtils.isNotEmpty(json)) {
                         List<String> sd = (List<String>) jsonToObject(json, genericList.getClass());
                         studyEntry.getSamplesData().add(sd);
                         samplePosition.put(sampleName, pos++);
                     } else {
-                        String gt = variantSearchModel.getGt().get("gt" + VariantSearchUtils.SEPARATOR + studyId
-                                + VariantSearchUtils.SEPARATOR + sampleName);
+                        String gt = variantSearchModel.getGt().get("gt" + VariantSearchUtils.FIELD_SEPARATOR + studyId
+                                + VariantSearchUtils.FIELD_SEPARATOR + sampleName);
                         if (StringUtils.isNotEmpty(gt)) {
                             onlyGT = true;
                             List<String> sd = new ArrayList<>();
@@ -174,7 +173,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         if (MapUtils.isNotEmpty(variantSearchModel.getStats())) {
             for (String key: variantSearchModel.getStats().keySet()) {
                 // key consists of 'stats' + "__" + studyId + "__" + cohort
-                String[] fields = key.split(VariantSearchUtils.SEPARATOR);
+                String[] fields = key.split(VariantSearchUtils.FIELD_SEPARATOR);
                 if (studyEntryMap.containsKey(fields[1])) {
                     VariantStats variantStats = new VariantStats();
                     variantStats.setRefAlleleFreq(1 - variantSearchModel.getStats().get(key));
@@ -318,7 +317,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         if (variantSearchModel.getPopFreq() != null && variantSearchModel.getPopFreq().size() > 0) {
             for (String key : variantSearchModel.getPopFreq().keySet()) {
                 PopulationFrequency populationFrequency = new PopulationFrequency();
-                String[] fields = key.split(VariantSearchUtils.SEPARATOR);
+                String[] fields = key.split(VariantSearchUtils.FIELD_SEPARATOR);
                 populationFrequency.setStudy(fields[1]);
                 populationFrequency.setPopulation(fields[2]);
                 populationFrequency.setRefAlleleFreq(1 - variantSearchModel.getPopFreq().get(key));
@@ -517,14 +516,17 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             List<String> studies = new ArrayList<>();
             Map<String, Float> stats = new HashMap<>();
 
-            // FILTER, QUAL and file info
-            Map<String, String> filter = new HashMap<>();
-            Map<String, Float> qual = new HashMap<>();
-            Map<String, String> fileInfo = new HashMap<>();
-
             // Genotypes and format
             Map<String, String> gt = new HashMap<>();
+            Map<String, Integer> dp = new HashMap<>();
             Map<String, String> sampleFormat = new HashMap<>();
+
+            // FILTER, QUAL and file info
+            Map<String, Float> qual = new HashMap<>();
+            Map<String, String> filter = new HashMap<>();
+            Map<String, String> fileInfo = new HashMap<>();
+
+            ObjectWriter writer = new ObjectMapper().writer();
 
             for (StudyEntry studyEntry : variant.getStudies()) {
                 String studyId = studyEntry.getStudyId();
@@ -538,8 +540,38 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 if (studyEntry.getStats() != null && studyEntry.getStats().size() > 0) {
                     Map<String, VariantStats> studyStats = studyEntry.getStats();
                     for (String key : studyStats.keySet()) {
-                        stats.put("stats" + VariantSearchUtils.SEPARATOR + studyId + VariantSearchUtils.SEPARATOR + key,
+                        stats.put("stats" + VariantSearchUtils.FIELD_SEPARATOR + studyId + VariantSearchUtils.FIELD_SEPARATOR + key,
                                 studyStats.get(key).getAltAlleleFreq());
+                    }
+                }
+
+                // Samples, genotypes and format fields management
+                if (MapUtils.isNotEmpty(studyEntry.getSamplesPosition())) {
+                    List<String> sampleNames = studyEntry.getOrderedSamplesName();
+                    if (ListUtils.isNotEmpty(sampleNames)) {
+                        // Sanity check
+                        if (ListUtils.isNotEmpty(studyEntry.getSamplesData())
+                                && sampleNames.size() == studyEntry.getSamplesData().size()) {
+                            // Save sample formats in a map (after, to JSON string), including sample names and GT
+                            String json = objectToJson(sampleNames);    // StringUtils.join(sampleNames, ",");
+                            sampleFormat.put("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + studyId
+                                    + VariantSearchUtils.FIELD_SEPARATOR + "sampleName", json);
+                            json = objectToJson(studyEntry.getFormat());
+                            sampleFormat.put("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + studyId
+                                    + VariantSearchUtils.FIELD_SEPARATOR + "format", json);
+                            for (int i = 0; i < sampleNames.size(); i++) {
+                                // Save genotype where study and sample name as key
+                                gt.put("gt" + VariantSearchUtils.FIELD_SEPARATOR + studyId + VariantSearchUtils.FIELD_SEPARATOR
+                                        + sampleNames.get(i), studyEntry.getSampleData(i).get(0));
+
+                                // Save formats for each sample (after, to JSON string)
+                                json = objectToJson(studyEntry.getSamplesData().get(i));
+                                sampleFormat.put("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + studyId
+                                        + VariantSearchUtils.FIELD_SEPARATOR + sampleNames.get(i), json);
+                            }
+                        } else {
+                            logger.error("Mismatch sizes: please, check your sample names, sample data and format array");
+                        }
                     }
                 }
 
@@ -558,52 +590,22 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             // In additon, store QUAL and FILTER separately
                             String value = fileEntry.getAttributes().get("QUAL");
                             if (StringUtils.isNotEmpty(value)) {
-                                qual.put("qual" + VariantSearchUtils.SEPARATOR + studyId + VariantSearchUtils.SEPARATOR
+                                qual.put("qual" + VariantSearchUtils.FIELD_SEPARATOR + studyId + VariantSearchUtils.FIELD_SEPARATOR
                                         + fileEntry.getFileId(), Float.parseFloat(value));
                             }
 
                             value = fileEntry.getAttributes().get("FILTER");
                             if (StringUtils.isNotEmpty(value)) {
-                                filter.put("filter" + VariantSearchUtils.SEPARATOR + studyId
-                                        + VariantSearchUtils.SEPARATOR + fileEntry.getFileId(), value);
+                                filter.put("filter" + VariantSearchUtils.FIELD_SEPARATOR + studyId
+                                        + VariantSearchUtils.FIELD_SEPARATOR + fileEntry.getFileId(), value);
                             }
                         }
                         if (MapUtils.isNotEmpty(fileInfoMap)) {
                             String json = objectToJson(fileInfoMap);
                             if (StringUtils.isNotEmpty(json)) {
-                                fileInfo.put("fileInfo" + VariantSearchUtils.SEPARATOR + studyId
-                                        + VariantSearchUtils.SEPARATOR + fileEntry.getFileId(), json);
+                                fileInfo.put("fileInfo" + VariantSearchUtils.FIELD_SEPARATOR + studyId
+                                        + VariantSearchUtils.FIELD_SEPARATOR + fileEntry.getFileId(), json);
                             }
-                        }
-                    }
-                }
-
-                // Samples, genotypes and format fields management
-                if (MapUtils.isNotEmpty(studyEntry.getSamplesPosition())) {
-                    List<String> sampleNames = studyEntry.getOrderedSamplesName();
-                    if (ListUtils.isNotEmpty(sampleNames)) {
-                        // Sanity check
-                        if (ListUtils.isNotEmpty(studyEntry.getSamplesData())
-                                && sampleNames.size() == studyEntry.getSamplesData().size()) {
-                            // Save sample formats in a map (after, to JSON string), including sample names and GT
-                            String json = objectToJson(sampleNames);
-                            sampleFormat.put("sampleFormat" + VariantSearchUtils.SEPARATOR + studyId
-                                    + VariantSearchUtils.SEPARATOR + "sampleName", json);
-                            json = objectToJson(studyEntry.getFormat());
-                            sampleFormat.put("sampleFormat" + VariantSearchUtils.SEPARATOR + studyId
-                                    + VariantSearchUtils.SEPARATOR + "format", json);
-                            for (int i = 0; i < sampleNames.size(); i++) {
-                                // Save genotype where study and sample name as key
-                                gt.put("gt" + VariantSearchUtils.SEPARATOR + studyId + VariantSearchUtils.SEPARATOR
-                                                + sampleNames.get(i), studyEntry.getSampleData(i).get(0));
-
-                                // Save formats for each sample (after, to JSON string)
-                                json = objectToJson(studyEntry.getSamplesData().get(i));
-                                sampleFormat.put("sampleFormat" + VariantSearchUtils.SEPARATOR + studyId
-                                        + VariantSearchUtils.SEPARATOR + sampleNames.get(i), json);
-                            }
-                        } else {
-                            logger.error("Mismatch sizes: please, check your sample names, sample data and format array");
                         }
                     }
                 }
@@ -616,6 +618,17 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             if (MapUtils.isNotEmpty(stats)) {
                 variantSearchModel.setStats(stats);
             }
+            // Set genotypes and format maps if not empty
+            if (MapUtils.isNotEmpty(gt)) {
+                variantSearchModel.setGt(gt);
+            }
+            if (MapUtils.isNotEmpty(dp)) {
+                variantSearchModel.setDp(dp);
+            }
+            if (MapUtils.isNotEmpty(sampleFormat)) {
+                variantSearchModel.setSampleFormat(sampleFormat);
+            }
+
             // Set FILTER, QUAL and file info maps if not empty
             if (MapUtils.isNotEmpty(filter)) {
                 variantSearchModel.setFilter(filter);
@@ -626,13 +639,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             if (MapUtils.isNotEmpty(fileInfo)) {
                 variantSearchModel.setFileInfo(fileInfo);
             }
-            // Set genotypes and format maps if not empty
-            if (MapUtils.isNotEmpty(gt)) {
-                variantSearchModel.setGt(gt);
-            }
-            if (MapUtils.isNotEmpty(sampleFormat)) {
-                variantSearchModel.setSampleFormat(sampleFormat);
-            }
+
         }
 
         // We init all annotation numeric values to MISSING_VALUE, this fixes two different scenarios:
@@ -780,8 +787,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             if (variantAnnotation.getPopulationFrequencies() != null) {
                 Map<String, Float> populationFrequencies = new HashMap<>();
                 for (PopulationFrequency populationFrequency : variantAnnotation.getPopulationFrequencies()) {
-                    populationFrequencies.put("popFreq" + VariantSearchUtils.SEPARATOR + populationFrequency.getStudy()
-                            + VariantSearchUtils.SEPARATOR + populationFrequency.getPopulation(),
+                    populationFrequencies.put("popFreq" + VariantSearchUtils.FIELD_SEPARATOR + populationFrequency.getStudy()
+                            + VariantSearchUtils.FIELD_SEPARATOR + populationFrequency.getPopulation(),
                             populationFrequency.getAltAlleleFreq());
                 }
                 if (!populationFrequencies.isEmpty()) {
@@ -954,7 +961,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         variantSearchModel.setPolyphenDesc(polyphenDesc);
     }
 
-    public String objectToJson(Object obj) {
+    private String objectToJson(Object obj) {
         ObjectWriter writer = new ObjectMapper().writer();
         try {
             return writer.writeValueAsString(obj);
@@ -964,7 +971,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         }
     }
 
-    public Object jsonToObject(String json, Class objClass) {
+    private Object jsonToObject(String json, Class objClass) {
         ObjectReader reader = new ObjectMapper().reader(objClass);
         try {
             return reader.readValue(json);
