@@ -8,7 +8,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -28,8 +30,8 @@ public class CatalogSolrQueryParser {
         queryParameters.add("creationDate");
         queryParameters.add("release");
 
-        queryParameters.add("formart");
-        queryParameters.add("bioformart");
+        queryParameters.add("format");
+        queryParameters.add("bioformat");
         queryParameters.add("size");
         queryParameters.add("samples");
 
@@ -53,7 +55,7 @@ public class CatalogSolrQueryParser {
      */
     public SolrQuery parse(Query query, QueryOptions queryOptions) {
 
-        List<String> filterList = new ArrayList<>();
+        Map<String, String> filterList = new HashMap<>();
         SolrQuery solrQuery = new SolrQuery();
 
         //-------------------------------------
@@ -81,19 +83,24 @@ public class CatalogSolrQueryParser {
 
         queryParameters.forEach(queryParam -> {
             if (query.containsKey(queryParam)) {
-                filterList.add(query.getString(queryParam));
+                if (queryParam.equals("study")) {
+                    filterList.put("studyId", query.getString(queryParam).replace(":", "_"));
+                } else {
+                    filterList.put(queryParam, query.getString(queryParam));
+                }
             }
         });
 
         logger.debug("query = {}\n", query.toJson());
 
         solrQuery.setQuery("*:*");
-        filterList.forEach(filter -> {
-            solrQuery.addFilterQuery(filter);
+        filterList.forEach((queryParamter, filter) -> {
+            solrQuery.addFilterQuery(queryParamter.concat(":").concat(filter));
             logger.debug("Solr fq: {}\n", filter);
         });
 
         return solrQuery;
+
     }
 
     /**

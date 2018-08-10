@@ -77,7 +77,7 @@
     <field name="name" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="type" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="format" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="bioformart" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="bioformat" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="release" type="int" indexed="true" stored="true" multiValued="false"/>
     <field name="creationDate" type="string" indexed="false" stored="true" multiValued="false"/>
     <field name="status" type="string" indexed="false" stored="true" multiValued="false"/>
