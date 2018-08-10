@@ -5,7 +5,8 @@
 \alias{sampleClient,OpencgaR-method}
 \title{SampleClient methods}
 \usage{
-\S4method{sampleClient}{OpencgaR}(OpencgaR, sample, action, params = NULL)
+\S4method{sampleClient}{OpencgaR}(OpencgaR, sample, action, params = NULL,
+  ...)
 }
 \arguments{
 \item{OpencgaR}{an object OpencgaR generated using initOpencgaR and/or opencgaLogin 

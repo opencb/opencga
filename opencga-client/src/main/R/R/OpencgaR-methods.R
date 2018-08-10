@@ -39,9 +39,9 @@ initOpencgaR <- function(host=NULL, version="v1", user=NULL, opencgaConfig=NULL)
     if (is.null(opencgaConfig)){
         # Check values provided
         if (!is.null(host) & !is.null(user)){
-            ocga <- new("OpencgaR", host=host, version=version, user=user, sessionId="")
+            ocga <- new("OpencgaR", host=host, version=version, user=user, sessionId="", expirationTime="")
         }else if(!is.null(host)){
-            ocga <- new("OpencgaR", host=host, version=version, user="", sessionId="")
+            ocga <- new("OpencgaR", host=host, version=version, user="", sessionId="", expirationTime="")
         }else{
             cat("No connection parameters given. Using HGVA setup.")
             ocga <- new("OpencgaR")
@@ -169,9 +169,11 @@ readConfFile <- function(conf){
 #' conf <- "/path/to/conf/client-configuration.yml"
 #' con <- initOpencgaR(opencgaConfig=conf)
 #' con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
-#' }
+#' 
+#' 
 #' @export
-opencgaLogin <- function(opencga, userid=NULL, passwd=NULL, interactive=FALSE){
+opencgaLogin <- function(opencga, userid=NULL, passwd=NULL, interactive=FALSE, 
+                         autoRenew=FALSE, showToken=FALSE){
     if (class(opencga) == "OpencgaR"){
         host <- slot(object = opencga, name = "host")
         version <- slot(object = opencga, name = "version")
@@ -237,6 +239,15 @@ opencgaLogin <- function(opencga, userid=NULL, passwd=NULL, interactive=FALSE){
     sessionId <- res$response[[1]]$result[[1]]$sessionId
     opencga@user <- userid
     opencga@sessionId <- sessionId
+    opencga@showToken <- showToken
+    opencga@autoRenew <- autoRenew
+    
+    # get expiration time
+    loginInfo <- unlist(strsplit(x=sessionId, split="\\."))[2]
+    loginInfojson <- jsonlite::fromJSON(rawToChar(base64enc::base64decode(what=loginInfo)))
+    expirationTime <- as.POSIXct(loginInfojson$exp, origin="1970-01-01")
+    opencga@expirationTime <- as.character(expirationTime)
+    
     return(opencga)
 }
 

@@ -16,61 +16,61 @@
 #' \url{http://bioinfo.hpc.cam.ac.uk/opencga/webservices/}
 #' @export
 
-setMethod("userClient", "OpencgaR", function(OpencgaR, user, action, params=NULL) {
+setMethod("userClient", "OpencgaR", function(OpencgaR, user, action, params=NULL, ...) {
     category <- "users"
     switch(action,
            delete=fetchOpenCGA(object=OpencgaR, category=category, categoryId=user, 
-                               action="delete", params=params, httpMethod="GET"),
+                               action="delete", params=params, httpMethod="GET", ...),
            info=fetchOpenCGA(object=OpencgaR, category=category, categoryId=user, 
-                             action="info", params=params, httpMethod="GET"),
+                             action="info", params=params, httpMethod="GET", ...),
            projects=fetchOpenCGA(object=OpencgaR, category=category, categoryId=user,
-                                 action="projects", params=params, httpMethod="GET"),
+                                 action="projects", params=params, httpMethod="GET", ...),
            create=fetchOpenCGA(object=OpencgaR, category=category, action="create", 
-                               params=params, httpMethod="POST"),
+                               params=params, httpMethod="POST", ...),
            login=fetchOpenCGA(object=OpencgaR, category=category, categoryId=user, 
-                              action="login", params=params, httpMethod="POST"),
+                              action="login", params=params, httpMethod="POST", ...),
            password=fetchOpenCGA(object=OpencgaR, category=category, categoryId=user, 
                                           action="change-password", params=params, 
-                                          httpMethod="POST"),
+                                          httpMethod="POST", ...),
            update=fetchOpenCGA(object=OpencgaR, category=category, categoryId=user, 
-                               action="update", params=params, httpMethod="POST")
+                               action="update", params=params, httpMethod="POST", ...)
     )
 })
 
 #' @export
-setMethod("userConfigClient", "OpencgaR", function(OpencgaR, user, name, action, params=NULL) {
+setMethod("userConfigClient", "OpencgaR", function(OpencgaR, user, name, action, params=NULL, ...) {
     category <- "users"
     switch(action,
            delete=fetchOpenCGA(object=OpencgaR, category=category, categoryId=user, 
                                subcategory="configs", subcategoryId=name, 
-                               action="delete", params=params, httpMethod="GET"),
+                               action="delete", params=params, httpMethod="GET", ...),
            info=fetchOpenCGA(object=OpencgaR, category=category, categoryId=user, 
                              subcategory="configs", subcategoryId=name, 
-                             action="info", params=params, httpMethod="GET"),
+                             action="info", params=params, httpMethod="GET", ...),
            create=fetchOpenCGA(object=OpencgaR, category=category, categoryId=user, 
                                subcategory="configs", action="create", 
-                               params=params, httpMethod="POST")
+                               params=params, httpMethod="POST", ...)
     )
 })
 
 #' @export
-setMethod("userFilterClient", "OpencgaR", function(OpencgaR, user, name, action, params=NULL) {
+setMethod("userFilterClient", "OpencgaR", function(OpencgaR, user, name, action, params=NULL, ...) {
     category <- "users"
     switch(action,
            list=fetchOpenCGA(object=OpencgaR, category=category, categoryId=user, 
                              subcategory="configs/filters", action="list", 
-                             params=params, httpMethod="GET"),
+                             params=params, httpMethod="GET", ...),
            delete=fetchOpenCGA(object=OpencgaR, category=category, categoryId=user, 
                                subcategory="configs/filters", subcategoryId=name, 
-                               action="delete", params=params, httpMethod="GET"),
+                               action="delete", params=params, httpMethod="GET", ...),
            info=fetchOpenCGA(object=OpencgaR, category=category, categoryId=user, 
                              subcategory="configs/filters", subcategoryId=name, 
-                             action="info", params=params, httpMethod="GET"),
+                             action="info", params=params, httpMethod="GET", ...),
            create=fetchOpenCGA(object=OpencgaR, category=category, categoryId=user, 
                                subcategory="configs/filters", action="create", 
-                               params=params, httpMethod="POST"),
+                               params=params, httpMethod="POST", ...),
            update=fetchOpenCGA(object=OpencgaR, category=category, categoryId=user, 
                                subcategory="configs/filters", subcategoryId=name, 
-                               action="update", params=params, httpMethod="POST")
+                               action="update", params=params, httpMethod="POST", ...)
     )
 })

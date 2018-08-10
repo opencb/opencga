@@ -5,7 +5,8 @@
 \alias{familyClient,OpencgaR-method}
 \title{FamilyClient methods}
 \usage{
-\S4method{familyClient}{OpencgaR}(OpencgaR, family, action, params = NULL)
+\S4method{familyClient}{OpencgaR}(OpencgaR, family, action, params = NULL,
+  ...)
 }
 \arguments{
 \item{OpencgaR}{an object OpencgaR generated using initOpencgaR and/or opencgaLogin 

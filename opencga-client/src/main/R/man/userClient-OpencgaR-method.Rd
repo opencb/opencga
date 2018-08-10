@@ -5,7 +5,7 @@
 \alias{userClient,OpencgaR-method}
 \title{UserClient methods}
 \usage{
-\S4method{userClient}{OpencgaR}(OpencgaR, user, action, params = NULL)
+\S4method{userClient}{OpencgaR}(OpencgaR, user, action, params = NULL, ...)
 }
 \description{
 This function implements the OpenCGA calls for managing Users
