@@ -23,7 +23,9 @@ public class CatalogIndividualToSolrIndividualConverter implements ComplexTypeCo
         IndividualSolrModel individualSolrModel = new IndividualSolrModel();
 
         individualSolrModel.setUid(individual.getUid());
-        individualSolrModel.setMultipleTypeName(individual.getMultiples().getType());
+        if (individual.getMultiples() != null) {
+            individualSolrModel.setMultipleTypeName(individual.getMultiples().getType());
+        }
 
         if (individual.getSex() != null) {
             individualSolrModel.setSex(individual.getSex().name());
