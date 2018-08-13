@@ -116,9 +116,10 @@ public class SampleMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
 
         if (!sampleUidMap.isEmpty()) {
             // Obtain all the related individuals
-            Query query = new Query()
-                    .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                    .append(IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleUidMap.keySet());
+            Query query = new Query(IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleUidMap.keySet());
+            if (studyUid > 0) {
+                query.put(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+            }
             List<Document> individualList;
             try {
                 if (user != null) {
@@ -168,6 +169,9 @@ public class SampleMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
                 }
             }
             if (!includeList.isEmpty()) {
+                // We need to include also the sample uids to retrieve the data
+                includeList.add(IndividualDBAdaptor.QueryParams.SAMPLES.key());
+
                 queryOptions.put(QueryOptions.INCLUDE, includeList);
             }
         }
