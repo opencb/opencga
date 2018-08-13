@@ -2,7 +2,6 @@ package org.opencb.opencga.catalog.stats.solr.converters;
 
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.opencga.catalog.stats.solr.SampleSolrModel;
-import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Sample;
 
 /**
