@@ -29,19 +29,17 @@ public class CatalogSampleToSolrSampleConverter implements ComplexTypeConverter<
         sampleSolrModel.setUid(sample.getUid());
         sampleSolrModel.setSource(sample.getSource());
 
-        if (sample.getAttributes() != null) {
-            Individual individual = (Individual) sample.getAttributes().get("individual");
-            if (individual != null) {
-            sampleSolrModel.setIndividualUuid(individual.getUuid());
-            sampleSolrModel.setIndividualEthnicity(individual.getEthnicity());
-            if (individual.getKaryotypicSex() != null) {
-                sampleSolrModel.setIndividualKaryotypicSex(individual.getKaryotypicSex().name());
+        if (sample.getIndividual() != null) {
+            sampleSolrModel.setIndividualUuid(sample.getIndividual().getUuid());
+            sampleSolrModel.setIndividualEthnicity(sample.getIndividual().getEthnicity());
+            if (sample.getIndividual().getKaryotypicSex() != null) {
+                sampleSolrModel.setIndividualKaryotypicSex(sample.getIndividual().getKaryotypicSex().name());
             }
-            if (individual.getPopulation() != null) {
-                sampleSolrModel.setIndividualPopulation(individual.getPopulation().getName());
+            if (sample.getIndividual().getPopulation() != null) {
+                sampleSolrModel.setIndividualPopulation(sample.getIndividual().getPopulation().getName());
             }
         }
-        }
+
         sampleSolrModel.setRelease(sample.getRelease());
         sampleSolrModel.setVersion(sample.getVersion());
         sampleSolrModel.setCreationDate(sample.getCreationDate());

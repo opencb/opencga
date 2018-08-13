@@ -26,12 +26,8 @@ public class CatalogSampleToSolrSampleConverterTest {
                 setPopulation(new Individual.Population("valencian", "", ""));
 
         Sample sample = new Sample();
-        sample.setUid(500).setSource("Lab").setRelease(3).setVersion(2).setStatus(new Status("READY")).
+        sample.setUid(500).setSource("Lab").setRelease(3).setIndividual(individual).setVersion(2).setStatus(new Status("READY")).
                 setType("Sample").setSomatic(true).setAnnotationSets(AnnotationHelper.createAnnotation());
-
-        Map<String, Object> attributes = new HashedMap();
-        attributes.put("individual", individual);
-        sample.setAttributes(attributes);
 
         SampleSolrModel sampleSolrModel = new CatalogSampleToSolrSampleConverter().convertToStorageType(sample);
 
@@ -44,11 +40,11 @@ public class CatalogSampleToSolrSampleConverterTest {
         assertEquals(sampleSolrModel.isSomatic(), sample.isSomatic());
         assertEquals(sampleSolrModel.getPhenotypes().size(), 0);
 
-        Individual sampleIndividual = (Individual) sample.getAttributes().get("individual");
-        assertEquals(sampleSolrModel.getIndividualEthnicity(), sampleIndividual.getEthnicity());
-        assertEquals(sampleSolrModel.getIndividualUuid(), sampleIndividual.getUuid());
-        assertEquals(sampleSolrModel.getIndividualKaryotypicSex(), sampleIndividual.getKaryotypicSex().name());
-        assertEquals(sampleSolrModel.getIndividualPopulation(), sampleIndividual.getPopulation().getName());
+
+        assertEquals(sampleSolrModel.getIndividualEthnicity(), sample.getIndividual().getEthnicity());
+        assertEquals(sampleSolrModel.getIndividualUuid(), sample.getIndividual().getUuid());
+        assertEquals(sampleSolrModel.getIndividualKaryotypicSex(), sample.getIndividual().getKaryotypicSex().name());
+        assertEquals(sampleSolrModel.getIndividualPopulation(), sample.getIndividual().getPopulation().getName());
 
         assertEquals(sampleSolrModel.getAnnotations().get("annotations__o__annotName.vsId.a.ab2.ab2c1.ab2c1d1"), Arrays.asList(1, 2, 3, 4, 11, 12, 13, 14, 21));
         assertEquals(sampleSolrModel.getAnnotations().get("annotations__o__annotName.vsId.a.ab1.ab1c1"), Arrays.asList(true, false, false));

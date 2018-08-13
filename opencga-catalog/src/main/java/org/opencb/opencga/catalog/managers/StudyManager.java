@@ -1291,12 +1291,15 @@ public class StudyManager extends AbstractManager {
         QueryOptions sampleQueryOptions = new QueryOptions(queryOptions);
         sampleQueryOptions.put(QueryOptions.INCLUDE, Arrays.asList(SampleDBAdaptor.QueryParams.ID.key(),
                 SampleDBAdaptor.QueryParams.STUDY_UID.key(), SampleDBAdaptor.QueryParams.SOURCE.key(),
-                SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), SampleDBAdaptor.QueryParams.RELEASE.key(),
-                SampleDBAdaptor.QueryParams.VERSION.key(), SampleDBAdaptor.QueryParams.CREATION_DATE.key(),
-                SampleDBAdaptor.QueryParams.STATUS.key(), SampleDBAdaptor.QueryParams.TYPE.key(),
-                SampleDBAdaptor.QueryParams.SOMATIC.key(), SampleDBAdaptor.QueryParams.PHENOTYPES.key(),
-                SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), SampleDBAdaptor.QueryParams.UID.key(),
-                SampleDBAdaptor.QueryParams.ATTRIBUTES.key()));
+                SampleDBAdaptor.QueryParams.RELEASE.key(), SampleDBAdaptor.QueryParams.VERSION.key(),
+                SampleDBAdaptor.QueryParams.CREATION_DATE.key(), SampleDBAdaptor.QueryParams.STATUS.key(),
+                SampleDBAdaptor.QueryParams.TYPE.key(), SampleDBAdaptor.QueryParams.SOMATIC.key(),
+                SampleDBAdaptor.QueryParams.PHENOTYPES.key(), SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(),
+                SampleDBAdaptor.QueryParams.UID.key(),
+                SampleDBAdaptor.QueryParams.INDIVIDUAL.key() + "." + IndividualDBAdaptor.QueryParams.UUID.key(),
+                SampleDBAdaptor.QueryParams.INDIVIDUAL.key() + "." + IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(),
+                SampleDBAdaptor.QueryParams.INDIVIDUAL.key() + "." + IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
+                SampleDBAdaptor.QueryParams.INDIVIDUAL.key() + "." + IndividualDBAdaptor.QueryParams.ETHNICITY.key()));
         sampleQueryOptions.put("lazy", false);
 
         catalogSolrManager.insertCatalogCollection(this.sampleDBAdaptor.iterator(query,
