@@ -5,7 +5,7 @@
 \alias{jobClient,OpencgaR-method}
 \title{JobClient methods}
 \usage{
-\S4method{jobClient}{OpencgaR}(OpencgaR, jobId, action, params = NULL)
+\S4method{jobClient}{OpencgaR}(OpencgaR, jobId, action, params = NULL, ...)
 }
 \arguments{
 \item{OpencgaR}{an object OpencgaR generated using initOpencgaR and/or opencgaLogin 

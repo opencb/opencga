@@ -5,7 +5,8 @@
 \alias{cohortClient,OpencgaR-method}
 \title{CohortClient methods}
 \usage{
-\S4method{cohortClient}{OpencgaR}(OpencgaR, cohort, action, params = NULL)
+\S4method{cohortClient}{OpencgaR}(OpencgaR, cohort, action, params = NULL,
+  ...)
 }
 \arguments{
 \item{OpencgaR}{an object OpencgaR generated using initOpencgaR and/or opencgaLogin 

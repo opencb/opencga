@@ -16,52 +16,52 @@
 #' \url{http://bioinfo.hpc.cam.ac.uk/opencga/webservices/}
 #' @export
 
-setMethod("familyClient", "OpencgaR", function(OpencgaR, family, action, params=NULL) {
+setMethod("familyClient", "OpencgaR", function(OpencgaR, family, action, params=NULL, ...) {
     category <- "families"
     switch(action,
            annotationsets=fetchOpenCGA(object=OpencgaR, category=category, 
                                        categoryId=family, action="annotationsets", 
-                                       params=params, httpMethod="GET"),
+                                       params=params, httpMethod="GET", ...),
            search=fetchOpenCGA(object=OpencgaR, category=category, action="search", 
-                               params=params, httpMethod="GET"),
+                               params=params, httpMethod="GET", ...),
            acl=fetchOpenCGA(object=OpencgaR, category=category, categoryId=family, 
-                            action="acl", params=params, httpMethod="GET"),
+                            action="acl", params=params, httpMethod="GET", ...),
            info=fetchOpenCGA(object=OpencgaR, category=category, categoryId=family, 
-                             action="info", params=params, httpMethod="GET"),
+                             action="info", params=params, httpMethod="GET", ...),
            create=fetchOpenCGA(object=OpencgaR, category=category,  
-                               action="create", params=params, httpMethod="POST"),
+                               action="create", params=params, httpMethod="POST", ...),
            update=fetchOpenCGA(object=OpencgaR, category=category, categoryId=family, 
-                               action="update", params=params, httpMethod="POST")
+                               action="update", params=params, httpMethod="POST", ...)
     )
 })
 
 #' @export
 setMethod("familyAnnotationsetClient", "OpencgaR", function(OpencgaR, family, annotationsetName, 
-                                                         action, params=NULL) {
+                                                         action, params=NULL, ...) {
     category <- "families"
     switch(action,
            search=fetchOpenCGA(object=OpencgaR, category=category, categoryId=family, 
                                subcategory="annotationsets", action="search", 
-                               params=params, httpMethod="GET"),
+                               params=params, httpMethod="GET", ...),
            delete=fetchOpenCGA(object=OpencgaR, category=category, categoryId=family, 
                                subcategory="annotationsets", subcategoryId=annotationsetName, 
-                               action="delete", params=params, httpMethod="GET"),
+                               action="delete", params=params, httpMethod="GET", ...),
            create=fetchOpenCGA(object=OpencgaR, category=category, categoryId=family, 
                                subcategory="annotationsets", action="create", 
-                               params=params, httpMethod="POST", as.queryParam="variableSet"),
+                               params=params, httpMethod="POST", as.queryParam="variableSet", ...),
            update=fetchOpenCGA(object=OpencgaR, category=category, categoryId=family, 
                                subcategory="annotationsets", subcategoryId=annotationsetName, 
-                               action="update", params=params, httpMethod="POST")
+                               action="update", params=params, httpMethod="POST", ...)
     )
 })
 
 #' @export
-setMethod("familyAclClient", "OpencgaR", function(OpencgaR, memberIds, action, params=NULL) {
+setMethod("familyAclClient", "OpencgaR", function(OpencgaR, memberIds, action, params=NULL, ...) {
     category <- "families"
     switch(action,
            update=fetchOpenCGA(object=OpencgaR, category=category, subcategory="acl", 
                                subcategoryId=memberIds, action="update", params=params, 
-                               httpMethod="POST")
+                               httpMethod="POST", ...)
     )
 })
 

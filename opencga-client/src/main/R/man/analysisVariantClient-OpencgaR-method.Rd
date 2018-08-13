@@ -5,7 +5,8 @@
 \alias{analysisVariantClient,OpencgaR-method}
 \title{analysisVariantClient methods}
 \usage{
-\S4method{analysisVariantClient}{OpencgaR}(OpencgaR, action, params = NULL)
+\S4method{analysisVariantClient}{OpencgaR}(OpencgaR, action, params = NULL,
+  ...)
 }
 \arguments{
 \item{OpencgaR}{an object OpencgaR generated using initOpencgaR and/or opencgaLogin 
