@@ -177,10 +177,15 @@ public class VariantSearchModel {
         sift = MISSING_VALUE;
         polyphen = MISSING_VALUE;
 
+        this.xrefs = new ArrayList<>();
+        this.studies = new ArrayList<>();
         this.genes = new ArrayList<>();
+        this.biotypes = new ArrayList<>();
         this.soAcc = new ArrayList<>();
         this.geneToSoAcc = new ArrayList<>();
+        this.traits = new ArrayList<>();
         this.other = new ArrayList<>();
+        this.stats = new HashMap<>();
         this.popFreq = new HashMap<>();
         this.gt = new HashMap<>();
         this.dp = new HashMap<>();
