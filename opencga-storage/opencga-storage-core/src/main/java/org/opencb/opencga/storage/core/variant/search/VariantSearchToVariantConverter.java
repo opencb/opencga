@@ -133,7 +133,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 // Sample management
                 stringToSplit = variantSearchModel.getSampleFormat().get("sampleFormat" + suffix + "sampleName");
                 if (StringUtils.isNotEmpty(stringToSplit)) {
-                    List<String> sampleNames = Arrays.asList(stringToSplit.split(LIST_SEPARATOR));
+                    String[] sampleNames = stringToSplit.split(LIST_SEPARATOR);
 
                     studyEntry.setSamplesData(new ArrayList());
                     Map<String, Integer> samplePosition = new HashMap<>();
@@ -509,8 +509,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             });
         }
 
-        // Set Studies Alias
-        if (variant.getStudies() != null && CollectionUtils.isNotEmpty(variant.getStudies())) {
+        // convert Study related information
+        if (CollectionUtils.isNotEmpty(variant.getStudies())) {
             ObjectWriter writer = new ObjectMapper().writer();
 
             for (StudyEntry studyEntry : variant.getStudies()) {
@@ -530,55 +530,56 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     }
                 }
 
-                // Samples, genotypes and format fields management
-                if (MapUtils.isNotEmpty(studyEntry.getSamplesPosition())) {
-
+                // samples, genotypes and format fields conversion
+                if (MapUtils.isNotEmpty(studyEntry.getSamplesPosition()) && ListUtils.isNotEmpty(studyEntry.getOrderedSamplesName())) {
                     List<String> sampleNames = studyEntry.getOrderedSamplesName();
-                    if (ListUtils.isNotEmpty(sampleNames)) {
-                        // Sanity check
-                        if (ListUtils.isNotEmpty(studyEntry.getSamplesData())
-                                && sampleNames.size() == studyEntry.getSamplesData().size()) {
-                            String suffix = VariantSearchUtils.FIELD_SEPARATOR + studyId + VariantSearchUtils.FIELD_SEPARATOR;
-                            // Save sample formats in a map (after, to JSON string), including sample names and GT
-                            variantSearchModel.getSampleFormat().put("sampleFormat" + suffix + "sampleName",
-                                    StringUtils.join(sampleNames, LIST_SEPARATOR));
-                            int dpPos = -1;
-                            if (ListUtils.isNotEmpty(studyEntry.getFormat())) {
-                                variantSearchModel.getSampleFormat().put("sampleFormat" + suffix + "format",
-                                        StringUtils.join(studyEntry.getFormat(), LIST_SEPARATOR));
-                                for (int i = 0; i < studyEntry.getFormat().size(); i++) {
-                                    if ("DP".equals(StringUtils.upperCase(studyEntry.getFormat().get(i)))) {
-                                        dpPos = i;
-                                        break;
-                                    }
+                    // sanity check, the number od sample names and sample data must be the same
+                    if (ListUtils.isNotEmpty(studyEntry.getSamplesData()) && sampleNames.size() == studyEntry.getSamplesData().size()) {
+                        String suffix = VariantSearchUtils.FIELD_SEPARATOR + studyId + VariantSearchUtils.FIELD_SEPARATOR;
+                        // Save sample formats in a map (after, to JSON string), including sample names and GT
+                        variantSearchModel.getSampleFormat().put("sampleFormat" + suffix + "sampleName",
+                                StringUtils.join(sampleNames, LIST_SEPARATOR));
+
+                        // find the index position of DP in the FORMAT
+                        int dpIndexPos = -1;
+                        if (ListUtils.isNotEmpty(studyEntry.getFormat())) {
+                            variantSearchModel.getSampleFormat().put("sampleFormat" + suffix + "format",
+                                    StringUtils.join(studyEntry.getFormat(), LIST_SEPARATOR));
+
+                            // find the index position of DP in the FORMAT
+                            for (int i = 0; i < studyEntry.getFormat().size(); i++) {
+                                if ("DP".equalsIgnoreCase(studyEntry.getFormat().get(i))) {
+                                    dpIndexPos = i;
+                                    break;
                                 }
                             }
-                            for (int i = 0; i < sampleNames.size(); i++) {
-                                suffix = VariantSearchUtils.FIELD_SEPARATOR + studyId
-                                        + VariantSearchUtils.FIELD_SEPARATOR + sampleNames.get(i);
-
-                                // Save genotype (gt) and depth (dp) where study and sample name as key
-                                variantSearchModel.getGt().put("gt" + suffix, studyEntry.getSampleData(i).get(0));
-
-                                if (dpPos != -1) {
-                                    try {
-                                        variantSearchModel.getDp().put("dp" + suffix, Integer.valueOf(studyEntry.getSampleData(i)
-                                                .get(dpPos)));
-                                    } catch (Exception e) {
-                                        logger.info("Problem converting from variant to variant search when getting DP value from sample "
-                                                        + "{}: {}", sampleNames.get(i), e.getMessage());
-                                    }
-                                }
-
-                                // Save formats for each sample (after, to JSON string)
-                                if (ListUtils.isNotEmpty(studyEntry.getSamplesData().get(i))) {
-                                    variantSearchModel.getSampleFormat().put("sampleFormat" + suffix,
-                                            StringUtils.join(studyEntry.getSamplesData().get(i), LIST_SEPARATOR));
-                                }
-                            }
-                        } else {
-                            logger.error("Mismatch sizes: please, check your sample names, sample data and format array");
                         }
+
+                        for (int i = 0; i < sampleNames.size(); i++) {
+                            suffix = VariantSearchUtils.FIELD_SEPARATOR + studyId
+                                    + VariantSearchUtils.FIELD_SEPARATOR + sampleNames.get(i);
+
+                            // Save genotype (gt) and depth (dp) where study and sample name as key
+                            variantSearchModel.getGt().put("gt" + suffix, studyEntry.getSampleData(i).get(0));
+
+                            if (dpIndexPos != -1) {
+                                try {
+                                    variantSearchModel.getDp()
+                                            .put("dp" + suffix, Integer.valueOf(studyEntry.getSampleData(i).get(dpIndexPos)));
+                                } catch (Exception e) {
+                                    logger.info("Problem converting from variant to variant search when getting DP value from sample "
+                                            + "{}: {}", sampleNames.get(i), e.getMessage());
+                                }
+                            }
+
+                            // Save formats for each sample (after, to JSON string)
+                            if (ListUtils.isNotEmpty(studyEntry.getSamplesData().get(i))) {
+                                variantSearchModel.getSampleFormat().put("sampleFormat" + suffix,
+                                        StringUtils.join(studyEntry.getSamplesData().get(i), LIST_SEPARATOR));
+                            }
+                        }
+                    } else {
+                        logger.error("Mismatch sizes: please, check your sample names, sample data and format array");
                     }
                 }
 
