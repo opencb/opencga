@@ -1243,7 +1243,8 @@ public class StudyManager extends AbstractManager {
                 FileDBAdaptor.QueryParams.RELEASE.key(), FileDBAdaptor.QueryParams.STATUS.key(),
                 FileDBAdaptor.QueryParams.EXTERNAL.key(), FileDBAdaptor.QueryParams.SIZE.key(),
                 FileDBAdaptor.QueryParams.SOFTWARE.key(), FileDBAdaptor.QueryParams.EXPERIMENT_UID.key(),
-                FileDBAdaptor.QueryParams.RELATED_FILES.key(), FileDBAdaptor.QueryParams.SAMPLE_UIDS.key()));
+                FileDBAdaptor.QueryParams.RELATED_FILES.key(), FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(),
+                FileDBAdaptor.QueryParams.ANNOTATION_SETS.key()));
 
         catalogSolrManager.insertCatalogCollection(this.fileDBAdaptor.iterator(query,
                 fileQueryOptions), new CatalogFileToSolrFileConverter(), CatalogSolrManager.FILE_SOLR_COLLECTION);

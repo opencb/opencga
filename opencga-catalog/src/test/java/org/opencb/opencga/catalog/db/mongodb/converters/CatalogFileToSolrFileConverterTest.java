@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 /**
  * Created by wasim on 13/08/18.
@@ -24,9 +25,9 @@ public class CatalogFileToSolrFileConverterTest {
                 "test/base", "convertorTest", new File.FileStatus("READY"), 1111L, 2);
         file.setUid(111).setSamples(Arrays.asList(new Sample().setId("1"), new Sample().setId("2")))
                 .setExperiment(new Experiment().setName("Experiment")).setSoftware(new Software().setName("Software"));
+        file.setAnnotationSets(AnnotationHelper.createAnnotation());
 
-        CatalogFileToSolrFileConverter converter = new CatalogFileToSolrFileConverter();
-        FileSolrModel fileSolrModel = converter.convertToStorageType(file);
+        FileSolrModel fileSolrModel = new CatalogFileToSolrFileConverter().convertToStorageType(file);
 
         assert (fileSolrModel.getUid() == file.getUid());
         assert (fileSolrModel.getName() == file.getName());
@@ -41,6 +42,15 @@ public class CatalogFileToSolrFileConverterTest {
         assert (fileSolrModel.getSoftware() == file.getSoftware().getName());
         assert (fileSolrModel.getExperiment() == file.getExperiment().getName());
         assert (fileSolrModel.getSamples() == file.getSamples().size());
+
+        assertEquals(fileSolrModel.getAnnotations().get("annotations__o__annotName.vsId.a.ab2.ab2c1.ab2c1d1"), Arrays.asList(1, 2, 3, 4, 11, 12, 13, 14, 21));
+        assertEquals(fileSolrModel.getAnnotations().get("annotations__o__annotName.vsId.a.ab1.ab1c1"), Arrays.asList(true, false, false));
+        assertEquals(fileSolrModel.getAnnotations().get("annotations__s__annotName.vsId.a.ab1.ab1c2"), "hello world");
+        assertEquals(fileSolrModel.getAnnotations().get("annotations__o__annotName.vsId.a.ab2.ab2c1.ab2c1d2"), Arrays.asList("hello ab2c1d2 1", "hello ab2c1d2 2"));
+        assertEquals(fileSolrModel.getAnnotations().get("annotations__o__annotName.vsId.a.ab3.ab3c1.ab3c1d1"), Arrays.asList(Arrays.asList("hello"), Arrays.asList("hello2", "bye2"), Arrays.asList("byeee2", "hellooo2")));
+        assertEquals(fileSolrModel.getAnnotations().get("annotations__o__annotName.vsId.a.ab3.ab3c1.ab3c1d2"), Arrays.asList(2.0, 4.0, 24.0));
+        assertNull(fileSolrModel.getAnnotations().get("nothing"));
+        assertEquals(fileSolrModel.getAnnotations().keySet().size(), 6);
 
     }
 
