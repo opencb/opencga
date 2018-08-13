@@ -2,6 +2,7 @@ package org.opencb.opencga.catalog.stats.solr.converters;
 
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.opencga.catalog.stats.solr.SampleSolrModel;
+import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Sample;
 
 /**
@@ -28,14 +29,17 @@ public class CatalogSampleToSolrSampleConverter implements ComplexTypeConverter<
         sampleSolrModel.setUid(sample.getUid());
         sampleSolrModel.setSource(sample.getSource());
 
-        if (sample.getIndividual() != null) {
-            sampleSolrModel.setIndividualUuid(sample.getIndividual().getUuid());
-            sampleSolrModel.setIndividualEthnicity(sample.getIndividual().getEthnicity());
-            if (sample.getIndividual().getKaryotypicSex() != null) {
-                sampleSolrModel.setIndividualKaryotypicSex(sample.getIndividual().getKaryotypicSex().name());
-            }
-            if (sample.getIndividual().getPopulation() != null) {
-                sampleSolrModel.setIndividualPopulation(sample.getIndividual().getPopulation().getName());
+        if (sample.getAttributes() != null) {
+            Individual individual = (Individual) sample.getAttributes().get("individual");
+            if (individual != null) {
+                sampleSolrModel.setIndividualUuid(individual.getUuid());
+                sampleSolrModel.setIndividualEthnicity(individual.getEthnicity());
+                if (individual.getKaryotypicSex() != null) {
+                    sampleSolrModel.setIndividualKaryotypicSex(individual.getKaryotypicSex().name());
+                }
+                if (individual.getPopulation() != null) {
+                    sampleSolrModel.setIndividualPopulation(individual.getPopulation().getName());
+                }
             }
         }
 
