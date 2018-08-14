@@ -86,6 +86,18 @@ public class CatalogStudyConfigurationFactory {
         return studyConfiguration;
     }
 
+    /**
+     * Updates catalog metadata from storage study configuration.
+     *
+     * 1) Update cohort ALL
+     * 2) Update cohort status (calculating / invalid)
+     * 3) Update file status
+     *
+     *
+     * @param studyConfiguration    StudyConfiguration
+     * @param sessionId             User session id
+     * @throws CatalogException     if there is an error with catalog
+     */
     public void updateCatalogFromStudyConfiguration(StudyConfiguration studyConfiguration, String sessionId)
             throws CatalogException {
 
