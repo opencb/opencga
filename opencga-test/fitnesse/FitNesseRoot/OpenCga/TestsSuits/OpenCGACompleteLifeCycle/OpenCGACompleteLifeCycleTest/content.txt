@@ -162,21 +162,21 @@
 
 !3 (Negative) Get Sample A1 with User A
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/samples/$sA1Id/info?sid=$userASessionId |403|  Content-Type: application/json || 
+| GET | /v1/samples/$sA1Id/info?sid=$userASessionId&study=$studyAId |403|  Content-Type: application/json || 
 
 !3 Create ACL For User A for Sample A1
 !|Table: Rest Fixture | $baseURL |
 | setBody | { "permissions": "VIEW", "action": "SET" , "sample" : "$sA1Id"}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/samples/acl/$userA/update?sid=$sessionId|200|  Content-Type: application/json ||
+| POST | /v1/samples/acl/$userA/update?sid=$sessionId&study=$studyAId|200|  Content-Type: application/json ||
 
 !3 Get Sample with User A
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/samples/$sA1Id/info?sid=$userASessionId |200|  Content-Type: application/json |jsonbody.response[0].result[0].id == '$sA1Id'| 
+| GET | /v1/samples/$sA1Id/info?sid=$userASessionId&study=$studyAId |200|  Content-Type: application/json |jsonbody.response[0].result[0].id == '$sA1Id'| 
 
 !3 (Negative) Get Sample A2 with User A
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/samples/$sA2Id/info?sid=$userASessionId |500|  Content-Type: application/json || 
+| GET | /v1/samples/$sA2Id/info?sid=$userASessionId&study=$studyAId |500|  Content-Type: application/json || 
 
 !3 Create Cohort A1 With Admin
 !|Table: Rest Fixture | $baseURL |
@@ -208,17 +208,17 @@
 !|Table: Rest Fixture | $baseURL |
 | setBody |  {  "permissions": "", "action": "SET",  "cohort": "$cA1Id"}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/cohorts/acl/$analyst/update?sid=$sessionId|200|  Content-Type: application/json ||
+| POST | /v1/cohorts/acl/$analyst/update?sid=$sessionId&study=$studyAId|200|  Content-Type: application/json ||
 
 !3 (Negative) Get Cohort A1 with Analyst After Restriction
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/cohorts/$cA1Id/info?sid=$analystSessionId |403|  Content-Type: application/json ||
+| GET | /v1/cohorts/$cA1Id/info?sid=$analystSessionId&study=$studyAId |403|  Content-Type: application/json ||
 
 !3 Remove Restricted ACL For Analyst for Cohort A1
 !|Table: Rest Fixture | $baseURL |
 | setBody |  {  "permissions": "", "action": "REMOVE",  "cohort": "$cA1Id"}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/cohorts/acl/$analyst/update?sid=$sessionId|200|  Content-Type: application/json ||
+| POST | /v1/cohorts/acl/$analyst/update?sid=$sessionId&study=$studyAId|200|  Content-Type: application/json ||
 
 !3 Create Variable Set A1 With Admin
 !|Table: Rest Fixture  | $baseURL |
@@ -261,11 +261,12 @@
 
 !3 Search Annotation Set 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/samples/$sA1Id/annotationsets/search?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result[0].name == '$asA1'|
-
+| GET | /v1/samples/$sA1Id/annotationsets/search?sid=$sessionId&variableSet=$vsAId1&study=$studyAId|200|  Content-Type: application/json |jsonbody.response[0].result[0].name == '$asA1'|
+| GET | /v1/samples/$sA1Id/annotationsets/search?sid=$sessionId&variableSet=$vsAId1&study=$studyAId|200|  Content-Type: application/json |jsonbody.response[0].result[0].id == '$asA1'|
 !3 Search Annotation Set By Annotation
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/samples/$sA1Id/annotationsets/search?sid=$sessionId&variableSet=$vsAId1&annotation=variable1=FALSE|200|  Content-Type: application/json |jsonbody.response[0].result[0].annotations[0].name == 'variable1'|
+| GET | /v1/samples/$sA1Id/annotationsets/search?sid=$sessionId&variableSet=$vsAId1&annotation=variable1=FALSE&study=$studyAId|200|  Content-Type: application/json ||
+|let||js|response.jsonbody.response[0].result[0].annotations["variable1"]|false|
 
 !3 Create Annotation Set Individual A1 With Analyst
 !|Table: Rest Fixture  | $baseURL |

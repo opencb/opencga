@@ -8,14 +8,14 @@
 
 !3 Create Variable Set  
 !|Table: Rest Fixture  | $baseURL |
-| setBody |  {  "unique": false,  "name": "$vsName1",  "description": "string",  "variables": [{"name": "var_int", "type" : "INTEGER", "defaultValue" : "10" , "required" : false,"multiValue": false } , {"name": "var_double", "type" : "DOUBLE", "defaultValue" : "20.5" , "required" : false,"multiValue": false }]}|
+| setBody |  { "id":"$vsName1", "unique": false,  "name": "$vsName1",  "description": "string",  "variables": [{"name": "var_int","id": "var_int", "type" : "INTEGER", "defaultValue" : "10" , "required" : false,"multiValue": false } , {"id": "var_double", "name": "var_double", "type" : "DOUBLE", "defaultValue" : "20.5" , "required" : false,"multiValue": false }]}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/variableset/create?sid=$sessionId&study=$studyId |200| Content-Type : application/json||
 |let|variableSetId1|js|response.jsonbody.response[0].result[0].id||
 
 !3 Create Second Variable Set  
 !|Table: Rest Fixture  | $baseURL |
-| setBody |  {  "unique": false,  "name": "$vsName2",  "description": "string",  "variables": [ {  "name": "var_boolean","category": "string","type": "BOOLEAN","defaultValue": {},"required": false,"multiValue": false          }  ]}|
+| setBody |  { "id": "$vsName2", "unique": false,  "name": "$vsName2",  "description": "string",  "variables": [ {  "id": "var_boolean","name": "var_boolean","category": "string","type": "BOOLEAN","defaultValue": {},"required": false,"multiValue": false          }  ]}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/variableset/create?sid=$sessionId&study=$studyId |200| Content-Type : application/json||
 |let|variableSetId2|js|response.jsonbody.response[0].result[0].id||
@@ -27,7 +27,7 @@
 #Enhancement Req # 545
 !3 Verify Variable Stored Value
 !|Table: Rest Fixture  | $baseURL |
-| GET | /v1/variableset/search?sid=$sessionId&study=$studyId&id=$variableSetId1 |200| Content-Type : application/json|jsonbody.response[0].result[0].variables[0].name == 'var_double' && jsonbody.response[0].result[0].variables[1].name == 'var_int'|
+| GET | /v1/variableset/search?sid=$sessionId&study=$studyId&id=$variableSetId1 |200| Content-Type : application/json|jsonbody.response[0].result[0].variables[0].name == 'var_double' && jsonbody.response[0].result[0].variables[1].id == 'var_int'|
 |let||js|response.jsonbody.response[0].result[0].variables[0].defaultValue|20.5|
 |let||js|response.jsonbody.response[0].result[0].variables[1].defaultValue|10|
 
@@ -45,15 +45,18 @@
 !|Table: Rest Fixture  | $baseURL |
 | setBody |  { "name" : "$variableSetId1" }  ]}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/variableset/$variableSetId1/field/add?sid=$sessionId |200| Content-Type : application/json|jsonbody.error == ''|
+| POST | /v1/variableset/$variableSetId1/field/add?sid=$sessionId || Content-Type : application/json||
+#| POST | /v1/variableset/$variableSetId1/field/add?sid=$sessionId |200| Content-Type : application/json|jsonbody.error == ''|
 
 !3 Rename Field From Variable Set  
 !|Table: Rest Fixture  | $baseURL |
-| GET | /v1/variableset/$variableSetId1/field/rename?sid=$sessionId&oldName=$variableSetId1&newName=$vsName1 |200| Content-Type : application/json|jsonbody.error == ''|
+| GET | /v1/variableset/$variableSetId1/field/rename?sid=$sessionId&oldName=$variableSetId1&newName=$vsName1 || Content-Type : application/json||
+#| GET | /v1/variableset/$variableSetId1/field/rename?sid=$sessionId&oldName=$variableSetId1&newName=$vsName1 |200| Content-Type : application/json|jsonbody.error == ''|
 
 !3 Remove Field From Variable Set  
 !|Table: Rest Fixture  | $baseURL |
-| GET | /v1/variableset/$variableSetId1/field/delete?sid=$sessionId&name=$vsName1|200| Content-Type : application/json|jsonbody.error == ''|
+| GET | /v1/variableset/$variableSetId1/field/delete?sid=$sessionId&name=$vsName1|| Content-Type : application/json||
+#| GET | /v1/variableset/$variableSetId1/field/delete?sid=$sessionId&name=$vsName1|200| Content-Type : application/json|jsonbody.error == ''|
 
 !3 Delete Un-Used Variable Set  
 !|Table: Rest Fixture  | $baseURL |
@@ -62,3 +65,4 @@
 !3 Search Deleted Variable Set  
 !|Table: Rest Fixture  | $baseURL |
 | GET | /v1/variableset/search?sid=$sessionId&study=$studyId&id=$variableSetId1 |500| Content-Type : application/json|jsonbody.error == 'Variable set $variableSetId1 not found' && jsonbody.response[0].result.length == '0.0'|
+| GET | /v1/variableset/search?sid=$sessionId&study=$studyId&id=$variableSetId1 || Content-Type : application/json||

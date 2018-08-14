@@ -7,6 +7,8 @@
 | let | sName | js | Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5) | |
 | let | sName2 | js | Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5) | |
 | let | updatedName | js | Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5) | |
+| let | aS1 | js | Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5) | |
+| let | aS2 | js | Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5) | |
 
 !3 Create First Individual
 !| Table: Rest Fixture | $baseURL |
@@ -52,13 +54,13 @@
 !| Table: Rest Fixture | $baseURL |
 | GET | /v1/individuals/$individualId/info?sid=$sessionId | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].id == '$individualId' |
 
-!3 Update Individual
+!3 Update Individual  
 !| Table: Rest Fixture | $baseURL |
 | setBody | {"sex" : "MALE" ,"karyotypicSex" : "XY" , "lifeStatus" : "ALIVE" } |
 | setHeader | Content-Type:application/json |
 | POST | /v1/individuals/$individualId/update?sid=$sessionId&incVersion=true | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].sex == 'MALE' && jsonbody.response[0].result[0].lifeStatus == 'ALIVE' |
 
-!3 Update Individual With Samples (1,2)
+!3 Update Individual With Samples (1,2)  
 !| Table: Rest Fixture | $baseURL |
 | setBody | {"samples" :["$sName", "$sName2"]} |
 | setHeader | Content-Type:application/json |
@@ -68,7 +70,8 @@
 !| Table: Rest Fixture | $baseURL |
 | GET | /v1/individuals/search?sid=$sessionId&name=$iName2 | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].samples.length == 0 |
 
-!3 Update Only Sample Version
+
+!3 Update Only Sample Version 
 !| Table: Rest Fixture | $baseURL |
 | setBody | {} |
 | setHeader | Content-Type:application/json |
@@ -87,7 +90,6 @@
 !3 Get Individual
 !| Table: Rest Fixture | $baseURL |
 | GET | /v1/individuals/$individualId/info?sid=$sessionId | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].sex == 'MALE' && jsonbody.response[0].result[0].lifeStatus == 'ALIVE' |
-
 
 !3 Get Individual Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
@@ -143,11 +145,11 @@
 
 !3 Get Multiple Individuals With One Invalid Entry
 !| Table: Rest Fixture | $baseURL |
-| GET | /v1/individuals/$individualId2,0000,$individualId/info?sid=$sessionId&study=$study |500 | Content-Type: application/json |jsonbody.error == "Indivivual id '0' does not exist" |
+| GET | /v1/individuals/$individualId2,0000,$individualId/info?sid=$sessionId&study=$study |500 | Content-Type: application/json |jsonbody.error == "Individual 0000 not found" |
 
 !3 Get Multiple Individuals With One Invalid Entry
 !| Table: Rest Fixture | $baseURL |
-| GET | /v1/individuals/$individualId,0000,$individualId2/info?sid=$sessionId&study=$study&silent=true |200 | Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$individualId' && jsonbody.response[1].errorMsg == "org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException: Permission denied. User '$user' cannot VIEW Individual { id: -1 }" && jsonbody.response[2].result[0].id == '$individualId2' |
+| GET | /v1/individuals/$individualId,0000,$individualId2/info?sid=$sessionId&study=$study&silent=true |200 | Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$individualId' && jsonbody.response[1].errorMsg == "org.opencb.opencga.catalog.exceptions.CatalogException: Individual 0000 not found" && jsonbody.response[2].result[0].id == '$individualId2' |
 
 !3 Get Individual ACL
 !| Table: Rest Fixture | $baseURL |
@@ -198,6 +200,16 @@
 !3 Update (SET) ACL Individual And Propagate (True)
 !| Table: Rest Fixture | $baseURL |
 | setBody | {  "permissions": "DELETE", "action": "SET", "individual" : "$individualId" , "propagate" : "true"} |
+| setHeader | Content-Type:application/json |
+| POST | /v1/individuals/acl/$userA/update?sid=$sessionId&study=$study | 200 | Content-Type: application/json ||
+
+!3 Get Individual 2
+!| Table: Rest Fixture | $baseURL |
+| GET | /v1/individuals/$individualId2/info?sid=$sessionId | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].samples.length == 0 |
+
+!3 Update (SET) ACL Individual And Propagate True Without Any Attached Samples
+!| Table: Rest Fixture | $baseURL |
+| setBody | {  "permissions": "DELETE", "action": "SET", "individual" : "$individualId2" , "propagate" : "true"} |
 | setHeader | Content-Type:application/json |
 | POST | /v1/individuals/acl/$userA/update?sid=$sessionId&study=$study | 200 | Content-Type: application/json ||
 
@@ -290,9 +302,10 @@
 !| Table: Rest Fixture | $baseURL |
 | GET | /v1/individuals/search?sid=$sessionId&study=$study&snapshot=$currentRelease | 200 | Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length =='2'|
 
-!3 Get First Release (Individual)
+!3 Get First Release (Individual)  
 !| Table: Rest Fixture | $baseURL |
 | GET | /v1/individuals/search?sid=$sessionId&study=$study&release=$releaseNumber | 200 | Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id =='$individualId' && jsonbody.response[0].result.length =='1'&& jsonbody.response[0].result[0].version =='3'||
+| GET | /v1/individuals/search?sid=$sessionId&study=$study&release=$releaseNumber | 200 | Content-Type: application/json |||
 
 !3 Get Second Release (Individual) 
 !| Table: Rest Fixture | $baseURL |
@@ -327,9 +340,103 @@
 !| Table: Rest Fixture | $baseURL |
 | GET | /v1/individuals/search?sid=$sessionId&study=$study&release=%3C$currentRelease | 200 | Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id =='$individualId' && jsonbody.response[0].result.length =='1'&& jsonbody.response[0].result[0].version =='3'||
 
+!3 Create Annotation Set
+!|Table: Rest Fixture  | $baseURL |
+| setBody |{ "annotationSets": [ { "name": "$aS1", "variableSetId": "$gVariableSetId", "annotations": {"var_int": "10", "var_double": "175.58"} } ]}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/individuals/$individualId/update?sid=$sessionId&study=$studyId |200|Content-Type : application/json||
+
+!3 Search Annotation Set By Annotation
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/individuals/$individualId/annotationsets/search?sid=$sessionId&variableSet=$gVariableSetId&annotation=var_int=10|200|  Content-Type: application/json ||
+
+!3 Create Nested Annotation
+!|Table: Rest Fixture | $baseURL |
+|setBody|{  "annotationSets": [{"name": "Testing", "variableSetId": "$gVariableSetId2", "annotations": { "outer_var" : [{"inner_first_var":1000.57 , "inner_second_var":2000}]}}]}|
+|setHeader|Content-Type:application/json|
+|POST| /v1/individuals/$individualId/update?sid=$sessionId |200|  Content-Type: application/json |jsonbody.response[0].result[0].annotationSets.length == 2|
+
+
+!3 Search Annotation Set By Variable Set
+!|Table: Rest Fixture | $baseURL |
+| GET |/v1/individuals/search?sid=$sessionId&study=$study|| Content-Type: application/json ||
+| GET |/v1/individuals/search?sid=$sessionId&study=$study&annotation=variableSet=$gVariableSetId|| Content-Type: application/json |jsonbody.response[0].numTotalResults == 1|
+| GET |/v1/individuals/search?sid=$sessionId&study=$study&annotation=variableSet!=$gVariableSetId||Content-Type: application/json |jsonbody.response[0].result[0].id == '$individualId'|
+| GET |/v1/individuals/search?sid=$sessionId&study=$study&annotation=variableSet=$gVariableSetId2||Content-Type: application/json |jsonbody.response[0].result[0].annotationSets.length == 2|
+| GET |/v1/individuals/search?sid=$sessionId&study=$study&annotation=variableSet!=$gVariableSetId2||Content-Type: application/json|jsonbody.response[0].result[0].id == '$individualId'|
+| GET |/v1/individuals/search?sid=$sessionId&study=$study&annotation=variableSet!==$gVariableSetId||Content-Type: application/json |jsonbody.response[0].result[0].annotationSets.length == 0|
+| GET |/v1/individuals/search?sid=$sessionId&study=$study&annotation=variableSet!==$gVariableSetId2||Content-Type: application/json|jsonbody.response[0].result[0].annotationSets.length == 0|
+| GET |/v1/individuals/search?sid=$sessionId&study=$study&annotation=variableSet!==$dummyVSId||Content-Type: application/json|jsonbody.response[0].result[0].annotationSets.length == 2|
+
+
+
+
+
+!3 Search Annotation Set By Annotation
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/individuals/search?sid=$sessionId&study=$study&annotation=annotationSet=Testing||Content-Type: application/json |jsonbody.response[0].result[0].annotationSets.length == 2|
+
+!3 Search Annotation Set By Annotation  
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/individuals/search?sid=$sessionId&study=$study&annotation=annotationSet=$aS1||Content-Type: application/json |jsonbody.response[0].result[0].annotationSets.length == 2|
+
+!3 Search Annotation Set By Annotation With Exclude
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/individuals/search?sid=$sessionId&study=$study&annotation=annotationSet=$aS1&exclude=annotationSet.Testing||  Content-Type: application/json |jsonbody.response[0].result[0].annotationSets.length == 1 && jsonbody.response[0].result[0].annotationSets[0].name == "$aS1"|
+
+!3 Update Variable in An Annotation   
+!|Table: Rest Fixture | $baseURL |
+| setBody |{"var_int": "545"}|
+|setHeader|Content-Type:application/json|
+|POST| /v1/individuals/$individualId/annotationSets/$aS1/annotations/update?sid=$sessionId |200|  Content-Type: application/json ||
+
+!3 (Negative) Update Variable in An Annotation
+!|Table: Rest Fixture | $baseURL |
+| setBody |{"var_int": "542.5"}|
+|setHeader|Content-Type:application/json|
+|POST| /v1/individuals/$individualId/annotationSets/$aS1/annotations/update?sid=$sessionId&action=ADD |500|  Content-Type: application/json |jsonbody.error == 'Value 542.5 is not an integer number'|
+
+!3 (Negative) Update Variable in An Annotation
+!|Table: Rest Fixture | $baseURL |
+| setBody |{"var_double": "ABC"}|
+|setHeader|Content-Type:application/json|
+|POST| /v1/individuals/$individualId/annotationSets/$aS1/annotations/update?sid=$sessionId&action=ADD |500|  Content-Type: application/json |jsonbody.error == 'Value ABC is not a number'|
+
+!3 Update Variable in An Annotation
+!|Table: Rest Fixture | $baseURL |
+| setBody |{"var_double": "2065.35"}|
+|setHeader|Content-Type:application/json|
+|POST| /v1/individuals/$individualId/annotationSets/$aS1/annotations/update?sid=$sessionId |200|  Content-Type: application/json ||
+
+!3 Delete Variable In Annotation
+!|Table: Rest Fixture | $baseURL |
+| setBody |{"remove" : "var_double"}|
+|setHeader|Content-Type:application/json|
+|POST| /v1/individuals/$individualId/annotationSets/$aS1/annotations/update?sid=$sessionId&action=REMOVE |200|  Content-Type: application/json ||
+
+!3 (Negative) Delete A Mandatory Variable In Annotation  DDDD
+!|Table: Rest Fixture | $baseURL |
+| setBody |{"remove" : "var_int"}|
+|setHeader|Content-Type:application/json|
+|POST| /v1/individuals/$individualId/annotationSets/$aS1/annotations/update?sid=$sessionId&action=REMOVE |500|  Content-Type: application/json |jsonbody.error == 'var_int: Cannot remove required variable.'|
+
+!3 Delete Annotation
+!|Table: Rest Fixture | $baseURL |
+| setBody |{ "annotationSets":[{"id": "$aS1"}]}|
+|setHeader|Content-Type:application/json|
+|POST| /v1/individuals/$individualId/update?sid=$sessionId&&annotationSetsAction=REMOVE |200|  Content-Type: application/json |jsonbody.response[0].result[0].annotationSets[0].name == "Testing"|
+
+!3 Get Flatten Annotation
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/individuals/search?sid=$sessionId&study=$study&annotation=annotationSet=Testing&flattenAnnotations=true||  Content-Type: application/json |jsonbody.response[0].result[0].annotationSets[0].annotations["outer_var.inner_second_var"][0] == 2000 && jsonbody.response[0].result[0].annotationSets[0].annotations["outer_var.inner_first_var"][0] == 1000.57|
+
+!3 Get Standard Annotation (Not Flatten)
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/individuals/search?sid=$sessionId&study=$study&annotation=annotationSet=Testing&flattenAnnotations=false||  Content-Type: application/json |jsonbody.response[0].result[0].annotationSets[0].annotations["outer_var"][0]["inner_first_var"] == 1000.57  && jsonbody.response[0].result[0].annotationSets[0].annotations["outer_var"][0]["inner_second_var"] == 2000  |
+
 !3 Delete First Individual
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/individuals/$individualId/delete?sid=$sessionId&study=$study|200|  Content-Type: application/json ||
+| DELETE | /v1/individuals/delete?sid=$sessionId&study=$study&id=$individualId|200|  Content-Type: application/json ||
 
 !3 Search Deleted Individual 
 !|Table: Rest Fixture | $baseURL |
@@ -337,7 +444,7 @@
 
 !3 Delete Second Individual
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/individuals/$individualId2/delete?sid=$sessionId&study=$study|200|  Content-Type: application/json ||
+| DELETE | /v1/individuals/delete?sid=$sessionId&study=$study&id=$individualId2|200|  Content-Type: application/json ||
 
 !3 Search Deleted Individual 
 !|Table: Rest Fixture | $baseURL |
@@ -345,7 +452,7 @@
 
 !3 Delete First Sample
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/samples/$sampleId/delete?sid=$sessionId&study=$study|200|  Content-Type: application/json ||
+| DELETE | /v1/samples/delete?sid=$sessionId&study=$study&id=$sampleId|200|  Content-Type: application/json ||
 
 !3 Search Deleted Sample 
 !|Table: Rest Fixture | $baseURL |
@@ -353,7 +460,7 @@
 
 !3 Delete Second Sample
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/samples/$sampleId2/delete?sid=$sessionId&study=$study|200|  Content-Type: application/json ||
+| DELETE | /v1/samples/delete?sid=$sessionId&study=$study&id=$sampleId2|200|  Content-Type: application/json ||
 
 !3 Search Deleted Sample 
 !|Table: Rest Fixture | $baseURL |
