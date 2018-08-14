@@ -24,10 +24,12 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.CollectionUtils;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
+import org.opencb.opencga.storage.core.variant.search.VariantSearchUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,13 +65,16 @@ public class SolrQueryParser {
         includeMap.put("end", "end");
         includeMap.put("type", "type");
 
-        includeMap.put("studies", "studies,stats__*,gt_*,filter_*,qual_*,fileInfo_*,sampleFormat_*");
-        includeMap.put("studies.stats", "studies,stats__*");
+        // Remove from this map fileInfo__* and sampleFormat__*, they will be processed with include-file,
+        // include-sample, include-genotype...
+        //includeMap.put("studies", "studies,stats__*,gt_*,filter_*,qual_*,fileInfo_*,sampleFormat_*");
+        includeMap.put("studies", "studies,stats_*,filter_*,qual_*");
+        includeMap.put("studies.stats", "studies,stats_*");
 
-        includeMap.put("annotation", "genes,soAcc,geneToSoAcc,biotypes,sift,siftDesc,polyphen,polyphenDesc,popFreq__*,xrefs,"
+        includeMap.put("annotation", "genes,soAcc,geneToSoAcc,biotypes,sift,siftDesc,polyphen,polyphenDesc,popFreq_*,xrefs,"
                 + "phastCons,phylop,gerp,caddRaw,caddScaled,traits");
         includeMap.put("annotation.consequenceTypes", "genes,soAcc,geneToSoAcc,biotypes,sift,siftDesc,polyphen,polyphenDesc");
-        includeMap.put("annotation.populationFrequencies", "popFreq__*");
+        includeMap.put("annotation.populationFrequencies", "popFreq_*");
         includeMap.put("annotation.xrefs", "xrefs");
         includeMap.put("annotation.conservation", "phastCons,phylop,gerp");
         includeMap.put("annotation.functionalScore", "caddRaw,caddScaled");
@@ -108,24 +113,17 @@ public class SolrQueryParser {
         }
         includes = ArrayUtils.removeAllOccurences(includes, "release");
         includes = includeFieldsWithMandatory(includes);
-
         solrQuery.setFields(includes);
 
         if (queryOptions.containsKey(QueryOptions.LIMIT)) {
             solrQuery.setRows(queryOptions.getInt(QueryOptions.LIMIT));
         }
-
         if (queryOptions.containsKey(QueryOptions.SKIP)) {
             solrQuery.setStart(queryOptions.getInt(QueryOptions.SKIP));
         }
-
         if (queryOptions.containsKey(QueryOptions.SORT)) {
             solrQuery.addSort(queryOptions.getString(QueryOptions.SORT), getSortOrder(queryOptions));
         }
-
-        //-------------------------------------
-        // Facet processing
-        //-------------------------------------
 
         // facet fields (query parameter: facet)
         // multiple faceted fields are separated by ";", they can be:
@@ -177,27 +175,35 @@ public class SolrQueryParser {
         }
 
         // consequence types (cts)
+        String ctBoolOp = " OR ";
         if (query.containsKey(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key())
                 && StringUtils.isNotEmpty(query.getString(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key()))) {
             consequenceTypes = Arrays.asList(query.getString(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key()).split("[,;]"));
+            if (query.getString(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key()).contains(";")) {
+                ctBoolOp = " AND ";
+                if (query.getString(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key()).contains(",")) {
+                    ctBoolOp = " OR ";
+                    logger.info("Misuse of consquence type values by mixing ';' and ',': using ',' as default.");
+                }
+            }
         }
 
         // goal: [((xrefs OR regions) AND cts) OR (genes AND cts)] AND ... AND ...
         if (CollectionUtils.isNotEmpty(consequenceTypes)) {
             if (CollectionUtils.isNotEmpty(genes)) {
                 // consequence types and genes
-                String or = buildXrefOrRegionAndConsequenceType(xrefs, regions, consequenceTypes);
+                String or = buildXrefOrRegionAndConsequenceType(xrefs, regions, consequenceTypes, ctBoolOp);
                 if (xrefs.isEmpty() && regions.isEmpty()) {
                     // no xrefs or regions: genes AND cts
-                    filterList.add(buildGeneAndCt(genes, consequenceTypes));
+                    filterList.add(buildGeneAndConsequenceType(genes, consequenceTypes));
                 } else {
                     // otherwise: [((xrefs OR regions) AND cts) OR (genes AND cts)]
-                    filterList.add("(" + or + ") OR (" + buildGeneAndCt(genes, consequenceTypes) + ")");
+                    filterList.add("(" + or + ") OR (" + buildGeneAndConsequenceType(genes, consequenceTypes) + ")");
                 }
             } else {
                 // consequence types but no genes: (xrefs OR regions) AND cts
                 // in this case, the resulting string will never be null, because there are some consequence types!!
-                filterList.add(buildXrefOrRegionAndConsequenceType(xrefs, regions, consequenceTypes));
+                filterList.add(buildXrefOrRegionAndConsequenceType(xrefs, regions, consequenceTypes, ctBoolOp));
             }
         } else {
             // no consequence types: (xrefs OR regions) but we must add "OR genes", i.e.: xrefs OR regions OR genes
@@ -362,8 +368,6 @@ public class SolrQueryParser {
             }
             sb.append(")");
             filterList.add(sb.toString());
-
-            filterList.add(parseCategoryTermValue("traits", "cs:" + query.getString(key)));
         }
 
         // Sanity check for QUAL and FILTER, only one study is permitted, but multiple files
@@ -389,7 +393,8 @@ public class SolrQueryParser {
                 } else {
                     // Add QUAL filters, (AND)
                     for (String file: files) {
-                        filterList.add(parseNumericValue("qual__" + studies[0] + "__" + file, quals[0]));
+                        filterList.add(parseNumericValue("qual" + VariantSearchUtils.FIELD_SEPARATOR + studies[0]
+                                + VariantSearchUtils.FIELD_SEPARATOR + file, quals[0]));
                     }
                 }
             } else {
@@ -414,11 +419,13 @@ public class SolrQueryParser {
                 // Add FILTER filters, (AND for each file, but OR for each FILTER value)
                 for (String file: files) {
                     StringBuilder sb = new StringBuilder();
-                    sb.append("(").append("filter__").append(studies[0]).append("__").append(file).append(":\"")
-                            .append(filters[0]).append("\"");
+                    sb.append("(").append("filter").append(VariantSearchUtils.FIELD_SEPARATOR).append(studies[0])
+                            .append(VariantSearchUtils.FIELD_SEPARATOR).append(file).append(":\"").append(filters[0])
+                            .append("\"");
                     for (int i = 1; i < filters.length; i++) {
-                        sb.append(" OR ").append("filter__").append(studies[0]).append("__").append(file).append(":\"")
-                                .append(filters[i]).append("\"");
+                        sb.append(" OR ").append("filter").append(VariantSearchUtils.FIELD_SEPARATOR).append(studies[0])
+                                .append(VariantSearchUtils.FIELD_SEPARATOR).append(file).append(":\"").append(filters[i])
+                                .append("\"");
                     }
                     sb.append(")");
                     filterList.add(sb.toString());
@@ -459,7 +466,8 @@ public class SolrQueryParser {
                                     sb.append(" OR ");
                                 }
                                 addOr = true;
-                                sb.append("gt__").append(studies[0]).append("__").append(sampleName.toString())
+                                sb.append("gt").append(VariantSearchUtils.FIELD_SEPARATOR).append(studies[0])
+                                        .append(VariantSearchUtils.FIELD_SEPARATOR).append(sampleName.toString())
                                         .append(":\"").append(gt).append("\"");
                             }
                             sb.append(")");
@@ -482,13 +490,34 @@ public class SolrQueryParser {
             }
         }
 
-        logger.debug("query = {}\n", query.toJson());
+        // For debugging
+        StringBuilder sb = new StringBuilder();
 
+        // Create Solr query, adding filter queries and fields to show
         solrQuery.setQuery("*:*");
         filterList.forEach(filter -> {
             solrQuery.addFilterQuery(filter);
-            logger.debug("Solr fq: {}\n", filter);
+            sb.append(filter).append("\n");
         });
+
+        // Add Solr fields from the variant includes, i.e.: include-sample, include-format,...
+        List<String> solrFieldsToInclude = getSolrFieldsFromVariantIncludes(query);
+        if (ListUtils.isNotEmpty(solrFieldsToInclude)) {
+            for (String solrField : solrFieldsToInclude) {
+                solrQuery.addField(solrField);
+            }
+        } else {
+            solrQuery.addField("fileInfo_*");
+            solrQuery.addField("sampleFormat_*");
+        }
+
+        logger.debug("\n\n-----------------------------------------------------\n"
+                + query.toJson()
+                + "\n\n"
+                + sb.toString()
+                + "\n\n"
+                + solrQuery.getFields()
+                + "\n-----------------------------------------------------\n\n");
 
         return solrQuery;
     }
@@ -580,8 +609,8 @@ public class SolrQueryParser {
             if (values.length == 1) {
                 negation = "";
                 if (value.startsWith("!")) {
-                  negation = "-";
-                  value = value.substring(1);
+                    negation = "-";
+                    value = value.substring(1);
                 }
                 filter.append(negation).append(name).append(":\"").append(valuePrefix).append(wildcard).append(value)
                         .append(wildcard).append("\"");
@@ -709,7 +738,8 @@ public class SolrQueryParser {
                     String[] freqValue = getMafOrRefFrequency(type, matcher.group(3), matcher.group(4));
 
                     // concat expression, e.g.: value:[0 TO 12]
-                    sb.append(getRange(name + "__" + matcher.group(1) + "__", matcher.group(2), freqValue[0], freqValue[1]));
+                    sb.append(getRange(name + VariantSearchUtils.FIELD_SEPARATOR + matcher.group(1)
+                            + VariantSearchUtils.FIELD_SEPARATOR, matcher.group(2), freqValue[0], freqValue[1]));
                 } else {
                     // error
                     throw new IllegalArgumentException("Invalid expression " +  value);
@@ -723,7 +753,8 @@ public class SolrQueryParser {
                         String[] freqValue = getMafOrRefFrequency(type, matcher.group(3), matcher.group(4));
 
                         // concat expression, e.g.: value:[0 TO 12]
-                        list.add(getRange(name + "__" + matcher.group(1) + "__", matcher.group(2), freqValue[0], freqValue[1]));
+                        list.add(getRange(name + VariantSearchUtils.FIELD_SEPARATOR + matcher.group(1)
+                                + VariantSearchUtils.FIELD_SEPARATOR, matcher.group(2), freqValue[0], freqValue[1]));
                     } else {
                         throw new IllegalArgumentException("Invalid expression " +  value);
                     }
@@ -871,9 +902,9 @@ public class SolrQueryParser {
                 String rightCloseOperator = ("<<").equals(op) ? "}" : "]";
                 if (StringUtils.isNotEmpty(prefix) && (prefix.startsWith("popFreq_") || prefix.startsWith("stats_"))) {
                     sb.append("(");
-                    sb.append("(* -").append(prefix).append(getSolrFieldName(name)).append(":*)");
-                    sb.append(" OR ");
                     sb.append(prefix).append(getSolrFieldName(name)).append(":[0 TO ").append(value).append(rightCloseOperator);
+                    sb.append(" OR ");
+                    sb.append("(* -").append(prefix).append(getSolrFieldName(name)).append(":*)");
                     sb.append(")");
                 } else {
                     sb.append(prefix).append(getSolrFieldName(name)).append(":[")
@@ -967,17 +998,18 @@ public class SolrQueryParser {
     }
 
     /**
-     * Build an OR-condition with all consequence types from the input list. It uses the VariantDBAdaptorUtils
+     * Build an OR/AND-condition with all consequence types from the input list. It uses the VariantDBAdaptorUtils
      * to parse the consequence type (accession or term) into an integer.
      *
-     * @param cts    List of consequence types
-     * @return       OR-condition string
+     * @param cts   List of consequence types
+     * @param op    Boolean operator (OR / AND)
+     * @return      OR/AND-condition string
      */
-    private String buildConsequenceTypeOr(List<String> cts) {
+    private String buildConsequenceTypeOrAnd(List<String> cts, String op) {
         StringBuilder sb = new StringBuilder();
         for (String ct : cts) {
             if (sb.length() > 0) {
-                sb.append(" OR ");
+                sb.append(" ").append(op).append(" ");
             }
             sb.append("soAcc:\"").append(VariantQueryUtils.parseConsequenceType(ct)).append("\"");
         }
@@ -992,8 +1024,9 @@ public class SolrQueryParser {
      * @param cts        List of consequence types
      * @return           OR/AND condition string
      */
-    private String buildXrefOrRegionAndConsequenceType(List<String> xrefs, List<Region> regions, List<String> cts) {
-        String orCts = buildConsequenceTypeOr(cts);
+    private String buildXrefOrRegionAndConsequenceType(List<String> xrefs, List<Region> regions, List<String> cts,
+                                                       String ctBoolOp) {
+        String orCts = buildConsequenceTypeOrAnd(cts, ctBoolOp);
         if (xrefs.isEmpty() && regions.isEmpty()) {
             // consequences type but no xrefs, no genes, no regions
             // we must make an OR with all consequences types and add it to the "AND" filter list
@@ -1011,7 +1044,7 @@ public class SolrQueryParser {
      * @param cts      List of consequence types
      * @return         OR/AND condition string
      */
-    private String buildGeneAndCt(List<String> genes, List<String> cts) {
+    private String buildGeneAndConsequenceType(List<String> genes, List<String> cts) {
         // in the VariantSearchModel the (gene AND ct) is modeled in the field: geneToSoAcc:gene_ct
         // and if there are multiple genes and consequence types, we have to build the combination of all of them in a OR expression
         StringBuilder sb = new StringBuilder();
@@ -1175,23 +1208,23 @@ public class SolrQueryParser {
                 error = false;
                 solrQuery.addFacetQuery("{!key=" + splitB[0] + "}" + splitA[0] + ":" + splitB[0]);
                 solrQuery.addFacetQuery("{!key=" + splitB[1] + "}" + splitA[0] + ":" + splitB[1]);
-                solrQuery.addFacetQuery("{!key=" + splitB[0] + "__" + splitB[1] + "}" + splitA[0] + ":" + splitB[0]
-                        + " AND " + splitA[0] + ":" + splitB[1]);
+                solrQuery.addFacetQuery("{!key=" + splitB[0] + VariantSearchUtils.FIELD_SEPARATOR + splitB[1] + "}"
+                        + splitA[0] + ":" + splitB[0] + " AND " + splitA[0] + ":" + splitB[1]);
 
             } else if (splitB.length == 3) {
                 error = false;
                 solrQuery.addFacetQuery("{!key=" + splitB[0] + "}" + splitA[0] + ":" + splitB[0]);
                 solrQuery.addFacetQuery("{!key=" + splitB[1] + "}" + splitA[0] + ":" + splitB[1]);
                 solrQuery.addFacetQuery("{!key=" + splitB[2] + "}" + splitA[0] + ":" + splitB[2]);
-                solrQuery.addFacetQuery("{!key=" + splitB[0] + "__" + splitB[1] + "}" + splitA[0] + ":" + splitB[0]
-                        + " AND " + splitA[0] + ":" + splitB[1]);
-                solrQuery.addFacetQuery("{!key=" + splitB[0] + "__" + splitB[2] + "}" + splitA[0] + ":" + splitB[0]
-                        + " AND " + splitA[0] + ":" + splitB[2]);
-                solrQuery.addFacetQuery("{!key=" + splitB[1] + "__" + splitB[2] + "}" + splitA[0] + ":" + splitB[1]
-                        + " AND " + splitA[0] + ":" + splitB[2]);
-                solrQuery.addFacetQuery("{!key=" + splitB[0] + "__" + splitB[1] + "__" + splitB[2] + "}" + splitA[0]
-                        + ":" + splitB[0] + " AND " + splitA[0]
-                        + ":" + splitB[1] + " AND " + splitA[0] + ":" + splitB[2]);
+                solrQuery.addFacetQuery("{!key=" + splitB[0] + VariantSearchUtils.FIELD_SEPARATOR + splitB[1] + "}"
+                        + splitA[0] + ":" + splitB[0] + " AND " + splitA[0] + ":" + splitB[1]);
+                solrQuery.addFacetQuery("{!key=" + splitB[0] + VariantSearchUtils.FIELD_SEPARATOR + splitB[2] + "}"
+                        + splitA[0] + ":" + splitB[0] + " AND " + splitA[0] + ":" + splitB[2]);
+                solrQuery.addFacetQuery("{!key=" + splitB[1] + VariantSearchUtils.FIELD_SEPARATOR + splitB[2] + "}"
+                        + splitA[0] + ":" + splitB[1] + " AND " + splitA[0] + ":" + splitB[2]);
+                solrQuery.addFacetQuery("{!key=" + splitB[0] + VariantSearchUtils.FIELD_SEPARATOR + splitB[1]
+                        + VariantSearchUtils.FIELD_SEPARATOR + splitB[2] + "}" + splitA[0] + ":" + splitB[0]
+                        + " AND " + splitA[0] + ":" + splitB[1] + " AND " + splitA[0] + ":" + splitB[2]);
             }
         }
 
@@ -1252,5 +1285,69 @@ public class SolrQueryParser {
             includeWithMandatory[includes.length + i] = mandatoryIncludeFields[i];
         }
         return includeWithMandatory;
+    }
+
+    /**
+     * Get the Solr fields to be included in the Solr query (fl parameter) from the variant query, i.e.: include-file,
+     * include-format, include-sample, include-study and include-genotype.
+     *
+     * @param query Variant query
+     * @return      List of Solr fields to be included in the Solr query
+     */
+    private List<String> getSolrFieldsFromVariantIncludes(Query query) {
+        List<String> solrFields = new ArrayList<>();
+
+        List<String> studies;
+        if (StringUtils.isEmpty(query.getString(VariantQueryParam.INCLUDE_STUDY.key()))) {
+            return solrFields;
+        }
+        studies = Arrays.asList(query.getString(VariantQueryParam.INCLUDE_STUDY.key()).split("[,;]"));
+
+        if (StringUtils.isNotEmpty(query.getString(VariantQueryParam.INCLUDE_FILE.key()))) {
+            List<String> includeFiles;
+            includeFiles = Arrays.asList(query.getString(VariantQueryParam.INCLUDE_FILE.key()).split("[,;]"));
+            for (String includeFile: includeFiles) {
+                for (String studyId: studies) {
+                    solrFields.add("fileinfo" + VariantSearchUtils.FIELD_SEPARATOR + studyId + VariantSearchUtils.FIELD_SEPARATOR
+                            + includeFile);
+                }
+            }
+        } else {
+            solrFields.add("fileinfo" + VariantSearchUtils.FIELD_SEPARATOR + "*");
+        }
+
+        if (StringUtils.isNotEmpty(query.getString(VariantQueryParam.INCLUDE_SAMPLE.key()))) {
+            List<String> includeSamples;
+            includeSamples = Arrays.asList(query.getString(VariantQueryParam.INCLUDE_SAMPLE.key()).split("[,;]"));
+            if (query.getBoolean(VariantQueryParam.INCLUDE_GENOTYPE.key())) {
+                for (String includeSample: includeSamples) {
+                    for (String studyId : studies) {
+                        solrFields.add("gt" + VariantSearchUtils.FIELD_SEPARATOR + studyId + VariantSearchUtils.FIELD_SEPARATOR
+                                + includeSample);
+                    }
+                }
+            } else {
+                for (String includeSample: includeSamples) {
+                    for (String studyId : studies) {
+                        solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + studyId
+                                + VariantSearchUtils.FIELD_SEPARATOR + includeSample);
+                    }
+                }
+            }
+        } else {
+            for (String studyId: studies) {
+                if (query.getBoolean(VariantQueryParam.INCLUDE_GENOTYPE.key())) {
+                    solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + studyId
+                            + VariantSearchUtils.FIELD_SEPARATOR + "sampleName");
+                    solrFields.add("gt" + VariantSearchUtils.FIELD_SEPARATOR + studyId + VariantSearchUtils.FIELD_SEPARATOR + "*");
+                } else {
+                    // Include sample data for each sample, and list of formats and sample names
+                    solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + studyId
+                            + VariantSearchUtils.FIELD_SEPARATOR + "*");
+                }
+            }
+        }
+
+        return solrFields;
     }
 }
