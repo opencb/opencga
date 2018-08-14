@@ -61,6 +61,12 @@ import java.util.concurrent.TimeUnit;
  */
 public class VariantSearchManager {
 
+    public static final String CONF_SET = "OpenCGAConfSet-1.4.x";
+
+    public static final String SEARCH_ENGINE_ID = "solr";
+    public static final String USE_SEARCH_INDEX = "useSearchIndex";
+    public static final int DEFAULT_INSERT_BATCH_SIZE = 10000;
+
     private SolrManager solrManager;
 
     private SolrQueryParser solrQueryParser;
@@ -69,11 +75,6 @@ public class VariantSearchManager {
     private int insertBatchSize;
 
     private Logger logger;
-
-    public static final int DEFAULT_INSERT_BATCH_SIZE = 10000;
-    public static final String CONF_SET = "OpenCGAConfSet";
-    public static final String SEARCH_ENGINE_ID = "solr";
-    public static final String USE_SEARCH_INDEX = "useSearchIndex";
 
     public enum UseSearchIndex {
         YES, NO, AUTO;
@@ -112,7 +113,7 @@ public class VariantSearchManager {
     }
 
     public void create(String coreName) throws VariantSearchException {
-        solrManager.create(coreName, "OpenCGAConfSet");
+        solrManager.create(coreName, CONF_SET);
     }
 
     public void create(String dbName, String configSet) throws VariantSearchException {

@@ -63,8 +63,7 @@ public class SolrManager {
         }
 
         if (StringUtils.isEmpty(configSet)) {
-            logger.warn("Solr 'configSet' is empty, setting default 'OpenCGAConfSet'");
-            configSet = "OpenCGAConfSet";
+            throw new IllegalArgumentException("Missing Solr configset!");
         }
 
         switch (mode.toLowerCase()) {

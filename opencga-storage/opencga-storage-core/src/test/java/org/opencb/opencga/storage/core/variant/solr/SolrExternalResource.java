@@ -81,7 +81,7 @@ public class SolrExternalResource extends ExternalResource {
             solrClient = create(solrHome, rootDir.resolve("configsets").toString(), coreName);
         } else {
             String host = "http://localhost:8983/solr";
-            String configSet = "OpenCGAConfSet";
+            String configSet = VariantSearchManager.CONF_SET;
             int timeout = 5000;
 
             SolrManager solrManager = new SolrManager(host, "core", timeout);
