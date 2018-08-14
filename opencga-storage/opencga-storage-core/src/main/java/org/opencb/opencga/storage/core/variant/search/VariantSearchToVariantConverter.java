@@ -86,84 +86,65 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             variant.setStudies(studies);
         }
 
-        // File info management
-        Map<String, FileEntry> fileEntryMap = new HashMap<>();
-        if (MapUtils.isNotEmpty(variantSearchModel.getFileInfo())) {
-            ObjectReader reader = new ObjectMapper().reader(new HashMap().getClass());
-            for (String key: variantSearchModel.getFileInfo().keySet()) {
-                // key consists of 'fileInfo' + "__" + studyId + "__" + fileId
-                String[] fields = key.split(VariantSearchUtils.FIELD_SEPARATOR);
-                FileEntry fileEntry = fileEntryMap.get(fields[2]);
-                if (fileEntry == null) {
-                    fileEntry = new FileEntry(fields[2], null, new HashMap<>());
-                    fileEntryMap.put(fields[2], fileEntry);
-                    variant.getStudy(fields[1]).getFiles().add(fileEntry);
-                }
-                try {
-                    Map<String, String> map = reader.readValue(variantSearchModel.getFileInfo().get(key));
-                    if (MapUtils.isNotEmpty(map)) {
-                        for (String infoName: map.keySet()) {
-                            if ("fileCall".equals(infoName)) {
-                                fileEntry.setCall(map.get(infoName));
-                            } else {
-                                fileEntry.getAttributes().put(infoName, map.get(infoName));
-                            }
-                        }
-                    }
-                } catch (IOException e) {
-                    logger.info("Error converting fileInfo from variant search model: {}", e.getMessage());
-                }
-            }
-        }
-
         // Genotypes and sample data and format
         if (MapUtils.isNotEmpty(variantSearchModel.getSampleFormat())) {
             for (String studyId: studyEntryMap.keySet()) {
-                String stringToSplit;
+                String stringToList;
                 String suffix = VariantSearchUtils.FIELD_SEPARATOR + studyId + VariantSearchUtils.FIELD_SEPARATOR;
                 StudyEntry studyEntry = studyEntryMap.get(studyId);
 
                 // Format
-                stringToSplit = variantSearchModel.getSampleFormat().get("sampleFormat" + suffix + "format");
-                if (StringUtils.isNotEmpty(stringToSplit)) {
-                    List<String> formats = Arrays.asList(stringToSplit.split(LIST_SEPARATOR));
-                    studyEntry.setFormat(formats);
+                stringToList = variantSearchModel.getSampleFormat().get("sampleFormat" + suffix + "format");
+                if (StringUtils.isNotEmpty(stringToList)) {
+                    studyEntry.setFormat(Arrays.asList(stringToList.split(LIST_SEPARATOR)));
                 }
 
-                // Sample management
-                stringToSplit = variantSearchModel.getSampleFormat().get("sampleFormat" + suffix + "sampleName");
-                if (StringUtils.isNotEmpty(stringToSplit)) {
-                    String[] sampleNames = stringToSplit.split(LIST_SEPARATOR);
-
-                    studyEntry.setSamplesData(new ArrayList());
+                // Sample Data management
+                stringToList = variantSearchModel.getSampleFormat().get("sampleFormat" + suffix + "sampleName");
+                if (StringUtils.isNotEmpty(stringToList)) {
+                    String[] sampleNames = stringToList.split(LIST_SEPARATOR);
+                    List<List<String>> sampleData = new ArrayList<>();
                     Map<String, Integer> samplePosition = new HashMap<>();
-
-                    boolean onlyGT = false;
                     int pos = 0;
                     for (String sampleName: sampleNames) {
                         suffix = VariantSearchUtils.FIELD_SEPARATOR + studyId + VariantSearchUtils.FIELD_SEPARATOR + sampleName;
-                        stringToSplit = variantSearchModel.getSampleFormat().get("sampleFormat" + suffix);
-                        if (StringUtils.isNotEmpty(stringToSplit)) {
-                            studyEntry.getSamplesData().add(Arrays.asList(stringToSplit.split(LIST_SEPARATOR)));
+                        stringToList = variantSearchModel.getSampleFormat().get("sampleFormat" + suffix);
+                        if (StringUtils.isNotEmpty(stringToList)) {
+                            sampleData.add(Arrays.asList(stringToList.split(LIST_SEPARATOR)));
                             samplePosition.put(sampleName, pos++);
                         } else {
-                            String gt = variantSearchModel.getGt().get("gt" + suffix);
-                            if (StringUtils.isNotEmpty(gt)) {
-                                onlyGT = true;
-                                List<String> sd = new ArrayList<>();
-                                sd.add(gt);
-                                studyEntry.getSamplesData().add(sd);
-                                samplePosition.put(sampleName, pos++);
-                            }
+                            logger.info("Error converting samplesFormat, sample '{}' is missing or empty, value: '{}'",
+                                    sampleName, stringToList);
                         }
                     }
-                    if (MapUtils.isNotEmpty(samplePosition)) {
+
+                    if (ListUtils.isNotEmpty(sampleData)) {
+                        studyEntry.setSamplesData(sampleData);
                         studyEntry.setSamplesPosition(samplePosition);
                     }
-                    if (onlyGT) {
-                        studyEntry.setFormat(new ArrayList<>());
-                        studyEntry.getFormat().add("GT");
+                }
+            }
+        }
+
+        // File info management
+        if (MapUtils.isNotEmpty(variantSearchModel.getFileInfo())) {
+            ObjectReader reader = new ObjectMapper().reader(HashMap.class);
+            for (String key: variantSearchModel.getFileInfo().keySet()) {
+                // key consists of 'fileInfo' + "__" + studyId + "__" + fileId
+                String[] fields = key.split(VariantSearchUtils.FIELD_SEPARATOR);
+                FileEntry fileEntry = new FileEntry(fields[2], null, new HashMap<>());
+                try {
+                    // We obtain the original call
+                    Map<String, String> map = reader.readValue(variantSearchModel.getFileInfo().get(key));
+                    if (MapUtils.isNotEmpty(map)) {
+                        fileEntry.setCall(map.get("fileCall"));
+                        map.remove("fileCall");
+                        fileEntry.setAttributes(map);
                     }
+                } catch (IOException e) {
+                    logger.info("Error converting fileInfo from variant search model: {}", e.getMessage());
+                } finally {
+                    variant.getStudy(fields[1]).getFiles().add(fileEntry);
                 }
             }
         }
@@ -941,4 +922,3 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         variantSearchModel.setPolyphenDesc(polyphenDesc);
     }
 }
-

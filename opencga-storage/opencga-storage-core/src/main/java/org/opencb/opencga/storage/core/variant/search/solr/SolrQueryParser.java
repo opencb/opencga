@@ -1297,7 +1297,7 @@ public class SolrQueryParser {
     private List<String> getSolrFieldsFromVariantIncludes(Query query) {
         List<String> solrFields = new ArrayList<>();
 
-        List<String> studies = null;
+        List<String> studies;
         if (StringUtils.isEmpty(query.getString(VariantQueryParam.INCLUDE_STUDY.key()))) {
             return solrFields;
         }
