@@ -1262,7 +1262,7 @@ public class SolrQueryParser {
 
         if (excludes != null) {
             for (String exclude : excludes) {
-                List<String> solrFields = Arrays.asList(includeMap.get(exclude).split(","));
+                List<String> solrFields = Arrays.asList(includeMap.getOrDefault(exclude, "").split(","));
                 solrFieldsToInclude.removeAll(solrFields);
             }
         }
