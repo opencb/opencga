@@ -316,7 +316,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
 
 
         String outdir = opencga.createTmpOutdir(studyId, "_INDEX_", sessionId);
-        List<String> fileIds = files.stream().map(File::getId).collect(Collectors.toList());
+        List<String> fileIds = files.stream().map(File::getPath).collect(Collectors.toList());
 
         List<StoragePipelineResult> etlResults = variantManager.index(studyId, fileIds, outdir, queryOptions, sessionId);
 

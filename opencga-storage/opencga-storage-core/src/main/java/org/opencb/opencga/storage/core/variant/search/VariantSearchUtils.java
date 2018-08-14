@@ -117,6 +117,21 @@ public class VariantSearchUtils {
         return true;
     }
 
+    /**
+     * Copy the given query and remove all uncovered params.
+     *
+     * @param query Query
+     * @return      Query for the search engine
+     */
+    public static Query getSearchEngineQuery(Query query) {
+        Collection<VariantQueryParam> uncoveredParams = uncoveredParams(query);
+        Query searchEngineQuery = new Query(query);
+        for (VariantQueryParam uncoveredParam : uncoveredParams) {
+            searchEngineQuery.remove(uncoveredParam.key());
+        }
+        return searchEngineQuery;
+    }
+
     public static Query getEngineQuery(Query query, QueryOptions options, StudyConfigurationManager scm) throws StorageEngineException {
         Collection<VariantQueryParam> uncoveredParams = uncoveredParams(query);
         Query engineQuery = new Query();
