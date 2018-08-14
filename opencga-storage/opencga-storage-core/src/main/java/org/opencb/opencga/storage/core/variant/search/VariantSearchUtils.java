@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.core.variant.search.solr;
+package org.opencb.opencga.storage.core.variant.search;
 
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -24,6 +24,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -38,6 +39,8 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class VariantSearchUtils {
+
+    public static final String FIELD_SEPARATOR = "__";
 
     public static final Set<VariantQueryParam> UNSUPPORTED_QUERY_PARAMS = Collections.unmodifiableSet(new HashSet<>(
             Arrays.asList(VariantQueryParam.FILE,
@@ -114,14 +117,13 @@ public class VariantSearchUtils {
         return true;
     }
 
-    public static Query getEngineQuery(Query query, QueryOptions options, StudyConfigurationManager scm)
-            throws StorageEngineException {
+    public static Query getEngineQuery(Query query, QueryOptions options, StudyConfigurationManager scm) throws StorageEngineException {
         Collection<VariantQueryParam> uncoveredParams = uncoveredParams(query);
         Query engineQuery = new Query();
         for (VariantQueryParam uncoveredParam : uncoveredParams) {
             engineQuery.put(uncoveredParam.key(), query.get(uncoveredParam.key()));
         }
-        // Despite STUDIES is a covered filter by Solr, it has to be in the underlying
+        // Despite STUDIES is a covered filter, it has to be in the underlying
         // query to be used as defaultStudy
         if (isValidParam(query, STUDY)) {
             if (!uncoveredParams.isEmpty()) {

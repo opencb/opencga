@@ -20,11 +20,15 @@ import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrResourceLoader;
 import org.junit.rules.ExternalResource;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.search.solr.SolrManager;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 
 import java.io.File;
@@ -35,6 +39,7 @@ import java.nio.file.Paths;
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.*;
 
 /**
+ * +
  * Created on 30/06/17.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -44,6 +49,15 @@ public class SolrExternalResource extends ExternalResource {
     public String coreName = DB_NAME;
 
     private SolrClient solrClient;
+    protected boolean embeded = true;
+
+    public SolrExternalResource() {
+        this(true);
+    }
+
+    public SolrExternalResource(boolean embeded) {
+        this.embeded = embeded;
+    }
 
     @Override
     protected void before() throws Throwable {
@@ -63,15 +77,31 @@ public class SolrExternalResource extends ExternalResource {
 
         String solrHome = rootDir.resolve("solr").toString();
 
-        solrClient = create(solrHome, rootDir.resolve("configsets").toString(), coreName);
+        if (embeded) {
+            solrClient = create(solrHome, rootDir.resolve("configsets").toString(), coreName);
+        } else {
+            String host = "http://localhost:8983/solr";
+            String configSet = VariantSearchManager.CONF_SET;
+            int timeout = 5000;
 
+            SolrManager solrManager = new SolrManager(host, "core", timeout);
+            if (!solrManager.existsCore(coreName)) {
+                solrManager.createCore(coreName, configSet);
+            }
+
+            this.solrClient = solrManager.getSolrClient();
+        }
     }
 
     @Override
     protected void after() {
         super.after();
         try {
-            ((MyEmbeddedSolrServer) solrClient).realClose();
+            if (embeded) {
+                ((MyEmbeddedSolrServer) solrClient).realClose();
+            } else {
+                solrClient.close();
+            }
         } catch (IOException e) {
             e.printStackTrace();
         } finally {

@@ -44,6 +44,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBItera
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchModel;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
+import org.opencb.opencga.storage.core.variant.search.VariantSearchUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,6 +61,12 @@ import java.util.concurrent.TimeUnit;
  */
 public class VariantSearchManager {
 
+    public static final String CONF_SET = "OpenCGAConfSet-1.4.x";
+
+    public static final String SEARCH_ENGINE_ID = "solr";
+    public static final String USE_SEARCH_INDEX = "useSearchIndex";
+    public static final int DEFAULT_INSERT_BATCH_SIZE = 10000;
+
     private SolrManager solrManager;
 
     private SolrQueryParser solrQueryParser;
@@ -68,11 +75,6 @@ public class VariantSearchManager {
     private int insertBatchSize;
 
     private Logger logger;
-
-    public static final int DEFAULT_INSERT_BATCH_SIZE = 10000;
-    public static final String CONF_SET = "OpenCGAConfSet";
-    public static final String SEARCH_ENGINE_ID = "solr";
-    public static final String USE_SEARCH_INDEX = "useSearchIndex";
 
     public enum UseSearchIndex {
         YES, NO, AUTO;
@@ -111,7 +113,7 @@ public class VariantSearchManager {
     }
 
     public void create(String coreName) throws VariantSearchException {
-        solrManager.create(coreName, "OpenCGAConfSet");
+        solrManager.create(coreName, CONF_SET);
     }
 
     public void create(String dbName, String configSet) throws VariantSearchException {
@@ -169,7 +171,7 @@ public class VariantSearchManager {
      * @param collection        Collection name
      * @param variantDBIterator Iterator to retrieve the variants to load
      * @param progressLogger    Progress logger
-     * @throws IOException            IOException
+     * @throws IOException      IOException
      * @throws VariantSearchException VariantSearchException
      */
     public void load(String collection, VariantDBIterator variantDBIterator, ProgressLogger progressLogger)
@@ -583,7 +585,7 @@ public class VariantSearchManager {
                             counts.put(name, (long) response.getFacetQuery().get(name));
                             name = list.get(1);
                             counts.put(name, (long) response.getFacetQuery().get(name));
-                            name = list.get(0) + "__" + list.get(1);
+                            name = list.get(0) + VariantSearchUtils.FIELD_SEPARATOR + list.get(1);
                             counts.put(name, (long) response.getFacetQuery().get(name));
                             intersection.setCounts(counts);
 
@@ -598,13 +600,14 @@ public class VariantSearchManager {
                             counts.put(name, (long) response.getFacetQuery().get(name));
                             name = list.get(2);
                             counts.put(name, (long) response.getFacetQuery().get(name));
-                            name = list.get(0) + "__" + list.get(1);
+                            name = list.get(0) + VariantSearchUtils.FIELD_SEPARATOR + list.get(1);
                             counts.put(name, (long) response.getFacetQuery().get(name));
-                            name = list.get(0) + "__" + list.get(2);
+                            name = list.get(0) + VariantSearchUtils.FIELD_SEPARATOR + list.get(2);
                             counts.put(name, (long) response.getFacetQuery().get(name));
-                            name = list.get(1) + "__" + list.get(2);
+                            name = list.get(1) + VariantSearchUtils.FIELD_SEPARATOR + list.get(2);
                             counts.put(name, (long) response.getFacetQuery().get(name));
-                            name = list.get(0) + "__" + list.get(1) + "__" + list.get(2);
+                            name = list.get(0) + VariantSearchUtils.FIELD_SEPARATOR + list.get(1)
+                                    + VariantSearchUtils.FIELD_SEPARATOR + list.get(2);
                             counts.put(name, (long) response.getFacetQuery().get(name));
                             intersection.setCounts(counts);
 
