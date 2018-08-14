@@ -82,8 +82,8 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Optio
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName;
-import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager.SEARCH_ENGINE_ID;
 import static org.opencb.opencga.storage.core.variant.search.VariantSearchUtils.*;
+import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager.SEARCH_ENGINE_ID;
 
 /**
  * Created by imedina on 13/08/14.
@@ -844,6 +844,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 Boolean approxCount = null;
                 Integer approxCountSamplingSize = null;
 
+                Query searchEngineQuery = getSearchEngineQuery(query);
+                Query engineQuery = getEngineQuery(query, options, getStudyConfigurationManager());
+
                 // Do not count for iterator
                 if (!iterator) {
                     if (isQueryCovered(query)) {
@@ -865,7 +868,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 if (pagination) {
                     if (isQueryCovered(query)) {
                         // We can use limit+skip directly in solr
-                        variantsIterator = variantIdIteratorFromSearch(query, limit, skip, searchCount);
+                        variantsIterator = variantIdIteratorFromSearch(searchEngineQuery, limit, skip, searchCount);
 
                         // Remove limit and skip from Options for storage. The Search Engine already knows the pagination.
                         options = new QueryOptions(options);
@@ -874,12 +877,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                     } else {
                         logger.debug("Client side pagination. limit : {} , skip : {}", limit, skip);
                         // Can't limit+skip only from solr. Need to limit+skip also in client side
-                        variantsIterator = variantIdIteratorFromSearch(query);
+                        variantsIterator = variantIdIteratorFromSearch(searchEngineQuery);
                     }
                 } else {
-                    variantsIterator = variantIdIteratorFromSearch(query, Integer.MAX_VALUE, 0, searchCount);
+                    variantsIterator = variantIdIteratorFromSearch(searchEngineQuery, Integer.MAX_VALUE, 0, searchCount);
                 }
-                Query engineQuery = getEngineQuery(query, options, getStudyConfigurationManager());
 
                 VariantDBAdaptor dbAdaptor = getDBAdaptor();
                 logger.debug("Intersect query " + engineQuery.toJson() + " options " + options.toJson());
@@ -1072,7 +1074,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                         getOptions().getInt(APPROXIMATE_COUNT_SAMPLING_SIZE.key(), APPROXIMATE_COUNT_SAMPLING_SIZE.defaultValue()));
                 QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, VariantField.ID).append(QueryOptions.LIMIT, sampling);
 
-                VariantQueryResult<VariantSearchModel> nativeResult = getVariantSearchManager().nativeQuery(dbName, query, queryOptions);
+                Query searchEngineQuery = getSearchEngineQuery(query);
+                Query engineQuery = getEngineQuery(query, options, getStudyConfigurationManager());
+
+                VariantQueryResult<VariantSearchModel> nativeResult = getVariantSearchManager()
+                        .nativeQuery(dbName, searchEngineQuery, queryOptions);
                 List<String> variantIds = nativeResult.getResult().stream().map(VariantSearchModel::getId).collect(Collectors.toList());
                 // Adjust numSamples if the results from SearchManager is smaller than numSamples
                 // If this happens, the count is not approximated
@@ -1082,7 +1088,6 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 }
                 long numSearchResults = nativeResult.getNumTotalResults();
 
-                Query engineQuery = getEngineQuery(query, options, getStudyConfigurationManager());
                 engineQuery.put(ID.key(), variantIds);
                 long numResults = getDBAdaptor().count(engineQuery).first();
                 logger.debug("NumResults: {}, NumSearchResults: {}, NumSamples: {}", numResults, numSearchResults, sampling);
