@@ -374,6 +374,11 @@ public class SolrQueryParser {
         String[] studies = null;
         if (StringUtils.isNotEmpty(query.getString(VariantQueryParam.STUDY.key()))) {
             studies = query.getString(VariantQueryParam.STUDY.key()).split("[,;]");
+            for (int i = 0; i < studies.length; i++) {
+                if (studies[i].contains(":")) {
+                    studies[i] = studies[i].split(":")[1];
+                }
+            }
         }
 
         String[] files = null;
