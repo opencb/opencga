@@ -72,6 +72,8 @@ public class FileMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
             next.put(FileDBAdaptor.QueryParams.SAMPLES.key(), sampleList);
         }
 
+        addAclInformation(next, options);
+
         if (converter != null) {
             return (E) converter.convertToDataModelType(next, options);
         } else {

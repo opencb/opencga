@@ -149,10 +149,7 @@ public class AdminWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr) {
 
         try {
-            // check permissions with sessionId
-            queryOptions.put(FLATTENED_ANNOTATIONS, "true");
-            queryOptions.remove(QueryOptions.LIMIT);
-            return createOkResponse(catalogManager.getStudyManager().indexCatalogIntoSolr(studyStr, query, queryOptions, sessionId));
+            return createOkResponse(catalogManager.getStudyManager().indexCatalogIntoSolr(studyStr, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

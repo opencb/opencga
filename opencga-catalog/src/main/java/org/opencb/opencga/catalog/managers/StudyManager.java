@@ -1198,19 +1198,20 @@ public class StudyManager extends AbstractManager {
         }
     }
 
-    public boolean indexCatalogIntoSolr(String studyStr, Query query, QueryOptions queryOptions, String sessionId)
-            throws CatalogException, IOException {
+    public boolean indexCatalogIntoSolr(String studyStr, String token) throws CatalogException {
 
-        if (checkCanSyncSolr(studyStr, sessionId)) {
+        String userId = catalogManager.getUserManager().getUserId(token);
+
+        if (authorizationManager.checkIsAdmin(userId)) {
             Map<Long, String> allStudiesIdAndUids = getAllStudiesIdAndUid();
             CatalogSolrManager catalogSolrManager = new CatalogSolrManager(this.catalogManager, allStudiesIdAndUids);
 
-            ExecutorService threadPool = Executors.newFixedThreadPool(5);
-            threadPool.submit(() -> indexCohort(catalogSolrManager, query, queryOptions));
-            threadPool.submit(() -> indexFile(catalogSolrManager, query, queryOptions));
-            threadPool.submit(() -> indexFamily(catalogSolrManager, query, queryOptions));
-            threadPool.submit(() -> indexIndividual(catalogSolrManager, query, queryOptions));
-            threadPool.submit(() -> indexSample(catalogSolrManager, query, queryOptions));
+            ExecutorService threadPool = Executors.newFixedThreadPool(4);
+            threadPool.submit(() -> indexCohort(catalogSolrManager, new Query()));
+            threadPool.submit(() -> indexFile(catalogSolrManager, new Query()));
+            threadPool.submit(() -> indexFamily(catalogSolrManager, new Query()));
+            threadPool.submit(() -> indexIndividual(catalogSolrManager, new Query()));
+            threadPool.submit(() -> indexSample(catalogSolrManager, new Query()));
             threadPool.shutdown();
         }
         return true;
@@ -1218,10 +1219,9 @@ public class StudyManager extends AbstractManager {
 
     // **************************   Private methods  ******************************** //
 
-    private Boolean indexCohort(CatalogSolrManager catalogSolrManager, Query query,
-                                QueryOptions queryOptions) throws CatalogException, IOException {
+    private Boolean indexCohort(CatalogSolrManager catalogSolrManager, Query query) throws CatalogException, IOException {
 
-        QueryOptions cohortQueryOptions = new QueryOptions(queryOptions);
+        QueryOptions cohortQueryOptions = new QueryOptions();
         cohortQueryOptions.put(QueryOptions.INCLUDE, Arrays.asList(CohortDBAdaptor.QueryParams.ID.key(),
                 CohortDBAdaptor.QueryParams.NAME.key(), CohortDBAdaptor.QueryParams.STUDY_UID.key(),
                 CohortDBAdaptor.QueryParams.TYPE.key(), CohortDBAdaptor.QueryParams.CREATION_DATE.key(),
@@ -1233,9 +1233,8 @@ public class StudyManager extends AbstractManager {
         return true;
     }
 
-    private Boolean indexFile(CatalogSolrManager catalogSolrManager, Query query,
-                              QueryOptions queryOptions) throws CatalogException, IOException {
-        QueryOptions fileQueryOptions = new QueryOptions(queryOptions);
+    private Boolean indexFile(CatalogSolrManager catalogSolrManager, Query query) throws CatalogException, IOException {
+        QueryOptions fileQueryOptions = new QueryOptions();
         fileQueryOptions.put(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ID.key(),
                 FileDBAdaptor.QueryParams.NAME.key(), FileDBAdaptor.QueryParams.STUDY_UID.key(),
                 FileDBAdaptor.QueryParams.TYPE.key(), FileDBAdaptor.QueryParams.FORMAT.key(),
@@ -1252,9 +1251,8 @@ public class StudyManager extends AbstractManager {
     }
 
 
-    private Boolean indexFamily(CatalogSolrManager catalogSolrManager, Query query,
-                                QueryOptions queryOptions) throws CatalogException, IOException {
-        QueryOptions familyQueryOptions = new QueryOptions(queryOptions);
+    private Boolean indexFamily(CatalogSolrManager catalogSolrManager, Query query) throws CatalogException, IOException {
+        QueryOptions familyQueryOptions = new QueryOptions();
         familyQueryOptions.put(QueryOptions.INCLUDE, Arrays.asList(FamilyDBAdaptor.QueryParams.ID.key(),
                 FamilyDBAdaptor.QueryParams.STUDY_UID.key(), FamilyDBAdaptor.QueryParams.CREATION_DATE.key(),
                 FamilyDBAdaptor.QueryParams.STATUS.key(), FamilyDBAdaptor.QueryParams.PHENOTYPES.key(),
@@ -1267,10 +1265,9 @@ public class StudyManager extends AbstractManager {
     }
 
 
-    private Boolean indexIndividual(CatalogSolrManager catalogSolrManager, Query query,
-                                    QueryOptions queryOptions) throws CatalogException, IOException {
+    private Boolean indexIndividual(CatalogSolrManager catalogSolrManager, Query query) throws CatalogException, IOException {
 
-        QueryOptions individualQueryOptions = new QueryOptions(queryOptions);
+        QueryOptions individualQueryOptions = new QueryOptions();
         individualQueryOptions.put(QueryOptions.INCLUDE, Arrays.asList(IndividualDBAdaptor.QueryParams.ID.key(),
                 IndividualDBAdaptor.QueryParams.STUDY_UID.key(), IndividualDBAdaptor.QueryParams.MULTIPLES.key(),
                 IndividualDBAdaptor.QueryParams.SEX.key(), IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(),
@@ -1286,10 +1283,9 @@ public class StudyManager extends AbstractManager {
         return true;
     }
 
-    private Boolean indexSample(CatalogSolrManager catalogSolrManager, Query query,
-                                QueryOptions queryOptions) throws CatalogException, IOException {
+    private Boolean indexSample(CatalogSolrManager catalogSolrManager, Query query) throws CatalogException, IOException {
 
-        QueryOptions sampleQueryOptions = new QueryOptions(queryOptions);
+        QueryOptions sampleQueryOptions = new QueryOptions();
         sampleQueryOptions.put(QueryOptions.INCLUDE, Arrays.asList(SampleDBAdaptor.QueryParams.ID.key(),
                 SampleDBAdaptor.QueryParams.STUDY_UID.key(), SampleDBAdaptor.QueryParams.SOURCE.key(),
                 SampleDBAdaptor.QueryParams.RELEASE.key(), SampleDBAdaptor.QueryParams.VERSION.key(),
@@ -1426,8 +1422,4 @@ public class StudyManager extends AbstractManager {
 
     }
 
-    private Boolean checkCanSyncSolr(String studyStr, String sessionId) throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(sessionId);
-        return authorizationManager.checkCanSyncSolr(studyStr, userId);
-    }
 }

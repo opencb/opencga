@@ -100,8 +100,6 @@ public interface AuthorizationManager {
 
     void checkCanEditStudy(long studyId, String userId) throws CatalogException;
 
-    boolean checkCanSyncSolr(String studyId, String userId) throws CatalogException;
-
     void checkCanViewStudy(long studyId, String userId) throws CatalogException;
 
     void checkCanUpdatePermissionRules(long studyId, String userId) throws CatalogException;

@@ -30,7 +30,6 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
-import org.opencb.opencga.catalog.db.api.DBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.core.models.*;
 
@@ -51,24 +50,6 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.PRIVATE_UID;
 class MongoDBUtils {
 
     // Special queryOptions keys
-    /**
-     * SKIP_CHECK is used when deleting a document. If SKIP_CHECK is set to false, the document will be deleted no matter if other
-     * documents might depend on that one.
-     * @deprecated Use {@link DBAdaptor#SKIP_CHECK}
-     */
-    @Deprecated
-    public static final String SKIP_CHECK = DBAdaptor.SKIP_CHECK;
-    /**
-     * @deprecated Use {@link DBAdaptor#FORCE} instead.
-     */
-    @Deprecated
-    public static final String FORCE = DBAdaptor.FORCE;
-    /**
-     * KEEP_OUTPUT_FILES is used when deleting/removing a job. If it is set to true, it will mean that the output files that have been
-     * generated with the job going to be deleted/removed will be kept. Otherwise, those files will be also deleted/removed.
-     */
-    public static final String KEEP_OUTPUT_FILES = "keepOutputFiles";
-
     public static final Set<String> DATASTORE_OPTIONS = Arrays.asList("include", "exclude", "sort", "limit", "skip").stream()
             .collect(Collectors.toSet());
     public static final Set<String> OTHER_OPTIONS = Arrays.asList("of", "sid", "sessionId", "metadata", "includeProjects",

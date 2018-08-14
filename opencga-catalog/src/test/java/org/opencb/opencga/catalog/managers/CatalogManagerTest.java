@@ -233,6 +233,16 @@ public class CatalogManagerTest extends AbstractManagerTest {
         String token = catalogManager.getUserManager().login("test", "test");
         QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get("user@1000G:phase1", QueryOptions.empty(), token);
         assertEquals(1, studyQueryResult.getNumResults());
+        assertTrue(studyQueryResult.first().getAttributes().isEmpty());
+
+        studyQueryResult = catalogManager.getStudyManager().get("user@1000G:phase1", new QueryOptions(DBAdaptor.INCLUDE_ACLS, true), token);
+        assertEquals(1, studyQueryResult.getNumResults());
+        assertTrue(!studyQueryResult.first().getAttributes().isEmpty());
+        assertTrue(studyQueryResult.first().getAttributes().containsKey("acl"));
+        Map<String, List<String>> acls = (Map<String, List<String>>) studyQueryResult.first().getAttributes().get("acl");
+        assertEquals(1, acls.size());
+        assertTrue(acls.containsKey("@group_cancer_some_thing_else"));
+        assertTrue(!acls.get("@group_cancer_some_thing_else").isEmpty());
     }
 
     /**

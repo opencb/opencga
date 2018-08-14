@@ -1504,7 +1504,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     @Override
     public DBIterator<Study> iterator(Query query, QueryOptions options) throws CatalogDBException {
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
-        return new StudyMongoDBIterator<>(mongoCursor, studyConverter);
+        return new StudyMongoDBIterator<>(mongoCursor, options, studyConverter);
     }
 
     @Override
@@ -1512,7 +1512,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
         MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions);
-        return new StudyMongoDBIterator<>(mongoCursor);
+        return new StudyMongoDBIterator<>(mongoCursor, options);
     }
 
     @Override
@@ -1520,7 +1520,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             throws CatalogDBException, CatalogAuthorizationException {
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
         Function<Document, Boolean> iteratorFilter = (d) -> checkCanViewStudy(d, user);
-        return new StudyMongoDBIterator<>(mongoCursor, studyConverter, iteratorFilter);
+        return new StudyMongoDBIterator<>(mongoCursor, options, studyConverter, iteratorFilter);
     }
 
     @Override
@@ -1530,7 +1530,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         queryOptions.put(NATIVE_QUERY, true);
         MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions);
         Function<Document, Boolean> iteratorFilter = (d) -> checkCanViewStudy(d, user);
-        return new StudyMongoDBIterator<Document>(mongoCursor, iteratorFilter);
+        return new StudyMongoDBIterator<Document>(mongoCursor, options, iteratorFilter);
     }
 
     private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {

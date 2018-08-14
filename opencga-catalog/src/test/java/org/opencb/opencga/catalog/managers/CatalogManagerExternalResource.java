@@ -66,22 +66,22 @@ public class CatalogManagerExternalResource extends ExternalResource {
             c++;
         } while (opencgaHome.toFile().exists());
         Files.createDirectories(opencgaHome);
-        configuration = Configuration.load(getClass().getResource("/configuration.yml").openStream());
+        configuration = Configuration.load(getClass().getResource("/configuration-test.yml").openStream());
         configuration.getAdmin().setSecretKey("dummy");
         configuration.getAdmin().setAlgorithm("HS256");
         configuration.setDataDir(opencgaHome.resolve("sessions").toUri().toString());
         configuration.setTempJobsDir(opencgaHome.resolve("jobs").toUri().toString());
 
         catalogManager = new CatalogManager(configuration);
-        /*try {
+        try {
             catalogManager.deleteCatalogDB(false);
         } catch (Exception ignore) {}
         clearCatalog(configuration);
         if (!opencgaHome.toFile().exists()) {
             deleteFolderTree(opencgaHome.toFile());
             Files.createDirectory(opencgaHome);
-        }*/
-      //  catalogManager.installCatalogDB();
+        }
+        catalogManager.installCatalogDB();
     }
 
     @Override
@@ -132,7 +132,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
 
 //        MongoDataStore db = mongoManager.get(catalogConfiguration.getDatabase().getDatabase());
         MongoDataStore db = mongoManager.get(catalogManager.getCatalogDatabase());
-      //  db.getDb().drop();
+        db.getDb().drop();
 //        mongoManager.close(catalogConfiguration.getDatabase().getDatabase());
         mongoManager.close(catalogManager.getCatalogDatabase());
 

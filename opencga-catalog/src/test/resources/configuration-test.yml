@@ -62,12 +62,12 @@ catalog:
     options:
       authenticationDatabase: ""
   search:   ## Solr configuration, by default is the same than storage
-    host: ${OPENCGA.CATALOG.SEARCH.HOST}
+    host: http://localhost:8983/solr/
     mode: "cloud"
     user: ""
     password: ""
-    timeout: ${OPENCGA.CATALOG.SEARCH.TIMEOUT}
-    insertBatchSize: ${OPENCGA.CATALOG.SEARCH.BATCH}
+    timeout: 30000
+    insertBatchSize: 2000
 
 authentication:
   expiration: 1000
