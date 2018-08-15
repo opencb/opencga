@@ -50,6 +50,7 @@ public class SolrQueryParser {
     private final StudyConfigurationManager studyConfigurationManager;
 
     private static Map<String, String> includeMap;
+    private QueryOperation fileQueryOp;
 
     private static final Pattern STUDY_PATTERN = Pattern.compile("^([^=<>!]+):([^=<>!]+)(!=?|<=?|>=?|<<=?|>>=?|==?|=?)([^=<>!]+.*)$");
     private static final Pattern SCORE_PATTERN = Pattern.compile("^([^=<>!]+)(!=?|<=?|>=?|<<=?|>>=?|==?|=?)([^=<>!]+.*)$");
@@ -382,15 +383,19 @@ public class SolrQueryParser {
             }
         }
 
+        // File
         String[] files = null;
-        if (StringUtils.isNotEmpty(query.getString(VariantQueryParam.FILE.key()))) {
-            files = query.getString(VariantQueryParam.FILE.key()).split("[,;]");
+        key = VariantQueryParam.FILE.key();
+        if (StringUtils.isNotEmpty(query.getString(key))) {
+            addFileFilter(query.getString(key), studies, filterList);
+            // This file array will be used later in QUAL, FILTER and genotype Solr query filters
+            files = query.getString(key).split("[,;]");
         }
 
         // QUAL
         key = VariantQueryParam.QUAL.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            if (studies != null && studies.length == 1 && files != null && files.length > 0) {
+            if (studies != null && studies.length == 1 && files != null) {
                 // Sanity check QUAL values
                 String[] quals = query.getString(key).split("[,;]");
                 if (quals.length > 1) {
@@ -419,7 +424,7 @@ public class SolrQueryParser {
         // FILTER
         key = VariantQueryParam.FILTER.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            if (studies != null && studies.length == 1 && files != null && files.length > 0) {
+            if (studies != null && studies.length == 1 && files != null) {
                 // Sanity check FILTER values
                 String[] filters = query.getString(key).split("[,;]");
                 // Add FILTER filters, (AND for each file, but OR for each FILTER value)
@@ -525,6 +530,40 @@ public class SolrQueryParser {
                 + "\n-----------------------------------------------------\n\n");
 
         return solrQuery;
+    }
+
+    private void addFileFilter(String strFiles, String[] studies, List<String> filterList) {
+        // IMPORTANT: Only the first study is taken into account! Multiple studies support ??
+        if (StringUtils.isNotEmpty(strFiles) && studies != null) {
+            boolean or = strFiles.contains(",");
+            boolean and = strFiles.contains(";");
+            if (or && and) {
+                throw new IllegalArgumentException("Command and semi-colon cannot be mixed for file filter: " + strFiles);
+            }
+            StringBuilder sb = new StringBuilder();
+            String[] files = strFiles.split("[,;]");
+            if (or) {
+                // OR
+                fileQueryOp = QueryOperation.OR;
+                sb.append("fileInfo").append(VariantSearchUtils.FIELD_SEPARATOR).append(studies[0])
+                        .append(VariantSearchUtils.FIELD_SEPARATOR).append(files[0]).append(": [* TO *]");
+                for (int i = 1; i < files.length; i++) {
+                    sb.append(" OR ");
+                    sb.append("fileInfo").append(VariantSearchUtils.FIELD_SEPARATOR).append(studies[0])
+                            .append(VariantSearchUtils.FIELD_SEPARATOR).append(files[i]).append(": [* TO *]");
+                }
+                filterList.add(sb.toString());
+            } else {
+                // AND
+                fileQueryOp = QueryOperation.AND;
+                for (String file : files) {
+                    sb.setLength(0);
+                    sb.append("fileInfo").append(VariantSearchUtils.FIELD_SEPARATOR).append(studies[0])
+                            .append(VariantSearchUtils.FIELD_SEPARATOR).append(file).append(": [* TO *]");
+                    filterList.add(sb.toString());
+                }
+            }
+        }
     }
 
     /**
