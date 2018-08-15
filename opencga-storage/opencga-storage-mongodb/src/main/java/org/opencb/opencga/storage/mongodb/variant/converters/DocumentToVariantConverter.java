@@ -184,7 +184,7 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
      */
     public DocumentToVariantConverter(DocumentToStudyVariantEntryConverter variantStudyEntryConverter,
                                       DocumentToVariantStatsConverter statsConverter) {
-        this(variantStudyEntryConverter, statsConverter, null);
+        this(variantStudyEntryConverter, statsConverter, null, null);
     }
 
     /**
@@ -195,11 +195,13 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
      * @param variantStudyEntryConverter The object used to convert the files
      * @param statsConverter Stats converter
      * @param returnStudies List of studies to return
+     * @param annotationIds Map of annotationIds
      */
     public DocumentToVariantConverter(DocumentToStudyVariantEntryConverter variantStudyEntryConverter,
-                                      DocumentToVariantStatsConverter statsConverter, Collection<Integer> returnStudies) {
+                                      DocumentToVariantStatsConverter statsConverter, Collection<Integer> returnStudies,
+                                      Map<Integer, String> annotationIds) {
         this.variantStudyEntryConverter = variantStudyEntryConverter;
-        this.variantAnnotationConverter = new DocumentToVariantAnnotationConverter();
+        this.variantAnnotationConverter = new DocumentToVariantAnnotationConverter(annotationIds);
         this.statsConverter = statsConverter;
         addDefaultId = true;
         if (returnStudies != null) {
@@ -333,8 +335,15 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
                         .min(Integer::compareTo)
                         .orElse(-1)
                         .toString();
-                AdditionalAttribute additionalAttribute = new AdditionalAttribute(Collections.singletonMap("release", release));
-                annotation.getAdditionalAttributes().put("opencga", additionalAttribute);
+
+                annotation.getAdditionalAttributes().compute("opencga", (key, value) -> {
+                    if (value == null) {
+                        HashMap<String, String> map = new HashMap<>(1);
+                        value = new AdditionalAttribute(map);
+                    }
+                    value.getAttribute().put("release", release);
+                    return value;
+                });
             }
 
             variant.setAnnotation(annotation);

@@ -24,16 +24,19 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.phoenix.schema.types.PInteger;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.EthnicCategory;
 import org.opencb.biodata.models.variant.avro.EvidenceEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.tools.Converter;
+import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.converters.VariantTraitAssociationToEvidenceEntryConverter;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantAnnotationMixin;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 
 import java.io.IOException;
@@ -42,6 +45,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created on 03/12/15.
@@ -54,6 +58,9 @@ public class HBaseToVariantAnnotationConverter implements Converter<Result, Vari
     private final byte[] columnFamily;
     private final VariantTraitAssociationToEvidenceEntryConverter traitAssociationConverter;
     private byte[] annotationColumn = VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes();
+    private String annotationColumnStr = Bytes.toString(annotationColumn);
+    private String defaultAnnotationId = null;
+    private Map<Integer, String> annotationIds;
 
     public HBaseToVariantAnnotationConverter(GenomeHelper genomeHelper) {
         columnFamily = genomeHelper.getColumnFamily();
@@ -62,8 +69,28 @@ public class HBaseToVariantAnnotationConverter implements Converter<Result, Vari
         traitAssociationConverter = new VariantTraitAssociationToEvidenceEntryConverter();
     }
 
-    public HBaseToVariantAnnotationConverter setAnnotationColumn(byte[] annotationColumn) {
+    public HBaseToVariantAnnotationConverter setAnnotationColumn(byte[] annotationColumn, String name) {
         this.annotationColumn = annotationColumn;
+        annotationColumnStr = Bytes.toString(annotationColumn);
+        if (name.equals(VariantAnnotationManager.CURRENT)) {
+            // If CURRENT, check the annotation ID column
+            defaultAnnotationId = null;
+        } else {
+            defaultAnnotationId = name;
+        }
+        return this;
+    }
+
+    public HBaseToVariantAnnotationConverter setAnnotationIds(ProjectMetadata.VariantAnnotationSets annotations) {
+        Map<Integer, String> map = annotations.getSaved()
+                .stream()
+                .collect(Collectors.toMap(
+                        ProjectMetadata.VariantAnnotationMetadata::getId,
+                        ProjectMetadata.VariantAnnotationMetadata::getName));
+        if (annotations.getCurrent() != null) {
+            map.put(annotations.getCurrent().getId(), annotations.getCurrent().getName());
+        }
+        this.annotationIds = map;
         return this;
     }
 
@@ -117,14 +144,23 @@ public class HBaseToVariantAnnotationConverter implements Converter<Result, Vari
                 releases.add(getRelease(Bytes.toString(bytes)));
             }
         }
+        String annotationId = this.defaultAnnotationId;
+        if (defaultAnnotationId == null) {
+            // Read the annotation Id from ANNOTATION_ID column
+            byte[] annotationIdBytes = result.getFamilyMap(columnFamily).get(VariantPhoenixHelper.VariantColumn.ANNOTATION_ID.bytes());
+            if (annotationIdBytes != null && annotationIdBytes.length > 0) {
+                int annotationIdNum = ((Integer) PInteger.INSTANCE.toObject(annotationIdBytes));
+                annotationId = annotationIds.get(annotationIdNum);
+            }
+        }
 
-        return post(variantAnnotation, releases);
+        return post(variantAnnotation, releases, annotationId);
     }
 
     public VariantAnnotation convert(ResultSet resultSet) {
         VariantAnnotation variantAnnotation = null;
 
-        Integer column = findColumn(resultSet, VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION);
+        Integer column = findColumn(resultSet, annotationColumnStr);
         if (column != null) {
             try {
                     String value = resultSet.getString(column);
@@ -157,12 +193,23 @@ public class HBaseToVariantAnnotationConverter implements Converter<Result, Vari
             // This should never happen!
             throw new IllegalStateException(e);
         }
-        return post(variantAnnotation, releases);
+
+        String annotationId = this.defaultAnnotationId;
+        if (defaultAnnotationId == null) {
+            try {
+                int annotationIdNum = resultSet.getInt(VariantPhoenixHelper.VariantColumn.ANNOTATION_ID.column());
+                annotationId = annotationIds.get(annotationIdNum);
+            } catch (SQLException e) {
+                throw VariantQueryException.internalException(e);
+            }
+        }
+
+        return post(variantAnnotation, releases, annotationId);
     }
 
-    public Integer findColumn(ResultSet resultSet, PhoenixHelper.Column column) {
+    public Integer findColumn(ResultSet resultSet, String column) {
         try {
-            return resultSet.findColumn(column.column());
+            return resultSet.findColumn(column);
         } catch (SQLException e) {
             //Column not found
             return null;
@@ -173,7 +220,7 @@ public class HBaseToVariantAnnotationConverter implements Converter<Result, Vari
         return Integer.valueOf(columnName.substring(VariantPhoenixHelper.RELEASE_PREFIX.length()));
     }
 
-    private VariantAnnotation post(VariantAnnotation variantAnnotation, List<Integer> releases) {
+    private VariantAnnotation post(VariantAnnotation variantAnnotation, List<Integer> releases, String annotationId) {
         if (variantAnnotation == null) {
             if (releases.isEmpty()) {
                 return null;
@@ -217,14 +264,25 @@ public class HBaseToVariantAnnotationConverter implements Converter<Result, Vari
             List<EvidenceEntry> evidenceEntries = traitAssociationConverter.convert(variantAnnotation.getVariantTraitAssociation());
             variantAnnotation.setTraitAssociation(evidenceEntries);
         }
-        if (releases != null && !releases.isEmpty()) {
-            if (variantAnnotation.getAdditionalAttributes() == null) {
-                variantAnnotation.setAdditionalAttributes(new HashMap<>());
-            }
-            String release = releases.stream().min(Integer::compareTo).orElse(0).toString();
-            variantAnnotation.getAdditionalAttributes().put("opencga",
-                    new AdditionalAttribute(Collections.singletonMap("release", release)));
+        if (variantAnnotation.getAdditionalAttributes() == null) {
+            variantAnnotation.setAdditionalAttributes(new HashMap<>());
         }
+        variantAnnotation.getAdditionalAttributes().compute("opencga", (key, value) -> {
+            final Map<String, String> map;
+            if (value == null) {
+                map = new HashMap<>(2);
+                value = new AdditionalAttribute(map);
+            } else {
+                map = value.getAttribute();
+            }
+            map.put("annotationId", annotationId);
+            if (releases != null && !releases.isEmpty()) {
+                String release = releases.stream().min(Integer::compareTo).orElse(0).toString();
+                map.put("release", release);
+            }
+            return value;
+        });
+
 
         return variantAnnotation;
     }

@@ -510,9 +510,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     /**
-     * Provide a new VariantAnnotationManager for creating and loading annotations.
+     * Provide a new VariantStatisticsManager for creating and loading statistics.
      *
-     * @return              A new instance of VariantAnnotationManager
+     * @return              A new instance of VariantStatisticsManager
      * @throws StorageEngineException  if there is an error creating the VariantStatisticsManager
      */
     public VariantStatisticsManager newVariantStatisticsManager() throws StorageEngineException {

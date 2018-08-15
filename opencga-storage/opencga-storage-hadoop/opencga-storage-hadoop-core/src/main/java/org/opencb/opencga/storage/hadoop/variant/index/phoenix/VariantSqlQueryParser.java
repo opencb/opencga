@@ -247,6 +247,7 @@ public class VariantSqlQueryParser {
             }
             if (returnedFields.contains(VariantField.ANNOTATION)) {
                 sb.append(',').append(VariantColumn.FULL_ANNOTATION);
+                sb.append(',').append(VariantColumn.ANNOTATION_ID);
 
                 int release = studyConfigurationManager.getProjectMetadata().first().getRelease();
                 for (int i = 1; i <= release; i++) {

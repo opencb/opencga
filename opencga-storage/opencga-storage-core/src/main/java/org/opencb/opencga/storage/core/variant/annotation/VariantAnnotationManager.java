@@ -93,7 +93,7 @@ public abstract class VariantAnnotationManager {
         if (current == null) {
             current = new VariantAnnotationMetadata();
             projectMetadata.getAnnotation().setCurrent(current);
-            current.setId(-1);
+            current.setId(1);
             current.setName(CURRENT);
         }
 
@@ -183,19 +183,17 @@ public abstract class VariantAnnotationManager {
         if (nameDuplicated) {
             throw new VariantAnnotatorException("Annotation snapshot name already exists!");
         }
-        Integer maxId = projectMetadata.getAnnotation().getSaved()
-                .stream()
-                .map(VariantAnnotationMetadata::getId)
-                .max(Integer::compareTo)
-                .orElse(0);
 
         VariantAnnotationMetadata newSnapshot = new VariantAnnotationMetadata(
-                maxId + 1,
+                current.getId(),
                 name,
                 Date.from(Instant.now()),
                 current.getAnnotator(),
                 current.getSourceVersion());
         projectMetadata.getAnnotation().getSaved().add(newSnapshot);
+
+        // Increment ID of the current annotation
+        current.setId(current.getId() + 1);
 
         return newSnapshot;
     }

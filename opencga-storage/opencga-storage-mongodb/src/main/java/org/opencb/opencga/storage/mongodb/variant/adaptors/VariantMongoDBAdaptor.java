@@ -970,7 +970,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         variantAnnotation.getReference(), variantAnnotation.getAlternate());
             }
             Document find = new Document("_id", id);
-            DocumentToVariantAnnotationConverter converter = new DocumentToVariantAnnotationConverter();
+            int currentAnnotationId = getStudyConfigurationManager().getProjectMetadata().first().getAnnotation().getCurrent().getId();
+            DocumentToVariantAnnotationConverter converter = new DocumentToVariantAnnotationConverter(currentAnnotationId);
             Document convertedVariantAnnotation = converter.convertToStorageType(variantAnnotation);
             Document update = new Document("$set", new Document(DocumentToVariantConverter.ANNOTATION_FIELD + ".0",
                     convertedVariantAnnotation));
@@ -1033,8 +1034,17 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         studyEntryConverter = new DocumentToStudyVariantEntryConverter(false, selectVariantElements.getFiles(), samplesConverter);
         studyEntryConverter.setStudyConfigurationManager(studyConfigurationManager);
+        ProjectMetadata projectMetadata = getStudyConfigurationManager().getProjectMetadata().first();
+        Map<Integer, String> map = projectMetadata.getAnnotation().getSaved()
+                .stream()
+                .collect(Collectors.toMap(
+                        ProjectMetadata.VariantAnnotationMetadata::getId,
+                        ProjectMetadata.VariantAnnotationMetadata::getName));
+        if (projectMetadata.getAnnotation().getCurrent() != null) {
+            map.put(projectMetadata.getAnnotation().getCurrent().getId(), projectMetadata.getAnnotation().getCurrent().getName());
+        }
         return new DocumentToVariantConverter(studyEntryConverter,
-                new DocumentToVariantStatsConverter(studyConfigurationManager), returnedStudies);
+                new DocumentToVariantStatsConverter(studyConfigurationManager), returnedStudies, map);
     }
 
     public void createIndexes(QueryOptions options) {

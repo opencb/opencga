@@ -91,6 +91,8 @@ public class VariantPhoenixHelper {
 
         TYPE("TYPE", PVarchar.INSTANCE),
 
+        ANNOTATION_ID(ANNOTATION_PREFIX + "ID", PInteger.INSTANCE),
+
         SO(ANNOTATION_PREFIX + "SO", PIntegerArray.INSTANCE),
         GENES(ANNOTATION_PREFIX + "GENES", PVarcharArray.INSTANCE),
         GENE_SO(ANNOTATION_PREFIX + "GENE_SO", PVarcharArray.INSTANCE),
