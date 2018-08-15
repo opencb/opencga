@@ -248,7 +248,7 @@ public class VariantSearchUtils {
                 } else {
                     sampleIds = samples.stream()
                             .map(sample -> isNegated(sample) ? removeNegation(sample) : sample)
-                            .map(studyConfiguration.getSampleIds()::get).collect(Collectors.toList());
+                            .map(sample -> studyConfigurationManager.getSampleId(sample, studyConfiguration)).collect(Collectors.toList());
                 }
 
                 Integer sampleSet = null;

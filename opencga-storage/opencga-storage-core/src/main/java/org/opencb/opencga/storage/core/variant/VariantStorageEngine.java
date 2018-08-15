@@ -959,9 +959,19 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                     parseSelectElements(query, options, getStudyConfigurationManager());
             query.putIfAbsent(INCLUDE_STUDY.key(), selectVariantElements.getStudies());
             query.putIfAbsent(INCLUDE_SAMPLE.key(), selectVariantElements.getSamples()
-                    .entrySet().stream().flatMap(e -> e.getValue().stream().map(v -> e.getKey() + ":" + v)).collect(Collectors.toList()));
+                    .entrySet()
+                    .stream()
+                    .flatMap(e -> e.getValue()
+                            .stream()
+                            .map(selectVariantElements.getStudyConfigurations().get(e.getKey()).getSampleIds().inverse()::get))
+                    .collect(Collectors.toList()));
             query.putIfAbsent(INCLUDE_FILE.key(), selectVariantElements.getFiles()
-                    .entrySet().stream().flatMap(e -> e.getValue().stream().map(v -> e.getKey() + ":" + v)).collect(Collectors.toList()));
+                    .entrySet()
+                    .stream()
+                    .flatMap(e -> e.getValue()
+                            .stream()
+                            .map(selectVariantElements.getStudyConfigurations().get(e.getKey()).getFileIds().inverse()::get))
+                    .collect(Collectors.toList()));
         }
         return query;
     }
