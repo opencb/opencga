@@ -68,6 +68,7 @@
     <field name="creationDate" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="status" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="release" type="int" indexed="true" stored="true" multiValued="false"/>
+    <field name="acl" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="samples" type="int" indexed="false" stored="true" multiValued="false"/>
 
     <dynamicField name="annotations__s__*" type="string" indexed="true" stored="true" multiValued="false"/>

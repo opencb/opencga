@@ -23,7 +23,10 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 /**
@@ -81,7 +84,7 @@ public class MongoDBIterator<E> implements DBIterator<E> {
         mongoCursor.close();
     }
 
-    protected void addAclInformation(Document document, QueryOptions options) {
+    void addAclInformation(Document document, QueryOptions options) {
         if (document == null) {
             return;
         }
@@ -92,25 +95,27 @@ public class MongoDBIterator<E> implements DBIterator<E> {
 
         // We have to include the acls to the current document
         List<String> aclList = (List<String>) document.get("_acl");
-        if (aclList == null || aclList.isEmpty()) {
-            // No acls present in the current document
-            return;
-        }
-
-        // We will return the acls in a map <member (user or group id), Set<permissions>>
-        Map<String, Set<String>> permissionMap = new HashMap<>();
-        aclList.forEach(permission -> {
-            String[] split = StringUtils.splitByWholeSeparatorPreserveAllTokens(permission, SEPARATOR, 2);
-
-            if (!"NONE".equals(split[1])) {
+        List<Document> permissions = new ArrayList<>();
+        if (aclList != null && !aclList.isEmpty()) {
+            // We will return the acls following the AclEntry format
+            Map<String, List<String>> permissionMap = new HashMap<>();
+            aclList.forEach(permission -> {
+                String[] split = StringUtils.splitByWholeSeparatorPreserveAllTokens(permission, SEPARATOR, 2);
                 if (!permissionMap.containsKey(split[0])) {
-                    Set<String> permissions = new HashSet<>();
-                    permissionMap.put(split[0], permissions);
+                    List<String> tmpPermissions = new ArrayList<>();
+                    permissionMap.put(split[0], tmpPermissions);
                 }
-                Set<String> permissions = permissionMap.get(split[0]);
-                permissions.add(split[1]);
-            }
-        });
+                if (!"NONE".equals(split[1])) {
+                    List<String> tmpPermissions = permissionMap.get(split[0]);
+                    tmpPermissions.add(split[1]);
+                }
+            });
+            // We parse the map to the AclEntry format
+            permissionMap.entrySet().forEach(entry -> permissions.add(new Document()
+                    .append("member", entry.getKey())
+                    .append("permissions", entry.getValue()))
+            );
+        }
 
         // We store those acls retrieved in the attributes field
         Document attributes = (Document) document.get("attributes");
@@ -118,7 +123,7 @@ public class MongoDBIterator<E> implements DBIterator<E> {
             attributes = new Document();
             document.put("attributes", attributes);
         }
-        attributes.put("acl", permissionMap);
+        attributes.put("OPENCGA_ACL", permissions);
     }
 
 }

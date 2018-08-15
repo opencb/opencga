@@ -658,7 +658,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
     public FacetedQueryResult facet(Query query, QueryOptions queryOptions, String sessionId) throws IOException, CatalogDBException {
 
-        CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager, null);
+        CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);
         String collection = catalogManager.getConfiguration().getDatabasePrefix() + "_"
                 + CatalogSolrManager.FAMILY_SOLR_COLLECTION;
 

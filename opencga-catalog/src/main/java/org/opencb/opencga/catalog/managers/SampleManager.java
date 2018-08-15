@@ -1126,7 +1126,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
     public FacetedQueryResult facet(Query query, QueryOptions queryOptions, String sessionId) throws IOException, CatalogDBException {
 
-        CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager, null);
+        CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);
         String collection = catalogManager.getConfiguration().getDatabasePrefix() + "_"
                 + CatalogSolrManager.SAMPLES_SOLR_COLLECTION;
 

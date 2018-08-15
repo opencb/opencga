@@ -70,6 +70,7 @@
     <field name="familyMembersUuids" type="string" indexed="false" stored="true" multiValued="true"/>
     <field name="release" type="int" indexed="true" stored="true" multiValued="false"/>
     <field name="version" type="int" indexed="true" stored="true" multiValued="false"/>
+    <field name="acl" type="string" indexed="true" stored="true" multiValued="true"/>
 
     <dynamicField name="annotations__s__*" type="string" indexed="true" stored="true" multiValued="false"/>
     <dynamicField name="annotations__d__*" type="double" indexed="true" stored="true" multiValued="false"/>

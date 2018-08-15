@@ -5,8 +5,10 @@ import org.opencb.opencga.catalog.stats.solr.FamilySolrModel;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogFamilyToSolrFamilyConverter;
 import org.opencb.opencga.core.models.Family;
 import org.opencb.opencga.core.models.Individual;
+import org.opencb.opencga.core.models.Study;
 
 import java.util.Arrays;
+import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -18,11 +20,11 @@ public class CatalogFamilyToSolrFamilyConverterTest {
 
     @Test
     public void FamilyToSolrTest() {
-
+        Study study = new Study().setFqn("user@project:study").setAttributes(new HashMap<>());
         Family family = new Family("id", "family", null, Arrays.asList(new Individual().setId("I1"), new Individual().setId("I2")),
                 "test", 1000, AnnotationHelper.createAnnotation(), null);
         family.setUid(100).setStatus(new Family.FamilyStatus("READY")).setRelease(1).setVersion(2);
-        FamilySolrModel familySolrModel = new CatalogFamilyToSolrFamilyConverter().convertToStorageType(family);
+        FamilySolrModel familySolrModel = new CatalogFamilyToSolrFamilyConverter(study).convertToStorageType(family);
 
         assertEquals(familySolrModel.getUid(), family.getUid());
         assertEquals(familySolrModel.getStatus(), family.getStatus().getName());

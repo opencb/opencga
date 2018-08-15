@@ -7,8 +7,10 @@ import org.opencb.opencga.catalog.stats.solr.converters.CatalogSampleToSolrSampl
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.Status;
+import org.opencb.opencga.core.models.Study;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
@@ -21,6 +23,7 @@ public class CatalogSampleToSolrSampleConverterTest {
     @Test
     public void SampleToSolrTest() {
 
+        Study study = new Study().setFqn("user@project:study").setAttributes(new HashMap<>());
         Individual individual = new Individual();
         individual.setUuid("uuid").setEthnicity("spanish").setKaryotypicSex(Individual.KaryotypicSex.XX).
                 setPopulation(new Individual.Population("valencian", "", ""));
@@ -33,7 +36,7 @@ public class CatalogSampleToSolrSampleConverterTest {
         attributes.put("individual", individual);
         sample.setAttributes(attributes);
 
-        SampleSolrModel sampleSolrModel = new CatalogSampleToSolrSampleConverter().convertToStorageType(sample);
+        SampleSolrModel sampleSolrModel = new CatalogSampleToSolrSampleConverter(study).convertToStorageType(sample);
 
         assertEquals(sampleSolrModel.getUid(), sample.getUid());
         assertEquals(sampleSolrModel.getSource(), sample.getSource());

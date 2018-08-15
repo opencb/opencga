@@ -57,6 +57,9 @@ public class FileSolrModel {
     @Field
     private List<Long> relatedFiles;
 
+    @Field
+    private List<String> acl;
+
     @Field("annotations__*")
     private Map<String, Object> annotations;
 
@@ -220,6 +223,15 @@ public class FileSolrModel {
 
     public FileSolrModel setRelatedFiles(List<Long> relatedFiles) {
         this.relatedFiles = relatedFiles;
+        return this;
+    }
+
+    public List<String> getAcl() {
+        return acl;
+    }
+
+    public FileSolrModel setAcl(List<String> acl) {
+        this.acl = acl;
         return this;
     }
 

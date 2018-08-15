@@ -3,13 +3,11 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 import org.junit.Test;
 import org.opencb.opencga.catalog.stats.solr.FileSolrModel;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogFileToSolrFileConverter;
-import org.opencb.opencga.core.models.Experiment;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.core.models.Software;
+import org.opencb.opencga.core.models.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -21,13 +19,14 @@ public class CatalogFileToSolrFileConverterTest {
 
     @Test
     public void FileToSolrTest() {
+        Study study = new Study().setFqn("user@project:study").setAttributes(new HashMap<>());
         File file = new File("name", File.Type.FILE, File.Format.BAM, File.Bioformat.MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT,
                 "test/base", "convertorTest", new File.FileStatus("READY"), 1111L, 2);
         file.setUid(111).setSamples(Arrays.asList(new Sample().setId("1"), new Sample().setId("2")))
                 .setExperiment(new Experiment().setName("Experiment")).setSoftware(new Software().setName("Software"));
         file.setAnnotationSets(AnnotationHelper.createAnnotation());
 
-        FileSolrModel fileSolrModel = new CatalogFileToSolrFileConverter().convertToStorageType(file);
+        FileSolrModel fileSolrModel = new CatalogFileToSolrFileConverter(study).convertToStorageType(file);
 
         assert (fileSolrModel.getUid() == file.getUid());
         assert (fileSolrModel.getName() == file.getName());

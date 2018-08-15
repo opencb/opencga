@@ -54,6 +54,9 @@ public class SampleSolrModel {
     @Field
     private List<String> phenotypes;
 
+    @Field
+    private List<String> acl;
+
     @Field("annotations__*")
     private Map<String, Object> annotations;
 
@@ -207,6 +210,15 @@ public class SampleSolrModel {
 
     public SampleSolrModel setPhenotypes(List<String> phenotypes) {
         this.phenotypes = phenotypes;
+        return this;
+    }
+
+    public List<String> getAcl() {
+        return acl;
+    }
+
+    public SampleSolrModel setAcl(List<String> acl) {
+        this.acl = acl;
         return this;
     }
 

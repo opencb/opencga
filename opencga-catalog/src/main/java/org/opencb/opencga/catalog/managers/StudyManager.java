@@ -1203,15 +1203,33 @@ public class StudyManager extends AbstractManager {
         String userId = catalogManager.getUserManager().getUserId(token);
 
         if (authorizationManager.checkIsAdmin(userId)) {
-            Map<Long, String> allStudiesIdAndUids = getAllStudiesIdAndUid();
-            CatalogSolrManager catalogSolrManager = new CatalogSolrManager(this.catalogManager, allStudiesIdAndUids);
+            // Get all the studies
+            Query query = new Query();
+            QueryOptions options = new QueryOptions()
+                    .append(QueryOptions.INCLUDE, Arrays.asList(StudyDBAdaptor.QueryParams.UID.key(), StudyDBAdaptor.QueryParams.ID.key(),
+                            StudyDBAdaptor.QueryParams.FQN.key()))
+                    .append(DBAdaptor.INCLUDE_ACLS, true);
+            QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, options);
+            if (studyQueryResult.getNumResults() == 0) {
+                throw new CatalogException("Could not index catalog into solr. No studies found");
+            }
+
+            CatalogSolrManager catalogSolrManager = new CatalogSolrManager(this.catalogManager);
 
             ExecutorService threadPool = Executors.newFixedThreadPool(4);
-            threadPool.submit(() -> indexCohort(catalogSolrManager, new Query()));
-            threadPool.submit(() -> indexFile(catalogSolrManager, new Query()));
-            threadPool.submit(() -> indexFamily(catalogSolrManager, new Query()));
-            threadPool.submit(() -> indexIndividual(catalogSolrManager, new Query()));
-            threadPool.submit(() -> indexSample(catalogSolrManager, new Query()));
+            for (Study study : studyQueryResult.getResult()) {
+                Map<String, Set<String>> studyAcls =
+                        SolrConverterUtil.parseInternalOpenCGAAcls((List<Map<String, Object>>) study.getAttributes().get("OPENCGA_ACL"));
+                // We replace the current studyAcls for the parsed one
+                study.getAttributes().put("OPENCGA_ACL", studyAcls);
+
+                threadPool.submit(() -> indexCohort(catalogSolrManager, study));
+                threadPool.submit(() -> indexFile(catalogSolrManager, study));
+                threadPool.submit(() -> indexFamily(catalogSolrManager, study));
+                threadPool.submit(() -> indexIndividual(catalogSolrManager, study));
+                threadPool.submit(() -> indexSample(catalogSolrManager, study));
+            }
+
             threadPool.shutdown();
         }
         return true;
@@ -1219,88 +1237,88 @@ public class StudyManager extends AbstractManager {
 
     // **************************   Private methods  ******************************** //
 
-    private Boolean indexCohort(CatalogSolrManager catalogSolrManager, Query query) throws CatalogException, IOException {
+    private Boolean indexCohort(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException, IOException {
 
-        QueryOptions cohortQueryOptions = new QueryOptions();
-        cohortQueryOptions.put(QueryOptions.INCLUDE, Arrays.asList(CohortDBAdaptor.QueryParams.ID.key(),
-                CohortDBAdaptor.QueryParams.NAME.key(), CohortDBAdaptor.QueryParams.STUDY_UID.key(),
-                CohortDBAdaptor.QueryParams.TYPE.key(), CohortDBAdaptor.QueryParams.CREATION_DATE.key(),
-                CohortDBAdaptor.QueryParams.STATUS.key(), CohortDBAdaptor.QueryParams.RELEASE.key(),
-                CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key(), CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key()));
+        Query query = new Query(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+        QueryOptions cohortQueryOptions = new QueryOptions()
+                .append(QueryOptions.INCLUDE, Arrays.asList(CohortDBAdaptor.QueryParams.ID.key(), CohortDBAdaptor.QueryParams.NAME.key(),
+                        CohortDBAdaptor.QueryParams.CREATION_DATE.key(), CohortDBAdaptor.QueryParams.STATUS.key(),
+                        CohortDBAdaptor.QueryParams.RELEASE.key(), CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key(),
+                        CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key(), CohortDBAdaptor.QueryParams.TYPE.key()))
+                .append(DBAdaptor.INCLUDE_ACLS, true);
 
         catalogSolrManager.insertCatalogCollection(this.cohortDBAdaptor.iterator(query,
-                cohortQueryOptions), new CatalogCohortToSolrCohortConverter(), CatalogSolrManager.COHORT_SOLR_COLLECTION);
+                cohortQueryOptions), new CatalogCohortToSolrCohortConverter(study), CatalogSolrManager.COHORT_SOLR_COLLECTION);
         return true;
     }
 
-    private Boolean indexFile(CatalogSolrManager catalogSolrManager, Query query) throws CatalogException, IOException {
-        QueryOptions fileQueryOptions = new QueryOptions();
-        fileQueryOptions.put(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ID.key(),
-                FileDBAdaptor.QueryParams.NAME.key(), FileDBAdaptor.QueryParams.STUDY_UID.key(),
-                FileDBAdaptor.QueryParams.TYPE.key(), FileDBAdaptor.QueryParams.FORMAT.key(),
-                FileDBAdaptor.QueryParams.CREATION_DATE.key(), FileDBAdaptor.QueryParams.BIOFORMAT.key(),
-                FileDBAdaptor.QueryParams.RELEASE.key(), FileDBAdaptor.QueryParams.STATUS.key(),
-                FileDBAdaptor.QueryParams.EXTERNAL.key(), FileDBAdaptor.QueryParams.SIZE.key(),
-                FileDBAdaptor.QueryParams.SOFTWARE.key(), FileDBAdaptor.QueryParams.EXPERIMENT_UID.key(),
-                FileDBAdaptor.QueryParams.RELATED_FILES.key(), FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(),
-                FileDBAdaptor.QueryParams.ANNOTATION_SETS.key()));
+    private Boolean indexFile(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException, IOException {
+        Query query = new Query(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+        QueryOptions fileQueryOptions = new QueryOptions()
+                .append(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ID.key(),
+                        FileDBAdaptor.QueryParams.NAME.key(), FileDBAdaptor.QueryParams.TYPE.key(), FileDBAdaptor.QueryParams.FORMAT.key(),
+                        FileDBAdaptor.QueryParams.CREATION_DATE.key(), FileDBAdaptor.QueryParams.BIOFORMAT.key(),
+                        FileDBAdaptor.QueryParams.RELEASE.key(), FileDBAdaptor.QueryParams.STATUS.key(),
+                        FileDBAdaptor.QueryParams.EXTERNAL.key(), FileDBAdaptor.QueryParams.SIZE.key(),
+                        FileDBAdaptor.QueryParams.SOFTWARE.key(), FileDBAdaptor.QueryParams.EXPERIMENT_UID.key(),
+                        FileDBAdaptor.QueryParams.RELATED_FILES.key(), FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(),
+                        FileDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
+                .append(DBAdaptor.INCLUDE_ACLS, true);
 
         catalogSolrManager.insertCatalogCollection(this.fileDBAdaptor.iterator(query,
-                fileQueryOptions), new CatalogFileToSolrFileConverter(), CatalogSolrManager.FILE_SOLR_COLLECTION);
+                fileQueryOptions), new CatalogFileToSolrFileConverter(study), CatalogSolrManager.FILE_SOLR_COLLECTION);
         return true;
     }
 
 
-    private Boolean indexFamily(CatalogSolrManager catalogSolrManager, Query query) throws CatalogException, IOException {
-        QueryOptions familyQueryOptions = new QueryOptions();
-        familyQueryOptions.put(QueryOptions.INCLUDE, Arrays.asList(FamilyDBAdaptor.QueryParams.ID.key(),
-                FamilyDBAdaptor.QueryParams.STUDY_UID.key(), FamilyDBAdaptor.QueryParams.CREATION_DATE.key(),
-                FamilyDBAdaptor.QueryParams.STATUS.key(), FamilyDBAdaptor.QueryParams.PHENOTYPES.key(),
-                FamilyDBAdaptor.QueryParams.MEMBER_UID.key(), FamilyDBAdaptor.QueryParams.RELEASE.key(),
-                FamilyDBAdaptor.QueryParams.VERSION.key(), FamilyDBAdaptor.QueryParams.ANNOTATION_SETS.key()));
+    private Boolean indexFamily(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException, IOException {
+        Query query = new Query(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+        QueryOptions familyQueryOptions = new QueryOptions()
+                .append(QueryOptions.INCLUDE, Arrays.asList(FamilyDBAdaptor.QueryParams.ID.key(),
+                        FamilyDBAdaptor.QueryParams.CREATION_DATE.key(), FamilyDBAdaptor.QueryParams.STATUS.key(),
+                        FamilyDBAdaptor.QueryParams.MEMBER_UID.key(), FamilyDBAdaptor.QueryParams.RELEASE.key(),
+                        FamilyDBAdaptor.QueryParams.VERSION.key(), FamilyDBAdaptor.QueryParams.ANNOTATION_SETS.key(),
+                        FamilyDBAdaptor.QueryParams.PHENOTYPES.key()))
+                .append(DBAdaptor.INCLUDE_ACLS, true);
 
         catalogSolrManager.insertCatalogCollection(this.familyDBAdaptor.iterator(query,
-                familyQueryOptions), new CatalogFamilyToSolrFamilyConverter(), CatalogSolrManager.FAMILY_SOLR_COLLECTION);
+                familyQueryOptions), new CatalogFamilyToSolrFamilyConverter(study), CatalogSolrManager.FAMILY_SOLR_COLLECTION);
         return true;
     }
 
 
-    private Boolean indexIndividual(CatalogSolrManager catalogSolrManager, Query query) throws CatalogException, IOException {
-
-        QueryOptions individualQueryOptions = new QueryOptions();
-        individualQueryOptions.put(QueryOptions.INCLUDE, Arrays.asList(IndividualDBAdaptor.QueryParams.ID.key(),
-                IndividualDBAdaptor.QueryParams.STUDY_UID.key(), IndividualDBAdaptor.QueryParams.MULTIPLES.key(),
-                IndividualDBAdaptor.QueryParams.SEX.key(), IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(),
-                IndividualDBAdaptor.QueryParams.ETHNICITY.key(), IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
-                IndividualDBAdaptor.QueryParams.RELEASE.key(), IndividualDBAdaptor.QueryParams.CREATION_DATE.key(),
-                IndividualDBAdaptor.QueryParams.STATUS.key(), IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(),
-                IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(), IndividualDBAdaptor.QueryParams.PHENOTYPES.key(),
-                IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), IndividualDBAdaptor.QueryParams.PARENTAL_CONSANGUINITY.key(),
-                IndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key()));
+    private Boolean indexIndividual(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException, IOException {
+        Query query = new Query(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+        QueryOptions individualQueryOptions = new QueryOptions()
+                .append(QueryOptions.INCLUDE, Arrays.asList(IndividualDBAdaptor.QueryParams.ID.key(),
+                        IndividualDBAdaptor.QueryParams.MULTIPLES.key(), IndividualDBAdaptor.QueryParams.SEX.key(),
+                        IndividualDBAdaptor.QueryParams.ETHNICITY.key(), IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
+                        IndividualDBAdaptor.QueryParams.RELEASE.key(), IndividualDBAdaptor.QueryParams.CREATION_DATE.key(),
+                        IndividualDBAdaptor.QueryParams.STATUS.key(), IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(),
+                        IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(), IndividualDBAdaptor.QueryParams.PHENOTYPES.key(),
+                        IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), IndividualDBAdaptor.QueryParams.PARENTAL_CONSANGUINITY.key(),
+                        IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(), IndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
+                .append(DBAdaptor.INCLUDE_ACLS, true);
 
         catalogSolrManager.insertCatalogCollection(this.individualDBAdaptor.iterator(query,
-                individualQueryOptions), new CatalogIndividualToSolrIndividualConverter(), CatalogSolrManager.INDIVIDUAL_SOLR_COLLECTION);
+                individualQueryOptions), new CatalogIndividualToSolrIndividualConverter(study),
+                CatalogSolrManager.INDIVIDUAL_SOLR_COLLECTION);
         return true;
     }
 
-    private Boolean indexSample(CatalogSolrManager catalogSolrManager, Query query) throws CatalogException, IOException {
-
-        QueryOptions sampleQueryOptions = new QueryOptions();
-        sampleQueryOptions.put(QueryOptions.INCLUDE, Arrays.asList(SampleDBAdaptor.QueryParams.ID.key(),
-                SampleDBAdaptor.QueryParams.STUDY_UID.key(), SampleDBAdaptor.QueryParams.SOURCE.key(),
-                SampleDBAdaptor.QueryParams.RELEASE.key(), SampleDBAdaptor.QueryParams.VERSION.key(),
-                SampleDBAdaptor.QueryParams.CREATION_DATE.key(), SampleDBAdaptor.QueryParams.STATUS.key(),
-                SampleDBAdaptor.QueryParams.TYPE.key(), SampleDBAdaptor.QueryParams.SOMATIC.key(),
-                SampleDBAdaptor.QueryParams.PHENOTYPES.key(), SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(),
-                SampleDBAdaptor.QueryParams.UID.key(),
-                SampleDBAdaptor.QueryParams.INDIVIDUAL.key() + "." + IndividualDBAdaptor.QueryParams.UUID.key(),
-                SampleDBAdaptor.QueryParams.INDIVIDUAL.key() + "." + IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(),
-                SampleDBAdaptor.QueryParams.INDIVIDUAL.key() + "." + IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
-                SampleDBAdaptor.QueryParams.INDIVIDUAL.key() + "." + IndividualDBAdaptor.QueryParams.ETHNICITY.key()));
-        sampleQueryOptions.put("lazy", false);
+    private Boolean indexSample(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException, IOException {
+        Query query = new Query(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+        QueryOptions sampleQueryOptions = new QueryOptions()
+                .append(QueryOptions.INCLUDE, Arrays.asList(SampleDBAdaptor.QueryParams.ID.key(), SampleDBAdaptor.QueryParams.SOURCE.key(),
+                        SampleDBAdaptor.QueryParams.RELEASE.key(), SampleDBAdaptor.QueryParams.VERSION.key(),
+                        SampleDBAdaptor.QueryParams.CREATION_DATE.key(), SampleDBAdaptor.QueryParams.STATUS.key(),
+                        SampleDBAdaptor.QueryParams.TYPE.key(), SampleDBAdaptor.QueryParams.SOMATIC.key(),
+                        SampleDBAdaptor.QueryParams.PHENOTYPES.key(), SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(),
+                        SampleDBAdaptor.QueryParams.UID.key()))
+                .append(DBAdaptor.INCLUDE_ACLS, true);
 
         catalogSolrManager.insertCatalogCollection(this.sampleDBAdaptor.iterator(query,
-                sampleQueryOptions), new CatalogSampleToSolrSampleConverter(), CatalogSolrManager.SAMPLES_SOLR_COLLECTION);
+                sampleQueryOptions), new CatalogSampleToSolrSampleConverter(study), CatalogSolrManager.SAMPLES_SOLR_COLLECTION);
         return true;
     }
 
@@ -1406,20 +1424,16 @@ public class StudyManager extends AbstractManager {
         }
     }
 
-    private Map<Long, String> getAllStudiesIdAndUid() throws CatalogDBException {
-        Map<Long, String> allStudiesIdAndUids = new HashMap<>();
-        QueryOptions queryOptions = new QueryOptions();
-
-        queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(StudyDBAdaptor.QueryParams.FQN.key(), StudyDBAdaptor.QueryParams.UID.key()));
-        List<Study> studies = studyDBAdaptor.get(new Query(), queryOptions).getResult();
-
-        for (Study study : studies) {
-            String id = study.getFqn().replace(":", "_");
-            long uid = study.getUid();
-            allStudiesIdAndUids.put(uid, id);
-        }
-        return allStudiesIdAndUids;
-
-    }
+//    private Map<Long, String> getAllStudiesIdAndUid(List<Study> studies) {
+//        Map<Long, String> allStudiesIdAndUids = new HashMap<>();
+//
+//        for (Study study : studies) {
+//            String id = study.getFqn().replace(":", "__");
+//            long uid = study.getUid();
+//            allStudiesIdAndUids.put(uid, id);
+//        }
+//        return allStudiesIdAndUids;
+//
+//    }
 
 }

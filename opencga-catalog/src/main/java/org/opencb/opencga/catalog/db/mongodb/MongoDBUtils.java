@@ -30,6 +30,7 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
+import org.opencb.opencga.catalog.db.api.DBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.core.models.*;
 
@@ -231,7 +232,8 @@ class MongoDBUtils {
      * Filter "include" and "exclude" options.
      * <p>
      * Include and Exclude options are as absolute routes. This method removes all the values that are not in the
-     * specified route. For the values in the route, the route is removed.
+     * specified route. For the values in the route, the route is removed. Also, if there are additional options such as INCLUDE_ACLS,
+     * it will add the proper field to the include filter.
      * <p>
      * [
      * name,
@@ -275,6 +277,9 @@ class MongoDBUtils {
                 }
                 if (listName.equals("include")) {
                     filteredList.add(PRIVATE_UID);
+                    if (options.getBoolean(DBAdaptor.INCLUDE_ACLS)) {
+                        filteredList.add(AuthorizationMongoDBAdaptor.QueryParams.ACL.key());
+                    }
                 } else if (listName.equals("exclude")) {
                     filteredList.remove(PRIVATE_UID);
                 }

@@ -36,6 +36,9 @@ public class FamilySolrModel {
     @Field
     private int version;
 
+    @Field
+    private List<String> acl;
+
     @Field("annotations__*")
     private Map<String, Object> annotations;
 
@@ -130,6 +133,15 @@ public class FamilySolrModel {
 
     public FamilySolrModel setVersion(int version) {
         this.version = version;
+        return this;
+    }
+
+    public List<String> getAcl() {
+        return acl;
+    }
+
+    public FamilySolrModel setAcl(List<String> acl) {
+        this.acl = acl;
         return this;
     }
 

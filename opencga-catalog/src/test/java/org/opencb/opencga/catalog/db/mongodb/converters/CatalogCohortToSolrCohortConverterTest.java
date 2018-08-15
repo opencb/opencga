@@ -9,6 +9,7 @@ import org.opencb.opencga.core.models.Study;
 
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -21,9 +22,10 @@ public class CatalogCohortToSolrCohortConverterTest {
 
     @Test
     public void CohortToSolrTest() {
+        Study study = new Study().setFqn("user@project:study").setAttributes(new HashMap<>());
         Cohort cohort = new Cohort("id", Study.Type.CASE_SET, new Date().toString(), "test", Arrays.asList(new Sample().setId("1"), new Sample().setId("2")), 2, null);
         cohort.setUid(200).setStatus(new Cohort.CohortStatus("CALCULATING")).setAnnotationSets(AnnotationHelper.createAnnotation());
-        CohortSolrModel cohortSolrModel = new CatalogCohortToSolrCohortConverter().convertToStorageType(cohort);
+        CohortSolrModel cohortSolrModel = new CatalogCohortToSolrCohortConverter(study).convertToStorageType(cohort);
 
         assertEquals(cohortSolrModel.getUid(), cohort.getUid());
         assertEquals(cohortSolrModel.getStatus(), cohort.getStatus().getName());

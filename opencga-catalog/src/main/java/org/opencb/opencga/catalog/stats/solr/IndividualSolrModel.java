@@ -60,6 +60,9 @@ public class IndividualSolrModel {
     @Field
     private boolean parentalConsanguinity;
 
+    @Field
+    private List<String> acl;
+
     @Field("annotations__*")
     private Map<String, Object> annotations;
 
@@ -233,6 +236,15 @@ public class IndividualSolrModel {
 
     public IndividualSolrModel setParentalConsanguinity(boolean parentalConsanguinity) {
         this.parentalConsanguinity = parentalConsanguinity;
+        return this;
+    }
+
+    public List<String> getAcl() {
+        return acl;
+    }
+
+    public IndividualSolrModel setAcl(List<String> acl) {
+        this.acl = acl;
         return this;
     }
 

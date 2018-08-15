@@ -3,6 +3,7 @@ package org.opencb.opencga.catalog.stats.solr;
 import org.apache.solr.client.solrj.beans.Field;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -30,6 +31,9 @@ public class CohortSolrModel {
 
     @Field
     private int samples;
+
+    @Field
+    private List<String> acl;
 
     @Field("annotations__*")
     private Map<String, Object> annotations;
@@ -113,6 +117,15 @@ public class CohortSolrModel {
 
     public CohortSolrModel setSamples(int samples) {
         this.samples = samples;
+        return this;
+    }
+
+    public List<String> getAcl() {
+        return acl;
+    }
+
+    public CohortSolrModel setAcl(List<String> acl) {
+        this.acl = acl;
         return this;
     }
 

@@ -68,11 +68,10 @@ public class CatalogSolrManager {
     public static final String INDIVIDUAL_CONF_SET = "OpenCGACatalogIndividualConfSet";
     public static final String SAMPLE_CONF_SET = "OpenCGACatalogSampleConfSet";
     public static final Map<String, String> CONFIGS_COLLECTION = new HashMap<>();
-    private Map<Long, String> STUDIES_UID_TO_ID = new HashMap<>();
 
     private Logger logger;
 
-    public CatalogSolrManager(CatalogManager catalogManager, Map<Long, String> studiesIdMap) throws SolrException, CatalogDBException {
+    public CatalogSolrManager(CatalogManager catalogManager) throws SolrException, CatalogDBException {
         this.catalogManager = catalogManager;
         SearchConfiguration searchConfiguration = catalogManager.getConfiguration().getCatalog().getSearch();
         this.solrManager = new SolrManager(searchConfiguration.getHost(), searchConfiguration.getMode(), searchConfiguration.getTimeout());
@@ -87,10 +86,6 @@ public class CatalogSolrManager {
             createCatalogSolrCollections();
         } else {
             createCatalogSolrCores();
-        }
-
-        if (studiesIdMap != null) {
-            STUDIES_UID_TO_ID = studiesIdMap;
         }
 
         logger = LoggerFactory.getLogger(CatalogSolrManager.class);
@@ -167,8 +162,7 @@ public class CatalogSolrManager {
         List<M> solrModels = new ArrayList<>();
 
         for (T record : records) {
-            M result = (M) converter.convertToStorageType(record);
-            solrModels.add(setStudyId(record, result));
+            solrModels.add((M) converter.convertToStorageType(record));
         }
 
         UpdateResponse updateResponse;
@@ -217,26 +211,5 @@ public class CatalogSolrManager {
         CONFIGS_COLLECTION.put(DATABASE_PREFIX + SAMPLES_SOLR_COLLECTION, SAMPLE_CONF_SET);
     }
 
-    private <T, M> M setStudyId(T record, M result) {
-
-        String studyId;
-        if (record instanceof Cohort) {
-            studyId = STUDIES_UID_TO_ID.get(((Cohort) record).getStudyUid());
-            return (M) ((CohortSolrModel) result).setStudyId(studyId);
-        } else if (record instanceof File) {
-            studyId = STUDIES_UID_TO_ID.get(((File) record).getStudyUid());
-            return (M) ((FileSolrModel) result).setStudyId(studyId);
-        } else if (record instanceof Sample) {
-            studyId = STUDIES_UID_TO_ID.get(((Sample) record).getStudyUid());
-            return (M) ((SampleSolrModel) result).setStudyId(studyId);
-        } else if (record instanceof Individual) {
-            studyId = STUDIES_UID_TO_ID.get(((Individual) record).getStudyUid());
-            return (M) ((IndividualSolrModel) result).setStudyId(studyId);
-        } else if (record instanceof Family) {
-            studyId = STUDIES_UID_TO_ID.get(((Family) record).getStudyUid());
-            return (M) ((FamilySolrModel) result).setStudyId(studyId);
-        }
-        return result;
-    }
 }
 
