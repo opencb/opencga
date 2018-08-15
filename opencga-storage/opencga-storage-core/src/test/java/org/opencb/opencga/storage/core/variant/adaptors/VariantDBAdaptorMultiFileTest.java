@@ -202,6 +202,38 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
     }
 
     @Test
+    public void testGetBySampleNamesOR() throws Exception {
+        query = new Query()
+                .append(VariantQueryParam.STUDY.key(), "S_1")
+                .append(VariantQueryParam.SAMPLE.key(), "NA12877,NA12878");
+        queryResult = query(query, options);
+        VariantQueryResult<Variant> allVariants = dbAdaptor.get(new Query()
+                .append(VariantQueryParam.INCLUDE_STUDY.key(), "S_1")
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877,NA12878")
+                .append(VariantQueryParam.INCLUDE_FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz"), options);
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", anyOf(
+                allOf(withFileId("12877"), withSampleData("NA12877", "GT", containsString("1"))),
+                allOf(withFileId("12878"), withSampleData("NA12878", "GT", containsString("1")))
+        ))));
+    }
+
+    @Test
+    public void testGetBySampleNamesAND() throws Exception {
+        query = new Query()
+                .append(VariantQueryParam.STUDY.key(), "S_1")
+                .append(VariantQueryParam.SAMPLE.key(), "NA12877;NA12878");
+        queryResult = query(query, options);
+        VariantQueryResult<Variant> allVariants = dbAdaptor.get(new Query()
+                .append(VariantQueryParam.INCLUDE_STUDY.key(), "S_1")
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877,NA12878")
+                .append(VariantQueryParam.INCLUDE_FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz"), options);
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(
+                withFileId("12877"), withSampleData("NA12877", "GT", containsString("1")),
+                withFileId("12878"), withSampleData("NA12878", "GT", containsString("1"))
+        ))));
+    }
+
+    @Test
     public void testGetByGenotype() throws Exception {
         VariantQueryResult<Variant> allVariants = dbAdaptor.get(new Query()
                 .append(VariantQueryParam.INCLUDE_STUDY.key(), "S_1")

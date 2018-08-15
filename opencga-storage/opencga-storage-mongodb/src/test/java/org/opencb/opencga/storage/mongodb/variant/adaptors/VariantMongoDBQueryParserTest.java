@@ -204,7 +204,7 @@ public class VariantMongoDBQueryParserTest {
                                 new Document("$or", Arrays.asList(
                                         new Document(GENOTYPES_FIELD + ".0/1", 10201),
                                         new Document(GENOTYPES_FIELD + ".1/1", 10201)))))
-                        .append(FILES_FIELD + '.' + FILEID_FIELD, new Document("$all", Arrays.asList(1, 2)))));
+                        .append(FILES_FIELD + '.' + FILEID_FIELD, new Document("$in", Arrays.asList(1, 2)))));
 
         System.out.println(expected.toJson());
         System.out.println(mongoQuery.toJson());
