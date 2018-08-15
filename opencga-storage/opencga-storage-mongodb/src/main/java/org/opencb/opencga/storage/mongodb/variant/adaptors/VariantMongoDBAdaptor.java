@@ -1049,7 +1049,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
      * - IDs
      * <p>
      * Study indices
-     * - StudyId + FileId
+     * - StudyId
+     * - FileId
      * <p>
      * Stats indices
      * - StatsMaf
@@ -1096,11 +1097,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         // Study indices
         ////////////////
-        variantsCollection.createIndex(new Document(DocumentToVariantConverter.STUDIES_FIELD
-                + '.' + STUDYID_FIELD, 1)
-                .append(DocumentToVariantConverter.STUDIES_FIELD
-                        + '.' + FILES_FIELD
-                        + '.' + FILEID_FIELD, 1), onBackground);
+        variantsCollection.createIndex(
+                new Document(DocumentToVariantConverter.STUDIES_FIELD + '.' + STUDYID_FIELD, 1), onBackground);
+        variantsCollection.createIndex(
+                new Document(DocumentToVariantConverter.STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, 1), onBackground);
+
         // Stats indices
         ////////////////
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.STATS_FIELD + '.' + DocumentToVariantStatsConverter
