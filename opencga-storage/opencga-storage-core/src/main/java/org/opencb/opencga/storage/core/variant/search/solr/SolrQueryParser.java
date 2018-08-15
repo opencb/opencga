@@ -221,33 +221,28 @@ public class SolrQueryParser {
         // Study (study)
         String key = VariantQueryParam.STUDY.key();
         if (isValidParam(query, VariantQueryParam.STUDY)) {
-            try {
-                String value = query.getString(key);
-                VariantQueryUtils.QueryOperation op = checkOperator(value);
-                Set<Integer> studyIds = new HashSet<>(studyConfigurationManager.getStudyIds(splitValue(value, op), queryOptions));
-                List<String> studyNames = new ArrayList<>(studyIds.size());
-                Map<String, Integer> map = studyConfigurationManager.getStudies(null);
-                if (map != null && map.size() > 1) {
-                    map.forEach((name, id) -> {
-                        if (studyIds.contains(id)) {
-                            String[] s = name.split(":");
-                            studyNames.add(s[s.length - 1]);
-                        }
-                    });
-
-                    if (op == null || op == VariantQueryUtils.QueryOperation.OR) {
-                        filterList.add(parseCategoryTermValue("studies", StringUtils.join(studyNames, ",")));
-                    } else {
-                        filterList.add(parseCategoryTermValue("studies", StringUtils.join(studyNames, ";")));
+            String value = query.getString(key);
+            VariantQueryUtils.QueryOperation op = checkOperator(value);
+            Set<Integer> studyIds = new HashSet<>(studyConfigurationManager.getStudyIds(splitValue(value, op), queryOptions));
+            List<String> studyNames = new ArrayList<>(studyIds.size());
+            Map<String, Integer> map = studyConfigurationManager.getStudies(null);
+            if (map != null && map.size() > 1) {
+                map.forEach((name, id) -> {
+                    if (studyIds.contains(id)) {
+                        String[] s = name.split(":");
+                        studyNames.add(s[s.length - 1]);
                     }
+                });
+
+                if (op == null || op == VariantQueryUtils.QueryOperation.OR) {
+                    filterList.add(parseCategoryTermValue("studies", StringUtils.join(studyNames, ",")));
+                } else {
+                    filterList.add(parseCategoryTermValue("studies", StringUtils.join(studyNames, ";")));
                 }
-            } catch (NullPointerException e) {
-                logger.error(e.getMessage());
-                e.printStackTrace();
             }
         }
 
-        // type (t)
+        // type
         key = VariantQueryParam.TYPE.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             filterList.add(parseCategoryTermValue("type", query.getString(key)));
@@ -342,31 +337,26 @@ public class SolrQueryParser {
             filterList.add(parseCategoryTermValue("traits", query.getString(key)));
         }
 
-        // clinvar
-//        key = VariantQueryParam.ANNOT_CLINVAR.key();
-//        if (StringUtils.isNotEmpty(query.getString(key))) {
-//            filterList.add(parseCategoryTermValue("traits", query.getString(key)));
-//        }
-
         // traits
         key = VariantQueryParam.ANNOT_TRAIT.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             filterList.add(parseCategoryTermValue("traits", query.getString(key)));
         }
 
-        // Protein keywords
+        // protein keywords
         key = VariantQueryParam.ANNOT_PROTEIN_KEYWORD.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             filterList.add(parseCategoryTermValue("traits", query.getString(key)));
         }
 
+        // clinical significance
         key = VariantQueryParam.ANNOT_CLINICAL_SIGNIFICANCE.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             String[] clinSig = query.getString(key).split("[,;]");
             StringBuilder sb = new StringBuilder();
-            sb.append("(").append("traits:\"cs:").append(clinSig[0]).append("\"");
+            sb.append("(").append("traits: \"cs:").append(clinSig[0]).append("\"");
             for (int i = 1; i < clinSig.length; i++) {
-                sb.append(" OR ").append("traits:\"cs:").append(clinSig[i]).append("\"");
+                sb.append(" OR ").append("traits: \"cs:").append(clinSig[i]).append("\"");
             }
             sb.append(")");
             filterList.add(sb.toString());
@@ -396,27 +386,21 @@ public class SolrQueryParser {
         key = VariantQueryParam.QUAL.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             if (studies != null && studies.length == 1 && files != null) {
-                // Sanity check QUAL values
-                String[] quals = query.getString(key).split("[,;]");
-                if (quals.length > 1) {
-                    logger.info("Ignoring query QUAL {}. Reason: only one QUAL value is permiited, we have {} values",
-                            query.getString(key), quals.length);
-                } else {
-                    // Add QUAL filters, (AND)
-                    for (String file: files) {
-                        filterList.add(parseNumericValue("qual" + VariantSearchUtils.FIELD_SEPARATOR + studies[0]
-                                + VariantSearchUtils.FIELD_SEPARATOR + file, quals[0]));
-                    }
+                String qual = query.getString(key);
+                // Add QUAL filters, (AND)
+                for (String file: files) {
+                    filterList.add(parseNumericValue("qual" + VariantSearchUtils.FIELD_SEPARATOR + studies[0]
+                            + VariantSearchUtils.FIELD_SEPARATOR + file, qual));
                 }
             } else {
                 if (studies == null) {
-                    logger.info("Ignoring QUAL query, {}. Reason: missing study ID", query.getString(key));
+                    logger.error("Ignoring QUAL query, {}. Reason: missing study ID", query.getString(key));
                 } else if (studies.length > 1) {
-                    logger.info("Ignoring QUAL query, {}. Reason: only one study is permitted, we have {} studies",
+                    logger.error("Ignoring QUAL query, {}. Reason: only one study is permitted, we have {} studies",
                             query.getString(key), studies.length);
                 }
                 if (files == null) {
-                    logger.info("Ignoring QUAL query, {}. Reason: missing file ID(s)", query.getString(key));
+                    logger.error("Ignoring QUAL query, {}. Reason: missing file ID(s)", query.getString(key));
                 }
             }
         }
@@ -617,7 +601,7 @@ public class SolrQueryParser {
      * @param value         Parameter value
      * @return             A list of strings, each string represents a boolean condition
      */
-    public String parseCategoryTermValue(String name, String value) {
+    private String parseCategoryTermValue(String name, String value) {
         return parseCategoryTermValue(name, value, "", false);
     }
 
@@ -635,7 +619,7 @@ public class SolrQueryParser {
         return parseCategoryTermValue(name, value, "", partialSearch);
     }
 
-    public String parseCategoryTermValue(String name, String val, String valuePrefix, boolean partialSearch) {
+    private String parseCategoryTermValue(String name, String val, String valuePrefix, boolean partialSearch) {
         StringBuilder filter = new StringBuilder();
         if (StringUtils.isNotEmpty(val)) {
             String negation  = "";
@@ -683,7 +667,7 @@ public class SolrQueryParser {
         return filter.toString();
     }
 
-    public String parseNumericValue(String name, String value) {
+    private String parseNumericValue(String name, String value) {
         StringBuilder filter = new StringBuilder();
         Matcher matcher = NUMERIC_PATTERN.matcher(value);
         if (matcher.find()) {
