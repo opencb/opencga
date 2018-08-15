@@ -123,8 +123,6 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         studyEntry.setSamplesPosition(samplePosition);
                     }
                 }
-
-                variant.getStudies().add(studyEntry);
             }
         }
 
