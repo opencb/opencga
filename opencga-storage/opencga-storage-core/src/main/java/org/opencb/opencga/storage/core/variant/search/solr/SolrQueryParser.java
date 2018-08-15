@@ -361,21 +361,11 @@ public class SolrQueryParser {
             filterList.add(sb.toString());
         }
 
-        // Add Solr query filters for files, QUAL and FILTER
-        addFileFilter(query, filterList);
-
         // Add Solr query filter for genotypes
         addGenotypeFilter(query, filterList);
 
-        // For debugging
-        StringBuilder sb = new StringBuilder();
-
-        // Create Solr query, adding filter queries and fields to show
-        solrQuery.setQuery("*:*");
-        filterList.forEach(filter -> {
-            solrQuery.addFilterQuery(filter);
-            sb.append(filter).append("\n");
-        });
+        // Add Solr query filters for files, QUAL and FILTER
+        addFileFilter(query, filterList);
 
         // Add Solr fields from the variant includes, i.e.: include-sample, include-format,...
         List<String> solrFieldsToInclude = getSolrFieldsFromVariantIncludes(query);
@@ -388,6 +378,14 @@ public class SolrQueryParser {
             solrQuery.addField("sampleFormat_*");
         }
 
+        // For debugging
+        // Create Solr query, adding filter queries and fields to show
+        StringBuilder sb = new StringBuilder();
+        solrQuery.setQuery("*:*");
+        filterList.forEach(filter -> {
+            solrQuery.addFilterQuery(filter);
+            sb.append(filter).append("\n");
+        });
         logger.debug("\n\n-----------------------------------------------------\n"
                 + query.toJson()
                 + "\n\n"
@@ -397,134 +395,6 @@ public class SolrQueryParser {
                 + "\n-----------------------------------------------------\n\n");
 
         return solrQuery;
-    }
-
-    /**
-     * Add Solr query filters for files, QUAL and FILTER.
-     *
-     * @param query         Query
-     * @param filterList    Output list with Solr query filters added
-     */
-    private void addFileFilter(Query query, List<String> filterList) {
-        // IMPORTANT: Only the first study is taken into account! Multiple studies support ??
-        String[] studies = getStudies(query);
-
-        String[] files = null;
-        QueryOperation fileQueryOp = null;
-
-        String key = VariantQueryParam.FILE.key();
-        if (StringUtils.isNotEmpty(query.getString(key))) {
-            if (studies == null) {
-                throw new IllegalArgumentException("Missing study parameter when filtering by file");
-            }
-
-            boolean or = query.getString(key).contains(",");
-            boolean and = query.getString(key).contains(";");
-            if (or && and) {
-                throw new IllegalArgumentException("Command and semi-colon cannot be mixed for file filter: "
-                        + query.getString(key));
-            }
-            StringBuilder sb = new StringBuilder();
-            files = query.getString(key).split("[,;]");
-            if (or) {
-                // OR
-                fileQueryOp = QueryOperation.OR;
-                for (int i = 0; i < files.length; i++) {
-                    sb.append("fileInfo").append(VariantSearchUtils.FIELD_SEPARATOR).append(studies[0])
-                            .append(VariantSearchUtils.FIELD_SEPARATOR).append(files[i]).append(": [* TO *]");
-                    if (i < files.length - 1) {
-                        sb.append(" OR ");
-                    }
-                }
-                filterList.add(sb.toString());
-            } else {
-                // AND
-                fileQueryOp = QueryOperation.AND;
-                for (String file : files) {
-                    sb.setLength(0);
-                    sb.append("fileInfo").append(VariantSearchUtils.FIELD_SEPARATOR).append(studies[0])
-                            .append(VariantSearchUtils.FIELD_SEPARATOR).append(file).append(": [* TO *]");
-                    filterList.add(sb.toString());
-                }
-            }
-        }
-
-        // QUAL
-        key = VariantQueryParam.QUAL.key();
-        if (StringUtils.isNotEmpty(query.getString(key))) {
-            if (files == null) {
-                throw new IllegalArgumentException("Missing file parameter when filtering by QUAL");
-            }
-            String qual = query.getString(key);
-
-            // Add QUAL filters
-            if (fileQueryOp == QueryOperation.OR) {
-                StringBuilder sb = new StringBuilder();
-                for (int i = 0; i < files.length; i++) {
-                    sb.append(parseNumericValue("qual" + VariantSearchUtils.FIELD_SEPARATOR + studies[0]
-                            + VariantSearchUtils.FIELD_SEPARATOR + files[i], qual));
-                    if (i < files.length - 1) {
-                        sb.append(" OR ");
-                    }
-                }
-                filterList.add(sb.toString());
-            } else {
-                for (String file: files) {
-                    filterList.add(parseNumericValue("qual" + VariantSearchUtils.FIELD_SEPARATOR + studies[0]
-                            + VariantSearchUtils.FIELD_SEPARATOR + file, qual));
-                }
-            }
-        }
-
-        // FILTER
-        key = VariantQueryParam.FILTER.key();
-        if (StringUtils.isNotEmpty(query.getString(key))) {
-            if (files == null) {
-                throw new IllegalArgumentException("Missing file parameter when filtering by FILTER");
-            }
-
-            boolean or = query.getString(key).contains(",");
-            boolean and = query.getString(key).contains(";");
-            if (or && and) {
-                throw new IllegalArgumentException("Command and semi-colon cannot be mixed for FILTER filter: "
-                        + query.getString(key));
-            }
-            String logicOp = (or ? " OR " : " AND ");
-
-            StringBuilder sb = new StringBuilder();
-            String[] filters = query.getString(key).split("[,;]");
-            if (fileQueryOp == QueryOperation.AND) {
-                // AND- between files
-                for (int i = 0; i < files.length; i++) {
-                    sb.setLength(0);
-                    for (int j = 0; j < filters.length; j++) {
-                        sb.append("filter").append(VariantSearchUtils.FIELD_SEPARATOR).append(studies[0])
-                                .append(VariantSearchUtils.FIELD_SEPARATOR).append(files[i]).append(":\"").append(filters[j]).append("\"");
-                        if (j < filters.length - 1) {
-                            sb.append(logicOp);
-                        }
-                    }
-                    filterList.add(sb.toString());
-                }
-            } else {
-                // OR- between files (...or skip when only one file is present)
-                for (int i = 0; i < files.length; i++) {
-                    sb.append("(");
-                    for (int j = 0; j < filters.length; j++) {
-                        sb.append("filter").append(VariantSearchUtils.FIELD_SEPARATOR).append(studies[0])
-                                .append(VariantSearchUtils.FIELD_SEPARATOR).append(files[i]).append(":\"").append(filters[j]).append("\"");
-                        if (j < filters.length - 1) {
-                            sb.append(logicOp);
-                        }
-                    }
-                    sb.append(")");
-                    if (i < files.length - 1) {
-                        sb.append(" OR ");
-                    }
-                }
-                filterList.add(sb.toString());
-            }
-        }
     }
 
     /**
@@ -573,6 +443,118 @@ public class SolrQueryParser {
             }
         }
     }
+
+    /**
+     * Add Solr query filters for files, QUAL and FILTER.
+     *
+     * @param query         Query
+     * @param filterList    Output list with Solr query filters added
+     */
+    private void addFileFilter(Query query, List<String> filterList) {
+        // IMPORTANT: Only the first study is taken into account! Multiple studies support ??
+        String[] studies = getStudies(query);
+
+        String[] files = null;
+        QueryOperation fileQueryOp = null;
+
+        String key = VariantQueryParam.FILE.key();
+        if (StringUtils.isNotEmpty(query.getString(key))) {
+            if (studies == null) {
+                throw new IllegalArgumentException("Missing study parameter when filtering by file");
+            }
+
+            files = query.getString(key).split("[,;]");
+            fileQueryOp = parseOrAndFilter(key, query.getString(key));
+
+            if (fileQueryOp == QueryOperation.OR) {     // OR
+                StringBuilder sb = new StringBuilder();
+                for (int i = 0; i < files.length; i++) {
+                    sb.append("fileInfo").append(VariantSearchUtils.FIELD_SEPARATOR)
+                            .append(studies[0]).append(VariantSearchUtils.FIELD_SEPARATOR).append(files[i]).append(": [* TO *]");
+                    if (i < files.length - 1) {
+                        sb.append(" OR ");
+                    }
+                }
+                filterList.add(sb.toString());
+            } else {    // AND
+                for (String file: files) {
+                    filterList.add("fileInfo" + VariantSearchUtils.FIELD_SEPARATOR
+                            + studies[0] + VariantSearchUtils.FIELD_SEPARATOR + file + ": [* TO *]");
+                }
+            }
+        }
+
+        // QUAL
+        key = VariantQueryParam.QUAL.key();
+        if (StringUtils.isNotEmpty(query.getString(key))) {
+            if (files == null) {
+                throw VariantQueryException.malformedParam(VariantQueryParam.FILE, "", "Missing file parameter when filtering by QUAL");
+            }
+            String qual = query.getString(key);
+            if (fileQueryOp == QueryOperation.OR) {
+                StringBuilder sb = new StringBuilder();
+                for (int i = 0; i < files.length; i++) {
+                    sb.append(parseNumericValue("qual" + VariantSearchUtils.FIELD_SEPARATOR + studies[0]
+                            + VariantSearchUtils.FIELD_SEPARATOR + files[i], qual));
+                    if (i < files.length - 1) {
+                        sb.append(" OR ");
+                    }
+                }
+                filterList.add(sb.toString());
+            } else {
+                for (String file: files) {
+                    filterList.add(parseNumericValue("qual" + VariantSearchUtils.FIELD_SEPARATOR + studies[0]
+                            + VariantSearchUtils.FIELD_SEPARATOR + file, qual));
+                }
+            }
+        }
+
+        // FILTER
+        key = VariantQueryParam.FILTER.key();
+        if (StringUtils.isNotEmpty(query.getString(key))) {
+            if (files == null) {
+                throw new IllegalArgumentException("Missing file parameter when filtering by FILTER");
+            }
+
+            QueryOperation filterQueryOp = parseOrAndFilter(key, query.getString(key));
+            String filterQueryOpString = (filterQueryOp == QueryOperation.OR ? " OR " : " AND ");
+
+            StringBuilder sb = new StringBuilder();
+            String[] filters = query.getString(key).split("[,;]");
+            if (fileQueryOp == QueryOperation.AND) {
+                // AND- between files
+                for (int i = 0; i < files.length; i++) {
+                    sb.setLength(0);
+                    for (int j = 0; j < filters.length; j++) {
+                        sb.append("filter").append(VariantSearchUtils.FIELD_SEPARATOR).append(studies[0])
+                                .append(VariantSearchUtils.FIELD_SEPARATOR).append(files[i]).append(":\"").append(filters[j]).append("\"");
+                        if (j < filters.length - 1) {
+                            sb.append(filterQueryOpString);
+                        }
+                    }
+                    filterList.add(sb.toString());
+                }
+            } else {
+                // OR- between files (...or skip when only one file is present)
+                for (int i = 0; i < files.length; i++) {
+                    sb.append("(");
+                    for (int j = 0; j < filters.length; j++) {
+                        sb.append("filter").append(VariantSearchUtils.FIELD_SEPARATOR).append(studies[0])
+                                .append(VariantSearchUtils.FIELD_SEPARATOR).append(files[i]).append(":\"").append(filters[j]).append("\"");
+                        if (j < filters.length - 1) {
+                            sb.append(filterQueryOpString);
+                        }
+                    }
+                    sb.append(")");
+                    if (i < files.length - 1) {
+                        sb.append(" OR ");
+                    }
+                }
+                filterList.add(sb.toString());
+            }
+        }
+    }
+
 
     /**
      * Check if the target xref is a gene.
@@ -1415,5 +1397,14 @@ public class SolrQueryParser {
             }
         }
         return studies;
+    }
+
+    private QueryOperation parseOrAndFilter(String field, String value) {
+        boolean or = value.contains(",");
+        boolean and = value.contains(";");
+        if (or && and) {
+            throw new IllegalArgumentException("Error: Comma and semi-colon cannot be mixed for filter '" + field + "'");
+        }
+        return or ? QueryOperation.OR : QueryOperation.AND;
     }
 }
