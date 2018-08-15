@@ -762,7 +762,7 @@ public class VariantMongoDBQueryParser {
                         && !files.containsAll(defaultStudyConfiguration.getIndexedFiles())) {
                     addQueryFilter(studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD
                                     + '.' + DocumentToStudyVariantEntryConverter.FILEID_FIELD, files, studyBuilder, QueryOperation.AND,
-                            QueryOperation.AND, t -> t);
+                            queryOperation, t -> t);
                 }
             }
 
