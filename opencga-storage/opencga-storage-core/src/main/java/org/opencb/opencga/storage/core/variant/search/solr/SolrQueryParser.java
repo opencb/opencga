@@ -26,6 +26,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
@@ -374,6 +375,11 @@ public class SolrQueryParser {
         String[] studies = null;
         if (StringUtils.isNotEmpty(query.getString(VariantQueryParam.STUDY.key()))) {
             studies = query.getString(VariantQueryParam.STUDY.key()).split("[,;]");
+            for (int i = 0; i < studies.length; i++) {
+                if (studies[i].contains(":")) {
+                    studies[i] = studies[i].split(":")[1];
+                }
+            }
         }
 
         String[] files = null;
@@ -449,8 +455,7 @@ public class SolrQueryParser {
             if (studies != null && studies.length == 1) {
                 Map<Object, List<String>> genotypeSamples = new HashMap<>();
                 try {
-                    QueryOperation queryOperation = VariantQueryUtils.parseGenotypeFilter(query.getString(key),
-                            genotypeSamples);
+                    QueryOperation queryOperation = VariantQueryUtils.parseGenotypeFilter(query.getString(key), genotypeSamples);
                     boolean addOperator = false;
                     if (MapUtils.isNotEmpty(genotypeSamples)) {
                         StringBuilder sb = new StringBuilder("(");
@@ -475,10 +480,10 @@ public class SolrQueryParser {
                         sb.append(")");
                         filterList.add(sb.toString());
                     }
-                    System.out.println(QueryOperation.valueOf(queryOperation.name()));
-                    System.out.println(queryOperation.separator());
+//                    System.out.println(QueryOperation.valueOf(queryOperation.name()));
+//                    System.out.println(queryOperation.separator());
                 } catch (Exception e) {
-                    logger.info("Ignoring genotype query. {}. Reason: {}", query.getString(key), e.getMessage());
+                    throw VariantQueryException.internalException(e);
                 }
             } else {
                 if (studies == null) {
@@ -1257,7 +1262,7 @@ public class SolrQueryParser {
 
         if (excludes != null) {
             for (String exclude : excludes) {
-                List<String> solrFields = Arrays.asList(includeMap.get(exclude).split(","));
+                List<String> solrFields = Arrays.asList(includeMap.getOrDefault(exclude, "").split(","));
                 solrFieldsToInclude.removeAll(solrFields);
             }
         }

@@ -77,11 +77,10 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         Map<String, StudyEntry> studyEntryMap = new HashMap<>();
         if (variantSearchModel.getStudies() != null && CollectionUtils.isNotEmpty(variantSearchModel.getStudies())) {
             List<StudyEntry> studies = new ArrayList<>();
-            variantSearchModel.getStudies().forEach(s -> {
-                StudyEntry entry = new StudyEntry();
-                entry.setStudyId(s);
+            variantSearchModel.getStudies().forEach(studyId -> {
+                StudyEntry entry = new StudyEntry(studyId);
                 studies.add(entry);
-                studyEntryMap.put(s, entry);
+                studyEntryMap.put(studyId, entry);
             });
             variant.setStudies(studies);
         }
@@ -113,7 +112,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             sampleData.add(Arrays.asList(stringToList.split(LIST_SEPARATOR)));
                             samplePosition.put(sampleName, pos++);
                         } else {
-                            logger.info("Error converting samplesFormat, sample '{}' is missing or empty, value: '{}'",
+                            logger.error("Error converting samplesFormat, sample '{}' is missing or empty, value: '{}'",
                                     sampleName, stringToList);
                         }
                     }
@@ -135,14 +134,14 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 FileEntry fileEntry = new FileEntry(fields[2], null, new HashMap<>());
                 try {
                     // We obtain the original call
-                    Map<String, String> map = reader.readValue(variantSearchModel.getFileInfo().get(key));
-                    if (MapUtils.isNotEmpty(map)) {
-                        fileEntry.setCall(map.get("fileCall"));
-                        map.remove("fileCall");
-                        fileEntry.setAttributes(map);
+                    Map<String, String> fileInfoAttributes = reader.readValue(variantSearchModel.getFileInfo().get(key));
+                    if (MapUtils.isNotEmpty(fileInfoAttributes)) {
+                        fileEntry.setCall(fileInfoAttributes.get("fileCall"));
+                        fileInfoAttributes.remove("fileCall");
+                        fileEntry.setAttributes(fileInfoAttributes);
                     }
                 } catch (IOException e) {
-                    logger.info("Error converting fileInfo from variant search model: {}", e.getMessage());
+                    logger.error("Error converting fileInfo from variant search model: {}", e.getMessage());
                 } finally {
                     variant.getStudy(fields[1]).getFiles().add(fileEntry);
                 }
