@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.stats.solr;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -26,16 +27,19 @@ import org.apache.solr.common.SolrException;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.FacetedQueryResult;
 import org.opencb.commons.datastore.core.result.FacetedQueryResultItem;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.stats.solr.converters.SolrFacetUtil;
 import org.opencb.opencga.core.SolrManager;
 import org.opencb.opencga.core.config.SearchConfiguration;
+import org.opencb.opencga.core.models.Study;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,13 +84,7 @@ public class CatalogSolrManager {
 
         DATABASE_PREFIX = catalogManager.getConfiguration().getDatabasePrefix() + "_";
 
-//        populateConfigCollectionMap();
-//
-//        if (searchConfiguration.getMode().equals("cloud")) {
-//            createCatalogSolrCollections();
-//        } else {
-//            createCatalogSolrCores();
-//        }
+        populateConfigCollectionMap();
 
         logger = LoggerFactory.getLogger(CatalogSolrManager.class);
     }
@@ -119,7 +117,15 @@ public class CatalogSolrManager {
         return solrManager.existsCollection(collectionName);
     }
 
-    public void createCatalogSolrCollections() throws SolrException {
+    public void createSolrCollections() {
+        if (catalogManager.getConfiguration().getCatalog().getSearch().getMode().equals("cloud")) {
+            createCatalogSolrCollections();
+        } else {
+            createCatalogSolrCores();
+        }
+    }
+
+    private void createCatalogSolrCollections() throws SolrException {
         for (String key : CONFIGS_COLLECTION.keySet()) {
             if (!existsCollection(key)) {
                 createCollection(key, CONFIGS_COLLECTION.get(key));
@@ -127,7 +133,7 @@ public class CatalogSolrManager {
         }
     }
 
-    public void createCatalogSolrCores() throws SolrException {
+    private void createCatalogSolrCores() throws SolrException {
         for (String key : CONFIGS_COLLECTION.keySet()) {
             if (!existsCore(key)) {
                 createCore(key, CONFIGS_COLLECTION.get(key));
@@ -185,9 +191,62 @@ public class CatalogSolrManager {
      * @throws IOException   IOException
      * @throws SolrException SolrException
      */
+    @Deprecated
     public FacetedQueryResult facetedQuery(String collection, Query query, QueryOptions queryOptions)
             throws IOException, SolrException {
         StopWatch stopWatch = StopWatch.createStarted();
+        try {
+            CatalogSolrQueryParser catalogSolrQueryParser = new CatalogSolrQueryParser();
+            SolrQuery solrQuery = catalogSolrQueryParser.parse(query, queryOptions);
+            QueryResponse response = solrManager.getSolrClient().query(DATABASE_PREFIX + collection, solrQuery);
+            FacetedQueryResultItem item = SolrFacetUtil.toFacetedQueryResultItem(queryOptions, response);
+            return new FacetedQueryResult("", (int) stopWatch.getTime(), 1, 1, "Faceted data from Solr", "", item);
+        } catch (SolrServerException e) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Return faceted data from a Solr core/collection according to a given query.
+     *
+     * @param studyStr     Study id
+     * @param collection   Collection name
+     * @param query        Query
+     * @param queryOptions Query options (contains the facet and facetRange options)
+     * @param token        Token of the user performing the facet.
+     * @return Facet results
+     * @throws IOException   IOException
+     * @throws SolrException SolrException
+     * @throws CatalogException CatalogException
+     */
+    public FacetedQueryResult facetedQuery(String studyStr, String collection, Query query, QueryOptions queryOptions, String token)
+            throws IOException, SolrException, CatalogException {
+        StopWatch stopWatch = StopWatch.createStarted();
+
+        String userId = catalogManager.getUserManager().getUserId(token);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+
+        query.put("study", study.getFqn());
+
+        if (!catalogManager.getAuthorizationManager().checkIsOwnerOrAdmin(study.getUid(), userId)) {
+            // We need to add an acl query to perform the facet query
+            QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get(study.getFqn(),
+                    new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.GROUPS.key()), token);
+            List<String> groups = new ArrayList<>();
+            studyQueryResult.first().getGroups().forEach(group -> {
+                if (group.getUserIds().contains(userId)) {
+                    groups.add(group.getName());
+                }
+            });
+
+            // TODO: If the facet covers annotations, we will need to check for VIEW_ANNOTATION permission
+            List<String> aclList = new ArrayList<>();
+            aclList.add(userId + "__VIEW");
+            groups.forEach(group -> aclList.add("(*:* -" + userId + "__NONE AND " + group + "__VIEW)"));
+
+            query.put("acl", "(" + StringUtils.join(aclList, " OR ") + ")");
+        }
+
         try {
             CatalogSolrQueryParser catalogSolrQueryParser = new CatalogSolrQueryParser();
             SolrQuery solrQuery = catalogSolrQueryParser.parse(query, queryOptions);

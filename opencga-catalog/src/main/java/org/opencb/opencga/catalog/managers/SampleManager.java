@@ -1124,14 +1124,12 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         return queryResults;
     }
 
-    public FacetedQueryResult facet(Query query, QueryOptions queryOptions, String sessionId) throws IOException, CatalogDBException {
-
+    public FacetedQueryResult facet(String studyStr, Query query, QueryOptions queryOptions, String sessionId)
+            throws CatalogException, IOException {
         CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);
-        String collection = catalogManager.getConfiguration().getDatabasePrefix() + "_"
-                + CatalogSolrManager.SAMPLE_SOLR_COLLECTION;
-
-        return catalogSolrManager.facetedQuery(collection, query, queryOptions);
+        return catalogSolrManager.facetedQuery(studyStr, CatalogSolrManager.SAMPLE_SOLR_COLLECTION, query, queryOptions, sessionId);
     }
+
 
     // **************************   Private methods  ******************************** //
 

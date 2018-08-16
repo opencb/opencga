@@ -1215,6 +1215,8 @@ public class StudyManager extends AbstractManager {
             }
 
             CatalogSolrManager catalogSolrManager = new CatalogSolrManager(this.catalogManager);
+            // Create solr collections if they don't exist
+            catalogSolrManager.createSolrCollections();
 
             ExecutorService threadPool = Executors.newFixedThreadPool(4);
             for (Study study : studyQueryResult.getResult()) {
@@ -1295,6 +1297,7 @@ public class StudyManager extends AbstractManager {
                         IndividualDBAdaptor.QueryParams.MULTIPLES.key(), IndividualDBAdaptor.QueryParams.SEX.key(),
                         IndividualDBAdaptor.QueryParams.ETHNICITY.key(), IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
                         IndividualDBAdaptor.QueryParams.RELEASE.key(), IndividualDBAdaptor.QueryParams.CREATION_DATE.key(),
+                        IndividualDBAdaptor.QueryParams.VERSION.key(),
                         IndividualDBAdaptor.QueryParams.STATUS.key(), IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(),
                         IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(), IndividualDBAdaptor.QueryParams.PHENOTYPES.key(),
                         IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), IndividualDBAdaptor.QueryParams.PARENTAL_CONSANGUINITY.key(),

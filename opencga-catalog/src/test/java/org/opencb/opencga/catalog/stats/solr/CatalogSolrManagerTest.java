@@ -184,6 +184,31 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
                 new Query(), new QueryOptions(QueryOptions.FACET, SampleDBAdaptor.QueryParams.RELEASE.key()));
         assertEquals(1, facet.getNumResults());
         assertEquals(3, facet.getResult().getFields().get(0).getCounts().get(0).getCount());
+
+        facet = catalogSolrManager.facetedQuery(studyFqn, CatalogSolrManager.SAMPLE_SOLR_COLLECTION,
+                new Query(), new QueryOptions(QueryOptions.FACET, SampleDBAdaptor.QueryParams.RELEASE.key()), sessionIdUser);
+        assertEquals(1, facet.getNumResults());
+        assertEquals(2, facet.getResult().getFields().get(0).getCounts().get(0).getCount());
+
+        facet = catalogSolrManager.facetedQuery(studyFqn, CatalogSolrManager.SAMPLE_SOLR_COLLECTION,
+                new Query(), new QueryOptions(QueryOptions.FACET, SampleDBAdaptor.QueryParams.RELEASE.key()), sessionIdUser2);
+        assertEquals(1, facet.getNumResults());
+        assertEquals(1, facet.getResult().getFields().get(0).getCounts().get(0).getCount());
+
+        facet = catalogSolrManager.facetedQuery(studyFqn, CatalogSolrManager.SAMPLE_SOLR_COLLECTION,
+                new Query(), new QueryOptions(QueryOptions.FACET, SampleDBAdaptor.QueryParams.RELEASE.key()), sessionIdUser3);
+        assertEquals(1, facet.getNumResults());
+        assertEquals(1, facet.getResult().getFields().get(0).getCounts().get(0).getCount());
+
+        facet = catalogSolrManager.facetedQuery(studyFqn, CatalogSolrManager.SAMPLE_SOLR_COLLECTION,
+                new Query(), new QueryOptions(QueryOptions.FACET, SampleDBAdaptor.QueryParams.RELEASE.key()), sessionIdAdmin);
+        assertEquals(1, facet.getNumResults());
+        assertEquals(3, facet.getResult().getFields().get(0).getCounts().get(0).getCount());
+
+        facet = catalogSolrManager.facetedQuery(studyFqn, CatalogSolrManager.SAMPLE_SOLR_COLLECTION,
+                new Query(), new QueryOptions(QueryOptions.FACET, SampleDBAdaptor.QueryParams.RELEASE.key()), sessionIdOwner);
+        assertEquals(1, facet.getNumResults());
+        assertEquals(3, facet.getResult().getFields().get(0).getCounts().get(0).getCount());
     }
 
     @Test

@@ -41,6 +41,7 @@ public class CatalogSolrQueryParser {
         queryParameters.add("population");
         queryParameters.add("source");
         queryParameters.add("somatic");
+        queryParameters.add("acl");
 
     }
 
@@ -85,7 +86,7 @@ public class CatalogSolrQueryParser {
         queryParameters.forEach(queryParam -> {
             if (query.containsKey(queryParam)) {
                 if (queryParam.equals("study")) {
-                    filterList.put("studyId", query.getString(queryParam).replace(":", "_"));
+                    filterList.put("studyId", query.getString(queryParam).replace(":", "__"));
                 } else {
                     filterList.put(queryParam, query.getString(queryParam));
                 }
