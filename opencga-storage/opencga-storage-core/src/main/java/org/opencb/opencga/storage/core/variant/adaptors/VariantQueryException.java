@@ -29,6 +29,8 @@ import java.util.stream.Collectors;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.GENE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.GENOTYPE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.SAMPLE;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.AND;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.OR;
 
 /**
  * Created on 29/01/16 .
@@ -66,6 +68,14 @@ public class VariantQueryException extends IllegalArgumentException {
     public static VariantQueryException malformedParam(VariantQueryParam queryParam, String value, String message) {
         return new VariantQueryException("Malformed \"" + queryParam.key() + "\" query : \"" + value + "\". "
                 +  message);
+    }
+
+    public static VariantQueryException mixedAndOrOperators() {
+        return new VariantQueryException("Unable to mix AND (" + AND + ") and OR (" + OR + ") in the same query.");
+    }
+
+    public static VariantQueryException mixedAndOrOperators(VariantQueryParam param, String value) {
+        return VariantQueryException.malformedParam(param, value, "Unable to mix AND (" + AND + ") and OR (" + OR + ") in the same query.");
     }
 
     public static VariantQueryException geneNotFound(String gene) {

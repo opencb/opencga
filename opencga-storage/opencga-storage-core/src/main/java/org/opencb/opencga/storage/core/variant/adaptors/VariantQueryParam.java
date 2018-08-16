@@ -89,6 +89,10 @@ public final class VariantQueryParam implements QueryParam {
             + "This will automatically set 'includeSample' parameter when not provided";
     public static final VariantQueryParam GENOTYPE = new VariantQueryParam("genotype", TEXT_ARRAY, GENOTYPE_DESCR);
 
+    public static final String FORMAT_DESCR
+            = "";
+    public static final VariantQueryParam FORMAT = new VariantQueryParam("format", TEXT_ARRAY, FORMAT_DESCR);
+
     public static final String INCLUDE_SAMPLE_DESCR
             = "List of samples to be included in the result. "
             + ACCEPTS_ALL_NONE;
@@ -110,6 +114,10 @@ public final class VariantQueryParam implements QueryParam {
     public static final String FILE_DESCR
             = "Filter variants from the files specified. This will set includeFile parameter when not provided";
     public static final VariantQueryParam FILE = new VariantQueryParam("file", TEXT_ARRAY, FILE_DESCR);
+
+    public static final String INFO_DESCR
+            = "";
+    public static final VariantQueryParam INFO = new VariantQueryParam("info", TEXT_ARRAY, INFO_DESCR);
 
     public static final String FILTER_DESCR
             = "Specify the FILTER for any of the files. If 'file' filter is provided, will match the file and the filter. "

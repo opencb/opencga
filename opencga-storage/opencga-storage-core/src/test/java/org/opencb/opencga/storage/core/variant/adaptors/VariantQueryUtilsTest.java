@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.variant.adaptors;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -192,6 +193,71 @@ public class VariantQueryUtilsTest extends GenericTest {
 
         thrown.expect(VariantQueryException.class);
         parseGenotypeFilter("sample:1/1,2/2,sample2:0/0,2/2;sample3:0/0,2/2", map);
+    }
+
+    @Test
+    public void testParseFormatFilter() throws Exception {
+
+        checkParseFormat(new Query(SAMPLE.key(), "HG00096").append(FORMAT.key(), "DP>8"),
+                null,
+                "HG00096", "DP>8");
+        checkParseFormat(new Query(SAMPLE.key(), "HG00096,!HG00097").append(FORMAT.key(), "DP>8"),
+                null,
+                "HG00096", "DP>8");
+        checkParseFormat(new Query(SAMPLE.key(), "HG00096,HG00097").append(FORMAT.key(), "DP>8"),
+                QueryOperation.OR,
+                "HG00096", "DP>8",
+                "HG00097", "DP>8");
+        checkParseFormat(new Query(SAMPLE.key(), "HG00096;HG00097").append(FORMAT.key(), "DP>8"),
+                QueryOperation.AND,
+                "HG00096", "DP>8",
+                "HG00097", "DP>8");
+
+        checkParseFormat(new Query(GENOTYPE.key(), "HG00096:0/1").append(FORMAT.key(), "DP>8"),
+                null,
+                "HG00096", "DP>8");
+        checkParseFormat(new Query(GENOTYPE.key(), "HG00096:0/1,HG00097:0/1").append(FORMAT.key(), "DP>8"),
+                QueryOperation.OR,
+                "HG00096", "DP>8",
+                "HG00097", "DP>8");
+        checkParseFormat(new Query(GENOTYPE.key(), "HG00096:0/1;HG00097:0/1").append(FORMAT.key(), "DP>8"),
+                QueryOperation.AND,
+                "HG00096", "DP>8",
+                "HG00097", "DP>8");
+
+        checkParseFormat(new Query(FORMAT.key(), "HG00096:GQ>5.0,HG00097:DP>8"),
+                QueryOperation.OR,
+                "HG00096", "GQ>5.0",
+                "HG00097", "DP>8");
+        checkParseFormat(new Query(FORMAT.key(), "HG00097:DP>8,HG00096:GQ>5.0"),
+                QueryOperation.OR,
+                "HG00097", "DP>8",
+                "HG00096", "GQ>5.0");
+        checkParseFormat(new Query(FORMAT.key(), "HG00096:GT=0/1,1/1;HG00097:GT=1/1;DP>3"),
+                QueryOperation.AND,
+                "HG00096", "GT=0/1,1/1",
+                "HG00097", "GT=1/1;DP>3");
+        checkParseFormat(new Query(FORMAT.key(), "HG00096:GT=0/1,1/1;HG00097:GT=1/1;HG00097:DP>3"),
+                QueryOperation.AND,
+                "HG00096", "GT=0/1,1/1",
+                "HG00097", "GT=1/1;DP>3");
+
+    }
+
+    protected void checkParseFormat(Query query, QueryOperation expectedOperation, String ...expected) {
+        Pair<QueryOperation, Map<String, String>> pair = parseFormat(query);
+        QueryOperation operation = pair.getKey();
+        Map<String, String> map = pair.getValue();
+
+        HashMap<String, String> expectedMap = new HashMap<>();
+
+        for (int i = 0; i < expected.length; i+=2) {
+            expectedMap.put(expected[i], expected[i + 1]);
+        }
+
+        assertEquals(expectedMap, map);
+        assertEquals(expectedOperation, operation);
+
     }
 
     @Test

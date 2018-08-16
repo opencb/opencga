@@ -50,7 +50,15 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 public final class VariantQueryUtils {
 
     private static final Pattern OPERATION_PATTERN = Pattern.compile("^([^=<>~!]*)(<?<=?|>>?=?|!=?|!?=?~|==?)([^=<>~!]+.*)$");
-    private static final Pattern GENOTYPE_FILTER_PATTERN = Pattern.compile("(?<sample>[^,;]+):(?<gts>([^:;,]+,?)+)(?<op>[;,.])");
+    private static final String KEY = "key";
+    private static final String VALUE = "value";
+    private static final String OP = "op";
+    // <KEY>:<VALUE><OP>
+    // e.g.
+    //      HG0096:0/1,1/1,HG0097:1/1
+    //      HG0096:DP<3,GQ>4,HG0097:DP<6
+    private static final Pattern MULTI_KEY_VALUE_FILTER_PATTERN =
+            Pattern.compile("(?<" + KEY + ">[^,;]+):(?<" + VALUE + ">([^:;,]+[,;]?)+)(?<" + OP + ">[;,.])");
 
     public static final String OR = ",";
     public static final char OR_CHAR = ',';
@@ -976,32 +984,151 @@ public final class VariantQueryUtils {
     }
 
     /**
-     * Partes the genotype filter.
+     * Parse INFO param.
+     *
+     * @param query Query to parse
+     * @return a pair with the internal QueryOperation (AND/OR) and a map between Files and INFO filters.
+     */
+    public static Pair<QueryOperation, Map<String, String>> parseInfo(Query query) {
+        String value = query.getString(INFO.key());
+        if (value.contains(IS)) {
+            return parseMultiKeyValueFilter(INFO, value);
+        } else {
+            List<String> files = query.getAsStringList(FILE.key());
+            files.removeIf(VariantQueryUtils::isNegated);
+
+            if (files.isEmpty()) {
+                throw VariantQueryException.malformedParam(INFO, value, "Missing \"" + FILE.key() + "\" param.");
+            }
+
+            QueryOperation operator = checkOperator(value);
+
+            Map<String, String> map = new LinkedHashMap<>(files.size());
+            for (String file : files) {
+                map.put(file, value);
+            }
+
+            return Pair.of(operator, map);
+        }
+    }
+
+    /**
+     * Parse FORMAT param.
+     *
+     * @param query Query to parse
+     * @return a pair with the internal QueryOperation (AND/OR) and a map between Samples and FORMAT filters.
+     */
+    public static Pair<QueryOperation, Map<String, String>> parseFormat(Query query) {
+        String value = query.getString(FORMAT.key());
+        if (value.contains(IS)) {
+            return parseMultiKeyValueFilter(FORMAT, value);
+        } else {
+            QueryOperation operator = checkOperator(value);
+            QueryOperation samplesOperator;
+
+            List<String> samples;
+            String sampleFilter = query.getString(SAMPLE.key());
+            Pair<QueryOperation, List<String>> pair = splitValue(sampleFilter);
+            samples = new LinkedList<>(pair.getValue());
+            samplesOperator = pair.getKey();
+            samples.removeIf(VariantQueryUtils::isNegated);
+
+            if (samples.isEmpty()) {
+                HashMap<Object, List<String>> genotypeMap = new HashMap<>();
+                samplesOperator = parseGenotypeFilter(query.getString(GENOTYPE.key()), genotypeMap);
+                samples = genotypeMap.keySet().stream().map(Object::toString).collect(Collectors.toList());
+            }
+
+            if (operator == null && samples.size() > 1) {
+                operator = samplesOperator;
+            }
+
+            if (samples.isEmpty()) {
+                throw VariantQueryException.malformedParam(FORMAT, value,
+                        "Missing \"" + SAMPLE.key() + "\" or \"" + GENOTYPE.key() + "\" param.");
+            }
+
+            Map<String, String> map = new LinkedHashMap<>(samples.size());
+            for (String sample : samples) {
+                map.put(sample, value);
+            }
+
+            return Pair.of(operator, map);
+        }
+    }
+
+    private static Pair<QueryOperation, Map<String, String>> parseMultiKeyValueFilter(VariantQueryParam param, String stringValue) {
+        Map<String, String> map = new LinkedHashMap<>();
+        stringValue += '.'; // Add stop operand
+        Matcher matcher = MULTI_KEY_VALUE_FILTER_PATTERN.matcher(stringValue);
+
+        int end = 0;
+        QueryOperation operation = null;
+        while (matcher.find()) {
+            end = matcher.end();
+            String key = matcher.group(KEY);
+            String value = matcher.group(VALUE);
+            String op = matcher.group(OP);
+
+            QueryOperation finalOperation = operation;
+            map.compute(key, (k, v) -> {
+                if (v == null) {
+                    return value;
+                } else {
+                    return v + finalOperation.separator() + value;
+                }
+            });
+            if (AND.equals(op)) {
+                if (operation == QueryOperation.OR) {
+                    throw VariantQueryException.mixedAndOrOperators(param, stringValue);
+                } else {
+                    operation = QueryOperation.AND;
+                }
+            } else if (OR.equals(op)) {
+                if (operation == QueryOperation.AND) {
+                    throw VariantQueryException.mixedAndOrOperators(param, stringValue);
+                } else {
+                    operation = QueryOperation.OR;
+                }
+            } else {
+                // found stop operand. Assume END
+                break;
+            }
+        }
+
+        // Check if all the sequence has been processed
+        if (end != (stringValue.length())) {
+            throw VariantQueryException.malformedParam(param, stringValue);
+        }
+
+        return Pair.of(operation, map);
+    }
+
+    /**
+     * Parse the genotype filter.
      *
      * @param sampleGenotypes Genotypes filter value
      * @param map             Initialized map to be filled with the sample to list of genotypes
      * @return QueryOperation between samples
      */
     public static QueryOperation parseGenotypeFilter(String sampleGenotypes, Map<Object, List<String>> map) {
-        Matcher matcher = GENOTYPE_FILTER_PATTERN.matcher(sampleGenotypes + '.');
+        Matcher matcher = MULTI_KEY_VALUE_FILTER_PATTERN.matcher(sampleGenotypes + '.');
 
         QueryOperation operation = null;
         while (matcher.find()) {
-            String gts = matcher.group("gts");
-            String sample = matcher.group("sample");
-            String op = matcher.group("op");
+            String gts = matcher.group(VALUE);
+            String sample = matcher.group(KEY);
+            String op = matcher.group(OP);
             map.put(sample, Arrays.asList(gts.split(",")));
             if (AND.equals(op)) {
                 if (operation == QueryOperation.OR) {
-                    throw VariantQueryException.malformedParam(GENOTYPE, sampleGenotypes,
-                            "Unable to mix AND (" + AND + ") and OR (" + OR + ") in the same query.");
+                    throw VariantQueryException.mixedAndOrOperators(GENOTYPE, sampleGenotypes);
                 } else {
                     operation = QueryOperation.AND;
                 }
             } else if (OR.equals(op)) {
                 if (operation == QueryOperation.AND) {
-                    throw VariantQueryException.malformedParam(GENOTYPE, sampleGenotypes,
-                            "Unable to mix AND (" + AND + ") and OR (" + OR + ") in the same query.");
+                    throw VariantQueryException.mixedAndOrOperators(GENOTYPE, sampleGenotypes);
                 } else {
                     operation = QueryOperation.OR;
                 }
@@ -1070,7 +1197,7 @@ public final class VariantQueryUtils {
             }
         }
         if (containsAnd && containsOr) {
-            throw new VariantQueryException("Can't merge in the same query filter, AND and OR operators");
+            throw VariantQueryException.mixedAndOrOperators();
         } else if (containsAnd) {   // && !containsOr  -> true
             return QueryOperation.AND;
         } else if (containsOr) {    // && !containsAnd  -> true
