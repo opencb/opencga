@@ -256,19 +256,19 @@ public class SolrQueryParser {
         // protein-substitution
         key = VariantQueryParam.ANNOT_PROTEIN_SUBSTITUTION.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parseScoreValue(query.getString(key)));
+            filterList.add(parseScoreValue(key, query.getString(key)));
         }
 
         // conservation
         key = VariantQueryParam.ANNOT_CONSERVATION.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parseScoreValue(query.getString(key)));
+            filterList.add(parseScoreValue(key, query.getString(key)));
         }
 
         // cadd, functional score
         key = VariantQueryParam.ANNOT_FUNCTIONAL_SCORE.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parseScoreValue(query.getString(key)));
+            filterList.add(parseScoreValue(key, query.getString(key)));
         }
 
         // ALT population frequency
@@ -631,12 +631,8 @@ public class SolrQueryParser {
             String negation  = "";
             String value = val.replace("\"", "");
 
-            boolean or = value.contains(",");
-            boolean and = value.contains(";");
-            if (or && and) {
-                throw new IllegalArgumentException("Command and semi-colon cannot be mixed: " + value);
-            }
-            String logicalComparator = or ? " OR " : " AND ";
+            QueryOperation queryOperation = parseOrAndFilter(name, val);
+            String logicalComparator = queryOperation == QueryOperation.OR ? " OR " : " AND ";
             String wildcard = partialSearch ? "*" : "";
 
             String[] values = value.split("[,;]");
@@ -692,21 +688,18 @@ public class SolrQueryParser {
      *     "," to apply a "OR condition"
      *     ";" to apply a "AND condition"
      *
-     * @param value        Parameter value
+     * @param name         Field name, e.g.: conservation, functionalScore, proteinSubstitution
+     * @param value        Field value
      * @return             The string with the boolean conditions
      */
-    public String parseScoreValue(String value) {
+    public String parseScoreValue(String name, String value) {
         // In Solr, range queries can be inclusive or exclusive of the upper and lower bounds:
         //    - Inclusive range queries are denoted by square brackets.
         //    - Exclusive range queries are denoted by curly brackets.
         StringBuilder sb = new StringBuilder();
         if (StringUtils.isNotEmpty(value)) {
-            boolean or = value.contains(",");
-            boolean and = value.contains(";");
-            if (or && and) {
-                throw new IllegalArgumentException("Command and semi-colon cannot be mixed: " + value);
-            }
-            String logicalComparator = or ? " OR " : " AND ";
+            QueryOperation queryOperation = parseOrAndFilter(name, value);
+            String logicalComparator = queryOperation == QueryOperation.OR ? " OR " : " AND ";
 
             Matcher matcher;
             String[] values = value.split("[,;]");
@@ -756,12 +749,8 @@ public class SolrQueryParser {
             value = value.replace("<<", "<");
             value = value.replace("<", "<<");
 
-            boolean or = value.contains(",");
-            boolean and = value.contains(";");
-            if (or && and) {
-                throw new IllegalArgumentException("Command and semi-colon cannot be mixed: " + value);
-            }
-            String logicalComparator = or ? " OR " : " AND ";
+            QueryOperation queryOperation = parseOrAndFilter(name, value);
+            String logicalComparator = queryOperation == QueryOperation.OR ? " OR " : " AND ";
 
             Matcher matcher;
             String[] values = value.split("[,;]");
@@ -1263,7 +1252,7 @@ public class SolrQueryParser {
         }
 
         if (error) {
-            logger.warn("Facet intersection '" + intersection + "' malformed. The expected intersection format"
+            logger.warn("boolean orFacet intersection '" + intersection + "' malformed. The expected intersection format"
                     + " is 'name:value1^value2[^value3]', value3 is optional");
         }
     }
