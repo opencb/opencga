@@ -21,7 +21,16 @@ public class CohortSolrModel {
     private String type;
 
     @Field
-    private String creationDate;
+    private int creationYear;
+
+    @Field
+    private String creationMonth;
+
+    @Field
+    private int creationDay;
+
+    @Field
+    private String creationDayOfWeek;
 
     @Field
     private String status;
@@ -30,7 +39,7 @@ public class CohortSolrModel {
     private int release;
 
     @Field
-    private int samples;
+    private int numSamples;
 
     @Field
     private List<String> acl;
@@ -48,10 +57,14 @@ public class CohortSolrModel {
         sb.append("uid=").append(uid);
         sb.append(", studyId='").append(studyId).append('\'');
         sb.append(", type='").append(type).append('\'');
-        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", creationYear='").append(creationYear).append('\'');
+        sb.append(", creationMonth='").append(creationMonth).append('\'');
+        sb.append(", creationDay='").append(creationDay).append('\'');
+        sb.append(", creationDayOfWeek='").append(creationDayOfWeek).append('\'');
         sb.append(", status='").append(status).append('\'');
         sb.append(", release=").append(release);
-        sb.append(", samples=").append(samples);
+        sb.append(", numSamples=").append(numSamples);
+        sb.append(", acl=").append(acl);
         sb.append(", annotations=").append(annotations);
         sb.append('}');
         return sb.toString();
@@ -84,12 +97,39 @@ public class CohortSolrModel {
         return this;
     }
 
-    public String getCreationDate() {
-        return creationDate;
+    public int getCreationYear() {
+        return creationYear;
     }
 
-    public CohortSolrModel setCreationDate(String creationDate) {
-        this.creationDate = creationDate;
+    public CohortSolrModel setCreationYear(int creationYear) {
+        this.creationYear = creationYear;
+        return this;
+    }
+
+    public String getCreationMonth() {
+        return creationMonth;
+    }
+
+    public CohortSolrModel setCreationMonth(String creationMonth) {
+        this.creationMonth = creationMonth;
+        return this;
+    }
+
+    public int getCreationDay() {
+        return creationDay;
+    }
+
+    public CohortSolrModel setCreationDay(int creationDay) {
+        this.creationDay = creationDay;
+        return this;
+    }
+
+    public String getCreationDayOfWeek() {
+        return creationDayOfWeek;
+    }
+
+    public CohortSolrModel setCreationDayOfWeek(String creationDayOfWeek) {
+        this.creationDayOfWeek = creationDayOfWeek;
         return this;
     }
 
@@ -111,12 +151,12 @@ public class CohortSolrModel {
         return this;
     }
 
-    public int getSamples() {
-        return samples;
+    public int getNumSamples() {
+        return numSamples;
     }
 
-    public CohortSolrModel setSamples(int samples) {
-        this.samples = samples;
+    public CohortSolrModel setNumSamples(int numSamples) {
+        this.numSamples = numSamples;
         return this;
     }
 

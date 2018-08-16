@@ -3,10 +3,13 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 import org.junit.Test;
 import org.opencb.opencga.catalog.stats.solr.CohortSolrModel;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogCohortToSolrCohortConverter;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.Cohort;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.Study;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -29,10 +32,20 @@ public class CatalogCohortToSolrCohortConverterTest {
 
         assertEquals(cohortSolrModel.getUid(), cohort.getUid());
         assertEquals(cohortSolrModel.getStatus(), cohort.getStatus().getName());
-        assertEquals(cohortSolrModel.getCreationDate(), cohort.getCreationDate());
+
+        Date date = TimeUtils.toDate(cohort.getCreationDate());
+        LocalDate localDate = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+
+        assertEquals(localDate.getYear(), cohortSolrModel.getCreationYear());
+        assertEquals(localDate.getMonth().toString(), cohortSolrModel.getCreationMonth());
+        assertEquals(localDate.getDayOfMonth(), cohortSolrModel.getCreationDay());
+        assertEquals(localDate.getDayOfMonth(), cohortSolrModel.getCreationDay());
+        assertEquals(localDate.getDayOfWeek().toString(), cohortSolrModel.getCreationDayOfWeek());
+        cohortSolrModel.setStatus(cohort.getStatus().getName());
+
         assertEquals(cohortSolrModel.getType(), cohort.getType().name());
         assertEquals(cohortSolrModel.getRelease(), cohort.getRelease());
-        assertEquals(cohortSolrModel.getSamples(), cohort.getSamples().size());
+        assertEquals(cohortSolrModel.getNumSamples(), cohort.getSamples().size());
 
         assertEquals(cohortSolrModel.getAnnotations().get("annotations__o__annotName.vsId.a.ab2.ab2c1.ab2c1d1"), Arrays.asList(1, 2, 3, 4, 11, 12, 13, 14, 21));
         assertEquals(cohortSolrModel.getAnnotations().get("annotations__o__annotName.vsId.a.ab1.ab1c1"), Arrays.asList(true, false, false));

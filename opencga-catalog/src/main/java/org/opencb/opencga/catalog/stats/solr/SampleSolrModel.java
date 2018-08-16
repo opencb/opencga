@@ -22,25 +22,22 @@ public class SampleSolrModel {
     private String source;
 
     @Field
-    private String individualUuid;
-
-    @Field
-    private String individualKaryotypicSex;
-
-    @Field
-    private String individualEthnicity;
-
-    @Field
-    private String individualPopulation;
-
-    @Field
     private int release;
 
     @Field
     private int version;
 
     @Field
-    private String creationDate;
+    private int creationYear;
+
+    @Field
+    private String creationMonth;
+
+    @Field
+    private int creationDay;
+
+    @Field
+    private String creationDayOfWeek;
 
     @Field
     private String status;
@@ -71,17 +68,17 @@ public class SampleSolrModel {
         sb.append("uid=").append(uid);
         sb.append(", studyId='").append(studyId).append('\'');
         sb.append(", source='").append(source).append('\'');
-        sb.append(", individualUuid='").append(individualUuid).append('\'');
-        sb.append(", individualKaryotypicSex='").append(individualKaryotypicSex).append('\'');
-        sb.append(", individualEthnicity='").append(individualEthnicity).append('\'');
-        sb.append(", individualPopulation='").append(individualPopulation).append('\'');
         sb.append(", release=").append(release);
         sb.append(", version=").append(version);
-        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", creationYear=").append(creationYear);
+        sb.append(", creationMonth='").append(creationMonth).append('\'');
+        sb.append(", creationDay=").append(creationDay);
+        sb.append(", creationDayOfWeek='").append(creationDayOfWeek).append('\'');
         sb.append(", status='").append(status).append('\'');
         sb.append(", type='").append(type).append('\'');
         sb.append(", somatic=").append(somatic);
         sb.append(", phenotypes=").append(phenotypes);
+        sb.append(", acl=").append(acl);
         sb.append(", annotations=").append(annotations);
         sb.append('}');
         return sb.toString();
@@ -114,42 +111,6 @@ public class SampleSolrModel {
         return this;
     }
 
-    public String getIndividualUuid() {
-        return individualUuid;
-    }
-
-    public SampleSolrModel setIndividualUuid(String individualUuid) {
-        this.individualUuid = individualUuid;
-        return this;
-    }
-
-    public String getIndividualKaryotypicSex() {
-        return individualKaryotypicSex;
-    }
-
-    public SampleSolrModel setIndividualKaryotypicSex(String individualKaryotypicSex) {
-        this.individualKaryotypicSex = individualKaryotypicSex;
-        return this;
-    }
-
-    public String getIndividualEthnicity() {
-        return individualEthnicity;
-    }
-
-    public SampleSolrModel setIndividualEthnicity(String individualEthnicity) {
-        this.individualEthnicity = individualEthnicity;
-        return this;
-    }
-
-    public String getIndividualPopulation() {
-        return individualPopulation;
-    }
-
-    public SampleSolrModel setIndividualPopulation(String individualPopulation) {
-        this.individualPopulation = individualPopulation;
-        return this;
-    }
-
     public int getRelease() {
         return release;
     }
@@ -168,12 +129,39 @@ public class SampleSolrModel {
         return this;
     }
 
-    public String getCreationDate() {
-        return creationDate;
+    public int getCreationYear() {
+        return creationYear;
     }
 
-    public SampleSolrModel setCreationDate(String creationDate) {
-        this.creationDate = creationDate;
+    public SampleSolrModel setCreationYear(int creationYear) {
+        this.creationYear = creationYear;
+        return this;
+    }
+
+    public String getCreationMonth() {
+        return creationMonth;
+    }
+
+    public SampleSolrModel setCreationMonth(String creationMonth) {
+        this.creationMonth = creationMonth;
+        return this;
+    }
+
+    public int getCreationDay() {
+        return creationDay;
+    }
+
+    public SampleSolrModel setCreationDay(int creationDay) {
+        this.creationDay = creationDay;
+        return this;
+    }
+
+    public String getCreationDayOfWeek() {
+        return creationDayOfWeek;
+    }
+
+    public SampleSolrModel setCreationDayOfWeek(String creationDayOfWeek) {
+        this.creationDayOfWeek = creationDayOfWeek;
         return this;
     }
 

@@ -73,20 +73,23 @@
     <field name="_text_" type="text_general" multiValued="true" indexed="true" stored="false"/>
     <field name="_version_" type="long" indexed="false" stored="false"/>
 
-    <field name="studyId" type="string" indexed="false" stored="true" multiValued="false"/>
+    <field name="studyId" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="name" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="type" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="format" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="bioformat" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="release" type="int" indexed="true" stored="true" multiValued="false"/>
-    <field name="creationDate" type="string" indexed="false" stored="true" multiValued="false"/>
-    <field name="status" type="string" indexed="false" stored="true" multiValued="false"/>
+    <field name="creationYear" type="int" indexed="true" stored="true" multiValued="false"/>
+    <field name="creationMonth" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="creationDay" type="int" indexed="true" stored="true" multiValued="false"/>
+    <field name="creationDayOfWeek" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="status" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="external" type="boolean" indexed="true" stored="true" multiValued="false"/>
-    <field name="size" type="int" indexed="true" stored="true" multiValued="false"/>
+    <field name="size" type="long" indexed="true" stored="true" multiValued="false"/>
     <field name="software" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="experiment" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="samples" type="int" indexed="true" stored="true" multiValued="false"/>
-    <field name="relatedFiles" type="long" indexed="true" stored="true" multiValued="true"/>
+    <field name="numSamples" type="int" indexed="true" stored="true" multiValued="false"/>
+    <field name="numRelatedFiles" type="int" indexed="true" stored="true" multiValued="false"/>
     <field name="acl" type="string" indexed="true" stored="true" multiValued="true"/>
 
     <dynamicField name="annotations__s__*" type="string" indexed="true" stored="true" multiValued="false"/>

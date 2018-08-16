@@ -3,7 +3,6 @@ package org.opencb.opencga.catalog.stats.solr;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.SolrParams;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.slf4j.Logger;

@@ -3,9 +3,13 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 import org.junit.Test;
 import org.opencb.opencga.catalog.stats.solr.IndividualSolrModel;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogIndividualToSolrIndividualConverter;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
@@ -30,13 +34,22 @@ public class CatalogIndividualToSolrIndividualConverterTest {
         IndividualSolrModel individualSolrModel = new CatalogIndividualToSolrIndividualConverter(study).convertToStorageType(individual);
 
         assertEquals(individualSolrModel.getUid(), individual.getUid());
-        assertEquals(individualSolrModel.getMultipleTypeName(), individual.getMultiples().getType());
+        assertEquals(individualSolrModel.getMultiplesType(), individual.getMultiples().getType());
         assertEquals(individualSolrModel.getSex(), individual.getSex().name());
         assertEquals(individualSolrModel.getKaryotypicSex(), individual.getKaryotypicSex().name());
         assertEquals(individualSolrModel.getEthnicity(), individual.getEthnicity());
         assertEquals(individualSolrModel.getPopulation(), individual.getPopulation().getName());
         assertEquals(individualSolrModel.getRelease(), individual.getRelease());
-        assertEquals(individualSolrModel.getCreationDate(), individual.getCreationDate());
+
+        Date date = TimeUtils.toDate(individual.getCreationDate());
+        LocalDate localDate = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+
+        assertEquals(localDate.getYear(), individualSolrModel.getCreationYear());
+        assertEquals(localDate.getMonth().toString(), individualSolrModel.getCreationMonth());
+        assertEquals(localDate.getDayOfMonth(), individualSolrModel.getCreationDay());
+        assertEquals(localDate.getDayOfMonth(), individualSolrModel.getCreationDay());
+        assertEquals(localDate.getDayOfWeek().toString(), individualSolrModel.getCreationDayOfWeek());
+
         assertEquals(individualSolrModel.getVersion(), individual.getVersion());
         assertEquals(individualSolrModel.getStatus(), individual.getStatus().getName());
         assertEquals(individualSolrModel.getLifeStatus(), individual.getLifeStatus().name());

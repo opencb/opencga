@@ -3,9 +3,13 @@ package org.opencb.opencga.catalog.stats.solr.converters;
 import org.apache.commons.lang3.NotImplementedException;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.opencga.catalog.stats.solr.CohortSolrModel;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.Cohort;
 import org.opencb.opencga.core.models.Study;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -33,11 +37,20 @@ public class CatalogCohortToSolrCohortConverter implements ComplexTypeConverter<
         cohortSolrModel.setUid(cohort.getUid());
         cohortSolrModel.setStudyId(study.getFqn().replace(":", "__"));
         cohortSolrModel.setType(cohort.getType().name());
-        cohortSolrModel.setCreationDate(cohort.getCreationDate());
+
+        Date date = TimeUtils.toDate(cohort.getCreationDate());
+        LocalDate localDate = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+
+        cohortSolrModel.setCreationYear(localDate.getYear());
+        cohortSolrModel.setCreationMonth(localDate.getMonth().toString());
+        cohortSolrModel.setCreationDay(localDate.getDayOfMonth());
+        cohortSolrModel.setCreationDayOfWeek(localDate.getDayOfWeek().toString());
         cohortSolrModel.setStatus(cohort.getStatus().getName());
 
         if (cohort.getSamples() != null) {
-            cohortSolrModel.setSamples(cohort.getSamples().size());
+            cohortSolrModel.setNumSamples(cohort.getSamples().size());
+        } else {
+            cohortSolrModel.setNumSamples(0);
         }
 
         cohortSolrModel.setRelease(cohort.getRelease());

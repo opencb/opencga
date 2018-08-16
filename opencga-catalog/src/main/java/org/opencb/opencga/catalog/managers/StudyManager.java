@@ -1278,7 +1278,7 @@ public class StudyManager extends AbstractManager {
                         FamilyDBAdaptor.QueryParams.CREATION_DATE.key(), FamilyDBAdaptor.QueryParams.STATUS.key(),
                         FamilyDBAdaptor.QueryParams.MEMBER_UID.key(), FamilyDBAdaptor.QueryParams.RELEASE.key(),
                         FamilyDBAdaptor.QueryParams.VERSION.key(), FamilyDBAdaptor.QueryParams.ANNOTATION_SETS.key(),
-                        FamilyDBAdaptor.QueryParams.PHENOTYPES.key()))
+                        FamilyDBAdaptor.QueryParams.PHENOTYPES.key(), FamilyDBAdaptor.QueryParams.EXPECTED_SIZE.key()))
                 .append(DBAdaptor.INCLUDE_ACLS, true);
 
         catalogSolrManager.insertCatalogCollection(this.familyDBAdaptor.iterator(query,
@@ -1291,6 +1291,7 @@ public class StudyManager extends AbstractManager {
         Query query = new Query(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
         QueryOptions individualQueryOptions = new QueryOptions()
                 .append(QueryOptions.INCLUDE, Arrays.asList(IndividualDBAdaptor.QueryParams.ID.key(),
+                        IndividualDBAdaptor.QueryParams.FATHER_UID.key(), IndividualDBAdaptor.QueryParams.MOTHER_UID.key(),
                         IndividualDBAdaptor.QueryParams.MULTIPLES.key(), IndividualDBAdaptor.QueryParams.SEX.key(),
                         IndividualDBAdaptor.QueryParams.ETHNICITY.key(), IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
                         IndividualDBAdaptor.QueryParams.RELEASE.key(), IndividualDBAdaptor.QueryParams.CREATION_DATE.key(),

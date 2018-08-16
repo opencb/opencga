@@ -2,7 +2,6 @@ package org.opencb.opencga.catalog.stats.solr;
 
 import org.apache.solr.client.solrj.beans.Field;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +33,16 @@ public class FileSolrModel {
     private int release;
 
     @Field
-    private String creationDate;
+    private int creationYear;
+
+    @Field
+    private String creationMonth;
+
+    @Field
+    private int creationDay;
+
+    @Field
+    private String creationDayOfWeek;
 
     @Field
     private String status;
@@ -52,10 +60,10 @@ public class FileSolrModel {
     private String experiment;
 
     @Field
-    private int samples;
+    private int numSamples;
 
     @Field
-    private List<Long> relatedFiles;
+    private int numRelatedFiles;
 
     @Field
     private List<String> acl;
@@ -64,7 +72,6 @@ public class FileSolrModel {
     private Map<String, Object> annotations;
 
     public FileSolrModel() {
-        this.relatedFiles = new ArrayList<>();
         this.annotations = new HashMap<>();
     }
 
@@ -78,14 +85,18 @@ public class FileSolrModel {
         sb.append(", format='").append(format).append('\'');
         sb.append(", bioformat='").append(bioformat).append('\'');
         sb.append(", release=").append(release);
-        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", creationYear=").append(creationYear);
+        sb.append(", creationMonth='").append(creationMonth).append('\'');
+        sb.append(", creationDay=").append(creationDay);
+        sb.append(", creationDayOfWeek='").append(creationDayOfWeek).append('\'');
         sb.append(", status='").append(status).append('\'');
         sb.append(", external=").append(external);
         sb.append(", size=").append(size);
         sb.append(", software='").append(software).append('\'');
         sb.append(", experiment='").append(experiment).append('\'');
-        sb.append(", samples=").append(samples);
-        sb.append(", relatedFiles=").append(relatedFiles);
+        sb.append(", numSamples=").append(numSamples);
+        sb.append(", numRelatedFiles=").append(numRelatedFiles);
+        sb.append(", acl=").append(acl);
         sb.append(", annotations=").append(annotations);
         sb.append('}');
         return sb.toString();
@@ -154,12 +165,39 @@ public class FileSolrModel {
         return this;
     }
 
-    public String getCreationDate() {
-        return creationDate;
+    public int getCreationYear() {
+        return creationYear;
     }
 
-    public FileSolrModel setCreationDate(String creationDate) {
-        this.creationDate = creationDate;
+    public FileSolrModel setCreationYear(int creationYear) {
+        this.creationYear = creationYear;
+        return this;
+    }
+
+    public String getCreationMonth() {
+        return creationMonth;
+    }
+
+    public FileSolrModel setCreationMonth(String creationMonth) {
+        this.creationMonth = creationMonth;
+        return this;
+    }
+
+    public int getCreationDay() {
+        return creationDay;
+    }
+
+    public FileSolrModel setCreationDay(int creationDay) {
+        this.creationDay = creationDay;
+        return this;
+    }
+
+    public String getCreationDayOfWeek() {
+        return creationDayOfWeek;
+    }
+
+    public FileSolrModel setCreationDayOfWeek(String creationDayOfWeek) {
+        this.creationDayOfWeek = creationDayOfWeek;
         return this;
     }
 
@@ -208,21 +246,21 @@ public class FileSolrModel {
         return this;
     }
 
-    public int getSamples() {
-        return samples;
+    public int getNumSamples() {
+        return numSamples;
     }
 
-    public FileSolrModel setSamples(int samples) {
-        this.samples = samples;
+    public FileSolrModel setNumSamples(int numSamples) {
+        this.numSamples = numSamples;
         return this;
     }
 
-    public List<Long> getRelatedFiles() {
-        return relatedFiles;
+    public int getNumRelatedFiles() {
+        return numRelatedFiles;
     }
 
-    public FileSolrModel setRelatedFiles(List<Long> relatedFiles) {
-        this.relatedFiles = relatedFiles;
+    public FileSolrModel setNumRelatedFiles(int numRelatedFiles) {
+        this.numRelatedFiles = numRelatedFiles;
         return this;
     }
 

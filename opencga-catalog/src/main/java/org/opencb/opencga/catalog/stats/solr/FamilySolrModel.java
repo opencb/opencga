@@ -19,7 +19,16 @@ public class FamilySolrModel {
     private String studyId;
 
     @Field
-    private String creationDate;
+    private int creationYear;
+
+    @Field
+    private String creationMonth;
+
+    @Field
+    private int creationDay;
+
+    @Field
+    private String creationDayOfWeek;
 
     @Field
     private String status;
@@ -28,7 +37,10 @@ public class FamilySolrModel {
     private List<String> phenotypes;
 
     @Field
-    private int familyMembers;
+    private int numMembers;
+
+    @Field
+    private int expectedSize;
 
     @Field
     private int release;
@@ -53,12 +65,17 @@ public class FamilySolrModel {
         final StringBuilder sb = new StringBuilder("FamilySolrModel{");
         sb.append("uid=").append(uid);
         sb.append(", studyId='").append(studyId).append('\'');
-        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", creationYear=").append(creationYear);
+        sb.append(", creationMonth='").append(creationMonth).append('\'');
+        sb.append(", creationDay=").append(creationDay);
+        sb.append(", creationDayOfWeek='").append(creationDayOfWeek).append('\'');
         sb.append(", status='").append(status).append('\'');
         sb.append(", phenotypes=").append(phenotypes);
-        sb.append(", familyMembers=").append(familyMembers);
+        sb.append(", numMembers=").append(numMembers);
+        sb.append(", expectedSize=").append(expectedSize);
         sb.append(", release=").append(release);
         sb.append(", version=").append(version);
+        sb.append(", acl=").append(acl);
         sb.append(", annotations=").append(annotations);
         sb.append('}');
         return sb.toString();
@@ -82,12 +99,39 @@ public class FamilySolrModel {
         return this;
     }
 
-    public String getCreationDate() {
-        return creationDate;
+    public int getCreationYear() {
+        return creationYear;
     }
 
-    public FamilySolrModel setCreationDate(String creationDate) {
-        this.creationDate = creationDate;
+    public FamilySolrModel setCreationYear(int creationYear) {
+        this.creationYear = creationYear;
+        return this;
+    }
+
+    public String getCreationMonth() {
+        return creationMonth;
+    }
+
+    public FamilySolrModel setCreationMonth(String creationMonth) {
+        this.creationMonth = creationMonth;
+        return this;
+    }
+
+    public int getCreationDay() {
+        return creationDay;
+    }
+
+    public FamilySolrModel setCreationDay(int creationDay) {
+        this.creationDay = creationDay;
+        return this;
+    }
+
+    public String getCreationDayOfWeek() {
+        return creationDayOfWeek;
+    }
+
+    public FamilySolrModel setCreationDayOfWeek(String creationDayOfWeek) {
+        this.creationDayOfWeek = creationDayOfWeek;
         return this;
     }
 
@@ -109,12 +153,21 @@ public class FamilySolrModel {
         return this;
     }
 
-    public int getFamilyMembers() {
-        return familyMembers;
+    public int getNumMembers() {
+        return numMembers;
     }
 
-    public FamilySolrModel setFamilyMembers(int familyMembers) {
-        this.familyMembers = familyMembers;
+    public FamilySolrModel setNumMembers(int numMembers) {
+        this.numMembers = numMembers;
+        return this;
+    }
+
+    public int getExpectedSize() {
+        return expectedSize;
+    }
+
+    public FamilySolrModel setExpectedSize(int expectedSize) {
+        this.expectedSize = expectedSize;
         return this;
     }
 

@@ -3,9 +3,13 @@ package org.opencb.opencga.catalog.stats.solr.converters;
 import org.apache.commons.lang3.NotImplementedException;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.opencga.catalog.stats.solr.FileSolrModel;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Study;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -41,7 +45,16 @@ public class CatalogFileToSolrFileConverter implements ComplexTypeConverter<File
             fileSolrModel.setBioformat(file.getBioformat().name());
         }
         fileSolrModel.setRelease(file.getRelease());
-        fileSolrModel.setCreationDate(file.getCreationDate());
+
+        Date date = TimeUtils.toDate(file.getCreationDate());
+        LocalDate localDate = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+
+        fileSolrModel.setCreationYear(localDate.getYear());
+        fileSolrModel.setCreationMonth(localDate.getMonth().toString());
+        fileSolrModel.setCreationDay(localDate.getDayOfMonth());
+        fileSolrModel.setCreationDayOfWeek(localDate.getDayOfWeek().toString());
+        fileSolrModel.setStatus(file.getStatus().getName());
+
         fileSolrModel.setStatus(file.getStatus().getName());
         fileSolrModel.setExternal(file.isExternal());
         fileSolrModel.setSize(file.getSize());
@@ -49,9 +62,9 @@ public class CatalogFileToSolrFileConverter implements ComplexTypeConverter<File
             fileSolrModel.setSoftware(file.getSoftware().getName());
         }
         fileSolrModel.setExperiment(file.getExperiment().getName());
-        if (file.getSamples() != null) {
-            fileSolrModel.setSamples(file.getSamples().size());
-        }
+
+        fileSolrModel.setNumSamples(file.getSamples() != null ? file.getSamples().size() : 0);
+        fileSolrModel.setNumRelatedFiles(file.getRelatedFiles() != null ? file.getRelatedFiles().size() : 0);
 
         fileSolrModel.setAnnotations(SolrConverterUtil.populateAnnotations(file.getAnnotationSets()));
 

@@ -3,10 +3,13 @@ package org.opencb.opencga.catalog.stats.solr.converters;
 import org.apache.commons.lang3.NotImplementedException;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.opencga.catalog.stats.solr.SampleSolrModel;
-import org.opencb.opencga.core.models.Individual;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.Study;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -36,23 +39,18 @@ public class CatalogSampleToSolrSampleConverter implements ComplexTypeConverter<
         sampleSolrModel.setSource(sample.getSource());
         sampleSolrModel.setStudyId(study.getFqn().replace(":", "__"));
 
-        if (sample.getAttributes() != null) {
-            Individual individual = (Individual) sample.getAttributes().get("individual");
-            if (individual != null) {
-                sampleSolrModel.setIndividualUuid(individual.getUuid());
-                sampleSolrModel.setIndividualEthnicity(individual.getEthnicity());
-                if (individual.getKaryotypicSex() != null) {
-                    sampleSolrModel.setIndividualKaryotypicSex(individual.getKaryotypicSex().name());
-                }
-                if (individual.getPopulation() != null) {
-                    sampleSolrModel.setIndividualPopulation(individual.getPopulation().getName());
-                }
-            }
-        }
-
         sampleSolrModel.setRelease(sample.getRelease());
         sampleSolrModel.setVersion(sample.getVersion());
-        sampleSolrModel.setCreationDate(sample.getCreationDate());
+
+        Date date = TimeUtils.toDate(sample.getCreationDate());
+        LocalDate localDate = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+
+        sampleSolrModel.setCreationYear(localDate.getYear());
+        sampleSolrModel.setCreationMonth(localDate.getMonth().toString());
+        sampleSolrModel.setCreationDay(localDate.getDayOfMonth());
+        sampleSolrModel.setCreationDayOfWeek(localDate.getDayOfWeek().toString());
+        sampleSolrModel.setStatus(sample.getStatus().getName());
+
         sampleSolrModel.setStatus(sample.getStatus().getName());
         sampleSolrModel.setType(sample.getType());
         sampleSolrModel.setSomatic(sample.isSomatic());

@@ -3,10 +3,14 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 import org.junit.Test;
 import org.opencb.opencga.catalog.stats.solr.FileSolrModel;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogFileToSolrFileConverter;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
@@ -29,18 +33,27 @@ public class CatalogFileToSolrFileConverterTest {
         FileSolrModel fileSolrModel = new CatalogFileToSolrFileConverter(study).convertToStorageType(file);
 
         assert (fileSolrModel.getUid() == file.getUid());
-        assert (fileSolrModel.getName() == file.getName());
-        assert (fileSolrModel.getType() == file.getType().name());
-        assert (fileSolrModel.getFormat() == file.getFormat().name());
-        assert (fileSolrModel.getBioformat() == file.getBioformat().name());
+        assert (fileSolrModel.getName().equals(file.getName()));
+        assert (fileSolrModel.getType().equals(file.getType().name()));
+        assert (fileSolrModel.getFormat().equals(file.getFormat().name()));
+        assert (fileSolrModel.getBioformat().equals(file.getBioformat().name()));
         assert (fileSolrModel.getRelease() == file.getRelease());
-        assert (fileSolrModel.getCreationDate() == file.getCreationDate());
-        assert (fileSolrModel.getStatus() == file.getStatus().getName());
+
+        Date date = TimeUtils.toDate(file.getCreationDate());
+        LocalDate localDate = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+
+        assertEquals(localDate.getYear(), fileSolrModel.getCreationYear());
+        assertEquals(localDate.getMonth().toString(), fileSolrModel.getCreationMonth());
+        assertEquals(localDate.getDayOfMonth(), fileSolrModel.getCreationDay());
+        assertEquals(localDate.getDayOfMonth(), fileSolrModel.getCreationDay());
+        assertEquals(localDate.getDayOfWeek().toString(), fileSolrModel.getCreationDayOfWeek());
+
+        assert (fileSolrModel.getStatus().equals(file.getStatus().getName()));
         assert (fileSolrModel.isExternal() == file.isExternal());
         assert (fileSolrModel.getSize() == file.getSize());
-        assert (fileSolrModel.getSoftware() == file.getSoftware().getName());
-        assert (fileSolrModel.getExperiment() == file.getExperiment().getName());
-        assert (fileSolrModel.getSamples() == file.getSamples().size());
+        assert (fileSolrModel.getSoftware().equals(file.getSoftware().getName()));
+        assert (fileSolrModel.getExperiment().equals(file.getExperiment().getName()));
+        assert (fileSolrModel.getNumSamples() == file.getSamples().size());
 
         assertEquals(fileSolrModel.getAnnotations().get("annotations__o__annotName.vsId.a.ab2.ab2c1.ab2c1d1"), Arrays.asList(1, 2, 3, 4, 11, 12, 13, 14, 21));
         assertEquals(fileSolrModel.getAnnotations().get("annotations__o__annotName.vsId.a.ab1.ab1c1"), Arrays.asList(true, false, false));

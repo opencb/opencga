@@ -19,7 +19,16 @@ public class IndividualSolrModel {
     private String studyId;
 
     @Field
-    private String multipleTypeName;
+    private boolean hasFather;
+
+    @Field
+    private boolean hasMother;
+
+    @Field
+    private int numMultiples;
+
+    @Field
+    private String multiplesType;
 
     @Field
     private String sex;
@@ -40,7 +49,16 @@ public class IndividualSolrModel {
     private int version;
 
     @Field
-    private String creationDate;
+    private int creationYear;
+
+    @Field
+    private String creationMonth;
+
+    @Field
+    private int creationDay;
+
+    @Field
+    private String creationDayOfWeek;
 
     @Field
     private String status;
@@ -55,7 +73,7 @@ public class IndividualSolrModel {
     private List<String> phenotypes;
 
     @Field
-    private int samples;
+    private int numSamples;
 
     @Field
     private boolean parentalConsanguinity;
@@ -76,20 +94,27 @@ public class IndividualSolrModel {
         final StringBuilder sb = new StringBuilder("IndividualSolrModel{");
         sb.append("uid=").append(uid);
         sb.append(", studyId='").append(studyId).append('\'');
-        sb.append(", multipleTypeName='").append(multipleTypeName).append('\'');
+        sb.append(", hasFather=").append(hasFather);
+        sb.append(", hasMother=").append(hasMother);
+        sb.append(", numMultiples=").append(numMultiples);
+        sb.append(", multiplesType='").append(multiplesType).append('\'');
         sb.append(", sex='").append(sex).append('\'');
         sb.append(", karyotypicSex='").append(karyotypicSex).append('\'');
         sb.append(", ethnicity='").append(ethnicity).append('\'');
         sb.append(", population='").append(population).append('\'');
         sb.append(", release=").append(release);
         sb.append(", version=").append(version);
-        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", creationYear=").append(creationYear);
+        sb.append(", creationMonth='").append(creationMonth).append('\'');
+        sb.append(", creationDay=").append(creationDay);
+        sb.append(", creationDayOfWeek='").append(creationDayOfWeek).append('\'');
         sb.append(", status='").append(status).append('\'');
         sb.append(", lifeStatus='").append(lifeStatus).append('\'');
         sb.append(", affectationStatus='").append(affectationStatus).append('\'');
         sb.append(", phenotypes=").append(phenotypes);
-        sb.append(", samples=").append(samples);
+        sb.append(", numSamples=").append(numSamples);
         sb.append(", parentalConsanguinity=").append(parentalConsanguinity);
+        sb.append(", acl=").append(acl);
         sb.append(", annotations=").append(annotations);
         sb.append('}');
         return sb.toString();
@@ -113,12 +138,39 @@ public class IndividualSolrModel {
         return this;
     }
 
-    public String getMultipleTypeName() {
-        return multipleTypeName;
+    public boolean isHasFather() {
+        return hasFather;
     }
 
-    public IndividualSolrModel setMultipleTypeName(String multipleTypeName) {
-        this.multipleTypeName = multipleTypeName;
+    public IndividualSolrModel setHasFather(boolean hasFather) {
+        this.hasFather = hasFather;
+        return this;
+    }
+
+    public boolean isHasMother() {
+        return hasMother;
+    }
+
+    public IndividualSolrModel setHasMother(boolean hasMother) {
+        this.hasMother = hasMother;
+        return this;
+    }
+
+    public int getNumMultiples() {
+        return numMultiples;
+    }
+
+    public IndividualSolrModel setNumMultiples(int numMultiples) {
+        this.numMultiples = numMultiples;
+        return this;
+    }
+
+    public String getMultiplesType() {
+        return multiplesType;
+    }
+
+    public IndividualSolrModel setMultiplesType(String multiplesType) {
+        this.multiplesType = multiplesType;
         return this;
     }
 
@@ -176,12 +228,39 @@ public class IndividualSolrModel {
         return this;
     }
 
-    public String getCreationDate() {
-        return creationDate;
+    public int getCreationYear() {
+        return creationYear;
     }
 
-    public IndividualSolrModel setCreationDate(String creationDate) {
-        this.creationDate = creationDate;
+    public IndividualSolrModel setCreationYear(int creationYear) {
+        this.creationYear = creationYear;
+        return this;
+    }
+
+    public String getCreationMonth() {
+        return creationMonth;
+    }
+
+    public IndividualSolrModel setCreationMonth(String creationMonth) {
+        this.creationMonth = creationMonth;
+        return this;
+    }
+
+    public int getCreationDay() {
+        return creationDay;
+    }
+
+    public IndividualSolrModel setCreationDay(int creationDay) {
+        this.creationDay = creationDay;
+        return this;
+    }
+
+    public String getCreationDayOfWeek() {
+        return creationDayOfWeek;
+    }
+
+    public IndividualSolrModel setCreationDayOfWeek(String creationDayOfWeek) {
+        this.creationDayOfWeek = creationDayOfWeek;
         return this;
     }
 
@@ -221,12 +300,12 @@ public class IndividualSolrModel {
         return this;
     }
 
-    public int getSamples() {
-        return samples;
+    public int getNumSamples() {
+        return numSamples;
     }
 
-    public IndividualSolrModel setSamples(int samples) {
-        this.samples = samples;
+    public IndividualSolrModel setNumSamples(int numSamples) {
+        this.numSamples = numSamples;
         return this;
     }
 

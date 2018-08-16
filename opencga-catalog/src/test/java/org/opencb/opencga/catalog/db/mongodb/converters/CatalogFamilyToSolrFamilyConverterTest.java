@@ -28,7 +28,7 @@ public class CatalogFamilyToSolrFamilyConverterTest {
 
         assertEquals(familySolrModel.getUid(), family.getUid());
         assertEquals(familySolrModel.getStatus(), family.getStatus().getName());
-        assertEquals(familySolrModel.getFamilyMembers(), family.getMembers().size());
+        assertEquals(familySolrModel.getNumMembers(), family.getMembers().size());
         assertEquals(familySolrModel.getRelease(), family.getRelease());
         assertEquals(familySolrModel.getVersion(), family.getVersion());
         assertEquals(familySolrModel.getPhenotypes().size(), 0);

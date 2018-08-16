@@ -3,9 +3,13 @@ package org.opencb.opencga.catalog.stats.solr.converters;
 import org.apache.commons.lang3.NotImplementedException;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.opencga.catalog.stats.solr.IndividualSolrModel;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Study;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,8 +36,16 @@ public class CatalogIndividualToSolrIndividualConverter implements ComplexTypeCo
 
         individualSolrModel.setUid(individual.getUid());
         individualSolrModel.setStudyId(study.getFqn().replace(":", "__"));
-        if (individual.getMultiples() != null) {
-            individualSolrModel.setMultipleTypeName(individual.getMultiples().getType());
+
+        individualSolrModel.setHasFather(individual.getFather() != null && individual.getFather().getUid() > 0);
+        individualSolrModel.setHasMother(individual.getMother() != null && individual.getMother().getUid() > 0);
+        if (individual.getMultiples() != null && individual.getMultiples().getSiblings() != null
+                && !individual.getMultiples().getSiblings().isEmpty()) {
+            individualSolrModel.setNumMultiples(individual.getMultiples().getSiblings().size());
+            individualSolrModel.setMultiplesType(individual.getMultiples().getType());
+        } else {
+            individualSolrModel.setNumMultiples(0);
+            individualSolrModel.setMultiplesType("None");
         }
 
         if (individual.getSex() != null) {
@@ -51,7 +63,16 @@ public class CatalogIndividualToSolrIndividualConverter implements ComplexTypeCo
         }
         individualSolrModel.setRelease(individual.getRelease());
         individualSolrModel.setVersion(individual.getVersion());
-        individualSolrModel.setCreationDate(individual.getCreationDate());
+
+        Date date = TimeUtils.toDate(individual.getCreationDate());
+        LocalDate localDate = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+
+        individualSolrModel.setCreationYear(localDate.getYear());
+        individualSolrModel.setCreationMonth(localDate.getMonth().toString());
+        individualSolrModel.setCreationDay(localDate.getDayOfMonth());
+        individualSolrModel.setCreationDayOfWeek(localDate.getDayOfWeek().toString());
+        individualSolrModel.setStatus(individual.getStatus().getName());
+
         if (individual.getStatus() != null) {
             individualSolrModel.setStatus(individual.getStatus().getName());
         }
@@ -62,9 +83,8 @@ public class CatalogIndividualToSolrIndividualConverter implements ComplexTypeCo
             individualSolrModel.setAffectationStatus(individual.getAffectationStatus().name());
         }
         individualSolrModel.setPhenotypes(SolrConverterUtil.populatePhenotypes(individual.getPhenotypes()));
-        if (individual.getSamples() != null) {
-            individualSolrModel.setSamples(individual.getSamples().size());
-        }
+
+        individualSolrModel.setNumSamples(individual.getSamples() != null ? individual.getSamples().size() : 0);
 
         individualSolrModel.setParentalConsanguinity(individual.isParentalConsanguinity());
         individualSolrModel.setAnnotations(SolrConverterUtil.populateAnnotations(individual.getAnnotationSets()));
