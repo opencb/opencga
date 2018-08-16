@@ -1032,7 +1032,7 @@ public class SolrQueryParser {
         StringBuilder sb = new StringBuilder();
         for (String ct : cts) {
             if (sb.length() > 0) {
-                sb.append(" ").append(op).append(" ");
+                sb.append(op);
             }
             sb.append("soAcc:\"").append(VariantQueryUtils.parseConsequenceType(ct)).append("\"");
         }
