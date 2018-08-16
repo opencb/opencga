@@ -11,6 +11,7 @@ import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.Job;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
@@ -22,8 +23,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
-
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.LOADED_GENOTYPES;
 
 /**
  * Creates and executes a MR job that finishes loading all the pending variants in the SampleIndex table.
@@ -115,8 +114,8 @@ public class SampleIndexConsolidationDrive extends AbstractVariantsTableDriver {
             }
             if (!gts.isEmpty()) {
                 getStudyConfigurationManager().lockAndUpdate(getStudyId(), sc -> {
-                    gts.addAll(sc.getAttributes().getAsStringList(LOADED_GENOTYPES));
-                    sc.getAttributes().put(LOADED_GENOTYPES, gts);
+                    gts.addAll(sc.getAttributes().getAsStringList(VariantStorageEngine.Options.LOADED_GENOTYPES.key()));
+                    sc.getAttributes().put(VariantStorageEngine.Options.LOADED_GENOTYPES.key(), gts);
                     return sc;
                 });
             }

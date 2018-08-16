@@ -75,8 +75,7 @@ import java.util.stream.Collectors;
 import static org.opencb.opencga.storage.core.metadata.StudyConfigurationManager.addBatchOperation;
 import static org.opencb.opencga.storage.core.metadata.StudyConfigurationManager.setStatus;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.LOAD_SPLIT_DATA;
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.POST_LOAD_CHECK_SKIP;
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.*;
 
 /**

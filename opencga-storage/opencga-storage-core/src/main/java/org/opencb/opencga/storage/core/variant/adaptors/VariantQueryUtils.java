@@ -890,7 +890,7 @@ public final class VariantQueryUtils {
                         .collect(Collectors.toList());
             }
             if (isValidParam(query, GENOTYPE)) {
-                HashMap<Object, List<String>> map = new HashMap<>();
+                HashMap<Object, List<String>> map = new LinkedHashMap<>();
                 parseGenotypeFilter(query.getString(GENOTYPE.key()), map);
                 if (samples == null) {
                     samples = new ArrayList<>(map.size());

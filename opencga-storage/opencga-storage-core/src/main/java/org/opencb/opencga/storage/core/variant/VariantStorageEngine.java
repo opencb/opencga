@@ -18,10 +18,13 @@ package org.opencb.opencga.storage.core.variant;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.Iterators;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -136,6 +139,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         LOAD_BATCH_SIZE("load.batch.size", 100),
         LOAD_THREADS("load.threads", 6),
         LOAD_SPLIT_DATA("load.split-data", false),
+
+        LOADED_GENOTYPES("loadedGenotypes", null),
 
         POST_LOAD_CHECK_SKIP("postLoad.check.skip", false),
 
@@ -1023,10 +1028,100 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             query.put(ANNOT_CLINICAL_SIGNIFICANCE.key(), clinicalSignificanceList);
         }
 
+        if (isValidParam(query, SAMPLE)) {
+            if (isValidParam(query, GENOTYPE)) {
+                throw VariantQueryException.malformedParam(SAMPLE, query.getString(SAMPLE.key()),
+                        "Can not be used along with filter " + GENOTYPE.key() + " filter");
+            }
+
+            StudyConfiguration studyConfiguration = getDefaultStudyConfiguration(query, options, getStudyConfigurationManager());
+
+            List<String> loadedGenotypes = studyConfiguration.getAttributes().getAsStringList(LOADED_GENOTYPES.key());
+            if (CollectionUtils.isEmpty(loadedGenotypes)) {
+                loadedGenotypes = Arrays.asList(
+                        "0/0", "0|0",
+                        "0/1", "1/0", "1/1", "./.",
+                        "0|1", "1|0", "1|1", ".|.",
+                        "0|2", "2|0", "2|1", "1|2", "2|2",
+                        "0/2", "2/0", "2/1", "1/2", "2/2",
+                        GenotypeClass.UNKNOWN_GENOTYPE);
+            }
+
+            String genotypes = loadedGenotypes.stream().filter(gt -> {
+                Genotype genotype;
+                try {
+                    genotype = new Genotype(gt);
+                } catch (IllegalArgumentException e) {
+                    return false;
+                }
+                for (int i : genotype.getAllelesIdx()) {
+                    if (i == 1) {
+                        return true;
+                    }
+                }
+                return false;
+            }).collect(Collectors.joining(","));
+
+            Pair<QueryOperation, List<String>> pair = VariantQueryUtils.splitValue(query.getString(SAMPLE.key()));
+
+            StringBuilder sb = new StringBuilder();
+            for (String sample : pair.getValue()) {
+                if (sb.length() > 0) {
+                    sb.append(pair.getLeft().separator());
+                }
+                sb.append(sample).append(IS).append(genotypes);
+            }
+            query.remove(SAMPLE.key());
+            query.put(GENOTYPE.key(), sb.toString());
+        } else if (isValidParam(query, GENOTYPE)) {
+            StudyConfiguration studyConfiguration = getDefaultStudyConfiguration(query, options, getStudyConfigurationManager());
+
+            List<String> loadedGenotypes = studyConfiguration.getAttributes().getAsStringList(LOADED_GENOTYPES.key());
+            if (CollectionUtils.isEmpty(loadedGenotypes)) {
+                loadedGenotypes = Arrays.asList(
+                        "0/0", "0|0",
+                        "0/1", "1/0", "1/1", "./.",
+                        "0|1", "1|0", "1|1", ".|.",
+                        "0|2", "2|0", "2|1", "1|2", "2|2",
+                        "0/2", "2/0", "2/1", "1/2", "2/2",
+                        GenotypeClass.UNKNOWN_GENOTYPE);
+            }
+
+            Map<Object, List<String>> map = new LinkedHashMap<>();
+            QueryOperation queryOperation = VariantQueryUtils.parseGenotypeFilter(query.getString(GENOTYPE.key()), map);
+
+            StringBuilder sb = new StringBuilder();
+            for (Map.Entry<Object, List<String>> entry : map.entrySet()) {
+//                List<String> genotypes = GenotypeClass.filter(entry.getValue(), loadedGenotypes, defaultGenotypes);
+                List<String> genotypes = GenotypeClass.filter(entry.getValue(), loadedGenotypes);
+
+                if (genotypes.isEmpty()) {
+                    // TODO: Do fast fail, NO RESULTS!
+                    genotypes = Collections.singletonList("x/x");
+                }
+
+                if (sb.length() > 0) {
+                    sb.append(queryOperation.separator());
+                }
+                sb.append(entry.getKey()).append(IS);
+                for (int i = 0; i < genotypes.size(); i++) {
+                    if (i > 0) {
+                        sb.append(OR);
+                    }
+                    sb.append(genotypes.get(i));
+                }
+            }
+            query.put(GENOTYPE.key(), sb.toString());
+        }
+
         if (!isValidParam(query, INCLUDE_STUDY) || !isValidParam(query, INCLUDE_SAMPLE) || !isValidParam(query, INCLUDE_FILE)) {
             VariantQueryUtils.SelectVariantElements selectVariantElements =
                     parseSelectElements(query, options, getStudyConfigurationManager());
-            query.putIfAbsent(INCLUDE_STUDY.key(), selectVariantElements.getStudies());
+            List<String> includeStudy = new ArrayList<>();
+            for (Integer studyId : selectVariantElements.getStudies()) {
+                includeStudy.add(selectVariantElements.getStudyConfigurations().get(studyId).getStudyName());
+            }
+            query.putIfAbsent(INCLUDE_STUDY.key(), includeStudy);
             query.putIfAbsent(INCLUDE_SAMPLE.key(), selectVariantElements.getSamples()
                     .entrySet()
                     .stream()

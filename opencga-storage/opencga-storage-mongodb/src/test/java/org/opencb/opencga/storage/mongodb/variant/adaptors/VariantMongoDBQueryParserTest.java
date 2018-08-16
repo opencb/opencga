@@ -7,6 +7,7 @@ import org.junit.Test;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.dummy.DummyProjectMetadataAdaptor;
 import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationAdaptor;
@@ -19,9 +20,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.IS;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.NOT;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.OR;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.*;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantAnnotationConverterTest.ANY;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantAnnotationConverterTest.checkEqualDocuments;
@@ -68,7 +67,7 @@ public class VariantMongoDBQueryParserTest {
             sc.getSamplesInFiles().put(fileId, samplesInFile);
         }
         sc.setIndexedFiles(new LinkedHashSet<>(fileIds));
-        sc.getAttributes().put(MongoDBVariantStorageEngine.MongoDBVariantOptions.LOADED_GENOTYPES.key(), "0/1,1/1,?/?");
+        sc.getAttributes().put(VariantStorageEngine.Options.LOADED_GENOTYPES.key(), "0/1,1/1,?/?");
         sc.getAttributes().put(MongoDBVariantStorageEngine.MongoDBVariantOptions.DEFAULT_GENOTYPE.key(), "0/0");
 
         return sc;

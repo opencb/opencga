@@ -1340,8 +1340,9 @@ public class SolrQueryParser {
         }
 
         if (StringUtils.isNotEmpty(query.getString(VariantQueryParam.INCLUDE_SAMPLE.key()))) {
-            List<String> includeSamples;
-            includeSamples = Arrays.asList(query.getString(VariantQueryParam.INCLUDE_SAMPLE.key()).split("[,;]"));
+            List<String> includeSamples = query.getAsStringList(VariantQueryParam.INCLUDE_SAMPLE.key());
+            // FIXME! Use VariantQueryUtils.getIncludeFormats
+//            List<String> formats = VariantQueryUtils.getIncludeFormats(query);
             if (query.getBoolean(VariantQueryParam.INCLUDE_GENOTYPE.key())) {
                 for (String includeSample: includeSamples) {
                     for (String studyId : studies) {
@@ -1358,6 +1359,8 @@ public class SolrQueryParser {
                 }
             }
         } else {
+            // FIXME! Use VariantQueryUtils.getIncludeFormats
+//            List<String> formats = VariantQueryUtils.getIncludeFormats(query);
             for (String studyId: studies) {
                 if (query.getBoolean(VariantQueryParam.INCLUDE_GENOTYPE.key())) {
                     solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + studyId

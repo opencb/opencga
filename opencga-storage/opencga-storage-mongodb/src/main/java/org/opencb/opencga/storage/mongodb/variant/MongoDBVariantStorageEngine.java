@@ -94,7 +94,6 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         BULK_SIZE("bulkSize",  100),
         DEFAULT_GENOTYPE("defaultGenotype", Arrays.asList("0/0", "0|0")),
         ALREADY_LOADED_VARIANTS("alreadyLoadedVariants", 0),
-        LOADED_GENOTYPES("loadedGenotypes", null),
 
         PARALLEL_WRITE("parallel.write", false),
 

@@ -31,10 +31,10 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTask;
@@ -765,9 +765,9 @@ public class VariantSqlQueryParser {
 
         List<String> loadedGenotypes;
         if (defaultStudyConfiguration != null
-                && defaultStudyConfiguration.getAttributes().containsKey(HadoopVariantStorageEngine.LOADED_GENOTYPES)) {
+                && defaultStudyConfiguration.getAttributes().containsKey(VariantStorageEngine.Options.LOADED_GENOTYPES.key())) {
             loadedGenotypes = defaultStudyConfiguration.getAttributes()
-                    .getAsStringList(HadoopVariantStorageEngine.LOADED_GENOTYPES);
+                    .getAsStringList(VariantStorageEngine.Options.LOADED_GENOTYPES.key());
         } else {
             loadedGenotypes = DEFAULT_LOADED_GENOTYPES;
         }

@@ -12,6 +12,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -21,7 +22,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.iterators.UnionMultiVari
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -171,7 +171,7 @@ public class SampleIndexDBAdaptor {
         if (CollectionUtils.isEmpty(gts)) {
             StudyConfiguration sc = scm.getStudyConfiguration(studyId,
                     new QueryOptions(StudyConfigurationManager.READ_ONLY, true).append(StudyConfigurationManager.CACHED, true)).first();
-            gts = sc.getAttributes().getAsStringList(HadoopVariantStorageEngine.LOADED_GENOTYPES);
+            gts = sc.getAttributes().getAsStringList(VariantStorageEngine.Options.LOADED_GENOTYPES.key());
         }
         String tableName = tableNameGenerator.getSampleIndexTableName(studyId);
 
@@ -240,7 +240,7 @@ public class SampleIndexDBAdaptor {
                         .append(StudyConfigurationManager.READ_ONLY, true))
                 .first()
                 .getAttributes()
-                .getAsStringList(HadoopVariantStorageEngine.LOADED_GENOTYPES);
+                .getAsStringList(VariantStorageEngine.Options.LOADED_GENOTYPES.key());
         if (allGts == null || allGts.isEmpty()) {
             allGts = DEFAULT_LOADED_GENOTYPES;
         }
