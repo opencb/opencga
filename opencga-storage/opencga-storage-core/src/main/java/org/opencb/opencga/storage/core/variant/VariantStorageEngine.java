@@ -572,27 +572,40 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
         AtomicInteger id = new AtomicInteger();
         StudyConfiguration sc = getStudyConfigurationManager().lockAndUpdate(study, studyConfiguration -> {
-            id.set(getStudyConfigurationManager().registerSearchIndexSamples(studyConfiguration, samples));
+            boolean resume = getOptions().getBoolean(RESUME.key(), RESUME.defaultValue());
+            id.set(getStudyConfigurationManager().registerSearchIndexSamples(studyConfiguration, samples, resume));
             return studyConfiguration;
         });
 
         String collectionName = buildSamplesIndexCollectionName(this.dbName, sc, id.intValue());
 
-        variantSearchManager.create(collectionName);
-        if (configuration.getSearch().getActive() && variantSearchManager.isAlive(collectionName)) {
-            // then, load variants
-            QueryOptions queryOptions = new QueryOptions();
-            Query query = new Query(VariantQueryParam.STUDY.key(), study)
-                    .append(VariantQueryParam.SAMPLE.key(), samples);
+        try {
+            variantSearchManager.create(collectionName);
+            if (configuration.getSearch().getActive() && variantSearchManager.isAlive(collectionName)) {
+                // then, load variants
+                QueryOptions queryOptions = new QueryOptions();
+                Query query = new Query(VariantQueryParam.STUDY.key(), study)
+                        .append(VariantQueryParam.SAMPLE.key(), samples);
 
-            VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions);
+                VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions);
 
-            ProgressLogger progressLogger = new ProgressLogger("Variants loaded in Solr:", () -> dbAdaptor.count(query).first(), 200);
-            variantSearchManager.load(collectionName, iterator, progressLogger);
-        } else {
-            throw new StorageEngineException("Solr is not alive!");
+                ProgressLogger progressLogger = new ProgressLogger("Variants loaded in Solr:", () -> dbAdaptor.count(query).first(), 200);
+                variantSearchManager.load(collectionName, iterator, progressLogger);
+            } else {
+                throw new StorageEngineException("Solr is not alive!");
+            }
+            dbAdaptor.close();
+        } catch (Exception e) {
+            getStudyConfigurationManager().lockAndUpdate(study, studyConfiguration -> {
+                studyConfiguration.getSearchIndexedSampleSetsStatus().put(id.get(), BatchFileOperation.Status.ERROR);
+                return studyConfiguration;
+            });
+            throw e;
         }
-        dbAdaptor.close();
+        getStudyConfigurationManager().lockAndUpdate(study, studyConfiguration -> {
+            studyConfiguration.getSearchIndexedSampleSetsStatus().put(id.get(), BatchFileOperation.Status.READY);
+            return studyConfiguration;
+        });
     }
 
     /**

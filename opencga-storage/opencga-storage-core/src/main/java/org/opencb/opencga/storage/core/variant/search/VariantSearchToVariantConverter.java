@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -32,7 +33,6 @@ import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.common.ArrayUtils;
 import org.opencb.opencga.storage.core.variant.annotation.converters.VariantTraitAssociationToEvidenceEntryConverter;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +47,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
     public static final double MISSING_VALUE = -100.0;
     private static final String LIST_SEPARATOR = "___";
 
-    private Logger logger = LoggerFactory.getLogger(VariantSearchManager.class);
+    private Logger logger = LoggerFactory.getLogger(VariantSearchToVariantConverter.class);
     private final VariantTraitAssociationToEvidenceEntryConverter evidenceEntryConverter;
 
     public VariantSearchToVariantConverter() {
@@ -543,12 +543,15 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             variantSearchModel.getGt().put("gt" + suffix, studyEntry.getSampleData(i).get(0));
 
                             if (dpIndexPos != -1) {
-                                try {
-                                    variantSearchModel.getDp()
-                                            .put("dp" + suffix, Integer.valueOf(studyEntry.getSampleData(i).get(dpIndexPos)));
-                                } catch (Exception e) {
-                                    logger.info("Problem converting from variant to variant search when getting DP value from sample "
-                                            + "{}: {}", sampleNames.get(i), e.getMessage());
+                                String dpValue = studyEntry.getSampleData(i).get(dpIndexPos);
+                                // Skip if empty
+                                if (!StringUtils.isEmpty(dpValue) && !dpValue.equals(VCFConstants.EMPTY_INFO_FIELD)) {
+                                    try {
+                                        variantSearchModel.getDp().put("dp" + suffix, Integer.valueOf(dpValue));
+                                    } catch (NumberFormatException e) {
+                                        logger.error("Problem converting from variant to variant search when getting DP value from sample "
+                                                + "{}: {}", sampleNames.get(i), e.getMessage());
+                                    }
                                 }
                             }
 

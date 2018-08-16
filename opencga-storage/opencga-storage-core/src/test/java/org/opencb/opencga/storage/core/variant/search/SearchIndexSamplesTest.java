@@ -14,6 +14,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
+import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -57,6 +58,13 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
         if (!loaded) {
             load();
             loaded = true;
+        } else {
+            variantStorageEngine.getStudyConfigurationManager().lockAndUpdate(STUDY_NAME, sc -> {
+                for (Integer id : sc.getSearchIndexedSampleSetsStatus().keySet()) {
+                    sc.getSearchIndexedSampleSetsStatus().put(id, BatchFileOperation.Status.READY);
+                }
+                return sc;
+            });
         }
     }
 
@@ -92,6 +100,38 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
     public void testFailReindexMix() throws Exception {
         thrown.expectMessage("already in search index");
         variantStorageEngine.searchIndexSamples(STUDY_NAME, Arrays.asList(samples1.get(0), samples2.get(0)));
+    }
+
+    @Test
+    public void testResumeOnError() throws Exception {
+        variantStorageEngine.getStudyConfigurationManager().lockAndUpdate(STUDY_NAME, sc -> {
+            Integer id = sc.getSearchIndexedSampleSets().get(sc.getSampleIds().get(samples1.get(0)));
+            sc.getSearchIndexedSampleSetsStatus().put(id, BatchFileOperation.Status.ERROR);
+            return sc;
+        });
+        variantStorageEngine.searchIndexSamples(STUDY_NAME, samples1);
+    }
+
+    @Test
+    public void testResumeWhileRunning() throws Exception {
+        variantStorageEngine.getStudyConfigurationManager().lockAndUpdate(STUDY_NAME, sc -> {
+            Integer id = sc.getSearchIndexedSampleSets().get(sc.getSampleIds().get(samples1.get(0)));
+            sc.getSearchIndexedSampleSetsStatus().put(id, BatchFileOperation.Status.RUNNING);
+            return sc;
+        });
+        variantStorageEngine.getOptions().put(VariantStorageEngine.Options.RESUME.key(), true);
+        variantStorageEngine.searchIndexSamples(STUDY_NAME, samples1);
+    }
+
+    @Test
+    public void testResumeFail() throws Exception {
+        variantStorageEngine.getStudyConfigurationManager().lockAndUpdate(STUDY_NAME, sc -> {
+            Integer id = sc.getSearchIndexedSampleSets().get(sc.getSampleIds().get(samples1.get(0)));
+            sc.getSearchIndexedSampleSetsStatus().put(id, BatchFileOperation.Status.RUNNING);
+            return sc;
+        });
+        thrown.expectMessage("Samples already being indexed. Resume operation to continue.");
+        variantStorageEngine.searchIndexSamples(STUDY_NAME, samples1);
     }
 
     @Test
@@ -132,6 +172,21 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
         check(COLLECTION_2, new Query(FILE.key(), files2), new QueryOptions());
         check(COLLECTION_2, new Query(FILE.key(), files2.get(0)), new QueryOptions());
         check(COLLECTION_2, new Query(FILE.key(), files2.get(0) + ",!" + files2.get(1)), new QueryOptions());
+    }
+
+    @Test
+    public void testDoQuerySearchManagerSpecificSearchIndexSamplesNotReadyCollections() throws Exception {
+        Query query = new Query(SAMPLE.key(), samples1);
+
+        check(COLLECTION_1, query, QueryOptions.empty());
+
+        variantStorageEngine.getStudyConfigurationManager().lockAndUpdate(STUDY_NAME, sc -> {
+            Integer id = sc.getSearchIndexedSampleSets().get(sc.getSampleIds().get(samples1.get(0)));
+            sc.getSearchIndexedSampleSetsStatus().put(id, BatchFileOperation.Status.RUNNING);
+            return sc;
+        });
+
+        check(null, query, QueryOptions.empty());
     }
 
     protected void check(String collection, Query query, QueryOptions options) throws StorageEngineException {

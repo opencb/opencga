@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.core.variant.search;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
@@ -260,6 +261,10 @@ public class VariantSearchUtils {
                         // Mix of sample sets
                         return null;
                     }
+                }
+                if (!BatchFileOperation.Status.READY.equals(studyConfiguration.getSearchIndexedSampleSetsStatus().get(sampleSet))) {
+                    // Secondary index not ready
+                    return null;
                 }
 
                 // Check that files are within the specific search collection, only if defined.
