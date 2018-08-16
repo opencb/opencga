@@ -38,8 +38,6 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils
  */
 public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
 
-    protected static final String COLLECTION_1 = "opencga_variants_test_1_1";
-    protected static final String COLLECTION_2 = "opencga_variants_test_1_2";
     @ClassRule
     public static SolrExternalResource solr = new SolrExternalResource();
 
@@ -51,6 +49,8 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
     private static List<String> samples2;
     private static List<String> files1;
     private static List<String> files2;
+    private String COLLECTION_1;
+    private String COLLECTION_2;
 
     @Before
     public void before() throws Exception {
@@ -58,14 +58,16 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
         if (!loaded) {
             load();
             loaded = true;
-        } else {
-            variantStorageEngine.getStudyConfigurationManager().lockAndUpdate(STUDY_NAME, sc -> {
-                for (Integer id : sc.getSearchIndexedSampleSetsStatus().keySet()) {
-                    sc.getSearchIndexedSampleSetsStatus().put(id, BatchFileOperation.Status.READY);
-                }
-                return sc;
-            });
         }
+        variantStorageEngine.getStudyConfigurationManager().lockAndUpdate(STUDY_NAME, sc -> {
+            for (Integer id : sc.getSearchIndexedSampleSetsStatus().keySet()) {
+                sc.getSearchIndexedSampleSetsStatus().put(id, BatchFileOperation.Status.READY);
+            }
+            COLLECTION_1 = "opencga_variants_test_1_" + sc.getSearchIndexedSampleSets().get(sc.getSampleIds().get(samples1.get(0)));
+            COLLECTION_2 = "opencga_variants_test_1_" + sc.getSearchIndexedSampleSets().get(sc.getSampleIds().get(samples2.get(0)));
+            return sc;
+        });
+
     }
 
     protected void load() throws Exception {
@@ -88,6 +90,27 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
         samples2 = Arrays.asList("NA12877", "NA12878");
         files2 = Arrays.asList(UriUtils.fileName(getPlatinumFile(12877)), UriUtils.fileName(getPlatinumFile(12878)));
         variantStorageEngine.searchIndexSamples(studyConfiguration.getStudyName(), samples2);
+    }
+
+    @Test
+    public void testRemove() throws Exception {
+
+        variantStorageEngine.removeSearchIndexSamples(STUDY_NAME, samples1);
+
+        variantStorageEngine.searchIndexSamples(STUDY_NAME, samples1);
+
+    }
+
+    @Test
+    public void testRemovePartialFail() throws Exception {
+        thrown.expectMessage("Must provide all the samples from the secondary index:");
+        variantStorageEngine.removeSearchIndexSamples(STUDY_NAME, Collections.singletonList(samples1.get(0)));
+    }
+
+    @Test
+    public void testRemoveMixFail() throws Exception {
+        thrown.expectMessage("Samples in multiple secondary indexes");
+        variantStorageEngine.removeSearchIndexSamples(STUDY_NAME, Arrays.asList(samples1.get(0), samples2.get(0)));
     }
 
     @Test

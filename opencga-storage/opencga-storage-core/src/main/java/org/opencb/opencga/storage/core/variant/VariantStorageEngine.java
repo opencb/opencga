@@ -608,6 +608,62 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         });
     }
 
+    public void removeSearchIndexSamples(String study, List<String> samples) throws StorageEngineException, VariantSearchException {
+        VariantSearchManager variantSearchManager = getVariantSearchManager();
+
+        StudyConfiguration sc = getStudyConfigurationManager().getStudyConfiguration(study, null).first();
+
+        // Check that all samples are from the same secondary index
+        Set<Integer> sampleIds = new HashSet<>();
+        Set<Integer> secIndexIdSet = new HashSet<>();
+        for (String sample : samples) {
+            Integer sampleId = StudyConfigurationManager.getSampleIdFromStudy(sample, sc);
+            if (sampleId == null) {
+                throw VariantQueryException.sampleNotFound(sample, study);
+            }
+            sampleIds.add(sampleId);
+            secIndexIdSet.add(sc.getSearchIndexedSampleSets().get(sampleId));
+        }
+        if (secIndexIdSet.isEmpty() || secIndexIdSet.contains(null)) {
+            throw new StorageEngineException("Samples not in a secondary index");
+        } else if (secIndexIdSet.size() != 1) {
+            throw new StorageEngineException("Samples in multiple secondary indexes");
+        }
+        Integer secIndexId = secIndexIdSet.iterator().next();
+
+        // Check that all samples from the secondary index are provided
+        List<Integer> samplesInSecIndex = new ArrayList<>();
+        for (Map.Entry<Integer, Integer> entry : sc.getSearchIndexedSampleSets().entrySet()) {
+            if (entry.getValue().equals(secIndexId)) {
+                samplesInSecIndex.add(entry.getKey());
+            }
+        }
+        if (samplesInSecIndex.size() != sampleIds.size()) {
+            throw new StorageEngineException("Must provide all the samples from the secondary index: "
+                    + samplesInSecIndex.stream().map(sc.getSampleIds().inverse()::get).collect(Collectors.toList()));
+        }
+
+
+        // Invalidate secondary index
+        getStudyConfigurationManager().lockAndUpdate(study, studyConfiguration -> {
+            studyConfiguration.getSearchIndexedSampleSetsStatus().put(secIndexId, BatchFileOperation.Status.RUNNING);
+            return studyConfiguration;
+        });
+
+        // Remove secondary index
+        String collection = buildSamplesIndexCollectionName(dbName, sc, secIndexId);
+        variantSearchManager.getSolrManager().remove(collection);
+
+        // Remove secondary index metadata
+        getStudyConfigurationManager().lockAndUpdate(study, studyConfiguration -> {
+            studyConfiguration.getSearchIndexedSampleSetsStatus().remove(secIndexId);
+            for (Integer sampleId : sampleIds) {
+                studyConfiguration.getSearchIndexedSampleSets().remove(sampleId);
+            }
+            return studyConfiguration;
+        });
+    }
+
     /**
      * Removes a file from the Variant Storage.
      *

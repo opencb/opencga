@@ -61,6 +61,7 @@ import java.net.URISyntaxException;
 import java.util.*;
 
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexRemoveCommandOptions.SECONDARY_INDEX_REMOVE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationSaveCommandOptions.ANNOTATION_SAVE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationDeleteCommandOptions.ANNOTATION_DELETE_COMMAND;
@@ -115,6 +116,9 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
                 break;
             case SECONDARY_INDEX_COMMAND:
                 secondaryIndex();
+                break;
+            case SECONDARY_INDEX_REMOVE_COMMAND:
+                secondaryIndexRemove();
                 break;
             case "stats":
                 stats();
@@ -306,13 +310,25 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
         if (StringUtils.isNotEmpty(cliOptions.sample)) {
-            variantManager.searchIndexSamples(cliOptions.study, Arrays.asList(cliOptions.sample.split(",")), sessionId);
+            variantManager.searchIndexSamples(cliOptions.study, Arrays.asList(cliOptions.sample.split(",")), queryOptions, sessionId);
         } else {
             Query query = new Query();
             query.putIfNotEmpty(VariantCatalogQueryUtils.PROJECT.key(), cliOptions.project);
             query.putIfNotEmpty(VariantQueryParam.REGION.key(), cliOptions.region);
             variantManager.searchIndex(query, queryOptions, sessionId);
         }
+    }
+
+    private void secondaryIndexRemove() throws CatalogException, AnalysisExecutionException, IOException, ClassNotFoundException, StorageEngineException,
+            InstantiationException, IllegalAccessException, URISyntaxException, VariantSearchException {
+        VariantCommandOptions.VariantSecondaryIndexRemoveCommandOptions cliOptions = variantCommandOptions.variantSecondaryIndexRemoveCommandOptions;
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.putAll(cliOptions.commonOptions.params);
+
+        VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
+
+        variantManager.removeSearchIndexSamples(cliOptions.study, Arrays.asList(cliOptions.sample.split(",")), queryOptions, sessionId);
     }
 
     private void stats() throws CatalogException, AnalysisExecutionException, IOException, ClassNotFoundException,
