@@ -39,7 +39,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager.UseSearchIndex;
-import org.opencb.opencga.storage.core.variant.solr.SolrExternalResource;
+import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 
 import java.io.IOException;
@@ -64,7 +64,7 @@ import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchM
 public abstract class VariantStorageSearchIntersectTest extends VariantStorageBaseTest {
 
     @ClassRule
-    public static SolrExternalResource solr = new SolrExternalResource();
+    public static VariantSolrExternalResource solr = new VariantSolrExternalResource();
 
     protected VariantDBAdaptor dbAdaptor;
     private StudyConfiguration studyConfiguration;

@@ -72,17 +72,6 @@
                 <artifactId>grpc-all</artifactId>
                 <version>${grpc}</version>
             </dependency>
-            <dependency>
-                <groupId>org.apache.solr</groupId>
-                <artifactId>solr-solrj</artifactId>
-                <version>${solr.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.solr</groupId>
-                <artifactId>solr-test-framework</artifactId>
-                <version>${solr.version}</version>
-                <scope>test</scope>
-            </dependency>
             <!--Ensure commons-io with version 2.5. Required for solr-->
             <dependency>
                 <groupId>commons-io</groupId>

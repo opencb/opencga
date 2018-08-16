@@ -1128,7 +1128,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);
         String collection = catalogManager.getConfiguration().getDatabasePrefix() + "_"
-                + CatalogSolrManager.SAMPLES_SOLR_COLLECTION;
+                + CatalogSolrManager.SAMPLE_SOLR_COLLECTION;
 
         return catalogSolrManager.facetedQuery(collection, query, queryOptions);
     }

@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.stats.solr;
 
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -35,7 +36,6 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.stats.solr.converters.SolrFacetUtil;
 import org.opencb.opencga.core.SolrManager;
 import org.opencb.opencga.core.config.SearchConfiguration;
-import org.opencb.opencga.core.models.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +60,7 @@ public class CatalogSolrManager {
     public static final String FILE_SOLR_COLLECTION = "Catalog_File";
     public static final String FAMILY_SOLR_COLLECTION = "Catalog_Family";
     public static final String INDIVIDUAL_SOLR_COLLECTION = "Catalog_Individual";
-    public static final String SAMPLES_SOLR_COLLECTION = "Catalog_Sample";
+    public static final String SAMPLE_SOLR_COLLECTION = "Catalog_Sample";
 
     public static final String COHORT_CONF_SET = "OpenCGACatalogCohortConfSet";
     public static final String FILE_CONF_SET = "OpenCGACatalogFileConfSet";
@@ -80,13 +80,13 @@ public class CatalogSolrManager {
 
         DATABASE_PREFIX = catalogManager.getConfiguration().getDatabasePrefix() + "_";
 
-        populateConfigCollectionMap();
-
-        if (searchConfiguration.getMode().equals("cloud")) {
-            createCatalogSolrCollections();
-        } else {
-            createCatalogSolrCores();
-        }
+//        populateConfigCollectionMap();
+//
+//        if (searchConfiguration.getMode().equals("cloud")) {
+//            createCatalogSolrCollections();
+//        } else {
+//            createCatalogSolrCores();
+//        }
 
         logger = LoggerFactory.getLogger(CatalogSolrManager.class);
     }
@@ -120,7 +120,6 @@ public class CatalogSolrManager {
     }
 
     public void createCatalogSolrCollections() throws SolrException {
-
         for (String key : CONFIGS_COLLECTION.keySet()) {
             if (!existsCollection(key)) {
                 createCollection(key, CONFIGS_COLLECTION.get(key));
@@ -129,7 +128,6 @@ public class CatalogSolrManager {
     }
 
     public void createCatalogSolrCores() throws SolrException {
-
         for (String key : CONFIGS_COLLECTION.keySet()) {
             if (!existsCore(key)) {
                 createCore(key, CONFIGS_COLLECTION.get(key));
@@ -193,7 +191,7 @@ public class CatalogSolrManager {
         try {
             CatalogSolrQueryParser catalogSolrQueryParser = new CatalogSolrQueryParser();
             SolrQuery solrQuery = catalogSolrQueryParser.parse(query, queryOptions);
-            QueryResponse response = solrManager.getSolrClient().query(collection, solrQuery);
+            QueryResponse response = solrManager.getSolrClient().query(DATABASE_PREFIX + collection, solrQuery);
             FacetedQueryResultItem item = SolrFacetUtil.toFacetedQueryResultItem(queryOptions, response);
             return new FacetedQueryResult("", (int) stopWatch.getTime(), 1, 1, "Faceted data from Solr", "", item);
         } catch (SolrServerException e) {
@@ -208,7 +206,11 @@ public class CatalogSolrManager {
         CONFIGS_COLLECTION.put(DATABASE_PREFIX + FILE_SOLR_COLLECTION, FILE_CONF_SET);
         CONFIGS_COLLECTION.put(DATABASE_PREFIX + FAMILY_SOLR_COLLECTION, FAMILY_CONF_SET);
         CONFIGS_COLLECTION.put(DATABASE_PREFIX + INDIVIDUAL_SOLR_COLLECTION, INDIVIDUAL_CONF_SET);
-        CONFIGS_COLLECTION.put(DATABASE_PREFIX + SAMPLES_SOLR_COLLECTION, SAMPLE_CONF_SET);
+        CONFIGS_COLLECTION.put(DATABASE_PREFIX + SAMPLE_SOLR_COLLECTION, SAMPLE_CONF_SET);
+    }
+
+    protected void setSolrClient(SolrClient solrClient) {
+        solrManager.setSolrClient(solrClient);
     }
 
 }

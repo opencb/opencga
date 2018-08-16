@@ -39,7 +39,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.*;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class SolrExternalResource extends ExternalResource {
+public class VariantSolrExternalResource extends ExternalResource {
 
     public String coreName = DB_NAME;
 

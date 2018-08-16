@@ -1318,7 +1318,7 @@ public class StudyManager extends AbstractManager {
                 .append(DBAdaptor.INCLUDE_ACLS, true);
 
         catalogSolrManager.insertCatalogCollection(this.sampleDBAdaptor.iterator(query,
-                sampleQueryOptions), new CatalogSampleToSolrSampleConverter(study), CatalogSolrManager.SAMPLES_SOLR_COLLECTION);
+                sampleQueryOptions), new CatalogSampleToSolrSampleConverter(study), CatalogSolrManager.SAMPLE_SOLR_COLLECTION);
         return true;
     }
 
