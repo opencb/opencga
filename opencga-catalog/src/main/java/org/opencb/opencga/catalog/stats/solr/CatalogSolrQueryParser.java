@@ -2,6 +2,8 @@ package org.opencb.opencga.catalog.stats.solr;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.SolrParams;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.slf4j.Logger;
@@ -94,6 +96,8 @@ public class CatalogSolrQueryParser {
         logger.debug("query = {}\n", query.toJson());
 
         solrQuery.setQuery("*:*");
+        // We only want stats, so we avoid retrieving the first 10 results
+        solrQuery.add(CommonParams.ROWS, "0");
         filterList.forEach((queryParamter, filter) -> {
             solrQuery.addFilterQuery(queryParamter.concat(":").concat(filter));
             logger.debug("Solr fq: {}\n", filter);

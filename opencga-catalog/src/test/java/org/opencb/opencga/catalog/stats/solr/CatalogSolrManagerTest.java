@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import static org.junit.Assert.assertEquals;
 import static org.opencb.opencga.catalog.utils.Constants.FLATTENED_ANNOTATIONS;
 
 public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
@@ -147,9 +148,8 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
 
     }
 
-
     @Test
-    public void testInsertSamples() throws CatalogException, SolrServerException, IOException {
+    public void testInsertSamples() throws CatalogException, IOException {
         MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(catalogManager.getConfiguration());
         Query query = new Query();
         QueryOptions options = new QueryOptions()
@@ -174,15 +174,16 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
                 SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(),SampleDBAdaptor.QueryParams.UID.key(),
                 SampleDBAdaptor.QueryParams.ATTRIBUTES.key()));
         queryOptions.append(DBAdaptor.INCLUDE_ACLS, true);
-        //queryOptions.put("lazy", false);
+
         SampleDBAdaptor sampleDBAdaptor = factory.getCatalogSampleDBAdaptor();
         DBIterator<Sample> sampleDBIterator = sampleDBAdaptor.iterator(
                 new Query(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid()), queryOptions);
         catalogSolrManager.insertCatalogCollection(sampleDBIterator, new CatalogSampleToSolrSampleConverter(study),
                 CatalogSolrManager.SAMPLE_SOLR_COLLECTION);
         FacetedQueryResult facet = catalogSolrManager.facetedQuery(CatalogSolrManager.SAMPLE_SOLR_COLLECTION,
-                new Query("facet", SampleDBAdaptor.QueryParams.RELEASE.key()), QueryOptions.empty());
-        System.out.println(facet);
+                new Query(), new QueryOptions(QueryOptions.FACET, SampleDBAdaptor.QueryParams.RELEASE.key()));
+        assertEquals(1, facet.getNumResults());
+        assertEquals(3, facet.getResult().getFields().get(0).getCounts().get(0).getCount());
     }
 
     @Test
