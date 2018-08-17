@@ -739,6 +739,8 @@ public final class VariantQueryUtils {
             if (includeFiles.isEmpty()) {
                 includeFiles = null;
             }
+        } else if (isValidParam(query, INFO)) {
+            includeFiles = new ArrayList<>(parseInfo(query).getValue().keySet());
         } else {
             includeFiles = null;
         }
@@ -907,6 +909,9 @@ public final class VariantQueryUtils {
             }
             if (samples != null && samples.isEmpty()) {
                 samples = null;
+            }
+            if (samples == null && isValidParam(query, FORMAT)) {
+                samples = new ArrayList<>(parseFormat(query).getValue().keySet());
             }
         }
         if (samples != null) {
