@@ -23,6 +23,7 @@ import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.bson.Document;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
@@ -541,14 +542,22 @@ public class VariantMongoDBQueryParser {
                         f -> studyConfigurationManager.getFileIdPair(f, false, defaultStudyConfiguration).getValue());
             }
 
-            if (isValidParam(query, FILTER) || isValidParam(query, QUAL)) {
+            if (isValidParam(query, FILTER) || isValidParam(query, QUAL) || isValidParam(query, INFO)) {
                 String values = query.getString(FILTER.key());
                 QueryOperation filterOperation = checkOperator(values);
                 List<String> filterValues = splitValue(values, filterOperation);
+                Pair<QueryOperation, Map<String, String>> infoParamPair = parseInfo(query);
+                QueryOperation infoOperator = infoParamPair.getKey();
+                Map<String, String> infoMap = infoParamPair.getValue();
+
+
+                boolean useFileElemMatch = !fileIds.isEmpty();
+                boolean infoInFileElemMatch = useFileElemMatch && (infoOperator == null || filesOperation == infoOperator);
+
 //                values = query.getString(QUAL.key());
 //                QueryOperation qualOperation = checkOperator(values);
 //                List<String> qualValues = splitValue(values, qualOperation);
-                if (fileIds.isEmpty()) {
+                if (!useFileElemMatch) {
                     String key = studyQueryPrefix
                             + DocumentToStudyVariantEntryConverter.FILES_FIELD + '.'
                             + DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD + '.';
@@ -584,6 +593,14 @@ public class VariantMongoDBQueryParser {
                         if (isValidParam(query, QUAL)) {
                             addCompListQueryFilter(key + StudyEntry.QUAL, query.getString(QUAL.key()), fileBuilder, false);
                         }
+
+                        if (infoInFileElemMatch) {
+                            String infoValue = infoMap.get(defaultStudyConfiguration.getFileIds().inverse().get(fileId));
+                            if (infoValue != null) {
+                                addCompListQueryFilter(DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD, infoValue, fileBuilder, true);
+                            }
+                        }
+
                         fileElemMatch[i++] = new BasicDBObject(studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD,
                                 new BasicDBObject("$elemMatch", fileBuilder.get()));
                     }
@@ -593,6 +610,27 @@ public class VariantMongoDBQueryParser {
                         studyBuilder.and(fileElemMatch);
                     }
 
+                }
+
+                if (!infoInFileElemMatch) {
+                    DBObject[] infoElemMatch = new DBObject[infoMap.size()];
+                    int i = 0;
+                    for (Map.Entry<String, String> entry : infoMap.entrySet()) {
+                        QueryBuilder infoBuilder = new QueryBuilder();
+                        Integer fileId = StudyConfigurationManager.getFileIdFromStudy(entry.getKey(), defaultStudyConfiguration);
+                        infoBuilder.and(DocumentToStudyVariantEntryConverter.FILEID_FIELD).is(fileId);
+                        String infoValue = entry.getValue();
+                        if (infoValue != null) {
+                            addCompListQueryFilter(DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD, infoValue, infoBuilder, true);
+                        }
+                        infoElemMatch[i++] = new BasicDBObject(studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD,
+                                new BasicDBObject("$elemMatch", infoBuilder.get()));
+                    }
+                    if (infoOperator == QueryOperation.OR) {
+                        studyBuilder.or(infoElemMatch);
+                    } else {
+                        studyBuilder.and(infoElemMatch);
+                    }
                 }
             }
 
