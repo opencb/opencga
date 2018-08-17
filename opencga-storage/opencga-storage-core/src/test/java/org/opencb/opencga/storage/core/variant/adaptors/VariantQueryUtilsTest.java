@@ -267,6 +267,22 @@ public class VariantQueryUtilsTest extends GenericTest {
     }
 
     @Test
+    public void extractGenotypeFromFormatTest() {
+        assertEquals(new Query(FORMAT.key(), "").append(GENOTYPE.key(), "S1:1/1"),
+                extractGenotypeFromFormatFilter(new Query(FORMAT.key(), "S1:GT=1/1")));
+        assertEquals(new Query(FORMAT.key(), "S1:DP>4").append(GENOTYPE.key(), "S1:1/1,0/1"),
+                extractGenotypeFromFormatFilter(new Query(FORMAT.key(), "S1:GT=1/1,0/1,DP>4")));
+        assertEquals(new Query(FORMAT.key(), "S1:PL<3,DP>4").append(GENOTYPE.key(), "S1:1/1,0/1"),
+                extractGenotypeFromFormatFilter(new Query(FORMAT.key(), "S1:PL<3,GT=1/1,0/1,DP>4")));
+        assertEquals(new Query(FORMAT.key(), "S1:PL<3;DP>4").append(GENOTYPE.key(), "S1:1/1,0/1"),
+                extractGenotypeFromFormatFilter(new Query(FORMAT.key(), "S1:PL<3;GT=1/1,0/1;DP>4")));
+        assertEquals(new Query(FORMAT.key(), "S1:PL<3;DP>4;S2:DP>3").append(GENOTYPE.key(), "S1:1/1,0/1;S2:1/1"),
+                extractGenotypeFromFormatFilter(new Query(FORMAT.key(), "S1:PL<3;GT=1/1,0/1;DP>4;S2:DP>3,GT=1/1")));
+        assertEquals(new Query(FORMAT.key(), "S1:PL<3;DP>4,S2:DP>3").append(GENOTYPE.key(), "S1:1/1,0/1,S2:1/1"),
+                extractGenotypeFromFormatFilter(new Query(FORMAT.key(), "S1:PL<3;GT=1/1,0/1;DP>4,S2:DP>3,GT=1/1")));
+    }
+
+    @Test
     public void testIncludeFormats() {
         checkIncludeFormats("GT", "GT");
         checkIncludeFormats("DP", "DP");

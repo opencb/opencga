@@ -1028,10 +1028,14 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             query.put(ANNOT_CLINICAL_SIGNIFICANCE.key(), clinicalSignificanceList);
         }
 
+        if (isValidParam(query, FORMAT)) {
+            extractGenotypeFromFormatFilter(query);
+        }
+
         if (isValidParam(query, SAMPLE)) {
             if (isValidParam(query, GENOTYPE)) {
                 throw VariantQueryException.malformedParam(SAMPLE, query.getString(SAMPLE.key()),
-                        "Can not be used along with filter " + GENOTYPE.key() + " filter");
+                        "Can not be used along with filter \"" + GENOTYPE.key() + '"');
             }
 
             StudyConfiguration studyConfiguration = getDefaultStudyConfiguration(query, options, getStudyConfigurationManager());
