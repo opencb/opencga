@@ -18,7 +18,7 @@ public class SolrConverterUtil {
             for (AnnotationSet annotationSet : annotationSets) {
                 for (String annotationKey : annotationSet.getAnnotations().keySet()) {
                     Object value = annotationSet.getAnnotations().get(annotationKey);
-                    result.put("annotations" + type(value) + annotationSet.getName() + "." + annotationSet.getVariableSetId()
+                    result.put("annotations" + type(value) + annotationSet.getVariableSetId() + "." + annotationSet.getId()
                             + "." + annotationKey, value);
                 }
             }
@@ -31,6 +31,7 @@ public class SolrConverterUtil {
         if (phenotypes != null) {
             for (OntologyTerm ontologyTerm : phenotypes) {
                 phenotypesIds.add(ontologyTerm.getId());
+                phenotypesIds.add(ontologyTerm.getName());
             }
         }
         return phenotypesIds;

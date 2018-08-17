@@ -30,16 +30,14 @@ import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
-import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
+import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
@@ -265,11 +263,12 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(sessionId);
-        Study study = studyManager.resolveId(studyStr, userId);
+        Study study = studyManager.resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
+                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
         // Fix query if it contains any annotation
-        fixQueryAnnotationSearch(study.getUid(), query);
-        fixQueryOptionAnnotation(options);
+        AnnotationUtils.fixQueryAnnotationSearch(study, query);
+        AnnotationUtils.fixQueryOptionAnnotation(options);
         fixQuery(study, query, sessionId);
 
         query.append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
@@ -309,7 +308,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
+                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
         Query finalQuery = new Query(query);
         try {
@@ -320,8 +320,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         }
 
         // Fix query if it contains any annotation
-        fixQueryAnnotationSearch(study.getUid(), finalQuery);
-        fixQueryOptionAnnotation(options);
+        AnnotationUtils.fixQueryAnnotationSearch(study, finalQuery);
+        AnnotationUtils.fixQueryOptionAnnotation(options);
 
         finalQuery.append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
@@ -336,7 +336,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         query = ParamUtils.defaultObject(query, Query::new);
 
         String userId = userManager.getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
+                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
         Query finalQuery = new Query(query);
         try {
@@ -347,7 +348,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         }
 
         // Fix query if it contains any annotation
-        fixQueryAnnotationSearch(study.getUid(), finalQuery);
+        AnnotationUtils.fixQueryAnnotationSearch(study, finalQuery);
 
 
         finalQuery.append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
@@ -373,12 +374,13 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         DBIterator<Individual> iterator;
         try {
             userId = catalogManager.getUserManager().getUserId(sessionId);
-            study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+            study = catalogManager.getStudyManager().resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
+                    StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
             // Fix query if it contains any annotation
             fixQuery(study, finalQuery, sessionId);
             // Fix query if it contains any annotation
-            fixQueryAnnotationSearch(study.getUid(), finalQuery);
+            AnnotationUtils.fixQueryAnnotationSearch(study, finalQuery);
 
             finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
@@ -728,7 +730,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS);
 
         // Fix query if it contains any annotation
-        fixQueryAnnotationSearch(study.getUid(), userId, query, true);
+        AnnotationUtils.fixQueryAnnotationSearch(study, userId, query, authorizationManager);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
@@ -755,8 +757,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         Query finalQuery = new Query(query);
 
         // Fix query if it contains any annotation
-        fixQueryAnnotationSearch(study.getUid(), userId, finalQuery, true);
-        fixQueryOptionAnnotation(options);
+        AnnotationUtils.fixQueryAnnotationSearch(study, userId, finalQuery, authorizationManager);
+        AnnotationUtils.fixQueryOptionAnnotation(options);
 
         try {
             fixQuery(study, finalQuery, sessionId);

@@ -38,6 +38,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
+import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
@@ -226,13 +227,14 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(sessionId);
-        Study study = studyManager.resolveId(studyStr, userId);
+        Study study = studyManager.resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
+                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
         fixQueryObject(study, query, sessionId);
 
         // Fix query if it contains any annotation
-        fixQueryAnnotationSearch(study.getUid(), query);
-        fixQueryOptionAnnotation(options);
+        AnnotationUtils.fixQueryAnnotationSearch(study, query);
+        AnnotationUtils.fixQueryOptionAnnotation(options);
 
         query.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
@@ -266,11 +268,12 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
+                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
         // Fix query if it contains any annotation
-        fixQueryAnnotationSearch(study.getUid(), query);
-        fixQueryOptionAnnotation(options);
+        AnnotationUtils.fixQueryAnnotationSearch(study, query);
+        AnnotationUtils.fixQueryOptionAnnotation(options);
 
         fixQueryObject(study, query, sessionId);
 
@@ -295,10 +298,11 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         query = ParamUtils.defaultObject(query, Query::new);
 
         String userId = userManager.getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
+                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
         // Fix query if it contains any annotation
-        fixQueryAnnotationSearch(study.getUid(), query);
+        AnnotationUtils.fixQueryAnnotationSearch(study, query);
         fixQueryObject(study, query, sessionId);
 
         query.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
@@ -338,9 +342,10 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             }
 
             userId = catalogManager.getUserManager().getUserId(sessionId);
-            study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+            study = catalogManager.getStudyManager().resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
+                    StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
-            fixQueryAnnotationSearch(study.getUid(), finalQuery);
+            AnnotationUtils.fixQueryAnnotationSearch(study, finalQuery);
             fixQueryObject(study, finalQuery, sessionId);
             finalQuery.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
@@ -881,7 +886,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
         // Fix query if it contains any annotation
-        fixQueryAnnotationSearch(study.getUid(), userId, query, true);
+        AnnotationUtils.fixQueryAnnotationSearch(study, userId, query, authorizationManager);
 
         authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.VIEW_SAMPLES);
 
@@ -910,8 +915,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
         // Fix query if it contains any annotation
-        fixQueryAnnotationSearch(study.getUid(), userId, query, true);
-        fixQueryOptionAnnotation(options);
+        AnnotationUtils.fixQueryAnnotationSearch(study, userId, query, authorizationManager);
+        AnnotationUtils.fixQueryOptionAnnotation(options);
 
         // Add study id to the query
         query.put(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());

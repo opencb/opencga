@@ -35,7 +35,7 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
 import org.opencb.opencga.catalog.stats.solr.converters.*;
-import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidator;
+import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -99,7 +99,7 @@ public class StudyManager extends AbstractManager {
                 studyStr = studyList.get(0);
             }
 
-            return smartResolutor(studyStr, userId).getResult();
+            return smartResolutor(studyStr, userId, null).getResult();
         }
 
         List<Study> returnList = new ArrayList<>(studyList.size());
@@ -110,7 +110,11 @@ public class StudyManager extends AbstractManager {
     }
 
     public Study resolveId(String studyStr, String userId) throws CatalogException {
-        QueryResult<Study> studyQueryResult = smartResolutor(studyStr, userId);
+        return resolveId(studyStr, userId, null);
+    }
+
+    public Study resolveId(String studyStr, String userId, QueryOptions options) throws CatalogException {
+        QueryResult<Study> studyQueryResult = smartResolutor(studyStr, userId, options);
 
         if (studyQueryResult.getNumResults() > 1) {
             String studyMessage = "";
@@ -124,17 +128,23 @@ public class StudyManager extends AbstractManager {
         return studyQueryResult.first();
     }
 
-    private QueryResult<Study> smartResolutor(String studyStr, String userId) throws CatalogException {
+    private QueryResult<Study> smartResolutor(String studyStr, String userId, QueryOptions options) throws CatalogException {
         String owner = null;
         String project = null;
 
         Query query = new Query();
+        QueryOptions queryOptions;
+        if (options == null) {
+            queryOptions = new QueryOptions();
+        } else {
+            queryOptions = new QueryOptions(options);
+        }
 
         if (StringUtils.isNotEmpty(studyStr)) {
             if (UUIDUtils.isOpenCGAUUID(studyStr)) {
                 query.putIfNotEmpty(StudyDBAdaptor.QueryParams.UUID.key(), studyStr);
             } else {
-                String study = null;
+                String study;
 
                 Matcher matcher = USER_PROJECT_STUDY_PATTERN.matcher(studyStr);
                 if (matcher.find()) {
@@ -167,16 +177,26 @@ public class StudyManager extends AbstractManager {
         query.putIfNotEmpty(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), project);
 //        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.ALIAS.key(), study);
 
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                StudyDBAdaptor.QueryParams.UUID.key(), StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.UID.key(),
-                StudyDBAdaptor.QueryParams.ALIAS.key(), StudyDBAdaptor.QueryParams.CREATION_DATE.key(),
-                StudyDBAdaptor.QueryParams.FQN.key(), StudyDBAdaptor.QueryParams.URI.key()
-        ));
+        if (queryOptions.isEmpty()) {
+            queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                    StudyDBAdaptor.QueryParams.UUID.key(), StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.UID.key(),
+                    StudyDBAdaptor.QueryParams.ALIAS.key(), StudyDBAdaptor.QueryParams.CREATION_DATE.key(),
+                    StudyDBAdaptor.QueryParams.FQN.key(), StudyDBAdaptor.QueryParams.URI.key()
+            ));
+        } else {
+            List<String> includeList = new ArrayList<>(queryOptions.getAsStringList(QueryOptions.INCLUDE));
+            includeList.addAll(Arrays.asList(
+                    StudyDBAdaptor.QueryParams.UUID.key(), StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.UID.key(),
+                    StudyDBAdaptor.QueryParams.ALIAS.key(), StudyDBAdaptor.QueryParams.CREATION_DATE.key(),
+                    StudyDBAdaptor.QueryParams.FQN.key(), StudyDBAdaptor.QueryParams.URI.key()));
+            // We create a new object in case there was an exclude or any other field. We only want to include fields in this case
+            queryOptions = new QueryOptions(QueryOptions.INCLUDE, includeList);
+        }
 
-        QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, options, userId);
+        QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, queryOptions, userId);
 
         if (studyQueryResult.getNumResults() == 0) {
-            studyQueryResult = studyDBAdaptor.get(query, options);
+            studyQueryResult = studyDBAdaptor.get(query, queryOptions);
             if (studyQueryResult.getNumResults() == 0) {
                 String studyMessage = "";
                 if (StringUtils.isNotEmpty(studyStr)) {
@@ -987,7 +1007,7 @@ public class StudyManager extends AbstractManager {
 
         VariableSet variableSet = new VariableSet(id, name, unique, confidential, description, variablesSet,
                 getCurrentRelease(study, userId), attributes);
-        CatalogAnnotationsValidator.checkVariableSet(variableSet);
+        AnnotationUtils.checkVariableSet(variableSet);
 
         QueryResult<VariableSet> queryResult = studyDBAdaptor.createVariableSet(study.getUid(), variableSet);
         auditManager.recordCreation(AuditRecord.Resource.variableSet, queryResult.first().getUid(), userId, queryResult.first(), null,

@@ -30,16 +30,14 @@ import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
-import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
+import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
@@ -171,11 +169,12 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
+                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
         // Fix query if it contains any annotation
-        fixQueryAnnotationSearch(study.getUid(), query);
-        fixQueryOptionAnnotation(options);
+        AnnotationUtils.fixQueryAnnotationSearch(study, query);
+        AnnotationUtils.fixQueryOptionAnnotation(options);
         fixQueryObject(study, query, sessionId);
 
         query.append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
@@ -256,11 +255,12 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(sessionId);
-        Study study = studyManager.resolveId(studyStr, userId);
+        Study study = studyManager.resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
+                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
         // Fix query if it contains any annotation
-        fixQueryAnnotationSearch(study.getUid(), query);
-        fixQueryOptionAnnotation(options);
+        AnnotationUtils.fixQueryAnnotationSearch(study, query);
+        AnnotationUtils.fixQueryOptionAnnotation(options);
         fixQueryObject(study, query, sessionId);
 
         query.append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
@@ -286,11 +286,12 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         query = ParamUtils.defaultObject(query, Query::new);
 
         String userId = userManager.getUserId(sessionId);
-        Study study = studyManager.resolveId(studyStr, userId);
+        Study study = studyManager.resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
+                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
 
         // Fix query if it contains any annotation
-        fixQueryAnnotationSearch(study.getUid(), query);
+        AnnotationUtils.fixQueryAnnotationSearch(study, query);
         fixQueryObject(study, query, sessionId);
 
         query.append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
@@ -316,9 +317,10 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         DBIterator<Cohort> iterator;
         try {
             userId = catalogManager.getUserManager().getUserId(sessionId);
-            study = studyManager.resolveId(studyStr, userId);
+            study = studyManager.resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
+                    StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
-            fixQueryAnnotationSearch(study.getUid(), finalQuery);
+            AnnotationUtils.fixQueryAnnotationSearch(study, finalQuery);
             fixQueryObject(study, finalQuery, sessionId);
             finalQuery.append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
@@ -564,8 +566,8 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
         // Fix query if it contains any annotation
-        fixQueryAnnotationSearch(study.getUid(), userId, query, true);
-        fixQueryOptionAnnotation(options);
+        AnnotationUtils.fixQueryAnnotationSearch(study, userId, query, authorizationManager);
+        AnnotationUtils.fixQueryOptionAnnotation(options);
 
         // Add study id to the query
         query.put(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
@@ -604,7 +606,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.VIEW_COHORTS);
 
         // Fix query if it contains any annotation
-        fixQueryAnnotationSearch(study.getUid(), userId, query, true);
+        AnnotationUtils.fixQueryAnnotationSearch(study, userId, query, authorizationManager);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;

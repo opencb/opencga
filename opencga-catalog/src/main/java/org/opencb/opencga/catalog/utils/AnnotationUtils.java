@@ -18,20 +18,35 @@ package org.opencb.opencga.catalog.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.AnnotationSet;
+import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.Variable;
 import org.opencb.opencga.core.models.VariableSet;
+import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 
 import javax.annotation.Nullable;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import static org.opencb.opencga.catalog.managers.AnnotationSetManager.*;
 
 /**
  * Created by jacobo on 14/12/14.
  */
-public class CatalogAnnotationsValidator {
+public class AnnotationUtils {
+
+    public static final Pattern ANNOTATION_PATTERN = Pattern.compile("^([^:=^<>~!$]+:)?([^=^<>~!:$]+)([=^<>~!$]+.+)$");
+    public static final Pattern OPERATION_PATTERN = Pattern.compile("^()(<=?|>=?|!==?|!?=?~|==?=?)([^=<>~!]+.*)$");
 
     public static void checkVariableSet(VariableSet variableSet) throws CatalogException {
         Set<String> variableIdSet = new HashSet<>();
@@ -525,5 +540,298 @@ public class CatalogAnnotationsValidator {
 //                annotations.remove(entry.getKey());
 //            }
 //        }
+    }
+
+
+    /**
+     * OpenCGA supports several ways of defining include/exclude of annotation fields:
+     *  - annotationSets.annotations.a.b.c where a.b.c would be variables that will be included/excluded.
+     *    annotation.a.b.c would be a shortcut used for the same purpose defined above.
+     *  - annotationSets.variableSetId.cancer where cancer would correspond with the variable set id to be included/excluded.
+     *    variableSet.cancer would be the shortcut used for the same purpose defined above.
+     *  - annotationSets.name.cancer1 where cancer1 would correspond with the annotationSetName to be included/excluded.
+     *    annotationSet.cancer1 would be the shortcut used for the same purpose defined above.
+     *
+     * This method will modify all the possible full way annotation fields to the corresponding shortcuts.
+     *
+     * @param options QueryOptions object containing
+     */
+    public static void fixQueryOptionAnnotation(QueryOptions options) {
+        List<String> includeList = options.getAsStringList(QueryOptions.INCLUDE, ",");
+        List<String> excludeList = options.getAsStringList(QueryOptions.EXCLUDE, ",");
+
+        options.putIfNotEmpty(QueryOptions.INCLUDE, fixQueryOptionAnnotation(includeList));
+        options.putIfNotEmpty(QueryOptions.EXCLUDE, fixQueryOptionAnnotation(excludeList));
+    }
+
+    private static String fixQueryOptionAnnotation(List<String> projectionList) {
+        if (projectionList == null || projectionList.isEmpty()) {
+            return null;
+        }
+
+        List<String> returnedProjection = new ArrayList<>(projectionList.size());
+        for (String projection : projectionList) {
+            if (projection.startsWith(ANNOTATION_SETS_ANNOTATIONS + ".")) {
+                returnedProjection.add(projection.replace(ANNOTATION_SETS_ANNOTATIONS + ".", Constants.ANNOTATION + "."));
+            } else if (projection.startsWith(ANNOTATION_SETS_VARIABLE_SET_ID + ".")) {
+                returnedProjection.add(projection.replace(ANNOTATION_SETS_VARIABLE_SET_ID + ".", Constants.VARIABLE_SET + "."));
+            } else if (projection.startsWith(ANNOTATION_SETS_ID + ".")) {
+                returnedProjection.add(projection.replace(ANNOTATION_SETS_ID + ".", Constants.ANNOTATION_SET_NAME + "."));
+            } else {
+                returnedProjection.add(projection);
+            }
+        }
+
+        return StringUtils.join(returnedProjection, ",");
+    }
+
+    /**
+     * Fixes any field that might be missing from the annotation built by the user so it is perfectly ready for the dbAdaptors to be parsed.
+     *
+     * @param study study corresponding to the entry that is being queried. Study should contain the variableSets field filled in.
+     * @param query query object containing the annotation.
+     * @throws CatalogException if there are unknown variables being queried, non-existing variable sets...
+     */
+    public static void fixQueryAnnotationSearch(Study study, Query query) throws CatalogException {
+        fixQueryAnnotationSearch(study, null, query, null);
+    }
+
+    /**
+     * Fixes any field that might be missing from the annotation built by the user so it is perfectly ready for the dbAdaptors to be parsed.
+     *
+     * @param study study corresponding to the entry that is being queried. Study should contain the variableSets field filled in.
+     * @param user for which the confidential permission should be checked.
+     * @param query query object containing the annotation.
+     * @param authorizationManager Authorization manager to check for confidential permissions. If null, permissions won't be checked.
+     * @throws CatalogException if there are unknown variables being queried, non-existing variable sets...
+     */
+    public static void fixQueryAnnotationSearch(Study study, String user, Query query, AuthorizationManager authorizationManager)
+            throws CatalogException {
+        if (query == null || query.isEmpty() || !query.containsKey(Constants.ANNOTATION)) {
+            return;
+        }
+        if (study.getVariableSets() == null) {
+            throw new CatalogException("Internal error. VariableSets should be provided in the study parameter.");
+        }
+
+        List<String> originalAnnotationList = query.getAsStringList(Constants.ANNOTATION, ";");
+        Map<String, VariableSet> variableSetMap = null;
+        Map<String, Map<String, QueryParam.Type>> variableTypeMap = new HashMap<>();
+
+        List<String> annotationList = new ArrayList<>(originalAnnotationList.size());
+        ObjectMap queriedVariableTypeMap = new ObjectMap();
+
+        boolean confidentialPermissionChecked = false;
+
+        for (String annotation : originalAnnotationList) {
+            if (variableSetMap == null) {
+                variableSetMap = getVariableSetMap(study);
+                for (VariableSet variableSet : variableSetMap.values()) {
+                    variableTypeMap.put(String.valueOf(variableSet.getUid()), getVariableMap(variableSet));
+                }
+            }
+
+            if (annotation.startsWith(Constants.ANNOTATION_SET_NAME)) {
+                annotationList.add(annotation);
+                continue;
+            }
+
+            // Split the annotation by key - value
+            Matcher matcher = ANNOTATION_PATTERN.matcher(annotation);
+            if (matcher.find()) {
+
+                if (annotation.startsWith(Constants.VARIABLE_SET)) {
+                    String variableSetString = matcher.group(3);
+                    // Obtain the operator to take it out and get only the actual value
+                    String operator = getOperator(variableSetString);
+                    variableSetString = variableSetString.replace(operator, "");
+
+                    VariableSet variableSet = variableSetMap.get(variableSetString);
+                    if (variableSet == null) {
+                        throw new CatalogException("Variable set " + variableSetString + " not found");
+                    }
+
+                    if (authorizationManager != null && !confidentialPermissionChecked && variableSet.isConfidential()) {
+                        // We only check the confidential permission if needed once
+                        authorizationManager.checkStudyPermission(study.getUid(), user,
+                                StudyAclEntry.StudyPermissions.CONFIDENTIAL_VARIABLE_SET_ACCESS);
+                        confidentialPermissionChecked = true;
+                    }
+                    annotationList.add(Constants.VARIABLE_SET + operator + variableSet.getUid());
+                    continue;
+                }
+
+                String variableSetString = matcher.group(1);
+                String key = matcher.group(2);
+                String valueString = matcher.group(3);
+
+                if (StringUtils.isEmpty(variableSetString)) {
+                    // Obtain the variable set for the annotations
+                    variableSetString = searchVariableSetForVariable(variableTypeMap, key);
+                } else {
+                    VariableSet variableSet = variableSetMap.get(variableSetString.replace(":", ""));
+                    if (variableSet == null) {
+                        throw new CatalogException("Variable set " + variableSetString + " not found");
+                    }
+
+                    // Remove the : at the end of the variableSet and convert the id into the uid
+                    variableSetString = String.valueOf(variableSet.getUid());
+
+                    // Check if the variable set and the variable exist
+                    if (!variableTypeMap.containsKey(variableSetString)) {
+                        throw new CatalogException("The variable " + variableSetString + " does not exist in the study " + study.getFqn());
+                    }
+                    if (!variableTypeMap.get(variableSetString).containsKey(key)) {
+                        throw new CatalogException("Variable " + key + " from variableSet " + variableSetString + " does not exist. Cannot "
+                                + "perform query " + annotation);
+                    }
+                }
+
+                if (authorizationManager != null  && !confidentialPermissionChecked && variableSetMap.get(variableSetString)
+                        .isConfidential()) {
+                    // We only check the confidential permission if needed once
+                    authorizationManager.checkStudyPermission(study.getUid(), user,
+                            StudyAclEntry.StudyPermissions.CONFIDENTIAL_VARIABLE_SET_ACCESS);
+                    confidentialPermissionChecked = true;
+                }
+
+                annotationList.add(variableSetString + ":" + key + valueString);
+                queriedVariableTypeMap.put(variableSetString + ":" + key, variableTypeMap.get(variableSetString).get(key));
+            } else {
+                throw new CatalogException("Annotation format from " + annotation + " not accepted. Supported format contains "
+                        + "[variableSet:]variable=value");
+            }
+        }
+
+        if (!annotationList.isEmpty()) {
+            query.put(Constants.ANNOTATION, StringUtils.join(annotationList, ";"));
+        }
+        if (!queriedVariableTypeMap.isEmpty()) {
+            query.put(Constants.PRIVATE_ANNOTATION_PARAM_TYPES, queriedVariableTypeMap);
+        }
+    }
+
+    private static String getOperator(String queryValue) {
+        Matcher matcher = OPERATION_PATTERN.matcher(queryValue);
+        if (matcher.find()) {
+            return matcher.group(2);
+        }
+        return null;
+    }
+
+    private static String searchVariableSetForVariable(Map<String, Map<String, QueryParam.Type>> variableTypeMap, String variableKey)
+            throws CatalogException {
+        String variableId = null;
+        for (Map.Entry<String, Map<String, QueryParam.Type>> variableTypeMapEntry : variableTypeMap.entrySet()) {
+            Map<String, QueryParam.Type> variableMap = variableTypeMapEntry.getValue();
+            if (variableMap.containsKey(variableKey)) {
+                if (variableId == null) {
+                    variableId = variableTypeMapEntry.getKey();
+                } else {
+                    throw new CatalogException("Found more than one Variable Set for the variable " + variableKey);
+                }
+            }
+        }
+
+        if (variableId == null) {
+            throw new CatalogException("Cannot find a Variable Set to match the variable " + variableKey);
+        }
+
+        return variableId;
+    }
+
+    private static Map<String, VariableSet> getVariableSetMap(Study study) {
+        Map<String, VariableSet> variableSetMap = new HashMap<>();
+        List<VariableSet> variableSets = study.getVariableSets();
+        if (variableSets != null) {
+            for (VariableSet variableSet : variableSets) {
+                variableSetMap.put(variableSet.getId(), variableSet);
+            }
+        }
+
+        return variableSetMap;
+    }
+
+    private static Map<String, QueryParam.Type> getVariableMap(VariableSet variableSet) throws CatalogDBException {
+        Map<String, QueryParam.Type> variableTypeMap = new HashMap<>();
+
+        Queue<VariableDepthMap> queue = new LinkedList<>();
+
+        // We first insert all the variables
+        for (Variable variable : variableSet.getVariables()) {
+            queue.add(new VariableDepthMap(variable, Collections.emptyList()));
+        }
+
+        // We iterate while there are elements in the queue
+        while (!queue.isEmpty()) {
+            VariableDepthMap variableDepthMap = queue.remove();
+            Variable variable = variableDepthMap.getVariable();
+
+            if (variable.getType() == Variable.VariableType.OBJECT) {
+                if (variable.getVariableSet() != null) {
+                    // We add the new nested variables to the queue
+                    for (Variable nestedVariable : variable.getVariableSet()) {
+                        List<String> keys = new ArrayList<>(variableDepthMap.getKeys());
+                        keys.add(variable.getId());
+                        queue.add(new VariableDepthMap(nestedVariable, keys));
+                    }
+                }
+            } else {
+                QueryParam.Type type;
+                switch (variable.getType()) {
+                    case BOOLEAN:
+                        type = QueryParam.Type.BOOLEAN;
+                        break;
+                    case CATEGORICAL:
+                    case TEXT:
+                        if (variable.isMultiValue()) {
+                            type = QueryParam.Type.TEXT_ARRAY;
+                        } else {
+                            type = QueryParam.Type.TEXT;
+                        }
+                        break;
+                    case INTEGER:
+                        if (variable.isMultiValue()) {
+                            type = QueryParam.Type.INTEGER_ARRAY;
+                        } else {
+                            type = QueryParam.Type.INTEGER;
+                        }
+                        break;
+                    case DOUBLE:
+                        if (variable.isMultiValue()) {
+                            type = QueryParam.Type.DECIMAL_ARRAY;
+                        } else {
+                            type = QueryParam.Type.DOUBLE;
+                        }
+                        break;
+                    case OBJECT:
+                    default:
+                        throw new CatalogDBException("Unexpected variable type detected: " + variable.getType());
+                }
+                List<String> keys = new ArrayList<>(variableDepthMap.getKeys());
+                keys.add(variable.getId());
+                variableTypeMap.put(StringUtils.join(keys, "."), type);
+            }
+        }
+
+        return variableTypeMap;
+    }
+
+    private static class VariableDepthMap {
+        private Variable variable;
+        private List<String> keys;
+
+        VariableDepthMap(Variable variable, List<String> keys) {
+            this.variable = variable;
+            this.keys = keys;
+        }
+
+        public Variable getVariable() {
+            return variable;
+        }
+
+        public List<String> getKeys() {
+            return keys;
+        }
     }
 }
