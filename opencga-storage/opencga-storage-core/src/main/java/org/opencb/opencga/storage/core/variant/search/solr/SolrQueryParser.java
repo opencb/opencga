@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.core.variant.search.solr;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.Query;
@@ -367,6 +368,15 @@ public class SolrQueryParser {
         // Add Solr query filters for files, QUAL and FILTER
         addFileFilter(query, filterList);
 
+        // File info filter are not supported
+        key = VariantQueryParam.INFO.key();
+        if (StringUtils.isNotEmpty(query.getString(key))) {
+            throw VariantQueryException.unsupportedVariantQueryFilter(VariantQueryParam.INFO, "Solr", "");
+        }
+
+        // Add Solr query filters for format
+        addFormatFilter(query, filterList);
+
         // Add Solr fields from the variant includes, i.e.: include-sample, include-format,...
         List<String> solrFieldsToInclude = getSolrFieldsFromVariantIncludes(query);
         if (ListUtils.isNotEmpty(solrFieldsToInclude)) {
@@ -409,7 +419,8 @@ public class SolrQueryParser {
         String key = VariantQueryParam.GENOTYPE.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             if (studies == null) {
-                throw new IllegalArgumentException("Missing study parameter when filtering by genotypes");
+                throw VariantQueryException.malformedParam(VariantQueryParam.STUDY, "", "Missing study parameter when "
+                        + " filtering with genotypes.");
             }
             Map<Object, List<String>> genotypeSamples = new HashMap<>();
             try {
@@ -460,7 +471,8 @@ public class SolrQueryParser {
         String key = VariantQueryParam.FILE.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             if (studies == null) {
-                throw new IllegalArgumentException("Missing study parameter when filtering by file");
+                throw VariantQueryException.malformedParam(VariantQueryParam.STUDY, "", "Missing study parameter when "
+                        + " filtering with files.");
             }
 
             files = query.getString(key).split("[,;]");
@@ -488,7 +500,8 @@ public class SolrQueryParser {
         key = VariantQueryParam.QUAL.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             if (files == null) {
-                throw VariantQueryException.malformedParam(VariantQueryParam.FILE, "", "Missing file parameter when filtering by QUAL");
+                throw VariantQueryException.malformedParam(VariantQueryParam.FILE, "", "Missing file parameter when "
+                        + " filtering with QUAL.");
             }
             String qual = query.getString(key);
             if (fileQueryOp == QueryOperation.OR) {
@@ -513,7 +526,8 @@ public class SolrQueryParser {
         key = VariantQueryParam.FILTER.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             if (files == null) {
-                throw new IllegalArgumentException("Missing file parameter when filtering by FILTER");
+                throw VariantQueryException.malformedParam(VariantQueryParam.FILE, "", "Missing file parameter when "
+                        + " filtering with FILTER.");
             }
 
             QueryOperation filterQueryOp = parseOrAndFilter(key, query.getString(key));
@@ -555,6 +569,56 @@ public class SolrQueryParser {
         }
     }
 
+    /**
+     * Add Solr query filters for format.
+     *
+     * @param query         Query
+     * @param filterList    Output list with Solr query filters added
+     */
+    private void addFormatFilter(Query query, List<String> filterList) {
+        // IMPORTANT: Only the first study is taken into account! Multiple studies support ??
+        String[] studies = getStudies(query);
+
+        String key = VariantQueryParam.FORMAT.key();
+        if (StringUtils.isNotEmpty(query.getString(key))) {
+            if (studies == null) {
+                throw VariantQueryException.malformedParam(VariantQueryParam.FORMAT, query.getString(VariantQueryParam.FORMAT.key()),
+                        "Missing study parameter when filtering with formats.");
+            }
+
+            Pair<QueryOperation, Map<String, String>> parsedSampleFormats = VariantQueryUtils.parseFormat(query);
+            String logicOp = parsedSampleFormats.getKey() == QueryOperation.AND ? " AND " : " OR ";
+            StringBuilder sb = new StringBuilder();
+            sb.append("(");
+            boolean first = true;
+            for (String sampleName : parsedSampleFormats.getValue().keySet()) {
+                // Sanity check, only DP is permitted
+                Pair<QueryOperation, List<String>> formats = VariantQueryUtils.splitValue(parsedSampleFormats.getValue().get(sampleName));
+                if (formats.getValue().size() > 1) {
+                    throw VariantQueryException.malformedParam(VariantQueryParam.FORMAT, query.getString(VariantQueryParam.FORMAT.key()),
+                            "Only one format name (and it has to be 'DP') is permitted in Solr search");
+                }
+                if (!first) {
+                    sb.append(logicOp);
+                }
+                String[] split = VariantQueryUtils.splitOperator(parsedSampleFormats.getValue().get(sampleName));
+                if (split[0] == null) {
+                    throw VariantQueryException.malformedParam(VariantQueryParam.FORMAT, query.getString(VariantQueryParam.FORMAT.key()),
+                            "Invalid format value");
+                }
+                if ("DP".equals(split[0].toUpperCase())) {
+                    sb.append(parseNumericValue("dp" + VariantSearchUtils.FIELD_SEPARATOR + studies[0]
+                            + VariantSearchUtils.FIELD_SEPARATOR + sampleName, split[1] + split[2]));
+                    first = false;
+                } else {
+                    throw VariantQueryException.malformedParam(VariantQueryParam.FORMAT, query.getString(VariantQueryParam.FORMAT.key()),
+                            "Only format name 'DP' is permitted in Solr search");
+                }
+                sb.append(")");
+                filterList.add(sb.toString());
+            }
+        }
+    }
 
     /**
      * Check if the target xref is a gene.
