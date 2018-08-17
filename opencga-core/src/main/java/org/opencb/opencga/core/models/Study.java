@@ -38,14 +38,16 @@ public class Study extends PrivateFields {
     private String modificationDate;
     private String description;
     private Status status;
+    @Deprecated
     private String lastModified;
     private long size;
-    // TODO: Pending !!!
+    @Deprecated
     private String cipher;
     private String fqn;
 
     private List<Group> groups;
 
+    @Deprecated
     private List<Experiment> experiments;
 
     private List<File> files;
@@ -53,6 +55,7 @@ public class Study extends PrivateFields {
     private List<Individual> individuals;
     private List<Sample> samples;
 
+    @Deprecated
     private List<Dataset> datasets;
     private List<Cohort> cohorts;
 
@@ -65,6 +68,7 @@ public class Study extends PrivateFields {
     private URI uri;
 
     private int release;
+    @Deprecated
     private Map<File.Bioformat, DataStore> dataStores;
 
     private Map<String, Object> stats;

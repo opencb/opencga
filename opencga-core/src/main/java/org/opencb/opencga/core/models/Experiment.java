@@ -24,8 +24,6 @@ import java.util.Map;
  */
 public class Experiment {
 
-    private long id;
-    private String name;
     private String type;
     private String platform;
     private String manufacturer;
@@ -41,15 +39,13 @@ public class Experiment {
     public Experiment() {
     }
 
-    public Experiment(int id, String name, String type, String platform, String manufacturer, String date, String lab,
+    public Experiment(String type, String platform, String manufacturer, String date, String lab,
                       String center, String responsible, String description) {
-        this(id, name, type, platform, manufacturer, date, lab, center, responsible, description, new HashMap<>());
+        this(type, platform, manufacturer, date, lab, center, responsible, description, new HashMap<>());
     }
 
-    public Experiment(int id, String name, String type, String platform, String manufacturer, String date,  String lab,
+    public Experiment(String type, String platform, String manufacturer, String date,  String lab,
                       String center, String responsible, String description, Map<String, Object> attributes) {
-        this.id = id;
-        this.name = name;
         this.type = type;
         this.platform = platform;
         this.manufacturer = manufacturer;
@@ -64,9 +60,7 @@ public class Experiment {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Experiment{");
-        sb.append("id=").append(id);
-        sb.append(", name='").append(name).append('\'');
-        sb.append(", type='").append(type).append('\'');
+        sb.append("type='").append(type).append('\'');
         sb.append(", platform='").append(platform).append('\'');
         sb.append(", manufacturer='").append(manufacturer).append('\'');
         sb.append(", date='").append(date).append('\'');
@@ -77,24 +71,6 @@ public class Experiment {
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
-    }
-
-    public long getId() {
-        return id;
-    }
-
-    public Experiment setId(long id) {
-        this.id = id;
-        return this;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public Experiment setName(String name) {
-        this.name = name;
-        return this;
     }
 
     public String getType() {

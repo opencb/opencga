@@ -677,7 +677,7 @@ public class SampleWSServer extends OpenCGAWSServer {
         public String type;
         public String source;
         public boolean somatic;
-        public List<OntologyTerm> phenotypes;
+        public List<Phenotype> phenotypes;
         public List<AnnotationSet> annotationSets;
         public Map<String, Object> stats;
         public Map<String, Object> attributes;
