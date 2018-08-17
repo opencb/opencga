@@ -739,6 +739,8 @@ public final class VariantQueryUtils {
             if (includeFiles.isEmpty()) {
                 includeFiles = null;
             }
+        } else if (isValidParam(query, INFO)) {
+            includeFiles = new ArrayList<>(parseInfo(query).getValue().keySet());
         } else {
             includeFiles = null;
         }
@@ -907,6 +909,9 @@ public final class VariantQueryUtils {
             }
             if (samples != null && samples.isEmpty()) {
                 samples = null;
+            }
+            if (samples == null && isValidParam(query, FORMAT)) {
+                samples = new ArrayList<>(parseFormat(query).getValue().keySet());
             }
         }
         if (samples != null) {
@@ -1187,6 +1192,70 @@ public final class VariantQueryUtils {
             }
         }
         return soAccession;
+    }
+
+    public static Query extractGenotypeFromFormatFilter(Query query) {
+        Pair<QueryOperation, Map<String, String>> formatPair = parseFormat(query);
+
+        if (formatPair.getValue().values().stream().anyMatch(v -> v.contains("GT"))) {
+            if (isValidParam(query, SAMPLE) || isValidParam(query, GENOTYPE)) {
+                throw VariantQueryException.malformedParam(FORMAT, query.getString(FORMAT.key()),
+                        "Can not be used along with filter \"" + GENOTYPE.key() + "\" or \"" + SAMPLE.key() + '"');
+            }
+
+            StringBuilder formatBuilder = new StringBuilder();
+            StringBuilder genotypeBuilder = new StringBuilder();
+
+            for (Map.Entry<String, String> entry : formatPair.getValue().entrySet()) {
+                String sample = entry.getKey();
+                String gt = "";
+                String other = "";
+                if (entry.getValue().contains("GT")) {
+                    StringTokenizer tokenizer = new StringTokenizer(entry.getValue(), AND + OR, true);
+                    boolean gtFilter = false;
+                    while (tokenizer.hasMoreTokens()) {
+                        String token = tokenizer.nextToken();
+                        if (StringUtils.containsAny(token, '>', '<', '=', '~')) {
+                            gtFilter = false;
+                        }
+                        if (token.contains("GT")) {
+                            gtFilter = true;
+                            gt += splitOperator(token)[2];
+                        } else if (gtFilter) {
+                            gt += token;
+                        } else {
+                            other += token;
+                        }
+                    }
+                } else {
+                    other = entry.getValue();
+                }
+
+                if (!other.isEmpty()) {
+                    if (formatBuilder.length() > 0) {
+                        formatBuilder.append(formatPair.getLeft().separator());
+                    }
+                    if (other.endsWith(OR) || other.endsWith(AND)) {
+                        other = other.substring(0, other.length() - 1);
+                    }
+                    formatBuilder.append(sample).append(IS).append(other);
+                }
+                if (!gt.isEmpty()) {
+                    if (genotypeBuilder.length() > 0) {
+                        genotypeBuilder.append(formatPair.getLeft().separator());
+                    }
+                    if (gt.endsWith(OR) || gt.endsWith(AND)) {
+                        gt = gt.substring(0, gt.length() - 1);
+                    }
+                    genotypeBuilder.append(sample).append(IS).append(gt);
+                }
+            }
+
+            query.put(GENOTYPE.key(), genotypeBuilder.toString());
+            query.put(FORMAT.key(), formatBuilder.toString());
+        }
+
+        return query;
     }
 
     /**
