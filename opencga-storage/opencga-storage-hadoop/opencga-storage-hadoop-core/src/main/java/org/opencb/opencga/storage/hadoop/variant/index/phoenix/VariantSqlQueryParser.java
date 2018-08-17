@@ -27,6 +27,7 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
@@ -35,6 +36,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTask;
@@ -608,6 +610,78 @@ public class VariantSqlQueryParser {
                 if (!isValidParam(query, FILE)) {
                     throw VariantQueryException.malformedParam(QUAL, value, "Missing \"" + FILE.key() + "\" filter");
                 }
+            }
+        }
+
+        if (isValidParam(query, INFO)) {
+            Pair<QueryOperation, Map<String, String>> pair = VariantQueryUtils.parseInfo(query);
+            QueryOperation infoOperation = pair.getKey();
+            Map<String, String> infoValuesMap = pair.getValue();
+
+            if (!infoValuesMap.isEmpty()) {
+                List<String> fixedAttributes = HBaseToVariantConverter.getFixedAttributes(defaultStudyConfiguration);
+
+                StringBuilder sb = new StringBuilder();
+                int i = -1;
+                for (Map.Entry<String, String> entry : infoValuesMap.entrySet()) {
+                    i++;
+
+                    String infoValues = entry.getValue();
+                    Pair<Integer, Integer> fileIdPair = studyConfigurationManager
+                            .getFileIdPair(entry.getKey(), false, defaultStudyConfiguration);
+                    Pair<QueryOperation, List<String>> infoPair = splitValue(infoValues);
+                    for (String infoValue : infoPair.getValue()) {
+
+                        if (sb.length() > 0) {
+                            sb.append(infoOperation.toString());
+                        }
+                        sb.append(" ( ");
+
+                        String[] strings = splitOperator(infoValue);
+                        String info = strings[0];
+                        String op = strings[1];
+                        String filterValue = strings[2];
+
+                        int infoIdx = fixedAttributes.indexOf(info);
+                        VariantFileHeaderComplexLine infoLine = defaultStudyConfiguration.getVariantHeaderLines("INFO").get(info);
+
+                        if (i > 0 && qualOperation != null) {
+                            sb.append(' ').append(qualOperation.name()).append(' ');
+                        }
+
+                        boolean toNumber = infoLine.getType().equals("Float") || infoLine.getType().equals("Integer");
+                        if (toNumber) {
+                            sb.append("TO_NUMBER(");
+                        }
+                        sb.append('"');
+                        buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue(), sb);
+                        sb.append('"');
+
+                        // Arrays in SQL are 1-based.
+                        sb.append('[').append(HBaseToStudyEntryConverter.FILE_INFO_START_IDX + infoIdx + 1).append(']');
+
+                        if (toNumber) {
+                            sb.append(')');
+                            double parsedValue = parseDouble(filterValue, INFO, infoValues);
+                            sb.append(parseNumericOperator(op)).append(' ').append(parsedValue);
+
+                            if (op.startsWith(">>") || op.startsWith("<<")) {
+                                sb.append(" OR \"");
+                                buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue(), sb);
+                                sb.append('"');
+
+                                // Arrays in SQL are 1-based.
+                                sb.append('[').append(HBaseToStudyEntryConverter.FILE_INFO_START_IDX + infoIdx + 1).append("] IS NULL");
+                            }
+                        } else {
+                            checkStringValue(filterValue);
+                            sb.append(parseOperator(op)).append(" '").append(filterValue).append('\'');
+                        }
+
+                        sb.append(" ) ");
+                    }
+                }
+                filters.add(sb.toString());
             }
         }
 
