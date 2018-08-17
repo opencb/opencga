@@ -242,6 +242,12 @@ public class VariantQueryUtilsTest extends GenericTest {
                 "HG00096", "GT=0/1,1/1",
                 "HG00097", "GT=1/1;DP>3");
 
+        checkParseFormat(new Query(FORMAT.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz:HaplotypeScore<10,"
+                        + "1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz:DP>100"),
+                QueryOperation.OR,
+                "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz", "HaplotypeScore<10",
+                "1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz", "DP>100");
+
     }
 
     protected void checkParseFormat(Query query, QueryOperation expectedOperation, String ...expected) {

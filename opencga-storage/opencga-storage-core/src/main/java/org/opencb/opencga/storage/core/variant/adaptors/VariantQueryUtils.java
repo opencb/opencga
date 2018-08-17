@@ -1056,49 +1056,71 @@ public final class VariantQueryUtils {
             return Pair.of(operator, map);
         }
     }
-
     private static Pair<QueryOperation, Map<String, String>> parseMultiKeyValueFilter(VariantQueryParam param, String stringValue) {
         Map<String, String> map = new LinkedHashMap<>();
-        stringValue += '.'; // Add stop operand
-        Matcher matcher = MULTI_KEY_VALUE_FILTER_PATTERN.matcher(stringValue);
 
-        int end = 0;
+        StringTokenizer tokenizer = new StringTokenizer(stringValue, OR + AND, true);
+        String key = "";
+        String values = "";
+        String op = "";
         QueryOperation operation = null;
-        while (matcher.find()) {
-            end = matcher.end();
-            String key = matcher.group(KEY);
-            String value = matcher.group(VALUE);
-            String op = matcher.group(OP);
 
-            QueryOperation finalOperation = operation;
-            map.compute(key, (k, v) -> {
-                if (v == null) {
-                    return value;
-                } else {
-                    return v + finalOperation.separator() + value;
+        while (tokenizer.hasMoreElements()) {
+            String token = tokenizer.nextToken();
+
+            if (token.contains(IS)) {
+                if (!key.isEmpty()) {
+                    // Prev operator is the main operator
+                    if (AND.equals(op)) {
+                        if (operation == QueryOperation.OR) {
+                            throw VariantQueryException.mixedAndOrOperators(param, stringValue);
+                        } else {
+                            operation = QueryOperation.AND;
+                        }
+                    } else if (OR.equals(op)) {
+                        if (operation == QueryOperation.AND) {
+                            throw VariantQueryException.mixedAndOrOperators(param, stringValue);
+                        } else {
+                            operation = QueryOperation.OR;
+                        }
+                    }
+
+                    // Add prev key/value to map
+                    String finalValues = values;
+                    QueryOperation finalOperation = operation;
+                    map.compute(key, (k, v) -> {
+                        if (v == null) {
+                            return finalValues;
+                        } else {
+                            return v + finalOperation.separator() + finalValues;
+                        }
+                    });
                 }
-            });
-            if (AND.equals(op)) {
-                if (operation == QueryOperation.OR) {
-                    throw VariantQueryException.mixedAndOrOperators(param, stringValue);
-                } else {
-                    operation = QueryOperation.AND;
-                }
-            } else if (OR.equals(op)) {
-                if (operation == QueryOperation.AND) {
-                    throw VariantQueryException.mixedAndOrOperators(param, stringValue);
-                } else {
-                    operation = QueryOperation.OR;
-                }
+
+
+                String[] split = token.split(IS, 2);
+                key = split[0];
+                values = split[1];
+            } else if (token.equals(OR) || token.equals(AND)) {
+                op = token;
             } else {
-                // found stop operand. Assume END
-                break;
+                if (key.isEmpty()) {
+                    throw VariantQueryException.malformedParam(param, stringValue);
+                }
+                values += op + token;
             }
         }
 
-        // Check if all the sequence has been processed
-        if (end != (stringValue.length())) {
-            throw VariantQueryException.malformedParam(param, stringValue);
+        if (!key.isEmpty()) {
+            String finalValues = values;
+            QueryOperation finalOperation = operation;
+            map.compute(key, (k, v) -> {
+                if (v == null) {
+                    return finalValues;
+                } else {
+                    return v + finalOperation.separator() + finalValues;
+                }
+            });
         }
 
         return Pair.of(operation, map);

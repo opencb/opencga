@@ -24,6 +24,7 @@ import static org.junit.Assert.*;
 import static org.opencb.biodata.models.variant.StudyEntry.FILTER;
 import static org.opencb.biodata.models.variant.StudyEntry.QUAL;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 
 /**
@@ -337,6 +338,88 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877,NA12882")
                 .append(VariantQueryParam.INCLUDE_FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,1K.end.platinum-genomes-vcf-NA12882_S1.genome.vcf.gz"), options);
         assertThat(queryResult, everyResult(allVariants, allOf(withStudy("S_1", withFileId("12877")), withStudy("S_2", withFileId("12882")))));
+    }
+
+    @Test
+    public void testGetAllVariants_Info() {
+        VariantQueryResult<Variant> allVariants = dbAdaptor.get(new Query()
+                .append(VariantQueryParam.INCLUDE_STUDY.key(), "S_1")
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877,NA12878")
+                .append(VariantQueryParam.INCLUDE_FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz"), options);
+
+
+        Query query = new Query(STUDY.key(), "S_1")
+                .append(INCLUDE_FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz")
+                .append(INFO.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz:HaplotypeScore<10"
+                        + ",1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz:DP>100");
+        queryResult = query(query, new QueryOptions());
+        System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(
+                anyOf(
+                        withFileId("12877",
+                                withAttribute("HaplotypeScore", asNumber(lt(10)))
+                        ),
+                        withFileId("12878",
+                                withAttribute("DP", asNumber(gt(100)))
+                        )
+                )
+        ))));
+
+        query = new Query(STUDY.key(), "S_1")
+                .append(FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz")
+                .append(INFO.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz:HaplotypeScore<10"
+                        + ",1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz:DP>100");
+        queryResult = query(query, new QueryOptions());
+        System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(
+                anyOf(
+                        withFileId("12877",
+                                withAttribute("HaplotypeScore", asNumber(lt(10)))
+                        ),
+                        withFileId("12878",
+                                withAttribute("DP", asNumber(gt(100)))
+                        )
+                )
+        ))));
+
+        query = new Query(STUDY.key(), "S_1")
+                .append(FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz")
+                .append(INFO.key(),
+                        "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz:HaplotypeScore<10"
+                        + AND
+                        + "1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz:DP>100");
+        queryResult = query(query, new QueryOptions());
+        System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(
+                withFileId("12877",
+                        withAttribute("HaplotypeScore", asNumber(lt(10)))
+                ),
+                withFileId("12878",
+                        withAttribute("DP", asNumber(gt(100)))
+                )
+        ))));
+
+        query = new Query(STUDY.key(), "S_1")
+                .append(FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"+AND+"1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz")
+                .append(INFO.key(),
+                        "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz:HaplotypeScore<10"
+                        + OR
+                        + "1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz:DP>100");
+        queryResult = query(query, new QueryOptions());
+        System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(
+                withFileId("12877"),
+                withFileId("12878"),
+                anyOf(
+                        withFileId("12877",
+                                withAttribute("HaplotypeScore", asNumber(lt(10)))
+                        ),
+                        withFileId("12878",
+                                withAttribute("DP", asNumber(gt(100)))
+                        )
+                )
+        ))));
+
     }
 
     @Test
