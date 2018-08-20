@@ -103,14 +103,14 @@ public class VariantSearchUtils {
     }
 
     public static List<VariantQueryParam> uncoveredParams(Collection<VariantQueryParam> params) {
-        List<VariantQueryParam> coveredParams = new ArrayList<>();
+        List<VariantQueryParam> uncoveredParams = new ArrayList<>();
 
         for (VariantQueryParam param : params) {
             if (UNSUPPORTED_QUERY_PARAMS.contains(param) || UNSUPPORTED_MODIFIERS.contains(param)) {
-                coveredParams.add(param);
+                uncoveredParams.add(param);
             }
         }
-        return coveredParams;
+        return uncoveredParams;
     }
 
     public static boolean isIncludeCovered(QueryOptions options) {

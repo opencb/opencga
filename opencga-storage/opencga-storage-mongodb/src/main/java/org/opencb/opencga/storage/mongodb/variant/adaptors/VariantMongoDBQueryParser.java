@@ -549,8 +549,13 @@ public class VariantMongoDBQueryParser {
                             addCompListQueryFilter(key + StudyEntry.QUAL, query.getString(QUAL.key()), fileBuilder, false);
                         }
 
-                        if (infoInFileElemMatch) {
-                            String infoValue = infoMap.get(defaultStudyConfiguration.getFileIds().inverse().get(fileId));
+                        if (infoInFileElemMatch && !infoMap.isEmpty()) {
+                            if (defaultStudyConfiguration == null) {
+                                throw VariantQueryException.missingStudyForFile(fileId.toString(),
+                                        studyConfigurationManager.getStudyNames(null));
+                            }
+                            String fileName = defaultStudyConfiguration.getFileIds().inverse().get(fileId);
+                            String infoValue = infoMap.get(fileName);
                             if (infoValue != null) {
                                 addCompListQueryFilter(DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD, infoValue, fileBuilder, true);
                             }
@@ -567,10 +572,13 @@ public class VariantMongoDBQueryParser {
 
                 }
 
-                if (!infoInFileElemMatch) {
+                if (!infoInFileElemMatch && !infoMap.isEmpty()) {
                     DBObject[] infoElemMatch = new DBObject[infoMap.size()];
                     int i = 0;
                     for (Map.Entry<String, String> entry : infoMap.entrySet()) {
+                        if (defaultStudyConfiguration == null) {
+                            throw VariantQueryException.missingStudyForFile(entry.getKey(), studyConfigurationManager.getStudyNames(null));
+                        }
                         QueryBuilder infoBuilder = new QueryBuilder();
                         Integer fileId = StudyConfigurationManager.getFileIdFromStudy(entry.getKey(), defaultStudyConfiguration);
                         infoBuilder.and(DocumentToStudyVariantEntryConverter.FILEID_FIELD).is(fileId);

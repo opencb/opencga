@@ -995,6 +995,9 @@ public final class VariantQueryUtils {
      * @return a pair with the internal QueryOperation (AND/OR) and a map between Files and INFO filters.
      */
     public static Pair<QueryOperation, Map<String, String>> parseInfo(Query query) {
+        if (!isValidParam(query, INFO)) {
+            return Pair.of(null, Collections.emptyMap());
+        }
         String value = query.getString(INFO.key());
         if (value.contains(IS)) {
             return parseMultiKeyValueFilter(INFO, value);
@@ -1024,6 +1027,9 @@ public final class VariantQueryUtils {
      * @return a pair with the internal QueryOperation (AND/OR) and a map between Samples and FORMAT filters.
      */
     public static Pair<QueryOperation, Map<String, String>> parseFormat(Query query) {
+        if (!isValidParam(query, FORMAT)) {
+            return Pair.of(null, Collections.emptyMap());
+        }
         String value = query.getString(FORMAT.key());
         if (value.contains(IS)) {
             return parseMultiKeyValueFilter(FORMAT, value);
