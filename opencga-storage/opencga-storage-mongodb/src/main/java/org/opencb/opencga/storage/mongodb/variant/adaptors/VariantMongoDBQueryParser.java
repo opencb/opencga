@@ -464,11 +464,8 @@ public class VariantMongoDBQueryParser {
             }
 
             if (isValidParam(query, VARIANTS_TO_INDEX)) {
-                long ts = 0;
-                for (String studyName : studyConfigurationManager.getStudyNames(null)) {
-                    StudyConfiguration sc = studyConfigurationManager.getStudyConfiguration(studyName, null).first();
-                    ts = Math.max(ts, sc.getAttributes().getLong(SEARCH_INDEX_LAST_TIMESTAMP.key()));
-                }
+                long ts = studyConfigurationManager.getProjectMetadata().first().getAttributes()
+                        .getLong(SEARCH_INDEX_LAST_TIMESTAMP.key());
                 if (ts > 0) {
                     builder.and(INDEX_FIELD + '.' + DocumentToVariantConverter.INDEX_TIMESTAMP_FIELD)
                             .greaterThan(ts);

@@ -28,6 +28,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.annotation.converters.VariantTraitAssociationToEvidenceEntryConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -442,12 +443,13 @@ public class DocumentToVariantAnnotationConverter
                     if (va.getAdditionalAttributes() == null) {
                         va.setAdditionalAttributes(new HashMap<>());
                     }
-                    va.getAdditionalAttributes().compute("opencga", (key, value) -> {
+                    va.getAdditionalAttributes().compute(VariantField.AdditionalAttributes.GROUP_NAME.key(), (key, value) -> {
                         if (value == null) {
                             HashMap<String, String> map = new HashMap<>(1);
                             value = new AdditionalAttribute(map);
                         }
-                        value.getAttribute().put("annotationId", annotationIds.get(((Number) o).intValue()));
+                        value.getAttribute().put(VariantField.AdditionalAttributes.ANNOTATION_ID.key(),
+                                annotationIds.get(((Number) o).intValue()));
                         return value;
                     });
                 }

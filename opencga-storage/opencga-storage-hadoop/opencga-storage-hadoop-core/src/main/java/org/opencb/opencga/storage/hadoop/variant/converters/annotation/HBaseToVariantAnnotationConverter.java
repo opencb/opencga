@@ -352,7 +352,7 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
         }
 
         if (hasAnnotationId) {
-            additionalAttribute.getAttribute().put("annotationId", annotationId);
+            additionalAttribute.getAttribute().put(VariantField.AdditionalAttributes.ANNOTATION_ID.key(), annotationId);
         }
         return variantAnnotation;
     }

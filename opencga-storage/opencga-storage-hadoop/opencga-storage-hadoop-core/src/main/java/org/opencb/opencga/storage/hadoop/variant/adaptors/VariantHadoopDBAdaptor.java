@@ -322,11 +322,8 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                     throw VariantQueryException.internalException(e);
                 }
             }).iterator();
-            long ts = 0;
-            for (String studyName : getStudyConfigurationManager().getStudyNames(null)) {
-                StudyConfiguration sc = getStudyConfigurationManager().getStudyConfiguration(studyName, null).first();
-                ts = Math.max(ts, sc.getAttributes().getLong(SEARCH_INDEX_LAST_TIMESTAMP.key()));
-            }
+            long ts = getStudyConfigurationManager().getProjectMetadata().first().getAttributes()
+                    .getLong(SEARCH_INDEX_LAST_TIMESTAMP.key());
             HBaseToVariantAnnotationConverter converter = new HBaseToVariantAnnotationConverter(genomeHelper, ts)
                     .setAnnotationIds(getStudyConfigurationManager().getProjectMetadata().first().getAnnotation())
                     .setIncludeFields(selectElements.getFields());

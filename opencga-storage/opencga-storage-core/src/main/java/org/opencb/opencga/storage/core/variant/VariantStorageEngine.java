@@ -578,13 +578,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             ProgressLogger progressLogger = new ProgressLogger("Variants loaded in Solr:", () -> dbAdaptor.count(query).first(), 200);
             VariantSearchLoadResult load = variantSearchManager.load(dbName, iterator, progressLogger, newVariantSearchLoadListener());
 
-            for (String studyName : getStudyConfigurationManager().getStudyNames(null)) {
-                long value = System.currentTimeMillis();
-                getStudyConfigurationManager().lockAndUpdate(studyName, sc -> {
-                    sc.getAttributes().put(SEARCH_INDEX_LAST_TIMESTAMP.key(), value);
-                    return sc;
-                });
-            }
+            long value = System.currentTimeMillis();
+            getStudyConfigurationManager().lockAndUpdateProject(projectMetadata -> {
+                projectMetadata.getAttributes().put(SEARCH_INDEX_LAST_TIMESTAMP.key(), value);
+                return projectMetadata;
+            });
 
             return load;
         } catch (StorageEngineException | IOException | VariantSearchException | RuntimeException e) {
@@ -642,7 +640,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions);
 
                 ProgressLogger progressLogger = new ProgressLogger("Variants loaded in Solr:", () -> dbAdaptor.count(query).first(), 200);
-                variantSearchManager.load(collectionName, iterator, progressLogger, null);
+                variantSearchManager.load(collectionName, iterator, progressLogger, VariantSearchLoadListener.empty());
             } else {
                 throw new StorageEngineException("Solr is not alive!");
             }

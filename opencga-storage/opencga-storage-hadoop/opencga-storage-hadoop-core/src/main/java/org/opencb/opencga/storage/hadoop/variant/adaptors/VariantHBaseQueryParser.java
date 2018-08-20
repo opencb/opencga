@@ -320,12 +320,9 @@ public class VariantHBaseQueryParser {
             Filter f2 = existingColumnFilter(INDEX_UNKNOWN.bytes());
             filters.addFilter(new FilterList(FilterList.Operator.MUST_PASS_ONE, f1, f2));
 
-            long ts = 0;
-            for (String studyName : studyNames) {
-                // TODO: Move this to ProjectMetadata
-                StudyConfiguration sc = studyConfigurationManager.getStudyConfiguration(studyName, null).first();
-                ts = Math.max(ts, sc.getAttributes().getLong(SEARCH_INDEX_LAST_TIMESTAMP.key()));
-            }
+
+            long ts = studyConfigurationManager.getProjectMetadata().first().getAttributes()
+                    .getLong(SEARCH_INDEX_LAST_TIMESTAMP.key());
             if (ts > 0 && scan.getStartRow() == HConstants.EMPTY_START_ROW) {
                 try {
                     scan.setTimeRange(ts, Long.MAX_VALUE);

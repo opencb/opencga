@@ -158,7 +158,8 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
         for (VariantAnnotation annotation: variantStorageEngine.getAnnotation(annotationName, query, null).getResult()) {
             assertEquals("an id -- " + expectedId, annotation.getId());
 //            assertEquals("1", annotation.getAdditionalAttributes().get("opencga").getAttribute().get("release"));
-            assertEquals(expectedAnnotationName, annotation.getAdditionalAttributes().get("opencga").getAttribute().get("annotationId"));
+            assertEquals(expectedAnnotationName, annotation.getAdditionalAttributes().get(VariantField.AdditionalAttributes.GROUP_NAME.key())
+                    .getAttribute().get(VariantField.AdditionalAttributes.ANNOTATION_ID.key()));
             count++;
         }
         assertEquals(count, variantStorageEngine.count(query).first().intValue());
