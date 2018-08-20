@@ -1182,7 +1182,11 @@ public class VariantMongoDBQueryParser {
                 }
                 break;
             case "!=":
-                builder.and(key).notEquals(Double.parseDouble(obj));
+                try {
+                    builder.and(key).notEquals(Double.parseDouble(obj));
+                } catch (NumberFormatException e) {
+                    builder.and(key).notEquals(obj);
+                }
                 break;
             case "~=":
             case "~":
