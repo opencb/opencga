@@ -614,75 +614,11 @@ public class VariantSqlQueryParser {
         }
 
         if (isValidParam(query, INFO)) {
-            Pair<QueryOperation, Map<String, String>> pair = VariantQueryUtils.parseInfo(query);
-            QueryOperation infoOperation = pair.getKey();
-            Map<String, String> infoValuesMap = pair.getValue();
+            addInfoFilter(query, filters, defaultStudyConfiguration);
+        }
 
-            if (!infoValuesMap.isEmpty()) {
-                List<String> fixedAttributes = HBaseToVariantConverter.getFixedAttributes(defaultStudyConfiguration);
-
-                StringBuilder sb = new StringBuilder();
-                int i = -1;
-                for (Map.Entry<String, String> entry : infoValuesMap.entrySet()) {
-                    i++;
-
-                    String infoValues = entry.getValue();
-                    Pair<Integer, Integer> fileIdPair = studyConfigurationManager
-                            .getFileIdPair(entry.getKey(), false, defaultStudyConfiguration);
-                    Pair<QueryOperation, List<String>> infoPair = splitValue(infoValues);
-                    for (String infoValue : infoPair.getValue()) {
-
-                        if (sb.length() > 0) {
-                            sb.append(infoOperation.toString());
-                        }
-                        sb.append(" ( ");
-
-                        String[] strings = splitOperator(infoValue);
-                        String info = strings[0];
-                        String op = strings[1];
-                        String filterValue = strings[2];
-
-                        int infoIdx = fixedAttributes.indexOf(info);
-                        VariantFileHeaderComplexLine infoLine = defaultStudyConfiguration.getVariantHeaderLines("INFO").get(info);
-
-                        if (i > 0 && qualOperation != null) {
-                            sb.append(' ').append(qualOperation.name()).append(' ');
-                        }
-
-                        boolean toNumber = infoLine.getType().equals("Float") || infoLine.getType().equals("Integer");
-                        if (toNumber) {
-                            sb.append("TO_NUMBER(");
-                        }
-                        sb.append('"');
-                        buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue(), sb);
-                        sb.append('"');
-
-                        // Arrays in SQL are 1-based.
-                        sb.append('[').append(HBaseToStudyEntryConverter.FILE_INFO_START_IDX + infoIdx + 1).append(']');
-
-                        if (toNumber) {
-                            sb.append(')');
-                            double parsedValue = parseDouble(filterValue, INFO, infoValues);
-                            sb.append(parseNumericOperator(op)).append(' ').append(parsedValue);
-
-                            if (op.startsWith(">>") || op.startsWith("<<")) {
-                                sb.append(" OR \"");
-                                buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue(), sb);
-                                sb.append('"');
-
-                                // Arrays in SQL are 1-based.
-                                sb.append('[').append(HBaseToStudyEntryConverter.FILE_INFO_START_IDX + infoIdx + 1).append("] IS NULL");
-                            }
-                        } else {
-                            checkStringValue(filterValue);
-                            sb.append(parseOperator(op)).append(" '").append(filterValue).append('\'');
-                        }
-
-                        sb.append(" ) ");
-                    }
-                }
-                filters.add(sb.toString());
-            }
+        if (isValidParam(query, FORMAT)) {
+            addFormatFilter(query, filters, defaultStudyConfiguration);
         }
 
         if (isValidParam(query, FILE)) {
@@ -951,6 +887,142 @@ public class VariantSqlQueryParser {
         }
 
         return defaultStudyConfiguration;
+    }
+
+    private void addInfoFilter(Query query, List<String> filters, StudyConfiguration defaultStudyConfiguration) {
+        Pair<QueryOperation, Map<String, String>> pair = VariantQueryUtils.parseInfo(query);
+        QueryOperation infoOperation = pair.getKey();
+        Map<String, String> infoValuesMap = pair.getValue();
+
+        if (!infoValuesMap.isEmpty()) {
+            List<String> fixedAttributes = HBaseToVariantConverter.getFixedAttributes(defaultStudyConfiguration);
+
+            StringBuilder sb = new StringBuilder();
+            int i = -1;
+            for (Map.Entry<String, String> entry : infoValuesMap.entrySet()) {
+                i++;
+
+                String infoValues = entry.getValue();
+                Pair<Integer, Integer> fileIdPair = studyConfigurationManager
+                        .getFileIdPair(entry.getKey(), false, defaultStudyConfiguration);
+                Pair<QueryOperation, List<String>> infoPair = splitValue(infoValues);
+                for (String infoValue : infoPair.getValue()) {
+
+                    if (sb.length() > 0) {
+                        sb.append(infoOperation.toString());
+                    }
+                    sb.append(" ( ");
+
+                    String[] strings = splitOperator(infoValue);
+                    String info = strings[0];
+                    String op = strings[1];
+                    String filterValue = strings[2];
+
+                    int infoIdx = fixedAttributes.indexOf(info);
+                    VariantFileHeaderComplexLine infoLine = defaultStudyConfiguration.getVariantHeaderLines("INFO").get(info);
+
+                    boolean toNumber = infoLine.getType().equals("Float") || infoLine.getType().equals("Integer");
+                    if (toNumber) {
+                        sb.append("TO_NUMBER(");
+                    }
+                    sb.append('"');
+                    buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue(), sb);
+                    sb.append('"');
+
+                    // Arrays in SQL are 1-based.
+                    sb.append('[').append(HBaseToStudyEntryConverter.FILE_INFO_START_IDX + infoIdx + 1).append(']');
+
+                    if (toNumber) {
+                        sb.append(')');
+                        double parsedValue = parseDouble(filterValue, INFO, infoValues);
+                        sb.append(parseNumericOperator(op)).append(' ').append(parsedValue);
+
+                        if (op.startsWith(">>") || op.startsWith("<<")) {
+                            sb.append(" OR \"");
+                            buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue(), sb);
+                            sb.append('"');
+
+                            // Arrays in SQL are 1-based.
+                            sb.append('[').append(HBaseToStudyEntryConverter.FILE_INFO_START_IDX + infoIdx + 1).append("] IS NULL");
+                        }
+                    } else {
+                        checkStringValue(filterValue);
+                        sb.append(parseOperator(op)).append(" '").append(filterValue).append('\'');
+                    }
+
+                    sb.append(" ) ");
+                }
+            }
+            filters.add(sb.toString());
+        }
+    }
+
+    private void addFormatFilter(Query query, List<String> filters, StudyConfiguration defaultStudyConfiguration) {
+        Pair<QueryOperation, Map<String, String>> pair = VariantQueryUtils.parseFormat(query);
+        QueryOperation formatOperation = pair.getKey();
+        Map<String, String> formatValuesMap = pair.getValue();
+
+        if (!formatValuesMap.isEmpty()) {
+            List<String> fixedFormat = HBaseToVariantConverter.getFixedFormat(defaultStudyConfiguration);
+
+            StringBuilder sb = new StringBuilder();
+            int i = -1;
+            for (Map.Entry<String, String> entry : formatValuesMap.entrySet()) {
+                i++;
+
+                String formatValues = entry.getValue();
+                int sampleId = studyConfigurationManager.getSampleId(entry.getKey(), defaultStudyConfiguration);
+                Pair<QueryOperation, List<String>> formatPair = splitValue(formatValues);
+                for (String formatValue : formatPair.getValue()) {
+
+                    if (sb.length() > 0) {
+                        sb.append(formatOperation.toString());
+                    }
+                    sb.append(" ( ");
+
+                    String[] strings = splitOperator(formatValue);
+                    String format = strings[0];
+                    String op = strings[1];
+                    String filterValue = strings[2];
+
+                    int formatIdx = fixedFormat.indexOf(format);
+
+                    VariantFileHeaderComplexLine formatLine = defaultStudyConfiguration.getVariantHeaderLines("FORMAT").get(format);
+
+                    boolean toNumber = formatLine.getType().equals("Float") || formatLine.getType().equals("Integer");
+                    if (toNumber) {
+                        sb.append("TO_NUMBER(");
+                    }
+                    sb.append('"');
+                    buildSampleColumnKey(defaultStudyConfiguration.getStudyId(), sampleId, sb);
+                    sb.append('"');
+
+                    // Arrays in SQL are 1-based.
+                    sb.append('[').append(formatIdx + 1).append(']');
+
+                    if (toNumber) {
+                        sb.append(')');
+                        double parsedValue = parseDouble(filterValue, INFO, formatValues);
+                        sb.append(parseNumericOperator(op)).append(' ').append(parsedValue);
+
+                        if (op.startsWith(">>") || op.startsWith("<<")) {
+                            sb.append(" OR \"");
+                            buildSampleColumnKey(defaultStudyConfiguration.getStudyId(), sampleId, sb);
+                            sb.append('"');
+
+                            // Arrays in SQL are 1-based.
+                            sb.append('[').append(formatIdx + 1).append("] IS NULL");
+                        }
+                    } else {
+                        checkStringValue(filterValue);
+                        sb.append(parseOperator(op)).append(" '").append(filterValue).append('\'');
+                    }
+
+                    sb.append(" ) ");
+                }
+            }
+            filters.add(sb.toString());
+        }
     }
 
     private void unsupportedFilter(Query query, VariantQueryParam param) {

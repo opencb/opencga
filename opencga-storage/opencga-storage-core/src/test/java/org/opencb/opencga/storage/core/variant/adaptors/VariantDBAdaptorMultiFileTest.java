@@ -341,6 +341,80 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
     }
 
     @Test
+    public void testGetAllVariants_format() {
+        VariantQueryResult<Variant> allVariants = dbAdaptor.get(new Query()
+                .append(VariantQueryParam.INCLUDE_STUDY.key(), "S_1")
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877,NA12878")
+                .append(VariantQueryParam.INCLUDE_FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz"), options);
+
+        Query query = new Query(STUDY.key(), "S_1")
+                .append(SAMPLE.key(), "NA12877,NA12878")
+                .append(FORMAT.key(), "NA12877:DP<100");
+        queryResult = query(query, new QueryOptions());
+        System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(
+                withSamples("NA12877", "NA12878"),
+                anyOf(
+                        withSampleData("NA12877", "GT", containsString("1")),
+                        withSampleData("NA12878", "GT", containsString("1"))
+                ),
+                withSampleData("NA12877", "DP", asNumber(lt(100)))
+
+        ))));
+
+        query = new Query(STUDY.key(), "S_1")
+                .append(INCLUDE_SAMPLE.key(), "NA12877,NA12878")
+                .append(FORMAT.key(), "NA12877:DP<100;GT=1/1");
+        queryResult = query(query, new QueryOptions());
+        System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(
+                withSamples("NA12877", "NA12878"),
+                withSampleData("NA12877", "GT", is("1/1")),
+                withSampleData("NA12877", "DP", asNumber(lt(100)))
+
+        ))));
+
+        query = new Query(STUDY.key(), "S_1")
+                .append(INCLUDE_SAMPLE.key(), "NA12877,NA12878")
+                .append(FORMAT.key(), "NA12877:DP<100;GT=1/1,0/1");
+        queryResult = query(query, new QueryOptions());
+        System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(
+                withSamples("NA12877", "NA12878"),
+                withSampleData("NA12877", "GT", anyOf(is("1/1"), is("0/1"))),
+                withSampleData("NA12877", "DP", asNumber(lt(100)))
+
+        ))));
+
+        query = new Query(STUDY.key(), "S_1")
+                .append(FORMAT.key(), "NA12877:DP<100" + OR + "NA12878:DP<50");
+        queryResult = query(query, new QueryOptions());
+        System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(
+                withSamples("NA12877", "NA12878"),
+                anyOf(
+                        withSampleData("NA12877", "DP", asNumber(lt(100))),
+                        withSampleData("NA12878", "DP", asNumber(lt(50)))
+                )
+        ))));
+
+        query = new Query(STUDY.key(), "S_1")
+                .append(FORMAT.key(), "NA12877:DP<100" + AND + "NA12878:DP<50");
+        queryResult = query(query, new QueryOptions());
+        System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(
+                withSamples("NA12877", "NA12878"),
+                allOf(
+                        withSampleData("NA12877", "DP", asNumber(lt(100))),
+                        withSampleData("NA12878", "DP", asNumber(lt(50)))
+                )
+        ))));
+
+    }
+
+
+
+    @Test
     public void testGetAllVariants_Info() {
         VariantQueryResult<Variant> allVariants = dbAdaptor.get(new Query()
                 .append(VariantQueryParam.INCLUDE_STUDY.key(), "S_1")

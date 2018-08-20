@@ -475,7 +475,12 @@ public class VariantMatchers {
         return new FeatureMatcher<String, Double>(subMatcher, "as number", "as number") {
             @Override
             protected Double featureValueOf(String actual) {
-                return Double.valueOf(actual);
+                try {
+                    return Double.valueOf(actual);
+                } catch (NumberFormatException e) {
+                    return null;
+//                    throw e;
+                }
             }
         };
     }
