@@ -351,6 +351,13 @@ public class StudyConfiguration {
                 .collect(Collectors.toMap(VariantFileHeaderComplexLine::getId, l -> l));
     }
 
+    public VariantFileHeaderComplexLine getVariantHeaderLine(String key, String id) {
+        return variantHeader.getComplexLines()
+                .stream()
+                .filter(l -> l.getKey().equalsIgnoreCase(key) && l.getId().equalsIgnoreCase(id))
+                .findFirst().orElse(null);
+    }
+
     public StudyConfiguration setVariantHeader(VariantFileHeader header) {
         this.variantHeader = header;
         return this;

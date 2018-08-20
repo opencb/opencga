@@ -620,7 +620,29 @@ public class StudyConfigurationManager implements AutoCloseable {
      * @return File id within this study. Null if the file does not exist.
      */
     public static Integer getFileIdFromStudy(Object fileObj, StudyConfiguration studyConfiguration) {
-        return getResourceIdFromStudy(fileObj, studyConfiguration, studyConfiguration.getFileIds());
+        return getFileIdFromStudy(fileObj, studyConfiguration, false);
+    }
+
+
+    /**
+     * Get fileId from a given study configuration.
+     *
+     * @param fileObj            File object
+     * @param studyConfiguration Study configuration.
+     * @param indexed            Only return indexed files
+     * @return File id within this study. Null if the file does not exist.
+     */
+    public static Integer getFileIdFromStudy(Object fileObj, StudyConfiguration studyConfiguration, boolean indexed) {
+        Integer fileId = getResourceIdFromStudy(fileObj, studyConfiguration, studyConfiguration.getFileIds());
+        if (indexed && fileId != null) {
+            if (studyConfiguration.getIndexedFiles().contains(fileId)) {
+                return fileId;
+            } else {
+                return null;
+            }
+        } else {
+            return fileId;
+        }
     }
 
     /**

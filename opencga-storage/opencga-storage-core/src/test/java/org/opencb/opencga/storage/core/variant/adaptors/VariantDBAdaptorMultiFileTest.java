@@ -413,6 +413,13 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
     }
 
 
+    @Test
+    public void testGetAllVariants_formatFail() {
+        thrown.expect(VariantQueryException.class);
+        thrown.expectMessage("FORMAT field \"JJ\" not found.");
+        Query query = new Query(STUDY.key(), "S_1").append(FORMAT.key(), "NA12877:JJ<100");
+        queryResult = query(query, new QueryOptions());
+    }
 
     @Test
     public void testGetAllVariants_Info() {
@@ -460,8 +467,8 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
                 .append(FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz")
                 .append(INFO.key(),
                         "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz:HaplotypeScore<10"
-                        + AND
-                        + "1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz:DP>100");
+                                + AND
+                                + "1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz:DP>100");
         queryResult = query(query, new QueryOptions());
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
         assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(
@@ -494,6 +501,14 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
                 )
         ))));
 
+    }
+
+    @Test
+    public void testGetAllVariants_infoFail() {
+        thrown.expect(VariantQueryException.class);
+        thrown.expectMessage("INFO field \"JJ\" not found.");
+        Query query = new Query(STUDY.key(), "S_1").append(INFO.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz:JJ<100");
+        queryResult = query(query, new QueryOptions());
     }
 
     @Test

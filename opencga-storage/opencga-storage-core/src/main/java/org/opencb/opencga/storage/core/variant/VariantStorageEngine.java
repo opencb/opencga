@@ -31,6 +31,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
+import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.rest.CellBaseClient;
@@ -1028,8 +1029,53 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             query.put(ANNOT_CLINICAL_SIGNIFICANCE.key(), clinicalSignificanceList);
         }
 
+        StudyConfiguration defaultStudyConfiguration = getDefaultStudyConfiguration(query, options, getStudyConfigurationManager());
         if (isValidParam(query, FORMAT)) {
             extractGenotypeFromFormatFilter(query);
+
+            for (Map.Entry<String, String> entry : parseFormat(query).getValue().entrySet()) {
+                String sampleName = entry.getKey();
+                if (defaultStudyConfiguration == null) {
+                    throw VariantQueryException.missingStudyForSample(sampleName, getStudyConfigurationManager().getStudyNames(null));
+                }
+                Integer sampleId = StudyConfigurationManager.getSampleIdFromStudy(sampleName, defaultStudyConfiguration, true);
+                if (sampleId == null) {
+                    throw VariantQueryException.sampleNotFound(sampleName, defaultStudyConfiguration.getStudyName());
+                }
+                List<String> formats = splitValue(entry.getValue()).getValue();
+                for (String format : formats) {
+                    String[] split = splitOperator(format);
+                    VariantFileHeaderComplexLine line = defaultStudyConfiguration.getVariantHeaderLine("FORMAT", split[0]);
+                    if (line == null) {
+                        throw VariantQueryException.malformedParam(FORMAT, query.getString(FORMAT.key()),
+                                "FORMAT field \"" + split[0] + "\" not found. Available keys in study: "
+                                        + defaultStudyConfiguration.getVariantHeaderLines("FORMAT").keySet());
+                    }
+                }
+            }
+        }
+
+        if (isValidParam(query, INFO)) {
+            for (Map.Entry<String, String> entry : parseInfo(query).getValue().entrySet()) {
+                String fileName = entry.getKey();
+                if (defaultStudyConfiguration == null) {
+                    throw VariantQueryException.missingStudyForFile(fileName, getStudyConfigurationManager().getStudyNames(null));
+                }
+                Integer fileId = StudyConfigurationManager.getFileIdFromStudy(fileName, defaultStudyConfiguration, true);
+                if (fileId == null) {
+                    throw VariantQueryException.fileNotFound(fileName, defaultStudyConfiguration.getStudyName());
+                }
+                List<String> infos = splitValue(entry.getValue()).getValue();
+                for (String info : infos) {
+                    String[] split = splitOperator(info);
+                    VariantFileHeaderComplexLine line = defaultStudyConfiguration.getVariantHeaderLine("INFO", split[0]);
+                    if (line == null) {
+                        throw VariantQueryException.malformedParam(INFO, query.getString(INFO.key()),
+                                "INFO field \"" + split[0] + "\" not found. Available keys in study: "
+                                        + defaultStudyConfiguration.getVariantHeaderLines("INFO").keySet());
+                    }
+                }
+            }
         }
 
         if (isValidParam(query, SAMPLE)) {
@@ -1038,9 +1084,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                         "Can not be used along with filter \"" + GENOTYPE.key() + '"');
             }
 
-            StudyConfiguration studyConfiguration = getDefaultStudyConfiguration(query, options, getStudyConfigurationManager());
-
-            List<String> loadedGenotypes = studyConfiguration.getAttributes().getAsStringList(LOADED_GENOTYPES.key());
+            List<String> loadedGenotypes = defaultStudyConfiguration.getAttributes().getAsStringList(LOADED_GENOTYPES.key());
             if (CollectionUtils.isEmpty(loadedGenotypes)) {
                 loadedGenotypes = Arrays.asList(
                         "0/0", "0|0",
@@ -1078,9 +1122,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             query.remove(SAMPLE.key());
             query.put(GENOTYPE.key(), sb.toString());
         } else if (isValidParam(query, GENOTYPE)) {
-            StudyConfiguration studyConfiguration = getDefaultStudyConfiguration(query, options, getStudyConfigurationManager());
 
-            List<String> loadedGenotypes = studyConfiguration.getAttributes().getAsStringList(LOADED_GENOTYPES.key());
+            List<String> loadedGenotypes = defaultStudyConfiguration.getAttributes().getAsStringList(LOADED_GENOTYPES.key());
             if (CollectionUtils.isEmpty(loadedGenotypes)) {
                 loadedGenotypes = Arrays.asList(
                         "0/0", "0|0",
