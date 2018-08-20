@@ -145,7 +145,7 @@ public class JobManager extends ResourceManager<Job> {
                                    List<File> inputFiles, List<File> outputFiles, Map<String, Object> attributes,
                                    Map<String, Object> resourceManagerAttributes, Job.JobStatus status, long startTime,
                                    long endTime, QueryOptions options, String sessionId) throws CatalogException {
-        Job job = new Job(-1, name, name, "", toolName, null, "", description, startTime, endTime, executor, "", commandLine, false, status,
+        Job job = new Job(-1, null, name, "", toolName, null, "", description, startTime, endTime, executor, "", commandLine, false, status,
                 -1, new File().setUid(outDirId), inputFiles, outputFiles, Collections.emptyList(), params, -1, attributes,
                 resourceManagerAttributes);
         return create(String.valueOf(studyId), job, options, sessionId);
@@ -172,8 +172,8 @@ public class JobManager extends ResourceManager<Job> {
         authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_JOBS);
 
         ParamUtils.checkObj(job, "Job");
-        ParamUtils.checkParameter(job.getId(), "id");
         ParamUtils.checkParameter(job.getToolId(), "toolId");
+        job.setId(ParamUtils.defaultString(job.getId(), job.getToolId() + "_" + TimeUtils.getTimeMillis()));
 //        ParamUtils.checkParameter(job.getCommandLine(), "commandLine");
 //        ParamUtils.checkObj(job.getOutDir(), "outDir");
         job.setDescription(ParamUtils.defaultString(job.getDescription(), ""));
@@ -187,6 +187,7 @@ public class JobManager extends ResourceManager<Job> {
         job.setAttributes(ParamUtils.defaultObject(job.getAttributes(), HashMap::new));
         job.setUserId(userId);
         job.setRelease(catalogManager.getStudyManager().getCurrentRelease(study, userId));
+        job.setOutDir(job.getOutDir() != null && StringUtils.isNotEmpty(job.getOutDir().getPath()) ? job.getOutDir() : null);
 
         // FIXME check inputFiles? is a null conceptually valid?
 //        URI tmpOutDirUri = createJobOutdir(studyId, randomString, sessionId);
@@ -505,21 +506,12 @@ public class JobManager extends ResourceManager<Job> {
                                   Map<String, String> params, List<File> input, List<File> output, File outDir,
                                   Map<String, Object> attributes, String token)
             throws CatalogException {
-        String userId = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyStr, userId);
-
-        authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_JOBS);
-
-        Job job = new Job(jobName, userId, executable, type, input, output, outDir, params,
-                catalogManager.getStudyManager().getCurrentRelease(study, userId))
+        Job job = new Job(jobName, null, executable, type, input, output, outDir, params, -1)
                 .setDescription(description)
+                .setToolId("variant_index")
                 .setAttributes(attributes);
 
-        job.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.JOB));
-        QueryResult<Job> queryResult = jobDBAdaptor.insert(job, study.getUid(), new QueryOptions());
-        auditManager.recordCreation(AuditRecord.Resource.job, queryResult.first().getUid(), userId, queryResult.first(), null, null);
-
-        return queryResult;
+        return create(studyStr, job, QueryOptions.empty(), token);
     }
 
     // **************************   ACLs  ******************************** //

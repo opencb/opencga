@@ -42,6 +42,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.ProjectConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.models.Status;
@@ -111,6 +112,9 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         long projectUid = dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId();
         project.setUid(projectUid);
         project.setFqn(userId + "@" + project.getId());
+        if (StringUtils.isEmpty(project.getUuid())) {
+            project.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.PROJECT));
+        }
 
         Document projectDocument = projectConverter.convertToStorageType(project);
         if (StringUtils.isNotEmpty(project.getCreationDate())) {
@@ -245,14 +249,14 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
 
-        Bson projectParameters = new Document();
+        Document projectParameters = new Document();
 
         String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.CREATION_DATE.key(), QueryParams.DESCRIPTION.key(),
                 QueryParams.ORGANIZATION.key(), QueryParams.LAST_MODIFIED.key(), QueryParams.ORGANISM_SCIENTIFIC_NAME.key(),
                 QueryParams.ORGANISM_COMMON_NAME.key(), QueryParams.ORGANISM_ASSEMBLY.key(), };
         for (String s : acceptedParams) {
             if (parameters.containsKey(s)) {
-                ((Document) projectParameters).put("projects.$." + s, parameters.getString(s));
+                projectParameters.put("projects.$." + s, parameters.getString(s));
             }
         }
         String[] acceptedIntParams = {QueryParams.SIZE.key(), QueryParams.ORGANISM_TAXONOMY_CODE.key(), };
@@ -260,26 +264,32 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             if (parameters.containsKey(s)) {
                 int anInt = parameters.getInt(s, Integer.MIN_VALUE);
                 if (anInt != Integer.MIN_VALUE) {
-                    ((Document) projectParameters).put("projects.$." + s, anInt);
+                    projectParameters.put("projects.$." + s, anInt);
                 }
             }
         }
         Map<String, Object> attributes = parameters.getMap(QueryParams.ATTRIBUTES.key());
         if (attributes != null) {
             for (Map.Entry<String, Object> entry : attributes.entrySet()) {
-                ((Document) projectParameters).put("projects.$.attributes." + entry.getKey(), entry.getValue());
+                projectParameters.put("projects.$.attributes." + entry.getKey(), entry.getValue());
             }
 //            projectParameters.put("projects.$.attributes", attributes);
         }
 
         if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
-            ((Document) projectParameters).put("projects.$." + QueryParams.STATUS_NAME.key(),
-                    parameters.get(QueryParams.STATUS_NAME.key()));
-            ((Document) projectParameters).put("projects.$." + QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
+            projectParameters.put("projects.$." + QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
+            projectParameters.put("projects.$." + QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
         QueryResult<UpdateResult> updateResult = new QueryResult<>();
-        if (!((Document) projectParameters).isEmpty()) {
+        if (!projectParameters.isEmpty()) {
+
+            // Update modificationDate param
+            String time = TimeUtils.getTime();
+            Date date = TimeUtils.toDate(time);
+            projectParameters.put(MODIFICATION_DATE, time);
+            projectParameters.put(PRIVATE_MODIFICATION_DATE, date);
+
             Bson bsonQuery = parseQuery(query);
             Bson updates = new Document("$set", projectParameters);
             // Fixme: Updates
@@ -521,6 +531,18 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
+    public QueryResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException {
+        long startTime = startQuery();
+        List<Document> documentList = new ArrayList<>();
+        try (DBIterator<Document> dbIterator = nativeIterator(query, options, user)) {
+            while (dbIterator.hasNext()) {
+                documentList.add(dbIterator.next());
+            }
+        }
+        return endQuery("Native get", startTime, documentList);
+    }
+
+    @Override
     public DBIterator<Project> iterator(Query query, QueryOptions options) throws CatalogDBException {
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
         return new MongoDBIterator<>(mongoCursor, projectConverter);
@@ -700,7 +722,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             try {
                 switch (queryParam) {
                     case UID:
-                        addOrQuery("projects." + queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery("projects." + queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case USER_ID:
                         addAutoOrQuery(PRIVATE_ID, queryParam.key(), query, queryParam.type(), andBsonList);

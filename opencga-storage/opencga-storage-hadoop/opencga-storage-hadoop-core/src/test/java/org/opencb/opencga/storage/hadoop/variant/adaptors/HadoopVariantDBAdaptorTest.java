@@ -25,6 +25,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
@@ -122,32 +123,6 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
         cellBaseUtils = variantStorageEngine.getCellBaseUtils();
     }
 //
-    @Override
-    public VariantQueryResult<Variant> query(Query query, QueryOptions options) {
-        query = preProcessQuery(query);
-        VariantQueryUtils.convertGenesToRegionsQuery(query, cellBaseUtils);
-        return super.query(query, options);
-    }
-
-    protected Query preProcessQuery(Query query) {
-        try {
-            return ((HadoopVariantStorageEngine) variantStorageEngine).preProcessQuery(query);
-        } catch (StorageEngineException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
-    @Override
-    public VariantDBIterator iterator(Query query, QueryOptions options) {
-        query = preProcessQuery(query);
-        return super.iterator(query, options);
-    }
-
-    @Override
-    public Long count(Query query) {
-        query = preProcessQuery(query);
-        return super.count(query);
-    }
     //    @Override
 //    public Map<String, ?> getOtherStorageConfigurationOptions() {
 //        return new ObjectMap(AbstractHadoopVariantStoragePipeline.SKIP_CREATE_PHOENIX_INDEXES, true);
@@ -268,7 +243,7 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     public void testArchiveIterator() {
         int count = 0;
         Query query = new Query(VariantQueryParam.STUDY.key(), studyConfiguration.getStudyId())
-                .append(VariantQueryParam.FILE.key(), 6);
+                .append(VariantQueryParam.FILE.key(), UriUtils.fileName(smallInputUri));
 
         for (VariantDBIterator iterator = dbAdaptor.iterator(query, new QueryOptions("archive", true)); iterator.hasNext(); ) {
             Variant variant = iterator.next();

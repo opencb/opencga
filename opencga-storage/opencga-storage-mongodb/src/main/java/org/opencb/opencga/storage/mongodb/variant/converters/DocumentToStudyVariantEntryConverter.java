@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.mongodb.variant.converters;
 
+import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -56,6 +57,7 @@ public class DocumentToStudyVariantEntryConverter {
 
     private boolean includeSrc;
     private Map<Integer, List<Integer>> returnedFiles;
+    private Map<Integer, String> fileIds = new HashMap<>();
 
     //    private Integer fileId;
     private DocumentToSamplesConverter samplesConverter;
@@ -138,7 +140,7 @@ public class DocumentToStudyVariantEntryConverter {
                     continue;
                 }
                 HashMap<String, String> attributes = new HashMap<>();
-                FileEntry fileEntry = new FileEntry(fid.toString(), null, attributes);
+                FileEntry fileEntry = new FileEntry(getFileName(studyId, fid), null, attributes);
                 files.add(fileEntry);
 
                 fileObject = fileDocument;
@@ -157,7 +159,7 @@ public class DocumentToStudyVariantEntryConverter {
                                 }
                             }
                         } else {
-                            attributes.put(entry.getKey().replace(DocumentToStudyConfigurationConverter.TO_REPLACE_DOTS, "."),
+                            attributes.put(StringUtils.replace(entry.getKey(), DocumentToStudyConfigurationConverter.TO_REPLACE_DOTS, "."),
                                     entry.getValue().toString());
                         }
                     }
@@ -228,7 +230,8 @@ public class DocumentToStudyVariantEntryConverter {
             if (studyConfigurationManager == null) {
                 studyIds.put(studyId, Integer.toString(studyId));
             } else {
-                QueryResult<StudyConfiguration> queryResult = studyConfigurationManager.getStudyConfiguration(studyId, null);
+                QueryResult<StudyConfiguration> queryResult = studyConfigurationManager.getStudyConfiguration(studyId,
+                        StudyConfigurationManager.RO_CACHED_OPTIONS);
                 if (queryResult.getResult().isEmpty()) {
                     studyIds.put(studyId, Integer.toString(studyId));
                 } else {
@@ -237,6 +240,19 @@ public class DocumentToStudyVariantEntryConverter {
             }
         }
         return studyIds.get(studyId);
+    }
+
+    public String getFileName(int studyId, int fileId) {
+        if (!fileIds.containsKey(fileId)) {
+            if (studyConfigurationManager == null) {
+                fileIds.put(fileId, Integer.toString(fileId));
+            } else {
+                QueryResult<StudyConfiguration> queryResult = studyConfigurationManager.getStudyConfiguration(studyId,
+                        StudyConfigurationManager.RO_CACHED_OPTIONS);
+                fileIds.put(fileId, queryResult.first().getFileIds().inverse().get(fileId));
+            }
+        }
+        return fileIds.get(fileId);
     }
 
     public Document convertToStorageType(Variant variant, StudyEntry studyEntry) {

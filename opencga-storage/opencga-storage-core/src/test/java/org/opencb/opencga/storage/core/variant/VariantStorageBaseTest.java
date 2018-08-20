@@ -156,6 +156,19 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
         return rootDir;
     }
 
+    public static URI getPlatinumFile(int fileId) throws IOException {
+        String fileName;
+        if (fileId < 17) {
+            fileName = "1K.end.platinum-genomes-vcf-NA" + (fileId + 12877) + "_S1.genome.vcf.gz";
+        } else if (fileId >= 12877 && fileId <= 12893){
+            fileName = "1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz";
+        } else {
+            throw new IllegalArgumentException("Unknown platinum file " + fileId);
+        }
+        return getResourceUri("platinum/" + fileName);
+    }
+
+
     private static void newRootDir() throws IOException {
         rootDir = Paths.get("target/test-data", "junit-opencga-storage-" + TimeUtils.getTimeMillis() + "_" + RandomStringUtils.randomAlphabetic(3));
         Files.createDirectories(rootDir);

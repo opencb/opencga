@@ -70,8 +70,10 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
 
         if (VariantPhoenixHelper.DEFAULT_TABLE_TYPE == PTableType.VIEW
                 || params.getBoolean(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, false)) {
+            int currentAnnotationId = dbAdaptor.getStudyConfigurationManager().getProjectMetadata().first()
+                    .getAnnotation().getCurrent().getId();
             VariantAnnotationToHBaseConverter task =
-                    new VariantAnnotationToHBaseConverter(dbAdaptor.getGenomeHelper(), progressLogger);
+                    new VariantAnnotationToHBaseConverter(dbAdaptor.getGenomeHelper(), progressLogger, currentAnnotationId);
             HBaseDataWriter<Put> writer = new HBaseDataWriter<>(dbAdaptor.getHBaseManager(), dbAdaptor.getVariantTable());
             return new ParallelTaskRunner<>(reader, task, writer, config);
         } else {

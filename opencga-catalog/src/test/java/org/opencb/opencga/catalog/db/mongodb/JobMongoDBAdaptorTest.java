@@ -43,11 +43,11 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
         Job job = new Job();
 
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        job.setName("jobName1");
+        job.setId("jobName1");
         System.out.println(catalogJobDBAdaptor.insert(job, studyId, null));
 //        long analysisId = catalogDBAdaptor.getAnalysisId(studyId, "analysis1Alias");
 
-        job.setName("jobName2");
+        job.setId("jobName2");
         System.out.println(catalogJobDBAdaptor.insert(job, studyId, null));
         try {
             catalogJobDBAdaptor.insert(job, -1, null);
@@ -121,7 +121,7 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
         // Job with current date
         Job job1 = new Job();
-        job1.setName("job1");
+        job1.setId("job1");
         job1.setCreationDate(TimeUtils.getTime());
 
         // Job with current date one hour before
@@ -131,7 +131,7 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
         Date oneHourBack = cal.getTime();
 
         Job job2 = new Job();
-        job2.setName("job2");
+        job2.setId("job2");
         job2.setCreationDate(TimeUtils.getTime(oneHourBack));
 
         // We create the jobs
@@ -146,8 +146,8 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
         QueryResult<Job> jobQueryResult1 = catalogJobDBAdaptor.get(new Query(), queryOptions);
 
-        assertTrue("job1".equals(jobQueryResult1.getResult().get(0).getName()));
-        assertTrue("job2".equals(jobQueryResult1.getResult().get(1).getName()));
+        assertTrue("job1".equals(jobQueryResult1.getResult().get(0).getId()));
+        assertTrue("job2".equals(jobQueryResult1.getResult().get(1).getId()));
 
         // Obtain the jobs in ascending order
         queryOptions = new QueryOptions()
@@ -156,8 +156,8 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
         QueryResult<Job> jobQueryResult2 = catalogJobDBAdaptor.get(new Query(), queryOptions);
 
-        assertTrue("job2".equals(jobQueryResult2.getResult().get(0).getName()));
-        assertTrue("job1".equals(jobQueryResult2.getResult().get(1).getName()));
+        assertTrue("job2".equals(jobQueryResult2.getResult().get(0).getId()));
+        assertTrue("job1".equals(jobQueryResult2.getResult().get(1).getId()));
     }
 
     @Test

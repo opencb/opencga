@@ -19,9 +19,8 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.FILE;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.GENOTYPE;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
+import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.PROJECT;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
 /**
  * Created on 12/12/17.
@@ -70,6 +69,10 @@ public class VariantCatalogQueryUtilsTest {
         createSample("sample4");
         catalog.getCohortManager().create("s1", new Cohort().setId("c2").setSamples(Collections.emptyList()), null, sessionId);
         catalog.getCohortManager().create("s1", new Cohort().setId(StudyEntry.DEFAULT_COHORT).setSamples(samples), null, sessionId);
+
+        catalog.getProjectManager().create("p2", "p2", "", null, "hsapiens", "Homo Sapiens", null, "GRCh38", null, sessionId);
+        catalog.getStudyManager().create("p2", "p2s2", null, "s1", Study.Type.CONTROL_SET, null, null, null, null, null, null, null, null, null, null, sessionId);
+
         queryUtils = new VariantCatalogQueryUtils(catalog);
     }
 
@@ -213,6 +216,18 @@ public class VariantCatalogQueryUtilsTest {
         assertEquals("sample1:HOM_ALT,sample2:HET_REF", parseValue("s1", GENOTYPE, "sample1:HOM_ALT,sample2:HET_REF"));
 
 
+    }
+
+    @Test
+    public void getAnyStudy() throws Exception {
+        assertEquals("user@p1:s1", queryUtils.getAnyStudy(new Query(PROJECT.key(), "p1"), sessionId));
+        assertEquals("user@p2:p2s2", queryUtils.getAnyStudy(new Query(PROJECT.key(), "p2"), sessionId));
+        assertEquals("user@p2:p2s2", queryUtils.getAnyStudy(new Query(STUDY.key(), "p2s2"), sessionId));
+        assertEquals("user@p2:p2s2", queryUtils.getAnyStudy(new Query(INCLUDE_STUDY.key(), "p2s2"), sessionId));
+        assertEquals("user@p2:p2s2", queryUtils.getAnyStudy(new Query(STUDY.key(), "p2s2").append(INCLUDE_STUDY.key(), "all"), sessionId));
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("Multiple projects");
+        queryUtils.getAnyStudy(new Query(), sessionId);
     }
 
     protected String parseValue(VariantQueryParam param, String value) throws CatalogException {

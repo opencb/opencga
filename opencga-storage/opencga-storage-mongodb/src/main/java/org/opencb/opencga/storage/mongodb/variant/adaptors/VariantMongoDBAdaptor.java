@@ -50,7 +50,10 @@ import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
@@ -71,8 +74,8 @@ import static com.mongodb.client.model.Filters.*;
 import static com.mongodb.client.model.Updates.*;
 import static org.opencb.commons.datastore.mongodb.MongoDBCollection.MULTI;
 import static org.opencb.commons.datastore.mongodb.MongoDBCollection.NAME;
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.LOADED_GENOTYPES;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.UNKNOWN_GENOTYPE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.ADDITIONAL_ATTRIBUTES_KEY;
 import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.ADDITIONAL_ATTRIBUTES_VARIANT_ID;
@@ -970,7 +973,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         variantAnnotation.getReference(), variantAnnotation.getAlternate());
             }
             Document find = new Document("_id", id);
-            DocumentToVariantAnnotationConverter converter = new DocumentToVariantAnnotationConverter();
+            int currentAnnotationId = getStudyConfigurationManager().getProjectMetadata().first().getAnnotation().getCurrent().getId();
+            DocumentToVariantAnnotationConverter converter = new DocumentToVariantAnnotationConverter(currentAnnotationId);
             Document convertedVariantAnnotation = converter.convertToStorageType(variantAnnotation);
             Document update = new Document("$set", new Document(DocumentToVariantConverter.ANNOTATION_FIELD + ".0",
                     convertedVariantAnnotation));
@@ -1033,8 +1037,17 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         studyEntryConverter = new DocumentToStudyVariantEntryConverter(false, selectVariantElements.getFiles(), samplesConverter);
         studyEntryConverter.setStudyConfigurationManager(studyConfigurationManager);
+        ProjectMetadata projectMetadata = getStudyConfigurationManager().getProjectMetadata().first();
+        Map<Integer, String> map = projectMetadata.getAnnotation().getSaved()
+                .stream()
+                .collect(Collectors.toMap(
+                        ProjectMetadata.VariantAnnotationMetadata::getId,
+                        ProjectMetadata.VariantAnnotationMetadata::getName));
+        if (projectMetadata.getAnnotation().getCurrent() != null) {
+            map.put(projectMetadata.getAnnotation().getCurrent().getId(), projectMetadata.getAnnotation().getCurrent().getName());
+        }
         return new DocumentToVariantConverter(studyEntryConverter,
-                new DocumentToVariantStatsConverter(studyConfigurationManager), returnedStudies);
+                new DocumentToVariantStatsConverter(studyConfigurationManager), returnedStudies, map);
     }
 
     public void createIndexes(QueryOptions options) {
@@ -1049,7 +1062,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
      * - IDs
      * <p>
      * Study indices
-     * - StudyId + FileId
+     * - StudyId
+     * - FileId
      * <p>
      * Stats indices
      * - StatsMaf
@@ -1096,11 +1110,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         // Study indices
         ////////////////
-        variantsCollection.createIndex(new Document(DocumentToVariantConverter.STUDIES_FIELD
-                + '.' + STUDYID_FIELD, 1)
-                .append(DocumentToVariantConverter.STUDIES_FIELD
-                        + '.' + FILES_FIELD
-                        + '.' + FILEID_FIELD, 1), onBackground);
+        variantsCollection.createIndex(
+                new Document(DocumentToVariantConverter.STUDIES_FIELD + '.' + STUDYID_FIELD, 1), onBackground);
+        variantsCollection.createIndex(
+                new Document(DocumentToVariantConverter.STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, 1), onBackground);
+
         // Stats indices
         ////////////////
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.STATS_FIELD + '.' + DocumentToVariantStatsConverter

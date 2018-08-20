@@ -40,6 +40,7 @@ import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.DiseasePanel;
 import org.opencb.opencga.core.models.Status;
@@ -136,6 +137,9 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
         long newPanelId = getNewId();
         panel.setUid(newPanelId);
         panel.setStudyUid(studyId);
+        if (StringUtils.isEmpty(panel.getUuid())) {
+            panel.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.PANEL));
+        }
 
         Document panelDocument = diseasePanelConverter.convertToStorageType(panel);
         // Versioning private parameters
@@ -162,7 +166,8 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
     @Override
     public QueryResult<DiseasePanel> get(long panelUid, QueryOptions options) throws CatalogDBException {
         checkUid(panelUid);
-        Query query = new Query(QueryParams.UID.key(), panelUid).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
+        Query query = new Query(QueryParams.UID.key(), panelUid).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED)
+                .append(QueryParams.STUDY_UID.key(), getStudyId(panelUid));
         return get(query, options);
     }
 
@@ -238,6 +243,29 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
         return queryResult;
     }
 
+    @Override
+    public QueryResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException {
+        long startTime = startQuery();
+        List<Document> documentList = new ArrayList<>();
+        QueryResult<Document> queryResult;
+        try (DBIterator<Document> dbIterator = nativeIterator(query, options, user)) {
+            while (dbIterator.hasNext()) {
+                documentList.add(dbIterator.next());
+            }
+        }
+        queryResult = endQuery("Native get", startTime, documentList);
+
+        if (options != null && options.getBoolean(QueryOptions.SKIP_COUNT, false)) {
+            return queryResult;
+        }
+
+        // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
+        if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
+            QueryResult<Long> count = count(query);
+            queryResult.setNumTotalResults(count.first());
+        }
+        return queryResult;
+    }
 
     @Override
     public long getStudyId(long panelUid) throws CatalogDBException {
@@ -431,6 +459,14 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
         if (parameters.containsKey(UpdateParams.STATUS_NAME.key())) {
             panelParameters.put(UpdateParams.STATUS_NAME.key(), parameters.get(UpdateParams.STATUS_NAME.key()));
             panelParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
+        }
+
+        if (!panelParameters.isEmpty()) {
+            // Update modificationDate param
+            String time = TimeUtils.getTime();
+            Date date = TimeUtils.toDate(time);
+            panelParameters.put(MODIFICATION_DATE, time);
+            panelParameters.put(PRIVATE_MODIFICATION_DATE, date);
         }
 
         return panelParameters;
@@ -646,15 +682,19 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
     private Bson parseQuery(Query query, boolean isolated, Document authorisation) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
 
+        Query queryCopy = new Query(query);
+
         if (isolated) {
             andBsonList.add(new Document("$isolated", 1));
         }
 
-        fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), query);
-        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), query);
-        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), query);
+        fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), queryCopy);
+        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), queryCopy);
+        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), queryCopy);
 
-        for (Map.Entry<String, Object> entry : query.entrySet()) {
+        boolean uidVersionQueryFlag = generateUidVersionQuery(queryCopy, andBsonList);
+
+        for (Map.Entry<String, Object> entry : queryCopy.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
             QueryParams queryParam =  QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
                     : QueryParams.getParam(key);
@@ -668,39 +708,39 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
             try {
                 switch (queryParam) {
                     case UID:
-                        addOrQuery(PRIVATE_UID, queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(PRIVATE_UID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case STUDY_UID:
-                        addOrQuery(PRIVATE_STUDY_ID, queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(PRIVATE_STUDY_ID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case ATTRIBUTES:
-                        addAutoOrQuery(entry.getKey(), entry.getKey(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(entry.getKey(), entry.getKey(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case BATTRIBUTES:
                         String mongoKey = entry.getKey().replace(QueryParams.BATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(mongoKey, entry.getKey(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case NATTRIBUTES:
                         mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(mongoKey, entry.getKey(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case SNAPSHOT:
-                        addAutoOrQuery(RELEASE_FROM_VERSION, queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(RELEASE_FROM_VERSION, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case CREATION_DATE:
-                        addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case GENES:
-                        addAutoOrQuery(QueryParams.GENES_ID.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(QueryParams.GENES_ID.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case PHENOTYPES:
-                        addAutoOrQuery(QueryParams.PHENOTYPES_ID.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(QueryParams.PHENOTYPES_ID.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case REGIONS:
-                        addAutoOrQuery(QueryParams.REGIONS_LOCATION.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(QueryParams.REGIONS_LOCATION.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case VARIANTS:
-                        addAutoOrQuery(QueryParams.VARIANTS_ID.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(QueryParams.VARIANTS_ID.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case ID:
                     case UUID:
@@ -722,7 +762,7 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
                     case STATUS_NAME:
                     case STATUS_MSG:
                     case STATUS_DATE:
-                        addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     default:
                         throw new CatalogDBException("Cannot query by parameter " + queryParam.key());
@@ -731,14 +771,14 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
                 if (e instanceof CatalogDBException) {
                     throw e;
                 } else {
-                    throw new CatalogDBException("Error parsing query : " + query.toJson(), e);
+                    throw new CatalogDBException("Error parsing query : " + queryCopy.toJson(), e);
                 }
             }
         }
 
         // If the user doesn't look for a concrete version...
-        if (!query.getBoolean(Constants.ALL_VERSIONS) && !query.containsKey(QueryParams.VERSION.key())) {
-            if (query.containsKey(QueryParams.SNAPSHOT.key())) {
+        if (!uidVersionQueryFlag && !queryCopy.getBoolean(Constants.ALL_VERSIONS) && !queryCopy.containsKey(QueryParams.VERSION.key())) {
+            if (queryCopy.containsKey(QueryParams.SNAPSHOT.key())) {
                 // If the user looks for anything from some release, we will try to find the latest from the release (snapshot)
                 andBsonList.add(Filters.eq(LAST_OF_RELEASE, true));
             } else {

@@ -320,8 +320,9 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 }
             }).iterator();
             HBaseToVariantAnnotationConverter converter = new HBaseToVariantAnnotationConverter(genomeHelper)
+                    .setAnnotationIds(getStudyConfigurationManager().getProjectMetadata().first().getAnnotation())
                     .setIncludeFields(selectElements.getFields());
-            converter.setAnnotationColumn(annotationColumn);
+            converter.setAnnotationColumn(annotationColumn, name);
             Iterator<Result> iterator = Iterators.concat(iterators);
             int skip = options.getInt(QueryOptions.SKIP);
             if (skip > 0) {
@@ -471,9 +472,9 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         } else {
 
             logger.debug("Table name = " + variantTable);
+            logger.info("Query : " + VariantQueryUtils.printQuery(query));
             VariantSqlQueryParser.VariantPhoenixSQLQuery phoenixQuery = queryParser.parse(query, options);
             String sql = phoenixQuery.getSql();
-            logger.info("Query : " + VariantQueryUtils.printQuery(query));
             logger.info(sql);
             logger.debug("Creating {} iterator", VariantHBaseResultSetIterator.class);
             try {
@@ -612,7 +613,9 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         long start = System.currentTimeMillis();
 
         final GenomeHelper genomeHelper1 = new GenomeHelper(configuration);
-        VariantAnnotationToPhoenixConverter converter = new VariantAnnotationToPhoenixConverter(genomeHelper1.getColumnFamily());
+        int currentAnnotationId = getStudyConfigurationManager().getProjectMetadata().first().getAnnotation().getCurrent().getId();
+        VariantAnnotationToPhoenixConverter converter = new VariantAnnotationToPhoenixConverter(genomeHelper1.getColumnFamily(),
+                currentAnnotationId);
         Iterable<Map<PhoenixHelper.Column, ?>> records = converter.apply(variantAnnotations);
 
         String fullTableName = VariantPhoenixHelper.getEscapedFullTableName(variantTable, getConfiguration());

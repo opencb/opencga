@@ -18,16 +18,20 @@ package org.opencb.opencga.storage.core.variant;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.Iterators;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
+import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.rest.CellBaseClient;
@@ -73,17 +77,17 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ANNOT_CLINICAL_SIGNIFICANCE;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ID;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.addDefaultLimit;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName;
+import static org.opencb.opencga.storage.core.variant.search.VariantSearchUtils.*;
 import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager.SEARCH_ENGINE_ID;
-import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchUtils.*;
 
 /**
  * Created by imedina on 13/08/14.
@@ -136,6 +140,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         LOAD_BATCH_SIZE("load.batch.size", 100),
         LOAD_THREADS("load.threads", 6),
         LOAD_SPLIT_DATA("load.split-data", false),
+
+        LOADED_GENOTYPES("loadedGenotypes", null),
 
         POST_LOAD_CHECK_SKIP("postLoad.check.skip", false),
 
@@ -264,7 +270,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                            Query query, QueryOptions queryOptions)
             throws IOException, StorageEngineException {
         VariantExporter exporter = newVariantExporter(metadataFactory);
-        preProcessQuery(query);
+        preProcessQuery(query, queryOptions);
         exporter.export(outputFile, outputFormat, query, queryOptions);
     }
 
@@ -510,9 +516,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     /**
-     * Provide a new VariantAnnotationManager for creating and loading annotations.
+     * Provide a new VariantStatisticsManager for creating and loading statistics.
      *
-     * @return              A new instance of VariantAnnotationManager
+     * @return              A new instance of VariantStatisticsManager
      * @throws StorageEngineException  if there is an error creating the VariantStatisticsManager
      */
     public VariantStatisticsManager newVariantStatisticsManager() throws StorageEngineException {
@@ -562,6 +568,106 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             throw new StorageEngineException("Solr is not alive!");
         }
         dbAdaptor.close();
+    }
+
+    public void searchIndexSamples(String study, List<String> samples) throws StorageEngineException, IOException, VariantSearchException {
+        VariantDBAdaptor dbAdaptor = getDBAdaptor();
+
+        VariantSearchManager variantSearchManager = getVariantSearchManager();
+        // first, create the collection it it does not exist
+
+        AtomicInteger id = new AtomicInteger();
+        StudyConfiguration sc = getStudyConfigurationManager().lockAndUpdate(study, studyConfiguration -> {
+            boolean resume = getOptions().getBoolean(RESUME.key(), RESUME.defaultValue());
+            id.set(getStudyConfigurationManager().registerSearchIndexSamples(studyConfiguration, samples, resume));
+            return studyConfiguration;
+        });
+
+        String collectionName = buildSamplesIndexCollectionName(this.dbName, sc, id.intValue());
+
+        try {
+            variantSearchManager.create(collectionName);
+            if (configuration.getSearch().getActive() && variantSearchManager.isAlive(collectionName)) {
+                // then, load variants
+                QueryOptions queryOptions = new QueryOptions();
+                Query query = new Query(VariantQueryParam.STUDY.key(), study)
+                        .append(VariantQueryParam.SAMPLE.key(), samples);
+
+                VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions);
+
+                ProgressLogger progressLogger = new ProgressLogger("Variants loaded in Solr:", () -> dbAdaptor.count(query).first(), 200);
+                variantSearchManager.load(collectionName, iterator, progressLogger);
+            } else {
+                throw new StorageEngineException("Solr is not alive!");
+            }
+            dbAdaptor.close();
+        } catch (Exception e) {
+            getStudyConfigurationManager().lockAndUpdate(study, studyConfiguration -> {
+                studyConfiguration.getSearchIndexedSampleSetsStatus().put(id.get(), BatchFileOperation.Status.ERROR);
+                return studyConfiguration;
+            });
+            throw e;
+        }
+        getStudyConfigurationManager().lockAndUpdate(study, studyConfiguration -> {
+            studyConfiguration.getSearchIndexedSampleSetsStatus().put(id.get(), BatchFileOperation.Status.READY);
+            return studyConfiguration;
+        });
+    }
+
+    public void removeSearchIndexSamples(String study, List<String> samples) throws StorageEngineException, VariantSearchException {
+        VariantSearchManager variantSearchManager = getVariantSearchManager();
+
+        StudyConfiguration sc = getStudyConfigurationManager().getStudyConfiguration(study, null).first();
+
+        // Check that all samples are from the same secondary index
+        Set<Integer> sampleIds = new HashSet<>();
+        Set<Integer> secIndexIdSet = new HashSet<>();
+        for (String sample : samples) {
+            Integer sampleId = StudyConfigurationManager.getSampleIdFromStudy(sample, sc);
+            if (sampleId == null) {
+                throw VariantQueryException.sampleNotFound(sample, study);
+            }
+            sampleIds.add(sampleId);
+            secIndexIdSet.add(sc.getSearchIndexedSampleSets().get(sampleId));
+        }
+        if (secIndexIdSet.isEmpty() || secIndexIdSet.contains(null)) {
+            throw new StorageEngineException("Samples not in a secondary index");
+        } else if (secIndexIdSet.size() != 1) {
+            throw new StorageEngineException("Samples in multiple secondary indexes");
+        }
+        Integer secIndexId = secIndexIdSet.iterator().next();
+
+        // Check that all samples from the secondary index are provided
+        List<Integer> samplesInSecIndex = new ArrayList<>();
+        for (Map.Entry<Integer, Integer> entry : sc.getSearchIndexedSampleSets().entrySet()) {
+            if (entry.getValue().equals(secIndexId)) {
+                samplesInSecIndex.add(entry.getKey());
+            }
+        }
+        if (samplesInSecIndex.size() != sampleIds.size()) {
+            throw new StorageEngineException("Must provide all the samples from the secondary index: "
+                    + samplesInSecIndex.stream().map(sc.getSampleIds().inverse()::get).collect(Collectors.toList()));
+        }
+
+
+        // Invalidate secondary index
+        getStudyConfigurationManager().lockAndUpdate(study, studyConfiguration -> {
+            studyConfiguration.getSearchIndexedSampleSetsStatus().put(secIndexId, BatchFileOperation.Status.RUNNING);
+            return studyConfiguration;
+        });
+
+        // Remove secondary index
+        String collection = buildSamplesIndexCollectionName(dbName, sc, secIndexId);
+        variantSearchManager.getSolrManager().remove(collection);
+
+        // Remove secondary index metadata
+        getStudyConfigurationManager().lockAndUpdate(study, studyConfiguration -> {
+            studyConfiguration.getSearchIndexedSampleSetsStatus().remove(secIndexId);
+            for (Integer sampleId : sampleIds) {
+                studyConfiguration.getSearchIndexedSampleSets().remove(sampleId);
+            }
+            return studyConfiguration;
+        });
     }
 
     /**
@@ -774,8 +880,22 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             options = QueryOptions.empty();
         }
         // TODO: Use CacheManager ?
-        query = preProcessQuery(query);
-        if (doQuerySearchManager(query, options)) {
+        query = preProcessQuery(query, options);
+
+
+        String specificSearchIndexSamples = inferSpecificSearchIndexSamplesCollection(
+                query, options, getStudyConfigurationManager(), dbName);
+        if (specificSearchIndexSamples != null) {
+            try {
+                if (iterator) {
+                    return getVariantSearchManager().iterator(specificSearchIndexSamples, query, options);
+                } else {
+                    return getVariantSearchManager().query(specificSearchIndexSamples, query, options);
+                }
+            } catch (IOException | VariantSearchException e) {
+                throw new VariantQueryException("Error querying Solr", e);
+            }
+        } else if (doQuerySearchManager(query, options)) {
             try {
                 if (iterator) {
                     return getVariantSearchManager().iterator(dbName, query, options);
@@ -799,6 +919,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 Boolean approxCount = null;
                 Integer approxCountSamplingSize = null;
 
+                Query searchEngineQuery = getSearchEngineQuery(query);
+                Query engineQuery = getEngineQuery(query, options, getStudyConfigurationManager());
+
                 // Do not count for iterator
                 if (!iterator) {
                     if (isQueryCovered(query)) {
@@ -820,7 +943,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 if (pagination) {
                     if (isQueryCovered(query)) {
                         // We can use limit+skip directly in solr
-                        variantsIterator = variantIdIteratorFromSearch(query, limit, skip, searchCount);
+                        variantsIterator = variantIdIteratorFromSearch(searchEngineQuery, limit, skip, searchCount);
 
                         // Remove limit and skip from Options for storage. The Search Engine already knows the pagination.
                         options = new QueryOptions(options);
@@ -829,12 +952,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                     } else {
                         logger.debug("Client side pagination. limit : {} , skip : {}", limit, skip);
                         // Can't limit+skip only from solr. Need to limit+skip also in client side
-                        variantsIterator = variantIdIteratorFromSearch(query);
+                        variantsIterator = variantIdIteratorFromSearch(searchEngineQuery);
                     }
                 } else {
-                    variantsIterator = variantIdIteratorFromSearch(query, Integer.MAX_VALUE, 0, searchCount);
+                    variantsIterator = variantIdIteratorFromSearch(searchEngineQuery, Integer.MAX_VALUE, 0, searchCount);
                 }
-                Query engineQuery = getEngineQuery(query, options, getStudyConfigurationManager());
 
                 VariantDBAdaptor dbAdaptor = getDBAdaptor();
                 logger.debug("Intersect query " + engineQuery.toJson() + " options " + options.toJson());
@@ -876,7 +998,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
     }
 
-    protected Query preProcessQuery(Query originalQuery) throws StorageEngineException {
+    public Query preProcessQuery(Query originalQuery, QueryOptions options) throws StorageEngineException {
         // Copy input query! Do not modify original query!
         Query query = originalQuery == null ? new Query() : new Query(originalQuery);
 
@@ -907,7 +1029,161 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             query.put(ANNOT_CLINICAL_SIGNIFICANCE.key(), clinicalSignificanceList);
         }
 
+        StudyConfiguration defaultStudyConfiguration = getDefaultStudyConfiguration(query, options, getStudyConfigurationManager());
+        if (isValidParam(query, FORMAT)) {
+            extractGenotypeFromFormatFilter(query);
 
+            for (Map.Entry<String, String> entry : parseFormat(query).getValue().entrySet()) {
+                String sampleName = entry.getKey();
+                if (defaultStudyConfiguration == null) {
+                    throw VariantQueryException.missingStudyForSample(sampleName, getStudyConfigurationManager().getStudyNames(null));
+                }
+                Integer sampleId = StudyConfigurationManager.getSampleIdFromStudy(sampleName, defaultStudyConfiguration, true);
+                if (sampleId == null) {
+                    throw VariantQueryException.sampleNotFound(sampleName, defaultStudyConfiguration.getStudyName());
+                }
+                List<String> formats = splitValue(entry.getValue()).getValue();
+                for (String format : formats) {
+                    String[] split = splitOperator(format);
+                    VariantFileHeaderComplexLine line = defaultStudyConfiguration.getVariantHeaderLine("FORMAT", split[0]);
+                    if (line == null) {
+                        throw VariantQueryException.malformedParam(FORMAT, query.getString(FORMAT.key()),
+                                "FORMAT field \"" + split[0] + "\" not found. Available keys in study: "
+                                        + defaultStudyConfiguration.getVariantHeaderLines("FORMAT").keySet());
+                    }
+                }
+            }
+        }
+
+        if (isValidParam(query, INFO)) {
+            for (Map.Entry<String, String> entry : parseInfo(query).getValue().entrySet()) {
+                String fileName = entry.getKey();
+                if (defaultStudyConfiguration == null) {
+                    throw VariantQueryException.missingStudyForFile(fileName, getStudyConfigurationManager().getStudyNames(null));
+                }
+                Integer fileId = StudyConfigurationManager.getFileIdFromStudy(fileName, defaultStudyConfiguration, true);
+                if (fileId == null) {
+                    throw VariantQueryException.fileNotFound(fileName, defaultStudyConfiguration.getStudyName());
+                }
+                List<String> infos = splitValue(entry.getValue()).getValue();
+                for (String info : infos) {
+                    String[] split = splitOperator(info);
+                    VariantFileHeaderComplexLine line = defaultStudyConfiguration.getVariantHeaderLine("INFO", split[0]);
+                    if (line == null) {
+                        throw VariantQueryException.malformedParam(INFO, query.getString(INFO.key()),
+                                "INFO field \"" + split[0] + "\" not found. Available keys in study: "
+                                        + defaultStudyConfiguration.getVariantHeaderLines("INFO").keySet());
+                    }
+                }
+            }
+        }
+
+        if (isValidParam(query, SAMPLE)) {
+            if (isValidParam(query, GENOTYPE)) {
+                throw VariantQueryException.malformedParam(SAMPLE, query.getString(SAMPLE.key()),
+                        "Can not be used along with filter \"" + GENOTYPE.key() + '"');
+            }
+
+            List<String> loadedGenotypes = defaultStudyConfiguration.getAttributes().getAsStringList(LOADED_GENOTYPES.key());
+            if (CollectionUtils.isEmpty(loadedGenotypes)) {
+                loadedGenotypes = Arrays.asList(
+                        "0/0", "0|0",
+                        "0/1", "1/0", "1/1", "./.",
+                        "0|1", "1|0", "1|1", ".|.",
+                        "0|2", "2|0", "2|1", "1|2", "2|2",
+                        "0/2", "2/0", "2/1", "1/2", "2/2",
+                        GenotypeClass.UNKNOWN_GENOTYPE);
+            }
+
+            String genotypes = loadedGenotypes.stream().filter(gt -> {
+                Genotype genotype;
+                try {
+                    genotype = new Genotype(gt);
+                } catch (IllegalArgumentException e) {
+                    return false;
+                }
+                for (int i : genotype.getAllelesIdx()) {
+                    if (i == 1) {
+                        return true;
+                    }
+                }
+                return false;
+            }).collect(Collectors.joining(","));
+
+            Pair<QueryOperation, List<String>> pair = VariantQueryUtils.splitValue(query.getString(SAMPLE.key()));
+
+            StringBuilder sb = new StringBuilder();
+            for (String sample : pair.getValue()) {
+                if (sb.length() > 0) {
+                    sb.append(pair.getLeft().separator());
+                }
+                sb.append(sample).append(IS).append(genotypes);
+            }
+            query.remove(SAMPLE.key());
+            query.put(GENOTYPE.key(), sb.toString());
+        } else if (isValidParam(query, GENOTYPE)) {
+
+            List<String> loadedGenotypes = defaultStudyConfiguration.getAttributes().getAsStringList(LOADED_GENOTYPES.key());
+            if (CollectionUtils.isEmpty(loadedGenotypes)) {
+                loadedGenotypes = Arrays.asList(
+                        "0/0", "0|0",
+                        "0/1", "1/0", "1/1", "./.",
+                        "0|1", "1|0", "1|1", ".|.",
+                        "0|2", "2|0", "2|1", "1|2", "2|2",
+                        "0/2", "2/0", "2/1", "1/2", "2/2",
+                        GenotypeClass.UNKNOWN_GENOTYPE);
+            }
+
+            Map<Object, List<String>> map = new LinkedHashMap<>();
+            QueryOperation queryOperation = VariantQueryUtils.parseGenotypeFilter(query.getString(GENOTYPE.key()), map);
+
+            StringBuilder sb = new StringBuilder();
+            for (Map.Entry<Object, List<String>> entry : map.entrySet()) {
+//                List<String> genotypes = GenotypeClass.filter(entry.getValue(), loadedGenotypes, defaultGenotypes);
+                List<String> genotypes = GenotypeClass.filter(entry.getValue(), loadedGenotypes);
+
+                if (genotypes.isEmpty()) {
+                    // TODO: Do fast fail, NO RESULTS!
+                    genotypes = Collections.singletonList("x/x");
+                }
+
+                if (sb.length() > 0) {
+                    sb.append(queryOperation.separator());
+                }
+                sb.append(entry.getKey()).append(IS);
+                for (int i = 0; i < genotypes.size(); i++) {
+                    if (i > 0) {
+                        sb.append(OR);
+                    }
+                    sb.append(genotypes.get(i));
+                }
+            }
+            query.put(GENOTYPE.key(), sb.toString());
+        }
+
+        if (!isValidParam(query, INCLUDE_STUDY) || !isValidParam(query, INCLUDE_SAMPLE) || !isValidParam(query, INCLUDE_FILE)) {
+            VariantQueryUtils.SelectVariantElements selectVariantElements =
+                    parseSelectElements(query, options, getStudyConfigurationManager());
+            List<String> includeStudy = new ArrayList<>();
+            for (Integer studyId : selectVariantElements.getStudies()) {
+                includeStudy.add(selectVariantElements.getStudyConfigurations().get(studyId).getStudyName());
+            }
+            query.putIfAbsent(INCLUDE_STUDY.key(), includeStudy);
+            query.putIfAbsent(INCLUDE_SAMPLE.key(), selectVariantElements.getSamples()
+                    .entrySet()
+                    .stream()
+                    .flatMap(e -> e.getValue()
+                            .stream()
+                            .map(selectVariantElements.getStudyConfigurations().get(e.getKey()).getSampleIds().inverse()::get))
+                    .collect(Collectors.toList()));
+            query.putIfAbsent(INCLUDE_FILE.key(), selectVariantElements.getFiles()
+                    .entrySet()
+                    .stream()
+                    .flatMap(e -> e.getValue()
+                            .stream()
+                            .map(selectVariantElements.getStudyConfigurations().get(e.getKey()).getFileIds().inverse()::get))
+                    .collect(Collectors.toList()));
+        }
         return query;
     }
 
@@ -990,7 +1266,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     public QueryResult<Long> count(Query query) throws StorageEngineException {
-        query = preProcessQuery(query);
+        query = preProcessQuery(query, null);
         if (!doQuerySearchManager(query, new QueryOptions(QueryOptions.COUNT, true))) {
             return getDBAdaptor().count(query);
         } else {
@@ -1019,7 +1295,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                         getOptions().getInt(APPROXIMATE_COUNT_SAMPLING_SIZE.key(), APPROXIMATE_COUNT_SAMPLING_SIZE.defaultValue()));
                 QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, VariantField.ID).append(QueryOptions.LIMIT, sampling);
 
-                VariantQueryResult<VariantSearchModel> nativeResult = getVariantSearchManager().nativeQuery(dbName, query, queryOptions);
+                Query searchEngineQuery = getSearchEngineQuery(query);
+                Query engineQuery = getEngineQuery(query, options, getStudyConfigurationManager());
+
+                VariantQueryResult<VariantSearchModel> nativeResult = getVariantSearchManager()
+                        .nativeQuery(dbName, searchEngineQuery, queryOptions);
                 List<String> variantIds = nativeResult.getResult().stream().map(VariantSearchModel::getId).collect(Collectors.toList());
                 // Adjust numSamples if the results from SearchManager is smaller than numSamples
                 // If this happens, the count is not approximated
@@ -1029,7 +1309,6 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 }
                 long numSearchResults = nativeResult.getNumTotalResults();
 
-                Query engineQuery = getEngineQuery(query, options, getStudyConfigurationManager());
                 engineQuery.put(ID.key(), variantIds);
                 long numResults = getDBAdaptor().count(engineQuery).first();
                 logger.debug("NumResults: {}, NumSearchResults: {}, NumSamples: {}", numResults, numSearchResults, sampling);

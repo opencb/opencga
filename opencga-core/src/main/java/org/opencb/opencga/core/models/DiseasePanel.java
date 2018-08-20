@@ -35,6 +35,7 @@ public class DiseasePanel extends PrivateStudyUid {
 
     private String author;
     private String creationDate;
+    private String modificationDate;
     private Status status;
     private SourcePanel source;
     private String description;
@@ -278,7 +279,7 @@ public class DiseasePanel extends PrivateStudyUid {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("Panel{");
+        final StringBuilder sb = new StringBuilder("DiseasePanel{");
         sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", uuid='").append(uuid).append('\'');
@@ -286,6 +287,7 @@ public class DiseasePanel extends PrivateStudyUid {
         sb.append(", version=").append(version);
         sb.append(", author='").append(author).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", status=").append(status);
         sb.append(", source=").append(source);
         sb.append(", description='").append(description).append('\'');
@@ -358,6 +360,15 @@ public class DiseasePanel extends PrivateStudyUid {
 
     public DiseasePanel setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public DiseasePanel setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 

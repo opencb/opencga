@@ -21,7 +21,7 @@
 
 <module name="Checker">
     <module name="FileLength">
-        <property name="max" value="3100"/>
+        <property name="max" value="3300"/>
     </module>
     <module name="FileTabCharacter"/>
     <module name="NewlineAtEndOfFile"/>
@@ -70,7 +70,7 @@
             <property name="max" value="140"/>
         </module>
         <module name="MethodLength">
-            <property name="max" value="400"/>
+            <property name="max" value="500"/>
         </module>
         <module name="ParameterNumber">
             <property name="max" value="30"/>

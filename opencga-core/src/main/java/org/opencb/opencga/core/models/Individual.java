@@ -35,6 +35,7 @@ public class Individual extends Annotable {
     private Individual father;
     private Individual mother;
     private Multiples multiples;
+    private Location location;
 
     private Sex sex;
     private KaryotypicSex karyotypicSex;
@@ -44,6 +45,7 @@ public class Individual extends Annotable {
     private int release;
     private int version;
     private String creationDate;
+    private String modificationDate;
     private Status status;
     private LifeStatus lifeStatus;
     private AffectationStatus affectationStatus;
@@ -76,31 +78,21 @@ public class Individual extends Annotable {
 
     public Individual(String id, String name, Sex sex, String ethnicity, Population population, int release,
                       List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
-        this(id, name, new Individual(), new Individual(), new Multiples(), sex, null, ethnicity,
-                population, "", release, 1, TimeUtils.getTime(), new Status(), LifeStatus.UNKNOWN, AffectationStatus.UNKNOWN,
-                Collections.emptyList(), Collections.emptyList(), false, annotationSets, attributes);
+        this(id, name, new Individual(), new Individual(), new Multiples(), new Location(), sex, null,
+                ethnicity, population, "", release, 1, TimeUtils.getTime(), new Status(), LifeStatus.UNKNOWN,
+                AffectationStatus.UNKNOWN, Collections.emptyList(), Collections.emptyList(), false, annotationSets, attributes);
     }
 
-    public Individual(String id, String name, Individual father, Individual mother, Multiples multiples, Sex sex,
+    public Individual(String id, String name, Individual father, Individual mother, Multiples multiples, Location location, Sex sex,
                       KaryotypicSex karyotypicSex, String ethnicity, Population population, LifeStatus lifeStatus,
                       AffectationStatus affectationStatus, String dateOfBirth, List<Sample> samples, boolean parentalConsanguinity,
                       int release, List<AnnotationSet> annotationSets, List<OntologyTerm> phenotypeList) {
-        this(id, name, father, mother, multiples, sex, karyotypicSex, ethnicity, population, dateOfBirth,
-                release, 1, TimeUtils.getTime(), new Status(), lifeStatus, affectationStatus, phenotypeList, samples, parentalConsanguinity,
-                annotationSets, Collections.emptyMap());
+        this(id, name, father, mother, multiples, location, sex, karyotypicSex, ethnicity, population,
+                dateOfBirth, release, 1, TimeUtils.getTime(), new Status(), lifeStatus, affectationStatus, phenotypeList, samples,
+                parentalConsanguinity, annotationSets, Collections.emptyMap());
     }
 
-    public Individual(String id, String name, Sex sex, KaryotypicSex karyotypicSex,
-                      String ethnicity, Population population, LifeStatus lifeStatus, AffectationStatus affectationStatus,
-                      String dateOfBirth, boolean parentalConsanguinity, int release, List<AnnotationSet> annotationSets,
-                      List<OntologyTerm> phenotypeList) {
-
-        this(id, name, new Individual(), new Individual(), new Multiples(), sex, karyotypicSex, ethnicity,
-                population, dateOfBirth, release, 1, TimeUtils.getTime(), new Status(), lifeStatus, affectationStatus,
-                phenotypeList, new ArrayList<>(), parentalConsanguinity, annotationSets, Collections.emptyMap());
-    }
-
-    public Individual(String id, String name, Individual father, Individual mother, Multiples multiples, Sex sex,
+    public Individual(String id, String name, Individual father, Individual mother, Multiples multiples, Location location, Sex sex,
                       KaryotypicSex karyotypicSex, String ethnicity, Population population, String dateOfBirth, int release, int version,
                       String creationDate, Status status, LifeStatus lifeStatus, AffectationStatus affectationStatus,
                       List<OntologyTerm> phenotypes, List<Sample> samples, boolean parentalConsanguinity,
@@ -110,6 +102,7 @@ public class Individual extends Annotable {
         this.father = defaultObject(father, Individual::new);
         this.mother = defaultObject(mother, Individual::new);
         this.multiples = defaultObject(multiples, Multiples::new);
+        this.location = location;
         this.sex = sex;
         this.karyotypicSex = karyotypicSex;
         this.ethnicity = ethnicity;
@@ -186,12 +179,13 @@ public class Individual extends Annotable {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Individual{");
-        sb.append("uuid='").append(uuid).append('\'');
-        sb.append(", id='").append(id).append('\'');
+        sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
+        sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", father=").append(father);
         sb.append(", mother=").append(mother);
         sb.append(", multiples=").append(multiples);
+        sb.append(", location=").append(location);
         sb.append(", sex=").append(sex);
         sb.append(", karyotypicSex=").append(karyotypicSex);
         sb.append(", ethnicity='").append(ethnicity).append('\'');
@@ -200,6 +194,7 @@ public class Individual extends Annotable {
         sb.append(", release=").append(release);
         sb.append(", version=").append(version);
         sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", status=").append(status);
         sb.append(", lifeStatus=").append(lifeStatus);
         sb.append(", affectationStatus=").append(affectationStatus);
@@ -316,6 +311,15 @@ public class Individual extends Annotable {
         return this;
     }
 
+    public Location getLocation() {
+        return location;
+    }
+
+    public Individual setLocation(Location location) {
+        this.location = location;
+        return this;
+    }
+
     public Sex getSex() {
         return sex;
     }
@@ -358,6 +362,15 @@ public class Individual extends Annotable {
 
     public Individual setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public Individual setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 

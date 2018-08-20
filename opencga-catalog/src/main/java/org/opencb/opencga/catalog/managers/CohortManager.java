@@ -200,10 +200,13 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
      */
     public QueryResult<Sample> getSamples(String studyStr, String cohortStr, QueryOptions options, String sessionId)
             throws CatalogException {
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
+//        options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         MyResource<Cohort> resource = getUid(cohortStr, studyStr, sessionId);
-        QueryResult<Cohort> cohortQueryResult = cohortDBAdaptor.get(resource.getResource().getUid(),
+        Query query = new Query()
+                .append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), resource.getStudy().getUid())
+                .append(CohortDBAdaptor.QueryParams.UID.key(), resource.getResource().getUid());
+        QueryResult<Cohort> cohortQueryResult = cohortDBAdaptor.get(query,
                 new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.SAMPLES.key()));
 
         if (cohortQueryResult == null || cohortQueryResult.getNumResults() == 0) {
@@ -213,16 +216,20 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             return new QueryResult<>("Samples from cohort " + cohortStr);
         }
 
-        // Look for the samples
-        List<Long> sampleIds = cohortQueryResult.first().getSamples()
-                .stream()
-                .map(Sample::getUid)
-                .collect(Collectors.toList());
-        Query query = new Query(SampleDBAdaptor.QueryParams.UID.key(), sampleIds);
-        QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().get(studyStr, query, options, sessionId);
-        sampleQueryResult.setId("Samples from cohort " + cohortStr);
-
-        return sampleQueryResult;
+        return new QueryResult<>("Samples from cohort " + cohortStr,
+                cohortQueryResult.getDbTime(), cohortQueryResult.first().getSamples().size(),
+                cohortQueryResult.first().getSamples().size(), cohortQueryResult.getWarningMsg(), cohortQueryResult.getErrorMsg(),
+                cohortQueryResult.first().getSamples());
+//        // Look for the samples
+//        List<Long> sampleIds = cohortQueryResult.first().getSamples()
+//                .stream()
+//                .map(Sample::getUid)
+//                .collect(Collectors.toList());
+//        Query query = new Query(SampleDBAdaptor.QueryParams.UID.key(), sampleIds);
+//        QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().get(studyStr, query, options, sessionId);
+//        sampleQueryResult.setId("Samples from cohort " + cohortStr);
+//
+//        return sampleQueryResult;
     }
 
     @Override
@@ -433,6 +440,9 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     public QueryResult<Cohort> updateAnnotations(String studyStr, String cohortStr, String annotationSetId,
                                                      Map<String, Object> annotations, ParamUtils.CompleteUpdateAction action,
                                                      QueryOptions options, String token) throws CatalogException {
+        if (annotations == null || annotations.isEmpty()) {
+            return new QueryResult<>(cohortStr, -1, -1, -1, "Nothing to do: The map of annotations is empty", "", Collections.emptyList());
+        }
         ObjectMap params = new ObjectMap(AnnotationSetManager.ANNOTATIONS, new AnnotationSet(annotationSetId, "", annotations));
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         options.put(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATIONS, action));

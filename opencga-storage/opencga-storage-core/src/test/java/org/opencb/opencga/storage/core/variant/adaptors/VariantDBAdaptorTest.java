@@ -203,14 +203,26 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     public VariantQueryResult<Variant> query(Query query, QueryOptions options) {
+        query = preProcessQuery(query, options);
         return dbAdaptor.get(query, options);
     }
 
     public VariantDBIterator iterator(Query query, QueryOptions options) {
+        query = preProcessQuery(query, options);
         return dbAdaptor.iterator(query, options);
     }
 
+    protected Query preProcessQuery(Query query, QueryOptions options) {
+        try {
+            query = variantStorageEngine.preProcessQuery(query, options);
+        } catch (StorageEngineException e) {
+            throw VariantQueryException.internalException(e);
+        }
+        return query;
+    }
+
     public Long count(Query query) {
+        query = preProcessQuery(query, null);
         return dbAdaptor.count(query).first();
     }
 
@@ -1999,7 +2011,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
             expectedAnnotation.setXrefs(null);
             expectedAnnotation.setId(null);
-            assertEquals(expectedAnnotation, annotation);
+            assertEquals("\n" + expectedAnnotation + "\n" + annotation, expectedAnnotation, annotation);
         }
     }
 

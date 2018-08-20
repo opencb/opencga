@@ -477,11 +477,13 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
             Variable variable = variableDepthMap.getVariable();
 
             if (variable.getType() == Variable.VariableType.OBJECT) {
-                // We add the new nested variables to the queue
-                for (Variable nestedVariable : variable.getVariableSet()) {
-                    List<String> keys = new ArrayList<>(variableDepthMap.getKeys());
-                    keys.add(variable.getId());
-                    queue.add(new VariableDepthMap(nestedVariable, keys));
+                if (variable.getVariableSet() != null) {
+                    // We add the new nested variables to the queue
+                    for (Variable nestedVariable : variable.getVariableSet()) {
+                        List<String> keys = new ArrayList<>(variableDepthMap.getKeys());
+                        keys.add(variable.getId());
+                        queue.add(new VariableDepthMap(nestedVariable, keys));
+                    }
                 }
             } else {
                 QueryParam.Type type;
@@ -740,6 +742,10 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                         || annotationSet.getAnnotations().isEmpty())) {
                     throw new CatalogException("Missing annotations to add to the annotationSet");
                 }
+                if (action == ParamUtils.CompleteUpdateAction.REPLACE && (annotationSet.getAnnotations() == null
+                        || annotationSet.getAnnotations().isEmpty())) {
+                    throw new CatalogException("Missing annotations to replace");
+                }
 
                 // Obtain all the variable sets from the study
                 QueryResult<Study> studyQueryResult = studyDBAdaptor.get(resource.getStudy().getUid(),
@@ -787,14 +793,20 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
 
     private void applyAnnotationChanges(AnnotationSet targetAnnotationSet, AnnotationSet sourceAnnotationSet, VariableSet variableSet,
                                         ParamUtils.CompleteUpdateAction action) throws CatalogException {
-        if (action == ParamUtils.CompleteUpdateAction.ADD || action == ParamUtils.CompleteUpdateAction.SET) {
+        if (action == ParamUtils.CompleteUpdateAction.ADD || action == ParamUtils.CompleteUpdateAction.SET
+                || action == ParamUtils.CompleteUpdateAction.REPLACE) {
             if (action == ParamUtils.CompleteUpdateAction.SET) {
                 // We empty the current annotations map
                 targetAnnotationSet.setAnnotations(new HashMap<>());
             }
 
-            // We fill in with the annotations provided by the user
-            targetAnnotationSet.getAnnotations().putAll(sourceAnnotationSet.getAnnotations());
+            if (action == ParamUtils.CompleteUpdateAction.REPLACE) {
+                // We need to check there already existed annotations to actually replace the values
+                replaceAnnotations(targetAnnotationSet.getAnnotations(), sourceAnnotationSet.getAnnotations());
+            } else {
+                // We fill in with the annotations provided by the user
+                targetAnnotationSet.getAnnotations().putAll(sourceAnnotationSet.getAnnotations());
+            }
         } else if (action == ParamUtils.CompleteUpdateAction.RESET) {
             String resetFields = (String) sourceAnnotationSet.getAnnotations().get("reset");
 
@@ -820,6 +832,21 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
         }
 
 
+    }
+
+    private void replaceAnnotations(Map<String, Object> target, Map<String, Object> source) {
+        for (String annKey : source.keySet()) {
+            if (target.containsKey(annKey)) {
+                // Check the value
+                if (source.get(annKey) instanceof Map) {
+                    if (target.get(annKey) instanceof Map) {
+                        replaceAnnotations((Map<String, Object>) target.get(annKey), (Map<String, Object>) source.get(annKey));
+                    }
+                } else {
+                    target.put(annKey, source.get(annKey));
+                }
+            }
+        }
     }
 
     private void resetAnnotation(Map<String, Object> annotations, String annotation, Set<Variable> variables) throws CatalogException {

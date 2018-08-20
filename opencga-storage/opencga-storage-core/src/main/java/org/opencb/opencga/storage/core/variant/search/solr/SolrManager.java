@@ -57,37 +57,21 @@ public class SolrManager {
             throw new VariantSearchException("We cannot create a Solr for the empty database '" + dbName + "'");
         }
 
-        if (StringUtils.isEmpty(mode)) {
-            logger.warn("Solr 'mode' is empty, setting default to 'cloud'");
-            mode = "cloud";
-        }
-
         if (StringUtils.isEmpty(configSet)) {
-            logger.warn("Solr 'configSet' is empty, setting default 'OpenCGAConfSet'");
-            configSet = "OpenCGAConfSet";
+            throw new IllegalArgumentException("Missing Solr configset!");
         }
 
-        switch (mode.toLowerCase()) {
-            case "core":
-            case "standalone": {
-                if (existsCore(dbName)) {
-                    logger.warn("Solr standalone core {} already exists", dbName);
-                } else {
-                    createCore(dbName, configSet);
-                }
-                break;
+        if (isCloud()) {
+            if (existsCollection(dbName)) {
+                logger.warn("Solr cloud collection {} already exists", dbName);
+            } else {
+                createCollection(dbName, configSet);
             }
-            case "collection":
-            case "cloud": {
-                if (existsCollection(dbName)) {
-                    logger.warn("Solr cloud collection {} already exists", dbName);
-                } else {
-                    createCollection(dbName, configSet);
-                }
-                break;
-            }
-            default: {
-                throw new IllegalArgumentException("Invalid Solr mode '" + mode + "'. Valid values are 'standalone' or 'cloud'");
+        } else {
+            if (existsCore(dbName)) {
+                logger.warn("Solr standalone core {} already exists", dbName);
+            } else {
+                createCore(dbName, configSet);
             }
         }
     }
@@ -190,7 +174,50 @@ public class SolrManager {
                 }
             }
             return false;
-        } catch (Exception e) {
+        } catch (SolrServerException | IOException e) {
+            throw new VariantSearchException(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Remove a given collection or core.
+     *
+     * @param dbName Collection name
+     * @throws VariantSearchException VariantSearchException
+     */
+    public void remove(String dbName) throws VariantSearchException {
+        if (isCloud()) {
+            removeCollection(dbName);
+        } else {
+            removeCore(dbName);
+        }
+    }
+
+    /**
+     * Remove a collection.
+     *
+     * @param collectionName Collection name
+     * @throws VariantSearchException VariantSearchException
+     */
+    public void removeCollection(String collectionName) throws VariantSearchException {
+        try {
+            CollectionAdminRequest request = CollectionAdminRequest.deleteCollection(collectionName);
+            request.process(solrClient);
+        } catch (SolrServerException | IOException e) {
+            throw new VariantSearchException(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Remove a core.
+     *
+     * @param coreName Core name
+     * @throws VariantSearchException VariantSearchException
+     */
+    public void removeCore(String coreName) throws VariantSearchException {
+        try {
+            CoreAdminRequest.unloadCore(coreName, true, true, solrClient);
+        } catch (SolrServerException | IOException e) {
             throw new VariantSearchException(e.getMessage(), e);
         }
     }
@@ -235,5 +262,25 @@ public class SolrManager {
     public SolrManager setSolrClient(SolrClient solrClient) {
         this.solrClient = solrClient;
         return this;
+    }
+
+    private boolean isCloud() {
+        if (StringUtils.isEmpty(mode)) {
+            logger.warn("Solr 'mode' is empty, setting default 'cloud'");
+            mode = "cloud";
+        }
+        switch (mode.toLowerCase()) {
+            case "collection":
+            case "cloud": {
+                return true;
+            }
+            case "core":
+            case "standalone": {
+                return false;
+            }
+            default: {
+                throw new IllegalArgumentException("Invalid Solr mode '" + mode + "'. Valid values are 'standalone' or 'cloud'");
+            }
+        }
     }
 }

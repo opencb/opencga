@@ -32,6 +32,8 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnno
 
 import java.util.List;
 
+import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexRemoveCommandOptions.SECONDARY_INDEX_REMOVE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationSaveCommandOptions.ANNOTATION_SAVE_COMMAND;
@@ -56,8 +58,9 @@ import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQuer
 public class VariantCommandOptions {
 
     public final VariantIndexCommandOptions indexVariantCommandOptions;
-    public final VariantIndexSearchCommandOptions variantIndexSearchCommandOptions;
     public final VariantRemoveCommandOptions variantRemoveCommandOptions;
+    public final VariantSecondaryIndexCommandOptions variantSecondaryIndexCommandOptions;
+    public final VariantSecondaryIndexRemoveCommandOptions variantSecondaryIndexRemoveCommandOptions;
 //    public final QueryVariantCommandOptionsOld queryVariantCommandOptionsOld;
     public final VariantQueryCommandOptions queryVariantCommandOptions;
     public final VariantStatsCommandOptions statsVariantCommandOptions;
@@ -87,8 +90,9 @@ public class VariantCommandOptions {
         this.jCommander = jCommander;
 
         this.indexVariantCommandOptions = new VariantIndexCommandOptions();
-        this.variantIndexSearchCommandOptions = new VariantIndexSearchCommandOptions();
         this.variantRemoveCommandOptions = new VariantRemoveCommandOptions();
+        this.variantSecondaryIndexCommandOptions = new VariantSecondaryIndexCommandOptions();
+        this.variantSecondaryIndexRemoveCommandOptions = new VariantSecondaryIndexRemoveCommandOptions();
 //        this.queryVariantCommandOptionsOld = new QueryVariantCommandOptionsOld();
         this.queryVariantCommandOptions = new VariantQueryCommandOptions();
         this.statsVariantCommandOptions = new VariantStatsCommandOptions();
@@ -130,33 +134,34 @@ public class VariantCommandOptions {
         public String catalogPath = null;
     }
 
-    @Parameters(commandNames = {"index-search"}, commandDescription = "Index variants file")
-    public class VariantIndexSearchCommandOptions extends GeneralCliOptions.StudyOption {
+    @Parameters(commandNames = {SECONDARY_INDEX_COMMAND}, commandDescription = "Creates a secondary index using a search engine")
+    public class VariantSecondaryIndexCommandOptions extends GeneralCliOptions.StudyOption {
 
+        public static final String SECONDARY_INDEX_COMMAND = "secondary-index";
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"-p", "--project"}, description = "Project to index.", arity = 1)
         public String project;
 
-        @Deprecated
-        @Parameter(names = {"--project-id"}, description = "Project to index. DEPRECATED: Use --project", arity = 1)
-        public String projectId;
-
         @Parameter(names = {"-r", "--region"}, description = VariantQueryParam.REGION_DESCR)
         public String region;
 
-        @Parameter(names = {"-g", "--gene"}, description = VariantQueryParam.GENE_DESCR)
-        public String gene;
-
-        @Parameter(names = {"--file"}, description = VariantQueryParam.FILE_DESCR, arity = 1)
-        public String file;
-
-        @Parameter(names = {"--sample"}, description = VariantQueryParam.SAMPLE_DESCR, arity = 1)
+        @Parameter(names = {"--sample"}, description = "Samples to index."
+                + " If provided, all sample data will be added to the secondary index.", arity = 1)
         public String sample;
+    }
 
-        @Parameter(names = {"--cohort"}, description = VariantQueryParam.COHORT_DESCR, arity = 1)
-        public String cohort;
+    @Parameters(commandNames = {SECONDARY_INDEX_REMOVE_COMMAND}, commandDescription = "Remove a secondary index from the search engine")
+    public class VariantSecondaryIndexRemoveCommandOptions extends GeneralCliOptions.StudyOption {
+
+        public static final String SECONDARY_INDEX_REMOVE_COMMAND = "secondary-index-remove";
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--sample"}, description = "Samples to remove. Needs to provide all the samples in the secondary index.",
+                required = true, arity = 1)
+        public String sample;
     }
 
     @Deprecated

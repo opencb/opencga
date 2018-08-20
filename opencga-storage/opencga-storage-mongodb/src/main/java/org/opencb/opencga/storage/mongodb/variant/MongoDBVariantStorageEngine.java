@@ -94,7 +94,6 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         BULK_SIZE("bulkSize",  100),
         DEFAULT_GENOTYPE("defaultGenotype", Arrays.asList("0/0", "0|0")),
         ALREADY_LOADED_VARIANTS("alreadyLoadedVariants", 0),
-        LOADED_GENOTYPES("loadedGenotypes", null),
 
         PARALLEL_WRITE("parallel.write", false),
 
@@ -539,13 +538,14 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public Query preProcessQuery(Query originalQuery) throws StorageEngineException {
-        Query query = super.preProcessQuery(originalQuery);
+    public Query preProcessQuery(Query originalQuery, QueryOptions options) throws StorageEngineException {
+        Query query = super.preProcessQuery(originalQuery, options);
         List<String> studyNames = studyConfigurationManager.getStudyNames(QueryOptions.empty());
         CellBaseUtils cellBaseUtils = getCellBaseUtils();
 
         if (isValidParam(query, VariantQueryParam.STUDY)
                 && studyNames.size() == 1
+                && !isNegated(query.getString(VariantQueryParam.STUDY.key()))
                 && !isValidParam(query, FILE)
                 && !isValidParam(query, SAMPLE)
                 && !isValidParam(query, GENOTYPE)) {

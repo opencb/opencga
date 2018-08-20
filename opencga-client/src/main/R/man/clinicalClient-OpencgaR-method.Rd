@@ -6,7 +6,7 @@
 \title{ClinicalClient methods}
 \usage{
 \S4method{clinicalClient}{OpencgaR}(OpencgaR, clinicalAnalysis, action,
-  params = NULL)
+  params = NULL, ...)
 }
 \arguments{
 \item{OpencgaR}{an object OpencgaR generated using initOpencgaR and/or opencgaLogin 

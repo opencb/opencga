@@ -131,9 +131,9 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                                           String populationDescription, String dateOfBirth, Individual.KaryotypicSex karyotypicSex,
                                           Individual.LifeStatus lifeStatus, Individual.AffectationStatus affectationStatus,
                                           QueryOptions options, String sessionId) throws CatalogException {
-        Individual individual = new Individual(name, name, null, null, null, sex, karyotypicSex, ethnicity,
-                new Individual.Population(populationName, populationSubpopulation, populationDescription), dateOfBirth, -1, 1, null,
-                null, lifeStatus, affectationStatus, null, null, false, null, null);
+        Individual individual = new Individual(name, name, null, null, null, null, sex, karyotypicSex,
+                ethnicity, new Individual.Population(populationName, populationSubpopulation, populationDescription), dateOfBirth, -1, 1,
+                null, null, lifeStatus, affectationStatus, null, null, false, null, null);
         return create(String.valueOf(studyId), individual, options, sessionId);
     }
 
@@ -144,6 +144,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
         ParamUtils.checkAlias(individual.getId(), "id");
         individual.setName(StringUtils.isEmpty(individual.getName()) ? individual.getId() : individual.getName());
+        individual.setLocation(ParamUtils.defaultObject(individual.getLocation(), Location::new));
         individual.setEthnicity(ParamUtils.defaultObject(individual.getEthnicity(), ""));
         individual.setPopulation(ParamUtils.defaultObject(individual.getPopulation(), Individual.Population::new));
         individual.setLifeStatus(ParamUtils.defaultObject(individual.getLifeStatus(), Individual.LifeStatus.UNKNOWN));
@@ -538,6 +539,10 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     public QueryResult<Individual> updateAnnotations(String studyStr, String individualStr, String annotationSetId,
                                                  Map<String, Object> annotations, ParamUtils.CompleteUpdateAction action,
                                                  QueryOptions options, String token) throws CatalogException {
+        if (annotations == null || annotations.isEmpty()) {
+            return new QueryResult<>(individualStr, -1, -1, -1, "Nothing to do: The map of annotations is empty", "",
+                    Collections.emptyList());
+        }
         ObjectMap params = new ObjectMap(AnnotationSetManager.ANNOTATIONS, new AnnotationSet(annotationSetId, "", annotations));
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         options.put(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATIONS, action));

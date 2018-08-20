@@ -25,10 +25,13 @@ import com.google.common.base.Throwables;
 import org.apache.avro.generic.GenericRecord;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.models.variant.stats.VariantSourceStats;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.biodata.tools.variant.stats.AggregationUtils;
 import org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator;
 import org.opencb.commons.ProgressLogger;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataReader;
@@ -202,17 +205,9 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
             }
         }
 
-        studyConfiguration = preCalculateStats(cohorts, studyConfiguration, overwrite, updateStats);
+        studyConfiguration = preCalculateStats(cohorts, studyConfiguration, overwrite, updateStats, options);
 
-        if (!overwrite) {
-            for (String cohortName : cohorts.keySet()) {
-                Integer cohortId = studyConfiguration.getCohortIds().get(cohortName);
-                if (studyConfiguration.getInvalidStats().contains(cohortId)) {
-                    logger.debug("Cohort \"{}\":{} is invalid. Need to overwrite stats. Using overwrite = true", cohortName, cohortId);
-                    overwrite = true;
-                }
-            }
-        }
+        overwrite = checkOverwrite(cohorts, studyConfiguration, overwrite);
 
         VariantSourceStats variantSourceStats = new VariantSourceStats(null/*FILE_ID*/, Integer.toString(studyConfiguration.getStudyId()));
 
@@ -227,7 +222,8 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
         List<Task<Variant, String>> tasks = new ArrayList<>(numTasks);
         ProgressLogger progressLogger = buildCreateStatsProgressLogger(dbAdaptor, readerQuery, readerOptions);
         for (int i = 0; i < numTasks; i++) {
-            tasks.add(new VariantStatsWrapperTask(overwrite, cohorts, studyConfiguration, variantSourceStats, tagmap, progressLogger));
+            tasks.add(new VariantStatsWrapperTask(overwrite, cohorts, studyConfiguration, variantSourceStats, tagmap, progressLogger,
+                    getAggregation(studyConfiguration, options)));
         }
         StringDataWriter writer = buildVariantStatsStringDataWriter(output);
 
@@ -255,11 +251,11 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
     }
 
     protected StudyConfiguration preCalculateStats(Map<String, Set<String>> cohorts, StudyConfiguration studyConfiguration,
-                                                   boolean overwrite, boolean updateStats)
+                                                   boolean overwrite, boolean updateStats, ObjectMap options)
             throws StorageEngineException {
         return dbAdaptor.getStudyConfigurationManager().lockAndUpdate(studyConfiguration.getStudyName(), sc -> {
             dbAdaptor.getStudyConfigurationManager().registerCohorts(sc, cohorts);
-            checkAndUpdateStudyConfigurationCohorts(sc, cohorts, overwrite, updateStats);
+            checkAndUpdateStudyConfigurationCohorts(sc, cohorts, overwrite, updateStats, getAggregation(sc, options));
             return sc;
         });
     }
@@ -297,8 +293,8 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
         private VariantStatisticsCalculator variantStatisticsCalculator;
 
         VariantStatsWrapperTask(boolean overwrite, Map<String, Set<String>> cohorts,
-                                StudyConfiguration studyConfiguration,
-                                VariantSourceStats variantSourceStats, Properties tagmap, ProgressLogger progressLogger) {
+                                StudyConfiguration studyConfiguration, VariantSourceStats variantSourceStats, Properties tagmap,
+                                ProgressLogger progressLogger, Aggregation aggregation) {
             this.overwrite = overwrite;
             this.cohorts = cohorts;
             this.studyConfiguration = studyConfiguration;
@@ -310,7 +306,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
             this.variantSourceStats = variantSourceStats;
             this.tagmap = tagmap;
             variantStatisticsCalculator = new VariantStatisticsCalculator(overwrite);
-            variantStatisticsCalculator.setAggregationType(studyConfiguration.getAggregation(), tagmap);
+            variantStatisticsCalculator.setAggregationType(aggregation, tagmap);
         }
 
         @Override
@@ -510,8 +506,8 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
      *
      */
     protected static List<Integer> checkAndUpdateStudyConfigurationCohorts(StudyConfiguration studyConfiguration,
-                                                          Map<String, Set<String>> cohorts,
-                                                          boolean overwrite, boolean updateStats)
+                                                                           Map<String, Set<String>> cohorts,
+                                                                           boolean overwrite, boolean updateStats, Aggregation aggregation)
             throws StorageEngineException {
         List<Integer> cohortIdList = new ArrayList<>();
 
@@ -523,7 +519,8 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
             final Set<Integer> sampleIds;
             if (samples == null || samples.isEmpty()) {
                 //There are not provided samples for this cohort. Take samples from StudyConfiguration
-                if (studyConfiguration.isAggregated()) {
+                boolean aggregated = AggregationUtils.isAggregated(aggregation);
+                if (aggregated) {
                     samples = Collections.emptySet();
                     sampleIds = Collections.emptySet();
                 } else {
@@ -587,6 +584,10 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
         return cohortIdList;
     }
 
+    private static Aggregation getAggregation(StudyConfiguration studyConfiguration, ObjectMap options) {
+        return AggregationUtils.valueOf(options.getString(Options.AGGREGATED_TYPE.key(), studyConfiguration.getAggregation().toString()));
+    }
+
     void checkAndUpdateCalculatedCohorts(StudyConfiguration studyConfiguration, URI uri, boolean updateStats)
             throws IOException, StorageEngineException {
         /** Select input path **/
@@ -603,6 +604,19 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
                 throw new IOException("File " + uri + " is empty");
             }
         }
+    }
+
+    protected static boolean checkOverwrite(Map<String, Set<String>> cohorts, StudyConfiguration studyConfiguration, boolean overwrite) {
+        if (!overwrite) {
+            for (String cohortName : cohorts.keySet()) {
+                Integer cohortId = studyConfiguration.getCohortIds().get(cohortName);
+                if (studyConfiguration.getInvalidStats().contains(cohortId)) {
+                    logger.debug("Cohort \"{}\":{} is invalid. Need to overwrite stats. Using overwrite = true", cohortName, cohortId);
+                    overwrite = true;
+                }
+            }
+        }
+        return overwrite;
     }
 
 }

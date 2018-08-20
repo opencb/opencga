@@ -498,10 +498,12 @@ public class VariantHBaseQueryParser {
                 scan.addColumn(family, Bytes.toBytes(VariantPhoenixHelper.getAnnotationSnapshotColumn(id)));
             } else {
                 scan.addColumn(family, FULL_ANNOTATION.bytes());
-            }
-            int release = studyConfigurationManager.getProjectMetadata().first().getRelease();
-            for (int i = 1; i <= release; i++) {
-                scan.addColumn(family, VariantPhoenixHelper.buildReleaseColumnKey(i));
+                scan.addColumn(family, ANNOTATION_ID.bytes());
+                // Only return RELEASE when reading current annotation
+                int release = studyConfigurationManager.getProjectMetadata().first().getRelease();
+                for (int i = 1; i <= release; i++) {
+                    scan.addColumn(family, VariantPhoenixHelper.buildReleaseColumnKey(i));
+                }
             }
         }
 

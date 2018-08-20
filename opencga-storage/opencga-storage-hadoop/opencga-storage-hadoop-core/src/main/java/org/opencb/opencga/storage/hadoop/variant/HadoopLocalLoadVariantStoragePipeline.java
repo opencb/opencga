@@ -56,7 +56,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
 
 import static org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.LOADED_GENOTYPES;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.STORAGE_ENGINE_ID;
 
 /**
@@ -283,8 +282,8 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
 
     private void updateLoadedGenotypes(HashSet<String> loadedGenotypes) throws StorageEngineException {
         getStudyConfigurationManager().lockAndUpdate(getStudyId(), sc -> {
-            loadedGenotypes.addAll(sc.getAttributes().getAsStringList(LOADED_GENOTYPES));
-            sc.getAttributes().put(LOADED_GENOTYPES, loadedGenotypes);
+            loadedGenotypes.addAll(sc.getAttributes().getAsStringList(VariantStorageEngine.Options.LOADED_GENOTYPES.key()));
+            sc.getAttributes().put(VariantStorageEngine.Options.LOADED_GENOTYPES.key(), loadedGenotypes);
             return sc;
         });
     }

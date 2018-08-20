@@ -189,6 +189,18 @@ public class DocumentToVariantAnnotationConverter
 
     private final VariantTraitAssociationToEvidenceEntryConverter traitAssociationConverter
             = new VariantTraitAssociationToEvidenceEntryConverter();
+    private Integer annotationId = null;
+    private Map<Integer, String> annotationIds = Collections.emptyMap();
+
+    public DocumentToVariantAnnotationConverter(Map<Integer, String> annotationIds) {
+        this();
+        this.annotationIds = annotationIds;
+    }
+
+    public DocumentToVariantAnnotationConverter(Integer annotationId) {
+        this();
+        this.annotationId = annotationId;
+    }
 
     public DocumentToVariantAnnotationConverter() {
         jsonObjectMapper = new ObjectMapper();
@@ -423,6 +435,23 @@ public class DocumentToVariantAnnotationConverter
         if (customAnnotation != null) {
             Map<String, AdditionalAttribute> additionalAttributes = convertAdditionalAttributesToDataModelType(customAnnotation);
             va.setAdditionalAttributes(additionalAttributes);
+        } else {
+            if (!annotationIds.isEmpty()) {
+                Object o = object.get(ANNOT_ID_FIELD);
+                if (o != null && o instanceof Number) {
+                    if (va.getAdditionalAttributes() == null) {
+                        va.setAdditionalAttributes(new HashMap<>());
+                    }
+                    va.getAdditionalAttributes().compute("opencga", (key, value) -> {
+                        if (value == null) {
+                            HashMap<String, String> map = new HashMap<>(1);
+                            value = new AdditionalAttribute(map);
+                        }
+                        value.getAttribute().put("annotationId", annotationIds.get(((Number) o).intValue()));
+                        return value;
+                    });
+                }
+            }
         }
 
         List<Document> repeats = getList(object, REPEATS_FIELD);
@@ -578,7 +607,7 @@ public class DocumentToVariantAnnotationConverter
         List<Document> cts = new LinkedList<>();
 
         //Annotation ID
-        document.put(ANNOT_ID_FIELD, "?");
+        document.put(ANNOT_ID_FIELD, annotationId);
 
         //Variant ID
         if (variantAnnotation.getId() != null && !variantAnnotation.getId().isEmpty()) {

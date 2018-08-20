@@ -37,11 +37,12 @@ public class Sample extends Annotable {
     private int release;
     private int version;
     private String creationDate;
+    private String modificationDate;
     private Status status;
     private String description;
     private String type;
     private boolean somatic;
-    private List<OntologyTerm> phenotypes;
+    private List<Phenotype> phenotypes;
 
     @Deprecated
     private Map<String, Object> stats;
@@ -57,7 +58,7 @@ public class Sample extends Annotable {
     }
 
     public Sample(String id, String source, Individual individual, String description, String type, boolean somatic, int release,
-                  int version, List<AnnotationSet> annotationSets, List<OntologyTerm> phenotypeList, Map<String, Object> stats,
+                  int version, List<AnnotationSet> annotationSets, List<Phenotype> phenotypeList, Map<String, Object> stats,
                   Map<String, Object> attributes) {
         this.id = id;
         this.source = source;
@@ -84,6 +85,7 @@ public class Sample extends Annotable {
         sb.append(", release=").append(release);
         sb.append(", version=").append(version);
         sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", status=").append(status);
         sb.append(", description='").append(description).append('\'');
         sb.append(", type='").append(type).append('\'');
@@ -196,6 +198,15 @@ public class Sample extends Annotable {
         return this;
     }
 
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public Sample setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
+        return this;
+    }
+
     public Status getStatus() {
         return status;
     }
@@ -250,11 +261,11 @@ public class Sample extends Annotable {
         return this;
     }
 
-    public List<OntologyTerm> getPhenotypes() {
+    public List<Phenotype> getPhenotypes() {
         return phenotypes;
     }
 
-    public Sample setPhenotypes(List<OntologyTerm> phenotypes) {
+    public Sample setPhenotypes(List<Phenotype> phenotypes) {
         this.phenotypes = phenotypes;
         return this;
     }

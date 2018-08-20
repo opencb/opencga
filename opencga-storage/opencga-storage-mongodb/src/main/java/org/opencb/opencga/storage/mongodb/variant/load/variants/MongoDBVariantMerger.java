@@ -980,7 +980,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 
         if (!overlappingFiles.isEmpty()) {
             for (FileEntry fileEntry : mainVariantNew.getStudies().get(0).getFiles()) {
-                int fileId = Integer.parseInt(fileEntry.getFileId());
+                int fileId = getFileId(fileEntry);
                 if (overlappingFiles.contains(fileId)) {
                     markAsOverlapped(fileEntry);
                 }
@@ -991,17 +991,27 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
     }
 
     private void markAsOverlapped(FileEntry fileEntry) {
-        int fid = Integer.parseInt(fileEntry.getFileId());
+        int fid = getFileId(fileEntry);
         if (fid > 0) {
             fileEntry.setFileId(String.valueOf(-fid));
         }
     }
 
     private void markAsNonOverlapped(FileEntry fileEntry) {
-        int fid = Integer.parseInt(fileEntry.getFileId());
+        int fid = getFileId(fileEntry);
         if (fid < 0) {
             fileEntry.setFileId(String.valueOf(-fid));
         }
+    }
+
+    private int getFileId(FileEntry fileEntry) {
+        int fid;
+        try {
+            fid = Integer.parseInt(fileEntry.getFileId());
+        } catch (NumberFormatException e) {
+            fid = studyConfiguration.getFileIds().get(fileEntry.getFileId());
+        }
+        return fid;
     }
 
     /**

@@ -5,7 +5,8 @@
 \alias{projectClient,OpencgaR-method}
 \title{ProjectClient methods}
 \usage{
-\S4method{projectClient}{OpencgaR}(OpencgaR, project, action, params = NULL)
+\S4method{projectClient}{OpencgaR}(OpencgaR, project, action, params = NULL,
+  ...)
 }
 \description{
 This function implements the OpenCGA calls for managing Projects
