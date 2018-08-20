@@ -138,11 +138,16 @@ public abstract class AbstractPhoenixConverter {
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> List<T> toList(Array value) {
+    public <T> List<T> toList(PhoenixArray value) {
         try {
-            return Arrays.asList((T[]) value.getArray());
+            if (value.isPrimitiveType()) {
+                return toModifiableList(value);
+            } else {
+                return Arrays.asList((T[]) value.getArray());
+            }
         } catch (SQLException e) {
             throw new IllegalStateException(e);
         }
     }
+
 }

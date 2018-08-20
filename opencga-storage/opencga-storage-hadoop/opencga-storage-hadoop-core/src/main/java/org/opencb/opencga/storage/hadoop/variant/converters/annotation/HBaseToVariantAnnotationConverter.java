@@ -22,9 +22,11 @@ import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.types.PInteger;
+import org.apache.phoenix.schema.types.PhoenixArray;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.EthnicCategory;
 import org.opencb.biodata.models.variant.avro.EvidenceEntry;
@@ -36,34 +38,44 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.converters.VariantTraitAssociationToEvidenceEntryConverter;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantAnnotationMixin;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.VariantColumn;
+import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchIndexUtils;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
+
 /**
  * Created on 03/12/15.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HBaseToVariantAnnotationConverter implements Converter<Result, VariantAnnotation> {
+public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter implements Converter<Result, VariantAnnotation> {
 
     private final ObjectMapper objectMapper;
     private final byte[] columnFamily;
+    private final long ts;
     private final VariantTraitAssociationToEvidenceEntryConverter traitAssociationConverter;
     private byte[] annotationColumn = VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes();
     private String annotationColumnStr = Bytes.toString(annotationColumn);
     private String defaultAnnotationId = null;
     private Map<Integer, String> annotationIds;
 
-    public HBaseToVariantAnnotationConverter(GenomeHelper genomeHelper) {
+    public HBaseToVariantAnnotationConverter(GenomeHelper genomeHelper, long ts) {
+        super(genomeHelper.getColumnFamily());
         columnFamily = genomeHelper.getColumnFamily();
+        this.ts = ts;
         objectMapper = new ObjectMapper();
         objectMapper.addMixIn(VariantAnnotation.class, VariantAnnotationMixin.class);
         traitAssociationConverter = new VariantTraitAssociationToEvidenceEntryConverter();
@@ -139,11 +151,12 @@ public class HBaseToVariantAnnotationConverter implements Converter<Result, Vari
             }
         }
         List<Integer> releases = new ArrayList<>();
-        for (byte[] bytes : result.getFamilyMap(columnFamily).keySet()) {
+        for (byte[] bytes : result.getFamilyMap(columnFamily).tailMap(VariantPhoenixHelper.RELEASE_PREFIX_BYTES).keySet()) {
             if (Bytes.startsWith(bytes, VariantPhoenixHelper.RELEASE_PREFIX_BYTES)) {
                 releases.add(getRelease(Bytes.toString(bytes)));
             }
         }
+
         String annotationId = this.defaultAnnotationId;
         if (defaultAnnotationId == null) {
             // Read the annotation Id from ANNOTATION_ID column
@@ -154,7 +167,25 @@ public class HBaseToVariantAnnotationConverter implements Converter<Result, Vari
             }
         }
 
-        return post(variantAnnotation, releases, annotationId);
+        byte[] studiesValue = result.getFamilyMap(columnFamily).get(VariantColumn.INDEX_STUDIES.bytes());
+
+        List<Integer> studies;
+        if (studiesValue != null) {
+            studies = toList((PhoenixArray) VariantColumn.INDEX_STUDIES.getPDataType().toObject(studiesValue));
+        } else {
+            studies = null;
+        }
+        Cell notSyncCell = result.getColumnLatestCell(columnFamily, VariantColumn.INDEX_NOT_SYNC.bytes());
+        Cell unknownCell = result.getColumnLatestCell(columnFamily, VariantColumn.INDEX_UNKNOWN.bytes());
+
+        // Don't need to check the value. If present, only check the timestamp.
+        boolean notSync = notSyncCell != null && notSyncCell.getTimestamp() > ts;
+        // Arrays.equals(PBoolean.TRUE_BYTES, result.getFamilyMap(columnFamily).get(VariantColumn.INDEX_NOT_SYNC.bytes()))
+        boolean unknown = unknownCell != null && unknownCell.getTimestamp() > ts;
+        // Arrays.equals(PBoolean.TRUE_BYTES, result.getFamilyMap(columnFamily).get(VariantColumn.INDEX_UNKNOWN.bytes()))
+        VariantSearchManager.SyncStatus syncStatus = HadoopVariantSearchIndexUtils.getSyncStatus(notSync, unknown, studies);
+
+        return post(variantAnnotation, releases, syncStatus, studies, annotationId);
     }
 
     public VariantAnnotation convert(ResultSet resultSet) {
@@ -179,16 +210,39 @@ public class HBaseToVariantAnnotationConverter implements Converter<Result, Vari
 
 
         List<Integer> releases = new ArrayList<>();
+        List<Integer> studies;
+        VariantSearchManager.SyncStatus syncStatus;
         try {
             ResultSetMetaData metaData = resultSet.getMetaData();
+            boolean hasIndex = false;
             for (int i = 1; i <= metaData.getColumnCount(); i++) {
                 String columnName = metaData.getColumnName(i);
                 if (columnName.startsWith(VariantPhoenixHelper.RELEASE_PREFIX)) {
                     if (resultSet.getBoolean(i)) {
                         releases.add(getRelease(columnName));
                     }
+                } else if (columnName.equals(VariantColumn.INDEX_NOT_SYNC.column())) {
+                    hasIndex = true;
                 }
             }
+
+            if (hasIndex) {
+                Array studiesValue = resultSet.getArray(VariantColumn.INDEX_STUDIES.column());
+                if (studiesValue != null) {
+                    studies = toList((PhoenixArray) studiesValue);
+                } else {
+                    studies = null;
+                }
+
+                boolean noSync = resultSet.getBoolean(VariantColumn.INDEX_NOT_SYNC.column());
+                boolean unknown = resultSet.getBoolean(VariantColumn.INDEX_UNKNOWN.column());
+
+                syncStatus = HadoopVariantSearchIndexUtils.getSyncStatus(noSync, unknown, studies);
+            } else {
+                studies = null;
+                syncStatus = null;
+            }
+
         } catch (SQLException e) {
             // This should never happen!
             throw new IllegalStateException(e);
@@ -204,7 +258,7 @@ public class HBaseToVariantAnnotationConverter implements Converter<Result, Vari
             }
         }
 
-        return post(variantAnnotation, releases, annotationId);
+        return post(variantAnnotation, releases, syncStatus, studies, annotationId);
     }
 
     public Integer findColumn(ResultSet resultSet, String column) {
@@ -220,9 +274,14 @@ public class HBaseToVariantAnnotationConverter implements Converter<Result, Vari
         return Integer.valueOf(columnName.substring(VariantPhoenixHelper.RELEASE_PREFIX.length()));
     }
 
-    private VariantAnnotation post(VariantAnnotation variantAnnotation, List<Integer> releases, String annotationId) {
+    private VariantAnnotation post(VariantAnnotation variantAnnotation, List<Integer> releases, VariantSearchManager.SyncStatus syncStatus,
+                                   List<Integer> studies, String annotationId) {
+        boolean hasRelease = releases != null && !releases.isEmpty();
+        boolean hasIndex = syncStatus != null || studies != null;
+        boolean hasAnnotationId = StringUtils.isNotEmpty(annotationId);
+
         if (variantAnnotation == null) {
-            if (releases.isEmpty()) {
+            if (!hasIndex && !hasRelease) {
                 return null;
             } else {
                 variantAnnotation = new VariantAnnotation();
@@ -264,26 +323,37 @@ public class HBaseToVariantAnnotationConverter implements Converter<Result, Vari
             List<EvidenceEntry> evidenceEntries = traitAssociationConverter.convert(variantAnnotation.getVariantTraitAssociation());
             variantAnnotation.setTraitAssociation(evidenceEntries);
         }
-        if (variantAnnotation.getAdditionalAttributes() == null) {
-            variantAnnotation.setAdditionalAttributes(new HashMap<>());
-        }
-        variantAnnotation.getAdditionalAttributes().compute("opencga", (key, value) -> {
-            final Map<String, String> map;
-            if (value == null) {
-                map = new HashMap<>(2);
-                value = new AdditionalAttribute(map);
+
+        AdditionalAttribute additionalAttribute = null;
+        if (hasAnnotationId || hasRelease || hasIndex) {
+            if (variantAnnotation.getAdditionalAttributes() == null) {
+                variantAnnotation.setAdditionalAttributes(new HashMap<>());
+            }
+            if (variantAnnotation.getAdditionalAttributes().containsKey(GROUP_NAME.key())) {
+                additionalAttribute = variantAnnotation.getAdditionalAttributes().get(GROUP_NAME.key());
             } else {
-                map = value.getAttribute();
+                additionalAttribute = new AdditionalAttribute(new HashMap<>());
+                variantAnnotation.getAdditionalAttributes().put(GROUP_NAME.key(), additionalAttribute);
             }
-            map.put("annotationId", annotationId);
-            if (releases != null && !releases.isEmpty()) {
-                String release = releases.stream().min(Integer::compareTo).orElse(0).toString();
-                map.put("release", release);
+        }
+        if (hasRelease) {
+            String release = releases.stream().min(Integer::compareTo).orElse(0).toString();
+            additionalAttribute.getAttribute().put(VariantField.AdditionalAttributes.RELEASE.key(), release);
+        }
+
+        if (hasIndex) {
+            if (syncStatus != null) {
+                additionalAttribute.getAttribute().put(VariantField.AdditionalAttributes.INDEX_SYNCHRONIZATION.key(), syncStatus.key());
             }
-            return value;
-        });
+            if (studies != null) {
+                additionalAttribute.getAttribute().put(VariantField.AdditionalAttributes.INDEX_STUDIES.key(),
+                        studies.stream().map(Object::toString).collect(Collectors.joining(",")));
+            }
+        }
 
-
+        if (hasAnnotationId) {
+            additionalAttribute.getAttribute().put("annotationId", annotationId);
+        }
         return variantAnnotation;
     }
 }

@@ -25,6 +25,8 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HConstants;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.io.compress.Compression.Algorithm;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.Variant;
@@ -50,11 +52,14 @@ import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadListener;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
@@ -76,6 +81,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdapt
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.io.HadoopVariantExporter;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
+import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchLoadListener;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopDefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopMRVariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
@@ -314,6 +320,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             if (doLoad) {
                 annotateLoadedFiles(outdirUri, inputFiles, concurrResult, getOptions());
                 calculateStatsForLoadedFiles(outdirUri, inputFiles, concurrResult, getOptions());
+                searchIndexLoadedFiles(inputFiles, getOptions());
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -371,10 +378,30 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public void searchIndex(Query query, QueryOptions queryOptions) throws StorageEngineException, IOException, VariantSearchException {
+    public VariantSearchLoadResult searchIndex(Query query, QueryOptions queryOptions, boolean overwrite)
+            throws StorageEngineException, IOException, VariantSearchException {
         queryOptions = queryOptions == null ? new QueryOptions() : new QueryOptions(queryOptions);
         queryOptions.putIfAbsent(VariantHadoopDBAdaptor.NATIVE, true);
-        super.searchIndex(query, queryOptions);
+        return super.searchIndex(query, queryOptions, overwrite);
+    }
+
+    @Override
+    protected VariantDBIterator getVariantsToIndex(boolean overwrite, Query query, QueryOptions queryOptions, VariantDBAdaptor dbAdaptor)
+            throws StorageEngineException {
+        if (!overwrite) {
+            query.put(VariantQueryUtils.VARIANTS_TO_INDEX.key(), true);
+            logger.info("Column intersect!");
+//        queryOptions.put("multiIteratorBatchSize", 1000);
+            return (VariantDBIterator) getOrIteratorHBaseColumnIntersect(query, queryOptions, true);
+        } else {
+            logger.info("Get variants to index");
+            return super.getVariantsToIndex(overwrite, query, queryOptions, dbAdaptor);
+        }
+    }
+
+    @Override
+    protected VariantSearchLoadListener newVariantSearchLoadListener() throws StorageEngineException {
+        return new HadoopVariantSearchLoadListener(getDBAdaptor());
     }
 
     @Override
@@ -571,7 +598,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
         VariantHadoopDBAdaptor dbAdaptor = getDBAdaptor();
         StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
-        List<Integer> fileIds = preRemoveFiles(study, files);
+        List<Integer> fileIds = preRemoveFiles(study, files).getFileIds();
         final int studyId = scm.getStudyId(study, null);
 
 //        // Pre delete
@@ -601,6 +628,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             String archiveTable = getArchiveTableName(studyId);
             String variantsTable = getVariantTableName();
             String sampleIndexTable = getTableNameGenerator().getSampleIndexTableName(studyId);
+            options.put(DeleteHBaseColumnDriver.DELETE_HBASE_COLUMN_MAPPER_CLASS, MyDeleteHBaseColumnMapper.class.getName());
 
             long startTime = System.currentTimeMillis();
             logger.info("------------------------------------------------------");
@@ -1003,7 +1031,9 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                 .append(QueryOptions.INCLUDE, Arrays.asList(CHROMOSOME, START, END, REFERENCE, ALTERNATE));
 
         scanQuery.putIfNotNull(STUDY.key(), query.get(STUDY.key()));
-        if (isValidParam(query, SAMPLE)) {
+        if (query.getBoolean(VARIANTS_TO_INDEX.key(), false)) {
+            scanQuery.put(VARIANTS_TO_INDEX.key(), true);
+        } else if (isValidParam(query, SAMPLE)) {
             // At any case, filter only by first sample
             // TODO: Use sample with less variants?
 
@@ -1167,4 +1197,25 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         }
     }
 
+    /**
+     * Created on 23/04/18.
+     *
+     * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
+     */
+    public static class MyDeleteHBaseColumnMapper extends DeleteHBaseColumnDriver.DeleteHBaseColumnMapper {
+
+        private byte[] columnFamily;
+
+        @Override
+        protected void setup(Context context) throws IOException, InterruptedException {
+            super.setup(context);
+            columnFamily = new GenomeHelper(context.getConfiguration()).getColumnFamily();
+        }
+
+        @Override
+        protected void map(ImmutableBytesWritable key, Result result, Context context) throws IOException, InterruptedException {
+            super.map(key, result, context);
+    //        context.write(key, HadoopVariantSearchIndexUtils.addUnknownSyncStatus(new Put(result.getRow()), columnFamily));
+        }
+    }
 }

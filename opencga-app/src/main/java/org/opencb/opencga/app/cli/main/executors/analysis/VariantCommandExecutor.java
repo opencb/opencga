@@ -118,6 +118,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         o.putIfNotNull(VariantStorageEngine.Options.RESUME.key(), variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.resume);
         o.putIfNotNull(VariantStorageEngine.Options.LOAD_SPLIT_DATA.key(), variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.loadSplitData);
         o.putIfNotNull(VariantStorageEngine.Options.POST_LOAD_CHECK_SKIP.key(), variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.skipPostLoadCheck);
+        o.putIfNotNull(VariantStorageEngine.Options.INDEX_SEARCH.key(), variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.indexSearch);
         o.putIfNotNull(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.overwriteAnnotations);
         o.putAll(variantCommandOptions.commonCommandOptions.params);
 

@@ -135,6 +135,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                           @ApiParam("Calculate indexed variants statistics after the load step") @DefaultValue("false") @QueryParam("calculateStats") boolean calculateStats,
                           @ApiParam("Annotate indexed variants after the load step") @DefaultValue("false") @QueryParam("annotate") boolean annotate,
                           @ApiParam("Overwrite annotations already present in variants") @DefaultValue("false") @QueryParam("overwrite") boolean overwriteAnnotations,
+                          @ApiParam("Add files to the secondary search index") @DefaultValue("false") @QueryParam("indexSearch") boolean indexSearch,
                           @ApiParam("Resume a previously failed indexation") @DefaultValue("false") @QueryParam("resume") boolean resume,
                           @ApiParam("Indicate that the variants from a sample (or group of samples) split into different files (by chromosome, by type, ...)") @DefaultValue("false") @QueryParam("loadSplitData") boolean loadSplitData,
                           @ApiParam("Do not execute post load checks over the database") @DefaultValue("false") @QueryParam("skipPostLoadCheck") boolean skipPostLoadCheck) {
@@ -157,6 +158,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         addParamIfNotNull(params, AGGREGATED_TYPE.key(), aggregated);
         addParamIfTrue(params, CALCULATE_STATS.key(), calculateStats);
         addParamIfTrue(params, ANNOTATE.key(), annotate);
+        addParamIfTrue(params, INDEX_SEARCH.key(), indexSearch);
         addParamIfTrue(params, VariantAnnotationManager.OVERWRITE_ANNOTATIONS, overwriteAnnotations);
         addParamIfTrue(params, LOAD_SPLIT_DATA.key(), loadSplitData);
         addParamIfTrue(params, POST_LOAD_CHECK_SKIP.key(), skipPostLoadCheck);
@@ -173,6 +175,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         knownParams.add("calculateStats");
         knownParams.add("annotate");
         knownParams.add("overwrite");
+        knownParams.add("indexSearch");
         knownParams.add("sid");
         knownParams.add("include");
         knownParams.add("exclude");

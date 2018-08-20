@@ -69,7 +69,7 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public void removeFiles(String study, List<String> files) throws StorageEngineException {
-        List<Integer> fileIds = preRemoveFiles(study, files);
+        List<Integer> fileIds = preRemoveFiles(study, files).getFileIds();
         try {
             Thread.sleep(1);
         } catch (InterruptedException e) {

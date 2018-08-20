@@ -293,6 +293,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         queryOptions.put(VariantStorageEngine.Options.RESUME.key(), cliOptions.genericVariantIndexOptions.resume);
         queryOptions.put(VariantStorageEngine.Options.LOAD_SPLIT_DATA.key(), cliOptions.genericVariantIndexOptions.loadSplitData);
         queryOptions.put(VariantStorageEngine.Options.POST_LOAD_CHECK_SKIP.key(), cliOptions.genericVariantIndexOptions.skipPostLoadCheck);
+        queryOptions.put(VariantStorageEngine.Options.INDEX_SEARCH.key(), cliOptions.genericVariantIndexOptions.indexSearch);
         queryOptions.putAll(cliOptions.commonOptions.params);
 
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
@@ -315,7 +316,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
             Query query = new Query();
             query.putIfNotEmpty(VariantCatalogQueryUtils.PROJECT.key(), cliOptions.project);
             query.putIfNotEmpty(VariantQueryParam.REGION.key(), cliOptions.region);
-            variantManager.searchIndex(query, queryOptions, sessionId);
+            variantManager.searchIndex(query, queryOptions, cliOptions.overwrite, sessionId);
         }
     }
 

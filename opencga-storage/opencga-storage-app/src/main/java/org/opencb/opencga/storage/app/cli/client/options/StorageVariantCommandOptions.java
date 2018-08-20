@@ -127,7 +127,7 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--annotate"}, description = "Annotate indexed variants after the load step")
         public boolean annotate;
 
-        @Parameter(names = {"--index-search"}, description = "Indexed Solr search database")
+        @Parameter(names = {"--index-search"}, description = "Add files to the secondary search index")
         public boolean indexSearch;
 
         @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}", arity = 1)
@@ -863,6 +863,9 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"--index"}, description = "Index a file into core/collection Solr.", arity = 0)
         public boolean index;
+
+        @Parameter(names = {"--overwrite"}, description = "Overwrite search index for all files and variants. Repeat operation for already processed variants.")
+        public boolean overwrite;
 
         @Parameter(names = {"-i", "--input"}, description = "Path to the file to index. Valid formats: AVRO and JSON.", arity = 1)
         public String inputFilename;

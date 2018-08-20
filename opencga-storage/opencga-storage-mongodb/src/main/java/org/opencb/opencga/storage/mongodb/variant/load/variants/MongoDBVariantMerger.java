@@ -37,6 +37,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStoragePipeline;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
@@ -44,6 +45,7 @@ import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVari
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
 import org.opencb.opencga.storage.mongodb.variant.converters.stage.StageDocumentToVariantConverter;
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader;
+import org.opencb.opencga.storage.mongodb.variant.search.MongoDBVariantSearchIndexUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -230,6 +232,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
     private final List<Integer> fileIds;
     /** Indexed files in the region that we are merging. */
     private final Set<Integer> indexedFiles;
+    private final long ts;
     /**
      * Check overlapping variants.
      * Only needed when loading more than one file at the same time, or there were other loaded files in the same region
@@ -278,6 +281,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         variantMerger.configure(studyConfiguration.getVariantHeader());
         variantMerger.setExpectedFormats(format);
         this.resume = resume;
+        ts = System.currentTimeMillis();
     }
 
     @Override
@@ -1033,7 +1037,8 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                                 .append(VariantQueryParam.ID.key(), variant.toString())
                                 .append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), ".")
                                 .append(VariantQueryParam.INCLUDE_STUDY.key(), studyId),
-                        new QueryOptions(QueryOptions.TIMEOUT, 30_000));
+                        new QueryOptions(QueryOptions.TIMEOUT, 30_000)
+                                .append(QueryOptions.EXCLUDE, Arrays.asList(VariantField.ANNOTATION, VariantField.STUDIES_STATS)));
             } catch (MongoExecutionTimeoutException e) {
                 fails++;
                 if (fails < maxNumFails) {
@@ -1101,6 +1106,9 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                             }
                         }
                     }
+                    updates.add(MongoDBVariantSearchIndexUtils.getSetIndexUnknown(ts));
+
+
                     mongoDBOps.getNewStudy().getVariants().add(variantDocument);
                     id = variantDocument.getString("_id");
                 } else {

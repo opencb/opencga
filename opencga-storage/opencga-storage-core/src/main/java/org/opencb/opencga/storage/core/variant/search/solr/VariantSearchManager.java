@@ -85,6 +85,19 @@ public class VariantSearchManager {
         }
     }
 
+    public enum SyncStatus {
+        SYNCHRONIZED("Y"), NOT_SYNCHRONIZED("N"), UNKNOWN("?");
+        private final String c;
+
+        SyncStatus(String c) {
+            this.c = c;
+        }
+
+        public String key() {
+            return c;
+        }
+    }
+
 
     @Deprecated
     public VariantSearchManager(String host, String collection) {
@@ -171,16 +184,20 @@ public class VariantSearchManager {
      * @param collection        Collection name
      * @param variantDBIterator Iterator to retrieve the variants to load
      * @param progressLogger    Progress logger
-     * @throws IOException      IOException
+     * @param loadListener      Load listener
+     * @return VariantSearchLoadResult
+     * @throws IOException            IOException
      * @throws VariantSearchException VariantSearchException
      */
-    public void load(String collection, VariantDBIterator variantDBIterator, ProgressLogger progressLogger)
+    public VariantSearchLoadResult load(String collection, VariantDBIterator variantDBIterator, ProgressLogger progressLogger,
+                                        VariantSearchLoadListener loadListener)
             throws IOException, VariantSearchException {
         if (variantDBIterator == null) {
             throw new VariantSearchException("VariantDBIterator parameter is null");
         }
 
         int count = 0;
+        int numLoadedVariants = 0;
         List<Variant> variantList = new ArrayList<>(insertBatchSize);
         while (variantDBIterator.hasNext()) {
             Variant variant = variantDBIterator.next();
@@ -188,17 +205,59 @@ public class VariantSearchManager {
             variantList.add(variant);
             count++;
             if (count % insertBatchSize == 0) {
+                loadListener.preLoad(variantList);
+                numLoadedVariants += variantList.size();
                 insert(collection, variantList);
+                loadListener.postLoad(variantList);
                 variantList.clear();
             }
         }
 
         // Insert the remaining variants
         if (CollectionUtils.isNotEmpty(variantList)) {
+            loadListener.preLoad(variantList);
+            numLoadedVariants += variantList.size();
             insert(collection, variantList);
+            loadListener.postLoad(variantList);
         }
+        loadListener.close();
 
         logger.debug("Variant Search loading done: {} variants indexed", count);
+        return new VariantSearchLoadResult(count, numLoadedVariants, 0);
+    }
+
+    /**
+     * Delete variants a Solr core/collection from a variant DB iterator.
+     *
+     * @param collection        Collection name
+     * @param variantDBIterator Iterator to retrieve the variants to remove
+     * @param progressLogger    Progress logger
+     * @return VariantSearchLoadResult
+     * @throws IOException            IOException
+     * @throws VariantSearchException VariantSearchException
+     */
+    public int delete(String collection, VariantDBIterator variantDBIterator, ProgressLogger progressLogger)
+            throws IOException, VariantSearchException {
+        if (variantDBIterator == null) {
+            throw new VariantSearchException("VariantDBIterator parameter is null");
+        }
+
+        int count = 0;
+        List<String> variantList = new ArrayList<>(insertBatchSize);
+        while (variantDBIterator.hasNext()) {
+            Variant variant = variantDBIterator.next();
+            progressLogger.increment(1, () -> "up to position " + variant.toString());
+            variantList.add(variant.toString());
+            count++;
+            if (count % insertBatchSize == 0 || !variantDBIterator.hasNext()) {
+                delete(collection, variantList);
+                variantList.clear();
+            }
+        }
+
+
+        logger.debug("Variant Search delete done: {} variants removed", count);
+        return count;
     }
 
     /**
@@ -393,6 +452,19 @@ public class VariantSearchManager {
         reader.close();
     }
 
+    private void delete(String collection, List<String> variants) throws IOException, VariantSearchException {
+        if (variants != null && CollectionUtils.isNotEmpty(variants)) {
+            UpdateResponse updateResponse;
+            try {
+                updateResponse = solrManager.getSolrClient().deleteById(collection, variants);
+                if (updateResponse.getStatus() == 0) {
+                    solrManager.getSolrClient().commit(collection);
+                }
+            } catch (SolrServerException e) {
+                throw new VariantSearchException(e.getMessage(), e);
+            }
+        }
+    }
 
     private FacetedQueryResultItem.Field processSolrPivot(String name, int index, Map<String, Set<String>> includes, PivotField pivot) {
         String countName;

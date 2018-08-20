@@ -77,9 +77,12 @@ public final class VariantQueryUtils {
     private static final int LIMIT_DEFAULT = 1000;
     private static final int LIMIT_MAX = 5000;
 
+    // Some private query params
     public static final QueryParam ANNOT_EXPRESSION_GENES = QueryParam.create("annot_expression_genes", "", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam ANNOT_GO_GENES = QueryParam.create("annot_go_genes", "", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam ANNOT_GENE_REGIONS = QueryParam.create("annot_gene_regions", "", QueryParam.Type.TEXT_ARRAY);
+    public static final QueryParam VARIANTS_TO_INDEX = QueryParam.create("variantsToIndex",
+            "Select variants that need to be updated in the SearchEngine", QueryParam.Type.BOOLEAN);
 
     public static final Set<VariantQueryParam> MODIFIER_QUERY_PARAMS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             INCLUDE_STUDY,
