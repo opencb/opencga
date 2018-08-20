@@ -58,11 +58,6 @@ public class FileConverter extends AnnotableConverter<File> {
         long jobId = file.getJob() != null ? (file.getJob().getUid() == 0 ? -1L : file.getJob().getUid()) : -1L;
         document.put("job", new Document("uid", jobId));
 
-        long experimentId = file.getExperiment() != null
-                ? (file.getExperiment().getId() == 0 ? -1L : file.getExperiment().getId())
-                : -1L;
-        document.put("experiment", new Document("uid", experimentId));
-
         document.put("samples", convertSamples(file.getSamples()));
 
         return document;
