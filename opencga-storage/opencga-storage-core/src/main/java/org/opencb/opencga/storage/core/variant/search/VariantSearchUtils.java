@@ -30,8 +30,7 @@ import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.INCLUDE_STUDY;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 
 /**
@@ -46,9 +45,13 @@ public class VariantSearchUtils {
     public static final Set<VariantQueryParam> UNSUPPORTED_QUERY_PARAMS = Collections.unmodifiableSet(new HashSet<>(
             Arrays.asList(VariantQueryParam.FILE,
                     VariantQueryParam.FILTER,
+                    VariantQueryParam.QUAL,
+                    VariantQueryParam.FORMAT,
+                    VariantQueryParam.INFO,
                     VariantQueryParam.GENOTYPE,
                     VariantQueryParam.SAMPLE,
                     VariantQueryParam.COHORT,
+                    VariantQueryParam.STATS_MGF,
                     VariantQueryParam.MISSING_ALLELES,
                     VariantQueryParam.MISSING_GENOTYPES)));
 
@@ -66,6 +69,8 @@ public class VariantSearchUtils {
     private static final List<VariantField> UNSUPPORTED_VARIANT_FIELDS =
             Arrays.asList(VariantField.STUDIES_FILES,
                     VariantField.STUDIES_SAMPLES_DATA);
+
+    private static final Set<String> ACCEPTED_FORMAT_FILTERS = Collections.singleton("DP");
 
     public static boolean isQueryCovered(Query query) {
         for (VariantQueryParam nonCoveredParam : UNSUPPORTED_QUERY_PARAMS) {
@@ -191,6 +196,11 @@ public class VariantSearchUtils {
                 }
             }
 
+            if (isValidParam(query, INFO)) {
+                // INFO not supported
+                return null;
+            }
+
             boolean validGenotypeFilter = false;
             if (isValidParam(query, VariantQueryParam.GENOTYPE)) {
                 HashMap<Object, List<String>> map = new HashMap<>();
@@ -201,8 +211,26 @@ public class VariantSearchUtils {
                 }
             }
 
+            boolean validFormatFilter = false;
+            Map<String, String> formatMap = Collections.emptyMap();
+            if (isValidParam(query, VariantQueryParam.FORMAT)) {
+                validFormatFilter = true;
+                formatMap = parseFormat(query).getValue();
+
+                for (String formatFilters : formatMap.values()) {
+                    for (String formatFilter : splitValue(formatFilters).getValue()) {
+                        String formatKey = splitOperator(formatFilter)[0];
+                        if (!ACCEPTED_FORMAT_FILTERS.contains(formatKey)) {
+                            // Unsupported format filter
+                            return null;
+                        }
+                    }
+                }
+            }
+
             if (!isValidParam(query, VariantQueryParam.SAMPLE, true)
                     && !validGenotypeFilter
+                    && !validFormatFilter
                     && !isValidParam(query, VariantQueryParam.FILE, true)) {
                 // Specific search index will only be valid if at least one of this filters is present.
                 return null;
@@ -234,6 +262,9 @@ public class VariantSearchUtils {
                     for (Object o : map.keySet()) {
                         samples.add(o.toString());
                     }
+                }
+                if (!formatMap.isEmpty()) {
+                    samples.addAll(formatMap.keySet());
                 }
                 if (isValidParam(query, VariantQueryParam.INCLUDE_SAMPLE)) {
                     String value = query.getString(VariantQueryParam.INCLUDE_SAMPLE.key());
