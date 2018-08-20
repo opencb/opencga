@@ -524,7 +524,8 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "List of facet ranges separated by semicolons with the format {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1") @QueryParam("facetRange") String facetRange,
             @ApiParam(value = "List of facet intersections separated by semicolons with the format {field_name}:{value1}:{value2}[:{value3}], e.g.: studies:1kG_phase3:EXAC:ESP6500") @QueryParam("facetIntersection") String facetIntersection) {
         try {
-            FacetedQueryResult queryResult = catalogManager.getFamilyManager().facet(query, queryOptions, sessionId);
+            query.remove("study");
+            FacetedQueryResult queryResult = catalogManager.getFamilyManager().facet(studyStr, query, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

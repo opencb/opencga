@@ -2,8 +2,6 @@ package org.opencb.opencga.catalog.stats.solr;
 
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -12,11 +10,11 @@ import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.CohortMongoDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.FileMongoDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.AbstractManagerTest;
+import org.opencb.opencga.catalog.stats.solr.converters.CatalogCohortToSolrCohortConverter;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogSampleToSolrSampleConverter;
 import org.opencb.opencga.catalog.stats.solr.converters.SolrConverterUtil;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.*;
 
 import java.io.IOException;
@@ -151,19 +149,13 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
     @Test
     public void testInsertSamples() throws CatalogException, IOException {
         MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(catalogManager.getConfiguration());
-        Query query = new Query();
-        QueryOptions options = new QueryOptions()
-                .append(QueryOptions.INCLUDE, Arrays.asList(StudyDBAdaptor.QueryParams.UID.key(), StudyDBAdaptor.QueryParams.ID.key(),
-                        StudyDBAdaptor.QueryParams.FQN.key()))
-                .append(DBAdaptor.INCLUDE_ACLS, true);
-        Study study = factory.getCatalogStudyDBAdaptor().get(query, options).first();
 
         Map<String, Set<String>> studyAcls =
                 SolrConverterUtil.parseInternalOpenCGAAcls((List<Map<String, Object>>) study.getAttributes().get("OPENCGA_ACL"));
         // We replace the current studyAcls for the parsed one
         study.getAttributes().put("OPENCGA_ACL", studyAcls);
 
-        QueryOptions queryOptions = new QueryOptions(FLATTENED_ANNOTATIONS, "true");
+        QueryOptions queryOptions = new QueryOptions(FLATTENED_ANNOTATIONS, true);
         queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(SampleDBAdaptor.QueryParams.ID.key(),
 
                 SampleDBAdaptor.QueryParams.STUDY_UID.key(), SampleDBAdaptor.QueryParams.SOURCE.key(),
@@ -185,28 +177,28 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
         assertEquals(1, facet.getNumResults());
         assertEquals(3, facet.getResult().getFields().get(0).getCounts().get(0).getCount());
 
-        facet = catalogSolrManager.facetedQuery(studyFqn, CatalogSolrManager.SAMPLE_SOLR_COLLECTION,
-                new Query(), new QueryOptions(QueryOptions.FACET, SampleDBAdaptor.QueryParams.RELEASE.key()), sessionIdUser);
+        facet = catalogSolrManager.facetedQuery(study, CatalogSolrManager.SAMPLE_SOLR_COLLECTION,
+                new Query(), new QueryOptions(QueryOptions.FACET, SampleDBAdaptor.QueryParams.RELEASE.key()), "user1");
         assertEquals(1, facet.getNumResults());
         assertEquals(2, facet.getResult().getFields().get(0).getCounts().get(0).getCount());
 
-        facet = catalogSolrManager.facetedQuery(studyFqn, CatalogSolrManager.SAMPLE_SOLR_COLLECTION,
-                new Query(), new QueryOptions(QueryOptions.FACET, SampleDBAdaptor.QueryParams.RELEASE.key()), sessionIdUser2);
+        facet = catalogSolrManager.facetedQuery(study, CatalogSolrManager.SAMPLE_SOLR_COLLECTION,
+                new Query(), new QueryOptions(QueryOptions.FACET, SampleDBAdaptor.QueryParams.RELEASE.key()), "user2");
         assertEquals(1, facet.getNumResults());
         assertEquals(1, facet.getResult().getFields().get(0).getCounts().get(0).getCount());
 
-        facet = catalogSolrManager.facetedQuery(studyFqn, CatalogSolrManager.SAMPLE_SOLR_COLLECTION,
-                new Query(), new QueryOptions(QueryOptions.FACET, SampleDBAdaptor.QueryParams.RELEASE.key()), sessionIdUser3);
+        facet = catalogSolrManager.facetedQuery(study, CatalogSolrManager.SAMPLE_SOLR_COLLECTION,
+                new Query(), new QueryOptions(QueryOptions.FACET, SampleDBAdaptor.QueryParams.RELEASE.key()), "user3");
         assertEquals(1, facet.getNumResults());
         assertEquals(1, facet.getResult().getFields().get(0).getCounts().get(0).getCount());
 
-        facet = catalogSolrManager.facetedQuery(studyFqn, CatalogSolrManager.SAMPLE_SOLR_COLLECTION,
-                new Query(), new QueryOptions(QueryOptions.FACET, SampleDBAdaptor.QueryParams.RELEASE.key()), sessionIdAdmin);
+        facet = catalogSolrManager.facetedQuery(study, CatalogSolrManager.SAMPLE_SOLR_COLLECTION,
+                new Query(), new QueryOptions(QueryOptions.FACET, SampleDBAdaptor.QueryParams.RELEASE.key()), "admin1");
         assertEquals(1, facet.getNumResults());
         assertEquals(3, facet.getResult().getFields().get(0).getCounts().get(0).getCount());
 
-        facet = catalogSolrManager.facetedQuery(studyFqn, CatalogSolrManager.SAMPLE_SOLR_COLLECTION,
-                new Query(), new QueryOptions(QueryOptions.FACET, SampleDBAdaptor.QueryParams.RELEASE.key()), sessionIdOwner);
+        facet = catalogSolrManager.facetedQuery(study, CatalogSolrManager.SAMPLE_SOLR_COLLECTION,
+                new Query(), new QueryOptions(QueryOptions.FACET, SampleDBAdaptor.QueryParams.RELEASE.key()), "owner");
         assertEquals(1, facet.getNumResults());
         assertEquals(3, facet.getResult().getFields().get(0).getCounts().get(0).getCount());
     }
@@ -232,7 +224,7 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
     }
 
     @Test
-    public void testInsertIndividusals() throws CatalogException, SolrServerException, IOException {
+    public void testInsertIndividuals() throws CatalogException, SolrServerException, IOException {
 
         QueryOptions queryOptions = new QueryOptions(FLATTENED_ANNOTATIONS, "true");
         queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(IndividualDBAdaptor.QueryParams.ID.key(),
@@ -253,21 +245,55 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
 
     @Test
     public void testInsertCohorts() throws CatalogException, SolrServerException, IOException {
-
-        Query query = new Query()
-                .append(CohortMongoDBAdaptor.QueryParams.ID.key(), "101_15011");
-
-        QueryOptions queryOptions = new QueryOptions(FLATTENED_ANNOTATIONS, "true");
-        queryOptions.put("nativeQuery", true);
-        queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(CohortDBAdaptor.QueryParams.ID.key(), CohortDBAdaptor.QueryParams.NAME.key(),
-                CohortDBAdaptor.QueryParams.STUDY_UID.key(),
-                CohortDBAdaptor.QueryParams.TYPE.key(), CohortDBAdaptor.QueryParams.CREATION_DATE.key(), CohortDBAdaptor.QueryParams.STATUS.key(),
-                CohortDBAdaptor.QueryParams.RELEASE.key(), CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key(), CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key()));
-
         MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(catalogManager.getConfiguration());
-        CohortMongoDBAdaptor cohortMongoDBAdaptor = factory.getCatalogCohortDBAdaptor();
-        DBIterator<Cohort> cohortIterator = cohortMongoDBAdaptor.iterator(new Query(), queryOptions);
-//        catalogSolrManager.insertCatalogCollection(cohortIterator, new CatalogCohortToSolrCohortConverter(), CatalogSolrManager.COHORT_SOLR_COLLECTION);
+
+        Map<String, Set<String>> studyAcls =
+                SolrConverterUtil.parseInternalOpenCGAAcls((List<Map<String, Object>>) study.getAttributes().get("OPENCGA_ACL"));
+        // We replace the current studyAcls for the parsed one
+        study.getAttributes().put("OPENCGA_ACL", studyAcls);
+
+        QueryOptions queryOptions = new QueryOptions()
+                .append(QueryOptions.INCLUDE, Arrays.asList(CohortDBAdaptor.QueryParams.ID.key(), CohortDBAdaptor.QueryParams.NAME.key(),
+                        CohortDBAdaptor.QueryParams.CREATION_DATE.key(), CohortDBAdaptor.QueryParams.STATUS.key(),
+                        CohortDBAdaptor.QueryParams.RELEASE.key(), CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key(),
+                        CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key(), CohortDBAdaptor.QueryParams.TYPE.key()))
+                .append(DBAdaptor.INCLUDE_ACLS, true)
+                .append(Constants.FLATTENED_ANNOTATIONS, true);
+
+        CohortDBAdaptor cohortDBAdaptor = factory.getCatalogCohortDBAdaptor();
+        DBIterator<Cohort> cohortDBIterator = cohortDBAdaptor.iterator(
+                new Query(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid()), queryOptions);
+        catalogSolrManager.insertCatalogCollection(cohortDBIterator, new CatalogCohortToSolrCohortConverter(study),
+                CatalogSolrManager.COHORT_SOLR_COLLECTION);
+        FacetedQueryResult facet = catalogSolrManager.facetedQuery(CatalogSolrManager.COHORT_SOLR_COLLECTION,
+                new Query(), new QueryOptions(QueryOptions.FACET, CohortDBAdaptor.QueryParams.RELEASE.key()));
+        assertEquals(1, facet.getNumResults());
+        assertEquals(3, facet.getResult().getFields().get(0).getCounts().get(0).getCount());
+
+        facet = catalogSolrManager.facetedQuery(study, CatalogSolrManager.COHORT_SOLR_COLLECTION,
+                new Query(), new QueryOptions(QueryOptions.FACET, CohortDBAdaptor.QueryParams.RELEASE.key()), "user1");
+        assertEquals(1, facet.getNumResults());
+        assertEquals(2, facet.getResult().getFields().get(0).getCounts().get(0).getCount());
+
+        facet = catalogSolrManager.facetedQuery(study, CatalogSolrManager.COHORT_SOLR_COLLECTION,
+                new Query(), new QueryOptions(QueryOptions.FACET, CohortDBAdaptor.QueryParams.RELEASE.key()), "user2");
+        assertEquals(1, facet.getNumResults());
+        assertEquals(1, facet.getResult().getFields().get(0).getCounts().get(0).getCount());
+
+        facet = catalogSolrManager.facetedQuery(study, CatalogSolrManager.COHORT_SOLR_COLLECTION,
+                new Query(), new QueryOptions(QueryOptions.FACET, CohortDBAdaptor.QueryParams.RELEASE.key()), "user3");
+        assertEquals(1, facet.getNumResults());
+        assertEquals(1, facet.getResult().getFields().get(0).getCounts().get(0).getCount());
+
+        facet = catalogSolrManager.facetedQuery(study, CatalogSolrManager.COHORT_SOLR_COLLECTION,
+                new Query(), new QueryOptions(QueryOptions.FACET, CohortDBAdaptor.QueryParams.RELEASE.key()), "admin1");
+        assertEquals(1, facet.getNumResults());
+        assertEquals(3, facet.getResult().getFields().get(0).getCounts().get(0).getCount());
+
+        facet = catalogSolrManager.facetedQuery(study, CatalogSolrManager.COHORT_SOLR_COLLECTION,
+                new Query(), new QueryOptions(QueryOptions.FACET, CohortDBAdaptor.QueryParams.RELEASE.key()), "owner");
+        assertEquals(1, facet.getNumResults());
+        assertEquals(3, facet.getResult().getFields().get(0).getCounts().get(0).getCount());
     }
 
 

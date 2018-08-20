@@ -2,17 +2,18 @@ package org.opencb.opencga.catalog.stats.solr.converters;
 
 import org.apache.commons.lang3.NotImplementedException;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.stats.solr.CohortSolrModel;
+import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.Cohort;
 import org.opencb.opencga.core.models.Study;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by wasim on 03/07/18.
@@ -20,9 +21,22 @@ import java.util.Set;
 public class CatalogCohortToSolrCohortConverter implements ComplexTypeConverter<Cohort, CohortSolrModel> {
 
     private Study study;
+    private Map<String, Map<String, AnnotationUtils.Type>> variableMap;
+
+    protected static Logger logger = LoggerFactory.getLogger(CatalogCohortToSolrCohortConverter.class);
 
     public CatalogCohortToSolrCohortConverter(Study study) {
         this.study = study;
+        this.variableMap = new HashMap<>();
+        if (this.study.getVariableSets() != null) {
+            this.study.getVariableSets().forEach(variableSet -> {
+                try {
+                    this.variableMap.put(variableSet.getId(), AnnotationUtils.getVariableMap(variableSet));
+                } catch (CatalogDBException e) {
+                    logger.warn("Could not parse variableSet {}: {}", variableSet.getId(), e.getMessage(), e);
+                }
+            });
+        }
     }
 
     @Override
@@ -54,7 +68,7 @@ public class CatalogCohortToSolrCohortConverter implements ComplexTypeConverter<
         }
 
         cohortSolrModel.setRelease(cohort.getRelease());
-        cohortSolrModel.setAnnotations(SolrConverterUtil.populateAnnotations(cohort.getAnnotationSets()));
+        cohortSolrModel.setAnnotations(SolrConverterUtil.populateAnnotations(variableMap, cohort.getAnnotationSets()));
 
         // Extract the permissions
         Map<String, Set<String>> cohortAcl =

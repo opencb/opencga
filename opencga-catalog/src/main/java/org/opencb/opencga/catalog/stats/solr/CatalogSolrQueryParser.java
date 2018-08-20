@@ -3,15 +3,20 @@ package org.opencb.opencga.catalog.stats.solr;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.common.params.CommonParams;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.AnnotationUtils;
+import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.core.models.VariableSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 /**
@@ -22,6 +27,8 @@ public class CatalogSolrQueryParser {
 
     private static List<String> queryParameters = new ArrayList<>();
     protected static Logger logger = LoggerFactory.getLogger(CatalogSolrQueryParser.class);
+
+    public static final Pattern OPERATION_PATTERN = Pattern.compile("^(<=?|>=?|!==?|!?=?~|==?=?)([^=<>~!]+.*)$");
 
     static {
         // common
@@ -43,6 +50,8 @@ public class CatalogSolrQueryParser {
         queryParameters.add("somatic");
         queryParameters.add("acl");
 
+        queryParameters.add(Constants.ANNOTATION);
+
     }
 
     public CatalogSolrQueryParser() {
@@ -53,9 +62,10 @@ public class CatalogSolrQueryParser {
      *
      * @param query        Query
      * @param queryOptions Query Options
+     * @param variableSetList List of variable sets available for the study whose query is going to be parsed.
      * @return SolrQuery
      */
-    public SolrQuery parse(Query query, QueryOptions queryOptions) {
+    public SolrQuery parse(Query query, QueryOptions queryOptions, List<VariableSet> variableSetList) {
 
         Map<String, String> filterList = new HashMap<>();
         SolrQuery solrQuery = new SolrQuery();
@@ -87,6 +97,13 @@ public class CatalogSolrQueryParser {
             if (query.containsKey(queryParam)) {
                 if (queryParam.equals("study")) {
                     filterList.put("studyId", query.getString(queryParam).replace(":", "__"));
+                } else if (queryParam.equals(Constants.ANNOTATION)) {
+                    try {
+                        filterList.putAll(parseAnnotationQueryField(query.getString(Constants.ANNOTATION),
+                                query.get(Constants.PRIVATE_ANNOTATION_PARAM_TYPES, ObjectMap.class), variableSetList));
+                    } catch (CatalogException e) {
+                        e.printStackTrace();
+                    }
                 } else {
                     filterList.put(queryParam, query.getString(queryParam));
                 }
@@ -280,5 +297,194 @@ public class CatalogSolrQueryParser {
                     + " is 'name:value1^value2[^value3]', value3 is optional");
         }
     }
+
+    private Map<String, String> parseAnnotationQueryField(String annotations, ObjectMap variableTypeMap, List<VariableSet> variableSetList)
+            throws CatalogException {
+
+//        Map<Long, String> variableSetUidIdMap = new HashMap<>();
+//        variableSetList.forEach(variableSet -> variableSetUidIdMap.put(variableSet.getUid(), variableSet.getId()));
+
+        Map<String, String> annotationMap = new HashMap<>();
+
+        if (StringUtils.isNotEmpty(annotations)) {
+            // Annotation Filter
+            final String sepAnd = ";";
+            String[] annotationArray = StringUtils.split(annotations, sepAnd);
+
+            for (String annotation : annotationArray) {
+                Matcher matcher = AnnotationUtils.ANNOTATION_PATTERN.matcher(annotation);
+
+                if (matcher.find()) {
+                    // Split the annotation by key - value
+                    // Remove the : at the end of the variableSet
+                    String variableSet = matcher.group(1).replace(":", "");
+//                    long variableSetUid = Long.valueOf(matcher.group(1).replace(":", ""));
+                    String key = matcher.group(2);
+                    String valueString = matcher.group(3);
+
+//                    String variableSet = variableSetUidIdMap.get(variableSetUid);
+
+                    if (variableTypeMap == null || variableTypeMap.isEmpty()) {
+                        logger.error("Internal error: The variableTypeMap is null or empty {}", variableTypeMap);
+                        throw new CatalogException("Internal error. Could not build the annotation query");
+                    }
+                    AnnotationUtils.Type type = variableTypeMap.get(variableSet + ":" + key, AnnotationUtils.Type.class);
+                    if (type == null) {
+                        logger.error("Internal error: Could not find the type of the variable {}:{}", variableSet, key);
+                        throw new CatalogException("Internal error. Could not find the type of the variable " + variableSet + ":" + key);
+                    }
+
+                    annotationMap.put("annotations" + getAnnotationType(type) + variableSet + "." + key,
+                            getAnnotationValues(Arrays.asList(valueString.split(",")), type));
+                } else {
+                    throw new CatalogDBException("Annotation " + annotation + " could not be parsed to a query.");
+                }
+            }
+        }
+
+        return annotationMap;
+    }
+
+    private String getAnnotationType(AnnotationUtils.Type type) throws CatalogException {
+        switch (type) {
+            case TEXT:
+                return "__s__";
+            case TEXT_ARRAY:
+                return "__sm__";
+            case INTEGER:
+                return "__i__";
+            case INTEGER_ARRAY:
+                return "__im__";
+            case DECIMAL:
+                return "__d__";
+            case DECIMAL_ARRAY:
+                return "__dm__";
+            case BOOLEAN:
+                return "__b__";
+            case BOOLEAN_ARRAY:
+                return "__bm__";
+            default:
+                throw new CatalogException("Unexpected variable type " + type);
+
+        }
+    }
+
+    private String getAnnotationValues(List<String> values, AnnotationUtils.Type type) throws CatalogException {
+        ArrayList<String> or = new ArrayList<>(values.size());
+        for (String option : values) {
+            Matcher matcher = OPERATION_PATTERN.matcher(option);
+            String operator;
+            String filter;
+            if (!matcher.find()) {
+                operator = "";
+                filter = option;
+            } else {
+                operator = matcher.group(1);
+                filter = matcher.group(2);
+            }
+            switch (type) {
+                case INTEGER:
+                case INTEGER_ARRAY:
+                    try {
+                        int intValue = Integer.parseInt(filter);
+                        or.add(addNumberOperationQueryFilter(operator, intValue, intValue - 1, intValue + 1));
+                    } catch (NumberFormatException e) {
+                        throw new CatalogDBException("Expected an integer value - " + e.getMessage(), e);
+                    }
+                    break;
+                case DECIMAL:
+                case DECIMAL_ARRAY:
+                    try {
+                        double doubleValue = Double.parseDouble(filter);
+                        or.add(addNumberOperationQueryFilter(operator, doubleValue, doubleValue - 1, doubleValue + 1));
+                    } catch (NumberFormatException e) {
+                        throw new CatalogDBException("Expected a double value - " + e.getMessage(), e);
+                    }
+                    break;
+                case TEXT:
+                case TEXT_ARRAY:
+                    or.add(addStringOperationQueryFilter(operator, filter));
+                    break;
+                case BOOLEAN:
+                case BOOLEAN_ARRAY:
+                    or.add(addBooleanOperationQueryFilter(operator, Boolean.parseBoolean(filter)));
+                    break;
+                default:
+                    break;
+            }
+        }
+        if (or.isEmpty()) {
+            return "";
+        } else if (or.size() == 1) {
+            return or.get(0);
+        } else {
+            return "(" + StringUtils.join(or, " OR ") + ")";
+        }
+    }
+
+    private String addBooleanOperationQueryFilter(String operator, boolean value) throws CatalogException {
+        String query;
+        switch (operator) {
+            case "!=":
+                query = "(" + !value + ")";
+                break;
+            case "":
+            case "=":
+            case "==":
+                query = "(" + value + ")";
+                break;
+            default:
+                throw new CatalogException("Unknown boolean query operation " + operator);
+        }
+        return query;
+    }
+
+    private String addStringOperationQueryFilter(String operator, String filter) throws CatalogException {
+        String query;
+        switch (operator) {
+            case "!=":
+                query = "(*:* -" + filter + ")";
+                break;
+            case "":
+            case "=":
+            case "==":
+                query = "(" + filter + ")";
+                break;
+            default:
+                throw new CatalogException("Unknown string query operation " + operator);
+        }
+        return query;
+    }
+
+    private String addNumberOperationQueryFilter(String operator, Number value, Number valueMinus1, Number valuePlus1)
+            throws CatalogException {
+        String query;
+        switch (operator) {
+            case "<":
+                query = "[* TO " + valueMinus1 + "]";
+                break;
+            case "<=":
+                query = "[* TO " + value + "]";
+                break;
+            case ">":
+                query = "[" + valuePlus1 + " TO *]";
+                break;
+            case ">=":
+                query = "[" + value + " TO *]";
+                break;
+            case "!=":
+                query = "-[" + value + " TO " + value + "]";
+                break;
+            case "":
+            case "=":
+            case "==":
+                query = "[" + value + " TO " + value + "]";
+                break;
+            default:
+                throw new CatalogException("Unknown string query operation " + operator);
+        }
+        return query;
+    }
+
 
 }

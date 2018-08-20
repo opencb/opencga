@@ -2500,20 +2500,19 @@ public class FileManager extends AnnotationSetManager<File> {
         return filesToAnalyse;
     }
 
-    public DBIterator<File> indexSolr(Query query) throws CatalogException {
-        return fileDBAdaptor.iterator(query, null, null);
-    }
-
-
-    public FacetedQueryResult facet(Query query, QueryOptions queryOptions, String sessionId) throws IOException, CatalogDBException {
-
+    public FacetedQueryResult facet(String studyStr, Query query, QueryOptions queryOptions, String sessionId)
+            throws CatalogException, IOException {
         CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);
-        String collection = catalogManager.getConfiguration().getDatabasePrefix() + "_"
-                + CatalogSolrManager.FILE_SOLR_COLLECTION;
 
-        return catalogSolrManager.facetedQuery(collection, query, queryOptions);
+        String userId = userManager.getUserId(sessionId);
+        // We need to add variableSets and groups to avoid additional queries as it will be used in the catalogSolrManager
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(StudyDBAdaptor.QueryParams.VARIABLE_SET.key(), StudyDBAdaptor.QueryParams.GROUPS.key())));
+
+        AnnotationUtils.fixQueryAnnotationSearch(study, userId, query, authorizationManager);
+
+        return catalogSolrManager.facetedQuery(study, CatalogSolrManager.FILE_SOLR_COLLECTION, query, queryOptions, userId);
     }
-
 
     private void updateIndexStatusAfterDeletionOfTransformedFile(long studyId, File file) throws CatalogDBException {
         if (file.getType() == File.Type.FILE && (file.getRelatedFiles() == null || file.getRelatedFiles().isEmpty())) {

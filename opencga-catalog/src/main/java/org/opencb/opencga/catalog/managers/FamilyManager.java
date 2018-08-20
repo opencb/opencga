@@ -37,7 +37,6 @@ import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
@@ -657,20 +656,19 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
     }
 
-    public DBIterator<Family> indexSolr(Query query) throws CatalogException {
-        return familyDBAdaptor.iterator(query, null, null);
-    }
-
-
-    public FacetedQueryResult facet(Query query, QueryOptions queryOptions, String sessionId) throws IOException, CatalogDBException {
-
+    public FacetedQueryResult facet(String studyStr, Query query, QueryOptions queryOptions, String sessionId)
+            throws CatalogException, IOException {
         CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);
-        String collection = catalogManager.getConfiguration().getDatabasePrefix() + "_"
-                + CatalogSolrManager.FAMILY_SOLR_COLLECTION;
 
-        return catalogSolrManager.facetedQuery(collection, query, queryOptions);
+        String userId = userManager.getUserId(sessionId);
+        // We need to add variableSets and groups to avoid additional queries as it will be used in the catalogSolrManager
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(StudyDBAdaptor.QueryParams.VARIABLE_SET.key(), StudyDBAdaptor.QueryParams.GROUPS.key())));
+
+        AnnotationUtils.fixQueryAnnotationSearch(study, userId, query, authorizationManager);
+
+        return catalogSolrManager.facetedQuery(study, CatalogSolrManager.FAMILY_SOLR_COLLECTION, query, queryOptions, userId);
     }
-
 
     /**
      * Looks for all the members in the database. If they exist, the data will be overriden. It also fetches the parents individuals if they

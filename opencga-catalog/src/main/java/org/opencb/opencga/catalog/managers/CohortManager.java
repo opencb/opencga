@@ -32,7 +32,6 @@ import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
@@ -706,32 +705,17 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         }
     }
 
-    public DBIterator<Cohort> indexSolr(Query query) throws CatalogException {
-        return cohortDBAdaptor.iterator(query, null, null);
-    }
-
-
-    public FacetedQueryResult facet(Query query, QueryOptions queryOptions, String sessionId) throws IOException, CatalogDBException {
-
+    public FacetedQueryResult facet(String studyStr, Query query, QueryOptions queryOptions, String sessionId)
+            throws CatalogException, IOException {
         CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);
-        String collection = catalogManager.getConfiguration().getDatabasePrefix() + "_"
-                + CatalogSolrManager.COHORT_SOLR_COLLECTION;
 
-        return catalogSolrManager.facetedQuery(collection, query, queryOptions);
+        String userId = userManager.getUserId(sessionId);
+        // We need to add variableSets and groups to avoid additional queries as it will be used in the catalogSolrManager
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(StudyDBAdaptor.QueryParams.VARIABLE_SET.key(), StudyDBAdaptor.QueryParams.GROUPS.key())));
+
+        AnnotationUtils.fixQueryAnnotationSearch(study, userId, query, authorizationManager);
+
+        return catalogSolrManager.facetedQuery(study, CatalogSolrManager.COHORT_SOLR_COLLECTION, query, queryOptions, userId);
     }
-
-    private long getCohortId(boolean silent, String cohortStr) throws CatalogException {
-        long cohortId = Long.parseLong(cohortStr);
-        try {
-            cohortDBAdaptor.checkId(cohortId);
-        } catch (CatalogException e) {
-            if (silent) {
-                return -1L;
-            } else {
-                throw e;
-            }
-        }
-        return cohortId;
-    }
-
 }

@@ -5,12 +5,14 @@ import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
+import org.opencb.opencga.catalog.db.api.DBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 
 public class AbstractSolrManagerTest extends GenericTest {
@@ -32,6 +34,7 @@ public class AbstractSolrManagerTest extends GenericTest {
     protected String sessionIdUser2;
     protected String sessionIdUser3;
 
+    protected Study study;
     protected String studyFqn;
 
     @Before
@@ -69,14 +72,33 @@ public class AbstractSolrManagerTest extends GenericTest {
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "@study_allow",
                 new Study.StudyAclParams(null, AclParams.Action.ADD, "view_only"), sessionIdAdmin);
 
-        catalogManager.getSampleManager().create(studyFqn, new Sample().setId("sample1"), QueryOptions.empty(), sessionIdAdmin).first();
-        catalogManager.getSampleManager().create(studyFqn, new Sample().setId("sample2"), QueryOptions.empty(), sessionIdAdmin).first();
-        catalogManager.getSampleManager().create(studyFqn, new Sample().setId("sample3"), QueryOptions.empty(), sessionIdAdmin).first();
+        study = catalogManager.getStudyManager().get("phase1", new QueryOptions(DBAdaptor.INCLUDE_ACLS, true), sessionIdOwner).first();
+
+        // Samples
+        Sample sample1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("sample1"), QueryOptions.empty(),
+                sessionIdAdmin).first();
+        Sample sample2 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("sample2"), QueryOptions.empty(),
+                sessionIdAdmin).first();
+        Sample sample3 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("sample3"), QueryOptions.empty(),
+                sessionIdAdmin).first();
 
         catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList("sample1"), "@study_deny,user3",
                 new Sample.SampleAclParams("VIEW,VIEW_ANNOTATIONS", AclParams.Action.ADD, null, null, null), sessionIdAdmin);
         catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList("sample2"), "@study_allow",
                 new Sample.SampleAclParams("", AclParams.Action.SET, null, null, null), sessionIdAdmin);
+
+        // Cohorts
+        catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("cohort1").setSamples(Arrays.asList(sample1, sample2, sample3)),
+                QueryOptions.empty(), sessionIdAdmin);
+        catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("cohort2").setSamples(Arrays.asList(sample1, sample2)),
+                QueryOptions.empty(), sessionIdAdmin);
+        catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("cohort3").setSamples(Arrays.asList(sample2, sample3)),
+                QueryOptions.empty(), sessionIdAdmin);
+
+        catalogManager.getCohortManager().updateAcl(studyFqn, Collections.singletonList("cohort1"), "@study_deny,user3",
+                new AclParams("VIEW,VIEW_ANNOTATIONS", AclParams.Action.ADD), sessionIdAdmin);
+        catalogManager.getCohortManager().updateAcl(studyFqn, Collections.singletonList("cohort2"), "@study_allow",
+                new AclParams("", AclParams.Action.SET), sessionIdAdmin);
     }
 
 }

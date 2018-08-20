@@ -1132,7 +1132,15 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     public FacetedQueryResult facet(String studyStr, Query query, QueryOptions queryOptions, String sessionId)
             throws CatalogException, IOException {
         CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);
-        return catalogSolrManager.facetedQuery(studyStr, CatalogSolrManager.SAMPLE_SOLR_COLLECTION, query, queryOptions, sessionId);
+
+        String userId = userManager.getUserId(sessionId);
+        // We need to add variableSets and groups to avoid additional queries as it will be used in the catalogSolrManager
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(StudyDBAdaptor.QueryParams.VARIABLE_SET.key(), StudyDBAdaptor.QueryParams.GROUPS.key())));
+
+        AnnotationUtils.fixQueryAnnotationSearch(study, userId, query, authorizationManager);
+
+        return catalogSolrManager.facetedQuery(study, CatalogSolrManager.SAMPLE_SOLR_COLLECTION, query, queryOptions, userId);
     }
 
 

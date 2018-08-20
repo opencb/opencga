@@ -2,17 +2,18 @@ package org.opencb.opencga.catalog.stats.solr.converters;
 
 import org.apache.commons.lang3.NotImplementedException;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.stats.solr.SampleSolrModel;
+import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.Study;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by wasim on 27/06/18.
@@ -20,9 +21,22 @@ import java.util.Set;
 public class CatalogSampleToSolrSampleConverter implements ComplexTypeConverter<Sample, SampleSolrModel> {
 
     private Study study;
+    private Map<String, Map<String, AnnotationUtils.Type>> variableMap;
+
+    protected static Logger logger = LoggerFactory.getLogger(CatalogSampleToSolrSampleConverter.class);
 
     public CatalogSampleToSolrSampleConverter(Study study) {
         this.study = study;
+        this.variableMap = new HashMap<>();
+        if (this.study.getVariableSets() != null) {
+            this.study.getVariableSets().forEach(variableSet -> {
+                try {
+                    this.variableMap.put(variableSet.getId(), AnnotationUtils.getVariableMap(variableSet));
+                } catch (CatalogDBException e) {
+                    logger.warn("Could not parse variableSet {}: {}", variableSet.getId(), e.getMessage(), e);
+                }
+            });
+        }
     }
 
     @Override
@@ -59,7 +73,7 @@ public class CatalogSampleToSolrSampleConverter implements ComplexTypeConverter<
             sampleSolrModel.setPhenotypes(SolrConverterUtil.populatePhenotypes(sample.getPhenotypes()));
         }
         if (sample.getAnnotationSets() != null) {
-            sampleSolrModel.setAnnotations(SolrConverterUtil.populateAnnotations(sample.getAnnotationSets()));
+            sampleSolrModel.setAnnotations(SolrConverterUtil.populateAnnotations(variableMap, sample.getAnnotationSets()));
         }
 
         // Extract the permissions

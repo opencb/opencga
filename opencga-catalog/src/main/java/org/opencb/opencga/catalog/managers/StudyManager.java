@@ -36,6 +36,7 @@ import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
 import org.opencb.opencga.catalog.stats.solr.converters.*;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -1227,7 +1228,7 @@ public class StudyManager extends AbstractManager {
             Query query = new Query();
             QueryOptions options = new QueryOptions()
                     .append(QueryOptions.INCLUDE, Arrays.asList(StudyDBAdaptor.QueryParams.UID.key(), StudyDBAdaptor.QueryParams.ID.key(),
-                            StudyDBAdaptor.QueryParams.FQN.key()))
+                            StudyDBAdaptor.QueryParams.FQN.key(), StudyDBAdaptor.QueryParams.VARIABLE_SET.key()))
                     .append(DBAdaptor.INCLUDE_ACLS, true);
             QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, options);
             if (studyQueryResult.getNumResults() == 0) {
@@ -1253,8 +1254,10 @@ public class StudyManager extends AbstractManager {
             }
 
             threadPool.shutdown();
+
+            return true;
         }
-        return true;
+        return false;
     }
 
     // **************************   Private methods  ******************************** //
@@ -1267,7 +1270,8 @@ public class StudyManager extends AbstractManager {
                         CohortDBAdaptor.QueryParams.CREATION_DATE.key(), CohortDBAdaptor.QueryParams.STATUS.key(),
                         CohortDBAdaptor.QueryParams.RELEASE.key(), CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key(),
                         CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key(), CohortDBAdaptor.QueryParams.TYPE.key()))
-                .append(DBAdaptor.INCLUDE_ACLS, true);
+                .append(DBAdaptor.INCLUDE_ACLS, true)
+                .append(Constants.FLATTENED_ANNOTATIONS, true);
 
         catalogSolrManager.insertCatalogCollection(this.cohortDBAdaptor.iterator(query,
                 cohortQueryOptions), new CatalogCohortToSolrCohortConverter(study), CatalogSolrManager.COHORT_SOLR_COLLECTION);
@@ -1285,7 +1289,8 @@ public class StudyManager extends AbstractManager {
                         FileDBAdaptor.QueryParams.SOFTWARE.key(), FileDBAdaptor.QueryParams.EXPERIMENT_UID.key(),
                         FileDBAdaptor.QueryParams.RELATED_FILES.key(), FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(),
                         FileDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
-                .append(DBAdaptor.INCLUDE_ACLS, true);
+                .append(DBAdaptor.INCLUDE_ACLS, true)
+                .append(Constants.FLATTENED_ANNOTATIONS, true);
 
         catalogSolrManager.insertCatalogCollection(this.fileDBAdaptor.iterator(query,
                 fileQueryOptions), new CatalogFileToSolrFileConverter(study), CatalogSolrManager.FILE_SOLR_COLLECTION);
@@ -1301,7 +1306,8 @@ public class StudyManager extends AbstractManager {
                         FamilyDBAdaptor.QueryParams.MEMBER_UID.key(), FamilyDBAdaptor.QueryParams.RELEASE.key(),
                         FamilyDBAdaptor.QueryParams.VERSION.key(), FamilyDBAdaptor.QueryParams.ANNOTATION_SETS.key(),
                         FamilyDBAdaptor.QueryParams.PHENOTYPES.key(), FamilyDBAdaptor.QueryParams.EXPECTED_SIZE.key()))
-                .append(DBAdaptor.INCLUDE_ACLS, true);
+                .append(DBAdaptor.INCLUDE_ACLS, true)
+                .append(Constants.FLATTENED_ANNOTATIONS, true);
 
         catalogSolrManager.insertCatalogCollection(this.familyDBAdaptor.iterator(query,
                 familyQueryOptions), new CatalogFamilyToSolrFamilyConverter(study), CatalogSolrManager.FAMILY_SOLR_COLLECTION);
@@ -1322,7 +1328,8 @@ public class StudyManager extends AbstractManager {
                         IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(), IndividualDBAdaptor.QueryParams.PHENOTYPES.key(),
                         IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), IndividualDBAdaptor.QueryParams.PARENTAL_CONSANGUINITY.key(),
                         IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(), IndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
-                .append(DBAdaptor.INCLUDE_ACLS, true);
+                .append(DBAdaptor.INCLUDE_ACLS, true)
+                .append(Constants.FLATTENED_ANNOTATIONS, true);
 
         catalogSolrManager.insertCatalogCollection(this.individualDBAdaptor.iterator(query,
                 individualQueryOptions), new CatalogIndividualToSolrIndividualConverter(study),
@@ -1339,7 +1346,8 @@ public class StudyManager extends AbstractManager {
                         SampleDBAdaptor.QueryParams.TYPE.key(), SampleDBAdaptor.QueryParams.SOMATIC.key(),
                         SampleDBAdaptor.QueryParams.PHENOTYPES.key(), SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(),
                         SampleDBAdaptor.QueryParams.UID.key()))
-                .append(DBAdaptor.INCLUDE_ACLS, true);
+                .append(DBAdaptor.INCLUDE_ACLS, true)
+                .append(Constants.FLATTENED_ANNOTATIONS, true);
 
         catalogSolrManager.insertCatalogCollection(this.sampleDBAdaptor.iterator(query,
                 sampleQueryOptions), new CatalogSampleToSolrSampleConverter(study), CatalogSolrManager.SAMPLE_SOLR_COLLECTION);

@@ -27,12 +27,10 @@ import org.apache.solr.common.SolrException;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.FacetedQueryResult;
 import org.opencb.commons.datastore.core.result.FacetedQueryResultItem;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -197,7 +195,7 @@ public class CatalogSolrManager {
         StopWatch stopWatch = StopWatch.createStarted();
         try {
             CatalogSolrQueryParser catalogSolrQueryParser = new CatalogSolrQueryParser();
-            SolrQuery solrQuery = catalogSolrQueryParser.parse(query, queryOptions);
+            SolrQuery solrQuery = catalogSolrQueryParser.parse(query, queryOptions, null);
             QueryResponse response = solrManager.getSolrClient().query(DATABASE_PREFIX + collection, solrQuery);
             FacetedQueryResultItem item = SolrFacetUtil.toFacetedQueryResultItem(queryOptions, response);
             return new FacetedQueryResult("", (int) stopWatch.getTime(), 1, 1, "Faceted data from Solr", "", item);
@@ -209,31 +207,26 @@ public class CatalogSolrManager {
     /**
      * Return faceted data from a Solr core/collection according to a given query.
      *
-     * @param studyStr     Study id
+     * @param study        Study
      * @param collection   Collection name
      * @param query        Query
      * @param queryOptions Query options (contains the facet and facetRange options)
-     * @param token        Token of the user performing the facet.
+     * @param userId       User performing the facet query.
      * @return Facet results
      * @throws IOException   IOException
      * @throws SolrException SolrException
      * @throws CatalogException CatalogException
      */
-    public FacetedQueryResult facetedQuery(String studyStr, String collection, Query query, QueryOptions queryOptions, String token)
+    public FacetedQueryResult facetedQuery(Study study, String collection, Query query, QueryOptions queryOptions, String userId)
             throws IOException, SolrException, CatalogException {
         StopWatch stopWatch = StopWatch.createStarted();
-
-        String userId = catalogManager.getUserManager().getUserId(token);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
         query.put("study", study.getFqn());
 
         if (!catalogManager.getAuthorizationManager().checkIsOwnerOrAdmin(study.getUid(), userId)) {
             // We need to add an acl query to perform the facet query
-            QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get(study.getFqn(),
-                    new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.GROUPS.key()), token);
             List<String> groups = new ArrayList<>();
-            studyQueryResult.first().getGroups().forEach(group -> {
+            study.getGroups().forEach(group -> {
                 if (group.getUserIds().contains(userId)) {
                     groups.add(group.getName());
                 }
@@ -249,7 +242,7 @@ public class CatalogSolrManager {
 
         try {
             CatalogSolrQueryParser catalogSolrQueryParser = new CatalogSolrQueryParser();
-            SolrQuery solrQuery = catalogSolrQueryParser.parse(query, queryOptions);
+            SolrQuery solrQuery = catalogSolrQueryParser.parse(query, queryOptions, study.getVariableSets());
             QueryResponse response = solrManager.getSolrClient().query(DATABASE_PREFIX + collection, solrQuery);
             FacetedQueryResultItem item = SolrFacetUtil.toFacetedQueryResultItem(queryOptions, response);
             return new FacetedQueryResult("", (int) stopWatch.getTime(), 1, 1, "Faceted data from Solr", "", item);

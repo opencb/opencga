@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.stats.solr.converters;
 
 import org.apache.commons.collections.map.HashedMap;
+import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.OntologyTerm;
 
@@ -12,14 +13,15 @@ import java.util.*;
 public class SolrConverterUtil {
 
 
-    public static Map<String, Object> populateAnnotations(List<AnnotationSet> annotationSets) {
+    public static Map<String, Object> populateAnnotations(Map<String, Map<String, AnnotationUtils.Type>> variableTypeMap,
+                                                          List<AnnotationSet> annotationSets) {
         Map<String, Object> result = new HashedMap();
         if (annotationSets != null) {
             for (AnnotationSet annotationSet : annotationSets) {
                 for (String annotationKey : annotationSet.getAnnotations().keySet()) {
                     Object value = annotationSet.getAnnotations().get(annotationKey);
-                    result.put("annotations" + type(value) + annotationSet.getVariableSetId() + "." + annotationSet.getId()
-                            + "." + annotationKey, value);
+                    result.put("annotations" + type(variableTypeMap.get(annotationSet.getVariableSetId()).get(annotationKey))
+                            + annotationSet.getVariableSetId() + "." + annotationKey, value);
                 }
             }
         }
@@ -37,22 +39,27 @@ public class SolrConverterUtil {
         return phenotypesIds;
     }
 
-    public static String type(Object object) {
-
-        if (object instanceof Boolean) {
-            return "__b__";
-        } else if (object instanceof Integer) {
-            return "__i__";
-        } else if (object instanceof String) {
-            return "__s__";
-        } else if (object instanceof Double) {
-            return "__d__";
-        } else if (object instanceof Object) {
-            return "__o__";
-        } else if (object instanceof Object) {
-            return "__a__";
+    public static String type(AnnotationUtils.Type type) {
+        switch (type) {
+            case TEXT:
+                return "__s__";
+            case TEXT_ARRAY:
+                return "__sm__";
+            case INTEGER:
+                return "__i__";
+            case INTEGER_ARRAY:
+                return "__im__";
+            case DECIMAL:
+                return "__d__";
+            case DECIMAL_ARRAY:
+                return "__dm__";
+            case BOOLEAN:
+                return "__b__";
+            case BOOLEAN_ARRAY:
+                return "__bm__";
+            default:
+                return "__o__";
         }
-        return "__o__";
     }
 
     public static Map<String, Set<String>> parseInternalOpenCGAAcls(List<Map<String, Object>> internalPermissions) {

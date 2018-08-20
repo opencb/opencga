@@ -916,18 +916,18 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         return queryResults;
     }
 
-    public DBIterator<Individual> indexSolr(Query query) throws CatalogException {
-        return individualDBAdaptor.iterator(query, null, null);
-    }
-
-
-    public FacetedQueryResult facet(Query query, QueryOptions queryOptions, String sessionId) throws IOException, CatalogDBException {
-
+    public FacetedQueryResult facet(String studyStr, Query query, QueryOptions queryOptions, String sessionId)
+            throws CatalogException, IOException {
         CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);
-        String collection = catalogManager.getConfiguration().getDatabasePrefix() + "_"
-                + CatalogSolrManager.INDIVIDUAL_SOLR_COLLECTION;
 
-        return catalogSolrManager.facetedQuery(collection, query, queryOptions);
+        String userId = userManager.getUserId(sessionId);
+        // We need to add variableSets and groups to avoid additional queries as it will be used in the catalogSolrManager
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(StudyDBAdaptor.QueryParams.VARIABLE_SET.key(), StudyDBAdaptor.QueryParams.GROUPS.key())));
+
+        AnnotationUtils.fixQueryAnnotationSearch(study, userId, query, authorizationManager);
+
+        return catalogSolrManager.facetedQuery(study, CatalogSolrManager.INDIVIDUAL_SOLR_COLLECTION, query, queryOptions, userId);
     }
 
     // **************************   Private methods  ******************************** //
