@@ -2011,7 +2011,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
             expectedAnnotation.setXrefs(null);
             expectedAnnotation.setId(null);
-            assertEquals(expectedAnnotation, annotation);
+            assertEquals("\n" + expectedAnnotation + "\n" + annotation, expectedAnnotation, annotation);
         }
     }
 

@@ -54,6 +54,8 @@ import static org.opencb.opencga.storage.core.variant.annotation.annotators.Abst
 public class StudyConfigurationManager implements AutoCloseable {
     public static final String CACHED = "cached";
     public static final String READ_ONLY = "ro";
+    public static final QueryOptions RO_CACHED_OPTIONS = new QueryOptions(READ_ONLY, true)
+            .append(CACHED, true);
     protected static Logger logger = LoggerFactory.getLogger(StudyConfigurationManager.class);
 
     private final ProjectMetadataAdaptor projectDBAdaptor;
@@ -579,7 +581,7 @@ public class StudyConfigurationManager implements AutoCloseable {
             Collection<Integer> studyIds = studies.values();
             Integer fileIdFromStudy;
             for (Integer id : studyIds) {
-                StudyConfiguration sc = getStudyConfiguration(id, new QueryOptions(READ_ONLY, true).append(CACHED, true)).first();
+                StudyConfiguration sc = getStudyConfiguration(id, RO_CACHED_OPTIONS).first();
                 fileIdFromStudy = getFileIdFromStudy(fileId != null ? fileId : fileObj, sc);
                 if (fileIdFromStudy != null) {
                     return Pair.of(sc.getStudyId(), fileIdFromStudy);
