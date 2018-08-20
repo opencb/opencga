@@ -1179,7 +1179,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
      * - ProteinVariantAnnotation.keywords : SPARSE
      * - TranscriptAnnotationFlags : SPARSE
      * SearchIndex
-     * - _index.sync
+     * - _index.ts
      *
      * @param options            Unused Options.
      * @param variantsCollection MongoDBCollection
@@ -1319,10 +1319,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                                 + '.' + DocumentToVariantAnnotationConverter.CT_TRANSCRIPT_ANNOT_FLAGS, 1),
                 onBackgroundSparse);
 
-        // _index.sync
+        // _index.ts
         variantsCollection.createIndex(new Document()
                         .append(DocumentToVariantConverter.INDEX_FIELD + '.' + DocumentToVariantConverter.INDEX_TIMESTAMP_FIELD, 1),
-                onBackgroundSparse);
+                onBackground);
 
         logger.debug("sent order to create indices");
     }
