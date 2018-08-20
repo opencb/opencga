@@ -1210,15 +1210,22 @@ public final class VariantQueryUtils {
                 String sample = entry.getKey();
                 String gt = "";
                 String other = "";
+                String op = "";
+                String gtOp = "";
                 if (entry.getValue().contains("GT")) {
                     StringTokenizer tokenizer = new StringTokenizer(entry.getValue(), AND + OR, true);
                     boolean gtFilter = false;
                     while (tokenizer.hasMoreTokens()) {
                         String token = tokenizer.nextToken();
-                        if (StringUtils.containsAny(token, '>', '<', '=', '~')) {
+                        if (token.equals(OR) || token.equals(AND)) {
+                            op = token;
+                        } else if (StringUtils.containsAny(token, '>', '<', '=', '~')) {
                             gtFilter = false;
                         }
                         if (token.contains("GT")) {
+                            if (!op.isEmpty()) {
+                                gtOp = op;
+                            }
                             gtFilter = true;
                             gt += splitOperator(token)[2];
                         } else if (gtFilter) {
@@ -1244,7 +1251,10 @@ public final class VariantQueryUtils {
                     if (genotypeBuilder.length() > 0) {
                         genotypeBuilder.append(formatPair.getLeft().separator());
                     }
-                    if (gt.endsWith(OR) || gt.endsWith(AND)) {
+                    if (gt.endsWith(OR) || gtOp.equals(OR)) {
+                        throw VariantQueryException.malformedParam(FORMAT, query.getString(FORMAT.key()), "Unable to add GT filter with "
+                                + "operator OR (" + OR + ").");
+                    } else if (gt.endsWith(AND)) {
                         gt = gt.substring(0, gt.length() - 1);
                     }
                     genotypeBuilder.append(sample).append(IS).append(gt);
