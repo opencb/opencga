@@ -6,6 +6,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.stats.solr.SampleSolrModel;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.Study;
 import org.slf4j.Logger;
@@ -14,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by wasim on 27/06/18.
@@ -72,8 +74,12 @@ public class CatalogSampleToSolrSampleConverter implements ComplexTypeConverter<
         if (sample.getPhenotypes() != null) {
             sampleSolrModel.setPhenotypes(SolrConverterUtil.populatePhenotypes(sample.getPhenotypes()));
         }
+
+        sampleSolrModel.setAnnotations(SolrConverterUtil.populateAnnotations(variableMap, sample.getAnnotationSets()));
         if (sample.getAnnotationSets() != null) {
-            sampleSolrModel.setAnnotations(SolrConverterUtil.populateAnnotations(variableMap, sample.getAnnotationSets()));
+            sampleSolrModel.setAnnotationSets(sample.getAnnotationSets().stream().map(AnnotationSet::getId).collect(Collectors.toList()));
+        } else {
+            sampleSolrModel.setAnnotationSets(Collections.emptyList());
         }
 
         // Extract the permissions

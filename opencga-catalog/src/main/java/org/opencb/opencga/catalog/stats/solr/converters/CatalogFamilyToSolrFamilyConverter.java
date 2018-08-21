@@ -6,6 +6,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.stats.solr.FamilySolrModel;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.Family;
 import org.opencb.opencga.core.models.Study;
 import org.slf4j.Logger;
@@ -14,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by wasim on 04/07/18.
@@ -71,6 +73,12 @@ public class CatalogFamilyToSolrFamilyConverter implements ComplexTypeConverter<
         familySolrModel.setRelease(family.getRelease());
         familySolrModel.setVersion(family.getVersion());
         familySolrModel.setAnnotations(SolrConverterUtil.populateAnnotations(variableMap, family.getAnnotationSets()));
+
+        if (family.getAnnotationSets() != null) {
+            familySolrModel.setAnnotationSets(family.getAnnotationSets().stream().map(AnnotationSet::getId).collect(Collectors.toList()));
+        } else {
+            familySolrModel.setAnnotationSets(Collections.emptyList());
+        }
 
         // Extract the permissions
         Map<String, Set<String>> familyAcl =

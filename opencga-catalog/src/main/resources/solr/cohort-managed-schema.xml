@@ -73,6 +73,7 @@
     <field name="release" type="int" indexed="true" stored="true" multiValued="false"/>
     <field name="acl" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="numSamples" type="int" indexed="true" stored="true" multiValued="false"/>
+    <field name="annotationSets" type="strings" multiValued="true" indexed="true" stored="true"/>
 
     <dynamicField name="annotations__s__*" type="string" indexed="true" stored="true" multiValued="false"/>
     <dynamicField name="annotations__d__*" type="double" indexed="true" stored="true" multiValued="false"/>

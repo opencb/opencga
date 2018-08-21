@@ -54,10 +54,14 @@ public class SampleSolrModel {
     @Field
     private List<String> acl;
 
+    @Field
+    private List<String> annotationSets;
+
     @Field("annotations__*")
     private Map<String, Object> annotations;
 
     public SampleSolrModel() {
+        this.annotationSets = new ArrayList<>();
         this.phenotypes = new ArrayList<>();
         this.annotations = new HashMap<>();
     }
@@ -79,6 +83,7 @@ public class SampleSolrModel {
         sb.append(", somatic=").append(somatic);
         sb.append(", phenotypes=").append(phenotypes);
         sb.append(", acl=").append(acl);
+        sb.append(", annotationSets=").append(annotationSets);
         sb.append(", annotations=").append(annotations);
         sb.append('}');
         return sb.toString();
@@ -207,6 +212,15 @@ public class SampleSolrModel {
 
     public SampleSolrModel setAcl(List<String> acl) {
         this.acl = acl;
+        return this;
+    }
+
+    public List<String> getAnnotationSets() {
+        return annotationSets;
+    }
+
+    public SampleSolrModel setAnnotationSets(List<String> annotationSets) {
+        this.annotationSets = annotationSets;
         return this;
     }
 

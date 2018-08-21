@@ -6,6 +6,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.stats.solr.CohortSolrModel;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.Cohort;
 import org.opencb.opencga.core.models.Study;
 import org.slf4j.Logger;
@@ -14,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by wasim on 03/07/18.
@@ -69,6 +71,12 @@ public class CatalogCohortToSolrCohortConverter implements ComplexTypeConverter<
 
         cohortSolrModel.setRelease(cohort.getRelease());
         cohortSolrModel.setAnnotations(SolrConverterUtil.populateAnnotations(variableMap, cohort.getAnnotationSets()));
+
+        if (cohort.getAnnotationSets() != null) {
+            cohortSolrModel.setAnnotationSets(cohort.getAnnotationSets().stream().map(AnnotationSet::getId).collect(Collectors.toList()));
+        } else {
+            cohortSolrModel.setAnnotationSets(Collections.emptyList());
+        }
 
         // Extract the permissions
         Map<String, Set<String>> cohortAcl =

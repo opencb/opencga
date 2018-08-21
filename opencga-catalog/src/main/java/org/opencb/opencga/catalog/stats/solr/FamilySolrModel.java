@@ -51,14 +51,17 @@ public class FamilySolrModel {
     @Field
     private List<String> acl;
 
+    @Field
+    private List<String> annotationSets;
+
     @Field("annotations__*")
     private Map<String, Object> annotations;
 
     public FamilySolrModel() {
+        this.annotationSets = new ArrayList<>();
         this.annotations = new HashMap<>();
         this.phenotypes = new ArrayList<>();
     }
-
 
     @Override
     public String toString() {
@@ -76,6 +79,7 @@ public class FamilySolrModel {
         sb.append(", release=").append(release);
         sb.append(", version=").append(version);
         sb.append(", acl=").append(acl);
+        sb.append(", annotationSets=").append(annotationSets);
         sb.append(", annotations=").append(annotations);
         sb.append('}');
         return sb.toString();
@@ -195,6 +199,15 @@ public class FamilySolrModel {
 
     public FamilySolrModel setAcl(List<String> acl) {
         this.acl = acl;
+        return this;
+    }
+
+    public List<String> getAnnotationSets() {
+        return annotationSets;
+    }
+
+    public FamilySolrModel setAnnotationSets(List<String> annotationSets) {
+        this.annotationSets = annotationSets;
         return this;
     }
 

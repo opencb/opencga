@@ -2,6 +2,7 @@ package org.opencb.opencga.catalog.stats.solr;
 
 import org.apache.solr.client.solrj.beans.Field;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -68,10 +69,14 @@ public class FileSolrModel {
     @Field
     private List<String> acl;
 
+    @Field
+    private List<String> annotationSets;
+
     @Field("annotations__*")
     private Map<String, Object> annotations;
 
     public FileSolrModel() {
+        this.annotationSets = new ArrayList<>();
         this.annotations = new HashMap<>();
     }
 
@@ -97,6 +102,7 @@ public class FileSolrModel {
         sb.append(", numSamples=").append(numSamples);
         sb.append(", numRelatedFiles=").append(numRelatedFiles);
         sb.append(", acl=").append(acl);
+        sb.append(", annotationSets=").append(annotationSets);
         sb.append(", annotations=").append(annotations);
         sb.append('}');
         return sb.toString();
@@ -270,6 +276,15 @@ public class FileSolrModel {
 
     public FileSolrModel setAcl(List<String> acl) {
         this.acl = acl;
+        return this;
+    }
+
+    public List<String> getAnnotationSets() {
+        return annotationSets;
+    }
+
+    public FileSolrModel setAnnotationSets(List<String> annotationSets) {
+        this.annotationSets = annotationSets;
         return this;
     }
 

@@ -6,6 +6,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.stats.solr.IndividualSolrModel;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Study;
 import org.slf4j.Logger;
@@ -14,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by wasim on 04/07/18.
@@ -102,6 +104,13 @@ public class CatalogIndividualToSolrIndividualConverter implements ComplexTypeCo
 
         individualSolrModel.setParentalConsanguinity(individual.isParentalConsanguinity());
         individualSolrModel.setAnnotations(SolrConverterUtil.populateAnnotations(variableMap, individual.getAnnotationSets()));
+
+        if (individual.getAnnotationSets() != null) {
+            individualSolrModel.setAnnotationSets(
+                    individual.getAnnotationSets().stream().map(AnnotationSet::getId).collect(Collectors.toList()));
+        } else {
+            individualSolrModel.setAnnotationSets(Collections.emptyList());
+        }
 
         // Extract the permissions
         Map<String, Set<String>> individualAcl =

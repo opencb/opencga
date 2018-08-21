@@ -2,6 +2,7 @@ package org.opencb.opencga.catalog.stats.solr;
 
 import org.apache.solr.client.solrj.beans.Field;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,12 +45,11 @@ public class CohortSolrModel {
     @Field
     private List<String> acl;
 
+    @Field
+    private List<String> annotationSets;
+
     @Field("annotations__*")
     private Map<String, Object> annotations;
-
-    public CohortSolrModel() {
-        this.annotations = new HashMap<>();
-    }
 
     @Override
     public String toString() {
@@ -57,17 +57,23 @@ public class CohortSolrModel {
         sb.append("uid=").append(uid);
         sb.append(", studyId='").append(studyId).append('\'');
         sb.append(", type='").append(type).append('\'');
-        sb.append(", creationYear='").append(creationYear).append('\'');
+        sb.append(", creationYear=").append(creationYear);
         sb.append(", creationMonth='").append(creationMonth).append('\'');
-        sb.append(", creationDay='").append(creationDay).append('\'');
+        sb.append(", creationDay=").append(creationDay);
         sb.append(", creationDayOfWeek='").append(creationDayOfWeek).append('\'');
         sb.append(", status='").append(status).append('\'');
         sb.append(", release=").append(release);
         sb.append(", numSamples=").append(numSamples);
         sb.append(", acl=").append(acl);
+        sb.append(", annotationSets=").append(annotationSets);
         sb.append(", annotations=").append(annotations);
         sb.append('}');
         return sb.toString();
+    }
+
+    public CohortSolrModel() {
+        this.annotationSets = new ArrayList<>();
+        this.annotations = new HashMap<>();
     }
 
     public long getUid() {
@@ -166,6 +172,15 @@ public class CohortSolrModel {
 
     public CohortSolrModel setAcl(List<String> acl) {
         this.acl = acl;
+        return this;
+    }
+
+    public List<String> getAnnotationSets() {
+        return annotationSets;
+    }
+
+    public CohortSolrModel setAnnotationSets(List<String> annotationSets) {
+        this.annotationSets = annotationSets;
         return this;
     }
 

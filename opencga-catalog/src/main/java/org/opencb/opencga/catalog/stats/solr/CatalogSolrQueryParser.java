@@ -170,7 +170,7 @@ public class CatalogSolrQueryParser {
                 } else {
                     try {
                         filterList.put(entry.getKey(), getValues(Arrays.asList(String.valueOf(entry.getValue()).split(",")),
-                            queryParam.type()));
+                                queryParam.type()));
                     } catch (CatalogException e) {
                         logger.warn("Error parsing parameter {}: {}", entry.getKey(), e.getMessage(), e);
                     }
@@ -381,27 +381,31 @@ public class CatalogSolrQueryParser {
                 Matcher matcher = AnnotationUtils.ANNOTATION_PATTERN.matcher(annotation);
 
                 if (matcher.find()) {
-                    // Split the annotation by key - value
-                    // Remove the : at the end of the variableSet
-                    String variableSet = matcher.group(1).replace(":", "");
-//                    long variableSetUid = Long.valueOf(matcher.group(1).replace(":", ""));
-                    String key = matcher.group(2);
                     String valueString = matcher.group(3);
 
-//                    String variableSet = variableSetUidIdMap.get(variableSetUid);
+                    if (annotation.startsWith(Constants.ANNOTATION_SET_NAME)) {
+                        annotationMap.put("annotationSets", getValues(Arrays.asList(valueString.split(",")), AnnotationUtils.Type.TEXT));
+                    } else { // annotation
+                        // Split the annotation by key - value
+                        // Remove the : at the end of the variableSet
+                        String variableSet = matcher.group(1).replace(":", "");
+                        // long variableSetUid = Long.valueOf(matcher.group(1).replace(":", ""));
+                        String key = matcher.group(2);
 
-                    if (variableTypeMap == null || variableTypeMap.isEmpty()) {
-                        logger.error("Internal error: The variableTypeMap is null or empty {}", variableTypeMap);
-                        throw new CatalogException("Internal error. Could not build the annotation query");
-                    }
-                    AnnotationUtils.Type type = variableTypeMap.get(variableSet + ":" + key, AnnotationUtils.Type.class);
-                    if (type == null) {
-                        logger.error("Internal error: Could not find the type of the variable {}:{}", variableSet, key);
-                        throw new CatalogException("Internal error. Could not find the type of the variable " + variableSet + ":" + key);
-                    }
+                        if (variableTypeMap == null || variableTypeMap.isEmpty()) {
+                            logger.error("Internal error: The variableTypeMap is null or empty {}", variableTypeMap);
+                            throw new CatalogException("Internal error. Could not build the annotation query");
+                        }
+                        AnnotationUtils.Type type = variableTypeMap.get(variableSet + ":" + key, AnnotationUtils.Type.class);
+                        if (type == null) {
+                            logger.error("Internal error: Could not find the type of the variable {}:{}", variableSet, key);
+                            throw new CatalogException("Internal error. Could not find the type of the variable " + variableSet + ":"
+                                    + key);
+                        }
 
-                    annotationMap.put("annotations" + getAnnotationType(type) + variableSet + "." + key,
-                            getValues(Arrays.asList(valueString.split(",")), type));
+                        annotationMap.put("annotations" + getAnnotationType(type) + variableSet + "." + key,
+                                getValues(Arrays.asList(valueString.split(",")), type));
+                    }
                 } else {
                     throw new CatalogDBException("Annotation " + annotation + " could not be parsed to a query.");
                 }
