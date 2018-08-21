@@ -34,6 +34,7 @@ public class FamilyCommandOptions {
     public InfoCommandOptions infoCommandOptions;
     public SearchCommandOptions searchCommandOptions;
     public GroupByCommandOptions groupByCommandOptions;
+    public FacetCommandOptions facetCommandOptions;
 //    public UpdateCommandOptions updateCommandOptions;
 
     public AclCommandOptions.AclsCommandOptions aclsCommandOptions;
@@ -62,6 +63,7 @@ public class FamilyCommandOptions {
         this.infoCommandOptions = new InfoCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
         this.groupByCommandOptions = new GroupByCommandOptions();
+        this.facetCommandOptions = new FacetCommandOptions();
 //        this.updateCommandOptions = new UpdateCommandOptions();
 
         AnnotationCommandOptions annotationCommandOptions = new AnnotationCommandOptions(commonCommandOptions);
@@ -164,6 +166,54 @@ public class FamilyCommandOptions {
 
         @Parameter(names = {"--variable-set"}, description = "Variable set ids", required = false, arity = 1)
         public String variableSetId;
+    }
+
+    @Parameters(commandNames = {"facet"}, commandDescription = "Facets in families")
+    public class FacetCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--creation-year"}, description = "Creation year.", arity = 1)
+        public String creationYear;
+
+        @Parameter(names = {"--creation-month"}, description = "Creation month (JANUARY, FEBRUARY...).", arity = 1)
+        public String creationMonth;
+
+        @Parameter(names = {"--creation-day"}, description = "Creation day.", arity = 1)
+        public String creationDay;
+
+        @Parameter(names = {"--creation-day-of-week"}, description = "Creation day of week (MONDAY, TUESDAY...).", arity = 1)
+        public String creationDayOfWeek;
+
+        @Parameter(names = {"--phenotypes"}, description = "Phenotypes.", arity = 1)
+        public String phenotypes;
+
+        @Parameter(names = {"--status"}, description = "Status.", arity = 1)
+        public String status;
+
+        @Parameter(names = {"--release"}, description = "Release.", arity = 1)
+        public String release;
+
+        @Parameter(names = {"--version"}, description = "Version.", arity = 1)
+        public String version;
+
+        @Parameter(names = {"--num-members"}, description = "Number of members.", arity = 1)
+        public String numMembers;
+
+        @Parameter(names = {"--expected-size"}, description = "Expected size.", arity = 1)
+        public String expectedSize;
+
+        @Parameter(names = {"--annotation"}, description = "Annotation. See documentation to see the options.", arity = 1)
+        public String annotation;
+
+        @Parameter(names = {"--facet"}, description = "List of facet fields separated by semicolons, e.g.: studies;type. For nested "
+                + "faceted fields use >>, e.g.: studies>>biotype;type.", arity = 1)
+        public String facet;
+
+        @Parameter(names = {"--facet-range"}, description = "List of facet ranges separated by semicolons with the format"
+                + " {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1.", arity = 1)
+        public String facetRange;
     }
 
 //    @Parameters(commandNames = {"update"}, commandDescription = "Update family information")

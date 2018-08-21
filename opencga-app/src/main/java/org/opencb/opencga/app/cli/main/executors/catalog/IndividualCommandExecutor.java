@@ -28,6 +28,7 @@ import org.opencb.opencga.app.cli.main.options.IndividualCommandOptions;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.acls.permissions.IndividualAclEntry;
@@ -75,6 +76,9 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "group-by":
                 queryResponse = groupBy();
+                break;
+            case "facet":
+                queryResponse = facet();
                 break;
             case "samples":
                 queryResponse = getSamples();
@@ -318,6 +322,41 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         bodyParams.putIfNotNull("sample", commandOptions.sample);
 
         return openCGAClient.getIndividualClient().updateAcl(commandOptions.memberId, queryParams, bodyParams);
+    }
+
+    private QueryResponse facet() throws IOException {
+        logger.debug("Individual facets");
+
+        IndividualCommandOptions.FacetCommandOptions commandOptions = individualsCommandOptions.facetCommandOptions;
+
+        Query query = new Query();
+        query.putIfNotEmpty("creationYear", commandOptions.creationYear);
+        query.putIfNotEmpty("creationMonth", commandOptions.creationMonth);
+        query.putIfNotEmpty("creationDay", commandOptions.creationDay);
+        query.putIfNotEmpty("creationDayOfWeek", commandOptions.creationDayOfWeek);
+        query.putIfNotEmpty("status", commandOptions.status);
+        query.putIfNotEmpty("lifeStatus", commandOptions.lifeStatus);
+        query.putIfNotEmpty("affectationStatus", commandOptions.affectationStatus);
+        query.putIfNotEmpty("numSamples", commandOptions.numSamples);
+        query.putIfNotEmpty("numMultiples", commandOptions.numMultiples);
+        query.putIfNotEmpty("multiplesType", commandOptions.multiplesType);
+        query.putIfNotEmpty("sex", commandOptions.sex);
+        query.putIfNotEmpty("karyotypicSex", commandOptions.karyotypicSex);
+        query.putIfNotEmpty("ethnicity", commandOptions.ethnicity);
+        query.putIfNotEmpty("population", commandOptions.population);
+        query.putIfNotEmpty("phenotypes", commandOptions.phenotypes);
+        query.putIfNotEmpty("release", commandOptions.release);
+        query.putIfNotEmpty("version", commandOptions.version);
+        query.putIfNotNull("hasFather", commandOptions.hasFather);
+        query.putIfNotNull("hasMother", commandOptions.hasMother);
+        query.putIfNotNull("parentalConsanguinity", commandOptions.parentalConsanguinity);
+        query.putIfNotEmpty(Constants.ANNOTATION, commandOptions.annotation);
+
+        QueryOptions options = new QueryOptions();
+        options.putIfNotNull("facet", commandOptions.facet);
+        options.putIfNotNull("facetRange", commandOptions.facetRange);
+
+        return openCGAClient.getIndividualClient().facet(commandOptions.study, query, options);
     }
 
 }

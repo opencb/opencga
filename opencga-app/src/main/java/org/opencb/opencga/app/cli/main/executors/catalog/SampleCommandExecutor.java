@@ -80,6 +80,9 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
             case "groupBy":
                 queryResponse = groupBy();
                 break;
+            case "facet":
+                queryResponse = facet();
+                break;
             case "individuals":
                 queryResponse = getIndividuals();
                 break;
@@ -266,6 +269,32 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
         bodyParams.putIfNotNull("file", commandOptions.file);
 
         return openCGAClient.getSampleClient().updateAcl(commandOptions.memberId, queryParams, bodyParams);
+    }
+
+    private QueryResponse facet() throws IOException {
+        logger.debug("Individual facets");
+
+        SampleCommandOptions.FacetCommandOptions commandOptions = samplesCommandOptions.facetCommandOptions;
+
+        Query query = new Query();
+        query.putIfNotEmpty("creationYear", commandOptions.creationYear);
+        query.putIfNotEmpty("creationMonth", commandOptions.creationMonth);
+        query.putIfNotEmpty("creationDay", commandOptions.creationDay);
+        query.putIfNotEmpty("creationDayOfWeek", commandOptions.creationDayOfWeek);
+        query.putIfNotEmpty("status", commandOptions.status);
+        query.putIfNotEmpty("source", commandOptions.source);
+        query.putIfNotEmpty("type", commandOptions.type);
+        query.putIfNotEmpty("phenotypes", commandOptions.phenotypes);
+        query.putIfNotEmpty("release", commandOptions.release);
+        query.putIfNotEmpty("version", commandOptions.version);
+        query.putIfNotNull("somatic", commandOptions.somatic);
+        query.putIfNotEmpty(Constants.ANNOTATION, commandOptions.annotation);
+
+        QueryOptions options = new QueryOptions();
+        options.putIfNotNull("facet", commandOptions.facet);
+        options.putIfNotNull("facetRange", commandOptions.facetRange);
+
+        return openCGAClient.getSampleClient().facet(commandOptions.study, query, options);
     }
 
 }

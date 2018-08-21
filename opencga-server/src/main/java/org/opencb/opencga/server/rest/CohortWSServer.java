@@ -616,7 +616,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Fetch catalog sample facets", position = 15, response = QueryResponse.class)
     public Response getFacets(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-            @QueryParam("study") String studyStr,
+                @QueryParam("study") String studyStr,
 
             @ApiParam(value = "Type") @QueryParam("type") String type,
             @ApiParam(value = "Creation year") @QueryParam("creationYear") String creationYear,
