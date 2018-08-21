@@ -1209,26 +1209,57 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         if (!isValidParam(query, INCLUDE_STUDY) || !isValidParam(query, INCLUDE_SAMPLE) || !isValidParam(query, INCLUDE_FILE)) {
             VariantQueryUtils.SelectVariantElements selectVariantElements =
                     parseSelectElements(query, options, getStudyConfigurationManager());
-            List<String> includeStudy = new ArrayList<>();
-            for (Integer studyId : selectVariantElements.getStudies()) {
-                includeStudy.add(selectVariantElements.getStudyConfigurations().get(studyId).getStudyName());
+            if (!isValidParam(query, INCLUDE_STUDY)) {
+                List<String> includeStudy = new ArrayList<>();
+                for (Integer studyId : selectVariantElements.getStudies()) {
+                    includeStudy.add(selectVariantElements.getStudyConfigurations().get(studyId).getStudyName());
+                }
+                if (includeStudy.isEmpty()) {
+                    query.put(INCLUDE_STUDY.key(), NONE);
+                } else {
+                    query.put(INCLUDE_STUDY.key(), includeStudy);
+                }
             }
-            query.putIfAbsent(INCLUDE_STUDY.key(), includeStudy);
-            query.putIfAbsent(INCLUDE_SAMPLE.key(), selectVariantElements.getSamples()
-                    .entrySet()
-                    .stream()
-                    .flatMap(e -> e.getValue()
-                            .stream()
-                            .map(selectVariantElements.getStudyConfigurations().get(e.getKey()).getSampleIds().inverse()::get))
-                    .collect(Collectors.toList()));
-            query.putIfAbsent(INCLUDE_FILE.key(), selectVariantElements.getFiles()
-                    .entrySet()
-                    .stream()
-                    .flatMap(e -> e.getValue()
-                            .stream()
-                            .map(selectVariantElements.getStudyConfigurations().get(e.getKey()).getFileIds().inverse()::get))
-                    .collect(Collectors.toList()));
+            if (!isValidParam(query, INCLUDE_SAMPLE)) {
+                List<String> includeSample = selectVariantElements.getSamples()
+                        .entrySet()
+                        .stream()
+                        .flatMap(e -> e.getValue()
+                                .stream()
+                                .map(selectVariantElements.getStudyConfigurations().get(e.getKey()).getSampleIds().inverse()::get))
+                        .collect(Collectors.toList());
+                if (includeSample.isEmpty()) {
+                    query.put(INCLUDE_SAMPLE.key(), NONE);
+                } else {
+                    query.put(INCLUDE_SAMPLE.key(), includeSample);
+                }
+            }
+            if (!isValidParam(query, INCLUDE_FILE)) {
+                List<String> includeFile = selectVariantElements.getFiles()
+                        .entrySet()
+                        .stream()
+                        .flatMap(e -> e.getValue()
+                                .stream()
+                                .map(selectVariantElements.getStudyConfigurations().get(e.getKey()).getFileIds().inverse()::get))
+                        .collect(Collectors.toList());
+                if (includeFile.isEmpty()) {
+                    query.put(INCLUDE_FILE.key(), NONE);
+                } else {
+                    query.put(INCLUDE_FILE.key(), includeFile);
+                }
+            }
         }
+
+        List<String> formats = getIncludeFormats(query);
+        if (formats == null) {
+            query.put(INCLUDE_FORMAT.key(), ALL);
+        } else if (formats.isEmpty()) {
+            query.put(INCLUDE_FORMAT.key(), NONE);
+        } else {
+            query.put(INCLUDE_FORMAT.key(), formats);
+        }
+        query.remove(INCLUDE_GENOTYPE.key(), formats);
+
         return query;
     }
 
