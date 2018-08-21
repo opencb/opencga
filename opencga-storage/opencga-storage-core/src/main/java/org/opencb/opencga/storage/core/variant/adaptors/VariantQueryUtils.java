@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.core.Region;
@@ -723,7 +724,7 @@ public final class VariantQueryUtils {
     }
 
     private static List<String> getIncludeFilesList(Query query) {
-        List<String> includeFiles;
+        List<String> includeFiles = null;
         if (query.containsKey(INCLUDE_FILE.key())) {
             String files = query.getString(INCLUDE_FILE.key());
             if (files.equals(ALL)) {
@@ -733,18 +734,23 @@ public final class VariantQueryUtils {
             } else {
                 includeFiles = query.getAsStringList(INCLUDE_FILE.key());
             }
-        } else if (query.containsKey(FILE.key())) {
+            return includeFiles;
+        }
+        if (isValidParam(query, FILE)) {
             String files = query.getString(FILE.key());
             includeFiles = splitValue(files, checkOperator(files))
                     .stream()
                     .filter(value -> !isNegated(value))
                     .collect(Collectors.toList());
-            if (includeFiles.isEmpty()) {
-                includeFiles = null;
+        }
+        if (isValidParam(query, INFO)) {
+            Map<String, String> infoMap = parseInfo(query).getValue();
+            if (includeFiles == null) {
+                includeFiles = new ArrayList<>(infoMap.size());
             }
-        } else if (isValidParam(query, INFO)) {
-            includeFiles = new ArrayList<>(parseInfo(query).getValue().keySet());
-        } else {
+            includeFiles.addAll(infoMap.keySet());
+        }
+        if (CollectionUtils.isEmpty(includeFiles)) {
             includeFiles = null;
         }
         return includeFiles;
@@ -910,11 +916,15 @@ public final class VariantQueryUtils {
                 }
                 map.keySet().stream().map(Object::toString).forEach(samples::add);
             }
-            if (samples != null && samples.isEmpty()) {
-                samples = null;
+            if (isValidParam(query, FORMAT)) {
+                Map<String, String> formatMap = parseFormat(query).getValue();
+                if (samples == null) {
+                    samples = new ArrayList<>(formatMap.size());
+                }
+                samples.addAll(formatMap.keySet());
             }
-            if (samples == null && isValidParam(query, FORMAT)) {
-                samples = new ArrayList<>(parseFormat(query).getValue().keySet());
+            if (CollectionUtils.isEmpty(samples)) {
+                samples = null;
             }
         }
         if (samples != null) {

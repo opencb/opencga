@@ -597,7 +597,11 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
                 && studyNames.size() == 1
                 && !isNegated(query.getString(VariantQueryParam.STUDY.key()))
                 && !isValidParam(query, FILE)
+                && !isValidParam(query, FILTER)
+                && !isValidParam(query, QUAL)
+                && !isValidParam(query, INFO)
                 && !isValidParam(query, SAMPLE)
+                && !isValidParam(query, FORMAT)
                 && !isValidParam(query, GENOTYPE)) {
             query.remove(VariantQueryParam.STUDY.key());
         }

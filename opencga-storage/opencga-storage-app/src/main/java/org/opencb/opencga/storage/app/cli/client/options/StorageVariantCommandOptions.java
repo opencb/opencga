@@ -270,8 +270,14 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--sample"}, description = SAMPLE_DESCR)
         public String samples;
 
+        @Parameter(names = {"--format"}, description = FORMAT_DESCR)
+        public String format;
+
         @Parameter(names = {"-f", "--file"}, description = FILE_DESCR)
         public String file;
+
+        @Parameter(names = {"--info"}, description = INFO_DESCR)
+        public String info;
 
         @Parameter(names = {"--filter"}, description = FILTER_DESCR)
         public String filter;
