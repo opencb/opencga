@@ -233,6 +233,9 @@ public class CohortCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
+        @Parameter(names = {"--default-stats"}, description = "Flag to calculate default stats", arity = 0)
+        public boolean defaultStats;
+
         @Parameter(names = {"--creation-year"}, description = "Creation year.", arity = 1)
         public String creationYear;
 

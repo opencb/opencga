@@ -191,6 +191,7 @@ public class FamilyCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotEmpty(Constants.ANNOTATION, commandOptions.annotation);
 
         QueryOptions options = new QueryOptions();
+        options.put("defaultStats", commandOptions.defaultStats);
         options.putIfNotNull("facet", commandOptions.facet);
         options.putIfNotNull("facetRange", commandOptions.facetRange);
 
