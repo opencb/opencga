@@ -39,7 +39,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
  */
 public class SolrQueryParserTest {
 
-    private String defaultFl = "fl=geneToSoAcc,traits,qual_*,type,soAcc,sift,caddRaw,biotypes,polyphenDesc,studies,end,id,variantId,filter_*,popFreq_*,caddScaled,genes,stats_*,chromosome,xrefs,start,gerp,polyphen,siftDesc,phastCons,phylop,id,chromosome,start,end,type,fileInfo_*,sampleFormat_*";
+    private String defaultFl = "fl=geneToSoAcc,traits,qual_*,type,soAcc,sift,caddRaw,biotypes,polyphenDesc,studies,end,id,variantId,filter_*,popFreq_*,caddScaled,genes,stats_*,chromosome,xrefs,start,gerp,polyphen,siftDesc,phastCons,phylop,id,chromosome,start,end,type,fileInfo__*,sampleFormat__*";
 
     SolrQueryParser solrQueryParser;
     StudyConfigurationManager studyConfigurationManager;

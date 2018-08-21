@@ -566,11 +566,13 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
     public void testGetByFilter() {
         VariantQueryResult<Variant> allVariants = dbAdaptor.get(new Query()
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877")
-                .append(VariantQueryParam.INCLUDE_FILE.key(), file12877), options);
+                .append(VariantQueryParam.INCLUDE_FILE.key(), file12877)
+                .append(VariantQueryParam.INCLUDE_STUDY.key(), "S_1"), options);
 
         query = new Query()
                 .append(VariantQueryParam.FILTER.key(), "LowGQX;LowMQ;LowQD;TruthSensitivityTranche99.90to100.00")
-                .append(VariantQueryParam.FILE.key(), file12877);
+                .append(VariantQueryParam.FILE.key(), file12877)
+                .append(VariantQueryParam.STUDY.key(), "S_1");
         queryResult = query(query, options);
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
         assertThat(queryResult, everyResult(allVariants, withStudy("S_1", withFileId(file12877,
