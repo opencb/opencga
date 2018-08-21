@@ -433,7 +433,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         VariantQueryResult<Variant> allVariants = dbAdaptor.get(new Query()
                 .append(VariantQueryParam.INCLUDE_STUDY.key(), "S_1")
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877,NA12878")
-                .append(VariantQueryParam.INCLUDE_FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz"), options);
+                .append(VariantQueryParam.INCLUDE_FILE.key(), file12877 + "," + file12878), options);
 
 
         Query query = new Query(STUDY.key(), "S_1")
@@ -469,6 +469,18 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
                         )
                 )
         ))));
+    }
+
+    @Test
+    public void testGetAllVariants_mixInfoFileOperators() {
+        VariantQueryResult<Variant> allVariants = dbAdaptor.get(new Query()
+                .append(VariantQueryParam.INCLUDE_STUDY.key(), "S_1")
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877,NA12878")
+                .append(VariantQueryParam.INCLUDE_FILE.key(), file12877 + "," + file12878), options);
+
+
+        thrown.expect(VariantQueryException.class);
+        thrown.expectMessage(VariantQueryException.mixedAndOrOperators(FILE, INFO).getMessage());
 
         query = new Query(STUDY.key(), "S_1")
                 .append(FILE.key(), file12877 + OR + file12878)
@@ -486,6 +498,18 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
                         withAttribute("DP", asNumber(gt(100)))
                 )
         ))));
+
+    }
+
+    @Test
+    public void testGetAllVariants_mixInfoFileOperators2() {
+        VariantQueryResult<Variant> allVariants = dbAdaptor.get(new Query()
+                .append(VariantQueryParam.INCLUDE_STUDY.key(), "S_1")
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877,NA12878")
+                .append(VariantQueryParam.INCLUDE_FILE.key(), file12877 + "," + file12878), options);
+
+        thrown.expect(VariantQueryException.class);
+        thrown.expectMessage(VariantQueryException.mixedAndOrOperators(FILE, INFO).getMessage());
 
         query = new Query(STUDY.key(), "S_1")
                 .append(FILE.key(), file12877 + AND + file12878)

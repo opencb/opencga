@@ -1075,10 +1075,14 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
 
         StudyConfiguration defaultStudyConfiguration = getDefaultStudyConfiguration(query, options, getStudyConfigurationManager());
+        QueryOperation formatOperator = null;
         if (isValidParam(query, FORMAT)) {
             extractGenotypeFromFormatFilter(query);
 
-            for (Map.Entry<String, String> entry : parseFormat(query).getValue().entrySet()) {
+            Pair<QueryOperation, Map<String, String>> pair = parseFormat(query);
+            formatOperator = pair.getKey();
+
+            for (Map.Entry<String, String> entry : pair.getValue().entrySet()) {
                 String sampleName = entry.getKey();
                 if (defaultStudyConfiguration == null) {
                     throw VariantQueryException.missingStudyForSample(sampleName, getStudyConfigurationManager().getStudyNames(null));
@@ -1101,7 +1105,14 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
 
         if (isValidParam(query, INFO)) {
-            for (Map.Entry<String, String> entry : parseInfo(query).getValue().entrySet()) {
+            Pair<QueryOperation, Map<String, String>> pair = parseInfo(query);
+            if (isValidParam(query, FILE) && pair.getKey() != null) {
+                QueryOperation fileOperator = checkOperator(query.getString(FILE.key()));
+                if (fileOperator != null && pair.getKey() != fileOperator) {
+                    throw VariantQueryException.mixedAndOrOperators(FILE, INFO);
+                }
+            }
+            for (Map.Entry<String, String> entry : pair.getValue().entrySet()) {
                 String fileName = entry.getKey();
                 if (defaultStudyConfiguration == null) {
                     throw VariantQueryException.missingStudyForFile(fileName, getStudyConfigurationManager().getStudyNames(null));
@@ -1123,11 +1134,14 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             }
         }
 
+        QueryOperation genotypeOperator = null;
+        VariantQueryParam genotypeParam = null;
         if (isValidParam(query, SAMPLE)) {
             if (isValidParam(query, GENOTYPE)) {
                 throw VariantQueryException.malformedParam(SAMPLE, query.getString(SAMPLE.key()),
                         "Can not be used along with filter \"" + GENOTYPE.key() + '"');
             }
+            genotypeParam = SAMPLE;
 
             List<String> loadedGenotypes = defaultStudyConfiguration.getAttributes().getAsStringList(LOADED_GENOTYPES.key());
             if (CollectionUtils.isEmpty(loadedGenotypes)) {
@@ -1156,17 +1170,19 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             }).collect(Collectors.joining(","));
 
             Pair<QueryOperation, List<String>> pair = VariantQueryUtils.splitValue(query.getString(SAMPLE.key()));
+            genotypeOperator = pair.getLeft();
 
             StringBuilder sb = new StringBuilder();
             for (String sample : pair.getValue()) {
                 if (sb.length() > 0) {
-                    sb.append(pair.getLeft().separator());
+                    sb.append(genotypeOperator.separator());
                 }
                 sb.append(sample).append(IS).append(genotypes);
             }
             query.remove(SAMPLE.key());
             query.put(GENOTYPE.key(), sb.toString());
         } else if (isValidParam(query, GENOTYPE)) {
+            genotypeParam = GENOTYPE;
 
             List<String> loadedGenotypes = defaultStudyConfiguration.getAttributes().getAsStringList(LOADED_GENOTYPES.key());
             if (CollectionUtils.isEmpty(loadedGenotypes)) {
@@ -1180,7 +1196,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             }
 
             Map<Object, List<String>> map = new LinkedHashMap<>();
-            QueryOperation queryOperation = VariantQueryUtils.parseGenotypeFilter(query.getString(GENOTYPE.key()), map);
+            genotypeOperator = VariantQueryUtils.parseGenotypeFilter(query.getString(GENOTYPE.key()), map);
 
             StringBuilder sb = new StringBuilder();
             for (Map.Entry<Object, List<String>> entry : map.entrySet()) {
@@ -1193,7 +1209,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 }
 
                 if (sb.length() > 0) {
-                    sb.append(queryOperation.separator());
+                    sb.append(genotypeOperator.separator());
                 }
                 sb.append(entry.getKey()).append(IS);
                 for (int i = 0; i < genotypes.size(); i++) {
@@ -1204,6 +1220,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 }
             }
             query.put(GENOTYPE.key(), sb.toString());
+        }
+
+        if (formatOperator != null && genotypeOperator != null && formatOperator != genotypeOperator) {
+            throw VariantQueryException.mixedAndOrOperators(FORMAT, genotypeParam);
         }
 
         if (!isValidParam(query, INCLUDE_STUDY) || !isValidParam(query, INCLUDE_SAMPLE) || !isValidParam(query, INCLUDE_FILE)) {
