@@ -2,7 +2,6 @@ package org.opencb.opencga.server.rest.admin;
 
 import io.swagger.annotations.*;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
@@ -18,8 +17,6 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.List;
-
-import static org.opencb.opencga.catalog.utils.Constants.FLATTENED_ANNOTATIONS;
 
 @Path("/{apiVersion}/admin")
 @Produces(MediaType.APPLICATION_JSON)
@@ -145,11 +142,9 @@ public class AdminWSServer extends OpenCGAWSServer {
     @POST
     @Path("/studies/syncSolr")
     @ApiOperation(value = "Sync Catalog into the Solr")
-    public Response syncSolr(
-            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr) {
-
+    public Response syncSolr() {
         try {
-            return createOkResponse(catalogManager.getStudyManager().indexCatalogIntoSolr(studyStr, sessionId));
+            return createOkResponse(catalogManager.getStudyManager().indexCatalogIntoSolr(sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

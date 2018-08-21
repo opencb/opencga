@@ -1219,7 +1219,7 @@ public class StudyManager extends AbstractManager {
         }
     }
 
-    public boolean indexCatalogIntoSolr(String studyStr, String token) throws CatalogException {
+    public boolean indexCatalogIntoSolr(String token) throws CatalogException {
 
         String userId = catalogManager.getUserManager().getUserId(token);
 
