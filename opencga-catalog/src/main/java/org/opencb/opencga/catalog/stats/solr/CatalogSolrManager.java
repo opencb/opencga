@@ -221,7 +221,7 @@ public class CatalogSolrManager {
             throws IOException, SolrException, CatalogException {
         StopWatch stopWatch = StopWatch.createStarted();
 
-        query.put("study", study.getFqn());
+        query.put(CatalogSolrQueryParser.QueryParams.STUDY.key(), study.getFqn());
 
         if (!catalogManager.getAuthorizationManager().checkIsOwnerOrAdmin(study.getUid(), userId)) {
             // We need to add an acl query to perform the facet query
@@ -232,12 +232,17 @@ public class CatalogSolrManager {
                 }
             });
 
-            // TODO: If the facet covers annotations, we will need to check for VIEW_ANNOTATION permission
+            final String suffixPermission;
+            if (query.containsKey(CatalogSolrQueryParser.QueryParams.ANNOTATIONS.key())) {
+                suffixPermission = "__VIEW_ANNOTATIONS";
+            } else {
+                suffixPermission = "__VIEW";
+            }
             List<String> aclList = new ArrayList<>();
-            aclList.add(userId + "__VIEW");
-            groups.forEach(group -> aclList.add("(*:* -" + userId + "__NONE AND " + group + "__VIEW)"));
+            aclList.add(userId + suffixPermission);
+            groups.forEach(group -> aclList.add("(*:* -" + userId + "__NONE AND " + group + suffixPermission + ")"));
 
-            query.put("acl", "(" + StringUtils.join(aclList, " OR ") + ")");
+            query.put(CatalogSolrQueryParser.QueryParams.ACL.key(), "(" + StringUtils.join(aclList, " OR ") + ")");
         }
 
         try {
