@@ -515,11 +515,17 @@ public class FamilyWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Fetch catalog sample facets", position = 15, response = QueryResponse.class)
     public Response getFacets(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-            @QueryParam("study") String studyStr,
-
-            @ApiParam(value = "CreationDate") @QueryParam("creationDate") String creationDate,
+                @QueryParam("study") String studyStr,
+            @ApiParam(value = "Creation year") @QueryParam("creationYear") String creationYear,
+            @ApiParam(value = "Creation month (JANUARY, FEBRUARY...)") @QueryParam("creationMonth") String creationMonth,
+            @ApiParam(value = "Creation day") @QueryParam("creationDay") String creationDay,
+            @ApiParam(value = "Creation day of week (MONDAY, TUESDAY...)") @QueryParam("creationDayOfWeek") String creationDayOfWeek,
             @ApiParam(value = "Status") @QueryParam("status") String status,
-            @ApiParam(value = "Release") @QueryParam("release") int release,
+            @ApiParam(value = "Phenotypes") @QueryParam("phenotypes") String phenotypes,
+            @ApiParam(value = "Release") @QueryParam("release") String release,
+            @ApiParam(value = "Version") @QueryParam("version") String version,
+            @ApiParam(value = "Number of members") @QueryParam("numMembers") String numMembers,
+            @ApiParam(value = "Expected size") @QueryParam("expectedSize") String expectedSize,
             @ApiParam(value = "List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: studies>>biotype;type") @QueryParam("facet") String facet,
             @ApiParam(value = "List of facet ranges separated by semicolons with the format {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1") @QueryParam("facetRange") String facetRange,
             @ApiParam(value = "List of facet intersections separated by semicolons with the format {field_name}:{value1}:{value2}[:{value3}], e.g.: studies:1kG_phase3:EXAC:ESP6500") @QueryParam("facetIntersection") String facetIntersection) {

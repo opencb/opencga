@@ -243,6 +243,7 @@ public class CatalogSolrManager {
         try {
             CatalogSolrQueryParser catalogSolrQueryParser = new CatalogSolrQueryParser();
             SolrQuery solrQuery = catalogSolrQueryParser.parse(query, queryOptions, study.getVariableSets());
+            logger.debug("Solr query: {}", solrQuery.toString());
             QueryResponse response = solrManager.getSolrClient().query(DATABASE_PREFIX + collection, solrQuery);
             FacetedQueryResultItem item = SolrFacetUtil.toFacetedQueryResultItem(queryOptions, response);
             return new FacetedQueryResult("", (int) stopWatch.getTime(), 1, 1, "Faceted data from Solr", "", item);

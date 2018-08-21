@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.stats.solr;
 
+import org.apache.commons.collections.map.LinkedMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.common.params.CommonParams;
@@ -18,6 +19,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.opencb.opencga.catalog.utils.AnnotationUtils.Type.*;
 
 /**
  * Created by wasim on 09/07/18.
@@ -25,33 +27,91 @@ import java.util.regex.Pattern;
 
 public class CatalogSolrQueryParser {
 
-    private static List<String> queryParameters = new ArrayList<>();
     protected static Logger logger = LoggerFactory.getLogger(CatalogSolrQueryParser.class);
 
     public static final Pattern OPERATION_PATTERN = Pattern.compile("^(<=?|>=?|!==?|!?=?~|==?=?)([^=<>~!]+.*)$");
 
-    static {
-        // common
-        queryParameters.add("study");
-        queryParameters.add("type");
-        queryParameters.add("status");
-        queryParameters.add("creationDate");
-        queryParameters.add("release");
+    enum QueryParams {
 
-        queryParameters.add("format");
-        queryParameters.add("bioformat");
-        queryParameters.add("size");
-        queryParameters.add("samples");
+        // Common
+        STUDY("study", TEXT),
+        RELEASE("release", INTEGER),
+        CREATION_YEAR("creationYear", INTEGER),
+        CREATION_MONTH("creationMonth", TEXT),
+        CREATION_DAY("creationDay", INTEGER),
+        CREATION_DAY_OF_WEEK("creationDayOfWeek", TEXT),
+        STATUS("status", TEXT),
+        ANNOTATIONS(Constants.ANNOTATION, TEXT),
+        ACL("acl", TEXT),
 
-        queryParameters.add("sex");
-        queryParameters.add("ethnicity");
-        queryParameters.add("population");
-        queryParameters.add("source");
-        queryParameters.add("somatic");
-        queryParameters.add("acl");
+        // Shared
+        VERSION("version", INTEGER),
+        TYPE("type", TEXT),
+        PHENOTYPES("phenotypes", TEXT_ARRAY),
+        NUM_SAMPLES("numSamples", INTEGER),
 
-        queryParameters.add(Constants.ANNOTATION);
+        // Sample
+        SOURCE("source", TEXT),
+        SOMATIC("somatic", BOOLEAN),
 
+        // Family
+        NUM_MEMBERS("numMembers", INTEGER),
+        EXPECTED_SIZE("expectedSize", INTEGER),
+
+        // File
+        NAME("name", TEXT),
+        FORMAT("format", TEXT),
+        BIOFORMAT("bioformat", TEXT),
+        EXTERNAL("external", BOOLEAN),
+        SIZE("size", INTEGER),
+        SOFTWARE("software", TEXT),
+        EXPERIMENT("experiment", TEXT),
+        NUM_RELATED_FILES("numRelatedFiles", INTEGER),
+
+        // Individual
+        HAS_FATHER("hasFather", BOOLEAN),
+        HAS_MOTHER("hasMother", BOOLEAN),
+        NUM_MULTIPLES("numMultiples", INTEGER),
+        MULTIPLES_TYPE("multiplesType", TEXT),
+        SEX("sex", TEXT),
+        KARYOTYPIC_SEX("karyotypicSex", TEXT),
+        ETHNICITY("ethnicity", TEXT),
+        POPULATION("population", TEXT),
+        LIFE_STATUS("lifeStatus", TEXT),
+        AFFECTATION_STATUS("affectationStatus", TEXT),
+        PARENTAL_CONSANGUINITY("parentalConsanguinity", BOOLEAN);
+
+        private static Map<String, QueryParams> map;
+        static {
+            map = new LinkedMap();
+            for (QueryParams params : QueryParams.values()) {
+                map.put(params.key(), params);
+            }
+        }
+
+        private final String key;
+        private AnnotationUtils.Type type;
+
+        QueryParams(String key, AnnotationUtils.Type type) {
+            this.key = key;
+            this.type = type;
+        }
+
+        public String key() {
+            return key;
+        }
+
+        public AnnotationUtils.Type type() {
+            return type;
+        }
+
+        public static Map<String, QueryParams> getMap() {
+            return map;
+        }
+
+        public static QueryParams getParam(String key) {
+            return map.get(key);
+        }
     }
 
     public CatalogSolrQueryParser() {
@@ -93,24 +153,30 @@ public class CatalogSolrQueryParser {
             parseSolrFacetRanges(queryOptions.get(QueryOptions.FACET_RANGE).toString(), solrQuery);
         }
 
-        queryParameters.forEach(queryParam -> {
-            if (query.containsKey(queryParam)) {
-                if (queryParam.equals("study")) {
-                    filterList.put("studyId", query.getString(queryParam).replace(":", "__"));
-                } else if (queryParam.equals(Constants.ANNOTATION)) {
+        query.entrySet().forEach(entry -> {
+            QueryParams queryParam = QueryParams.getParam(entry.getKey());
+            if (queryParam != null) {
+                if (queryParam == QueryParams.STUDY) {
+                    filterList.put("studyId", query.getString(queryParam.key()).replace(":", "__"));
+                } else if (queryParam == QueryParams.ACL) {
+                    filterList.put(entry.getKey(), (String) entry.getValue());
+                } else if (queryParam == QueryParams.ANNOTATIONS) {
                     try {
                         filterList.putAll(parseAnnotationQueryField(query.getString(Constants.ANNOTATION),
                                 query.get(Constants.PRIVATE_ANNOTATION_PARAM_TYPES, ObjectMap.class), variableSetList));
                     } catch (CatalogException e) {
-                        e.printStackTrace();
+                        logger.warn("Error parsing annotation info: {}", e.getMessage(), e);
                     }
                 } else {
-                    filterList.put(queryParam, query.getString(queryParam));
+                    try {
+                        filterList.put(entry.getKey(), getValues(Arrays.asList(String.valueOf(entry.getValue()).split(",")),
+                            queryParam.type()));
+                    } catch (CatalogException e) {
+                        logger.warn("Error parsing parameter {}: {}", entry.getKey(), e.getMessage(), e);
+                    }
                 }
             }
         });
-
-        logger.debug("query = {}\n", query.toJson());
 
         solrQuery.setQuery("*:*");
         // We only want stats, so we avoid retrieving the first 10 results
@@ -335,7 +401,7 @@ public class CatalogSolrQueryParser {
                     }
 
                     annotationMap.put("annotations" + getAnnotationType(type) + variableSet + "." + key,
-                            getAnnotationValues(Arrays.asList(valueString.split(",")), type));
+                            getValues(Arrays.asList(valueString.split(",")), type));
                 } else {
                     throw new CatalogDBException("Annotation " + annotation + " could not be parsed to a query.");
                 }
@@ -369,7 +435,7 @@ public class CatalogSolrQueryParser {
         }
     }
 
-    private String getAnnotationValues(List<String> values, AnnotationUtils.Type type) throws CatalogException {
+    private String getValues(List<String> values, AnnotationUtils.Type type) throws CatalogException {
         ArrayList<String> or = new ArrayList<>(values.size());
         for (String option : values) {
             Matcher matcher = OPERATION_PATTERN.matcher(option);
