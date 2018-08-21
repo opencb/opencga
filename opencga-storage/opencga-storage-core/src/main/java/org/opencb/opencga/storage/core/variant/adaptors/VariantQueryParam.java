@@ -90,7 +90,10 @@ public final class VariantQueryParam implements QueryParam {
     public static final VariantQueryParam GENOTYPE = new VariantQueryParam("genotype", TEXT_ARRAY, GENOTYPE_DESCR);
 
     public static final String FORMAT_DESCR
-            = "";
+            = "Filter by any FORMAT field from samples. [{sample}:]{key}{op}{value}[,;]* . "
+            + "If no sample is specified, will use all samples from \"sample\" or \"genotype\" filter. "
+            + "e.g. DP>200 or HG0097:DP>200,HG0098:DP<10 . "
+            + "Many FORMAT fields can be combined. e.g. HG0097:DP>200;GT=1/1,0/1,HG0098:DP<10";
     public static final VariantQueryParam FORMAT = new VariantQueryParam("format", TEXT_ARRAY, FORMAT_DESCR);
 
     public static final String INCLUDE_SAMPLE_DESCR
@@ -116,7 +119,10 @@ public final class VariantQueryParam implements QueryParam {
     public static final VariantQueryParam FILE = new VariantQueryParam("file", TEXT_ARRAY, FILE_DESCR);
 
     public static final String INFO_DESCR
-            = "";
+            = "Filter by INFO attributes from file. [{file}:]{key}{op}{value}[,;]* . "
+            + "If no file is specified, will use all files from \"file\" filter. "
+            + "e.g. AN>200 or file_1.vcf:AN>200;file_2.vcf:AN<10 . "
+            + "Many INFO fields can be combined. e.g. file_1.vcf:AN>200;DB=true;file_2.vcf:AN<10";
     public static final VariantQueryParam INFO = new VariantQueryParam("info", TEXT_ARRAY, INFO_DESCR);
 
     public static final String FILTER_DESCR

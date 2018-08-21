@@ -230,9 +230,11 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "file", value = FILE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "filter", value = FILTER_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "qual", value = QUAL_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "info", value = INFO_DESCR, dataType = "string", paramType = "query"),
 
             @ApiImplicitParam(name = "sample", value = SAMPLE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "genotype", value = GENOTYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "format", value = FORMAT_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "sampleAnnotation", value = VariantCatalogQueryUtils.SAMPLE_ANNOTATION_DESC, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "sampleMetadata", value = SAMPLE_METADATA_DESCR, dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = "unknownGenotype", value = UNKNOWN_GENOTYPE_DESCR, dataType = "string", paramType = "query"),
@@ -364,22 +366,30 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         public String alternate;
         public String project;
         public String study;
+
         public String includeStudy;
         public String includeSample;
         public String includeFile;
         public String includeFormat;
         public String includeGenotype;
+
         public String file;
+        public String qual;
         public String filter;
+        public String info;
+
+        public String genotype;
+        public String sample;
+        public String format;
+        public String sampleAnnotation;
+
         public String cohort;
         public String maf;
         public String mgf;
         public String missingAlleles;
         public String missingGenotypes;
         public Boolean annotationExists;
-        public String genotype;
-        public String sample;
-        public String sampleAnnotation;
+
         public String ct;
         public String xref;
         public String biotype;
