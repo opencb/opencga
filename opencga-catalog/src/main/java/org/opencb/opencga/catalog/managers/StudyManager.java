@@ -1264,7 +1264,9 @@ public class StudyManager extends AbstractManager {
 
     private Boolean indexCohort(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException, IOException {
 
-        Query query = new Query(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+        Query query = new Query()
+                .append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                .append(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), Constants.ALL_STATUS);
         QueryOptions cohortQueryOptions = new QueryOptions()
                 .append(QueryOptions.INCLUDE, Arrays.asList(CohortDBAdaptor.QueryParams.ID.key(), CohortDBAdaptor.QueryParams.NAME.key(),
                         CohortDBAdaptor.QueryParams.CREATION_DATE.key(), CohortDBAdaptor.QueryParams.STATUS.key(),
@@ -1279,7 +1281,9 @@ public class StudyManager extends AbstractManager {
     }
 
     private Boolean indexFile(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException, IOException {
-        Query query = new Query(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+        Query query = new Query()
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), Constants.ALL_STATUS);
         QueryOptions fileQueryOptions = new QueryOptions()
                 .append(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ID.key(),
                         FileDBAdaptor.QueryParams.NAME.key(), FileDBAdaptor.QueryParams.TYPE.key(), FileDBAdaptor.QueryParams.FORMAT.key(),
@@ -1299,7 +1303,9 @@ public class StudyManager extends AbstractManager {
 
 
     private Boolean indexFamily(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException, IOException {
-        Query query = new Query(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+        Query query = new Query()
+                .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                .append(FamilyDBAdaptor.QueryParams.STATUS_NAME.key(), Constants.ALL_STATUS);
         QueryOptions familyQueryOptions = new QueryOptions()
                 .append(QueryOptions.INCLUDE, Arrays.asList(FamilyDBAdaptor.QueryParams.ID.key(),
                         FamilyDBAdaptor.QueryParams.CREATION_DATE.key(), FamilyDBAdaptor.QueryParams.STATUS.key(),
@@ -1316,7 +1322,9 @@ public class StudyManager extends AbstractManager {
 
 
     private Boolean indexIndividual(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException, IOException {
-        Query query = new Query(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+        Query query = new Query()
+                .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                .append(IndividualDBAdaptor.QueryParams.STATUS_NAME.key(), Constants.ALL_STATUS);
         QueryOptions individualQueryOptions = new QueryOptions()
                 .append(QueryOptions.INCLUDE, Arrays.asList(IndividualDBAdaptor.QueryParams.ID.key(),
                         IndividualDBAdaptor.QueryParams.FATHER_UID.key(), IndividualDBAdaptor.QueryParams.MOTHER_UID.key(),
@@ -1338,7 +1346,9 @@ public class StudyManager extends AbstractManager {
     }
 
     private Boolean indexSample(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException, IOException {
-        Query query = new Query(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+        Query query = new Query()
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                .append(SampleDBAdaptor.QueryParams.STATUS_NAME.key(), Constants.ALL_STATUS);
         QueryOptions sampleQueryOptions = new QueryOptions()
                 .append(QueryOptions.INCLUDE, Arrays.asList(SampleDBAdaptor.QueryParams.ID.key(), SampleDBAdaptor.QueryParams.SOURCE.key(),
                         SampleDBAdaptor.QueryParams.RELEASE.key(), SampleDBAdaptor.QueryParams.VERSION.key(),
