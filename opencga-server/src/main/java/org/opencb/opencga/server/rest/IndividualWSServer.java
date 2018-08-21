@@ -651,6 +651,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
         }
     }
 
+    private final String defaultFacet = "creationYear>>creationMonth;status;multiplesType;ethnicity;population;lifeStatus;affectationStatus;phenotypes;sex";
+    private final String defaultFacetRange = "numSamples:0:500";
+
     @GET
     @Path("/facet")
     @ApiOperation(value = "Fetch catalog sample facets", position = 15, response = QueryResponse.class)
@@ -678,11 +681,21 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Parental consanguinity") @QueryParam("parentalConsanguinity") Boolean parentalConsanguinity,
             @ApiParam(value = "Release") @QueryParam("release") String release,
             @ApiParam(value = "Version") @QueryParam("version") String version,
+            @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
+
+            @ApiParam(value = "Calculate default stats", defaultValue = "false") @QueryParam("defaultStats") boolean defaultStats,
+
             @ApiParam(value = "List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: studies>>biotype;type") @QueryParam("facet") String facet,
             @ApiParam(value = "List of facet ranges separated by semicolons with the format {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1") @QueryParam("facetRange") String facetRange,
             @ApiParam(value = "List of facet intersections separated by semicolons with the format {field_name}:{value1}:{value2}[:{value3}], e.g.: studies:1kG_phase3:EXAC:ESP6500") @QueryParam("facetIntersection") String facetIntersection) {
         try {
             query.remove("study");
+
+            if (defaultStats) {
+                queryOptions.put(QueryOptions.FACET, StringUtils.isNotEmpty(facet) ? defaultFacet + ";" + facet : defaultFacet);
+                queryOptions.put(QueryOptions.FACET_RANGE, StringUtils.isNotEmpty(facet) ? defaultFacetRange + ";" + facet : defaultFacetRange);
+            }
+
             FacetedQueryResult queryResult = catalogManager.getIndividualManager().facet(studyStr, query, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {

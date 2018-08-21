@@ -510,6 +510,9 @@ public class FamilyWSServer extends OpenCGAWSServer {
         }
     }
 
+    private final String defaultFacet = "creationYear>>creationMonth;status;phenotypes;expectedSize";
+    private final String defaultFacetRange = "numMembers:0:20:2";
+
     @GET
     @Path("/facet")
     @ApiOperation(value = "Fetch catalog sample facets", position = 15, response = QueryResponse.class)
@@ -526,11 +529,21 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Version") @QueryParam("version") String version,
             @ApiParam(value = "Number of members") @QueryParam("numMembers") String numMembers,
             @ApiParam(value = "Expected size") @QueryParam("expectedSize") String expectedSize,
+            @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
+
+            @ApiParam(value = "Calculate default stats", defaultValue = "false") @QueryParam("defaultStats") boolean defaultStats,
+
             @ApiParam(value = "List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: studies>>biotype;type") @QueryParam("facet") String facet,
             @ApiParam(value = "List of facet ranges separated by semicolons with the format {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1") @QueryParam("facetRange") String facetRange,
             @ApiParam(value = "List of facet intersections separated by semicolons with the format {field_name}:{value1}:{value2}[:{value3}], e.g.: studies:1kG_phase3:EXAC:ESP6500") @QueryParam("facetIntersection") String facetIntersection) {
         try {
             query.remove("study");
+
+            if (defaultStats) {
+                queryOptions.put(QueryOptions.FACET, StringUtils.isNotEmpty(facet) ? defaultFacet + ";" + facet : defaultFacet);
+                queryOptions.put(QueryOptions.FACET_RANGE, StringUtils.isNotEmpty(facet) ? defaultFacetRange + ";" + facet : defaultFacetRange);
+            }
+
             FacetedQueryResult queryResult = catalogManager.getFamilyManager().facet(studyStr, query, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
