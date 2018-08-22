@@ -856,7 +856,6 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                             logger.error("Internal error: Could not find the type of the variable {}:{}", variableSet, key);
                             throw new CatalogDBException("Internal error. Could not find the type of the variable " + variableSet + ":"
                                     + key);
-
                         }
 
                         List<Document> valueList;
@@ -869,7 +868,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
 
                         Document queryDocument = new Document()
                                 .append(AnnotationSetParams.ID.key(), key)
-                                .append(AnnotationSetParams.VARIABLE_SET_ID.key(), Long.parseLong(variableSet));
+                                .append(AnnotationSetParams.VARIABLE_SET_ID.key(), variableTypeMap.getLong(variableSet));
                         queryDocument.putAll(valueList.get(0));
 
                         // Add the query to the document query list

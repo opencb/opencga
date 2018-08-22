@@ -1,7 +1,7 @@
 package org.opencb.opencga.catalog.stats.solr.converters;
 
 import org.apache.commons.collections.map.HashedMap;
-import org.opencb.opencga.catalog.utils.AnnotationUtils;
+import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.OntologyTerm;
 import org.opencb.opencga.core.models.Phenotype;
@@ -14,7 +14,7 @@ import java.util.*;
 public class SolrConverterUtil {
 
 
-    public static Map<String, Object> populateAnnotations(Map<String, Map<String, AnnotationUtils.Type>> variableTypeMap,
+    public static Map<String, Object> populateAnnotations(Map<String, Map<String, QueryParam.Type>> variableTypeMap,
                                                           List<AnnotationSet> annotationSets) {
         Map<String, Object> result = new HashedMap();
         if (annotationSets != null) {
@@ -51,7 +51,7 @@ public class SolrConverterUtil {
         return phenotypesIds;
     }
 
-    public static String type(AnnotationUtils.Type type) {
+    public static String type(QueryParam.Type type) {
         switch (type) {
             case TEXT:
                 return "__s__";
