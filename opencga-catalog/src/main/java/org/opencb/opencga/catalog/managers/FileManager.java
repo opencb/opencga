@@ -39,6 +39,7 @@ import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.monitor.daemons.IndexDaemon;
@@ -1360,7 +1361,11 @@ public class FileManager extends AnnotationSetManager<File> {
                     FileAclEntry.FilePermissions.WRITE);
         }
 
-        checkUpdateParams(parameters);
+        try {
+            ParamUtils.checkAllParametersExist(parameters.keySet().iterator(), (a) -> FileDBAdaptor.UpdateParams.getParam(a) != null);
+        } catch (CatalogParameterException e) {
+            throw new CatalogException("Could not update: " + e.getMessage(), e);
+        }
 
         // We obtain the numeric ids of the samples given
         if (StringUtils.isNotEmpty(parameters.getString(FileDBAdaptor.QueryParams.SAMPLES.key()))) {
@@ -1395,7 +1400,11 @@ public class FileManager extends AnnotationSetManager<File> {
             throw new CatalogException("Cannot modify root folder");
         }
 
-        checkUpdateParams(parameters);
+        try {
+            ParamUtils.checkAllParametersExist(parameters.keySet().iterator(), (a) -> FileDBAdaptor.UpdateParams.getParam(a) != null);
+        } catch (CatalogParameterException e) {
+            throw new CatalogException("Could not update: " + e.getMessage(), e);
+        }
 
         MyResource<File> resource = new MyResource<>(userId, study, file);
         List<VariableSet> variableSetList = checkUpdateAnnotationsAndExtractVariableSets(resource, parameters, options, fileDBAdaptor);
@@ -1406,29 +1415,6 @@ public class FileManager extends AnnotationSetManager<File> {
         auditManager.recordUpdate(AuditRecord.Resource.file, file.getUid(), userId, parameters, null, null);
         userDBAdaptor.updateUserLastModified(ownerId);
         return queryResult;
-    }
-
-    private void checkUpdateParams(ObjectMap parameters) throws CatalogException {
-        for (Map.Entry<String, Object> param : parameters.entrySet()) {
-            FileDBAdaptor.QueryParams queryParam = FileDBAdaptor.QueryParams.getParam(param.getKey());
-            switch (queryParam) {
-                case NAME:
-                case FORMAT:
-                case BIOFORMAT:
-                case DESCRIPTION:
-                case CHECKSUM:
-                case ATTRIBUTES:
-                case STATS:
-                case JOB_UID:
-                case SOFTWARE:
-                case SAMPLES:
-                case ANNOTATION_SETS:
-                case ANNOTATION:
-                    break;
-                default:
-                    throw new CatalogException("Parameter '" + queryParam + "' cannot be changed.");
-            }
-        }
     }
 
     private void removeJobReferences(MyResources<File> resource) throws CatalogException {

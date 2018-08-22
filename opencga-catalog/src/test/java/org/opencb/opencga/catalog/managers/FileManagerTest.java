@@ -465,7 +465,7 @@ public class FileManagerTest extends AbstractManagerTest {
                 ));
         QueryResult<File> update = catalogManager.getFileManager().update(studyFqn, "data/", updateAnnotation, QueryOptions.empty(),
                 sessionIdUser);
-        System.out.println(update.first());
+        assertEquals(2, update.first().getAnnotationSets().size());
     }
 
     @Test

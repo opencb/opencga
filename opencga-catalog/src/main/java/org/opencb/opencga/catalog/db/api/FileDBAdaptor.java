@@ -16,12 +16,15 @@
 
 package org.opencb.opencga.catalog.db.api;
 
+import org.apache.commons.collections.map.LinkedMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.AnnotationSetManager;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.VariableSet;
@@ -88,7 +91,7 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
         NSTATS("nstats", DECIMAL, ""),
 
         ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
-        ANNOTATION("annotation", TEXT_ARRAY, ""),
+        ANNOTATION(Constants.ANNOTATION, TEXT_ARRAY, ""),
 
         DIRECTORY("directory", TEXT, ""),
         STUDY_UID("studyUid", INTEGER_ARRAY, ""),
@@ -134,6 +137,43 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
         }
 
         public static QueryParams getParam(String key) {
+            return map.get(key);
+        }
+    }
+
+    enum UpdateParams {
+        NAME(QueryParams.NAME.key()),
+        FORMAT(QueryParams.FORMAT.key()),
+        BIOFORMAT(QueryParams.BIOFORMAT.key()),
+        CHECKSUM(QueryParams.CHECKSUM.key()),
+        STATS(QueryParams.STATS.key()),
+        DESCRIPTION(QueryParams.DESCRIPTION.key()),
+        JOB_UID(QueryParams.JOB_UID.key()),
+        SOFTWARE(QueryParams.SOFTWARE.key()),
+        SAMPLES(QueryParams.SAMPLES.key()),
+        ATTRIBUTES(QueryParams.ATTRIBUTES.key()),
+        ANNOTATION_SETS(QueryParams.ANNOTATION_SETS.key()),
+        ANNOTATIONS(AnnotationSetManager.ANNOTATIONS);
+
+        private static Map<String, UpdateParams> map;
+        static {
+            map = new LinkedMap();
+            for (UpdateParams params : UpdateParams.values()) {
+                map.put(params.key(), params);
+            }
+        }
+
+        private final String key;
+
+        UpdateParams(String key) {
+            this.key = key;
+        }
+
+        public String key() {
+            return key;
+        }
+
+        public static UpdateParams getParam(String key) {
             return map.get(key);
         }
     }
