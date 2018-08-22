@@ -612,7 +612,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     }
 
     private final String defaultFacet = "creationYear>>creationMonth;status";
-    private final String defaultFacetRange = "numSamples:0:500";
+    private final String defaultFacetRange = "numSamples:0:10:1";
 
     @GET
     @Path("/facet")

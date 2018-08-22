@@ -63,7 +63,7 @@ public class CatalogSolrQueryParser {
         FORMAT("format", TEXT),
         BIOFORMAT("bioformat", TEXT),
         EXTERNAL("external", BOOLEAN),
-        SIZE("size", INTEGER),
+        SIZE("size", LONG),
         SOFTWARE("software", TEXT),
         EXPERIMENT("experiment", TEXT),
         NUM_RELATED_FILES("numRelatedFiles", INTEGER),
@@ -299,26 +299,56 @@ public class CatalogSolrQueryParser {
      * @param solrQuery Solr query
      */
     public void parseSolrFacetRanges(String range, SolrQuery solrQuery) {
-        String[] split = range.split(":");
-        if (split.length != 4) {
-            logger.warn("Facet range '" + range + "' malformed. The expected range format is 'name:start:end:gap'");
-        } else {
-            try {
-                Number start, end, gap;
-                if (("start").equals(split[0])) {
-                    start = Integer.parseInt(split[1]);
-                    end = Integer.parseInt(split[2]);
-                    gap = Integer.parseInt(split[3]);
-                } else {
-                    start = Double.parseDouble(split[1]);
-                    end = Double.parseDouble(split[2]);
-                    gap = Double.parseDouble(split[3]);
+        String[] fields = range.split(";");
+        for (String field : fields) {
+            String[] split = field.split(":");
+            if (split.length != 4) {
+                logger.warn("Facet range '" + range + "' malformed. The expected range format is 'name:start:end:gap'");
+            } else {
+                try {
+                    Number start, end, gap;
+                    QueryParams param = QueryParams.getParam(split[0]);
+                    if (param != null) {
+                        switch (param.type()) {
+                            case LONG:
+                                start = Long.parseLong(split[1]);
+                                end = Long.parseLong(split[2]);
+                                gap = Long.parseLong(split[3]);
+                                break;
+                            case INTEGER:
+                            case INTEGER_ARRAY:
+                                start = Integer.parseInt(split[1]);
+                                end = Integer.parseInt(split[2]);
+                                gap = Integer.parseInt(split[3]);
+                                break;
+                            case DECIMAL:
+                            case DECIMAL_ARRAY:
+                                start = Double.parseDouble(split[1]);
+                                end = Double.parseDouble(split[2]);
+                                gap = Double.parseDouble(split[3]);
+                                break;
+                            default:
+                                logger.warn("Facet range '{}' malformed. Unexpected type {} to perform a facet range.", range,
+                                        param.type());
+                                return;
+                        }
+                    } else {
+                        if (("start").equals(split[0])) {
+                            start = Integer.parseInt(split[1]);
+                            end = Integer.parseInt(split[2]);
+                            gap = Integer.parseInt(split[3]);
+                        } else {
+                            start = Double.parseDouble(split[1]);
+                            end = Double.parseDouble(split[2]);
+                            gap = Double.parseDouble(split[3]);
+                        }
+                    }
+                    // Solr ranges
+                    solrQuery.addNumericRangeFacet(split[0], start, end, gap);
+                } catch (NumberFormatException e) {
+                    logger.warn("Facet range '{}' malformed. Range format is 'name:start:end:gap' where start, end and gap values are "
+                                    + "numbers.", range);
                 }
-                // Solr ranges
-                solrQuery.addNumericRangeFacet(split[0], start, end, gap);
-            } catch (NumberFormatException e) {
-                logger.warn("Facet range '" + range + "' malformed. Range format is 'name:start:end:gap'"
-                        + " where start, end and gap values are numbers.");
             }
         }
     }

@@ -652,7 +652,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     }
 
     private final String defaultFacet = "creationYear>>creationMonth;status;multiplesType;ethnicity;population;lifeStatus;affectationStatus;phenotypes;sex";
-    private final String defaultFacetRange = "numSamples:0:500";
+    private final String defaultFacetRange = "numSamples:0:10:1";
 
     @GET
     @Path("/facet")

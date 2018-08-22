@@ -829,6 +829,7 @@ public class AnnotationUtils {
     public enum Type {
         TEXT,
         TEXT_ARRAY,
+        LONG,
         INTEGER,
         INTEGER_ARRAY,
         DECIMAL,
