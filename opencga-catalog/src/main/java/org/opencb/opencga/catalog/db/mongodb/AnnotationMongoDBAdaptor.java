@@ -31,7 +31,7 @@ import org.opencb.opencga.catalog.db.api.AnnotationSetDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotationConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.managers.AnnotationSetManager;
+import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.Annotable;
@@ -759,7 +759,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
 
             List<Document> documentList = new ArrayList<>();
             for (String annotation : annotationArray) {
-                Matcher matcher = AnnotationSetManager.ANNOTATION_PATTERN.matcher(annotation);
+                Matcher matcher = AnnotationUtils.ANNOTATION_PATTERN.matcher(annotation);
 
                 if (matcher.find()) {
                     // Split the annotation by key - value

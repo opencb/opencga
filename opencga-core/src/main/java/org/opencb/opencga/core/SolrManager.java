@@ -1,4 +1,20 @@
-package org.opencb.opencga.storage.core.variant.search.solr;
+/*
+ * Copyright 2015-2017 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.opencb.opencga.core;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrClient;
@@ -11,7 +27,6 @@ import org.apache.solr.client.solrj.request.CoreStatus;
 import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.common.SolrException;
-import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,14 +72,14 @@ public class SolrManager {
             SolrPing solrPing = new SolrPing();
             SolrPingResponse response = solrPing.process(solrClient, collection);
             return ("OK").equals(response.getResponse().get("status"));
-        } catch (SolrServerException | IOException | SolrException e) {
+        } catch (SolrServerException | IOException | org.apache.solr.common.SolrException e) {
             return false;
         }
     }
 
-    public void create(String dbName, String configSet) throws VariantSearchException {
+    public void create(String dbName, String configSet) throws SolrException {
         if (StringUtils.isEmpty(dbName)) {
-            throw new VariantSearchException("We cannot create a Solr for the empty database '" + dbName + "'");
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "We cannot create a Solr for the empty database '" + dbName + "'");
         }
 
         if (StringUtils.isEmpty(configSet)) {
@@ -92,9 +107,9 @@ public class SolrManager {
      *
      * @param coreName  Core name
      * @param configSet Configuration set name
-     * @throws VariantSearchException Exception
+     * @throws SolrException Exception
      */
-    public void createCore(String coreName, String configSet) throws VariantSearchException {
+    public void createCore(String coreName, String configSet) throws SolrException {
         try {
             logger.debug("Creating core: host={}, core={}, configSet={}", host, coreName, configSet);
             CoreAdminRequest.Create request = new CoreAdminRequest.Create();
@@ -102,7 +117,7 @@ public class SolrManager {
             request.setConfigSet(configSet);
             request.process(solrClient);
         } catch (Exception e) {
-            throw new VariantSearchException(e.getMessage(), e);
+            throw new SolrException(SolrException.ErrorCode.CONFLICT, e);
         }
     }
 
@@ -114,22 +129,22 @@ public class SolrManager {
      *
      * @param collectionName Collection name
      * @param configSet      Configuration name
-     * @throws VariantSearchException Exception
+     * @throws SolrException Exception
      */
-    public void createCollection(String collectionName, String configSet) throws VariantSearchException {
+    public void createCollection(String collectionName, String configSet) throws SolrException {
         logger.debug("Creating collection: host={}, collection={}, config={}, numShards={}, numReplicas={}",
                 host, collectionName, configSet, 1, 1);
         try {
             CollectionAdminRequest request = CollectionAdminRequest.createCollection(collectionName, configSet, 1, 1);
             request.process(solrClient);
         } catch (Exception e) {
-            throw new VariantSearchException(e.getMessage(), e);
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }
     }
 
-    public boolean exists(String dbName) throws VariantSearchException {
+    public boolean exists(String dbName) throws SolrException {
         if (StringUtils.isEmpty(dbName)) {
-            throw new VariantSearchException("We cannot check if Solr database exists '" + dbName + "'");
+            throw new SolrException(SolrException.ErrorCode.CONFLICT,"We cannot check if Solr database exists '" + dbName + "'");
         }
 
         if (StringUtils.isNotEmpty(mode)) {
@@ -173,9 +188,9 @@ public class SolrManager {
      *
      * @param collectionName Collection name
      * @return True or false
-     * @throws VariantSearchException VariantSearchException
+     * @throws SolrException SolrException
      */
-    public boolean existsCollection(String collectionName) throws VariantSearchException {
+    public boolean existsCollection(String collectionName) throws SolrException {
         try {
             List<String> collections = CollectionAdminRequest.listCollections(solrClient);
             for (String collection : collections) {
@@ -184,8 +199,8 @@ public class SolrManager {
                 }
             }
             return false;
-        } catch (SolrServerException | IOException e) {
-            throw new VariantSearchException(e.getMessage(), e);
+        } catch (Exception e) {
+            throw new SolrException(SolrException.ErrorCode.CONFLICT, e);
         }
     }
 
@@ -193,9 +208,9 @@ public class SolrManager {
      * Remove a given collection or core.
      *
      * @param dbName Collection name
-     * @throws VariantSearchException VariantSearchException
+     * @throws SolrException SolrException
      */
-    public void remove(String dbName) throws VariantSearchException {
+    public void remove(String dbName) throws SolrException {
         if (isCloud()) {
             removeCollection(dbName);
         } else {
@@ -207,14 +222,14 @@ public class SolrManager {
      * Remove a collection.
      *
      * @param collectionName Collection name
-     * @throws VariantSearchException VariantSearchException
+     * @throws SolrException SolrException
      */
-    public void removeCollection(String collectionName) throws VariantSearchException {
+    public void removeCollection(String collectionName) throws SolrException {
         try {
             CollectionAdminRequest request = CollectionAdminRequest.deleteCollection(collectionName);
             request.process(solrClient);
         } catch (SolrServerException | IOException e) {
-            throw new VariantSearchException(e.getMessage(), e);
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
         }
     }
 
@@ -222,13 +237,13 @@ public class SolrManager {
      * Remove a core.
      *
      * @param coreName Core name
-     * @throws VariantSearchException VariantSearchException
+     * @throws SolrException SolrException
      */
-    public void removeCore(String coreName) throws VariantSearchException {
+    public void removeCore(String coreName) throws SolrException {
         try {
             CoreAdminRequest.unloadCore(coreName, true, true, solrClient);
         } catch (SolrServerException | IOException e) {
-            throw new VariantSearchException(e.getMessage(), e);
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
         }
     }
 

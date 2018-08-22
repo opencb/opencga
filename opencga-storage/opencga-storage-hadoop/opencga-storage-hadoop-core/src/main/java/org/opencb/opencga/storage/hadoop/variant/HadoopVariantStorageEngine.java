@@ -29,6 +29,7 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.io.compress.Compression.Algorithm;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.solr.common.SolrException;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantType;
@@ -41,7 +42,6 @@ import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
-import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
@@ -133,19 +133,27 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     // Merge variants operation status. Skip merge and run post-load/post-merge step if status is DONE
     public static final String HADOOP_LOAD_VARIANT_STATUS = "hadoop.load.variant.status";
     //Other files to be loaded from Archive to Variant
-    @Deprecated public static final String HADOOP_LOAD_VARIANT_PENDING_FILES = "opencga.storage.hadoop.load.pending.files";
+    @Deprecated
+    public static final String HADOOP_LOAD_VARIANT_PENDING_FILES = "opencga.storage.hadoop.load.pending.files";
     public static final String INTERMEDIATE_HDFS_DIRECTORY = "opencga.storage.hadoop.intermediate.hdfs.directory";
 
     public static final String HADOOP_LOAD_ARCHIVE_BATCH_SIZE = "hadoop.load.archive.batch.size";
     public static final String HADOOP_LOAD_VARIANT_BATCH_SIZE = "hadoop.load.variant.batch.size";
-    @Deprecated public static final String HADOOP_LOAD_DIRECT = "hadoop.load.direct";
-    @Deprecated public static final boolean HADOOP_LOAD_DIRECT_DEFAULT = true;
+    @Deprecated
+    public static final String HADOOP_LOAD_DIRECT = "hadoop.load.direct";
+    @Deprecated
+    public static final boolean HADOOP_LOAD_DIRECT_DEFAULT = true;
 
-    @Deprecated public static final String MERGE_ARCHIVE_SCAN_BATCH_SIZE = "opencga.storage.hadoop.hbase.merge.archive.scan.batchsize";
-    @Deprecated public static final int DEFAULT_MERGE_ARCHIVE_SCAN_BATCH_SIZE = 500;
-    @Deprecated public static final String MERGE_COLLAPSE_DELETIONS      = "opencga.storage.hadoop.hbase.merge.collapse-deletions";
-    @Deprecated public static final boolean DEFAULT_MERGE_COLLAPSE_DELETIONS = false;
-    @Deprecated public static final String MERGE_LOAD_SPECIFIC_PUT       = "opencga.storage.hadoop.hbase.merge.use_specific_put";
+    @Deprecated
+    public static final String MERGE_ARCHIVE_SCAN_BATCH_SIZE = "opencga.storage.hadoop.hbase.merge.archive.scan.batchsize";
+    @Deprecated
+    public static final int DEFAULT_MERGE_ARCHIVE_SCAN_BATCH_SIZE = 500;
+    @Deprecated
+    public static final String MERGE_COLLAPSE_DELETIONS = "opencga.storage.hadoop.hbase.merge.collapse-deletions";
+    @Deprecated
+    public static final boolean DEFAULT_MERGE_COLLAPSE_DELETIONS = false;
+    @Deprecated
+    public static final String MERGE_LOAD_SPECIFIC_PUT = "opencga.storage.hadoop.hbase.merge.use_specific_put";
 
     //upload HBase jars and jars for any of the configured job classes via the distributed cache (tmpjars).
     public static final String MAPREDUCE_ADD_DEPENDENCY_JARS = "opencga.mapreduce.addDependencyJars";
@@ -379,7 +387,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public VariantSearchLoadResult searchIndex(Query query, QueryOptions queryOptions, boolean overwrite)
-            throws StorageEngineException, IOException, VariantSearchException {
+            throws StorageEngineException, IOException, SolrException {
         queryOptions = queryOptions == null ? new QueryOptions() : new QueryOptions(queryOptions);
         queryOptions.putIfAbsent(VariantHadoopDBAdaptor.NATIVE, true);
         return super.searchIndex(query, queryOptions, overwrite);
@@ -1008,10 +1016,10 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
      * Intersect result of column hbase scan and full phoenix query.
      * Use {@link org.opencb.opencga.storage.core.variant.adaptors.iterators.MultiVariantDBIterator}.
      *
-     * @param query     Query
-     * @param options   Options
-     * @param iterator  Shall the resulting object be an iterator instead of a QueryResult
-     * @return          QueryResult or Iterator with the variants that matches the query
+     * @param query    Query
+     * @param options  Options
+     * @param iterator Shall the resulting object be an iterator instead of a QueryResult
+     * @return QueryResult or Iterator with the variants that matches the query
      * @throws StorageEngineException StorageEngineException
      */
     private Object getOrIteratorHBaseColumnIntersect(Query query, QueryOptions options, boolean iterator) throws StorageEngineException {

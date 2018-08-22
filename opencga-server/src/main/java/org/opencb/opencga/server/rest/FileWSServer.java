@@ -26,6 +26,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.result.FacetedQueryResult;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
@@ -1041,7 +1042,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
             @ApiParam(value = "Job id that created the file(s) or folder(s)") @QueryParam("job.id") String jobId,
             @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)") @QueryParam("attributes") String attributes,
-            @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)")  @QueryParam("nattributes") String nattributes,
+            @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)") @QueryParam("nattributes") String nattributes,
             @ApiParam(value = "Release value") @QueryParam("release") String release) {
         try {
             query.remove("study");
@@ -1235,6 +1236,53 @@ public class FileWSServer extends OpenCGAWSServer {
             List<File> scan = new FileScanner(catalogManager)
                     .scan(resource.getResource(), null, FileScanner.FileScannerPolicy.REPLACE, calculateChecksum, false, sessionId);
             return createOkResponse(new QueryResult<>("Scan", 0, scan.size(), scan.size(), "", "", scan));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    private final String defaultFacet = "creationYear>>creationMonth;format;bioformat;format>>bioformat;status";
+    private final String defaultFacetRange = "size:0:214748364800:10737418240;numSamples:0:10:1";
+
+    @GET
+    @Path("/facet")
+    @ApiOperation(value = "Fetch catalog sample facets", position = 15, response = QueryResponse.class)
+    public Response getFacets(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                @QueryParam("study") String studyStr,
+            @ApiParam(value = "Name") @QueryParam("name") String name,
+            @ApiParam(value = "Type") @QueryParam("type") String type,
+            @ApiParam(value = "Format") @QueryParam("format") String format,
+            @ApiParam(value = "Bioformat") @QueryParam("bioformat") String bioformat,
+            @ApiParam(value = "Creation year") @QueryParam("creationYear") String creationYear,
+            @ApiParam(value = "Creation month (JANUARY, FEBRUARY...)") @QueryParam("creationMonth") String creationMonth,
+            @ApiParam(value = "Creation day") @QueryParam("creationDay") String creationDay,
+            @ApiParam(value = "Creation day of week (MONDAY, TUESDAY...)") @QueryParam("creationDayOfWeek") String creationDayOfWeek,
+            @ApiParam(value = "Status") @QueryParam("status") String status,
+            @ApiParam(value = "Release") @QueryParam("release") String release,
+            @ApiParam(value = "External") @QueryParam("external") Boolean external,
+            @ApiParam(value = "Size") @QueryParam("size") String size,
+            @ApiParam(value = "Software") @QueryParam("software") String software,
+            @ApiParam(value = "Experiment") @QueryParam("experiment") String experiment,
+            @ApiParam(value = "Number of samples") @QueryParam("numSamples") String numSamples,
+            @ApiParam(value = "Number of related files") @QueryParam("numRelatedFiles") String numRelatedFiles,
+            @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
+
+            @ApiParam(value = "Calculate default stats", defaultValue = "false") @QueryParam("defaultStats") boolean defaultStats,
+
+            @ApiParam(value = "List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: studies>>biotype;type") @QueryParam("facet") String facet,
+            @ApiParam(value = "List of facet ranges separated by semicolons with the format {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1") @QueryParam("facetRange") String facetRange,
+            @ApiParam(value = "List of facet intersections separated by semicolons with the format {field_name}:{value1}:{value2}[:{value3}], e.g.: studies:1kG_phase3:EXAC:ESP6500") @QueryParam("facetIntersection") String facetIntersection) {
+        try {
+            query.remove("study");
+
+            if (defaultStats) {
+                queryOptions.put(QueryOptions.FACET, StringUtils.isNotEmpty(facet) ? defaultFacet + ";" + facet : defaultFacet);
+                queryOptions.put(QueryOptions.FACET_RANGE, StringUtils.isNotEmpty(facet) ? defaultFacetRange + ";" + facet : defaultFacetRange);
+            }
+
+            FacetedQueryResult queryResult = catalogManager.getFileManager().facet(studyStr, query, queryOptions, sessionId);
+            return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }

@@ -80,6 +80,8 @@ public class SampleMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
 //            }
 //        }
 
+        addAclInformation(next, options);
+
         if (converter != null) {
             return (E) converter.convertToDataModelType(next, options);
         } else {

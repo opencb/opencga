@@ -73,14 +73,14 @@ public class CatalogSampleAnnotationsLoader {
             variableSet = catalogManager.getStudyManager().getVariableSet(study.getFqn(), variableSetId, null, sessionId).first();
         } else {
             variableSet = getVariableSetFromPedFile(ped);
-            CatalogAnnotationsValidator.checkVariableSet(variableSet);
+            AnnotationUtils.checkVariableSet(variableSet);
         }
 
         //Check VariableSet for all samples
         for (Individual individual : ped.getIndividuals().values()) {
             Map<String, Object> annotation = getAnnotation(individual, sampleMap, variableSet, ped.getFields());
             try {
-                CatalogAnnotationsValidator.checkAnnotationSet(variableSet, new AnnotationSet("", variableSet.getId(), annotation, "", 1,
+                AnnotationUtils.checkAnnotationSet(variableSet, new AnnotationSet("", variableSet.getId(), annotation, "", 1,
                         null), null, true);
             } catch (CatalogException e) {
                 String message = "Validation with the variableSet {id: " + variableSetId + "} over ped File = {path: " + pedFile.getPath()
