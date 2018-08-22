@@ -50,9 +50,11 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.LOADED_GENOTYPES;
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.SEARCH_INDEX_LAST_TIMESTAMP;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.DEFAULT_GENOTYPE;
+import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.INDEX_FIELD;
 
 /**
  * Created on 31/03/17.
@@ -459,6 +461,17 @@ public class VariantMongoDBQueryParser {
                                     throw new IllegalArgumentException("Unsupported operator '" + op + "'");
                             }
                         });
+            }
+
+            if (isValidParam(query, VARIANTS_TO_INDEX)) {
+                long ts = studyConfigurationManager.getProjectMetadata().first().getAttributes()
+                        .getLong(SEARCH_INDEX_LAST_TIMESTAMP.key());
+                if (ts > 0) {
+                    String key = INDEX_FIELD + '.' + DocumentToVariantConverter.INDEX_TIMESTAMP_FIELD;
+                    builder.or(
+                            QueryBuilder.start(key).greaterThan(ts).get(),
+                            QueryBuilder.start(key).exists(false).get()); // It may not exist from versions <1.4.x
+                } // Otherwise, get all variants
             }
         }
     }
@@ -896,6 +909,7 @@ public class VariantMongoDBQueryParser {
             returnedFields.add(VariantField.STUDIES_STUDY_ID);
         }
 
+
         // Top level $elemMatch MUST be at the very beginning in the projection document, so all the fields apply correctly.
         //
         // This two queries return different values:
@@ -959,6 +973,10 @@ public class VariantMongoDBQueryParser {
                     logger.warn("Unknown include field: {}", s);
                 }
             }
+        }
+
+        if (query.getBoolean(VARIANTS_TO_INDEX.key(), false)) {
+            projection.putIfAbsent(INDEX_FIELD, 1);
         }
 
         logger.debug("QueryOptions: = {}", options.toJson());

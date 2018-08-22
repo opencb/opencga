@@ -36,16 +36,18 @@ public class VariantAnnotationDBWriter implements Task<VariantAnnotation, Object
     protected final VariantDBAdaptor dbAdaptor;
     protected final QueryOptions options;
     private ProgressLogger progressLogger;
+    private final long timestamp;
 
     public VariantAnnotationDBWriter(VariantDBAdaptor dbAdaptor, QueryOptions options, ProgressLogger progressLogger) {
         this.dbAdaptor = dbAdaptor;
         this.options = options;
         this.progressLogger = progressLogger;
+        timestamp = System.currentTimeMillis();
     }
 
     @Override
     public List<Object> apply(List<VariantAnnotation> list) throws IOException {
-        QueryResult queryResult = dbAdaptor.updateAnnotations(list, options);
+        QueryResult queryResult = dbAdaptor.updateAnnotations(list, timestamp, options);
         logUpdate(list);
         return queryResult.getResult();
     }

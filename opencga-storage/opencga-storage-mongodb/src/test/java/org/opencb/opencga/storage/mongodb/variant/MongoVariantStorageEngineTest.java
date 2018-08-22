@@ -578,7 +578,8 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
                 .append(MongoDBVariantOptions.COLLECTION_FILES.key(), MongoDBVariantOptions.COLLECTION_FILES.defaultValue() + collectionSufix)
                 .append(MongoDBVariantOptions.COLLECTION_STAGE.key(), MongoDBVariantOptions.COLLECTION_STAGE.defaultValue() + collectionSufix)
                 .append(MongoDBVariantOptions.COLLECTION_ANNOTATION.key(), MongoDBVariantOptions.COLLECTION_ANNOTATION.defaultValue() + collectionSufix)
-                .append(MongoDBVariantOptions.COLLECTION_VARIANTS.key(), MongoDBVariantOptions.COLLECTION_VARIANTS.defaultValue() + collectionSufix);
+                .append(MongoDBVariantOptions.COLLECTION_VARIANTS.key(), MongoDBVariantOptions.COLLECTION_VARIANTS.defaultValue() + collectionSufix)
+                .append(MongoDBVariantOptions.COLLECTION_TRASH.key(), MongoDBVariantOptions.COLLECTION_TRASH.defaultValue() + collectionSufix);
 
         variantStorageEngine.getOptions().putAll(renameCollections);
         return variantStorageEngine;
@@ -589,15 +590,16 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
     }
 
     public long compareCollections(MongoDBCollection expectedCollection, MongoDBCollection actualCollection, Function<Document, Document> map) {
-        QueryOptions sort = new QueryOptions(QueryOptions.SORT, Sorts.ascending("_id"));
+        QueryOptions options = new QueryOptions(QueryOptions.SORT, Sorts.ascending("_id"))
+                .append(QueryOptions.EXCLUDE, DocumentToVariantConverter.INDEX_FIELD);
 
         System.out.println("Comparing " + expectedCollection + " vs " + actualCollection);
         assertNotEquals(expectedCollection.toString(), actualCollection.toString());
         assertEquals(expectedCollection.count().first(), actualCollection.count().first());
         assertNotEquals(0L, expectedCollection.count().first().longValue());
 
-        Iterator<Document> actualIterator = actualCollection.nativeQuery().find(new Document(), sort).iterator();
-        Iterator<Document> expectedIterator = expectedCollection.nativeQuery().find(new Document(), sort).iterator();
+        Iterator<Document> actualIterator = actualCollection.nativeQuery().find(new Document(), options).iterator();
+        Iterator<Document> expectedIterator = expectedCollection.nativeQuery().find(new Document(), options).iterator();
 
         long c = 0;
         while (actualIterator.hasNext() && expectedIterator.hasNext()) {
@@ -628,7 +630,6 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
                 .append(MongoDBVariantOptions.STAGE.key(), true)
                 .append(MongoDBVariantOptions.MERGE.key(), false), false, false, true);
     }
-
 
     @Test
     public void stageAlreadyMergedFileTest() throws Exception {

@@ -20,15 +20,12 @@ import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
-import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrResourceLoader;
 import org.junit.rules.ExternalResource;
+import org.opencb.opencga.core.SolrManager;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.search.solr.SolrManager;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 
 import java.io.File;
@@ -44,18 +41,18 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.*;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class SolrExternalResource extends ExternalResource {
+public class VariantSolrExternalResource extends ExternalResource {
 
     public String coreName = DB_NAME;
 
     private SolrClient solrClient;
     protected boolean embeded = true;
 
-    public SolrExternalResource() {
+    public VariantSolrExternalResource() {
         this(true);
     }
 
-    public SolrExternalResource(boolean embeded) {
+    public VariantSolrExternalResource(boolean embeded) {
         this.embeded = embeded;
     }
 
@@ -68,7 +65,7 @@ public class SolrExternalResource extends ExternalResource {
         String confFolder = VariantSearchManager.CONF_SET;
         // Copy configuration
         getResourceUri("configsets/variantsCollection/solrconfig.xml", "configsets/" + confFolder + "/solrconfig.xml");
-        getResourceUri("solr/variant/managed-schema", "configsets/" + confFolder + "/managed-schema");
+        getResourceUri("solr/variant/managed-schema", "configsets/" + confFolder + "/solr/file-managed-schema.xml");
         getResourceUri("configsets/variantsCollection/params.json", "configsets/" + confFolder + "/params.json");
         getResourceUri("configsets/variantsCollection/protwords.txt", "configsets/" + confFolder + "/protwords.txt");
         getResourceUri("configsets/variantsCollection/stopwords.txt", "configsets/" + confFolder + "/stopwords.txt");
@@ -117,7 +114,8 @@ public class SolrExternalResource extends ExternalResource {
         variantStorageEngine.getConfiguration().getSearch().setMode("core");
         variantStorageEngine.getConfiguration().getSearch().setActive(true);
         VariantSearchManager variantSearchManager = variantStorageEngine.getVariantSearchManager();
-        variantSearchManager.setSolrClient(getSolrClient());
+        variantSearchManager.setSolrManager(new SolrManager(solrClient, "localhost", "core",
+                variantStorageEngine.getConfiguration().getSearch().getTimeout()));
         return variantSearchManager;
     }
 

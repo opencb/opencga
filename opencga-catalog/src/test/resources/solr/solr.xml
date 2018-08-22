@@ -1,0 +1,9 @@
+<solr persistent="true" sharedLib="lib">
+    <cores adminPath="/admin/cores">
+        <core name="OpenCGACatalogCohortConfSet" instanceDir="OpenCGACatalogCohortConfSet" />
+        <core name="OpenCGACatalogSampleConfSet" instanceDir="OpenCGACatalogSampleConfSet" />
+        <core name="OpenCGACatalogIndividualConfSet" instanceDir="OpenCGACatalogIndividualConfSet" />
+        <core name="OpenCGACatalogFileConfSet" instanceDir="OpenCGACatalogFileConfSet" />
+        <core name="OpenCGACatalogFamilyConfSet" instanceDir="OpenCGACatalogFamilyConfSet" />
+    </cores>
+</solr>

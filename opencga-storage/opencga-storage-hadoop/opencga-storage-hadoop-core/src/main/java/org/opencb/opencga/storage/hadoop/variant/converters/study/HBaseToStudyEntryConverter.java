@@ -47,7 +47,6 @@ import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKey
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -190,7 +189,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                     String[] split = columnName.split(VariantPhoenixHelper.COLUMN_KEY_SEPARATOR_STR);
                     Integer studyId = getStudyId(split);
                     Integer sampleId = getSampleId(split);
-                    Array value = resultSet.getArray(i);
+                    PhoenixArray value = (PhoenixArray) resultSet.getArray(i);
                     if (value != null) {
                         List<String> sampleData = toModifiableList(value);
                         studies.add(studyId);
@@ -260,7 +259,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 String[] split = columnName.split(VariantPhoenixHelper.COLUMN_KEY_SEPARATOR_STR);
                 Integer studyId = getStudyId(split);
                 Integer sampleId = getSampleId(split);
-                Array array = (Array) PVarcharArray.INSTANCE.toObject(bytes);
+                PhoenixArray array = (PhoenixArray) PVarcharArray.INSTANCE.toObject(bytes);
                 List<String> sampleData = toModifiableList(array);
                 studies.add(studyId);
                 sampleDataMap.computeIfAbsent(studyId, s -> new ArrayList<>()).add(Pair.of(sampleId, sampleData));

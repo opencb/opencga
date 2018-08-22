@@ -23,10 +23,12 @@ import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AnnotationCommandExecutor;
+import org.opencb.opencga.app.cli.main.options.CohortCommandOptions;
 import org.opencb.opencga.app.cli.main.options.FamilyCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.Family;
 import org.opencb.opencga.core.models.acls.permissions.FamilyAclEntry;
 
@@ -64,6 +66,9 @@ public class FamilyCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "search":
                 queryResponse = search();
+                break;
+            case "facet":
+                queryResponse = facet();
                 break;
 //            case "update":
 //                queryResponse = update();
@@ -165,6 +170,32 @@ public class FamilyCommandExecutor extends OpencgaCommandExecutor {
 
             return openCGAClient.getFamilyClient().search(query, queryOptions);
         }
+    }
+
+    private QueryResponse facet() throws IOException {
+        logger.debug("Family facets");
+
+        FamilyCommandOptions.FacetCommandOptions commandOptions = familyCommandOptions.facetCommandOptions;
+
+        Query query = new Query();
+        query.putIfNotEmpty("creationYear", commandOptions.creationYear);
+        query.putIfNotEmpty("creationMonth", commandOptions.creationMonth);
+        query.putIfNotEmpty("creationDay", commandOptions.creationDay);
+        query.putIfNotEmpty("creationDayOfWeek", commandOptions.creationDayOfWeek);
+        query.putIfNotEmpty("phenotypes", commandOptions.phenotypes);
+        query.putIfNotEmpty("status", commandOptions.status);
+        query.putIfNotEmpty("numMembers", commandOptions.numMembers);
+        query.putIfNotEmpty("release", commandOptions.release);
+        query.putIfNotEmpty("version", commandOptions.version);
+        query.putIfNotEmpty("expectedSize", commandOptions.expectedSize);
+        query.putIfNotEmpty(Constants.ANNOTATION, commandOptions.annotation);
+
+        QueryOptions options = new QueryOptions();
+        options.put("defaultStats", commandOptions.defaultStats);
+        options.putIfNotNull("facet", commandOptions.facet);
+        options.putIfNotNull("facetRange", commandOptions.facetRange);
+
+        return openCGAClient.getFamilyClient().facet(commandOptions.study, query, options);
     }
 
 //

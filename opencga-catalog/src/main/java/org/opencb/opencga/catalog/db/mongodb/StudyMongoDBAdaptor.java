@@ -718,7 +718,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         QueryResult<UpdateResult> queryResult = studyCollection.update(bsonQuery, update, null);
         if (queryResult.first().getModifiedCount() != 1) {
             throw new CatalogDBException("Remove field from Variable Set. Could not remove the field " + name
-                    + " from the variableSet id " +  variableSetId);
+                    + " from the variableSet id " + variableSetId);
         }
 
         // Remove all the annotations from that field
@@ -742,8 +742,9 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     /**
      * Checks if the variable given is present in the variableSet.
+     *
      * @param variableSet Variable set.
-     * @param variableId VariableId that will be checked.
+     * @param variableId  VariableId that will be checked.
      * @throws CatalogDBException when the variableId is not present in the variableSet.
      */
     private void checkVariableInVariableSet(VariableSet variableSet, String variableId) throws CatalogDBException {
@@ -755,8 +756,9 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     /**
      * Checks if the variable given is not present in the variableSet.
+     *
      * @param variableSet Variable set.
-     * @param variableId VariableId that will be checked.
+     * @param variableId  VariableId that will be checked.
      * @throws CatalogDBException when the variableId is present in the variableSet.
      */
     private void checkVariableNotInVariableSet(VariableSet variableSet, String variableId) throws CatalogDBException {
@@ -1502,7 +1504,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     @Override
     public DBIterator<Study> iterator(Query query, QueryOptions options) throws CatalogDBException {
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
-        return new StudyMongoDBIterator<>(mongoCursor, studyConverter);
+        return new StudyMongoDBIterator<>(mongoCursor, options, studyConverter);
     }
 
     @Override
@@ -1510,7 +1512,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
         MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions);
-        return new StudyMongoDBIterator<>(mongoCursor);
+        return new StudyMongoDBIterator<>(mongoCursor, options);
     }
 
     @Override
@@ -1518,7 +1520,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             throws CatalogDBException, CatalogAuthorizationException {
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
         Function<Document, Boolean> iteratorFilter = (d) -> checkCanViewStudy(d, user);
-        return new StudyMongoDBIterator<>(mongoCursor, studyConverter, iteratorFilter);
+        return new StudyMongoDBIterator<>(mongoCursor, options, studyConverter, iteratorFilter);
     }
 
     @Override
@@ -1528,7 +1530,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         queryOptions.put(NATIVE_QUERY, true);
         MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions);
         Function<Document, Boolean> iteratorFilter = (d) -> checkCanViewStudy(d, user);
-        return new StudyMongoDBIterator<Document>(mongoCursor, iteratorFilter);
+        return new StudyMongoDBIterator<Document>(mongoCursor, options, iteratorFilter);
     }
 
     private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {
@@ -1651,8 +1653,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                                 && query.getString(QueryParams.ID.key()).equals(query.getString(QueryParams.ALIAS.key()))) {
                             if (!idOrAliasFlag) {
                                 List<Document> orList = Arrays.asList(
-                                    new Document(QueryParams.ID.key(), query.getString(QueryParams.ID.key())),
-                                    new Document(QueryParams.ALIAS.key(), query.getString(QueryParams.ALIAS.key()))
+                                        new Document(QueryParams.ID.key(), query.getString(QueryParams.ID.key())),
+                                        new Document(QueryParams.ALIAS.key(), query.getString(QueryParams.ALIAS.key()))
                                 );
                                 andBsonList.add(new Document("$or", orList));
                                 idOrAliasFlag = true;

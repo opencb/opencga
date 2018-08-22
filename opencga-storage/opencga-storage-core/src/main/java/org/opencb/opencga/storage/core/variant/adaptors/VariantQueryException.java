@@ -74,6 +74,11 @@ public class VariantQueryException extends IllegalArgumentException {
         return new VariantQueryException("Unable to mix AND (" + AND + ") and OR (" + OR + ") in the same query.");
     }
 
+    public static VariantQueryException mixedAndOrOperators(VariantQueryParam param1, VariantQueryParam param2) {
+        return new VariantQueryException("Unable to mix AND (" + AND + ") and OR (" + OR + ") across filters "
+                + "\"" + param1.key() + "\" and \"" + param2.key() + "\".");
+    }
+
     public static VariantQueryException mixedAndOrOperators(VariantQueryParam param, String value) {
         return VariantQueryException.malformedParam(param, value, "Unable to mix AND (" + AND + ") and OR (" + OR + ") in the same query.");
     }

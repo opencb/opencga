@@ -72,6 +72,8 @@ public class CohortMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
             next.put(CohortDBAdaptor.QueryParams.SAMPLES.key(), sampleList);
         }
 
+        addAclInformation(next, options);
+
         if (converter != null) {
             return (E) converter.convertToDataModelType(next, options);
         } else {

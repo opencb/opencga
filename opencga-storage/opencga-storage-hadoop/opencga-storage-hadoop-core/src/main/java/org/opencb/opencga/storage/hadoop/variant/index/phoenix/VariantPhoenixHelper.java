@@ -122,7 +122,11 @@ public class VariantPhoenixHelper {
         CADD_SCALED(FUNCTIONAL_SCORE_PREFIX + "CADD_SC", PFloat.INSTANCE),
         CADD_RAW(FUNCTIONAL_SCORE_PREFIX + "CADD_R", PFloat.INSTANCE),
 
-        FULL_ANNOTATION(ANNOTATION_PREFIX + "FULL", PVarchar.INSTANCE);
+        FULL_ANNOTATION(ANNOTATION_PREFIX + "FULL", PVarchar.INSTANCE),
+
+        INDEX_NOT_SYNC("_IDX_N", PBoolean.INSTANCE),
+        INDEX_UNKNOWN("_IDX_U", PBoolean.INSTANCE),
+        INDEX_STUDIES("_IDX_ST_", PIntegerArray.INSTANCE);
 
         private final String columnName;
         private final byte[] columnNameBytes;
@@ -384,10 +388,10 @@ public class VariantPhoenixHelper {
             switch (variantColumn) {
                 case CHROMOSOME:
                 case POSITION:
-                    sb.append(' ').append(variantColumn).append(' ').append(variantColumn.sqlType()).append(" NOT NULL , ");
+                    sb.append(" \"").append(variantColumn).append("\" ").append(variantColumn.sqlType()).append(" NOT NULL , ");
                     break;
                 default:
-                    sb.append(' ').append(variantColumn).append(' ').append(variantColumn.sqlType()).append(" , ");
+                    sb.append(" \"").append(variantColumn).append("\" ").append(variantColumn.sqlType()).append(" , ");
                     break;
             }
         }

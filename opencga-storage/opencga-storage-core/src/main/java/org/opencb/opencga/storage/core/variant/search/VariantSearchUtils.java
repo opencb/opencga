@@ -135,6 +135,10 @@ public class VariantSearchUtils {
         for (VariantQueryParam uncoveredParam : uncoveredParams) {
             searchEngineQuery.remove(uncoveredParam.key());
         }
+        searchEngineQuery.put(INCLUDE_SAMPLE.key(), NONE);
+        searchEngineQuery.put(INCLUDE_FILE.key(), NONE);
+        searchEngineQuery.put(INCLUDE_FORMAT.key(), NONE);
+        searchEngineQuery.put(INCLUDE_GENOTYPE.key(), false);
         return searchEngineQuery;
     }
 
@@ -268,7 +272,7 @@ public class VariantSearchUtils {
                 }
                 if (isValidParam(query, VariantQueryParam.INCLUDE_SAMPLE)) {
                     String value = query.getString(VariantQueryParam.INCLUDE_SAMPLE.key());
-                    if (!value.equals(VariantQueryUtils.NONE)) {
+                    if (!NONE.equals(value)) {
                         samples.addAll(splitValue(value).getValue());
                     }
                 }
@@ -304,7 +308,10 @@ public class VariantSearchUtils {
                 if (isValidParam(query, VariantQueryParam.FILE)) {
                     files.addAll(splitValue(query.getString(VariantQueryParam.FILE.key())).getValue());
                 } else if (isValidParam(query, VariantQueryParam.INCLUDE_FILE)) {
-                    files.addAll(splitValue(query.getString(VariantQueryParam.INCLUDE_FILE.key())).getValue());
+                    String value = query.getString(VariantQueryParam.INCLUDE_FILE.key());
+                    if (!NONE.equals(value)) {
+                        files.addAll(splitValue(value).getValue());
+                    }
                 }
 
                 for (String file : files) {

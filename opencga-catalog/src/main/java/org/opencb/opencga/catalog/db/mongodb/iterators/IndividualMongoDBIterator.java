@@ -58,6 +58,8 @@ public class IndividualMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
             next = filter.apply(next);
         }
 
+        addAclInformation(next, options);
+
         if (converter != null) {
             return (E) converter.convertToDataModelType(next, options);
         } else {

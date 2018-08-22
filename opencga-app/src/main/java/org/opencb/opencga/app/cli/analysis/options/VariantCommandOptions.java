@@ -150,6 +150,12 @@ public class VariantCommandOptions {
         @Parameter(names = {"--sample"}, description = "Samples to index."
                 + " If provided, all sample data will be added to the secondary index.", arity = 1)
         public String sample;
+
+        @Parameter(names = {"--cohort"}, description = VariantQueryParam.COHORT_DESCR, arity = 1)
+        public String cohort;
+
+        @Parameter(names = {"--overwrite"}, description = "Overwrite search index for all files and variants. Repeat operation for already processed variants.")
+        public boolean overwrite;
     }
 
     @Parameters(commandNames = {SECONDARY_INDEX_REMOVE_COMMAND}, commandDescription = "Remove a secondary index from the search engine")

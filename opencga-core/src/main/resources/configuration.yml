@@ -2,7 +2,7 @@
 logLevel: "INFO"
 logFile: null
 
-openRegister: false
+openRegister: true
 userDefaultQuota: 200000
 
 databasePrefix: ${OPENCGA.DB.PREFIX}
@@ -62,6 +62,13 @@ catalog:
     options:
       authenticationDatabase: ${OPENCGA.CATALOG.DB.AUTHENTICATION_DATABASE}
       connectionsPerHost: ${OPENCGA.CATALOG.DB.CONNECTIONS_PER_HOST}
+  search:   ## Solr configuration, by default is the same than storage
+    host: ${OPENCGA.CATALOG.SEARCH.HOST}
+    mode: "cloud"
+    user: ""
+    password: ""
+    timeout: ${OPENCGA.CATALOG.SEARCH.TIMEOUT}
+    insertBatchSize: ${OPENCGA.CATALOG.SEARCH.BATCH}
 
 authentication:
   # Session expiration time in seconds

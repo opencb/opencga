@@ -47,6 +47,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.utils.Constants.FLATTENED_ANNOTATIONS;
+
 
 @Path("/{apiVersion}/studies")
 @Produces(MediaType.APPLICATION_JSON)
@@ -388,7 +390,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response updateGroupPOST(
             @ApiParam(value = "Study [[user@]project:]study") @PathParam("study") String studyStr,
             @ApiParam(value = "Action to be performed: ADD or REMOVE a group", defaultValue = "ADD", required = true)
-                @QueryParam("action") ParamUtils.BasicUpdateAction action,
+            @QueryParam("action") ParamUtils.BasicUpdateAction action,
             @ApiParam(value = "JSON containing the parameters", required = true) GroupCreateParams params) {
         try {
             if (action == null) {
@@ -413,7 +415,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study") @PathParam("study") String studyStr,
             @ApiParam(value = "Group name") @PathParam("group") String groupId,
             @ApiParam(value = "Action to be performed: ADD, SET or REMOVE users to/from a group", defaultValue = "ADD", required = true)
-                @QueryParam("action") GroupParams.Action action,
+            @QueryParam("action") GroupParams.Action action,
             @ApiParam(value = "JSON containing the parameters", required = true) Users users) {
         try {
             if (action == null) {
@@ -689,9 +691,9 @@ public class StudyWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Fetch variableSets from a study")
     public Response getVariableSets(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
-                @PathParam("study") String studyStr,
+            @PathParam("study") String studyStr,
             @ApiParam(value = "Id of the variableSet to be retrieved. If no id is passed, it will show all the variableSets of the study")
-                @QueryParam("id") String variableSetId) {
+            @QueryParam("id") String variableSetId) {
         try {
             QueryResult<VariableSet> queryResult;
             if (StringUtils.isEmpty(variableSetId)) {
@@ -720,7 +722,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response createOrRemoveVariableSets(
             @ApiParam(value = "Study [[user@]project:]study") @PathParam("study") String studyStr,
             @ApiParam(value = "Action to be performed: ADD or REMOVE a variableSet", defaultValue = "ADD", required = true)
-                @QueryParam("action") ParamUtils.BasicUpdateAction action,
+            @QueryParam("action") ParamUtils.BasicUpdateAction action,
             @ApiParam(value = "JSON containing the VariableSet to be created or removed.", required = true) VariableSetParameters params) {
         try {
             if (action == null) {
@@ -764,7 +766,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study") @PathParam("study") String studyStr,
             @ApiParam(value = "VariableSet id of the VariableSet to be updated") @PathParam("variableSet") String variableSetId,
             @ApiParam(value = "Action to be performed: ADD or REMOVE a variable", defaultValue = "ADD", required = true)
-                @QueryParam("action") ParamUtils.BasicUpdateAction action,
+            @QueryParam("action") ParamUtils.BasicUpdateAction action,
             @ApiParam(value = "JSON containing the variable to be added or removed. For removing, only the variable id will be needed.",
                     required = true) Variable variable) {
         try {
@@ -784,6 +786,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             return createErrorResponse(e);
         }
     }
+
 
     private static class VariableSetParameters {
         public Boolean unique;

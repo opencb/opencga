@@ -53,29 +53,29 @@ public class CatalogAnnotationsValidatorTest {
 
     @Test
     public void checkVariableString() throws CatalogException {
-        CatalogAnnotationsValidator.checkVariable(string);
+        AnnotationUtils.checkVariable(string);
     }
 
     @Test
     public void checkVariableStringList() throws CatalogException {
-        CatalogAnnotationsValidator.checkVariable(stringList);
+        AnnotationUtils.checkVariable(stringList);
     }
 
     @Test
     public void checkVariableNumberList() throws CatalogException {
-        CatalogAnnotationsValidator.checkVariable(numberList);
+        AnnotationUtils.checkVariable(numberList);
     }
 
     @Test
     public void checkVariableObject() throws CatalogException {
-        CatalogAnnotationsValidator.checkVariable(object);
+        AnnotationUtils.checkVariable(object);
     }
 
     @Test
     public void checkStringTest() throws CatalogException {
         Map<String, Object> annotation = new HashMap<>();
         annotation.put(string.getId(), "value");
-        CatalogAnnotationsValidator.checkAnnotations(Collections.singletonMap(string.getId(), string), annotation);
+        AnnotationUtils.checkAnnotations(Collections.singletonMap(string.getId(), string), annotation);
     }
 
     @Test
@@ -83,28 +83,28 @@ public class CatalogAnnotationsValidatorTest {
         Map<String, Object> annotation = new HashMap<>();
         annotation.put(string.getId(), Arrays.asList("value1", "value2", "value3"));
         thrown.expect(CatalogException.class);
-        CatalogAnnotationsValidator.checkAnnotations(Collections.singletonMap(string.getId(), string), annotation);
+        AnnotationUtils.checkAnnotations(Collections.singletonMap(string.getId(), string), annotation);
     }
 
     @Test
     public void checkStringListTest() throws CatalogException {
         Map<String, Object> annotation = new HashMap<>();
         annotation.put(stringList.getId(), "value");
-        CatalogAnnotationsValidator.checkAnnotations(Collections.singletonMap(stringList.getId(), stringList), annotation);
+        AnnotationUtils.checkAnnotations(Collections.singletonMap(stringList.getId(), stringList), annotation);
     }
 
     @Test
     public void checkStringList2Test() throws CatalogException {
         Map<String, Object> annotation = new HashMap<>();
         annotation.put(stringList.getId(), Arrays.asList("value1", "value2", "value3"));
-        CatalogAnnotationsValidator.checkAnnotations(Collections.singletonMap(stringList.getId(), stringList), annotation);
+        AnnotationUtils.checkAnnotations(Collections.singletonMap(stringList.getId(), stringList), annotation);
     }
 
     @Test
     public void checkNumberListTest() throws CatalogException {
         Map<String, Object> annotation = new HashMap<>();
         annotation.put(numberList.getId(), Arrays.asList(1, "22", 3.3));
-        CatalogAnnotationsValidator.checkAnnotations(Collections.singletonMap(numberList.getId(), numberList), annotation);
+        AnnotationUtils.checkAnnotations(Collections.singletonMap(numberList.getId(), numberList), annotation);
     }
 
     @Test
@@ -112,7 +112,7 @@ public class CatalogAnnotationsValidatorTest {
         Map<String, Object> annotation = new HashMap<>();
         annotation.put(stringList.getId(), Arrays.asList(1, "NOT_A_NUMBER", 3.3));
         thrown.expect(CatalogException.class);
-        CatalogAnnotationsValidator.checkAnnotations(Collections.singletonMap(numberList.getId(), numberList), annotation);
+        AnnotationUtils.checkAnnotations(Collections.singletonMap(numberList.getId(), numberList), annotation);
     }
 
     @Test
@@ -120,7 +120,7 @@ public class CatalogAnnotationsValidatorTest {
         Map<String, Object> annotation = new HashMap<>();
         annotation.put(object.getId(), new ObjectMap(string.getId(), "OneString")
                 .append(numberList.getId(), Arrays.asList(1, "2", 3)));
-        CatalogAnnotationsValidator.checkAnnotations(Collections.singletonMap(object.getId(), object), annotation);
+        AnnotationUtils.checkAnnotations(Collections.singletonMap(object.getId(), object), annotation);
     }
 
     @Test
@@ -129,21 +129,21 @@ public class CatalogAnnotationsValidatorTest {
         annotation.put(object.getId(), new ObjectMap(string.getId(), "OneString")
                 .append(numberList.getId(), Arrays.asList(1, 2, "K")));
         thrown.expect(CatalogException.class);
-        CatalogAnnotationsValidator.checkAnnotations(Collections.singletonMap(object.getId(), object), annotation);
+        AnnotationUtils.checkAnnotations(Collections.singletonMap(object.getId(), object), annotation);
     }
 
     @Test
     public void checkObjectTest3() throws CatalogException {
         Map<String, Object> annotation = new HashMap<>();
         annotation.put(object.getId(), new ObjectBean("string Key", Arrays.<Double>asList(3.3, 4.0, 5.0)));
-        CatalogAnnotationsValidator.checkAnnotations(Collections.singletonMap(object.getId(), object), annotation);
+        AnnotationUtils.checkAnnotations(Collections.singletonMap(object.getId(), object), annotation);
     }
 
     @Test
     public void checkFreeObjectTest() throws CatalogException {
         Map<String, Object> annotation = new HashMap<>();
         annotation.put(freeObject.getId(), new ObjectMap("ANY_KEY", "SOME_VALUE").append("A_BOOLEAN", false));
-        CatalogAnnotationsValidator.checkAnnotations(Collections.singletonMap(freeObject.getId(), freeObject), annotation);
+        AnnotationUtils.checkAnnotations(Collections.singletonMap(freeObject.getId(), freeObject), annotation);
     }
 
     @Test
@@ -154,7 +154,7 @@ public class CatalogAnnotationsValidatorTest {
                         .append(object.getId(), new ObjectMap(string.getId(), "OneString")
                                 .append(numberList.getId(), Arrays.asList (1, 2, "3")))
         );
-        CatalogAnnotationsValidator.checkAnnotations(Collections.singletonMap(nestedObject.getId(), nestedObject), annotation);
+        AnnotationUtils.checkAnnotations(Collections.singletonMap(nestedObject.getId(), nestedObject), annotation);
     }
 
     @Test
@@ -165,7 +165,7 @@ public class CatalogAnnotationsValidatorTest {
                         .append(numberList.getId(), Arrays.asList(1, "K", "3")))
         );
         thrown.expect(CatalogException.class);  //Bad value for numericList "K"
-        CatalogAnnotationsValidator.checkAnnotations(Collections.singletonMap(nestedObject.getId(), nestedObject), annotation);
+        AnnotationUtils.checkAnnotations(Collections.singletonMap(nestedObject.getId(), nestedObject), annotation);
     }
 
     @Test
@@ -174,14 +174,14 @@ public class CatalogAnnotationsValidatorTest {
         annotation.put(nestedObject.getId(), new ObjectMap(stringList.getId(), Arrays.asList("v1", "v2", "v3"))
                 .append(object .getId(), new ObjectMap(string.getId(), "OneString")));
         thrown.expect(CatalogException.class); //Numeric list is required
-        CatalogAnnotationsValidator.checkAnnotations(Collections.singletonMap(nestedObject.getId(), nestedObject), annotation);
+        AnnotationUtils.checkAnnotations(Collections.singletonMap(nestedObject.getId(), nestedObject), annotation);
     }
 
     @Test
     public void checkNullValuesTest() throws CatalogException {
         Map<String, Object> annotation = new HashMap<>();
         annotation.put(string.getId(), null);
-        CatalogAnnotationsValidator.checkAnnotations(Collections.singletonMap(stringNoRequired.getId(), stringNoRequired), annotation);
+        AnnotationUtils.checkAnnotations(Collections.singletonMap(stringNoRequired.getId(), stringNoRequired), annotation);
     }
 
     @Test
@@ -189,7 +189,7 @@ public class CatalogAnnotationsValidatorTest {
         Map<String, Object> annotation = new HashMap<>();
         annotation.put(string.getId(), null);
         thrown.expect(CatalogException.class); //Numeric list is required
-        CatalogAnnotationsValidator.checkAnnotations(Collections.singletonMap(string.getId(), string), annotation);
+        AnnotationUtils.checkAnnotations(Collections.singletonMap(string.getId(), string), annotation);
     }
 
     @Test
@@ -203,7 +203,7 @@ public class CatalogAnnotationsValidatorTest {
                 .append("K", "newValue")        //Modify
                 .append("K2", null)             //Delete
                 .append("K3", "newAnnotation"); //Add
-        CatalogAnnotationsValidator.mergeNewAnnotations(annotationSet, newAnnotations);
+        AnnotationUtils.mergeNewAnnotations(annotationSet, newAnnotations);
 
         Map<String, Object> newAnnotation = annotationSet.getAnnotations();
 

@@ -28,6 +28,8 @@ import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor
 import java.util.*;
 
 import static java.util.Collections.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.RELEASE;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.*;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantAnnotationConverter.*;
 
@@ -72,6 +74,10 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
     public static final String AT_FIELD = "_at";
     public static final String CHUNK_IDS_FIELD = "chunkIds";
     public static final String RELEASE_FIELD = "_r";
+    public static final String INDEX_FIELD = "_index";
+    public static final String INDEX_TIMESTAMP_FIELD = "ts";
+//    public static final String INDEX_SYNCHRONIZED_FIELD = "sync";
+//    public static final String INDEX_STUDIES_FIELD = "st";
 
 //    public static final String ID_FIELD = "id";
 //    public static final String FILES_FIELD = "files";
@@ -91,6 +97,7 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
         requiredFieldsSet.add(VariantField.REFERENCE);
         requiredFieldsSet.add(VariantField.ALTERNATE);
         requiredFieldsSet.add(VariantField.TYPE);
+        requiredFieldsSet.add(VariantField.SV);
         REQUIRED_FIELDS_SET = Collections.unmodifiableSet(requiredFieldsSet);
 
         Map<VariantField, List<String>> map = new EnumMap<>(VariantField.class);
@@ -314,6 +321,7 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
         }
         Document customAnnotation = object.get(CUSTOM_ANNOTATION_FIELD, Document.class);
         boolean hasRelease = object.containsKey(RELEASE_FIELD);
+        boolean hasIndex = object.containsKey(INDEX_FIELD);
         if (mongoAnnotation != null || customAnnotation != null || hasRelease) {
             VariantAnnotation annotation;
             if (mongoAnnotation != null) {
@@ -326,24 +334,26 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
                             .convertAdditionalAttributesToDataModelType(customAnnotation));
                 }
             }
-            if (hasRelease) {
+            AdditionalAttribute additionalAttribute = null;
+            if (hasRelease || hasIndex) {
                 if (annotation.getAdditionalAttributes() == null) {
                     annotation.setAdditionalAttributes(new HashMap<>());
                 }
+                if (annotation.getAdditionalAttributes().containsKey(GROUP_NAME.key())) {
+                    additionalAttribute = annotation.getAdditionalAttributes().get(GROUP_NAME.key());
+                } else {
+                    additionalAttribute = new AdditionalAttribute(new HashMap<>());
+                    annotation.getAdditionalAttributes().put(GROUP_NAME.key(), additionalAttribute);
+                }
+            }
+            if (hasRelease) {
                 String release = this.<Number>getList(object, RELEASE_FIELD).stream()
                         .map(Number::intValue)
                         .min(Integer::compareTo)
                         .orElse(-1)
                         .toString();
 
-                annotation.getAdditionalAttributes().compute("opencga", (key, value) -> {
-                    if (value == null) {
-                        HashMap<String, String> map = new HashMap<>(1);
-                        value = new AdditionalAttribute(map);
-                    }
-                    value.getAttribute().put("release", release);
-                    return value;
-                });
+                additionalAttribute.getAttribute().put(RELEASE.key(), release);
             }
 
             variant.setAnnotation(annotation);

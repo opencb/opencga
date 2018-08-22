@@ -36,10 +36,9 @@ import java.util.function.Consumer;
 public interface DBAdaptor<T> extends Iterable<T> {
 
     /**
-     * SKIP_CHECK is used when deleting a document. If SKIP_CHECK is set to false, the document will be deleted no matter if other
-     * documents might depend on that one.
+     * Include ACL list in the attributes field.
      */
-    String SKIP_CHECK = "skipCheck";
+    String INCLUDE_ACLS = "includeAcls";
     /**
      * Deprecated constant. Use SKIP_CHECK instead.
      */
