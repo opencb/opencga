@@ -617,10 +617,10 @@ public class SolrQueryParser {
                     throw VariantQueryException.malformedParam(VariantQueryParam.FORMAT, query.getString(VariantQueryParam.FORMAT.key()),
                             "Only format name 'DP' is permitted in Solr search");
                 }
-                sb.append(")");
-                filterList.add(sb.toString().replace(String.valueOf(VariantSearchToVariantConverter.MISSING_VALUE),
-                        "" + Math.round(VariantSearchToVariantConverter.MISSING_VALUE)));
             }
+            sb.append(")");
+            filterList.add(sb.toString().replace(String.valueOf(VariantSearchToVariantConverter.MISSING_VALUE),
+                    "" + Math.round(VariantSearchToVariantConverter.MISSING_VALUE)));
         }
     }
 
