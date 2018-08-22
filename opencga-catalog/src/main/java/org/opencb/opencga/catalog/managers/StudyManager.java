@@ -1060,6 +1060,12 @@ public class StudyManager extends AbstractManager {
 
     public QueryResult<VariableSet> addFieldToVariableSet(String studyStr, String variableSetStr, Variable variable, String sessionId)
             throws CatalogException {
+        if (StringUtils.isEmpty(variable.getId())) {
+            if (StringUtils.isEmpty(variable.getName())) {
+                throw new CatalogException("Missing variable id");
+            }
+            variable.setId(variable.getName());
+        }
         MyResourceId resource = getVariableSetId(variableSetStr, studyStr, sessionId);
         String userId = resource.getUser();
 

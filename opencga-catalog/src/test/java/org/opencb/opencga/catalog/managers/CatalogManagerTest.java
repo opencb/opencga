@@ -731,7 +731,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 new Variable("PHEN", "", Variable.VariableType.CATEGORICAL, "", true, false, Arrays.asList("CASE", "CONTROL"), 4, "", "",
                         null, Collections.<String, Object>emptyMap())
         ));
-        QueryResult<VariableSet> queryResult = catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs1", "vs1", true,
+        QueryResult<VariableSet> queryResult = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", true,
                 false, "", null, variables, sessionIdUser);
 
         assertEquals(1, queryResult.getResult().size());
