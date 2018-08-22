@@ -24,6 +24,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.VariableSet;
 
 import java.util.HashMap;
 import java.util.List;
@@ -163,13 +164,14 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
     /***
      * Inserts the passed file in the database.
      *
-     * @param file The file to be inserted in the database.
      * @param studyId Id of the study where the file belongs to.
+     * @param file The file to be inserted in the database.
+     * @param variableSetList Variable set list.
      * @param options Options to filter the output that will be returned after the insertion of the file.
      * @return A QueryResult object containing information regarding the inserted file.
      * @throws CatalogDBException when the file could not be inserted due to different reasons.
      */
-    QueryResult<File> insert(File file, long studyId, QueryOptions options) throws CatalogDBException;
+    QueryResult<File> insert(long studyId, File file, List<VariableSet> variableSetList, QueryOptions options) throws CatalogDBException;
 
     /***
      * Retrieves the file from the database containing the fileId given.
