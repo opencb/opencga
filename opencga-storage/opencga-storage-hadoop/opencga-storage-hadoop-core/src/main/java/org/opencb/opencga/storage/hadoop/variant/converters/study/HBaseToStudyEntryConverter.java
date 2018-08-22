@@ -33,7 +33,6 @@ import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
@@ -48,13 +47,13 @@ import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKey
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.storage.core.metadata.StudyConfigurationManager.RO_CACHED_OPTIONS;
 import static org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass.UNKNOWN_GENOTYPE;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED;
 
@@ -76,10 +75,9 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
     private final StudyConfigurationManager scm;
     private final HBaseToVariantStatsConverter statsConverter;
-    private final QueryOptions scmOptions = new QueryOptions(StudyConfigurationManager.READ_ONLY, true)
-            .append(StudyConfigurationManager.CACHED, true);
     private final Map<Integer, LinkedHashMap<String, Integer>> returnedSamplesPositionMap = new HashMap<>();
     private Map<Pair<Integer, Integer>, List<Boolean>> missingUpdatedSamplesMap = new HashMap<>();
+    private Map<Integer, String> fileIds = new HashMap<>();
 
     private boolean studyNameAsStudyId = false;
     private boolean simpleGenotypes = false;
@@ -169,7 +167,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         if (studyConfiguration != null) {
             return studyConfiguration;
         } else {
-            QueryResult<StudyConfiguration> queryResult = scm.getStudyConfiguration(studyId, scmOptions);
+            QueryResult<StudyConfiguration> queryResult = scm.getStudyConfiguration(studyId, RO_CACHED_OPTIONS);
             if (queryResult.getResult().isEmpty()) {
                 throw new IllegalStateException("No study found for study ID: " + studyId);
             }
@@ -191,7 +189,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                     String[] split = columnName.split(VariantPhoenixHelper.COLUMN_KEY_SEPARATOR_STR);
                     Integer studyId = getStudyId(split);
                     Integer sampleId = getSampleId(split);
-                    Array value = resultSet.getArray(i);
+                    PhoenixArray value = (PhoenixArray) resultSet.getArray(i);
                     if (value != null) {
                         List<String> sampleData = toModifiableList(value);
                         studies.add(studyId);
@@ -261,7 +259,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 String[] split = columnName.split(VariantPhoenixHelper.COLUMN_KEY_SEPARATOR_STR);
                 Integer studyId = getStudyId(split);
                 Integer sampleId = getSampleId(split);
-                Array array = (Array) PVarcharArray.INSTANCE.toObject(bytes);
+                PhoenixArray array = (PhoenixArray) PVarcharArray.INSTANCE.toObject(bytes);
                 List<String> sampleData = toModifiableList(array);
                 studies.add(studyId);
                 sampleDataMap.computeIfAbsent(studyId, s -> new ArrayList<>()).add(Pair.of(sampleId, sampleData));
@@ -418,8 +416,9 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         }
         attributes.put(StudyEntry.FILTER, (String) (fileColumn.getElement(FILE_FILTER_IDX)));
         String alternate = (String) (fileColumn.getElement(FILE_SEC_ALTS_IDX));
+        String fileName = studyConfiguration.getFileIds().inverse().get(Integer.parseInt(fileId));
         if (StringUtils.isNotEmpty(alternate)) {
-            alternateFileMap.computeIfAbsent(alternate, (key) -> new ArrayList<>()).add(fileId);
+            alternateFileMap.computeIfAbsent(alternate, (key) -> new ArrayList<>()).add(fileName);
         }
         List<String> fixedAttributes = HBaseToVariantConverter.getFixedAttributes(studyConfiguration);
         int i = FILE_INFO_START_IDX;
@@ -434,7 +433,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             i++;
         }
         // fileColumn.getElement(FILE_VARIANT_OVERLAPPING_STATUS_IDX);
-        studyEntry.getFiles().add(new FileEntry(fileId, (String) (fileColumn.getElement(FILE_CALL_IDX)), attributes));
+        studyEntry.getFiles().add(new FileEntry(fileName, (String) (fileColumn.getElement(FILE_CALL_IDX)), attributes));
     }
 
     private void fillEmptySamplesData(StudyEntry studyEntry, StudyConfiguration studyConfiguration, int fillMissingColumnValue) {
@@ -457,7 +456,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
         Set<Integer> filesInThisVariant = studyEntry.getFiles().stream()
                 .map(FileEntry::getFileId)
-                .map(Integer::parseInt)
+                .map(studyConfiguration.getFileIds()::get)
                 .collect(Collectors.toSet());
 
         List<Boolean> sampleWithVariant = getSampleWithVariant(studyConfiguration, filesInThisVariant);
@@ -682,7 +681,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
                 for (String fileId : fileIds) {
                     se.getFiles().add(studyEntry.getFile(fileId));
-                    for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(Integer.parseInt(fileId))) {
+                    for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(studyConfiguration.getFileIds().get(fileId))) {
                         String sample = studyConfiguration.getSampleIds().inverse().get(sampleId);
                         se.addSampleData(sample, studyEntry.getSampleData(sample));
                     }

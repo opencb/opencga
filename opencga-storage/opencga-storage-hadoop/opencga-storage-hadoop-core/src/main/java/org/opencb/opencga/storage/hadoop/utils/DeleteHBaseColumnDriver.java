@@ -5,6 +5,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Delete;
+import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.filter.KeyOnlyFilter;
@@ -36,6 +37,7 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
     private static final Logger LOGGER = LoggerFactory.getLogger(DeleteHBaseColumnDriver.class);
     // This separator is not valid at Bytes.toStringBinary
     private static final String REGION_SEPARATOR = "\\\\";
+    public static final String DELETE_HBASE_COLUMN_MAPPER_CLASS = "delete.hbase.column.mapper.class";
 
     private List<String> columns;
     private List<Pair<byte[], byte[]>> regions;
@@ -74,8 +76,11 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
             scans = Collections.singletonList(templateScan);
         }
 
+        Class<? extends DeleteHBaseColumnMapper> mapperClass = job.getConfiguration()
+                .getClass(DELETE_HBASE_COLUMN_MAPPER_CLASS, DeleteHBaseColumnMapper.class, DeleteHBaseColumnMapper.class);
+
         // set other scan attrs
-        VariantMapReduceUtil.initTableMapperJob(job, table, table, scans, DeleteHBaseColumnMapper.class);
+        VariantMapReduceUtil.initTableMapperJob(job, table, table, scans, mapperClass);
     }
 
     @Override
@@ -184,7 +189,7 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
         return ToolRunner.run(this, args);
     }
 
-    public static class DeleteHBaseColumnMapper extends TableMapper<ImmutableBytesWritable, Delete> {
+    public static class DeleteHBaseColumnMapper extends TableMapper<ImmutableBytesWritable, Mutation> {
 
         private Set<String> columnsToCount;
         private Set<String> columnsToDelete;
@@ -221,6 +226,9 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
                     context.getCounter("DeleteColumn", "delete").increment(1);
                     context.write(key, delete);
                 }
+            }
+            if (!delete.isEmpty()) {
+                context.write(key, delete);
             }
         }
     }

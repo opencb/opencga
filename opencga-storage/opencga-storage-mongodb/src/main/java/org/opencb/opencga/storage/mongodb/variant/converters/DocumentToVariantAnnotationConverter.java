@@ -28,6 +28,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.annotation.converters.VariantTraitAssociationToEvidenceEntryConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -189,6 +190,18 @@ public class DocumentToVariantAnnotationConverter
 
     private final VariantTraitAssociationToEvidenceEntryConverter traitAssociationConverter
             = new VariantTraitAssociationToEvidenceEntryConverter();
+    private Integer annotationId = null;
+    private Map<Integer, String> annotationIds = Collections.emptyMap();
+
+    public DocumentToVariantAnnotationConverter(Map<Integer, String> annotationIds) {
+        this();
+        this.annotationIds = annotationIds;
+    }
+
+    public DocumentToVariantAnnotationConverter(Integer annotationId) {
+        this();
+        this.annotationId = annotationId;
+    }
 
     public DocumentToVariantAnnotationConverter() {
         jsonObjectMapper = new ObjectMapper();
@@ -423,6 +436,24 @@ public class DocumentToVariantAnnotationConverter
         if (customAnnotation != null) {
             Map<String, AdditionalAttribute> additionalAttributes = convertAdditionalAttributesToDataModelType(customAnnotation);
             va.setAdditionalAttributes(additionalAttributes);
+        } else {
+            if (!annotationIds.isEmpty()) {
+                Object o = object.get(ANNOT_ID_FIELD);
+                if (o != null && o instanceof Number) {
+                    if (va.getAdditionalAttributes() == null) {
+                        va.setAdditionalAttributes(new HashMap<>());
+                    }
+                    va.getAdditionalAttributes().compute(VariantField.AdditionalAttributes.GROUP_NAME.key(), (key, value) -> {
+                        if (value == null) {
+                            HashMap<String, String> map = new HashMap<>(1);
+                            value = new AdditionalAttribute(map);
+                        }
+                        value.getAttribute().put(VariantField.AdditionalAttributes.ANNOTATION_ID.key(),
+                                annotationIds.get(((Number) o).intValue()));
+                        return value;
+                    });
+                }
+            }
         }
 
         List<Document> repeats = getList(object, REPEATS_FIELD);
@@ -578,7 +609,7 @@ public class DocumentToVariantAnnotationConverter
         List<Document> cts = new LinkedList<>();
 
         //Annotation ID
-        document.put(ANNOT_ID_FIELD, "?");
+        document.put(ANNOT_ID_FIELD, annotationId);
 
         //Variant ID
         if (variantAnnotation.getId() != null && !variantAnnotation.getId().isEmpty()) {

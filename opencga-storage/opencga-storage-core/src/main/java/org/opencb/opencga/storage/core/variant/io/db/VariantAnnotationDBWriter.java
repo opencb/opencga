@@ -17,10 +17,10 @@
 package org.opencb.opencga.storage.core.variant.io.db;
 
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.run.ParallelTaskRunner;
-import org.opencb.commons.ProgressLogger;
+import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import java.io.IOException;
@@ -31,21 +31,23 @@ import java.util.List;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class VariantAnnotationDBWriter implements ParallelTaskRunner.TaskWithException<VariantAnnotation, Object, IOException> {
+public class VariantAnnotationDBWriter implements Task<VariantAnnotation, Object> {
 
     protected final VariantDBAdaptor dbAdaptor;
     protected final QueryOptions options;
     private ProgressLogger progressLogger;
+    private final long timestamp;
 
     public VariantAnnotationDBWriter(VariantDBAdaptor dbAdaptor, QueryOptions options, ProgressLogger progressLogger) {
         this.dbAdaptor = dbAdaptor;
         this.options = options;
         this.progressLogger = progressLogger;
+        timestamp = System.currentTimeMillis();
     }
 
     @Override
     public List<Object> apply(List<VariantAnnotation> list) throws IOException {
-        QueryResult queryResult = dbAdaptor.updateAnnotations(list, options);
+        QueryResult queryResult = dbAdaptor.updateAnnotations(list, timestamp, options);
         logUpdate(list);
         return queryResult.getResult();
     }

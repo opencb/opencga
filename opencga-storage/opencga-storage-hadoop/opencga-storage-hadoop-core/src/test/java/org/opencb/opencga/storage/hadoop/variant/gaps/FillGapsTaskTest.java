@@ -43,7 +43,6 @@ import static org.junit.Assert.assertThat;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.everyResult;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.withSampleData;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.withStudy;
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.LOADED_GENOTYPES;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED;
 import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.printVariants;
 import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.removeFile;
@@ -190,7 +189,7 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
         VariantHadoopDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
         checkFillMissing(dbAdaptor);
         checkSampleIndexTable(dbAdaptor);
-        assertEquals(new HashSet<>(Arrays.asList("0/1", "1/1")), new HashSet<>(studyConfiguration.getAttributes().getAsStringList(LOADED_GENOTYPES)));
+        assertEquals(new HashSet<>(Arrays.asList("0/1", "1/1")), new HashSet<>(studyConfiguration.getAttributes().getAsStringList(VariantStorageEngine.Options.LOADED_GENOTYPES.key())));
 
         List<Integer> sampleIds = new ArrayList<>(studyConfiguration.getSampleIds().values());
         sampleIds.sort(Integer::compareTo);
@@ -202,7 +201,7 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
         assertTrue(studyConfiguration.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED));
         checkFillMissing(dbAdaptor, "NA12877", "NA12878");
         checkSampleIndexTable(dbAdaptor);
-        assertEquals(new HashSet<>(Arrays.asList("0/1", "1/1", "0/2")), new HashSet<>(studyConfiguration.getAttributes().getAsStringList(LOADED_GENOTYPES)));
+        assertEquals(new HashSet<>(Arrays.asList("0/1", "1/1", "0/2")), new HashSet<>(studyConfiguration.getAttributes().getAsStringList(VariantStorageEngine.Options.LOADED_GENOTYPES.key())));
 
         // Load file 12879
         studyConfiguration = loadPlatinum(options, 12879, 12879);

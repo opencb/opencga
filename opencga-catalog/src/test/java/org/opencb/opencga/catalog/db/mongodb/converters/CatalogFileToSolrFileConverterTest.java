@@ -4,11 +4,13 @@ import org.junit.Test;
 import org.opencb.opencga.catalog.stats.solr.FileSolrModel;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogFileToSolrFileConverter;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.Software;
+import org.opencb.opencga.core.models.Study;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -27,7 +29,7 @@ public class CatalogFileToSolrFileConverterTest {
         File file = new File("name", File.Type.FILE, File.Format.BAM, File.Bioformat.MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT,
                 "test/base", "convertorTest", new File.FileStatus("READY"), 1111L, 2);
         file.setUid(111).setSamples(Arrays.asList(new Sample().setId("1"), new Sample().setId("2")))
-                .setExperiment(new Experiment().setName("Experiment")).setSoftware(new Software().setName("Software"));
+                .setSoftware(new Software().setName("Software"));
         file.setAnnotationSets(AnnotationHelper.createAnnotation());
 
         FileSolrModel fileSolrModel = new CatalogFileToSolrFileConverter(study).convertToStorageType(file);
@@ -52,7 +54,6 @@ public class CatalogFileToSolrFileConverterTest {
         assert (fileSolrModel.isExternal() == file.isExternal());
         assert (fileSolrModel.getSize() == file.getSize());
         assert (fileSolrModel.getSoftware().equals(file.getSoftware().getName()));
-        assert (fileSolrModel.getExperiment().equals(file.getExperiment().getName()));
         assert (fileSolrModel.getNumSamples() == file.getSamples().size());
 
         assertEquals(fileSolrModel.getAnnotations().get("annotations__o__annotName.vsId.a.ab2.ab2c1.ab2c1d1"), Arrays.asList(1, 2, 3, 4, 11, 12, 13, 14, 21));

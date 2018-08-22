@@ -40,6 +40,7 @@ import java.util.Map;
  <field name="end" type="int" indexed="true" stored="true" multiValued="false"/>
  <field name="xrefs" type="string" indexed="true" stored="true" multiValued="true"/>
  <field name="type" type="string" indexed="true" stored="true" multiValued="false"/>
+ <field name="release" type="int" indexed="true" stored="true" multiValued="false"/>
  <field name="studies" type="string" indexed="true" stored="true" multiValued="true"/>
  <field name="phastCons" type="double" indexed="true" stored="true" multiValued="false"/>
  <field name="phylop" type="double" indexed="true" stored="true" multiValued="false"/>
@@ -47,19 +48,23 @@ import java.util.Map;
  <field name="caddRaw" type="double" indexed="true" stored="true" multiValued="false"/>
  <field name="caddScaled" type="double" indexed="true" stored="true" multiValued="false"/>
  <field name="sift" type="double" indexed="true" stored="true" multiValued="false"/>
+ <field name="siftDesc" type="string" indexed="true" stored="true" multiValued="false"/>
  <field name="polyphen" type="double" indexed="true" stored="true" multiValued="false"/>
+ <field name="polyphenDesc" type="string" indexed="true" stored="true" multiValued="false"/>
  <field name="genes" type="string" indexed="false" stored="true" multiValued="true"/>
  <field name="biotypes" type="string" indexed="true" stored="true" multiValued="true"/>
  <field name="soAcc" type="int" indexed="true" stored="true" multiValued="true"/>
  <field name="geneToSoAcc" type="string" indexed="true" stored="true" multiValued="true"/>
  <field name="traits" type="text_en" indexed="true" stored="true" multiValued="true"/>
- <dynamicField name="stats_*" type="double" indexed="true" stored="true" multiValued="false"/>
- <dynamicField name="popFreq_*" type="double" indexed="true" stored="true" multiValued="false"/>
+ <field name="other" type="string" indexed="false" stored="true" multiValued="true"/>
+ <dynamicField name="stats_*" type="float" indexed="true" stored="true" multiValued="false"/>
+ <dynamicField name="popFreq_*" type="float" indexed="true" stored="true" multiValued="false"/>
  <dynamicField name="gt_*" type="string" indexed="true" stored="true" multiValued="false"/>
- <dynamicField name="filter_*" type="string" indexed="true" stored="true" multiValued="false"/>
- <dynamicField name="qual_*" type="double" indexed="true" stored="true" multiValued="false"/>
- <dynamicField name="fileInfo_*" type="string" indexed="false" stored="true" multiValued="false"/>
+ <dynamicField name="dp_*" type="int" indexed="true" stored="true" multiValued="false"/>
  <dynamicField name="sampleFormat_*" type="string" indexed="false" stored="true" multiValued="false"/>
+ <dynamicField name="qual_*" type="float" indexed="true" stored="true" multiValued="false"/>
+ <dynamicField name="filter_*" type="string" indexed="true" stored="true" multiValued="false"/>
+ <dynamicField name="fileInfo_*" type="string" indexed="false" stored="true" multiValued="false"/>
  */
 
 public class VariantSearchModel {
@@ -145,17 +150,21 @@ public class VariantSearchModel {
     @Field("gt_*")
     private Map<String, String> gt;
 
-    @Field("filter_*")
-    private Map<String, String> filter;
+    @Field("dp_*")
+    private Map<String, Integer> dp;
+
+    @Field("sampleFormat_*")
+    private Map<String, String> sampleFormat;
 
     @Field("qual_*")
     private Map<String, Float> qual;
 
+    @Field("filter_*")
+    private Map<String, String> filter;
+
     @Field("fileInfo_*")
     private Map<String, String> fileInfo;
 
-    @Field("sampleFormat_*")
-    private Map<String, String> sampleFormat;
 
     public static final double MISSING_VALUE = -100.0;
 
@@ -168,21 +177,27 @@ public class VariantSearchModel {
         sift = MISSING_VALUE;
         polyphen = MISSING_VALUE;
 
+        this.xrefs = new ArrayList<>();
+        this.studies = new ArrayList<>();
         this.genes = new ArrayList<>();
+        this.biotypes = new ArrayList<>();
         this.soAcc = new ArrayList<>();
         this.geneToSoAcc = new ArrayList<>();
+        this.traits = new ArrayList<>();
         this.other = new ArrayList<>();
+        this.stats = new HashMap<>();
         this.popFreq = new HashMap<>();
         this.gt = new HashMap<>();
-        this.filter = new HashMap<>();
-        this.qual = new HashMap<>();
-        this.fileInfo = new HashMap<>();
+        this.dp = new HashMap<>();
         this.sampleFormat = new HashMap<>();
+        this.qual = new HashMap<>();
+        this.filter = new HashMap<>();
+        this.fileInfo = new HashMap<>();
     }
 
     @Override
     public String toString() {
-        final StringBuffer sb = new StringBuffer("VariantSearchModel{");
+        final StringBuilder sb = new StringBuilder("VariantSearchModel{");
         sb.append("id='").append(id).append('\'');
         sb.append(", variantId='").append(variantId).append('\'');
         sb.append(", chromosome='").append(chromosome).append('\'');
@@ -210,10 +225,11 @@ public class VariantSearchModel {
         sb.append(", stats=").append(stats);
         sb.append(", popFreq=").append(popFreq);
         sb.append(", gt=").append(gt);
-        sb.append(", filter=").append(filter);
-        sb.append(", qual=").append(qual);
-        sb.append(", fileInfo=").append(fileInfo);
+        sb.append(", dp=").append(dp);
         sb.append(", sampleFormat=").append(sampleFormat);
+        sb.append(", qual=").append(qual);
+        sb.append(", filter=").append(filter);
+        sb.append(", fileInfo=").append(fileInfo);
         sb.append('}');
         return sb.toString();
     }
@@ -461,12 +477,21 @@ public class VariantSearchModel {
         return this;
     }
 
-    public Map<String, String> getFilter() {
-        return filter;
+    public Map<String, Integer> getDp() {
+        return dp;
     }
 
-    public VariantSearchModel setFilter(Map<String, String> filter) {
-        this.filter = filter;
+    public VariantSearchModel setDp(Map<String, Integer> dp) {
+        this.dp = dp;
+        return this;
+    }
+
+    public Map<String, String> getSampleFormat() {
+        return sampleFormat;
+    }
+
+    public VariantSearchModel setSampleFormat(Map<String, String> sampleFormat) {
+        this.sampleFormat = sampleFormat;
         return this;
     }
 
@@ -479,6 +504,15 @@ public class VariantSearchModel {
         return this;
     }
 
+    public Map<String, String> getFilter() {
+        return filter;
+    }
+
+    public VariantSearchModel setFilter(Map<String, String> filter) {
+        this.filter = filter;
+        return this;
+    }
+
     public Map<String, String> getFileInfo() {
         return fileInfo;
     }
@@ -488,12 +522,4 @@ public class VariantSearchModel {
         return this;
     }
 
-    public Map<String, String> getSampleFormat() {
-        return sampleFormat;
-    }
-
-    public VariantSearchModel setSampleFormat(Map<String, String> sampleFormat) {
-        this.sampleFormat = sampleFormat;
-        return this;
-    }
 }

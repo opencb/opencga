@@ -22,7 +22,6 @@ import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.stats.VariantStats;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.slf4j.Logger;
@@ -39,8 +38,6 @@ import java.util.stream.Collectors;
  */
 public class DocumentToVariantStatsConverter {
 
-    public static final QueryOptions STUDY_CONFIGURATION_MANAGER_QUERY_OPTIONS = new QueryOptions()
-            .append(StudyConfigurationManager.CACHED, true).append(StudyConfigurationManager.READ_ONLY, true);
     private static final Pattern MISSING_ALLELE = Pattern.compile("-1", Pattern.LITERAL);
 
     public DocumentToVariantStatsConverter() {
@@ -298,7 +295,7 @@ public class DocumentToVariantStatsConverter {
         if (studyConfigurations != null && studyConfigurations.containsKey(studyId)) {
             return studyConfigurations.get(studyId);
         } else {
-            return studyConfigurationManager.getStudyConfiguration(studyId, STUDY_CONFIGURATION_MANAGER_QUERY_OPTIONS).first();
+            return studyConfigurationManager.getStudyConfiguration(studyId, StudyConfigurationManager.RO_CACHED_OPTIONS).first();
         }
     }
 

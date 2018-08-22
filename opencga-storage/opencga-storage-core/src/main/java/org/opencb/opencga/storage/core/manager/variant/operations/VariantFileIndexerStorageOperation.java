@@ -142,7 +142,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         String studyFQNByInputFileId = studyInfo.getStudyFQN();
 
         options.put(VariantStorageEngine.Options.STUDY.key(), studyFQNByInputFileId);
-        options.put(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), getAggregation(studyFQNByInputFileId, options, sessionId));
+        options.putIfAbsent(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), getAggregation(studyFQNByInputFileId, options, sessionId));
 
 //        Study study = catalogManager.getStudyManager().get(studyUidByInputFileId, new QueryOptions(), sessionId).getResult().get(0);
         Study study = studyInfo.getStudy();

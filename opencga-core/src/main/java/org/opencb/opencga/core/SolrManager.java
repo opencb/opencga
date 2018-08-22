@@ -57,6 +57,16 @@ public class SolrManager {
         logger = LoggerFactory.getLogger(SolrManager.class);
     }
 
+    public SolrManager(SolrClient solrClient, String host, String mode, int timeout) {
+        this.host = host;
+        this.mode = mode;
+        this.timeout = timeout;
+
+        this.solrClient = solrClient;
+
+        logger = LoggerFactory.getLogger(SolrManager.class);
+    }
+
     public boolean isAlive(String collection) {
         try {
             SolrPing solrPing = new SolrPing();
@@ -72,37 +82,21 @@ public class SolrManager {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "We cannot create a Solr for the empty database '" + dbName + "'");
         }
 
-        if (StringUtils.isEmpty(mode)) {
-            logger.warn("Solr 'mode' is empty, setting default to 'cloud'");
-            mode = "cloud";
-        }
-
         if (StringUtils.isEmpty(configSet)) {
-            logger.warn("Solr 'configSet' is empty, setting default 'OpenCGAConfSet'");
-            configSet = "OpenCGAConfSet";
+            throw new IllegalArgumentException("Missing Solr configset!");
         }
 
-        switch (mode.toLowerCase()) {
-            case "core":
-            case "standalone": {
-                if (existsCore(dbName)) {
-                    logger.warn("Solr standalone core {} already exists", dbName);
-                } else {
-                    createCore(dbName, configSet);
-                }
-                break;
+        if (isCloud()) {
+            if (existsCollection(dbName)) {
+                logger.warn("Solr cloud collection {} already exists", dbName);
+            } else {
+                createCollection(dbName, configSet);
             }
-            case "collection":
-            case "cloud": {
-                if (existsCollection(dbName)) {
-                    logger.warn("Solr cloud collection {} already exists", dbName);
-                } else {
-                    createCollection(dbName, configSet);
-                }
-                break;
-            }
-            default: {
-                throw new IllegalArgumentException("Invalid Solr mode '" + mode + "'. Valid values are 'standalone' or 'cloud'");
+        } else {
+            if (existsCore(dbName)) {
+                logger.warn("Solr standalone core {} already exists", dbName);
+            } else {
+                createCore(dbName, configSet);
             }
         }
     }
@@ -117,7 +111,7 @@ public class SolrManager {
      */
     public void createCore(String coreName, String configSet) throws SolrException {
         try {
-            logger.debug("Creating core={}, core={}, configSet={}", host, coreName, configSet);
+            logger.debug("Creating core: host={}, core={}, configSet={}", host, coreName, configSet);
             CoreAdminRequest.Create request = new CoreAdminRequest.Create();
             request.setCoreName(coreName);
             request.setConfigSet(configSet);
@@ -138,7 +132,7 @@ public class SolrManager {
      * @throws SolrException Exception
      */
     public void createCollection(String collectionName, String configSet) throws SolrException {
-        logger.debug("Creating collection: {}, collection={}, config={}, numShards={}, numReplicas={}",
+        logger.debug("Creating collection: host={}, collection={}, config={}, numShards={}, numReplicas={}",
                 host, collectionName, configSet, 1, 1);
         try {
             CollectionAdminRequest request = CollectionAdminRequest.createCollection(collectionName, configSet, 1, 1);
@@ -210,6 +204,49 @@ public class SolrManager {
         }
     }
 
+    /**
+     * Remove a given collection or core.
+     *
+     * @param dbName Collection name
+     * @throws SolrException SolrException
+     */
+    public void remove(String dbName) throws SolrException {
+        if (isCloud()) {
+            removeCollection(dbName);
+        } else {
+            removeCore(dbName);
+        }
+    }
+
+    /**
+     * Remove a collection.
+     *
+     * @param collectionName Collection name
+     * @throws SolrException SolrException
+     */
+    public void removeCollection(String collectionName) throws SolrException {
+        try {
+            CollectionAdminRequest request = CollectionAdminRequest.deleteCollection(collectionName);
+            request.process(solrClient);
+        } catch (SolrServerException | IOException e) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Remove a core.
+     *
+     * @param coreName Core name
+     * @throws SolrException SolrException
+     */
+    public void removeCore(String coreName) throws SolrException {
+        try {
+            CoreAdminRequest.unloadCore(coreName, true, true, solrClient);
+        } catch (SolrServerException | IOException e) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
+        }
+    }
+
     public void close() throws IOException {
         if (solrClient != null) {
             solrClient.close();
@@ -250,5 +287,25 @@ public class SolrManager {
     public SolrManager setSolrClient(SolrClient solrClient) {
         this.solrClient = solrClient;
         return this;
+    }
+
+    private boolean isCloud() {
+        if (StringUtils.isEmpty(mode)) {
+            logger.warn("Solr 'mode' is empty, setting default 'cloud'");
+            mode = "cloud";
+        }
+        switch (mode.toLowerCase()) {
+            case "collection":
+            case "cloud": {
+                return true;
+            }
+            case "core":
+            case "standalone": {
+                return false;
+            }
+            default: {
+                throw new IllegalArgumentException("Invalid Solr mode '" + mode + "'. Valid values are 'standalone' or 'cloud'");
+            }
+        }
     }
 }

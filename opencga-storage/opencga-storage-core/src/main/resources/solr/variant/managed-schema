@@ -89,8 +89,9 @@
     <dynamicField name="stats_*" type="float" indexed="true" stored="true" multiValued="false"/>
     <dynamicField name="popFreq_*" type="float" indexed="true" stored="true" multiValued="false"/>
     <dynamicField name="gt_*" type="string" indexed="true" stored="true" multiValued="false"/>
-    <dynamicField name="filter_*" type="string" indexed="true" stored="true" multiValued="false"/>
-    <dynamicField name="qual_*" type="float" indexed="true" stored="true" multiValued="false"/>
-    <dynamicField name="fileInfo_*" type="string" indexed="false" stored="true" multiValued="false"/>
+    <dynamicField name="dp_*" type="int" indexed="true" stored="true" multiValued="false"/>
     <dynamicField name="sampleFormat_*" type="string" indexed="false" stored="true" multiValued="false"/>
+    <dynamicField name="qual_*" type="float" indexed="true" stored="true" multiValued="false"/>
+    <dynamicField name="filter_*" type="string" indexed="true" stored="true" multiValued="false"/>
+    <dynamicField name="fileInfo_*" type="string" indexed="false" stored="true" multiValued="false"/>
 </schema>

@@ -135,6 +135,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                           @ApiParam("Calculate indexed variants statistics after the load step") @DefaultValue("false") @QueryParam("calculateStats") boolean calculateStats,
                           @ApiParam("Annotate indexed variants after the load step") @DefaultValue("false") @QueryParam("annotate") boolean annotate,
                           @ApiParam("Overwrite annotations already present in variants") @DefaultValue("false") @QueryParam("overwrite") boolean overwriteAnnotations,
+                          @ApiParam("Add files to the secondary search index") @DefaultValue("false") @QueryParam("indexSearch") boolean indexSearch,
                           @ApiParam("Resume a previously failed indexation") @DefaultValue("false") @QueryParam("resume") boolean resume,
                           @ApiParam("Indicate that the variants from a sample (or group of samples) split into different files (by chromosome, by type, ...)") @DefaultValue("false") @QueryParam("loadSplitData") boolean loadSplitData,
                           @ApiParam("Do not execute post load checks over the database") @DefaultValue("false") @QueryParam("skipPostLoadCheck") boolean skipPostLoadCheck) {
@@ -157,6 +158,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         addParamIfNotNull(params, AGGREGATED_TYPE.key(), aggregated);
         addParamIfTrue(params, CALCULATE_STATS.key(), calculateStats);
         addParamIfTrue(params, ANNOTATE.key(), annotate);
+        addParamIfTrue(params, INDEX_SEARCH.key(), indexSearch);
         addParamIfTrue(params, VariantAnnotationManager.OVERWRITE_ANNOTATIONS, overwriteAnnotations);
         addParamIfTrue(params, LOAD_SPLIT_DATA.key(), loadSplitData);
         addParamIfTrue(params, POST_LOAD_CHECK_SKIP.key(), skipPostLoadCheck);
@@ -173,6 +175,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         knownParams.add("calculateStats");
         knownParams.add("annotate");
         knownParams.add("overwrite");
+        knownParams.add("indexSearch");
         knownParams.add("sid");
         knownParams.add("include");
         knownParams.add("exclude");
@@ -227,9 +230,11 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "file", value = FILE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "filter", value = FILTER_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "qual", value = QUAL_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "info", value = INFO_DESCR, dataType = "string", paramType = "query"),
 
             @ApiImplicitParam(name = "sample", value = SAMPLE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "genotype", value = GENOTYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "format", value = FORMAT_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "sampleAnnotation", value = VariantCatalogQueryUtils.SAMPLE_ANNOTATION_DESC, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "sampleMetadata", value = SAMPLE_METADATA_DESCR, dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = "unknownGenotype", value = UNKNOWN_GENOTYPE_DESCR, dataType = "string", paramType = "query"),
@@ -361,22 +366,30 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         public String alternate;
         public String project;
         public String study;
+
         public String includeStudy;
         public String includeSample;
         public String includeFile;
         public String includeFormat;
         public String includeGenotype;
+
         public String file;
+        public String qual;
         public String filter;
+        public String info;
+
+        public String genotype;
+        public String sample;
+        public String format;
+        public String sampleAnnotation;
+
         public String cohort;
         public String maf;
         public String mgf;
         public String missingAlleles;
         public String missingGenotypes;
         public Boolean annotationExists;
-        public String genotype;
-        public String sample;
-        public String sampleAnnotation;
+
         public String ct;
         public String xref;
         public String biotype;

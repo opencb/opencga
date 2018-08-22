@@ -1680,6 +1680,8 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     @Test
     public void testGetAllVariants_samples_gt() {
         Query query = new Query(SAMPLE.key(), "NA19600").append(GENOTYPE.key(), "NA19685" + IS + homRef).append(INCLUDE_SAMPLE.key(), ALL);
+        thrown.expect(VariantQueryException.class);
+        thrown.expectMessage("Can not be used along with filter \"genotype\"");
         queryResult = query(query, new QueryOptions());
         assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, allOf(
                 withSampleData("NA19600", "GT", containsString("1")),
@@ -1981,6 +1983,17 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     @Test
+    public void testSummary() {
+        queryResult = query(new Query(), new QueryOptions(VariantField.SUMMARY, true).append(QueryOptions.LIMIT, 1000));
+        System.out.println("queryResult = " + ((VariantQueryResult) queryResult).getSource());
+        assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
+        for (Variant variant : queryResult.getResult()) {
+            assertThat(variant.getStudies().get(0).getSamplesData(), is(Collections.emptyList()));
+            assertThat(variant.getStudies().get(0).getFiles(), is(Collections.emptyList()));
+        }
+    }
+
+    @Test
     public void testExcludeAnnotation() {
         queryResult = query(new Query(), new QueryOptions(QueryOptions.EXCLUDE, "annotation"));
         assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
@@ -2011,7 +2024,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
             expectedAnnotation.setXrefs(null);
             expectedAnnotation.setId(null);
-            assertEquals(expectedAnnotation, annotation);
+            assertEquals("\n" + expectedAnnotation + "\n" + annotation, expectedAnnotation, annotation);
         }
     }
 

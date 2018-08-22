@@ -25,6 +25,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
@@ -242,7 +243,7 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     public void testArchiveIterator() {
         int count = 0;
         Query query = new Query(VariantQueryParam.STUDY.key(), studyConfiguration.getStudyId())
-                .append(VariantQueryParam.FILE.key(), 6);
+                .append(VariantQueryParam.FILE.key(), UriUtils.fileName(smallInputUri));
 
         for (VariantDBIterator iterator = dbAdaptor.iterator(query, new QueryOptions("archive", true)); iterator.hasNext(); ) {
             Variant variant = iterator.next();

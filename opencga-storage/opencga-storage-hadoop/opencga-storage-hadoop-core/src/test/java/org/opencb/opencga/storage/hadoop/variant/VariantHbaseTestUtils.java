@@ -150,7 +150,8 @@ public class VariantHbaseTestUtils {
         PrintStream os = new PrintStream(new FileOutputStream(outputFile.toFile()));
         int numVariants = hm.act(tableName, table -> {
             int num = 0;
-            ResultScanner resultScanner = table.getScanner(genomeHelper.getColumnFamily());
+            byte[] family = genomeHelper.getColumnFamily();
+            ResultScanner resultScanner = table.getScanner(family);
             for (Result result : resultScanner) {
                 Variant variant;
                 try {
@@ -161,12 +162,13 @@ public class VariantHbaseTestUtils {
                     continue;
                 }
                 os.println("Variant = " + variant);
-                for (Map.Entry<byte[], byte[]> entry : result.getFamilyMap(genomeHelper.getColumnFamily()).entrySet()) {
+                for (Map.Entry<byte[], byte[]> entry : result.getFamilyMap(family).entrySet()) {
                     String key = Bytes.toString(entry.getKey());
                     PhoenixHelper.Column column = VariantPhoenixHelper.VariantColumn.getColumn(key);
                     if (column != null) {
                         os.println("\t" + key + " = " + length(entry.getValue()) + ", "
-                                + column.getPDataType().toObject(entry.getValue()));
+                                + column.getPDataType().toObject(entry.getValue())
+                         + ", ts:" + result.getColumnLatestCell(family, column.bytes()).getTimestamp());
                     } else if (key.endsWith(VariantPhoenixHelper.STATS_PROTOBUF_SUFIX)) {
 //                        ComplexFilter complexFilter = ComplexFilter.parseFrom(entry.getValue());
                         os.println("\t" + key + " = " + length(entry.getValue()) + ", " + Arrays.toString(entry.getValue()));

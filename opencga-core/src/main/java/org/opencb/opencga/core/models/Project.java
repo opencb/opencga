@@ -30,6 +30,9 @@ public class Project extends PrivateFields {
     private String uuid;
     @Deprecated
     private String alias;
+    /**
+     * Full Qualified Name (user@projectId).
+      */
     private String fqn;
     private String creationDate;
     private String modificationDate;
@@ -38,6 +41,7 @@ public class Project extends PrivateFields {
     private Organism organism;
     private int currentRelease;
     private Status status;
+    @Deprecated
     private String lastModified;
     private long size;
 

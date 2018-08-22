@@ -43,6 +43,7 @@ public class User {
     private Account account;
 
     private UserStatus status;
+    @Deprecated
     private String lastModified;
     private long size;
     private long quota;

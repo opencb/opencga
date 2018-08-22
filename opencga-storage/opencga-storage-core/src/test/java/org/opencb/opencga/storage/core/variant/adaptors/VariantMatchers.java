@@ -390,6 +390,15 @@ public class VariantMatchers {
         };
     }
 
+    public static Matcher<FileEntry> withAttribute(String attribute, Matcher<? super String> subMatcher) {
+        return new FeatureMatcher<FileEntry, String>(subMatcher, "with attribute " + attribute, attribute) {
+            @Override
+            protected String featureValueOf(FileEntry actual) {
+                return actual.getAttributes().get(attribute);
+            }
+        };
+    }
+
     public static Matcher<StudyEntry> withStats(final String cohortName, Matcher<? super VariantStats> subMatcher) {
         return new FeatureMatcher<StudyEntry, VariantStats>(subMatcher, "with stats " + cohortName, "Stats") {
             @Override
@@ -458,6 +467,20 @@ public class VariantMatchers {
             @Override
             public void describeTo(Description description) {
                 description.appendText(describe);
+            }
+        };
+    }
+
+    public static Matcher<String> asNumber(Matcher<? super Double> subMatcher) {
+        return new FeatureMatcher<String, Double>(subMatcher, "as number", "as number") {
+            @Override
+            protected Double featureValueOf(String actual) {
+                try {
+                    return Double.valueOf(actual);
+                } catch (NumberFormatException e) {
+                    return null;
+//                    throw e;
+                }
             }
         };
     }

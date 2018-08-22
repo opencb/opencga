@@ -25,8 +25,6 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.metadata.StudyConfigurationManager.checkStudyConfiguration;
-
 /**
  * Created on 18/04/18.
  *
@@ -47,7 +45,6 @@ public class MongoDBVariantStatisticsManager extends DefaultVariantStatisticsMan
         if (studyConfiguration.isAggregated()) {
             return super.createStats(variantDBAdaptor, output, cohorts, cohortIdsMap, studyConfiguration, options);
         }
-
         if (options == null) {
             options = new QueryOptions();
         }
@@ -61,19 +58,9 @@ public class MongoDBVariantStatisticsManager extends DefaultVariantStatisticsMan
         if (cohorts == null) {
             cohorts = new LinkedHashMap<>();
         }
-        checkAndUpdateStudyConfigurationCohorts(studyConfiguration, cohorts, overwrite, updateStats);
-        List<Integer> cohortIds = cohorts.keySet().stream().map(studyConfiguration.getCohortIds()::get).collect(Collectors.toList());
 
-        if (!overwrite) {
-            for (String cohortName : cohorts.keySet()) {
-                Integer cohortId = studyConfiguration.getCohortIds().get(cohortName);
-                if (studyConfiguration.getInvalidStats().contains(cohortId)) {
-                    logger.debug("Cohort \"{}\":{} is invalid. Need to overwrite stats. Using overwrite = true", cohortName, cohortId);
-                    overwrite = true;
-                }
-            }
-        }
-        checkStudyConfiguration(studyConfiguration);
+        studyConfiguration = preCalculateStats(cohorts, studyConfiguration, overwrite, updateStats, options);
+        overwrite = checkOverwrite(cohorts, studyConfiguration, overwrite);
 
 //        VariantSourceStats variantSourceStats = new VariantSourceStats(/*FILE_ID*/, Integer.toString(studyConfiguration.getStudyId()));
 
@@ -94,6 +81,7 @@ public class MongoDBVariantStatisticsManager extends DefaultVariantStatisticsMan
             };
 
             // tasks
+            List<Integer> cohortIds = cohorts.keySet().stream().map(studyConfiguration.getCohortIds()::get).collect(Collectors.toList());
             List<Task<Document, String>> tasks = new ArrayList<>(numTasks);
             ProgressLogger progressLogger = buildCreateStatsProgressLogger(variantDBAdaptor, readerQuery, options);
             for (int i = 0; i < numTasks; i++) {

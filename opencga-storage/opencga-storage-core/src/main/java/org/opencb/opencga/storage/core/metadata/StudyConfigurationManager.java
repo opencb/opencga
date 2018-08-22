@@ -54,6 +54,8 @@ import static org.opencb.opencga.storage.core.variant.annotation.annotators.Abst
 public class StudyConfigurationManager implements AutoCloseable {
     public static final String CACHED = "cached";
     public static final String READ_ONLY = "ro";
+    public static final QueryOptions RO_CACHED_OPTIONS = new QueryOptions(READ_ONLY, true)
+            .append(CACHED, true);
     protected static Logger logger = LoggerFactory.getLogger(StudyConfigurationManager.class);
 
     private final ProjectMetadataAdaptor projectDBAdaptor;
@@ -579,7 +581,7 @@ public class StudyConfigurationManager implements AutoCloseable {
             Collection<Integer> studyIds = studies.values();
             Integer fileIdFromStudy;
             for (Integer id : studyIds) {
-                StudyConfiguration sc = getStudyConfiguration(id, new QueryOptions(READ_ONLY, true).append(CACHED, true)).first();
+                StudyConfiguration sc = getStudyConfiguration(id, RO_CACHED_OPTIONS).first();
                 fileIdFromStudy = getFileIdFromStudy(fileId != null ? fileId : fileObj, sc);
                 if (fileIdFromStudy != null) {
                     return Pair.of(sc.getStudyId(), fileIdFromStudy);
@@ -620,7 +622,29 @@ public class StudyConfigurationManager implements AutoCloseable {
      * @return File id within this study. Null if the file does not exist.
      */
     public static Integer getFileIdFromStudy(Object fileObj, StudyConfiguration studyConfiguration) {
-        return getResourceIdFromStudy(fileObj, studyConfiguration, studyConfiguration.getFileIds());
+        return getFileIdFromStudy(fileObj, studyConfiguration, false);
+    }
+
+
+    /**
+     * Get fileId from a given study configuration.
+     *
+     * @param fileObj            File object
+     * @param studyConfiguration Study configuration.
+     * @param indexed            Only return indexed files
+     * @return File id within this study. Null if the file does not exist.
+     */
+    public static Integer getFileIdFromStudy(Object fileObj, StudyConfiguration studyConfiguration, boolean indexed) {
+        Integer fileId = getResourceIdFromStudy(fileObj, studyConfiguration, studyConfiguration.getFileIds());
+        if (indexed && fileId != null) {
+            if (studyConfiguration.getIndexedFiles().contains(fileId)) {
+                return fileId;
+            } else {
+                return null;
+            }
+        } else {
+            return fileId;
+        }
     }
 
     /**
@@ -864,7 +888,8 @@ public class StudyConfigurationManager implements AutoCloseable {
         }
     }
 
-    public int registerSearchIndexSamples(StudyConfiguration studyConfiguration, List<String> samples) throws StorageEngineException {
+    public int registerSearchIndexSamples(StudyConfiguration studyConfiguration, List<String> samples, boolean resume)
+            throws StorageEngineException {
         if (samples == null || samples.isEmpty()) {
             throw new StorageEngineException("Missing samples to index");
         }
@@ -872,6 +897,7 @@ public class StudyConfigurationManager implements AutoCloseable {
         List<Integer> sampleIds = new ArrayList<>(samples.size());
 
         List<String> alreadyIndexedSamples = new ArrayList<>();
+        Set<Integer> searchIndexSampleSets = new HashSet<>();
 
         for (String sample : samples) {
             Integer sampleId = getSampleIdFromStudy(sample, studyConfiguration);
@@ -879,18 +905,45 @@ public class StudyConfigurationManager implements AutoCloseable {
                 throw VariantQueryException.sampleNotFound(sample, studyConfiguration.getStudyName());
             }
             sampleIds.add(sampleId);
-            if (studyConfiguration.getSearchIndexedSampleSets().containsKey(sampleId)) {
+            Integer searchIndex = studyConfiguration.getSearchIndexedSampleSets().get(sampleId);
+            if (searchIndex != null) {
+                searchIndexSampleSets.add(searchIndex);
                 alreadyIndexedSamples.add(sample);
             }
         }
 
+        final int id;
         if (!alreadyIndexedSamples.isEmpty()) {
-            throw new StorageEngineException("Samples " + alreadyIndexedSamples + " already in search index");
-        }
+            // All samples are already indexed, and in the same collection
+            if (alreadyIndexedSamples.size() == samples.size() && searchIndexSampleSets.size() == 1) {
+                id = searchIndexSampleSets.iterator().next();
+                BatchFileOperation.Status status = studyConfiguration.getSearchIndexedSampleSetsStatus().get(id);
+                switch (status) {
+                    case DONE:
+                    case READY:
+                        throw new StorageEngineException("Samples already in search index.");
+                    case RUNNING:
+                        // Resume if resume=true
+                        if (!resume) {
+                            throw new StorageEngineException("Samples already being indexed. Resume operation to continue.");
+                        }
+                    case ERROR:
+                        // Resume
+                        logger.info("Resume load of secondary index in status " + status);
+                        break;
+                    default:
+                        throw new IllegalStateException("Unknown status " + status);
+                }
 
-        int id = newSearchIndexSamplesId(studyConfiguration);
-        for (Integer sampleId : sampleIds) {
-            studyConfiguration.getSearchIndexedSampleSets().put(sampleId, id);
+            } else {
+                throw new StorageEngineException("Samples " + alreadyIndexedSamples + " already in search index");
+            }
+        } else {
+            id = newSearchIndexSamplesId(studyConfiguration);
+            for (Integer sampleId : sampleIds) {
+                studyConfiguration.getSearchIndexedSampleSets().put(sampleId, id);
+            }
+            studyConfiguration.getSearchIndexedSampleSetsStatus().put(id, BatchFileOperation.Status.RUNNING);
         }
 
         return id;

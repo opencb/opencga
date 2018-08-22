@@ -46,9 +46,17 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
 
     private VariantTraitAssociationToEvidenceEntryConverter evidenceEntryConverter;
 
+    private int annotationId;
+
+    @Deprecated
     public VariantAnnotationToPhoenixConverter(byte[] columnFamily) {
+        this(columnFamily, -1);
+    }
+
+    public VariantAnnotationToPhoenixConverter(byte[] columnFamily, int annotationId) {
         super(columnFamily);
         evidenceEntryConverter = new VariantTraitAssociationToEvidenceEntryConverter();
+        this.annotationId = annotationId;
     }
 
     private final Logger logger = LoggerFactory.getLogger(VariantAnnotationToPhoenixConverter.class);
@@ -58,7 +66,14 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
 
         HashMap<PhoenixHelper.Column, Object> map = new HashMap<>();
 
+        // If there are VariantTraitAssociation, and there are none TraitAssociations (EvidenceEntry), convert
+        if (variantAnnotation.getVariantTraitAssociation() != null && CollectionUtils.isEmpty(variantAnnotation.getTraitAssociation())) {
+            List<EvidenceEntry> evidenceEntries = evidenceEntryConverter.convert(variantAnnotation.getVariantTraitAssociation());
+            variantAnnotation.setTraitAssociation(evidenceEntries);
+        }
+
         map.put(FULL_ANNOTATION, variantAnnotation.toString());
+        map.put(ANNOTATION_ID, annotationId);
 
         Set<String> genes = new HashSet<>();
         Set<String> gnSo = new HashSet<>();
@@ -148,12 +163,6 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
                     addNotNull(xrefs, clinVar.getAccession());
                 }
             }
-        }
-
-        // If there are VariantTraitAssociation, and there are none TraitAssociations (EvidenceEntry), convert
-        if (variantAnnotation.getVariantTraitAssociation() != null && CollectionUtils.isEmpty(variantAnnotation.getTraitAssociation())) {
-            List<EvidenceEntry> evidenceEntries = evidenceEntryConverter.convert(variantAnnotation.getVariantTraitAssociation());
-            variantAnnotation.setTraitAssociation(evidenceEntries);
         }
 
         if (CollectionUtils.isNotEmpty(variantAnnotation.getTraitAssociation())) {

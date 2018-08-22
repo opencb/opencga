@@ -326,6 +326,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
         final int batchSize = params.getInt(BATCH_SIZE, 100);
         final int numConsumers = params.getInt(NUM_WRITERS, 6);
         final String key = params.getString(CUSTOM_ANNOTATION_KEY, "default");
+        long ts = System.currentTimeMillis();
 
         ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
                 .setNumTasks(numConsumers)
@@ -347,7 +348,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                                 Region region = new Region(normalizeChromosome(gff.getSequenceName()), gff.getStart(), gff.getEnd());
                                 Query query = new Query(VariantQueryParam.REGION.key(), region);
                                 dbAdaptor.updateCustomAnnotations(
-                                        query, key, new AdditionalAttribute(Collections.singletonMap("feature", gff.getFeature())),
+                                        query, key, new AdditionalAttribute(Collections.singletonMap("feature", gff.getFeature())), ts,
                                         QueryOptions.empty());
                             }
                             return Collections.emptyList();
@@ -374,7 +375,8 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                                 annotation.put("name", bed.getName());
                                 annotation.put(("score"), String.valueOf(bed.getScore()));
                                 annotation.put(("strand"), bed.getStrand());
-                                dbAdaptor.updateCustomAnnotations(query, key, new AdditionalAttribute(annotation), QueryOptions.empty());
+                                AdditionalAttribute additionalAttribute = new AdditionalAttribute(annotation);
+                                dbAdaptor.updateCustomAnnotations(query, key, additionalAttribute, ts, QueryOptions.empty());
                             }
                             return Collections.emptyList();
                         }, null, config);
@@ -400,7 +402,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                             Query query = new Query(VariantQueryParam.REGION.key(), region);
                             Map<String, String> info = variant.getStudies().get(0).getFiles().get(0).getAttributes();
                             AdditionalAttribute attribute = new AdditionalAttribute(info);
-                            dbAdaptor.updateCustomAnnotations(query, key, attribute, new QueryOptions());
+                            dbAdaptor.updateCustomAnnotations(query, key, attribute, ts, new QueryOptions());
                         }
                         return Collections.emptyList();
                     }, null, config);

@@ -77,7 +77,7 @@ public class CatalogFileToSolrFileConverter implements ComplexTypeConverter<File
         if (file.getSoftware() != null) {
             fileSolrModel.setSoftware(file.getSoftware().getName());
         }
-        fileSolrModel.setExperiment(file.getExperiment().getName());
+//        fileSolrModel.setExperiment(file.getExperiment().getName());
 
         fileSolrModel.setNumSamples(file.getSamples() != null ? file.getSamples().size() : 0);
         fileSolrModel.setNumRelatedFiles(file.getRelatedFiles() != null ? file.getRelatedFiles().size() : 0);

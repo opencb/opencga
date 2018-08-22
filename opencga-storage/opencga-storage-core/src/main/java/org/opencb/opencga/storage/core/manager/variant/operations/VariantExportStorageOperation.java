@@ -226,7 +226,7 @@ public class VariantExportStorageOperation extends StorageOperation {
 
         @Override
         protected void processStudyConfiguration(StudyConfiguration studyConfiguration) {
-//            studyConfiguration.setStudyId((int) studyFqn);
+            studyConfiguration.setStudyName(studyStr);
 
             try {
                 // Create Samples
