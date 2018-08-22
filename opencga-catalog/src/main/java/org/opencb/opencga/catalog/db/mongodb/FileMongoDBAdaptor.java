@@ -98,7 +98,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     }
 
     @Override
-    public QueryResult<File> insert(File file, long studyId, QueryOptions options) throws CatalogDBException {
+    public QueryResult<File> insert(long studyId, File file, List<VariableSet> variableSetList, QueryOptions options)
+            throws CatalogDBException {
         long startTime = startQuery();
 
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
@@ -115,7 +116,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             file.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
         }
 
-        Document fileDocument = fileConverter.convertToStorageType(file);
+        Document fileDocument = fileConverter.convertToStorageType(file, variableSetList);
         if (StringUtils.isNotEmpty(file.getCreationDate())) {
             fileDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(file.getCreationDate()));
         } else {
@@ -409,7 +410,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         String fileName = path.getFileName().toString();
 
         Document fileDoc = (Document) nativeGet(new Query(QueryParams.UID.key(), fileUid), null).getResult().get(0);
-        File file = fileConverter.convertToDataModelType(fileDoc);
+        File file = fileConverter.convertToDataModelType(fileDoc, options);
 
         if (file.getType().equals(File.Type.DIRECTORY)) {
             filePath += filePath.endsWith("/") ? "" : "/";

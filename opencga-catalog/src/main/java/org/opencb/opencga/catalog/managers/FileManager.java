@@ -549,9 +549,11 @@ public class FileManager extends AnnotationSetManager<File> {
             }
         }
 
+        List<VariableSet> variableSetList = validateNewAnnotationSetsAndExtractVariableSets(study.getUid(), file.getAnnotationSets());
+
         file.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
         checkHooks(file, study.getFqn(), HookConfiguration.Stage.CREATE);
-        QueryResult<File> queryResult = fileDBAdaptor.insert(file, studyId, options);
+        QueryResult<File> queryResult = fileDBAdaptor.insert(studyId, file, variableSetList, options);
         // We obtain the permissions set in the parent folder and set them to the file or folder being created
         QueryResult<FileAclEntry> allFileAcls = authorizationManager.getAllFileAcls(studyId, parentFileId, userId, false);
         // Propagate ACLs
@@ -2638,7 +2640,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 catalogManager.getStudyManager().getCurrentRelease(study, userId), Collections.emptyList(), null, null);
         folder.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
         checkHooks(folder, study.getFqn(), HookConfiguration.Stage.CREATE);
-        QueryResult<File> queryResult = fileDBAdaptor.insert(folder, study.getUid(), new QueryOptions());
+        QueryResult<File> queryResult = fileDBAdaptor.insert(study.getUid(), folder, Collections.emptyList(), new QueryOptions());
         // Propagate ACLs
         if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
             authorizationManager.replicateAcls(study.getUid(), Arrays.asList(queryResult.first().getUid()), allFileAcls.getResult(),
@@ -2788,7 +2790,7 @@ public class FileManager extends AnnotationSetManager<File> {
                         Collections.emptyMap());
                 subfile.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
                 checkHooks(subfile, study.getFqn(), HookConfiguration.Stage.CREATE);
-                QueryResult<File> queryResult = fileDBAdaptor.insert(subfile, study.getUid(), new QueryOptions());
+                QueryResult<File> queryResult = fileDBAdaptor.insert(study.getUid(), subfile, Collections.emptyList(), new QueryOptions());
 
                 // Propagate ACLs
                 if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
@@ -2862,7 +2864,8 @@ public class FileManager extends AnnotationSetManager<File> {
                                     Collections.emptyMap(), Collections.emptyMap());
                             folder.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
                             checkHooks(folder, study.getFqn(), HookConfiguration.Stage.CREATE);
-                            QueryResult<File> queryResult = fileDBAdaptor.insert(folder, study.getUid(), new QueryOptions());
+                            QueryResult<File> queryResult = fileDBAdaptor.insert(study.getUid(), folder, Collections.emptyList(),
+                                    new QueryOptions());
 
                             // Propagate ACLs
                             if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
@@ -2913,7 +2916,8 @@ public class FileManager extends AnnotationSetManager<File> {
                                     Collections.emptyMap(), Collections.emptyMap());
                             subfile.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
                             checkHooks(subfile, study.getFqn(), HookConfiguration.Stage.CREATE);
-                            QueryResult<File> queryResult = fileDBAdaptor.insert(subfile, study.getUid(), new QueryOptions());
+                            QueryResult<File> queryResult = fileDBAdaptor.insert(study.getUid(), subfile, Collections.emptyList(),
+                                    new QueryOptions());
 
                             // Propagate ACLs
                             if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
