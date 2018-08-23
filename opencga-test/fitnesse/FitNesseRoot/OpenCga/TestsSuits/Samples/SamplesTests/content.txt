@@ -5,7 +5,7 @@
 |let|sId|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 |let|sId2|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 |let|sId3|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
-|let|createPostName|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|sampleName|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 |let|updatedName|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 |let|iName|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 |let|aS1|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
@@ -13,7 +13,7 @@
 
 !3 Create Sample
 !|Table: Rest Fixture | $baseURL |
-| setBody | {"name" : "$createPostName" }|
+| setBody | {"name" : "$sampleName" }|
 | setHeader|Content-Type:application/json|
 | POST | /v1/samples/create?sid=$sessionId&study=$study |200|  Content-Type: application/json ||
 |let|sampleId|js|response.jsonbody.response[0].result[0].id||
@@ -311,9 +311,10 @@
 !|Table: Rest Fixture | $baseURL |
 | GET |/v1/samples/search?sid=$sessionId&study=$study|| Content-Type: application/json |jsonbody.response[0].numTotalResults == 3|
 | GET |/v1/samples/search?sid=$sessionId&study=$study&annotation=variableSet=$gVariableSetId|| Content-Type: application/json |jsonbody.response[0].numTotalResults == 1|
-| GET |/v1/samples/search?sid=$sessionId&study=$study&annotation=variableSet!=$gVariableSetId||Content-Type: application/json |jsonbody.response[0].numTotalResults == 2|
+| GET |/v1/samples/search?sid=$sessionId&study=$study&annotation=variableSet!==$gVariableSetId||Content-Type: application/json |jsonbody.response[0].numTotalResults == 2|
 | GET |/v1/samples/search?sid=$sessionId&study=$study&annotation=variableSet=$gVariableSetId2||Content-Type: application/json |jsonbody.response[0].numTotalResults == 1|
-| GET |/v1/samples/search?sid=$sessionId&study=$study&annotation=variableSet!=$gVariableSetId2||Content-Type: application/json|jsonbody.response[0].numTotalResults == 2|
+| GET |/v1/samples/search?sid=$sessionId&study=$study&annotation=variableSet!==$gVariableSetId||Content-Type: application/json |jsonbody.response[0].numTotalResults == 2|
+
 
 !3 Search Annotation Set By Annotation
 !|Table: Rest Fixture | $baseURL |
@@ -422,7 +423,7 @@
 
 !3 Update (SET) ACL Sample 2 And Connecting Individual
 !|Table: Rest Fixture | $baseURL |
-| setBody | {  "permissions": "VIEW, DELETE", "action": "SET", "sample" : "$sampleId2", "propagate" : "true"}|
+| setBody | {  "permissions": "VIEW", "action": "SET", "sample" : "$sampleId2", "propagate" : "true"}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/samples/acl/$userA/update?sid=$sessionId&study=$study |200|  Content-Type: application/json ||
 
@@ -436,7 +437,6 @@
 !3 Get Member ACL (Individual)
 !|Table: Rest Fixture | $baseURL ||
 | GET | /v1/individuals/$individualId/acl?sid=$sessionId&member=$userA|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '1.0' && jsonbody.response[0].result[0].permissions[0] == 'VIEW'|
-| GET | /v1/individuals/$individualId/acl?sid=$sessionId&member=$userA|200|  Content-Type: application/json ||
 
 !3 Search Sample (All With Limit)
 !|Table: Rest Fixture | $baseURL |
@@ -471,7 +471,6 @@
 
 !3 Get First Snap Shot
 !| Table: Rest Fixture | $baseURL |
-| GET | /v1/samples/search?sid=$sessionId&study=$study&snapshot=$releaseNumber | 200 | Content-Type: application/json ||
 | GET | /v1/samples/search?sid=$sessionId&study=$study&snapshot=$releaseNumber | 200 | Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id =='$sampleId' && jsonbody.response[0].result.length =='2'|
 !3 Get Second Snap Shot 
 !| Table: Rest Fixture | $baseURL |
