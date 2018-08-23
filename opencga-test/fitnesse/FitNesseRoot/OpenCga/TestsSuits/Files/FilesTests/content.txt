@@ -1,6 +1,12 @@
 !define TEST_SYSTEM {slim}
 !define pathName {dummyPath}
 
+!3 Generate Random Variables 
+!|Table: Rest Fixture | $baseURL |
+|let|aS1|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|aS2|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|nestedAS|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+
 !3 Create Folder
 !|Table: Rest Fixture | $baseURL |
 | setBody | {  "directory": "true", "path" : "${pathName}", "parents" : "true"}|
@@ -21,12 +27,20 @@
 | setHeader|Content-Type:application/json|
 | POST | /v1/files/create?sid=$sessionId&study=$study |500|  Content-Type: application/json |  |
 
-!3 Create File 
+!3 Create File 1
 !|Table: Rest Fixture | $baseURL |
 | setBody | {  "directory": "false", "path" : "${pathName}/file", "parents" : "false", "description" : "testing file", "content" :"data goes here"}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/files/create?sid=$sessionId&study=$study |200|Content-Type: application/json||
 |let|fileId|js|response.jsonbody.response[0].result[0].id||
+
+
+!3 Create File 2
+!|Table: Rest Fixture | $baseURL |
+| setBody | {  "directory": "false", "path" : "${pathName}/file2", "parents" : "false", "description" : "testing file 2", "content" :"data for file 2 goes here"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/files/create?sid=$sessionId&study=$study |200|Content-Type: application/json||
+|let|fileId2|js|response.jsonbody.response[0].result[0].id||
 
 #error message is correct but not the return code, sending 200 as of now
 !3 (Negative) Create Folder with Existing Name
@@ -176,15 +190,136 @@
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/files/search?sid=$sessionId&name=file&samples=$sampleId,$sampleId2 ||Content-Type: application/json|jsonbody.error === '' && jsonbody.response[0].result[0].samples[0].id == "$sampleId" && jsonbody.response[0].result[0].samples[1].id == "$sampleId2"|
 
+!3 Create Annotation Set For File 1
+!|Table: Rest Fixture  | $baseURL |
+| setBody |{ "annotationSets":[{"name": "$aS1", "variableSetId": "$gVariableSetId",  "annotations": {"var_int": "10","var_double": "175.58"}}]}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/files/$fileId/update?sid=$sessionId&study=$studyId |200|Content-Type : application/json||
+
+!3 Create Annotation Set For File 2
+!|Table: Rest Fixture  | $baseURL |
+| setBody |{ "annotationSets":[{"name": "$aS2", "variableSetId": "$gVariableSetId",  "annotations": {"var_int": "50","var_double": "55.44"}}]}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/files/$fileId2/update?sid=$sessionId&study=$studyId |200|Content-Type : application/json||
+
+!3 Search Annotation Set By Annotation
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/files/search?sid=$sessionId&variableSet=$gVariableSetId&annotation=annotationSet=$aS1|200|  Content-Type: application/json ||
+
+!3 Create Nested Annotation For File 1 Using VS2
+!|Table: Rest Fixture | $baseURL |
+|setBody| { "annotationSets":[{"id": "$nestedAS","variableSetId": "$gVariableSetId2","annotations": { "outer_var" : [{"inner_first_var":1000.57 , "inner_second_var":2000}]}}]}|
+|setHeader|Content-Type:application/json|
+|POST| /v1/files/$fileId/update?sid=$sessionId |200|  Content-Type: application/json |jsonbody.response[0].result[0].annotationSets.length == 2|
+
+!3 Search Annotation Set By Variable Set  
+!|Table: Rest Fixture | $baseURL |
+| GET |/v1/files/search?sid=$sessionId&study=$study|| Content-Type: application/json ||
+| GET |/v1/files/search?sid=$sessionId&study=$study&annotation=variableSet=$gVariableSetId&type=FILE|| Content-Type: application/json |jsonbody.response[0].numTotalResults == 2|
+| GET |/v1/files/search?sid=$sessionId&study=$study&annotation=variableSet!=$gVariableSetId&type=FILE||Content-Type: application/json |jsonbody.response[0].result[0].id == '$fileId'|
+| GET |/v1/files/search?sid=$sessionId&study=$study&annotation=variableSet=$gVariableSetId2&type=FILE||Content-Type: application/json |jsonbody.response[0].result[0].annotationSets.length == 2|
+| GET |/v1/files/search?sid=$sessionId&study=$study&annotation=variableSet!=$gVariableSetId2&type=FILE||Content-Type: application/json|jsonbody.response[0].result.length == 2|
+| GET |/v1/files/search?sid=$sessionId&study=$study&annotation=variableSet===$gVariableSetId&type=FILE||Content-Type: application/json |jsonbody.response[0].result[0].id == '$fileId2'|
+| GET |/v1/files/search?sid=$sessionId&study=$study&annotation=variableSet===$gVariableSetId2&type=FILE||Content-Type: application/json |jsonbody.response[0].result.length == 0|
+| GET |/v1/files/search?sid=$sessionId&study=$study&annotation=variableSet!==$gVariableSetId&type=FILE||Content-Type: application/json |jsonbody.response[0].result.length == 0|
+| GET |/v1/files/search?sid=$sessionId&study=$study&annotation=variableSet!==$gVariableSetId2&type=FILE||Content-Type: application/json|jsonbody.response[0].result[0].id == '$fileId2'|
+| GET |/v1/files/search?sid=$sessionId&study=$study&annotation=variableSet==$dummyVSId&type=FILE||Content-Type: application/json|jsonbody.response[0].result.length == 0|
+
+
+!3 Search Annotation Set By Annotation 
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/files/search?sid=$sessionId&study=$study&annotation=annotationSet==$nestedAS||Content-Type: application/json ||
+
+!3 Search Annotation Set By Annotation
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/files/search?sid=$sessionId&study=$study&annotation=annotationSet=$nestedAS||Content-Type: application/json |jsonbody.response[0].result[0].annotationSets.length == 2|
+
+!3 Search Annotation Set By Annotation
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/files/search?sid=$sessionId&study=$study&annotation=annotationSet=$aS1||Content-Type: application/json |jsonbody.response[0].result[0].annotationSets.length == 2|
+
+!3 Search Annotation Set By Annotation With Exclude
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/files/search?sid=$sessionId&study=$study&annotation=annotationSet=$aS1&exclude=annotationSet.$nestedAS||  Content-Type: application/json |jsonbody.response[0].result[0].annotationSets.length == 1 && jsonbody.response[0].result[0].annotationSets[0].id == "$aS1"|
+
+!3 Update Variable in An Annotation  
+!|Table: Rest Fixture | $baseURL |
+| setBody | {"var_int": "545"}|
+|setHeader|Content-Type:application/json|
+|POST| /v1/files/$fileId/annotationSets/$aS1/annotations/update?sid=$sessionId&action=ADD |200|  Content-Type: application/json ||
+
+!3 (Negative) Update Variable in An Annotation
+!|Table: Rest Fixture | $baseURL |
+| setBody |{"var_int": "542.5"}|
+|setHeader|Content-Type:application/json|
+|POST| /v1/files/$fileId/annotationSets/$aS1/annotations/update?sid=$sessionId&action=ADD |500|  Content-Type: application/json |jsonbody.error == 'Value 542.5 is not an integer number'|
+
+!3 (Negative) Update Variable in An Annotation
+!|Table: Rest Fixture | $baseURL |
+| setBody |{"var_double": "ABC"}|
+|setHeader|Content-Type:application/json|
+|POST| /v1/files/$fileId/annotationSets/$aS1/annotations/update?sid=$sessionId&action=ADD |500|  Content-Type: application/json |jsonbody.error == 'Value ABC is not a number'|
+
+!3 Update Variable in An Annotation
+!|Table: Rest Fixture | $baseURL |
+| setBody |{"var_double": "2065.35"}|
+|setHeader|Content-Type:application/json|
+|POST| /v1/files/$fileId/annotationSets/$aS1/annotations/update?sid=$sessionId&action=ADD |200|  Content-Type: application/json ||
+
+!3 (Negative) Delete Mandatory Variable In Annotation
+!|Table: Rest Fixture | $baseURL |
+| setBody |{"remove" : "var_int"}|
+|setHeader|Content-Type:application/json|
+|POST| /v1/files/$fileId/annotationSets/$aS1/annotations/update?sid=$sessionId&action=REMOVE |500|  Content-Type: application/json |jsonbody.error == 'var_int: Cannot remove required variable.'|
+
+!3 Remove Variable From Annotation 
+!|Table: Rest Fixture | $baseURL |
+| setBody |{"remove" : "var_double"}|
+|setHeader|Content-Type:application/json|
+|POST| /v1/files/$fileId/annotationSets/$aS1/annotations/update?sid=$sessionId&action=REMOVE |200|  Content-Type: application/json ||
+
+!3 Search Deleted Variable From Annotation Set  
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/files/search?sid=$sessionId&study=$study&annotation=annotationSet=$aS1&exclude=annotationSet.$nestedAS||  Content-Type: application/json |jsonbody.response[0].result[0].annotationSets.length == 1 && jsonbody.response[0].result[0].annotationSets[0].annotations.var_int == "545"|
+|let||js|response.jsonbody.response[0].result[0].annotationSets[0].annotations["var_double"]||
+
+!3 Reset Variable From Annotation 
+!|Table: Rest Fixture | $baseURL |
+| setBody |{"reset" : "var_double"}|
+|setHeader|Content-Type:application/json|
+|POST| /v1/files/$fileId/annotationSets/$aS1/annotations/update?sid=$sessionId&action=RESET |200|  Content-Type: application/json ||
+
+!3 Search Reset Variable From Annotation Set
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/files/search?sid=$sessionId&study=$study&annotation=annotationSet=$aS1&exclude=annotationSet.$nestedAS||  Content-Type: application/json |jsonbody.response[0].result[0].annotationSets.length == 1 && jsonbody.response[0].result[0].annotationSets[0].annotations.var_int == "545" && jsonbody.response[0].result[0].annotationSets[0].annotations.var_double == "20.5"|
+
+!3 (Negative) Reset Variable Without A Default Value From Annotation
+!|Table: Rest Fixture | $baseURL |
+| setBody |{"reset" : "var_int"}|
+|setHeader|Content-Type:application/json|
+|POST| /v1/files/$fileId/annotationSets/$aS1/annotations/update?sid=$sessionId&action=RESET ||  Content-Type: application/json |jsonbody.error == 'var_int: No default value found for variable.'|
+
+!3 Delete Annotation  
+!|Table: Rest Fixture | $baseURL |
+| setBody |{ "annotationSets":[{"id": "$aS1"}]}|
+|setHeader|Content-Type:application/json|
+|POST| /v1/files/$fileId/update?sid=$sessionId&annotationSetsAction=REMOVE ||  Content-Type: application/json |jsonbody.response[0].result[0].annotationSets[0].id == "$nestedAS"|
+
+!3 Get Flatten Annotation
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/files/search?sid=$sessionId&study=$study&annotation=annotationSet=$nestedAS&flattenAnnotations=true||Content-Type: application/json|jsonbody.response[0].result[0].annotationSets[0].annotations["outer_var.inner_second_var"][0] == 2000 && jsonbody.response[0].result[0].annotationSets[0].annotations["outer_var.inner_first_var"][0] == 1000.57|
+
+!3 Get Standard Annotation (Not Flatten)
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/files/search?sid=$sessionId&study=$study&annotation=annotationSet=$nestedAS&flattenAnnotations=false||  Content-Type: application/json |jsonbody.response[0].result[0].annotationSets[0].annotations["outer_var"][0]["inner_first_var"] == 1000.57  && jsonbody.response[0].result[0].annotationSets[0].annotations["outer_var"][0]["inner_second_var"] == 2000  |
+
 !3 Delete All Samples
 !|Table: Rest Fixture | $baseURL |
 | DELETE | /v1/samples/delete?sid=$sessionId&study=$study&id=$sampleId,$sampleId2&force=true|200|  Content-Type: application/json ||
-#| GET | /v1/samples/$sampleId,$sampleId2/delete?sid=$sessionId&study=$study|200|  Content-Type: application/json ||
 
 !3 Search First Deleted Sample 
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/samples/search?sid=$sessionId&study=$study&name=sample1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
-| GET | /v1/samples/search?sid=$sessionId&study=$study&name=sample1|200|  Content-Type: application/json ||
 
 !3 Search Second Deleted Sample 
 !|Table: Rest Fixture | $baseURL |
