@@ -1167,6 +1167,25 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testUpdateIndividuaParents() throws CatalogException {
+        IndividualManager individualManager = catalogManager.getIndividualManager();
+        individualManager.create(studyFqn, new Individual().setId("child"), QueryOptions.empty(), sessionIdUser);
+        individualManager.create(studyFqn, new Individual().setId("father"), QueryOptions.empty(), sessionIdUser);
+        individualManager.create(studyFqn, new Individual().setId("mother"), QueryOptions.empty(), sessionIdUser);
+
+        QueryResult<Individual> individualQueryResult = individualManager.update(studyFqn, "child", new ObjectMap()
+                        .append(IndividualDBAdaptor.QueryParams.FATHER.key(), new ObjectMap(IndividualDBAdaptor.QueryParams.ID.key(), "father"))
+                        .append(IndividualDBAdaptor.QueryParams.MOTHER.key(), new ObjectMap(IndividualDBAdaptor.QueryParams.ID.key(), "mother")),
+                QueryOptions.empty(), sessionIdUser);
+
+        assertEquals("mother", individualQueryResult.first().getMother().getId());
+        assertEquals(1, individualQueryResult.first().getMother().getVersion());
+
+        assertEquals("father", individualQueryResult.first().getFather().getId());
+        assertEquals(1, individualQueryResult.first().getFather().getVersion());
+    }
+
+    @Test
     public void testGetIndividualWithSamples() throws CatalogException {
         IndividualManager individualManager = catalogManager.getIndividualManager();
         individualManager.create(studyFqn, new Individual().setId("individual1")
