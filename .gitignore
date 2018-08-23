@@ -85,6 +85,7 @@ opencga-client/src/main/R/vignettes/opencgaR.md
 /opencga-catalog/src/test/java/org/opencb/opencga/catalog/config/CatalogConfigurationTest.java
 
 opencga-test/fitnesse/FitNesseRoot/files/testResults
+opencga-test/fitnesse/FitNesseRoot/RecentChanges.wiki
 
 # Python
 *.pyc
