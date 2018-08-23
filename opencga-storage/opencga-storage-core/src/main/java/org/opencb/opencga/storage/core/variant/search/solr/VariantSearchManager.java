@@ -473,7 +473,7 @@ public class VariantSearchManager {
         String countName;
         FacetedQueryResultItem.Field field = null;
         if (pivot.getPivot() != null && CollectionUtils.isNotEmpty(pivot.getPivot())) {
-            field = new FacetedQueryResultItem().new Field();
+            field = new FacetedQueryResultItem.Field();
             field.setName(name.split(",")[index]);
 
             long total = 0;
@@ -487,9 +487,8 @@ public class VariantSearchManager {
                         || (!countName.startsWith("ENSG0") && !countName.startsWith("ENST0"))) {
                     // and then check if this has to be include
                     if (toInclude(includes, field.getName(), solrPivot.getValue().toString())) {
-                        FacetedQueryResultItem.Count count = new FacetedQueryResultItem()
-                                .new Count(updateValueIfSoAcc(field.getName(), countName),
-                                solrPivot.getCount(), nestedField);
+                        FacetedQueryResultItem.Count count = new FacetedQueryResultItem.Count(updateValueIfSoAcc(field.getName(),
+                                countName), solrPivot.getCount(), nestedField);
                         counts.add(count);
                     }
                     total += solrPivot.getCount();
@@ -561,7 +560,7 @@ public class VariantSearchManager {
         List<FacetedQueryResultItem.Field> fields = new ArrayList<>();
         if (response.getFacetFields() != null) {
             for (FacetField solrField : response.getFacetFields()) {
-                FacetedQueryResultItem.Field field = new FacetedQueryResultItem().new Field();
+                FacetedQueryResultItem.Field field = new FacetedQueryResultItem.Field();
                 field.setName(solrField.getName());
 
                 long total = 0;
@@ -573,8 +572,8 @@ public class VariantSearchManager {
                             || (!countName.startsWith("ENSG0") && !countName.startsWith("ENST0"))) {
                         // and then check if this has to be include
                         if (toInclude(includes, field.getName(), solrCount.getName())) {
-                            FacetedQueryResultItem.Count count = new FacetedQueryResultItem()
-                                    .new Count(updateValueIfSoAcc(field.getName(), countName), solrCount.getCount(), null);
+                            FacetedQueryResultItem.Count count = new FacetedQueryResultItem.Count(updateValueIfSoAcc(field.getName(),
+                                    countName), solrCount.getCount(), null);
                             counts.add(count);
                         }
                         total += solrCount.getCount();
@@ -595,7 +594,7 @@ public class VariantSearchManager {
                 List<PivotField> solrPivots = facetPivot.getVal(i);
                 if (solrPivots != null && CollectionUtils.isNotEmpty(solrPivots)) {
                     // init field
-                    FacetedQueryResultItem.Field field = new FacetedQueryResultItem().new Field();
+                    FacetedQueryResultItem.Field field = new FacetedQueryResultItem.Field();
                     field.setName(facetPivot.getName(i).split(",")[0]);
 
                     long total = 0;
@@ -609,9 +608,8 @@ public class VariantSearchManager {
                                 || (!countName.startsWith("ENSG0") && !countName.startsWith("ENST0"))) {
                             // and then check if this has to be include
                             if (toInclude(includes, field.getName(), solrPivot.getValue().toString())) {
-                                FacetedQueryResultItem.Count count = new FacetedQueryResultItem()
-                                        .new Count(updateValueIfSoAcc(field.getName(), solrPivot.getValue().toString()),
-                                        solrPivot.getCount(), nestedField);
+                                FacetedQueryResultItem.Count count = new FacetedQueryResultItem.Count(updateValueIfSoAcc(field.getName(),
+                                        solrPivot.getValue().toString()), solrPivot.getCount(), nestedField);
                                 counts.add(count);
                             }
                             total += solrPivot.getCount();
@@ -637,7 +635,7 @@ public class VariantSearchManager {
                     total += count;
                     counts.add(count);
                 }
-                ranges.add(new FacetedQueryResultItem().new Range(solrRange.getName(),
+                ranges.add(new FacetedQueryResultItem.Range(solrRange.getName(),
                         (Number) solrRange.getStart(), (Number) solrRange.getEnd(),
                         (Number) solrRange.getGap(), total, counts));
             }
@@ -651,7 +649,7 @@ public class VariantSearchManager {
                 for (String key : intersectionMap.keySet()) {
                     List<List<String>> intersectionLists = intersectionMap.get(key);
                     for (List<String> list : intersectionLists) {
-                        FacetedQueryResultItem.Intersection intersection = new FacetedQueryResultItem().new Intersection();
+                        FacetedQueryResultItem.Intersection intersection = new FacetedQueryResultItem.Intersection();
                         intersection.setName(key);
                         intersection.setSize(list.size());
                         if (list.size() == 2) {

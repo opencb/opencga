@@ -140,13 +140,6 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
     }
 
     @Test
-    public void testFacet() throws CatalogException, SolrServerException, IOException {
-
-        System.out.println(catalogSolrManager.facetedQuery(catalogManager.getConfiguration().getDatabasePrefix() + "_" + CatalogSolrManager.SAMPLE_SOLR_COLLECTION, new Query("study", "bertha@100k_genomes_grch38_somatic:CS38"), new QueryOptions(QueryOptions.FACET, "status")));
-
-    }
-
-    @Test
     public void testInsertSamples() throws CatalogException, IOException {
         MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(catalogManager.getConfiguration());
 
