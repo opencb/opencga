@@ -323,12 +323,11 @@
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/studies/$studyId/permissionRules?entity=JOBS&sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '1' && jsonbody.response[0].result[0].id == 'PR1' && jsonbody.response[0].result[0].members == '$userA'|
 
-!3 Create Second Permission Rule For Jobs 
+!3 Create Second Permission Rule For Jobs
 !|Table: Rest Fixture | $baseURL |
 | setBody | { "id": "PR2", "query": {"name" : "jobs2"},  "members": ["$userB"],  "permissions": ["VIEW"]}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/studies/$studyId/permissionRules/update?sid=$sessionId&entity=JOBS&action=ADD |200|  Content-Type: application/json ||
-#| POST | /v1/studies/$studyId/permissionRules/JOBS/create?sid=$sessionId |200|  Content-Type: application/json |jsonbody.response[0].result[0].id == 'PR2' && jsonbody.response[0].result[0].members == '$userB'|
+| POST | /v1/studies/$studyId/permissionRules/update?sid=$sessionId&entity=JOBS&action=ADD  |200|  Content-Type: application/json |jsonbody.response[0].result[0].id == 'PR2' && jsonbody.response[0].result[0].members == '$userB'|
 
 !3 Get All Permission Rules For Jobs 
 !|Table: Rest Fixture | $baseURL |
@@ -412,7 +411,4 @@
 !|Table: Rest Fixture  | $baseURL |
 | setHeader|Content-Type:application/json|
 | GET | /v1/studies/$study/variableSets?sid=$sessionId&id=$variableSetId1 |500| Content-Type : application/json|jsonbody.error == 'Variable set $variableSetId1 not found in study $study'|
-
-
-
 

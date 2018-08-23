@@ -330,7 +330,6 @@
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/samples/search?sid=$sessionId&study=$study&annotation=annotationSet=$aS1||Content-Type: application/json |jsonbody.response[0].result[0].annotationSets.length == 2|
 
-
 !3 Search Annotation Set By Annotation Using Include
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/samples/search?sid=$sessionId&study=$study&annotation=var_double%3C%3D20.5||Content-Type: application/json ||
@@ -348,7 +347,6 @@
 | GET | /v1/samples/search?sid=$sessionId&study=$study&annotation=var_double=20.5&exclude=annotation.var_double||Content-Type: application/json ||
 | GET | /v1/samples/search?sid=$sessionId&study=$study&exclude=annotationSets||Content-Type: application/json ||
 | GET | /v1/samples/search?sid=$sessionId&study=$study||Content-Type: application/json ||
-
 
 !3 Search Annotation Set By Annotation With Exclude
 !|Table: Rest Fixture | $baseURL |
@@ -427,7 +425,7 @@
 | setHeader|Content-Type:application/json|
 | POST | /v1/samples/acl/$userA/update?sid=$sessionId&study=$study |200|  Content-Type: application/json ||
 
-!3 Update (SET) ACL Sample And Propagate True without Any Attached Individual XXX
+!3 Update (SET) ACL Sample And Propagate True without Any Attached Individual
 !|Table: Rest Fixture | $baseURL |
 | setBody | {  "permissions": "VIEW", "action": "SET", "sample" : "$sampleId", "propagate" : "true"}|
 | setHeader|Content-Type:application/json|

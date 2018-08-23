@@ -320,7 +320,6 @@
 !3 Search First Deleted Sample 
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/samples/search?sid=$sessionId&study=$study&name=sample1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
-| GET | /v1/samples/search?sid=$sessionId&study=$study&name=sample1|200|  Content-Type: application/json ||
 
 !3 Search Second Deleted Sample 
 !|Table: Rest Fixture | $baseURL |
