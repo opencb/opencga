@@ -40,8 +40,7 @@
 
 !3 Get Study Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/info |403|Content-Type: application/json|jsonbody.error != ''|
-| GET | /v1/studies/$studyId/info ||Content-Type: application/json||
+| GET | /v1/studies/$studyId/info |403|Content-Type: application/json|jsonbody.error == "Permission denied. User '*' cannot view study { id: $study }"|
 
 !3 Create Anonymous User For Study
 !|Table: Rest Fixture | $baseURL |
@@ -73,9 +72,7 @@
 
 !3 Get Studies Info With One Invalid Entry And Silent False
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$lStudyId,$studyId,000/info?sid=$sessionId|403|Content-Type: application/json |jsonbody.response[0].errorMsg == "DEPRECATED: org.opencb.opencga.catalog.exceptions.CatalogException: No study found given '000' or the user '$user'  does not have permissions to view any."|
-| GET | /v1/studies/$lStudyId,$studyId,000/info?sid=$sessionId||Content-Type: application/json ||
-| GET | /v1/studies/$lStudyId,$studyId,000/info?sid=$sessionId&silent=false||Content-Type: application/json ||
+| GET | /v1/studies/$lStudyId,$studyId,000/info?sid=$sessionId|500|Content-Type: application/json |jsonbody.response[0].errorMsg == "DEPRECATED: org.opencb.opencga.catalog.exceptions.CatalogException: No study found given '000' or the user '$user'  does not have permissions to view any."|
 
 !3 Get Studies Info With One Invalid Entry And Silent True
 !|Table: Rest Fixture | $baseURL |
@@ -171,12 +168,11 @@
 
 !3 Get Groups From Studies In Reverser Order With One Invalid Entry And Silent False
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId,000,$lStudyId/groups?sid=$sessionId&silent=false|403|Content-Type: application/json |jsonbody.error == "No study found or the user $user does not have permissions to view any."|
-| GET | /v1/studies/$studyId,000,$lStudyId/groups?sid=$sessionId&silent=false||Content-Type: application/json |jsonbody.error == "No study found or the user $user does not have permissions to view any."|
+| GET | /v1/studies/$studyId,000,$lStudyId/groups?sid=$sessionId&silent=false|403|Content-Type: application/json |jsonbody.error == "No study found given '000' or the user '$user'  does not have permissions to view any."|
 
 !3 Get Groups From Studies In Reverser Order With One Invalid Entry And Silent True
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId,000,$lStudyId/groups?sid=$sessionId&silent=true|200|Content-Type: application/json |jsonbody.response[0].numResults == '2' && jsonbody.response[1].errorMsg == 'org.opencb.opencga.catalog.exceptions.CatalogException: No study found or the user $user does not have permissions to view any.' && jsonbody.response[2].numResults == '4'|
+| GET | /v1/studies/$studyId,000,$lStudyId/groups?sid=$sessionId&silent=true|200|Content-Type: application/json |jsonbody.response[0].numResults == '2' && jsonbody.response[1].errorMsg == "org.opencb.opencga.catalog.exceptions.CatalogException: No study found given '000' or the user '$user'  does not have permissions to view any." && jsonbody.response[2].numResults == '4'|
 
 !3 Delete Group 
 !|Table: Rest Fixture | $baseURL |
@@ -406,7 +402,7 @@
 | setHeader|Content-Type:application/json|
 | POST | /v1/studies/$study/variableSets/$variableSetId1/variables/update?sid=$sessionId&study=$study&action=REMOVE |200| Content-Type : application/json|jsonbody.response[0].result[0].variables.length == 2|
 
-!3 Remove Variable Set1  XXX
+!3 Remove Variable Set1  
 !|Table: Rest Fixture  | $baseURL |
 | setBody |  {"id":"$variableSetId1"}|
 | setHeader|Content-Type:application/json|

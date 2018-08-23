@@ -353,10 +353,8 @@
 | GET | /v1/families/search?sid=$sessionId&study=$study&annotation=variableSet=$gVariableSetId | | Content-Type: application/json | jsonbody.response[0].numTotalResults == 2 |
 | GET | /v1/families/search?sid=$sessionId&study=$study&annotation=variableSet===$gVariableSetId | | Content-Type: application/json | jsonbody.response[0].result[0].id == "$familyId2" |
 | GET | /v1/families/search?sid=$sessionId&study=$study&annotation=variableSet===$gVariableSetId | | Content-Type: application/json | |
-#| GET | /v1/families/search?sid=$sessionId&study=$study&annotation=variableSet=$gVariableSetId2 | | Content-Type: application/json | jsonbody.response[0].result[0].annotationSets.length == 2 |
-#| GET | /v1/families/search?sid=$sessionId&study=$study&annotation=variableSet!=$gVariableSetId2 | | Content-Type: application/json | jsonbody.response[0].numTotalResults == 2 |
 
-!3 Search Annotation Set By Annotation XXX
+!3 Search Annotation Set By Annotation
 !| Table: Rest Fixture | $baseURL |
 | GET | /v1/families/search?sid=$sessionId&study=$study&annotation=annotationSet=$aS1 | | Content-Type: application/json |  jsonbody.response[0].numTotalResults == '2' |
 

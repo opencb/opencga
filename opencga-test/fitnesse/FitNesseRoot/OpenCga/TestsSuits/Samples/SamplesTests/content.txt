@@ -94,8 +94,7 @@
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"name" : "newName" }|
 | setHeader|Content-Type:application/json|
-| POST | /v1/samples/$sampleId/update?sid=$sessionId&incVersion=false |200|  Content-Type: application/json ||
-#| POST | /v1/samples/$sampleId/update?sid=$sessionId&incVersion=false |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].name == 'newName'|
+| POST | /v1/samples/$sampleId/update?sid=$sessionId&incVersion=false&study=$study |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].name == 'newName'|
 
 !3 Update Sample With Version Increment
 !|Table: Rest Fixture | $baseURL |
@@ -111,7 +110,7 @@
 
 !3 Get Sample Returns Latest Version
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/samples/$sampleId/info?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].name == '$updatedName' && jsonbody.response[0].result[0].version == '3'|
+| GET | /v1/samples/$sampleId/info?sid=$sessionId&study=$study|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].name == '$updatedName' && jsonbody.response[0].result[0].version == '3'|
 
 !3 Search Sample Returns Latest Version
 !|Table: Rest Fixture | $baseURL |
