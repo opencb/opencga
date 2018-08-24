@@ -4,7 +4,6 @@
 !define TEST_HOST {qa.opencb.org}
 !define VERSION {v1}
 
-
 !|import|
 |smartrics.rest.fitnesse.fixture|
 
@@ -12,8 +11,6 @@
 |restfixture.display.toggle.for.cells.larger.than|200|
 |restfixture.display.actual.on.right | false |
 |http.client.connection.timeout| 100000|
-
-#|let|user|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5).concat("-",Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)).concat(".",Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5))||
 
 !3 Generate Random Variables 
 !|Table: Rest Fixture | http://bioinfoint.hpc.cam.ac.uk/|
@@ -79,7 +76,7 @@
 | POST | /v1/variableset/create?sid=$sessionId&study=$study |200| Content-Type : application/json||
 |let|gVariableSetId2|js|response.jsonbody.response[0].result[0].id||
 
-!3 Create Global Variable Set  Without Ids
+!3 Create Global Variable Set Without Ids
 !|Table: Rest Fixture  | $baseURL |
 | setBody |  { "unique": false, "confidential" : "false",  "name": "VSNameTest",  "description": "string",  "variables": [{"name": "outer_var", "type" : "OBJECT", "required" : true,"multiValue": true , "variableSet" : [{"name": "inner_first_var_name_test", "type" : "DOUBLE", "defaultValue" : "20.5" , "required" : false,"multiValue": false }, {"name": "inner_second_var_name_test", "type" : "INTEGER", "defaultValue" : "20" , "required" : false,"multiValue": false }] }]}|
 | setHeader|Content-Type:application/json|

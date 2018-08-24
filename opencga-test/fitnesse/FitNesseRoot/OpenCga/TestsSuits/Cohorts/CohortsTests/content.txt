@@ -11,14 +11,14 @@
 |let|aS2|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 |let|nestedAS|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 
-!3 Create Cohort 
+!3 Create Cohort 1
 !|Table: Rest Fixture | $baseURL |
 | setBody |{ "name": "$CohortName1"}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/cohorts/create?sid=$sessionId&study=$study |200|  Content-Type: application/json ||
-|let|cohortId|js|response.jsonbody.response[0].result[0].id|2222|
+|let|cohortId|js|response.jsonbody.response[0].result[0].id||
 
-!3 Create Second Cohort 
+!3 Create Cohort 2
 !|Table: Rest Fixture | $baseURL |
 | setBody |{ "name": "$CohortName2"}|
 | setHeader|Content-Type:application/json|
@@ -29,7 +29,7 @@
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/cohorts/search?sid=$sessionId&study=$study&id=$CohortName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$cohortId'|
 
-!3 Find Info About A Cohort 
+!3 Find Info About Cohort 1
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/cohorts/$cohortId/info?sid=$sessionId&study=$study|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$cohortId'|
 
@@ -40,7 +40,6 @@
 !3 Get Study Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/studies/$studyId/info |403|Content-Type: application/json|jsonbody.error == "Permission denied. User '*' cannot view study { id: $user@$project:$studyId }"|
-| GET | /v1/studies/$studyId/info |403|Content-Type: application/json||
 
 !3 Get Cohort Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
