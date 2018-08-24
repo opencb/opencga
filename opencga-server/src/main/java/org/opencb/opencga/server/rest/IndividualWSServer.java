@@ -722,7 +722,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
         public Individual.LifeStatus lifeStatus;
         public Individual.AffectationStatus affectationStatus;
         public List<AnnotationSet> annotationSets;
-        public List<OntologyTerm> phenotypes;
+        public List<Phenotype> phenotypes;
         public Map<String, Object> attributes;
 
         public Individual toIndividual(String studyStr, StudyManager studyManager, String sessionId) throws CatalogException {

@@ -569,7 +569,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
         public Individual.LifeStatus lifeStatus;
         public Individual.AffectationStatus affectationStatus;
         public List<AnnotationSet> annotationSets;
-        public List<OntologyTerm> phenotypes;
+        public List<Phenotype> phenotypes;
         public Map<String, Object> attributes;
 
 
@@ -623,7 +623,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
         public String name;
         public String description;
 
-        public List<OntologyTerm> phenotypes;
+        public List<Phenotype> phenotypes;
         public List<IndividualPOST> members;
 
         public Integer expectedSize;

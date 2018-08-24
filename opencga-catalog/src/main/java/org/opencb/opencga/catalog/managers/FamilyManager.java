@@ -837,10 +837,10 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         Set<String> memberPhenotypes = new HashSet<>();
         for (Individual individual : family.getMembers()) {
             if (individual.getPhenotypes() != null && !individual.getPhenotypes().isEmpty()) {
-                memberPhenotypes.addAll(individual.getPhenotypes().stream().map(OntologyTerm::getId).collect(Collectors.toSet()));
+                memberPhenotypes.addAll(individual.getPhenotypes().stream().map(Phenotype::getId).collect(Collectors.toSet()));
             }
         }
-        Set<String> familyPhenotypes = family.getPhenotypes().stream().map(OntologyTerm::getId).collect(Collectors.toSet());
+        Set<String> familyPhenotypes = family.getPhenotypes().stream().map(Phenotype::getId).collect(Collectors.toSet());
         if (!familyPhenotypes.containsAll(memberPhenotypes)) {
             throw new CatalogException("Some of the phenotypes are not present in any member of the family");
         }

@@ -3,7 +3,6 @@ package org.opencb.opencga.catalog.stats.solr.converters;
 import org.apache.commons.collections.map.HashedMap;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.core.models.AnnotationSet;
-import org.opencb.opencga.core.models.OntologyTerm;
 import org.opencb.opencga.core.models.Phenotype;
 
 import java.util.*;
@@ -35,17 +34,6 @@ public class SolrConverterUtil {
             for (Phenotype phenotype : phenotypes) {
                 phenotypesIds.add(phenotype.getId());
                 phenotypesIds.add(phenotype.getName());
-            }
-        }
-        return phenotypesIds;
-    }
-
-    public static List<String> populateOntologyTerms(List<OntologyTerm> phenotypes) {
-        List<String> phenotypesIds = new ArrayList<>();
-        if (phenotypes != null) {
-            for (OntologyTerm ontologyTerm : phenotypes) {
-                phenotypesIds.add(ontologyTerm.getId());
-                phenotypesIds.add(ontologyTerm.getName());
             }
         }
         return phenotypesIds;

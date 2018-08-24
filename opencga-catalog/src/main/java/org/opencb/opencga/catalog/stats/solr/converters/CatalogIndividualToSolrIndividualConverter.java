@@ -99,7 +99,7 @@ public class CatalogIndividualToSolrIndividualConverter implements ComplexTypeCo
         if (individual.getAffectationStatus() != null) {
             individualSolrModel.setAffectationStatus(individual.getAffectationStatus().name());
         }
-        individualSolrModel.setPhenotypes(SolrConverterUtil.populateOntologyTerms(individual.getPhenotypes()));
+        individualSolrModel.setPhenotypes(SolrConverterUtil.populatePhenotypes(individual.getPhenotypes()));
 
         individualSolrModel.setNumSamples(individual.getSamples() != null ? individual.getSamples().size() : 0);
 
