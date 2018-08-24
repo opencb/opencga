@@ -65,7 +65,7 @@ public class VariantSolrExternalResource extends ExternalResource {
         String confFolder = VariantSearchManager.CONF_SET;
         // Copy configuration
         getResourceUri("configsets/variantsCollection/solrconfig.xml", "configsets/" + confFolder + "/solrconfig.xml");
-        getResourceUri("solr/variant/managed-schema", "configsets/" + confFolder + "/solr/file-managed-schema.xml");
+        getResourceUri("solr/variant/managed-schema", "configsets/" + confFolder + "/managed-schema");
         getResourceUri("configsets/variantsCollection/params.json", "configsets/" + confFolder + "/params.json");
         getResourceUri("configsets/variantsCollection/protwords.txt", "configsets/" + confFolder + "/protwords.txt");
         getResourceUri("configsets/variantsCollection/stopwords.txt", "configsets/" + confFolder + "/stopwords.txt");
