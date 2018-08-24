@@ -51,8 +51,8 @@ import org.opencb.opencga.storage.core.variant.transform.RemapVariantIdsTask;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.exceptions.MongoVariantStorageEngineException;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantWriteResult;
-import org.opencb.opencga.storage.mongodb.variant.load.direct.MongoDBVariantDirectConverter;
 import org.opencb.opencga.storage.mongodb.variant.load.direct.MongoDBVariantDirectLoader;
+import org.opencb.opencga.storage.mongodb.variant.load.direct.MongoDBVariantStageAndFileReader;
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageConverterTask;
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader;
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageReader;
@@ -287,11 +287,11 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         int batchSize = options.getInt(Options.LOAD_BATCH_SIZE.key(), Options.LOAD_BATCH_SIZE.defaultValue());
         int loadThreads = options.getInt(Options.LOAD_THREADS.key(), Options.LOAD_THREADS.defaultValue());
         final int numReaders = 1;
+        boolean resume = isResume(options);
         StudyConfiguration studyConfiguration = getStudyConfiguration();
 
         try {
-            //Reader
-            DataReader<Variant> variantReader;
+            //Dedup task
             VariantDeduplicationTask duplicatedVariantsDetector = new VariantDeduplicationTask(list -> {
                 if (list.size() > 1) {
                     logger.warn("Found {} duplicated variants for file {} in variant {}.", list.size(), fileId, list.get(0));
@@ -300,20 +300,41 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     throw new IllegalStateException("Unexpected list of " + list.size() + " duplicated variants : " + list);
                 }
             });
-            variantReader = VariantReaderUtils.getVariantReader(Paths.get(inputUri), metadata).then(duplicatedVariantsDetector);
 
             //Remapping ids task
             Task<Variant, Variant> remapIdsTask = new RemapVariantIdsTask(studyConfiguration.getStudyId(), fileId);
 
-            //Runner
-            ProgressLogger progressLogger = new ProgressLogger("Write variants in VARIANTS collection:", numRecords, 200);
-            int release = options.getInt(Options.RELEASE.key(), Options.RELEASE.defaultValue());
-            MongoDBVariantDirectConverter converter = new MongoDBVariantDirectConverter(dbAdaptor, getStudyConfiguration(), fileId,
-                    isResume(options), release, progressLogger);
-            MongoDBVariantDirectLoader loader = new MongoDBVariantDirectLoader(dbAdaptor, getStudyConfiguration(), fileId,
-                    isResume(options));
+            // File reader
+            DataReader<Variant> variantReader = VariantReaderUtils.getVariantReader(Paths.get(inputUri), metadata)
+                    .then(duplicatedVariantsDetector)
+                    .then(remapIdsTask);
 
-            ParallelTaskRunner<Variant, ?> ptr;
+            MongoDBCollection stageCollection = dbAdaptor.getStageCollection(studyId);
+            MergeMode mergeMode = MergeMode.from(studyConfiguration.getAttributes());
+            boolean addAllStageDocuments = mergeMode.equals(MergeMode.ADVANCED);
+
+            // Reader -- MongoDBVariantStageAndFileReader
+            MongoDBVariantStageAndFileReader stageReader = new MongoDBVariantStageAndFileReader(
+                    variantReader, stageCollection, studyId, fileId, addAllStageDocuments);
+
+
+            //Task -- MongoDBVariantMerger
+            ProgressLogger progressLogger = new ProgressLogger("Write variants in VARIANTS collection:", numRecords, 200);
+
+            int release = options.getInt(Options.RELEASE.key(), Options.RELEASE.defaultValue());
+            boolean ignoreOverlapping = studyConfiguration.getAttributes().getBoolean(MERGE_IGNORE_OVERLAPPING_VARIANTS.key(),
+                    MERGE_IGNORE_OVERLAPPING_VARIANTS.defaultValue());
+
+            Map<String, Set<Integer>> chromosomeInLoadedFiles = getChromosomeInLoadedFiles();
+            MongoDBVariantMerger variantMerger = new MongoDBVariantMerger(dbAdaptor, studyConfiguration, fileIds,
+                    chromosomeInLoadedFiles, resume, ignoreOverlapping, release);
+
+            // Writer -- MongoDBVariantDirectLoader
+            MongoDBVariantDirectLoader loader = new MongoDBVariantDirectLoader(dbAdaptor, studyConfiguration, fileId, resume,
+                    progressLogger);
+
+            // Runner
+            ParallelTaskRunner<Document, ?> ptr;
             ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
                     .setReadQueuePutTimeout(20 * 60)
                     .setNumTasks(loadThreads)
@@ -321,12 +342,13 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     .setAbortOnFail(true).build();
             if (isDirectLoadParallelWrite(options)) {
                 logger.info("Multi thread direct load... [{} readerThreads, {} writerThreads]", numReaders, loadThreads);
-                ptr = new ParallelTaskRunner<>(variantReader, remapIdsTask.then(converter).then(loader), null, config);
+                ptr = new ParallelTaskRunner<>(stageReader, variantMerger.then(loader), null, config);
             } else {
                 logger.info("Multi thread direct load... [{} readerThreads, {} tasks, {} writerThreads]", numReaders, loadThreads, 1);
-                ptr = new ParallelTaskRunner<>(variantReader, remapIdsTask.then(converter), loader, config);
+                ptr = new ParallelTaskRunner<>(stageReader, variantMerger, loader, config);
             }
 
+            // Run
             Thread hook = getStudyConfigurationManager().buildShutdownHook(DIRECT_LOAD.key(), studyId, fileId);
             try {
                 Runtime.getRuntime().addShutdownHook(hook);
@@ -337,7 +359,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             }
 
             writeResult = loader.getResult();
-            writeResult.setSkippedVariants(converter.getSkippedVariants());
+            writeResult.setSkippedVariants(stageReader.getSkippedVariants());
             writeResult.setNonInsertedVariants(duplicatedVariantsDetector.getDiscardedVariants());
             loadStats.append("directLoad", true);
             loadStats.append("writeResult", writeResult);
@@ -960,33 +982,104 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
      * @return  If the file can be loaded using direct load
      * @throws StorageEngineException is there is a problem reading metadata
      */
-    public boolean checkCanLoadDirectly(URI input) throws StorageEngineException {
+    public boolean checkCanLoadDirectly(List<URI> input) throws StorageEngineException {
         boolean doDirectLoad;
+
+        if (input.size() > 1) {
+            // Direct load can be done, but for more than one file we choose by default not to do it.
+            // Let's read whatever is in the configuration file
+            return getOptions().getBoolean(DIRECT_LOAD.key(), false);
+        }
 
         // Direct load can be avoided from outside, but can not be forced.
         if (!getOptions().getBoolean(DIRECT_LOAD.key(), true)) {
             doDirectLoad = false;
         } else {
-            StudyConfiguration studyConfiguration = getStudyConfiguration();
 
-            // Direct load if loading one file, and there were no other indexed file in the study.
-            if ((studyConfiguration == null || studyConfiguration.getIndexedFiles().isEmpty())) {
+            if (!getOptions().getBoolean(STAGE.key(), false) && !getOptions().getBoolean(MERGE.key(), false)) {
                 doDirectLoad = true;
-            } else if (getOptions().getBoolean(LOAD_SPLIT_DATA.key(), LOAD_SPLIT_DATA.defaultValue())) {
-                LinkedHashSet<Integer> sampleIds = readVariantFileMetadata(input).getSampleIds().stream()
-                        .map(studyConfiguration.getSampleIds()::get).collect(Collectors.toCollection(LinkedHashSet::new));
-                doDirectLoad = true;
-                for (Integer fileId : studyConfiguration.getIndexedFiles()) {
-                    if (!sampleIds.equals(studyConfiguration.getSamplesInFiles().get(fileId))) {
-                        doDirectLoad = false;
-                        break;
-                    }
-                }
             } else {
                 doDirectLoad = false;
             }
+
+//            StudyConfiguration studyConfiguration = getStudyConfiguration();
+//
+//            // Direct load if loading one file, and there were no other indexed file in the study.
+//            if ((studyConfiguration == null || studyConfiguration.getIndexedFiles().isEmpty())) {
+//                doDirectLoad = true;
+//            } else if (getOptions().getBoolean(LOAD_SPLIT_DATA.key(), LOAD_SPLIT_DATA.defaultValue())) {
+//                LinkedHashSet<Integer> sampleIds = readVariantFileMetadata(input).getSampleIds().stream()
+//                        .map(studyConfiguration.getSampleIds()::get).collect(Collectors.toCollection(LinkedHashSet::new));
+//                doDirectLoad = true;
+//                for (Integer fileId : studyConfiguration.getIndexedFiles()) {
+//                    if (!sampleIds.equals(studyConfiguration.getSamplesInFiles().get(fileId))) {
+//                        doDirectLoad = false;
+//                        break;
+//                    }
+//                }
+//            } else {
+//                doDirectLoad = false;
+//            }
         }
         return doDirectLoad;
     }
 
+    private Map<String, Set<Integer>> getChromosomeInLoadedFiles() throws StorageEngineException {
+        List<Integer> fileIds = Collections.singletonList(getFileId());
+        StudyConfiguration studyConfiguration = getStudyConfiguration();
+
+
+        //Iterate over all the files
+        Query query = new Query(VariantFileMetadataDBAdaptor.VariantFileMetadataQueryParam.STUDY_ID.key(), studyConfiguration.getStudyId());
+        Iterator<VariantFileMetadata> iterator = dbAdaptor.getStudyConfigurationManager().variantFileMetadataIterator(query, null);
+
+        // List of chromosomes to be loaded
+        TreeSet<String> chromosomesToLoad = new TreeSet<>((s1, s2) -> {
+            try {
+                return Integer.valueOf(s1).compareTo(Integer.valueOf(s2));
+            } catch (NumberFormatException e) {
+                return s1.compareTo(s2);
+            }
+        });
+        // List of all the indexed files that cover each chromosome
+        ListMultimap<String, Integer> chromosomeInLoadedFiles = LinkedListMultimap.create();
+        // List of all the indexed files that cover each chromosome
+        ListMultimap<String, Integer> chromosomeInFilesToLoad = LinkedListMultimap.create();
+
+        Set<String> wholeGenomeFiles = new HashSet<>();
+        Set<String> byChromosomeFiles = new HashSet<>();
+
+        boolean loadUnknownGenotypes = MongoDBVariantMerger.loadUnknownGenotypes(studyConfiguration);
+        // Loading split files is only a problem when loading unknown genotypes
+        // If so, load files per chromosome.
+        if (loadUnknownGenotypes) {
+            while (iterator.hasNext()) {
+                VariantFileMetadata fileMetadata = iterator.next();
+                int fileId = Integer.parseInt(fileMetadata.getId());
+
+                // If the file is going to be loaded, check if covers just one chromosome
+                if (fileIds.contains(fileId)) {
+                    if (fileMetadata.getStats().getChromosomeCounts().size() == 1) {
+                        chromosomesToLoad.addAll(fileMetadata.getStats().getChromosomeCounts().keySet());
+                        byChromosomeFiles.add(fileMetadata.getPath());
+                    } else {
+                        wholeGenomeFiles.add(fileMetadata.getPath());
+                    }
+                }
+                // If the file is indexed, add to the map of chromosome->fileId
+                for (String chromosome : fileMetadata.getStats().getChromosomeCounts().keySet()) {
+                    if (studyConfiguration.getIndexedFiles().contains(fileId)) {
+                        chromosomeInLoadedFiles.put(chromosome, fileId);
+                    } else if (fileIds.contains(fileId)) {
+                        chromosomeInFilesToLoad.put(chromosome, fileId);
+                    } // else { ignore files that are not loaded, and are not going to be loaded }
+                }
+            }
+        }
+
+        return chromosomeInLoadedFiles.asMap()
+                .entrySet()
+                .stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> new HashSet<>(e.getValue())));
+    }
 }

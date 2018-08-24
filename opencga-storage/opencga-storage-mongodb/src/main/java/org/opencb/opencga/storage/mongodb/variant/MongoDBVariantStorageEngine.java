@@ -373,7 +373,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
                         boolean doDirectLoad;
                         // Decide if use direct load or not.
                         if (doStage && doMerge) {
-                            doDirectLoad = storagePipeline.checkCanLoadDirectly(input);
+                            doDirectLoad = storagePipeline.checkCanLoadDirectly(inputFiles);
                         } else {
                             doDirectLoad = false;
                         }
