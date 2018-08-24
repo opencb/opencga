@@ -22,6 +22,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.pedigree.IndividualProperty;
+import org.opencb.biodata.models.pedigree.Multiples;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.FacetedQueryResult;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
@@ -33,7 +36,10 @@ import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.AnnotationSet;
+import org.opencb.opencga.core.models.Individual;
+import org.opencb.opencga.core.models.Location;
+import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.server.WebServiceException;
 import org.opencb.opencga.server.rest.json.mixin.IndividualMixin;
@@ -152,11 +158,11 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     String populationDescription,
             @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
             @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex")
-                    Individual.KaryotypicSex karyotypicSex,
+                    IndividualProperty.KaryotypicSex karyotypicSex,
             @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus")
-                    Individual.LifeStatus lifeStatus,
+                    IndividualProperty.LifeStatus lifeStatus,
             @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")
-                    Individual.AffectationStatus affectationStatus,
+                    IndividualProperty.AffectationStatus affectationStatus,
             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
             @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: annotationSet[=|==|!|!=]{annotationSetName}")
             @QueryParam("annotationsetName") String annotationsetName,
@@ -476,11 +482,11 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     String populationDescription,
             @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
             @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex")
-                    Individual.KaryotypicSex karyotypicSex,
+                    IndividualProperty.KaryotypicSex karyotypicSex,
             @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus")
-                    Individual.LifeStatus lifeStatus,
+                    IndividualProperty.LifeStatus lifeStatus,
             @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")
-                    Individual.AffectationStatus affectationStatus,
+                    IndividualProperty.AffectationStatus affectationStatus,
             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
             @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)", required = false) @QueryParam("annotation") String annotation,
             @ApiParam(value = "Release value (Current release from the moment the individuals were first created)")
@@ -511,7 +517,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @QueryParam("study") String studyStr,
             @ApiParam(value = "name", required = false) @QueryParam("name") String names,
             @ApiParam(value = "Comma separated list of sample ids or names") @QueryParam("samples") String samples,
-            @ApiParam(value = "sex", required = false) @QueryParam("sex") Individual.Sex sex,
+            @ApiParam(value = "sex", required = false) @QueryParam("sex") IndividualProperty.Sex sex,
             @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
             @ApiParam(value = "Population name", required = false) @QueryParam("population.name") String populationName,
             @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation")
@@ -519,10 +525,10 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Population description", required = false) @QueryParam("population.description")
                     String populationDescription,
             @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex")
-                    Individual.KaryotypicSex karyotypicSex,
-            @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus") Individual.LifeStatus lifeStatus,
+                    IndividualProperty.KaryotypicSex karyotypicSex,
+            @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus") IndividualProperty.LifeStatus lifeStatus,
             @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")
-                    Individual.AffectationStatus affectationStatus,
+                    IndividualProperty.AffectationStatus affectationStatus,
             @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: annotationSet[=|==|!|!=]{annotationSetName}")
             @QueryParam("annotationsetName") String annotationsetName,
             @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: variableSet[=|==|!|!=]{variableSetId}")
@@ -713,14 +719,14 @@ public class IndividualWSServer extends OpenCGAWSServer {
         public Multiples multiples;
         public Location location;
 
-        public Individual.Sex sex;
+        public IndividualProperty.Sex sex;
         public String ethnicity;
         public Boolean parentalConsanguinity;
         public Individual.Population population;
         public String dateOfBirth;
-        public Individual.KaryotypicSex karyotypicSex;
-        public Individual.LifeStatus lifeStatus;
-        public Individual.AffectationStatus affectationStatus;
+        public IndividualProperty.KaryotypicSex karyotypicSex;
+        public IndividualProperty.LifeStatus lifeStatus;
+        public IndividualProperty.AffectationStatus affectationStatus;
         public List<AnnotationSet> annotationSets;
         public List<Phenotype> phenotypes;
         public Map<String, Object> attributes;

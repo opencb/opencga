@@ -17,6 +17,7 @@
 package org.opencb.opencga.core.models;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.commons.Software;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.acls.AclParams;
 

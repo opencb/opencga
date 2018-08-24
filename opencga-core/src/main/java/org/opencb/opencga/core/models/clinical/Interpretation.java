@@ -1,7 +1,8 @@
 package org.opencb.opencga.core.models.clinical;
 
+import org.opencb.biodata.models.commons.Analyst;
+import org.opencb.biodata.models.commons.Software;
 import org.opencb.opencga.core.models.DiseasePanel;
-import org.opencb.opencga.core.models.Software;
 
 import java.util.List;
 import java.util.Map;

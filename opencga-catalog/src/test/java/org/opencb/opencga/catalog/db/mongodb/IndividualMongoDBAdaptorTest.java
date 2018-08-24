@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 import org.bson.Document;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -75,7 +76,7 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void testGetIndividual() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        Individual individual = new Individual("an_individual", "An Individual", Individual.Sex.MALE, "",
+        Individual individual = new Individual("an_individual", "An Individual", IndividualProperty.Sex.MALE, "",
                 new Individual.Population(), 1, Collections.emptyList(), null);
         individual = catalogIndividualDBAdaptor.insert(studyId, individual, null).first();
         Individual individual2 = catalogIndividualDBAdaptor.get(individual.getUid(), null).first();
@@ -85,7 +86,7 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void testGetIndividualNoExists() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        Individual individual = new Individual("in1", "An Individual", Individual.Sex.MALE, "", new Individual
+        Individual individual = new Individual("in1", "An Individual", IndividualProperty.Sex.MALE, "", new Individual
                 .Population(), 1, Collections.emptyList(), null);
         catalogIndividualDBAdaptor.insert(studyId, individual, null).first();
         catalogIndividualDBAdaptor.get(individual.getUid(), null).first();
@@ -96,19 +97,19 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void testGetAllIndividuals() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        catalogIndividualDBAdaptor.insert(studyId, new Individual("ind_1", "ind_1", Individual.Sex.MALE, "", new Individual.Population(), 1,
-                Collections.emptyList(), null), null);
-        catalogIndividualDBAdaptor.insert(studyId, new Individual("ind_2", "ind_2", Individual.Sex.FEMALE, "", new
+        catalogIndividualDBAdaptor.insert(studyId, new Individual("ind_1", "ind_1", IndividualProperty.Sex.MALE, "", 
+                new Individual.Population(), 1, Collections.emptyList(), null), null);
+        catalogIndividualDBAdaptor.insert(studyId, new Individual("ind_2", "ind_2", IndividualProperty.Sex.FEMALE, "", new
                 Individual.Population(), 1, Collections.emptyList(), null), null);
 
-        Individual father = catalogIndividualDBAdaptor.insert(studyId, new Individual("ind_3", "ind_3", Individual.Sex
+        Individual father = catalogIndividualDBAdaptor.insert(studyId, new Individual("ind_3", "ind_3", IndividualProperty.Sex
                 .MALE, "", new Individual.Population(), 1, Collections.emptyList(), null), null).first();
-        Individual mother = catalogIndividualDBAdaptor.insert(studyId, new Individual("ind_4", "ind_4", Individual.Sex
+        Individual mother = catalogIndividualDBAdaptor.insert(studyId, new Individual("ind_4", "ind_4", IndividualProperty.Sex
                 .FEMALE, "", new Individual.Population(), 1, Collections.emptyList(), null), null).first();
-        catalogIndividualDBAdaptor.insert(studyId, new Individual("ind_5", "ind_5", father, mother, null, null, Individual.Sex.MALE,
-                Individual.KaryotypicSex.XY, "", new Individual.Population(), null, null, null, null, true, 1, Collections.emptyList(),
+        catalogIndividualDBAdaptor.insert(studyId, new Individual("ind_5", "ind_5", father, mother, null, null, IndividualProperty.Sex.MALE,
+                IndividualProperty.KaryotypicSex.XY, "", new Individual.Population(), null, null, null, null, true, 1, Collections.emptyList(),
                 null), null);
-        catalogIndividualDBAdaptor.insert(studyId, new Individual("ind_6", "ind_6", Individual.Sex.FEMALE, "",
+        catalogIndividualDBAdaptor.insert(studyId, new Individual("ind_6", "ind_6", IndividualProperty.Sex.FEMALE, "",
                 new Individual.Population(), 1, Collections.emptyList(), null), null);
 
         QueryResult<Individual> result;
@@ -118,7 +119,7 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
         assertEquals(3, result.getNumResults());
 
         result = catalogIndividualDBAdaptor.get(new Query(IndividualDBAdaptor.QueryParams.SEX.key(),
-                Individual.Sex.FEMALE).append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyId), new QueryOptions());
+                IndividualProperty.Sex.FEMALE).append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyId), new QueryOptions());
         assertEquals(3, result.getNumResults());
 
         result = catalogIndividualDBAdaptor.get(new Query(IndividualDBAdaptor.QueryParams.FATHER_UID.key(), ">0")
@@ -129,19 +130,19 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void testModifyIndividual() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        long individualId = catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "in1", Individual.Sex
+        long individualId = catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "in1", IndividualProperty.Sex
                 .UNKNOWN, "", null, 1, Collections.emptyList(), null), null).first().getUid();
 
         ObjectMap params = new ObjectMap("sex", "MALE");
         catalogIndividualDBAdaptor.update(individualId, params, QueryOptions.empty());
         Individual individual = catalogIndividualDBAdaptor.get(individualId, null).first();
-        assertEquals(Individual.Sex.MALE, individual.getSex());
+        assertEquals(IndividualProperty.Sex.MALE, individual.getSex());
     }
 
     @Test
     public void testModifyIndividualBadGender() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        long individualId = catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "in1", Individual.Sex
+        long individualId = catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "in1", IndividualProperty.Sex
                 .UNKNOWN, "", null, 1, Collections.emptyList(), null), null).first().getUid();
 
         thrown.expect(CatalogDBException.class);
@@ -151,7 +152,7 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void testModifyIndividualBadFatherId() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        long individualId = catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "in1", Individual.Sex
+        long individualId = catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "in1", IndividualProperty.Sex
                 .UNKNOWN, "", null, 1, Collections.emptyList(), null), null).first().getUid();
 
         thrown.expect(CatalogDBException.class);
@@ -161,7 +162,7 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void testModifyIndividualNegativeFatherId() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        long individualId = catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "in1", Individual.Sex
+        long individualId = catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "in1", IndividualProperty.Sex
                 .UNKNOWN, "", null, 1, Collections.emptyList(), null), null).first().getUid();
 
         Individual individual = catalogIndividualDBAdaptor.update(individualId,
@@ -174,9 +175,9 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void testModifyIndividualExistingName() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        long individualId = catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "in1", Individual.Sex
+        long individualId = catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "in1", IndividualProperty.Sex
                 .UNKNOWN, "", null, 1, Collections.emptyList(), null), null).first().getUid();
-        catalogIndividualDBAdaptor.insert(studyId, new Individual("in2", "in2", Individual.Sex.UNKNOWN, "", null, 1,
+        catalogIndividualDBAdaptor.insert(studyId, new Individual("in2", "in2", IndividualProperty.Sex.UNKNOWN, "", null, 1,
                 Collections.emptyList(), null), null).first().getUid();
 
         thrown.expect(CatalogDBException.class);
@@ -210,7 +211,7 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
 //    @Test
 //    public void testSeveralAnnotationsInUniqueVariableSet() throws CatalogDBException {
 //        long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-//        long individualId = catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "in1", 0, 0, "", Individual.Sex
+//        long individualId = catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "in1", 0, 0, "", IndividualProperty.Sex
 //                .UNKNOWN, "", null, 1, Collections.emptyList(), null), null).first().getUid();
 //
 //        Set<Variable> variableSet = new HashSet<>();
@@ -237,7 +238,7 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
 //    @Test
 //    public void testAnnotateIndividual() throws Exception {
 //        long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-//        long individualId = catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "in1", 0, 0, "", Individual.Sex
+//        long individualId = catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "in1", 0, 0, "", IndividualProperty.Sex
 //                .UNKNOWN, "", null, 1, Collections.emptyList(), null), null).first().getUid();
 //
 //        Set<Variable> variableSet = new HashSet<>();
@@ -268,7 +269,7 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
 //    @Test
 //    public void testAnnotateIndividualExistingAnnotationId() throws Exception {
 //        long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-//        long individualId = catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "in1", 0, 0, "", Individual.Sex
+//        long individualId = catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "in1", 0, 0, "", IndividualProperty.Sex
 //                .UNKNOWN, "", null, 1, Collections.emptyList(), null), null).first().getUid();
 //
 //        Set<Variable> variableSet = new HashSet<>();
@@ -294,10 +295,10 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void testNativeGet() throws Exception {
         long studyId = user4.getProjects().get(0).getStudies().get(0).getUid();
-        Individual individual = new Individual("in1", "An Individual", Individual.Sex.MALE, "", new Individual
+        Individual individual = new Individual("in1", "An Individual", IndividualProperty.Sex.MALE, "", new Individual
                 .Population(), 1, Collections.emptyList(), null);
         individual = catalogIndividualDBAdaptor.insert(studyId, individual, null).first();
-        Individual individual2 = new Individual("in2", "Another Individual", Individual.Sex.FEMALE, "", new Individual
+        Individual individual2 = new Individual("in2", "Another Individual", IndividualProperty.Sex.FEMALE, "", new Individual
                 .Population(), 1, Collections.emptyList(), null);
         individual2 = catalogIndividualDBAdaptor.insert(studyId, individual2, null).first();
         List<QueryResult> queryResults = catalogIndividualDBAdaptor.nativeGet(Arrays.asList(

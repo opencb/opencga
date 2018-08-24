@@ -24,6 +24,7 @@ import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -124,7 +125,7 @@ public class IndividualWSServerTest {
         QueryResponse<Individual> response = WSServerTestUtils.parseResult(json, Individual.class);
 
         Individual individual = response.getResponse().get(0).first();
-        assertEquals(Individual.Sex.FEMALE, individual.getSex());
+        assertEquals(IndividualProperty.Sex.FEMALE, individual.getSex());
         assertEquals("new_individual1", individual.getName());
         assertTrue(individual.getUid() > 0);
     }

@@ -20,6 +20,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
+import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
@@ -280,7 +281,7 @@ public class IndividualCommandOptions {
         public String family;
 
         @Parameter(names = {"--sex"}, description = "Sex", required = false)
-        public Individual.Sex sex;
+        public IndividualProperty.Sex sex;
 
         @Parameter(names = {"--ethnicity"}, description = "Ethnic group", required = false, arity = 1)
         public String ethnicity;

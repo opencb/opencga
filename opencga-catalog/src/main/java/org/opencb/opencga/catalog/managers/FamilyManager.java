@@ -21,6 +21,8 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -767,14 +769,14 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             for (String parentName : split) {
                 String[] splitNameSex = parentName.split("\\|\\|");
                 String name = splitNameSex[0];
-                Individual.Sex sex = splitNameSex[1].equals("F") ? Individual.Sex.FEMALE : Individual.Sex.MALE;
+                IndividualProperty.Sex sex = splitNameSex[1].equals("F") ? IndividualProperty.Sex.FEMALE : IndividualProperty.Sex.MALE;
 
                 if (!membersMap.containsKey(name)) {
                     throw new CatalogException("The parent " + name + " is not present in the members list");
                 } else {
                     // Check if the sex is correct
-                    Individual.Sex sex1 = membersMap.get(name).getSex();
-                    if (sex1 != null && sex1 != sex && sex1 != Individual.Sex.UNKNOWN) {
+                    IndividualProperty.Sex sex1 = membersMap.get(name).getSex();
+                    if (sex1 != null && sex1 != sex && sex1 != IndividualProperty.Sex.UNKNOWN) {
                         throw new CatalogException("Sex of parent " + name + " is incorrect or the relationship is incorrect. In "
                                 + "principle, it should be " + sex);
                     }
@@ -791,7 +793,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 //            throw new CatalogException("Some members that are not related to any other have been found: "
 //                    + noParentsSet.stream().map(Individual::getName).collect(Collectors.joining(", ")));
             logger.warn("Some members that are not related to any other have been found: {}",
-                    noParentsSet.stream().map(Individual::getName).collect(Collectors.joining(", ")));
+                    noParentsSet.stream().map(Individual::getId).collect(Collectors.joining(", ")));
         }
     }
 
