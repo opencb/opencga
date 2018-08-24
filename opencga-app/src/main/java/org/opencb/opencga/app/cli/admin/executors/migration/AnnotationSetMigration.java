@@ -14,7 +14,7 @@ import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidator;
+import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.VariableSet;
 import org.slf4j.Logger;
@@ -88,7 +88,7 @@ public class AnnotationSetMigration {
 
                     AnnotationSet annotationSet = new AnnotationSet(annotationSetName, variableSet.getId(), annotations,
                             Collections.emptyMap());
-                    CatalogAnnotationsValidator.checkAnnotationSet(variableSet, annotationSet, null, true);
+                    AnnotationUtils.checkAnnotationSet(variableSet, annotationSet, null, true);
 
                     dbAdaptor.createAnnotationSetForMigration(next.get("_id"), variableSet, annotationSet);
                 }

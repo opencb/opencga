@@ -31,7 +31,7 @@ import org.opencb.opencga.catalog.db.api.AnnotationSetDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotationConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.managers.AnnotationSetManager;
+import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.Annotable;
@@ -759,7 +759,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
 
             List<Document> documentList = new ArrayList<>();
             for (String annotation : annotationArray) {
-                Matcher matcher = AnnotationSetManager.ANNOTATION_PATTERN.matcher(annotation);
+                Matcher matcher = AnnotationUtils.ANNOTATION_PATTERN.matcher(annotation);
 
                 if (matcher.find()) {
                     // Split the annotation by key - value
@@ -856,7 +856,6 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                             logger.error("Internal error: Could not find the type of the variable {}:{}", variableSet, key);
                             throw new CatalogDBException("Internal error. Could not find the type of the variable " + variableSet + ":"
                                     + key);
-
                         }
 
                         List<Document> valueList;
@@ -869,7 +868,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
 
                         Document queryDocument = new Document()
                                 .append(AnnotationSetParams.ID.key(), key)
-                                .append(AnnotationSetParams.VARIABLE_SET_ID.key(), Long.parseLong(variableSet));
+                                .append(AnnotationSetParams.VARIABLE_SET_ID.key(), variableTypeMap.getLong(variableSet));
                         queryDocument.putAll(valueList.get(0));
 
                         // Add the query to the document query list

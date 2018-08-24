@@ -76,6 +76,8 @@ public class ClinicalAnalysisMongoDBIterator<E> extends MongoDBIterator<E>  {
             next = filter.apply(next);
         }
 
+        addAclInformation(next, options);
+
         if (converter != null) {
             return (E) converter.convertToDataModelType(next);
         } else {

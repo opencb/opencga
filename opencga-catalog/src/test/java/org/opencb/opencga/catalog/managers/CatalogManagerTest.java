@@ -233,6 +233,16 @@ public class CatalogManagerTest extends AbstractManagerTest {
         String token = catalogManager.getUserManager().login("test", "test");
         QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get("user@1000G:phase1", QueryOptions.empty(), token);
         assertEquals(1, studyQueryResult.getNumResults());
+        assertTrue(studyQueryResult.first().getAttributes().isEmpty());
+
+        studyQueryResult = catalogManager.getStudyManager().get("user@1000G:phase1", new QueryOptions(DBAdaptor.INCLUDE_ACLS, true), token);
+        assertEquals(1, studyQueryResult.getNumResults());
+        assertTrue(!studyQueryResult.first().getAttributes().isEmpty());
+        assertTrue(studyQueryResult.first().getAttributes().containsKey("OPENCGA_ACL"));
+        List<Map<String, Object>> acls = (List<Map<String, Object>>) studyQueryResult.first().getAttributes().get("OPENCGA_ACL");
+        assertEquals(1, acls.size());
+        assertEquals("@group_cancer_some_thing_else", acls.get(0).get("member"));
+        assertTrue(!((List) acls.get(0).get("permissions")).isEmpty());
     }
 
     /**
@@ -721,7 +731,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 new Variable("PHEN", "", Variable.VariableType.CATEGORICAL, "", true, false, Arrays.asList("CASE", "CONTROL"), 4, "", "",
                         null, Collections.<String, Object>emptyMap())
         ));
-        QueryResult<VariableSet> queryResult = catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs1", "vs1", true,
+        QueryResult<VariableSet> queryResult = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", true,
                 false, "", null, variables, sessionIdUser);
 
         assertEquals(1, queryResult.getResult().size());
@@ -1154,6 +1164,25 @@ public class CatalogManagerTest extends AbstractManagerTest {
         thrown.expectMessage("Invalid date of birth format");
         individualManager.update(studyFqn, individualQueryResult.first().getId(),
                 new ObjectMap(IndividualDBAdaptor.QueryParams.DATE_OF_BIRTH.key(), "198421"), QueryOptions.empty(), sessionIdUser);
+    }
+
+    @Test
+    public void testUpdateIndividuaParents() throws CatalogException {
+        IndividualManager individualManager = catalogManager.getIndividualManager();
+        individualManager.create(studyFqn, new Individual().setId("child"), QueryOptions.empty(), sessionIdUser);
+        individualManager.create(studyFqn, new Individual().setId("father"), QueryOptions.empty(), sessionIdUser);
+        individualManager.create(studyFqn, new Individual().setId("mother"), QueryOptions.empty(), sessionIdUser);
+
+        QueryResult<Individual> individualQueryResult = individualManager.update(studyFqn, "child", new ObjectMap()
+                        .append(IndividualDBAdaptor.QueryParams.FATHER.key(), new ObjectMap(IndividualDBAdaptor.QueryParams.ID.key(), "father"))
+                        .append(IndividualDBAdaptor.QueryParams.MOTHER.key(), new ObjectMap(IndividualDBAdaptor.QueryParams.ID.key(), "mother")),
+                QueryOptions.empty(), sessionIdUser);
+
+        assertEquals("mother", individualQueryResult.first().getMother().getId());
+        assertEquals(1, individualQueryResult.first().getMother().getVersion());
+
+        assertEquals("father", individualQueryResult.first().getFather().getId());
+        assertEquals(1, individualQueryResult.first().getFather().getVersion());
     }
 
     @Test

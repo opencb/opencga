@@ -20,6 +20,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.datastore.core.result.FacetedQueryResult;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.models.Cohort;
 import org.opencb.opencga.core.models.Sample;
@@ -62,6 +63,13 @@ public class CohortClient extends AnnotationClient<Cohort, CohortAclEntry> {
     public QueryResponse<ObjectMap> groupBy(String studyId, String fields, ObjectMap params) throws IOException {
         params = addParamsToObjectMap(params, "study", studyId, "fields", fields);
         return execute(COHORT_URL, "groupBy", params, GET, ObjectMap.class);
+    }
+
+    public QueryResponse<FacetedQueryResult> facet(String study, Query query, QueryOptions queryOptions) throws IOException {
+        ObjectMap params = new ObjectMap(query);
+        params.putAll(queryOptions);
+        params.put("study", study);
+        return execute(COHORT_URL, "facet", params, GET, FacetedQueryResult.class);
     }
 
 }

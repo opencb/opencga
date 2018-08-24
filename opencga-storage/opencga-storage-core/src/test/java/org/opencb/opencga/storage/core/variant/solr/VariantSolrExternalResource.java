@@ -20,15 +20,12 @@ import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
-import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrResourceLoader;
 import org.junit.rules.ExternalResource;
+import org.opencb.opencga.core.SolrManager;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.search.solr.SolrManager;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 
 import java.io.File;
@@ -44,18 +41,18 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.*;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class SolrExternalResource extends ExternalResource {
+public class VariantSolrExternalResource extends ExternalResource {
 
     public String coreName = DB_NAME;
 
     private SolrClient solrClient;
     protected boolean embeded = true;
 
-    public SolrExternalResource() {
+    public VariantSolrExternalResource() {
         this(true);
     }
 
-    public SolrExternalResource(boolean embeded) {
+    public VariantSolrExternalResource(boolean embeded) {
         this.embeded = embeded;
     }
 

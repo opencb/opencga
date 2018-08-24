@@ -16,7 +16,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
-import org.opencb.opencga.storage.core.variant.solr.SolrExternalResource;
+import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 
 import java.io.IOException;
@@ -35,7 +35,7 @@ import static org.junit.Assert.assertEquals;
 public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
 
     @Rule
-    public SolrExternalResource solr = new SolrExternalResource();
+    public VariantSolrExternalResource solr = new VariantSolrExternalResource();
 
     @Before
     public void setUp() throws Exception {

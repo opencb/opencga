@@ -39,8 +39,8 @@
     <properties>
         <opencga.version>1.4.0-rc-dev</opencga.version>
         <java.version>1.8</java.version>
-        <java-common-libs.version>3.7.0-SNAPSHOT</java-common-libs.version>
-        <biodata.version>1.4.0-SNAPSHOT</biodata.version>
+        <java-common-libs.version>3.7.1-SNAPSHOT</java-common-libs.version>
+        <biodata.version>1.4.1-SNAPSHOT</biodata.version>
         <cellbase.version>4.5.4</cellbase.version>
         <hpg-bigdata.version>1.0.0-beta4</hpg-bigdata.version>
         <jackson.version>2.6.6</jackson.version>
@@ -50,7 +50,7 @@
         <grpc>1.9.1</grpc>
         <slf4j.version>1.7.21</slf4j.version>
         <junit.version>4.12</junit.version>
-        <solr.version>6.4.1</solr.version>
+        <solr.version>6.4.2</solr.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <opencga.war.name>opencga</opencga.war.name>
@@ -374,6 +374,17 @@
 
             <!-- General dependencies -->
             <dependency>
+                <groupId>org.apache.solr</groupId>
+                <artifactId>solr-solrj</artifactId>
+                <version>${solr.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.solr</groupId>
+                <artifactId>solr-test-framework</artifactId>
+                <version>${solr.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
                 <version>18.0</version>
@@ -616,6 +627,9 @@
                 <OPENCGA.CATALOG.DB.PASSWORD></OPENCGA.CATALOG.DB.PASSWORD>
                 <OPENCGA.CATALOG.DB.AUTHENTICATION_DATABASE></OPENCGA.CATALOG.DB.AUTHENTICATION_DATABASE>
                 <OPENCGA.CATALOG.DB.CONNECTIONS_PER_HOST>20</OPENCGA.CATALOG.DB.CONNECTIONS_PER_HOST>
+                <OPENCGA.CATALOG.SEARCH.HOST>http://localhost:8983/solr/</OPENCGA.CATALOG.SEARCH.HOST>
+                <OPENCGA.CATALOG.SEARCH.TIMEOUT>30000</OPENCGA.CATALOG.SEARCH.TIMEOUT>
+                <OPENCGA.CATALOG.SEARCH.BATCH>2000</OPENCGA.CATALOG.SEARCH.BATCH>
 
                 <!-- Storage -->
                 <OPENCGA.STORAGE.DEFAULT_ENGINE>mongodb</OPENCGA.STORAGE.DEFAULT_ENGINE>

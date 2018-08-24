@@ -28,6 +28,9 @@ import org.opencb.opencga.app.cli.main.options.CohortCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
+import org.opencb.opencga.catalog.stats.solr.CatalogSolrQueryParser;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.Cohort;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.acls.permissions.CohortAclEntry;
@@ -78,6 +81,9 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "group-by":
                 queryResponse = groupBy();
+                break;
+            case "facet":
+                queryResponse = facet();
                 break;
             case "acl":
                 queryResponse = aclCommandExecutor.acls(cohortsCommandOptions.aclsCommandOptions, openCGAClient.getCohortClient());
@@ -214,6 +220,30 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(CohortDBAdaptor.QueryParams.NATTRIBUTES.key(), cohortsCommandOptions.groupByCommandOptions.nattributes);
         return openCGAClient.getCohortClient().groupBy(cohortsCommandOptions.groupByCommandOptions.study,
                 cohortsCommandOptions.groupByCommandOptions.fields,params);
+    }
+
+    private QueryResponse facet() throws IOException {
+        logger.debug("Cohort facets");
+
+        CohortCommandOptions.FacetCommandOptions commandOptions = cohortsCommandOptions.facetCommandOptions;
+
+        Query query = new Query();
+        query.putIfNotEmpty("creationYear", commandOptions.creationYear);
+        query.putIfNotEmpty("creationMonth", commandOptions.creationMonth);
+        query.putIfNotEmpty("creationDay", commandOptions.creationDay);
+        query.putIfNotEmpty("creationDayOfWeek", commandOptions.creationDayOfWeek);
+        query.putIfNotEmpty("type", commandOptions.type);
+        query.putIfNotEmpty("status", commandOptions.status);
+        query.putIfNotEmpty("numSamples", commandOptions.numSamples);
+        query.putIfNotEmpty("release", commandOptions.release);
+        query.putIfNotEmpty(Constants.ANNOTATION, commandOptions.annotation);
+
+        QueryOptions options = new QueryOptions();
+        options.put("defaultStats", commandOptions.defaultStats);
+        options.putIfNotNull("facet", commandOptions.facet);
+        options.putIfNotNull("facetRange", commandOptions.facetRange);
+
+        return openCGAClient.getCohortClient().facet(commandOptions.study, query, options);
     }
 
     private QueryResponse<CohortAclEntry> updateAcl() throws IOException, CatalogException {

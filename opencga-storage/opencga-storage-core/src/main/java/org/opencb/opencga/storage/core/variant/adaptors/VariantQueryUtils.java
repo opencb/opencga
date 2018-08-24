@@ -713,7 +713,7 @@ public final class VariantQueryUtils {
      * @param fields                    Returned fields
      * @return List of fileIds to return.
      */
-    private static List<String> getIncludeFilesList(Query query, Set<VariantField> fields) {
+    public static List<String> getIncludeFilesList(Query query, Set<VariantField> fields) {
         List<String> includeFiles;
         if (!fields.contains(VariantField.STUDIES_FILES)) {
             includeFiles = Collections.emptyList();

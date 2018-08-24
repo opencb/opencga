@@ -22,10 +22,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.result.FacetedQueryResult;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
@@ -42,6 +40,7 @@ import org.opencb.opencga.server.rest.json.mixin.IndividualMixin;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.*;
@@ -160,9 +159,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     Individual.AffectationStatus affectationStatus,
             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
             @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: annotationSet[=|==|!|!=]{annotationSetName}")
-                @QueryParam("annotationsetName") String annotationsetName,
+            @QueryParam("annotationsetName") String annotationsetName,
             @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: variableSet[=|==|!|!=]{variableSetId}")
-                @QueryParam("variableSet") String variableSet,
+            @QueryParam("variableSet") String variableSet,
             @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)", required = false) @QueryParam("annotation") String annotation,
             @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,
             @ApiParam(value = "Release value (Current release from the moment the individuals were first created)")
@@ -278,7 +277,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                 queryOptions.put(QueryOptions.INCLUDE, Constants.ANNOTATION_SET_NAME + "." + annotationsetName);
             }
 
-            QueryResult<Individual> search = individualManager.search(studyStr, query, queryOptions,sessionId);
+            QueryResult<Individual> search = individualManager.search(studyStr, query, queryOptions, sessionId);
             if (search.getNumResults() == 1) {
                 return createOkResponse(new QueryResult<>("List annotationSets", search.getDbTime(),
                         search.first().getAnnotationSets().size(), search.first().getAnnotationSets().size(), search.getWarningMsg(),
@@ -386,9 +385,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
             @QueryParam("study") String studyStr,
             @ApiParam(value = "Action to be performed if the array of samples is being updated.", defaultValue = "ADD")
-                @QueryParam("samplesAction") ParamUtils.UpdateAction samplesAction,
+            @QueryParam("samplesAction") ParamUtils.UpdateAction samplesAction,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", defaultValue = "ADD")
-                @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
+            @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
             @ApiParam(value = "Create a new version of individual", defaultValue = "false")
             @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(value = "Update all the sample references from the individual to point to their latest versions",
@@ -462,7 +461,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     })
     public Response delete(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                @QueryParam("study") String studyStr,
+            @QueryParam("study") String studyStr,
             @ApiParam(value = "id") @QueryParam("id") String id,
             @ApiParam(value = "name") @QueryParam("name") String name,
             @ApiParam(value = "father") @QueryParam("father") String father,
@@ -485,7 +484,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
             @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)", required = false) @QueryParam("annotation") String annotation,
             @ApiParam(value = "Release value (Current release from the moment the individuals were first created)")
-                @QueryParam("release") String release) {
+            @QueryParam("release") String release) {
         try {
             query.remove("study");
             return createOkResponse(individualManager.delete(studyStr, query, queryOptions, sessionId));
@@ -506,33 +505,33 @@ public class IndividualWSServer extends OpenCGAWSServer {
     })
     public Response groupBy(
             @ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("")
-                @QueryParam("fields") String fields,
+            @QueryParam("fields") String fields,
             @ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @QueryParam("studyId") String studyIdStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                @QueryParam("study") String studyStr,
+            @QueryParam("study") String studyStr,
             @ApiParam(value = "name", required = false) @QueryParam("name") String names,
             @ApiParam(value = "Comma separated list of sample ids or names") @QueryParam("samples") String samples,
             @ApiParam(value = "sex", required = false) @QueryParam("sex") Individual.Sex sex,
             @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
             @ApiParam(value = "Population name", required = false) @QueryParam("population.name") String populationName,
             @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation")
-                String populationSubpopulation,
+                    String populationSubpopulation,
             @ApiParam(value = "Population description", required = false) @QueryParam("population.description")
-                String populationDescription,
+                    String populationDescription,
             @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex")
-                Individual.KaryotypicSex karyotypicSex,
+                    Individual.KaryotypicSex karyotypicSex,
             @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus") Individual.LifeStatus lifeStatus,
             @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")
-                Individual.AffectationStatus affectationStatus,
+                    Individual.AffectationStatus affectationStatus,
             @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: annotationSet[=|==|!|!=]{annotationSetName}")
-                @QueryParam("annotationsetName") String annotationsetName,
+            @QueryParam("annotationsetName") String annotationsetName,
             @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: variableSet[=|==|!|!=]{variableSetId}")
-                @QueryParam("variableSet") String variableSet,
+            @QueryParam("variableSet") String variableSet,
             @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
             @ApiParam(value = "Release value (Current release from the moment the families were first created)")
-                @QueryParam("release") String release,
+            @QueryParam("release") String release,
             @ApiParam(value = "Snapshot value (Latest version of families in the specified release)") @QueryParam("snapshot")
-                int snapshot) {
+                    int snapshot) {
         try {
             query.remove("study");
             query.remove("fields");
@@ -652,6 +651,57 @@ public class IndividualWSServer extends OpenCGAWSServer {
         }
     }
 
+    private final String defaultFacet = "creationYear>>creationMonth;status;multiplesType;ethnicity;population;lifeStatus;affectationStatus;phenotypes;sex";
+    private final String defaultFacetRange = "numSamples:0:10:1";
+
+    @GET
+    @Path("/facet")
+    @ApiOperation(value = "Fetch catalog sample facets", position = 15, response = QueryResponse.class)
+    public Response getFacets(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+            @QueryParam("study") String studyStr,
+
+            @ApiParam(value = "Has father") @QueryParam("hasFather") Boolean hasFather,
+            @ApiParam(value = "Has mother") @QueryParam("hasMother") Boolean hasMother,
+            @ApiParam(value = "Number of multiples") @QueryParam("numMultiples") String numMultiples,
+            @ApiParam(value = "Multiples type") @QueryParam("multiplesType") String multiplesType,
+            @ApiParam(value = "Sex") @QueryParam("sex") String sex,
+            @ApiParam(value = "Karyotypic sex") @QueryParam("karyotypicSex") String karyotypicSex,
+            @ApiParam(value = "Ethnicity") @QueryParam("ethnicity") String ethnicity,
+            @ApiParam(value = "Population") @QueryParam("population") String population,
+            @ApiParam(value = "Creation year") @QueryParam("creationYear") String creationYear,
+            @ApiParam(value = "Creation month (JANUARY, FEBRUARY...)") @QueryParam("creationMonth") String creationMonth,
+            @ApiParam(value = "Creation day") @QueryParam("creationDay") String creationDay,
+            @ApiParam(value = "Creation day of week (MONDAY, TUESDAY...)") @QueryParam("creationDayOfWeek") String creationDayOfWeek,
+            @ApiParam(value = "Status") @QueryParam("status") String status,
+            @ApiParam(value = "Life status") @QueryParam("lifeStatus") String lifeStatus,
+            @ApiParam(value = "Affectation status") @QueryParam("affectationStatus") String affectationStatus,
+            @ApiParam(value = "Phenotypes") @QueryParam("phenotypes") String phenotypes,
+            @ApiParam(value = "Number of samples") @QueryParam("numSamples") String numSamples,
+            @ApiParam(value = "Parental consanguinity") @QueryParam("parentalConsanguinity") Boolean parentalConsanguinity,
+            @ApiParam(value = "Release") @QueryParam("release") String release,
+            @ApiParam(value = "Version") @QueryParam("version") String version,
+            @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
+
+            @ApiParam(value = "Calculate default stats", defaultValue = "false") @QueryParam("defaultStats") boolean defaultStats,
+
+            @ApiParam(value = "List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: studies>>biotype;type") @QueryParam("facet") String facet,
+            @ApiParam(value = "List of facet ranges separated by semicolons with the format {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1") @QueryParam("facetRange") String facetRange,
+            @ApiParam(value = "List of facet intersections separated by semicolons with the format {field_name}:{value1}:{value2}[:{value3}], e.g.: studies:1kG_phase3:EXAC:ESP6500") @QueryParam("facetIntersection") String facetIntersection) {
+        try {
+            query.remove("study");
+
+            if (defaultStats) {
+                queryOptions.put(QueryOptions.FACET, StringUtils.isNotEmpty(facet) ? defaultFacet + ";" + facet : defaultFacet);
+                queryOptions.put(QueryOptions.FACET_RANGE, StringUtils.isNotEmpty(facet) ? defaultFacetRange + ";" + facet : defaultFacetRange);
+            }
+
+            FacetedQueryResult queryResult = catalogManager.getIndividualManager().facet(studyStr, query, queryOptions, sessionId);
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
     // Data models
 
     protected static class IndividualPOST {
@@ -672,7 +722,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
         public Individual.LifeStatus lifeStatus;
         public Individual.AffectationStatus affectationStatus;
         public List<AnnotationSet> annotationSets;
-        public List<OntologyTerm> phenotypes;
+        public List<Phenotype> phenotypes;
         public Map<String, Object> attributes;
 
         public Individual toIndividual(String studyStr, StudyManager studyManager, String sessionId) throws CatalogException {

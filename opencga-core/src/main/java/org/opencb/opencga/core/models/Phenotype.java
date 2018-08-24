@@ -16,6 +16,10 @@ public class Phenotype {
     public Phenotype() {
     }
 
+    public Phenotype(String id, String name, String source) {
+        this(id, name, source, Status.UNKNOWN);
+    }
+
     public Phenotype(String id, String name, String source, Status status) {
         this.id = id;
         this.name = name;
