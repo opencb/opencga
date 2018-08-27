@@ -5,9 +5,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.IndividualMongoDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -29,6 +31,8 @@ public class IndividualMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
     private SampleDBAdaptor sampleDBAdaptor;
     private QueryOptions sampleQueryOptions;
 
+    private IndividualDBAdaptor individualDBAdaptor;
+
     private Queue<Document> individualListBuffer;
 
     private Logger logger;
@@ -36,15 +40,17 @@ public class IndividualMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
     private static final int BUFFER_SIZE = 100;
 
     public IndividualMongoDBIterator(MongoCursor mongoCursor, AnnotableConverter<? extends Annotable> converter,
-                                     Function<Document, Document> filter, SampleDBAdaptor sampleMongoDBAdaptor,
+                                     Function<Document, Document> filter, MongoDBAdaptorFactory dbAdaptorFactory,
                                      long studyUid, String user, QueryOptions options) {
         super(mongoCursor, converter, filter, options);
 
         this.user = user;
         this.studyUid = studyUid;
 
-        this.sampleDBAdaptor = sampleMongoDBAdaptor;
+        this.sampleDBAdaptor = dbAdaptorFactory.getCatalogSampleDBAdaptor();
         this.sampleQueryOptions = createSampleQueryOptions();
+
+        this.individualDBAdaptor = dbAdaptorFactory.getCatalogIndividualDBAdaptor();
 
         this.individualListBuffer = new LinkedList<>();
         this.logger = LoggerFactory.getLogger(IndividualMongoDBIterator.class);
@@ -77,6 +83,7 @@ public class IndividualMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
 
     private void fetchNextBatch() {
         Set<String> sampleVersions = new HashSet<>();
+        Map<Long, List<Document>> individualMap = new HashMap<>();
 
         // Get next BUFFER_SIZE documents
         int counter = 0;
@@ -87,7 +94,7 @@ public class IndividualMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
             counter++;
 
             // Extract all the samples
-            Object samples = individualDocument.get(IndividualMongoDBAdaptor.QueryParams.SAMPLES.key());
+            Object samples = individualDocument.get(IndividualDBAdaptor.QueryParams.SAMPLES.key());
             if (samples != null && !options.getBoolean(NATIVE_QUERY)) {
                 List<Document> sampleList = (List<Document>) samples;
                 if (!sampleList.isEmpty()) {
@@ -100,6 +107,50 @@ public class IndividualMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
                     });
                 }
             }
+
+            if (!options.getBoolean(NATIVE_QUERY)) {
+                // Extract father and mother uids
+                Document father = (Document) individualDocument.get(IndividualDBAdaptor.QueryParams.FATHER.key());
+                addParentToMap(individualMap, father);
+                Document mother = (Document) individualDocument.get(IndividualDBAdaptor.QueryParams.MOTHER.key());
+                addParentToMap(individualMap, mother);
+            }
+        }
+
+        if (!individualMap.isEmpty()) {
+            // Obtain the parents
+
+            Query query = new Query()
+                    .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+                    .append(SampleDBAdaptor.QueryParams.UID.key(), individualMap.keySet());
+            QueryOptions queryOptions = new QueryOptions()
+                    .append(NATIVE_QUERY, true)
+                    .append(QueryOptions.INCLUDE, Arrays.asList(
+                            IndividualDBAdaptor.QueryParams.ID.key(), IndividualDBAdaptor.QueryParams.VERSION.key(),
+                            IndividualDBAdaptor.QueryParams.UID.key()));
+
+            try {
+                QueryResult<Document> individualQueryResult;
+                if (user != null) {
+                    individualQueryResult = individualDBAdaptor.nativeGet(query, queryOptions, user);
+                } else {
+                    individualQueryResult = individualDBAdaptor.nativeGet(query, queryOptions);
+                }
+
+                for (Document individual : individualQueryResult.getResult()) {
+                    List<Document> parentList = individualMap.get(individual.getLong(IndividualDBAdaptor.QueryParams.UID.key()));
+                    for (Document parentDocument : parentList) {
+                        parentDocument.put(IndividualDBAdaptor.QueryParams.ID.key(),
+                                individual.getString(IndividualDBAdaptor.QueryParams.ID.key()));
+                        parentDocument.put(IndividualDBAdaptor.QueryParams.VERSION.key(),
+                                individual.getInteger(IndividualDBAdaptor.QueryParams.VERSION.key()));
+                    }
+                }
+
+            } catch (CatalogDBException | CatalogAuthorizationException e) {
+                logger.warn("Could not obtain the parents associated to the individuals: {}", e.getMessage(), e);
+            }
+
         }
 
         if (!sampleVersions.isEmpty()) {
@@ -154,6 +205,18 @@ public class IndividualMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
 
                 individual.put(IndividualMongoDBAdaptor.QueryParams.SAMPLES.key(), tmpSampleList);
             });
+        }
+    }
+
+    private void addParentToMap(Map<Long, List<Document>> individualMap, Document parent) {
+        if (parent != null && parent.size() > 0) {
+            Long uid = parent.getLong("uid");
+            if (uid != null && uid > 0) {
+                if (!individualMap.containsKey(uid)) {
+                    individualMap.put(uid, new ArrayList<>());
+                }
+                individualMap.get(uid).add(parent);
+            }
         }
     }
 

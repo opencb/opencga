@@ -24,6 +24,7 @@ import com.mongodb.client.result.UpdateResult;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -554,7 +555,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 QueryParams.DATE_OF_BIRTH.key(), };
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
-        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap((QueryParams.SEX.key()), Individual.Sex.class);
+        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap((QueryParams.SEX.key()), IndividualProperty.Sex.class);
         filterEnumParams(parameters, document.getSet(), acceptedEnums);
 
         String[] acceptedIntParams = {QueryParams.FATHER_UID.key(), QueryParams.MOTHER_UID.key()};
@@ -781,8 +782,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     @Override
     public DBIterator<Individual> iterator(Query query, QueryOptions options) throws CatalogDBException {
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
-        return new IndividualMongoDBIterator<>(mongoCursor, individualConverter, null, dbAdaptorFactory.getCatalogSampleDBAdaptor(),
-                query.getLong(PRIVATE_STUDY_ID), null, options);
+        return new IndividualMongoDBIterator<>(mongoCursor, individualConverter, null, dbAdaptorFactory, query.getLong(PRIVATE_STUDY_ID),
+                null, options);
     }
 
     @Override
@@ -791,8 +792,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         queryOptions.put(NATIVE_QUERY, true);
 
         MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions);
-        return new IndividualMongoDBIterator(mongoCursor, null, null, dbAdaptorFactory.getCatalogSampleDBAdaptor(),
-                query.getLong(PRIVATE_STUDY_ID), null, options);
+        return new IndividualMongoDBIterator(mongoCursor, null, null, dbAdaptorFactory, query.getLong(PRIVATE_STUDY_ID), null, options);
     }
 
     @Override
@@ -804,8 +804,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS.name(),
                 IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name());
 
-        return new IndividualMongoDBIterator<>(mongoCursor, individualConverter, iteratorFilter,
-                dbAdaptorFactory.getCatalogSampleDBAdaptor(), query.getLong(PRIVATE_STUDY_ID), user, options);
+        return new IndividualMongoDBIterator<>(mongoCursor, individualConverter, iteratorFilter, dbAdaptorFactory,
+                query.getLong(PRIVATE_STUDY_ID), user, options);
     }
 
     @Override
@@ -820,8 +820,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS.name(),
                 IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name());
 
-        return new IndividualMongoDBIterator(mongoCursor, null, iteratorFilter, dbAdaptorFactory.getCatalogSampleDBAdaptor(),
-                query.getLong(PRIVATE_STUDY_ID), user, options);
+        return new IndividualMongoDBIterator(mongoCursor, null, iteratorFilter, dbAdaptorFactory, query.getLong(PRIVATE_STUDY_ID), user,
+                options);
     }
 
     private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {

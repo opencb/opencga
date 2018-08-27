@@ -2,6 +2,7 @@ package org.opencb.opencga.catalog.stats.solr.converters;
 
 import org.apache.commons.lang3.NotImplementedException;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
+import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.stats.solr.CohortSolrModel;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
@@ -23,7 +24,7 @@ import java.util.stream.Collectors;
 public class CatalogCohortToSolrCohortConverter implements ComplexTypeConverter<Cohort, CohortSolrModel> {
 
     private Study study;
-    private Map<String, Map<String, AnnotationUtils.Type>> variableMap;
+    private Map<String, Map<String, QueryParam.Type>> variableMap;
 
     protected static Logger logger = LoggerFactory.getLogger(CatalogCohortToSolrCohortConverter.class);
 

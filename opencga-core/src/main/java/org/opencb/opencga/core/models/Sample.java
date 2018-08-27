@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.models;
 
+import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.acls.AclParams;
 

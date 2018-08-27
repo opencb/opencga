@@ -18,16 +18,21 @@ package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.commons.Analyst;
+import org.opencb.biodata.models.commons.OntologyTerm;
+import org.opencb.biodata.models.commons.Software;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
-import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.*;
-import org.opencb.opencga.core.models.clinical.*;
+import org.opencb.opencga.core.models.clinical.Comment;
+import org.opencb.opencga.core.models.clinical.Interpretation;
+import org.opencb.opencga.core.models.clinical.ReportedVariant;
+import org.opencb.opencga.core.models.clinical.Version;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;

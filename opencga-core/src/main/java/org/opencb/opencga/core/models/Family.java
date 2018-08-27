@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.models;
 
+import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.Collections;
@@ -33,7 +34,7 @@ public class Family extends Annotable {
     private String name;
     private String uuid;
 
-    private List<OntologyTerm> phenotypes;
+    private List<Phenotype> phenotypes;
     private List<Individual> members;
 
     private String creationDate;
@@ -49,13 +50,13 @@ public class Family extends Annotable {
     public Family() {
     }
 
-    public Family(String id, String name, List<OntologyTerm> phenotypes, List<Individual> members, String description,
+    public Family(String id, String name, List<Phenotype> phenotypes, List<Individual> members, String description,
                   int expectedSize, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this(id, name, phenotypes, members, TimeUtils.getTime(), new FamilyStatus(Status.READY), description, expectedSize, -1, 1,
                 annotationSets, attributes);
     }
 
-    public Family(String id, String name, List<OntologyTerm> phenotypes, List<Individual> members, String creationDate,
+    public Family(String id, String name, List<Phenotype> phenotypes, List<Individual> members, String creationDate,
                   FamilyStatus status, String description, int expectedSize, int release, int version, List<AnnotationSet> annotationSets,
                   Map<String, Object> attributes) {
         this.id = id;
@@ -163,11 +164,11 @@ public class Family extends Annotable {
         return this;
     }
 
-    public List<OntologyTerm> getPhenotypes() {
+    public List<Phenotype> getPhenotypes() {
         return phenotypes;
     }
 
-    public Family setPhenotypes(List<OntologyTerm> phenotypes) {
+    public Family setPhenotypes(List<Phenotype> phenotypes) {
         this.phenotypes = phenotypes;
         return this;
     }

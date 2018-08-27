@@ -2,6 +2,7 @@ package org.opencb.opencga.catalog.stats.solr.converters;
 
 import org.apache.commons.lang3.NotImplementedException;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
+import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.stats.solr.IndividualSolrModel;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
@@ -23,7 +24,7 @@ import java.util.stream.Collectors;
 public class CatalogIndividualToSolrIndividualConverter implements ComplexTypeConverter<Individual, IndividualSolrModel> {
 
     private Study study;
-    private Map<String, Map<String, AnnotationUtils.Type>> variableMap;
+    private Map<String, Map<String, QueryParam.Type>> variableMap;
 
     protected static Logger logger = LoggerFactory.getLogger(CatalogIndividualToSolrIndividualConverter.class);
 
@@ -98,7 +99,7 @@ public class CatalogIndividualToSolrIndividualConverter implements ComplexTypeCo
         if (individual.getAffectationStatus() != null) {
             individualSolrModel.setAffectationStatus(individual.getAffectationStatus().name());
         }
-        individualSolrModel.setPhenotypes(SolrConverterUtil.populateOntologyTerms(individual.getPhenotypes()));
+        individualSolrModel.setPhenotypes(SolrConverterUtil.populatePhenotypes(individual.getPhenotypes()));
 
         individualSolrModel.setNumSamples(individual.getSamples() != null ? individual.getSamples().size() : 0);
 

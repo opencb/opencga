@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -68,21 +69,21 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     private UserManager userManager;
     private StudyManager studyManager;
 
-    private static final Map<Individual.KaryotypicSex, Individual.Sex> KARYOTYPIC_SEX_SEX_MAP;
+    private static final Map<IndividualProperty.KaryotypicSex, IndividualProperty.Sex> KARYOTYPIC_SEX_SEX_MAP;
 
     static {
         KARYOTYPIC_SEX_SEX_MAP = new HashMap<>();
-        KARYOTYPIC_SEX_SEX_MAP.put(Individual.KaryotypicSex.UNKNOWN, Individual.Sex.UNKNOWN);
-        KARYOTYPIC_SEX_SEX_MAP.put(Individual.KaryotypicSex.XX, Individual.Sex.FEMALE);
-        KARYOTYPIC_SEX_SEX_MAP.put(Individual.KaryotypicSex.XO, Individual.Sex.FEMALE);
-        KARYOTYPIC_SEX_SEX_MAP.put(Individual.KaryotypicSex.XXX, Individual.Sex.FEMALE);
-        KARYOTYPIC_SEX_SEX_MAP.put(Individual.KaryotypicSex.XXXX, Individual.Sex.FEMALE);
-        KARYOTYPIC_SEX_SEX_MAP.put(Individual.KaryotypicSex.XY, Individual.Sex.MALE);
-        KARYOTYPIC_SEX_SEX_MAP.put(Individual.KaryotypicSex.XXY, Individual.Sex.MALE);
-        KARYOTYPIC_SEX_SEX_MAP.put(Individual.KaryotypicSex.XXYY, Individual.Sex.MALE);
-        KARYOTYPIC_SEX_SEX_MAP.put(Individual.KaryotypicSex.XXXY, Individual.Sex.MALE);
-        KARYOTYPIC_SEX_SEX_MAP.put(Individual.KaryotypicSex.XYY, Individual.Sex.MALE);
-        KARYOTYPIC_SEX_SEX_MAP.put(Individual.KaryotypicSex.OTHER, Individual.Sex.UNDETERMINED);
+        KARYOTYPIC_SEX_SEX_MAP.put(IndividualProperty.KaryotypicSex.UNKNOWN, IndividualProperty.Sex.UNKNOWN);
+        KARYOTYPIC_SEX_SEX_MAP.put(IndividualProperty.KaryotypicSex.XX, IndividualProperty.Sex.FEMALE);
+        KARYOTYPIC_SEX_SEX_MAP.put(IndividualProperty.KaryotypicSex.XO, IndividualProperty.Sex.FEMALE);
+        KARYOTYPIC_SEX_SEX_MAP.put(IndividualProperty.KaryotypicSex.XXX, IndividualProperty.Sex.FEMALE);
+        KARYOTYPIC_SEX_SEX_MAP.put(IndividualProperty.KaryotypicSex.XXXX, IndividualProperty.Sex.FEMALE);
+        KARYOTYPIC_SEX_SEX_MAP.put(IndividualProperty.KaryotypicSex.XY, IndividualProperty.Sex.MALE);
+        KARYOTYPIC_SEX_SEX_MAP.put(IndividualProperty.KaryotypicSex.XXY, IndividualProperty.Sex.MALE);
+        KARYOTYPIC_SEX_SEX_MAP.put(IndividualProperty.KaryotypicSex.XXYY, IndividualProperty.Sex.MALE);
+        KARYOTYPIC_SEX_SEX_MAP.put(IndividualProperty.KaryotypicSex.XXXY, IndividualProperty.Sex.MALE);
+        KARYOTYPIC_SEX_SEX_MAP.put(IndividualProperty.KaryotypicSex.XYY, IndividualProperty.Sex.MALE);
+        KARYOTYPIC_SEX_SEX_MAP.put(IndividualProperty.KaryotypicSex.OTHER, IndividualProperty.Sex.UNDETERMINED);
     }
 
     IndividualManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
@@ -127,11 +128,12 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     @Deprecated
-    public QueryResult<Individual> create(long studyId, String name, String family, long fatherId, long motherId, Individual.Sex sex,
-                                          String ethnicity, String populationName, String populationSubpopulation,
-                                          String populationDescription, String dateOfBirth, Individual.KaryotypicSex karyotypicSex,
-                                          Individual.LifeStatus lifeStatus, Individual.AffectationStatus affectationStatus,
-                                          QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<Individual> create(long studyId, String name, String family, long fatherId, long motherId,
+                                          IndividualProperty.Sex sex, String ethnicity, String populationName,
+                                          String populationSubpopulation, String populationDescription, String dateOfBirth,
+                                          IndividualProperty.KaryotypicSex karyotypicSex, IndividualProperty.LifeStatus lifeStatus,
+                                          IndividualProperty.AffectationStatus affectationStatus, QueryOptions options, String sessionId)
+            throws CatalogException {
         Individual individual = new Individual(name, name, null, null, null, null, sex, karyotypicSex,
                 ethnicity, new Individual.Population(populationName, populationSubpopulation, populationDescription), dateOfBirth, -1, 1,
                 null, null, lifeStatus, affectationStatus, null, null, false, null, null);
@@ -148,10 +150,11 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         individual.setLocation(ParamUtils.defaultObject(individual.getLocation(), Location::new));
         individual.setEthnicity(ParamUtils.defaultObject(individual.getEthnicity(), ""));
         individual.setPopulation(ParamUtils.defaultObject(individual.getPopulation(), Individual.Population::new));
-        individual.setLifeStatus(ParamUtils.defaultObject(individual.getLifeStatus(), Individual.LifeStatus.UNKNOWN));
-        individual.setKaryotypicSex(ParamUtils.defaultObject(individual.getKaryotypicSex(), Individual.KaryotypicSex.UNKNOWN));
-        individual.setSex(ParamUtils.defaultObject(individual.getSex(), Individual.Sex.UNKNOWN));
-        individual.setAffectationStatus(ParamUtils.defaultObject(individual.getAffectationStatus(), Individual.AffectationStatus.UNKNOWN));
+        individual.setLifeStatus(ParamUtils.defaultObject(individual.getLifeStatus(), IndividualProperty.LifeStatus.UNKNOWN));
+        individual.setKaryotypicSex(ParamUtils.defaultObject(individual.getKaryotypicSex(), IndividualProperty.KaryotypicSex.UNKNOWN));
+        individual.setSex(ParamUtils.defaultObject(individual.getSex(), IndividualProperty.Sex.UNKNOWN));
+        individual.setAffectationStatus(ParamUtils.defaultObject(individual.getAffectationStatus(),
+                IndividualProperty.AffectationStatus.UNKNOWN));
         individual.setPhenotypes(ParamUtils.defaultObject(individual.getPhenotypes(), Collections.emptyList()));
         individual.setAnnotationSets(ParamUtils.defaultObject(individual.getAnnotationSets(), Collections.emptyList()));
         individual.setAttributes(ParamUtils.defaultObject(individual.getAttributes(), Collections.emptyMap()));
@@ -613,7 +616,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         }
         if (parameters.containsKey(IndividualDBAdaptor.UpdateParams.KARYOTYPIC_SEX.key())) {
             try {
-                Individual.KaryotypicSex.valueOf(parameters.getString(IndividualDBAdaptor.UpdateParams.KARYOTYPIC_SEX.key()));
+                IndividualProperty.KaryotypicSex.valueOf(parameters.getString(IndividualDBAdaptor.UpdateParams.KARYOTYPIC_SEX.key()));
             } catch (IllegalArgumentException e) {
                 logger.error("Invalid karyotypic sex found: {}", e.getMessage(), e);
                 throw new CatalogException("Invalid karyotypic sex detected");
@@ -621,7 +624,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         }
         if (parameters.containsKey(IndividualDBAdaptor.UpdateParams.SEX.key())) {
             try {
-                Individual.Sex.valueOf(parameters.getString(IndividualDBAdaptor.UpdateParams.SEX.key()));
+                IndividualProperty.Sex.valueOf(parameters.getString(IndividualDBAdaptor.UpdateParams.SEX.key()));
             } catch (IllegalArgumentException e) {
                 logger.error("Invalid sex found: {}", e.getMessage(), e);
                 throw new CatalogException("Invalid sex detected");

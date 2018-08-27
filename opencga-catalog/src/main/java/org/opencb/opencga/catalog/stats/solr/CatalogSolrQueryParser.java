@@ -7,6 +7,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
@@ -19,7 +20,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.opencb.opencga.catalog.utils.AnnotationUtils.Type.*;
+import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
 /**
  * Created by wasim on 09/07/18.
@@ -90,9 +91,9 @@ public class CatalogSolrQueryParser {
         }
 
         private final String key;
-        private AnnotationUtils.Type type;
+        private QueryParam.Type type;
 
-        QueryParams(String key, AnnotationUtils.Type type) {
+        QueryParams(String key, QueryParam.Type type) {
             this.key = key;
             this.type = type;
         }
@@ -101,7 +102,7 @@ public class CatalogSolrQueryParser {
             return key;
         }
 
-        public AnnotationUtils.Type type() {
+        public QueryParam.Type type() {
             return type;
         }
 
@@ -414,7 +415,7 @@ public class CatalogSolrQueryParser {
                     String valueString = matcher.group(3);
 
                     if (annotation.startsWith(Constants.ANNOTATION_SET_NAME)) {
-                        annotationMap.put("annotationSets", getValues(Arrays.asList(valueString.split(",")), AnnotationUtils.Type.TEXT));
+                        annotationMap.put("annotationSets", getValues(Arrays.asList(valueString.split(",")), QueryParam.Type.TEXT));
                     } else { // annotation
                         // Split the annotation by key - value
                         // Remove the : at the end of the variableSet
@@ -426,7 +427,7 @@ public class CatalogSolrQueryParser {
                             logger.error("Internal error: The variableTypeMap is null or empty {}", variableTypeMap);
                             throw new CatalogException("Internal error. Could not build the annotation query");
                         }
-                        AnnotationUtils.Type type = variableTypeMap.get(variableSet + ":" + key, AnnotationUtils.Type.class);
+                        QueryParam.Type type = variableTypeMap.get(variableSet + ":" + key, QueryParam.Type.class);
                         if (type == null) {
                             logger.error("Internal error: Could not find the type of the variable {}:{}", variableSet, key);
                             throw new CatalogException("Internal error. Could not find the type of the variable " + variableSet + ":"
@@ -445,7 +446,7 @@ public class CatalogSolrQueryParser {
         return annotationMap;
     }
 
-    private String getAnnotationType(AnnotationUtils.Type type) throws CatalogException {
+    private String getAnnotationType(QueryParam.Type type) throws CatalogException {
         switch (type) {
             case TEXT:
                 return "__s__";
@@ -469,7 +470,7 @@ public class CatalogSolrQueryParser {
         }
     }
 
-    private String getValues(List<String> values, AnnotationUtils.Type type) throws CatalogException {
+    private String getValues(List<String> values, QueryParam.Type type) throws CatalogException {
         ArrayList<String> or = new ArrayList<>(values.size());
         for (String option : values) {
             Matcher matcher = OPERATION_PATTERN.matcher(option);

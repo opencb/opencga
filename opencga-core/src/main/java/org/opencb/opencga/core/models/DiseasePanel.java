@@ -17,6 +17,7 @@
 package org.opencb.opencga.core.models;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.io.IOException;
@@ -40,7 +41,7 @@ public class DiseasePanel extends PrivateStudyUid {
     private SourcePanel source;
     private String description;
 
-    private List<OntologyTerm> phenotypes;
+    private List<Phenotype> phenotypes;
 
     private List<VariantPanel> variants;
     private List<GenePanel> genes;
@@ -58,7 +59,7 @@ public class DiseasePanel extends PrivateStudyUid {
     }
 
     public DiseasePanel(String id, String name, int release, int version, String author, SourcePanel source, String description,
-                        List<OntologyTerm> phenotypes, List<VariantPanel> variants, List<GenePanel> genes, List<RegionPanel> regions,
+                        List<Phenotype> phenotypes, List<VariantPanel> variants, List<GenePanel> genes, List<RegionPanel> regions,
                         Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -399,11 +400,11 @@ public class DiseasePanel extends PrivateStudyUid {
         return this;
     }
 
-    public List<OntologyTerm> getPhenotypes() {
+    public List<Phenotype> getPhenotypes() {
         return phenotypes;
     }
 
-    public DiseasePanel setPhenotypes(List<OntologyTerm> phenotypes) {
+    public DiseasePanel setPhenotypes(List<Phenotype> phenotypes) {
         this.phenotypes = phenotypes;
         return this;
     }

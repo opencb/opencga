@@ -22,6 +22,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.pedigree.IndividualProperty;
+import org.opencb.biodata.models.pedigree.Multiples;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.FacetedQueryResult;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
@@ -560,16 +563,16 @@ public class FamilyWSServer extends OpenCGAWSServer {
         public Multiples multiples;
         public Location location;
 
-        public Individual.Sex sex;
+        public IndividualProperty.Sex sex;
         public String ethnicity;
         public Boolean parentalConsanguinity;
         public Individual.Population population;
         public String dateOfBirth;
-        public Individual.KaryotypicSex karyotypicSex;
-        public Individual.LifeStatus lifeStatus;
-        public Individual.AffectationStatus affectationStatus;
+        public IndividualProperty.KaryotypicSex karyotypicSex;
+        public IndividualProperty.LifeStatus lifeStatus;
+        public IndividualProperty.AffectationStatus affectationStatus;
         public List<AnnotationSet> annotationSets;
-        public List<OntologyTerm> phenotypes;
+        public List<Phenotype> phenotypes;
         public Map<String, Object> attributes;
 
 
@@ -623,7 +626,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
         public String name;
         public String description;
 
-        public List<OntologyTerm> phenotypes;
+        public List<Phenotype> phenotypes;
         public List<IndividualPOST> members;
 
         public Integer expectedSize;

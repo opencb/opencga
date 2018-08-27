@@ -30,7 +30,7 @@ public class SolrFacetUtil {
         List<FacetedQueryResultItem.Field> fields = new ArrayList<>();
         if (response.getFacetFields() != null) {
             for (FacetField solrField : response.getFacetFields()) {
-                FacetedQueryResultItem.Field field = new FacetedQueryResultItem().new Field();
+                FacetedQueryResultItem.Field field = new FacetedQueryResultItem.Field();
                 field.setName(solrField.getName());
 
                 long total = 0;
@@ -38,8 +38,7 @@ public class SolrFacetUtil {
                 for (FacetField.Count solrCount : solrField.getValues()) {
                     countName = solrCount.getName();
 
-                    FacetedQueryResultItem.Count count = new FacetedQueryResultItem()
-                            .new Count(countName, solrCount.getCount(), null);
+                    FacetedQueryResultItem.Count count = new FacetedQueryResultItem.Count(countName, solrCount.getCount(), null);
                     counts.add(count);
                     total += solrCount.getCount();
                 }
@@ -58,7 +57,7 @@ public class SolrFacetUtil {
                 List<PivotField> solrPivots = facetPivot.getVal(i);
                 if (solrPivots != null && CollectionUtils.isNotEmpty(solrPivots)) {
                     // init field
-                    FacetedQueryResultItem.Field field = new FacetedQueryResultItem().new Field();
+                    FacetedQueryResultItem.Field field = new FacetedQueryResultItem.Field();
                     field.setName(facetPivot.getName(i).split(",")[0]);
 
                     long total = 0;
@@ -66,8 +65,7 @@ public class SolrFacetUtil {
                     for (PivotField solrPivot : solrPivots) {
                         FacetedQueryResultItem.Field nestedField = processSolrPivot(facetPivot.getName(i), 1, solrPivot);
 
-                        FacetedQueryResultItem.Count count = new FacetedQueryResultItem()
-                                .new Count(solrPivot.getValue().toString(),
+                        FacetedQueryResultItem.Count count = new FacetedQueryResultItem.Count(solrPivot.getValue().toString(),
                                 solrPivot.getCount(), nestedField);
                         counts.add(count);
                         total += solrPivot.getCount();
@@ -92,7 +90,7 @@ public class SolrFacetUtil {
                     total += count;
                     counts.add(count);
                 }
-                ranges.add(new FacetedQueryResultItem().new Range(solrRange.getName(),
+                ranges.add(new FacetedQueryResultItem.Range(solrRange.getName(),
                         (Number) solrRange.getStart(), (Number) solrRange.getEnd(),
                         (Number) solrRange.getGap(), total, counts));
             }
@@ -106,7 +104,7 @@ public class SolrFacetUtil {
                 for (String key : intersectionMap.keySet()) {
                     List<List<String>> intersectionLists = intersectionMap.get(key);
                     for (List<String> list : intersectionLists) {
-                        FacetedQueryResultItem.Intersection intersection = new FacetedQueryResultItem().new Intersection();
+                        FacetedQueryResultItem.Intersection intersection = new FacetedQueryResultItem.Intersection();
                         intersection.setName(key);
                         intersection.setSize(list.size());
                         if (list.size() == 2) {
@@ -160,7 +158,7 @@ public class SolrFacetUtil {
         String countName;
         FacetedQueryResultItem.Field field = null;
         if (pivot.getPivot() != null && CollectionUtils.isNotEmpty(pivot.getPivot())) {
-            field = new FacetedQueryResultItem().new Field();
+            field = new FacetedQueryResultItem.Field();
             field.setName(name.split(",")[index]);
 
             long total = 0;
@@ -170,8 +168,7 @@ public class SolrFacetUtil {
 
                 countName = solrPivot.getValue().toString();
 
-                FacetedQueryResultItem.Count count = new FacetedQueryResultItem()
-                        .new Count(countName, solrPivot.getCount(), nestedField);
+                FacetedQueryResultItem.Count count = new FacetedQueryResultItem.Count(countName, solrPivot.getCount(), nestedField);
 
                 counts.add(count);
                 total += solrPivot.getCount();

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -13,7 +14,6 @@ import org.opencb.opencga.catalog.managers.DiseasePanelManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.DiseasePanel;
-import org.opencb.opencga.core.models.OntologyTerm;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.server.rest.json.mixin.PanelMixin;
 
@@ -264,7 +264,7 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
         public String author;
         public DiseasePanel.SourcePanel source;
 
-        public List<OntologyTerm> phenotypes;
+        public List<Phenotype> phenotypes;
         public List<DiseasePanel.VariantPanel> variants;
         public List<DiseasePanel.GenePanel> genes;
         public List<DiseasePanel.RegionPanel> regions;

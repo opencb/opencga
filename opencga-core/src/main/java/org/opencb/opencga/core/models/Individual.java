@@ -16,6 +16,12 @@
 
 package org.opencb.opencga.core.models;
 
+import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.pedigree.IndividualProperty.AffectationStatus;
+import org.opencb.biodata.models.pedigree.IndividualProperty.KaryotypicSex;
+import org.opencb.biodata.models.pedigree.IndividualProperty.LifeStatus;
+import org.opencb.biodata.models.pedigree.IndividualProperty.Sex;
+import org.opencb.biodata.models.pedigree.Multiples;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.acls.AclParams;
 
@@ -49,29 +55,13 @@ public class Individual extends Annotable {
     private Status status;
     private LifeStatus lifeStatus;
     private AffectationStatus affectationStatus;
-    private List<OntologyTerm> phenotypes;
+    private List<Phenotype> phenotypes;
     private List<Sample> samples;
     private boolean parentalConsanguinity;
 
 //    private List<AnnotationSet> annotationSets;
 
     private Map<String, Object> attributes;
-
-    public enum Sex {
-        MALE, FEMALE, UNKNOWN, UNDETERMINED
-    }
-
-    public enum LifeStatus {
-        ALIVE, ABORTED, DECEASED, UNBORN, STILLBORN, MISCARRIAGE, UNKNOWN
-    }
-
-    public enum AffectationStatus {
-        CONTROL, AFFECTED, UNAFFECTED, UNKNOWN
-    }
-
-    public enum KaryotypicSex {
-        UNKNOWN, XX, XY, XO, XXY, XXX, XXYY, XXXY, XXXX, XYY, OTHER
-    }
 
     public Individual() {
     }
@@ -86,7 +76,7 @@ public class Individual extends Annotable {
     public Individual(String id, String name, Individual father, Individual mother, Multiples multiples, Location location, Sex sex,
                       KaryotypicSex karyotypicSex, String ethnicity, Population population, LifeStatus lifeStatus,
                       AffectationStatus affectationStatus, String dateOfBirth, List<Sample> samples, boolean parentalConsanguinity,
-                      int release, List<AnnotationSet> annotationSets, List<OntologyTerm> phenotypeList) {
+                      int release, List<AnnotationSet> annotationSets, List<Phenotype> phenotypeList) {
         this(id, name, father, mother, multiples, location, sex, karyotypicSex, ethnicity, population,
                 dateOfBirth, release, 1, TimeUtils.getTime(), new Status(), lifeStatus, affectationStatus, phenotypeList, samples,
                 parentalConsanguinity, annotationSets, Collections.emptyMap());
@@ -95,7 +85,7 @@ public class Individual extends Annotable {
     public Individual(String id, String name, Individual father, Individual mother, Multiples multiples, Location location, Sex sex,
                       KaryotypicSex karyotypicSex, String ethnicity, Population population, String dateOfBirth, int release, int version,
                       String creationDate, Status status, LifeStatus lifeStatus, AffectationStatus affectationStatus,
-                      List<OntologyTerm> phenotypes, List<Sample> samples, boolean parentalConsanguinity,
+                      List<Phenotype> phenotypes, List<Sample> samples, boolean parentalConsanguinity,
                       List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -428,11 +418,11 @@ public class Individual extends Annotable {
         return this;
     }
 
-    public List<OntologyTerm> getPhenotypes() {
+    public List<Phenotype> getPhenotypes() {
         return phenotypes;
     }
 
-    public Individual setPhenotypes(List<OntologyTerm> phenotypes) {
+    public Individual setPhenotypes(List<Phenotype> phenotypes) {
         this.phenotypes = phenotypes;
         return this;
     }

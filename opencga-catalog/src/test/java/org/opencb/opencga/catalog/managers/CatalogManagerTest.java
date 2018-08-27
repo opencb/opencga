@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.managers;
 import com.mongodb.BasicDBObject;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -731,7 +732,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 new Variable("PHEN", "", Variable.VariableType.CATEGORICAL, "", true, false, Arrays.asList("CASE", "CONTROL"), 4, "", "",
                         null, Collections.<String, Object>emptyMap())
         ));
-        QueryResult<VariableSet> queryResult = catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs1", "vs1", true,
+        QueryResult<VariableSet> queryResult = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", true,
                 false, "", null, variables, sessionIdUser);
 
         assertEquals(1, queryResult.getResult().size());
@@ -1072,16 +1073,16 @@ public class CatalogManagerTest extends AbstractManagerTest {
         VariableSet variableSet = study.getVariableSets().get(0);
 
         String individualId1 = catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("INDIVIDUAL_1")
-                .setKaryotypicSex(Individual.KaryotypicSex.UNKNOWN).setLifeStatus(Individual.LifeStatus.UNKNOWN)
-                        .setAffectationStatus(Individual.AffectationStatus.UNKNOWN), new QueryOptions(), sessionIdUser)
+                .setKaryotypicSex(IndividualProperty.KaryotypicSex.UNKNOWN).setLifeStatus(IndividualProperty.LifeStatus.UNKNOWN)
+                        .setAffectationStatus(IndividualProperty.AffectationStatus.UNKNOWN), new QueryOptions(), sessionIdUser)
                 .first().getId();
         String individualId2 = catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("INDIVIDUAL_2")
-                .setKaryotypicSex(Individual.KaryotypicSex.UNKNOWN).setLifeStatus(Individual.LifeStatus.UNKNOWN)
-                        .setAffectationStatus(Individual.AffectationStatus.UNKNOWN), new QueryOptions(), sessionIdUser)
+                .setKaryotypicSex(IndividualProperty.KaryotypicSex.UNKNOWN).setLifeStatus(IndividualProperty.LifeStatus.UNKNOWN)
+                        .setAffectationStatus(IndividualProperty.AffectationStatus.UNKNOWN), new QueryOptions(), sessionIdUser)
                 .first().getId();
         String individualId3 = catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("INDIVIDUAL_3")
-                .setKaryotypicSex(Individual.KaryotypicSex.UNKNOWN).setLifeStatus(Individual.LifeStatus.UNKNOWN)
-                        .setAffectationStatus(Individual.AffectationStatus.UNKNOWN), new QueryOptions(), sessionIdUser)
+                .setKaryotypicSex(IndividualProperty.KaryotypicSex.UNKNOWN).setLifeStatus(IndividualProperty.LifeStatus.UNKNOWN)
+                        .setAffectationStatus(IndividualProperty.AffectationStatus.UNKNOWN), new QueryOptions(), sessionIdUser)
                 .first().getId();
 
         catalogManager.getIndividualManager().update(studyFqn, individualId1, new ObjectMap()
@@ -1164,6 +1165,25 @@ public class CatalogManagerTest extends AbstractManagerTest {
         thrown.expectMessage("Invalid date of birth format");
         individualManager.update(studyFqn, individualQueryResult.first().getId(),
                 new ObjectMap(IndividualDBAdaptor.QueryParams.DATE_OF_BIRTH.key(), "198421"), QueryOptions.empty(), sessionIdUser);
+    }
+
+    @Test
+    public void testUpdateIndividuaParents() throws CatalogException {
+        IndividualManager individualManager = catalogManager.getIndividualManager();
+        individualManager.create(studyFqn, new Individual().setId("child"), QueryOptions.empty(), sessionIdUser);
+        individualManager.create(studyFqn, new Individual().setId("father"), QueryOptions.empty(), sessionIdUser);
+        individualManager.create(studyFqn, new Individual().setId("mother"), QueryOptions.empty(), sessionIdUser);
+
+        QueryResult<Individual> individualQueryResult = individualManager.update(studyFqn, "child", new ObjectMap()
+                        .append(IndividualDBAdaptor.QueryParams.FATHER.key(), new ObjectMap(IndividualDBAdaptor.QueryParams.ID.key(), "father"))
+                        .append(IndividualDBAdaptor.QueryParams.MOTHER.key(), new ObjectMap(IndividualDBAdaptor.QueryParams.ID.key(), "mother")),
+                QueryOptions.empty(), sessionIdUser);
+
+        assertEquals("mother", individualQueryResult.first().getMother().getId());
+        assertEquals(1, individualQueryResult.first().getMother().getVersion());
+
+        assertEquals("father", individualQueryResult.first().getFather().getId());
+        assertEquals(1, individualQueryResult.first().getFather().getVersion());
     }
 
     @Test

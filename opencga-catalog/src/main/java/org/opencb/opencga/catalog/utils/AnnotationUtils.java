@@ -22,6 +22,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -615,7 +616,7 @@ public class AnnotationUtils {
 
         List<String> originalAnnotationList = query.getAsStringList(Constants.ANNOTATION, ";");
         Map<String, VariableSet> variableSetMap = null;
-        Map<String, Map<String, Type>> variableTypeMap = new HashMap<>();
+        Map<String, Map<String, QueryParam.Type>> variableTypeMap = new HashMap<>();
 
         List<String> annotationList = new ArrayList<>(originalAnnotationList.size());
         ObjectMap queriedVariableTypeMap = new ObjectMap();
@@ -697,6 +698,7 @@ public class AnnotationUtils {
 
                 annotationList.add(variableSetString + ":" + key + valueString);
                 queriedVariableTypeMap.put(variableSetString + ":" + key, variableTypeMap.get(variableSetString).get(key));
+                queriedVariableTypeMap.put(variableSetString, variableSetMap.get(variableSetString).getUid());
             } else {
                 throw new CatalogException("Annotation format from " + annotation + " not accepted. Supported format contains "
                         + "[variableSet:]variable=value");
@@ -719,11 +721,11 @@ public class AnnotationUtils {
         return null;
     }
 
-    private static String searchVariableSetForVariable(Map<String, Map<String, Type>> variableTypeMap, String variableKey)
+    private static String searchVariableSetForVariable(Map<String, Map<String, QueryParam.Type>> variableTypeMap, String variableKey)
             throws CatalogException {
         String variableId = null;
-        for (Map.Entry<String, Map<String, Type>> variableTypeMapEntry : variableTypeMap.entrySet()) {
-            Map<String, Type> variableMap = variableTypeMapEntry.getValue();
+        for (Map.Entry<String, Map<String, QueryParam.Type>> variableTypeMapEntry : variableTypeMap.entrySet()) {
+            Map<String, QueryParam.Type> variableMap = variableTypeMapEntry.getValue();
             if (variableMap.containsKey(variableKey)) {
                 if (variableId == null) {
                     variableId = variableTypeMapEntry.getKey();
@@ -752,8 +754,8 @@ public class AnnotationUtils {
         return variableSetMap;
     }
 
-    public static Map<String, Type> getVariableMap(VariableSet variableSet) throws CatalogDBException {
-        Map<String, Type> variableTypeMap = new HashMap<>();
+    public static Map<String, QueryParam.Type> getVariableMap(VariableSet variableSet) throws CatalogDBException {
+        Map<String, QueryParam.Type> variableTypeMap = new HashMap<>();
 
         Queue<VariableDepthMap> queue = new LinkedList<>();
 
@@ -782,35 +784,35 @@ public class AnnotationUtils {
                     }
                 }
             } else {
-                Type type;
+                QueryParam.Type type;
                 switch (variable.getType()) {
                     case BOOLEAN:
                         if (variable.isMultiValue()) {
-                            type = Type.BOOLEAN_ARRAY;
+                            type = QueryParam.Type.BOOLEAN_ARRAY;
                         } else {
-                            type = Type.BOOLEAN;
+                            type = QueryParam.Type.BOOLEAN;
                         }
                         break;
                     case CATEGORICAL:
                     case TEXT:
                         if (variable.isMultiValue()) {
-                            type = Type.TEXT_ARRAY;
+                            type = QueryParam.Type.TEXT_ARRAY;
                         } else {
-                            type = Type.TEXT;
+                            type = QueryParam.Type.TEXT;
                         }
                         break;
                     case INTEGER:
                         if (variable.isMultiValue()) {
-                            type = Type.INTEGER_ARRAY;
+                            type = QueryParam.Type.INTEGER_ARRAY;
                         } else {
-                            type = Type.INTEGER;
+                            type = QueryParam.Type.INTEGER;
                         }
                         break;
                     case DOUBLE:
                         if (variable.isMultiValue()) {
-                            type = Type.DECIMAL_ARRAY;
+                            type = QueryParam.Type.DECIMAL_ARRAY;
                         } else {
-                            type = Type.DECIMAL;
+                            type = QueryParam.Type.DECIMAL;
                         }
                         break;
                     case OBJECT:
@@ -824,18 +826,6 @@ public class AnnotationUtils {
         }
 
         return variableTypeMap;
-    }
-
-    public enum Type {
-        TEXT,
-        TEXT_ARRAY,
-        LONG,
-        INTEGER,
-        INTEGER_ARRAY,
-        DECIMAL,
-        DECIMAL_ARRAY,
-        BOOLEAN,
-        BOOLEAN_ARRAY,
     }
 
     private static class VariableDepthMap {

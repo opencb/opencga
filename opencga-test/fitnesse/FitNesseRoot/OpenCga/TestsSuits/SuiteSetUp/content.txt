@@ -1,9 +1,8 @@
 !define TEST_SYSTEM {slim}
 !path target/appassembler/dependencies/*.jar
 !define OPENCGA_VERSION {opencga-1.4.0-rc-dev}
-!define TEST_HOST {localhost:8080}
+!define TEST_HOST {qa.opencb.org}
 !define VERSION {v1}
-
 
 !|import|
 |smartrics.rest.fitnesse.fixture|
@@ -20,14 +19,22 @@
 |let|study|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 |let|userA|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 |let|userB|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
-|let|gvsName|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|gvsName|js|Math.ceil(Math.random() * (50000 - 100) + 100).toString()||
+|let|gvsName2|js|Math.ceil(Math.random() * (50000 - 100) + 100).toString()||
 |let|baseURL|const|http://${TEST_HOST}/${OPENCGA_VERSION}/webservices/rest/||
+
+!3 Login OpenCGA Root User 
+!|Table: Rest Fixture | $baseURL  |
+| setBody | {"password" : "admin_P@ssword"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/users/admin/login |200|  Content-Type: application/json ||
+|let|root|js|response.jsonbody.response[0].result[0].sessionId||
 
 !3 Create User
 !|Table: Rest Fixture  | $baseURL |
-| setBody |  { "name": "$user", "userId": "$user","email": "test@test.com", "password" : "user_P@ssword" }|
+| setBody |  { "name": "$user", "userId": "$user","email": "test@test.com", "password" : "user_P@ssword",  "account": "full" }|
 | setHeader|Content-Type:application/json|
-| POST | /v1/users/create |200| Content-Type : application/json| jsonbody.error === '' && jsonbody.response[0].result[0].id == '$user'|
+| POST | /v1/admin/users/create?sid=$root |200| Content-Type : application/json| jsonbody.error === '' && jsonbody.response[0].result[0].id == '$user'|
 
 !3 Login User 
 !|Table: Rest Fixture | $baseURL  |
@@ -57,24 +64,38 @@
 
 !3 Create Global Variable Set  
 !|Table: Rest Fixture  | $baseURL |
-| setBody |  {  "unique": false, "confidential" : "false",  "name": "$gvsName",  "description": "string",  "variables": [{"name": "var_int", "type" : "INTEGER", "required" : true,"multiValue": false }, {"name": "var_double", "type" : "DOUBLE", "defaultValue" : "20.5" , "required" : false,"multiValue": false }]}|
+| setBody |  {"id" : "VS1","unique": false, "confidential" : "false",  "name": "$gvsName",  "description": "string",  "variables": [{ "id" : "var_int", "name": "V1", "type" : "INTEGER", "required" : true,"multiValue": false }, {"id" : "var_double", "name": "V2", "type" : "DOUBLE", "defaultValue" : "20.5" , "required" : false,"multiValue": false }]}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/variableset/create?sid=$sessionId&study=$study |200| Content-Type : application/json||
 |let|gVariableSetId|js|response.jsonbody.response[0].result[0].id||
 
+!3 Create Global Nested Variable Set 2
+!|Table: Rest Fixture  | $baseURL |
+| setBody |  { "id" : "VS2", "unique": false, "confidential" : "false",  "name": "$gvsName2",  "description": "string",  "variables": [{"id" : "outer_var", "name": "V11", "type" : "OBJECT", "required" : true,"multiValue": true , "variableSet" : [{"id" : "inner_first_var","name": "V1", "type" : "DOUBLE", "defaultValue" : "20.5" , "required" : false,"multiValue": false }, {"id" : "inner_second_var","name": "V2", "type" : "INTEGER", "defaultValue" : "20" , "required" : false,"multiValue": false }] }]}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/variableset/create?sid=$sessionId&study=$study |200| Content-Type : application/json||
+|let|gVariableSetId2|js|response.jsonbody.response[0].result[0].id||
+
+!3 Create Global Variable Set Without Ids
+!|Table: Rest Fixture  | $baseURL |
+| setBody |  { "unique": false, "confidential" : "false",  "name": "VSNameTest",  "description": "string",  "variables": [{"name": "outer_var", "type" : "OBJECT", "required" : true,"multiValue": true , "variableSet" : [{"name": "inner_first_var_name_test", "type" : "DOUBLE", "defaultValue" : "20.5" , "required" : false,"multiValue": false }, {"name": "inner_second_var_name_test", "type" : "INTEGER", "defaultValue" : "20" , "required" : false,"multiValue": false }] }]}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/variableset/create?sid=$sessionId&study=$study |200| Content-Type : application/json||
+|let|dummyVSId|js|response.jsonbody.response[0].result[0].id||
+
 #userA has Full Permissions
 !3 Create userA  
 !|Table: Rest Fixture  | $baseURL |
-| setBody |  { "name": "$userA", "userId": "$userA","email": "test@test.com", "password" : "p@ssword" }|
+| setBody |  { "name": "$userA", "userId": "$userA","email": "test@test.com", "password" : "p@ssword" , "account": "full" }|
 | setHeader|Content-Type:application/json|
-| POST | /v1/users/create?sid=$sessionId |200| Content-Type : application/json| jsonbody.error === '' |
+| POST | /v1/admin/users/create?sid=$root|200| Content-Type : application/json| jsonbody.error === '' |
 
 #userB has Empty(no) Permissions
 !3 Create userB  
 !|Table: Rest Fixture  | $baseURL |
-| setBody |  { "name": "$userB", "userId": "$userB","email": "test@test.com", "password" : "p@ssword" }|
+| setBody |  { "name": "$userB", "userId": "$userB","email": "test@test.com", "password" : "p@ssword" ,  "account": "full" }|
 | setHeader|Content-Type:application/json|
-| POST | /v1/users/create?sid=$sessionId |200| Content-Type : application/json| jsonbody.error === '' |
+| POST | /v1/admin/users/create?sid=$root |200| Content-Type : application/json| jsonbody.error === '' |
 
 !3 Add User A to Admin group
 !|Table: Rest Fixture | $baseURL |
@@ -88,4 +109,11 @@
 !3 Generate Random Variables 
 !|Table: Rest Fixture | http://bioinfoint.hpc.cam.ac.uk/|
 |let|study|const|${userProjectStudy}||
+
+!3 Login userB 
+!|Table: Rest Fixture | $baseURL  |
+| setBody | {"password" : "p@ssword"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/users/$userB/login |200|  Content-Type: application/json ||
+|let|userBSessionId|js|response.jsonbody.response[0].result[0].sessionId||
 

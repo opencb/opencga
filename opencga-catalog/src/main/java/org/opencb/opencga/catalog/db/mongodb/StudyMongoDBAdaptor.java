@@ -158,7 +158,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         String errorMsg = updateResult.getErrorMsg() != null ? updateResult.getErrorMsg() : "";
 
         for (File file : files) {
-            String fileErrorMsg = dbAdaptorFactory.getCatalogFileDBAdaptor().insert(file, study.getUid(), options).getErrorMsg();
+            String fileErrorMsg = dbAdaptorFactory.getCatalogFileDBAdaptor().insert(study.getUid(), file, Collections.emptyList(), options)
+                    .getErrorMsg();
             if (fileErrorMsg != null && !fileErrorMsg.isEmpty()) {
                 errorMsg += file.getName() + ":" + fileErrorMsg + ", ";
             }

@@ -2,6 +2,7 @@ package org.opencb.opencga.catalog.stats.solr.converters;
 
 import org.apache.commons.lang3.NotImplementedException;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
+import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.stats.solr.FamilySolrModel;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
@@ -23,7 +24,7 @@ import java.util.stream.Collectors;
 public class CatalogFamilyToSolrFamilyConverter implements ComplexTypeConverter<Family, FamilySolrModel> {
 
     private Study study;
-    private Map<String, Map<String, AnnotationUtils.Type>> variableMap;
+    private Map<String, Map<String, QueryParam.Type>> variableMap;
 
     protected static Logger logger = LoggerFactory.getLogger(CatalogFamilyToSolrFamilyConverter.class);
 
@@ -65,7 +66,7 @@ public class CatalogFamilyToSolrFamilyConverter implements ComplexTypeConverter<
         if (family.getStatus() != null) {
             familySolrModel.setStatus(family.getStatus().getName());
         }
-        familySolrModel.setPhenotypes(SolrConverterUtil.populateOntologyTerms(family.getPhenotypes()));
+        familySolrModel.setPhenotypes(SolrConverterUtil.populatePhenotypes(family.getPhenotypes()));
 
         familySolrModel.setNumMembers(family.getMembers() != null ? family.getMembers().size() : 0);
         familySolrModel.setExpectedSize(family.getExpectedSize());

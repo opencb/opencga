@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -433,6 +435,37 @@ public class FileManagerTest extends AbstractManagerTest {
         thrown.expect(CatalogAuthorizationException.class);
         catalogManager.getFileManager().createFolder(studyFqn3, folderPath.toString(), null, true, null, null,
                 sessionIdUser3);
+    }
+
+    @Test
+    public void testAnnotations() throws CatalogException, JsonProcessingException {
+        List<Variable> variables = new ArrayList<>();
+        variables.add(new Variable("var_name", "", "", Variable.VariableType.TEXT, "", true, false, Collections.emptyList(), 0, "", "",
+                null, Collections.emptyMap()));
+        variables.add(new Variable("AGE", "", "", Variable.VariableType.INTEGER, "", false, false, Collections.emptyList(), 0, "", "",
+                null, Collections.emptyMap()));
+        variables.add(new Variable("HEIGHT", "", "", Variable.VariableType.DOUBLE, "", false, false, Collections.emptyList(), 0, "",
+                "", null, Collections.emptyMap()));
+        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, variables,
+                sessionIdUser).first();
+
+        ObjectMap annotations = new ObjectMap()
+                .append("var_name", "Joe")
+                .append("AGE", 25)
+                .append("HEIGHT", 180);
+        AnnotationSet annotationSet = new AnnotationSet("annotation1", vs1.getId(), annotations);
+        AnnotationSet annotationSet1 = new AnnotationSet("annotation2", vs1.getId(), annotations);
+
+        ObjectMapper jsonObjectMapper = new ObjectMapper();
+        ObjectMap updateAnnotation = new ObjectMap()
+                // Update the annotation values
+                .append(FileDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Arrays.asList(
+                        new ObjectMap(jsonObjectMapper.writeValueAsString(annotationSet)),
+                        new ObjectMap(jsonObjectMapper.writeValueAsString(annotationSet1))
+                ));
+        QueryResult<File> update = catalogManager.getFileManager().update(studyFqn, "data/", updateAnnotation, QueryOptions.empty(),
+                sessionIdUser);
+        assertEquals(2, update.first().getAnnotationSets().size());
     }
 
     @Test
