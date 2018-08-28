@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.core.variant.adaptors;
 
 import com.google.common.base.Throwables;
+import org.junit.Assume;
 import org.junit.ClassRule;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
@@ -8,6 +9,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.search.VariantSearchUtils;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
 
