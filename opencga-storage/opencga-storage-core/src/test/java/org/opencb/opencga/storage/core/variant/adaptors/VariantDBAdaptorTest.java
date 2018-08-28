@@ -1040,15 +1040,19 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasSift(anyOf(hasItem(m), isEmpty())))));
         }
 
-        Query query = new Query(ANNOT_POLYPHEN.key(), "sift>0.5");
-        thrown.expect(VariantQueryException.class);
-        query(query, null);
 //        for (Map.Entry<Double, Integer> entry : polyphen.entrySet()) {
 //            query = new Query(VariantDBAdaptor.VariantQueryParams.SIFT.key(), entry.getKey());
 //            queryResult = dbAdaptor.get(query, null);
 //            assertEquals(entry.getKey(), entry.getValue(), queryResult.getNumResults());
 //        }
 
+    }
+
+    @Test
+    public void testGetAllVariants_polyphenSiftMalformed() {
+        Query query = new Query(ANNOT_POLYPHEN.key(), "sift>0.5");
+        thrown.expect(VariantQueryException.class);
+        query(query, null);
     }
 
     @Test
@@ -1384,9 +1388,9 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         numResults = count(query);
         assertEquals(allVariants.getNumResults(), numResults);
 
-        query = new Query(STUDY.key(), NOT + studyConfiguration.getStudyId());
-        numResults = count(query);
-        assertEquals(0, numResults);
+//        query = new Query(STUDY.key(), NOT + studyConfiguration.getStudyId());
+//        numResults = count(query);
+//        assertEquals(0, numResults);
 
         query = new Query(STUDY.key(), NOT + studyConfiguration.getStudyName());
         numResults = count(query);
