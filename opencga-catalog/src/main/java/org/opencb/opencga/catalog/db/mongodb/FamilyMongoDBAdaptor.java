@@ -821,6 +821,12 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
+                    case STATUS_NAME:
+                        // Convert the status to a positive status
+                        query.put(queryParam.key(),
+                                Status.getPositiveStatus(Family.FamilyStatus.STATUS_LIST, query.getString(queryParam.key())));
+                        addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
                     case MEMBER_UID:
                     case UUID:
                     case ID:
@@ -832,7 +838,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                     case PHENOTYPES_ID:
                     case PHENOTYPES_NAME:
                     case PHENOTYPES_SOURCE:
-                    case STATUS_NAME:
                     case STATUS_MSG:
                     case STATUS_DATE:
 //                    case ANNOTATION_SETS:

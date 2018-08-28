@@ -16,10 +16,7 @@
 
 package org.opencb.opencga.core.models;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -83,6 +80,8 @@ public class Cohort extends Annotable {
         public static final String NONE = "NONE";
         public static final String CALCULATING = "CALCULATING";
         public static final String INVALID = "INVALID";
+
+        public static final List<String> STATUS_LIST = Arrays.asList(READY, DELETED, NONE, CALCULATING, INVALID);
 
         public CohortStatus(String status, String message) {
             if (isValid(status)) {

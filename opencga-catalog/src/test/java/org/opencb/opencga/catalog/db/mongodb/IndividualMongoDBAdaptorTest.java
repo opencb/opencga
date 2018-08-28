@@ -28,6 +28,7 @@ import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.Status;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -188,13 +189,14 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void testAvoidDuplicatedSamples() throws CatalogDBException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         Sample sample1 = catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyId,
-                new Sample().setId("sample1"), QueryOptions.empty()).first();
+                new Sample().setId("sample1").setStatus(new Status()), QueryOptions.empty()).first();
         Sample sample2 = catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyId,
-                new Sample().setId("sample2"), QueryOptions.empty()).first();
+                new Sample().setId("sample2").setStatus(new Status()), QueryOptions.empty()).first();
 
         Individual individual = new Individual()
                 .setName("in2")
-                .setSamples(Arrays.asList(sample1, sample1, sample2, new Sample().setUid(-1)));
+                .setStatus(new Status())
+                .setSamples(Arrays.asList(sample1, sample1, sample2, new Sample().setUid(-1).setStatus(new Status())));
         Individual individualStored = catalogIndividualDBAdaptor.insert(studyId, individual, null).first();
         assertEquals(2, individualStored.getSamples().size());
         assertTrue(individualStored.getSamples().stream().map(Sample::getUid).collect(Collectors.toSet()).containsAll(Arrays.asList(
@@ -287,7 +289,7 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void testGetStudyIdByIndividualId() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        long individualId = catalogIndividualDBAdaptor.insert(studyId, new Individual(), null).first().getUid();
+        long individualId = catalogIndividualDBAdaptor.insert(studyId, new Individual().setStatus(new Status()), null).first().getUid();
         long studyIdByIndividualId = catalogIndividualDBAdaptor.getStudyId(individualId);
         assertEquals(studyId, studyIdByIndividualId);
     }
