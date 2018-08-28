@@ -53,15 +53,15 @@ public abstract class VariantAnnotationManager {
     public static final String CREATE = "annotation.create";
     public static final String LOAD_FILE = "annotation.load.file";
     public static final String CUSTOM_ANNOTATION_KEY = "custom_annotation_key";
-    public static final String LATEST = "LATEST";
+    public static final String CURRENT = "CURRENT";
 
     private static Logger logger = LoggerFactory.getLogger(VariantAnnotationManager.class);
 
     public abstract void annotate(Query query, ObjectMap options) throws VariantAnnotatorException, IOException, StorageEngineException;
 
-    public abstract void createAnnotationSnapshot(String name, ObjectMap options) throws StorageEngineException, VariantAnnotatorException;
+    public abstract void saveAnnotation(String name, ObjectMap options) throws StorageEngineException, VariantAnnotatorException;
 
-    public abstract void deleteAnnotationSnapshot(String name, ObjectMap options) throws StorageEngineException, VariantAnnotatorException;
+    public abstract void deleteAnnotation(String name, ObjectMap options) throws StorageEngineException, VariantAnnotatorException;
 
     protected final VariantAnnotationMetadata checkCurrentAnnotation(VariantAnnotator annotator, ProjectMetadata projectMetadata,
                                                                      boolean overwrite)
@@ -93,8 +93,8 @@ public abstract class VariantAnnotationManager {
         if (current == null) {
             current = new VariantAnnotationMetadata();
             projectMetadata.getAnnotation().setCurrent(current);
-            current.setId(-1);
-            current.setName(LATEST);
+            current.setId(1);
+            current.setName(CURRENT);
         }
 
         // Check using same annotator and same source version
@@ -177,30 +177,34 @@ public abstract class VariantAnnotationManager {
         boolean nameDuplicated = projectMetadata.getAnnotation().getSaved()
                 .stream()
                 .map(VariantAnnotationMetadata::getName)
-                .anyMatch(s -> s.equalsIgnoreCase(name));
+                .anyMatch(s -> s.equalsIgnoreCase(name))
+                || VariantAnnotationManager.CURRENT.equalsIgnoreCase(name);
 
         if (nameDuplicated) {
             throw new VariantAnnotatorException("Annotation snapshot name already exists!");
         }
-        Integer maxId = projectMetadata.getAnnotation().getSaved()
-                .stream()
-                .map(VariantAnnotationMetadata::getId)
-                .max(Integer::compareTo)
-                .orElse(0);
 
         VariantAnnotationMetadata newSnapshot = new VariantAnnotationMetadata(
-                maxId + 1,
+                current.getId(),
                 name,
                 Date.from(Instant.now()),
                 current.getAnnotator(),
                 current.getSourceVersion());
         projectMetadata.getAnnotation().getSaved().add(newSnapshot);
 
+        // Increment ID of the current annotation
+        current.setId(current.getId() + 1);
+
         return newSnapshot;
     }
 
     protected final VariantAnnotationMetadata removeAnnotationSnapshot(String name, ProjectMetadata projectMetadata)
             throws VariantAnnotatorException {
+
+        if (VariantAnnotationManager.CURRENT.equalsIgnoreCase(name)) {
+            throw new VariantAnnotatorException("Can not delete " + VariantAnnotationManager.CURRENT + " annotation");
+        }
+
         Iterator<VariantAnnotationMetadata> iterator = projectMetadata.getAnnotation().getSaved().iterator();
         VariantAnnotationMetadata annotation = null;
         boolean found = false;

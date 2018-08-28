@@ -72,8 +72,6 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
 
     QueryResult<Study> get(long studyId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException;
-
     void updateStudyLastModified(long studyId) throws CatalogDBException;
 
 //    @Deprecated
@@ -89,7 +87,9 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
 
     long getId(long projectId, String studyAlias) throws CatalogDBException;
 
-    long getProjectIdByStudyId(long studyId) throws CatalogDBException;
+    long getProjectUidByStudyUid(long studyUid) throws CatalogDBException;
+
+    String getProjectIdByStudyUid(long studyUid) throws CatalogDBException;
 
     String getOwnerId(long studyId) throws CatalogDBException;
 
@@ -276,8 +276,9 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
     QueryResult<Study> getStudiesFromUser(String userId, QueryOptions queryOptions) throws CatalogDBException;
 
     enum QueryParams implements QueryParam {
-        UID("uid", INTEGER_ARRAY, ""),
         ID("id", TEXT, ""),
+        UID("uid", INTEGER_ARRAY, ""),
+        UUID("uuid", TEXT, ""),
         NAME("name", TEXT, ""),
         ALIAS("alias", TEXT, ""),
         FQN("fqn", TEXT, ""),
@@ -293,6 +294,7 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
         URI("uri", TEXT_ARRAY, ""),
         PROJECT_ID("projectId", TEXT, ""),
         PROJECT_UID("projectUid", INTEGER, ""),
+        PROJECT_UUID("projectUuid", TEXT, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]",
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"

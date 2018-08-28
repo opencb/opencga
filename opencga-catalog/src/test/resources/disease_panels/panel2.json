@@ -1,0 +1,67 @@
+{
+    "genes": [
+        {
+            "name": "CALM1",
+            "confidence": "HighEvidence",
+            "id": "ENSG00000198668"
+        },
+        {
+            "name": "CALM2",
+            "confidence": "HighEvidence",
+            "id": "ENSG00000143933"
+        },
+        {
+            "name": "CASQ2",
+            "confidence": "HighEvidence",
+            "id": "ENSG00000118729"
+        },
+        {
+            "name": "RYR2",
+            "confidence": "HighEvidence",
+            "id": "ENSG00000198626"
+        },
+        {
+            "name": "TRDN",
+            "confidence": "HighEvidence",
+            "id": "ENSG00000186439"
+        },
+        {
+            "name": "ANK2",
+            "confidence": "LowEvidence",
+            "id": "ENSG00000145362"
+        },
+        {
+            "name": "CALM3",
+            "confidence": "LowEvidence",
+            "id": "ENSG00000160014"
+        },
+        {
+            "name": "KCNE1",
+            "confidence": "LowEvidence",
+            "id": "ENSG00000180509"
+        },
+        {
+            "name": "KCNJ2",
+            "confidence": "LowEvidence",
+            "id": "ENSG00000123700"
+        }
+    ],
+    "creationDate": "2018-07-06",
+    "author": "",
+    "id": "55a3aac122c1fc6710839b7d",
+    "name": "Catecholaminergic Polymorphic Ventricular Tachycardia",
+    "source": {
+        "version": "1.2",
+        "project": "PanelApp (GEL)",
+        "id": "55a3aac122c1fc6710839b7d"
+    },
+    "description": "Cardiac arrhythmia (Cardiovascular disorders)",
+    "attributes": {
+        "DiseaseSubGroup": "Cardiac arrhythmia",
+        "DiseaseGroup": "Cardiovascular disorders"
+    },
+    "variants": [],
+    "phenotypes": [],
+    "regions": [],
+    "version": 1
+}

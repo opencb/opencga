@@ -23,13 +23,11 @@ import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveResultToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.converters.study.StudyEntryToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.mr.AbstractHBaseVariantMapper;
-import org.opencb.opencga.storage.hadoop.variant.mr.AnalysisTableMapReduceHelper;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,8 +47,6 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
 
     protected ArchiveResultToVariantConverter resultConverter;
     private ArchiveRowKeyFactory rowKeyFactory;
-    private StudyEntryToHBaseConverter studyEntryToHBaseConverter;
-
 
     protected ArchiveResultToVariantConverter getResultConverter() {
         return resultConverter;
@@ -80,8 +76,7 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
     protected void setup(Context context) throws IOException,
             InterruptedException {
         super.setup(context);
-        studyEntryToHBaseConverter = new StudyEntryToHBaseConverter(getHelper().getColumnFamily(), getStudyConfiguration(), false,
-                getHelper().getConf().getInt(VariantStorageEngine.Options.RELEASE.key(), -1));
+
         // Load VCF meta data for columns
         int studyId = getStudyConfiguration().getStudyId();
         resultConverter = new ArchiveResultToVariantConverter(studyId, getHelper().getColumnFamily(), this.getStudyConfiguration());
@@ -100,11 +95,11 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
         logger.info("Start mapping key: " + Bytes.toString(key.get()));
         startStep();
         if (value.isEmpty()) {
-            context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "VCF_RESULT_EMPTY").increment(1);
+            context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "VCF_RESULT_EMPTY").increment(1);
             return; // TODO search backwards?
         }
 
-        context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "VCF_BLOCK_READ").increment(1);
+        context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "VCF_BLOCK_READ").increment(1);
 
 
         // Calculate various positions

@@ -14,22 +14,22 @@
 #' \url{http://bioinfo.hpc.cam.ac.uk/opencga/webservices/}
 #' @export
 
-setMethod("projectClient", "OpencgaR", function(OpencgaR, project, action, params=NULL) {
+setMethod("projectClient", "OpencgaR", function(OpencgaR, project, action, params=NULL, ...) {
     category <- "projects"
     switch(action,
            search=fetchOpenCGA(object=OpencgaR, category=category, action=action, 
-                               params=params, httpMethod = "GET"),
+                               params=params, httpMethod = "GET", ...),
            info=fetchOpenCGA(object=OpencgaR, category=category, categoryId=project, 
-                             action=action, params=params, httpMethod = "GET"),
+                             action=action, params=params, httpMethod = "GET", ...),
            studies=fetchOpenCGA(object=OpencgaR, category=category, categoryId=project, 
-                             action=action, params=params, httpMethod = "GET"),
+                             action=action, params=params, httpMethod = "GET", ...),
            delete=fetchOpenCGA(object=OpencgaR, category=category, categoryId=project,
-                               action=action, params=params, httpMethod = "GET"),
+                               action=action, params=params, httpMethod = "GET", ...),
            create=fetchOpenCGA(object=OpencgaR, category=category, action=action, 
-                               params=params, httpMethod = "POST"),
+                               params=params, httpMethod = "POST", ...),
            increlease=fetchOpenCGA(object=OpencgaR, category=category, categoryId=project, 
-                             action=action, params=params, httpMethod = "POST"),
+                             action=action, params=params, httpMethod = "POST", ...),
            update=fetchOpenCGA(object=OpencgaR, category=category, categoryId=project, 
-                             action=action, params=params, httpMethod = "POST")
+                             action=action, params=params, httpMethod = "POST", ...)
            )
 })

@@ -21,10 +21,17 @@ package org.opencb.opencga.core.config;
  */
 public class Catalog {
 
+    @Deprecated
     private long offset;
     private CatalogDBCredentials database;
+    private SearchConfiguration search;
 
     public Catalog() {
+    }
+
+    public Catalog(CatalogDBCredentials database, SearchConfiguration search) {
+        this.database = database;
+        this.search = search;
     }
 
     @Override
@@ -32,14 +39,17 @@ public class Catalog {
         final StringBuilder sb = new StringBuilder("Catalog{");
         sb.append("offset=").append(offset);
         sb.append(", database=").append(database);
+        sb.append(", search=").append(search);
         sb.append('}');
         return sb.toString();
     }
 
+    @Deprecated
     public long getOffset() {
         return offset;
     }
 
+    @Deprecated
     public Catalog setOffset(long offset) {
         this.offset = offset;
         return this;
@@ -51,6 +61,15 @@ public class Catalog {
 
     public Catalog setDatabase(CatalogDBCredentials database) {
         this.database = database;
+        return this;
+    }
+
+    public SearchConfiguration getSearch() {
+        return search;
+    }
+
+    public Catalog setSearch(SearchConfiguration search) {
+        this.search = search;
         return this;
     }
 }

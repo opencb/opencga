@@ -5,6 +5,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.pedigree.Multiples;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -56,19 +58,19 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     }
 
     private QueryResult<Family> createDummyFamily() throws CatalogException {
-        OntologyTerm disease1 = new OntologyTerm("dis1", "Disease 1", "HPO");
-        OntologyTerm disease2 = new OntologyTerm("dis2", "Disease 2", "HPO");
+        Phenotype disease1 = new Phenotype("dis1", "Disease 1", "HPO");
+        Phenotype disease2 = new Phenotype("dis2", "Disease 2", "HPO");
 
-        Individual father = new Individual().setId("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
-        Individual mother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
+        Individual father = new Individual().setId("father").setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")));
+        Individual mother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new Phenotype("dis2", "dis2", "OT")));
 
         // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
         // ingesting references to exactly the same object and this test would not work exactly the same way.
-        Individual relFather = new Individual().setId("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
-        Individual relMother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
+        Individual relFather = new Individual().setId("father").setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")));
+        Individual relMother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new Phenotype("dis2", "dis2", "OT")));
 
         Individual relChild1 = new Individual().setId("child1")
-                .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT"), new OntologyTerm("dis2", "dis2", "OT")))
+                .setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT"), new Phenotype("dis2", "dis2", "OT")))
                 .setFather(father)
                 .setMother(mother)
                 .setSamples(Arrays.asList(
@@ -80,13 +82,13 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 .setMultiples(new Multiples("multiples", Arrays.asList("child2", "child3")))
                 .setParentalConsanguinity(true);
         Individual relChild2 = new Individual().setId("child2")
-                .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")))
+                .setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")))
                 .setFather(father)
                 .setMother(mother)
                 .setMultiples(new Multiples("multiples", Arrays.asList("child1", "child3")))
                 .setParentalConsanguinity(true);
         Individual relChild3 = new Individual().setId("child3")
-                .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")))
+                .setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")))
                 .setFather(father)
                 .setMother(mother)
                 .setMultiples(new Multiples("multiples", Arrays.asList("child1", "child2")))
@@ -120,11 +122,15 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(1, dummyEnvironment.getNumResults());
         assertEquals(0, dummyEnvironment.first().getInterpretations().size());
 
-        assertEquals(catalogManager.getFamilyManager().getUid("family", STUDY, sessionIdUser).getResource().getUid(),
-                dummyEnvironment.first().getFamily().getUid());
-        assertEquals(catalogManager.getIndividualManager().getUid("child1", STUDY, sessionIdUser).getResource().getUid(),
-                dummyEnvironment.first().getSubjects().get(0).getUid());
+        assertEquals("family", dummyEnvironment.first().getFamily().getId());
+        assertEquals(5, dummyEnvironment.first().getFamily().getMembers().size());
+
+        assertEquals(1, dummyEnvironment.first().getSubjects().size());
+        assertEquals("child1", dummyEnvironment.first().getSubjects().get(0).getId());
+
         assertEquals(1, dummyEnvironment.first().getSubjects().get(0).getSamples().size());
+        assertEquals("sample2", dummyEnvironment.first().getSubjects().get(0).getSamples().get(0).getId());
+
         assertEquals(catalogManager.getSampleManager().getUid("sample2", STUDY, sessionIdUser).getResource().getUid(),
                 dummyEnvironment.first().getSubjects().get(0).getSamples().get(0).getUid());
     }

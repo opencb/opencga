@@ -32,8 +32,7 @@ import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
-import org.opencb.opencga.storage.core.metadata.adaptors.VariantFileMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -143,19 +142,7 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     }
 
     VariantDBIterator toVariantDBIterator(final List<Variant> variants) {
-        return new VariantDBIterator() {
-            Iterator<Variant> iterator = variants.iterator();
-
-            @Override
-            public boolean hasNext() {
-                return iterator.hasNext();
-            }
-
-            @Override
-            public Variant next() {
-                return iterator.next();
-            }
-        };
+        return VariantDBIterator.wrapper(variants.iterator());
     }
 
     @Override
@@ -181,7 +168,7 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     // Update methods
 
     @Override
-    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration, QueryOptions options) {
+    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration, long timestamp, QueryOptions options) {
         QueryResult queryResult = new QueryResult();
         logger.info("Writing " + variantStatsWrappers.size() + " statistics");
         queryResult.setNumResults(variantStatsWrappers.size());
@@ -190,19 +177,19 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions) {
+    public QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, long timestamp, QueryOptions queryOptions) {
         return new QueryResult();
     }
 
     @Override
-    public QueryResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, QueryOptions options) {
+    public QueryResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, long timeStamp, QueryOptions options) {
         System.out.println("Update custom annotation : " + name);
         return new QueryResult();
     }
 
     // Unsupported methods
     @Override
-    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions) {
+    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp, QueryOptions queryOptions) {
         throw new UnsupportedOperationException();
     }
 

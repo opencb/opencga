@@ -17,6 +17,7 @@
 package org.opencb.opencga.core.models;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.commons.Software;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.acls.AclParams;
 
@@ -29,11 +30,11 @@ import java.util.Objects;
 /**
  * Created by jacobo on 11/09/14.
  */
-public class File extends PrivateStudyUid {
+public class File extends Annotable {
 
-    private String uuid;
     private String id;
     private String name;
+    private String uuid;
 
     /**
      * Formats: file, folder, index.
@@ -50,12 +51,13 @@ public class File extends PrivateStudyUid {
      */
     private Bioformat bioformat;
 
+    private String checksum;
+
     private URI uri;
     private String path;
 
     private int release;
     private String creationDate;
-    @Deprecated
     private String modificationDate;
 
     private String description;
@@ -66,9 +68,8 @@ public class File extends PrivateStudyUid {
     private Software software;
     private Experiment experiment;
     private List<Sample> samples;
-    @Deprecated
-    private List<Long> sampleIds;
 
+    private List<String> tags;
 
     /**
      * This field values -1 when file has been uploaded.
@@ -88,23 +89,22 @@ public class File extends PrivateStudyUid {
 
     public File(String name, Type type, Format format, Bioformat bioformat, String path, String description, FileStatus status, long size,
                 int release) {
-        this(-1, name, type, format, bioformat, null, path, TimeUtils.getTime(), TimeUtils.getTime(), description, status, false,
-                size, null, new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(), new FileIndex(),
-                Collections.emptyMap(), release, Collections.emptyMap());
+        this(name, type, format, bioformat, null, path, null, TimeUtils.getTime(), TimeUtils.getTime(), description, status,
+                false, size, null, new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(),
+                new FileIndex(), release, Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap());
     }
 
     public File(Type type, Format format, Bioformat bioformat, String path, String description, FileStatus status, long size,
                 List<Sample> samples, long jobId, Software software, Map<String, Object> stats, Map<String, Object> attributes) {
-        this(-1, "", type, format, bioformat, null, path, TimeUtils.getTime(), TimeUtils.getTime(), description, status, false,
-                size, software, new Experiment(), samples, new Job().setUid(jobId), Collections.emptyList(), new FileIndex(), stats, -1,
-                attributes);
+        this("", type, format, bioformat, null, path, null, TimeUtils.getTime(), TimeUtils.getTime(), description, status,
+                false, size, software, new Experiment(), samples, new Job().setUid(jobId), Collections.emptyList(), new FileIndex(), -1,
+                Collections.emptyList(), stats, attributes);
     }
 
-    public File(long uid, String name, Type type, Format format, Bioformat bioformat, URI uri, String path, String creationDate,
-                String modificationDate, String description, FileStatus status, boolean external, long size, Software software,
-                Experiment experiment, List<Sample> samples, Job job, List<RelatedFile> relatedFiles, FileIndex index,
-                Map<String, Object> stats, int release, Map<String, Object> attributes) {
-        super(uid);
+    public File(String name, Type type, Format format, Bioformat bioformat, URI uri, String path, String checksum,
+                String creationDate, String modificationDate, String description, FileStatus status, boolean external, long size,
+                Software software, Experiment experiment, List<Sample> samples, Job job, List<RelatedFile> relatedFiles, FileIndex index,
+                int release, List<AnnotationSet> annotationSets, Map<String, Object> stats, Map<String, Object> attributes) {
         this.id = StringUtils.isNotEmpty(path) ? StringUtils.replace(path, "/", ":") : path;
         this.name = name;
         this.type = type;
@@ -112,6 +112,7 @@ public class File extends PrivateStudyUid {
         this.bioformat = bioformat;
         this.uri = uri;
         this.path = path;
+        this.checksum = checksum;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
         this.description = description;
@@ -122,9 +123,11 @@ public class File extends PrivateStudyUid {
         this.software = software;
         this.experiment = experiment;
         this.samples = samples;
+        this.tags = Collections.emptyList();
         this.job = job;
         this.relatedFiles = relatedFiles;
         this.index = index != null ? index : new FileIndex();
+        this.annotationSets = annotationSets;
         this.stats = stats;
         this.attributes = attributes;
     }
@@ -320,15 +323,16 @@ public class File extends PrivateStudyUid {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("File{");
-        sb.append("uuid='").append(uuid).append('\'');
-        sb.append(", id='").append(id).append('\'');
+        sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
+        sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", type=").append(type);
         sb.append(", format=").append(format);
         sb.append(", bioformat=").append(bioformat);
         sb.append(", uri=").append(uri);
         sb.append(", path='").append(path).append('\'');
         sb.append(", release=").append(release);
+        sb.append(", checksum=").append(checksum);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
@@ -338,9 +342,11 @@ public class File extends PrivateStudyUid {
         sb.append(", software=").append(software);
         sb.append(", experiment=").append(experiment);
         sb.append(", samples=").append(samples);
+        sb.append(", tags=").append(tags);
         sb.append(", job=").append(job);
         sb.append(", relatedFiles=").append(relatedFiles);
         sb.append(", index=").append(index);
+        sb.append(", annotationSets=").append(annotationSets);
         sb.append(", stats=").append(stats);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
@@ -432,6 +438,15 @@ public class File extends PrivateStudyUid {
         return this;
     }
 
+    public String getChecksum() {
+        return checksum;
+    }
+
+    public File setChecksum(String checksum) {
+        this.checksum = checksum;
+        return this;
+    }
+
     public String getCreationDate() {
         return creationDate;
     }
@@ -450,12 +465,10 @@ public class File extends PrivateStudyUid {
         return this;
     }
 
-    @Deprecated
     public String getModificationDate() {
         return modificationDate;
     }
 
-    @Deprecated
     public File setModificationDate(String modificationDate) {
         this.modificationDate = modificationDate;
         return this;
@@ -515,6 +528,15 @@ public class File extends PrivateStudyUid {
         return this;
     }
 
+    public List<String> getTags() {
+        return tags;
+    }
+
+    public File setTags(List<String> tags) {
+        this.tags = tags;
+        return this;
+    }
+
     public Experiment getExperiment() {
         return experiment;
     }
@@ -551,6 +573,11 @@ public class File extends PrivateStudyUid {
         return this;
     }
 
+    public File setAnnotationSets(List<AnnotationSet> annotationSets) {
+        super.setAnnotationSets(annotationSets);
+        return this;
+    }
+
     public Map<String, Object> getStats() {
         return stats;
     }
@@ -566,17 +593,6 @@ public class File extends PrivateStudyUid {
 
     public File setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
-        return this;
-    }
-
-    @Deprecated
-    public List<Long> getSampleIds() {
-        return sampleIds;
-    }
-
-    @Deprecated
-    public File setSampleIds(List<Long> sampleIds) {
-        this.sampleIds = sampleIds;
         return this;
     }
 

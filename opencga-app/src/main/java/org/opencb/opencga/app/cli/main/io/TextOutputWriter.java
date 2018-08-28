@@ -292,7 +292,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 individualName = StringUtils.defaultIfEmpty(sample.getIndividual().getName(), "-");
             }
             sb.append(String.format("%s%s\t%s\t%s\t%s\t%s\t%s\t%s\n", format, StringUtils.defaultIfEmpty(sample.getId(), "-"),
-                    StringUtils.defaultIfEmpty(sample.getName(), "-"), StringUtils.defaultIfEmpty(sample.getSource(), "-"),
+                    StringUtils.defaultIfEmpty(sample.getId(), "-"), StringUtils.defaultIfEmpty(sample.getSource(), "-"),
                     StringUtils.defaultIfEmpty(sample.getDescription(), "-"),
                     sample.getStatus() != null ? StringUtils.defaultIfEmpty(sample.getStatus().getName(), "-") : "-", individualId,
                             individualName));
@@ -309,7 +309,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
 
             for (Cohort cohort : queryResult.getResult()) {
                 sb.append(String.format("%s\t%s\t%s\t%s\t%s\t%d\t%s\t%s\n", StringUtils.defaultIfEmpty(cohort.getId(), "-"),
-                        StringUtils.defaultIfEmpty(cohort.getName(), "-"), cohort.getType(),
+                        StringUtils.defaultIfEmpty(cohort.getId(), "-"), cohort.getType(),
                         StringUtils.defaultIfEmpty(cohort.getDescription(), "-"),
                         cohort.getStatus() != null ? StringUtils.defaultIfEmpty(cohort.getStatus().getName(), "-") : "-",
                         cohort.getSamples().size(), cohort.getSamples().size() > 0 ? StringUtils.join(cohort.getSamples(), ", ") : "NA",

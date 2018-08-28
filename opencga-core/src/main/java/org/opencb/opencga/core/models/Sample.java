@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.models;
 
+import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.acls.AclParams;
 
@@ -26,10 +27,10 @@ import java.util.*;
  */
 public class Sample extends Annotable {
 
-    private String uuid;
     private String id;
     @Deprecated
     private String name;
+    private String uuid;
     private String source;
     @Deprecated
     private Individual individual;
@@ -37,12 +38,14 @@ public class Sample extends Annotable {
     private int release;
     private int version;
     private String creationDate;
+    private String modificationDate;
     private Status status;
     private String description;
     private String type;
     private boolean somatic;
-    private List<OntologyTerm> phenotypes;
+    private List<Phenotype> phenotypes;
 
+    @Deprecated
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
 
@@ -56,7 +59,7 @@ public class Sample extends Annotable {
     }
 
     public Sample(String id, String source, Individual individual, String description, String type, boolean somatic, int release,
-                  int version, List<AnnotationSet> annotationSets, List<OntologyTerm> phenotypeList, Map<String, Object> stats,
+                  int version, List<AnnotationSet> annotationSets, List<Phenotype> phenotypeList, Map<String, Object> stats,
                   Map<String, Object> attributes) {
         this.id = id;
         this.source = source;
@@ -83,6 +86,7 @@ public class Sample extends Annotable {
         sb.append(", release=").append(release);
         sb.append(", version=").append(version);
         sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", status=").append(status);
         sb.append(", description='").append(description).append('\'');
         sb.append(", type='").append(type).append('\'');
@@ -104,9 +108,12 @@ public class Sample extends Annotable {
             return false;
         }
         Sample sample = (Sample) o;
-        return id == sample.id
-                && release == sample.release
+        return release == sample.release
+                && version == sample.version
                 && somatic == sample.somatic
+                && Objects.equals(uuid, sample.uuid)
+                && Objects.equals(id, sample.id)
+                && Objects.equals(name, sample.name)
                 && Objects.equals(source, sample.source)
                 && Objects.equals(individual, sample.individual)
                 && Objects.equals(creationDate, sample.creationDate)
@@ -114,13 +121,14 @@ public class Sample extends Annotable {
                 && Objects.equals(description, sample.description)
                 && Objects.equals(type, sample.type)
                 && Objects.equals(phenotypes, sample.phenotypes)
+                && Objects.equals(stats, sample.stats)
                 && Objects.equals(attributes, sample.attributes);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, source, individual, release, creationDate, status,
-                description, type, somatic, phenotypes, attributes);
+        return Objects.hash(uuid, id, name, source, individual, release, version, creationDate, status,
+                description, type, somatic, phenotypes, stats, attributes);
     }
 
     @Override
@@ -153,10 +161,12 @@ public class Sample extends Annotable {
         return this;
     }
 
+    @Deprecated
     public String getName() {
         return name;
     }
 
+    @Deprecated
     public Sample setName(String name) {
         this.name = name;
         return this;
@@ -186,6 +196,15 @@ public class Sample extends Annotable {
 
     public Sample setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public Sample setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 
@@ -243,11 +262,11 @@ public class Sample extends Annotable {
         return this;
     }
 
-    public List<OntologyTerm> getPhenotypes() {
+    public List<Phenotype> getPhenotypes() {
         return phenotypes;
     }
 
-    public Sample setPhenotypes(List<OntologyTerm> phenotypes) {
+    public Sample setPhenotypes(List<Phenotype> phenotypes) {
         this.phenotypes = phenotypes;
         return this;
     }

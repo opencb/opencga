@@ -20,7 +20,9 @@ import com.google.common.base.Throwables;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.log4j.Level;
+import org.apache.solr.common.SolrException;
 import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -34,21 +36,26 @@ import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.metadata.local.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
+import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.opencb.opencga.storage.mongodb.annotation.MongoDBVariantAnnotationManager;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
 import org.opencb.opencga.storage.mongodb.metadata.MongoDBVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoVariantImporter;
+import org.opencb.opencga.storage.mongodb.variant.stats.MongoDBVariantStatisticsManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,10 +95,10 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         COLLECTION_PROJECT("collection.project",  "project"),
         COLLECTION_STAGE("collection.stage",  "stage"),
         COLLECTION_ANNOTATION("collection.annotation",  "annot"),
+        COLLECTION_TRASH("collection.trash", "trash"),
         BULK_SIZE("bulkSize",  100),
         DEFAULT_GENOTYPE("defaultGenotype", Arrays.asList("0/0", "0|0")),
         ALREADY_LOADED_VARIANTS("alreadyLoadedVariants", 0),
-        LOADED_GENOTYPES("loadedGenotypes", null),
 
         PARALLEL_WRITE("parallel.write", false),
 
@@ -185,15 +192,59 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
+    public VariantStatisticsManager newVariantStatisticsManager() throws StorageEngineException {
+        return new MongoDBVariantStatisticsManager(getDBAdaptor());
+    }
+
+    @Override
     protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator) throws StorageEngineException {
         VariantMongoDBAdaptor mongoDbAdaptor = getDBAdaptor();
         return new MongoDBVariantAnnotationManager(annotator, mongoDbAdaptor);
     }
 
     @Override
+    public VariantSearchLoadResult searchIndex(Query inputQuery, QueryOptions inputQueryOptions, boolean overwrite)
+            throws StorageEngineException, IOException, SolrException {
+        VariantSearchManager variantSearchManager = getVariantSearchManager();
+
+        int deletedVariants;
+        VariantSearchLoadResult searchIndex;
+        long timeStamp = System.currentTimeMillis();
+
+        if (configuration.getSearch().getActive() && variantSearchManager.isAlive(dbName)) {
+            // First remove trashed variants.
+            ProgressLogger progressLogger = new ProgressLogger("Variants removed from Solr");
+            try (VariantDBIterator removedVariants = getDBAdaptor().trashedVariants(timeStamp)) {
+                deletedVariants = variantSearchManager.delete(dbName, removedVariants, progressLogger);
+                getDBAdaptor().cleanTrash(timeStamp);
+            } catch (StorageEngineException | IOException | RuntimeException e) {
+                throw e;
+            } catch (Exception e) {
+                throw new StorageEngineException("Exception closing VariantDBIterator", e);
+            }
+
+            // Then, load new variants.
+            searchIndex = super.searchIndex(inputQuery, inputQueryOptions, overwrite);
+        } else {
+            //The current dbName from the SearchEngine is not alive or does not exist. There is nothing to remove
+            deletedVariants = 0;
+            logger.debug("Skip removed variants!");
+
+            // Try to index the rest of variants. This method will fail if the search engine is not alive
+            searchIndex = super.searchIndex(inputQuery, inputQueryOptions, overwrite);
+
+            // If the variants were loaded correctly, the trash can be clean up.
+            getDBAdaptor().cleanTrash(timeStamp);
+        }
+
+        return new VariantSearchLoadResult(searchIndex.getNumProcessedVariants(), searchIndex.getNumLoadedVariants(), deletedVariants);
+    }
+
+    @Override
     public void removeFiles(String study, List<String> files) throws StorageEngineException {
 
-        List<Integer> fileIds = preRemoveFiles(study, files);
+        BatchFileOperation batchFileOperation = preRemoveFiles(study, files);
+        List<Integer> fileIds = batchFileOperation.getFileIds();
 
         ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
 
@@ -203,7 +254,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         Thread hook = scm.buildShutdownHook(REMOVE_OPERATION_NAME, studyId, fileIds);
         try {
             Runtime.getRuntime().addShutdownHook(hook);
-            getDBAdaptor().removeFiles(study, files, new QueryOptions(options));
+            getDBAdaptor().removeFiles(study, files, batchFileOperation.getTimestamp(), new QueryOptions(options));
             postRemoveFiles(study, fileIds, false);
         } catch (Exception e) {
             postRemoveFiles(study, fileIds, true);
@@ -216,10 +267,15 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     @Override
     public void removeStudy(String studyName) throws StorageEngineException {
         StudyConfigurationManager scm = getStudyConfigurationManager();
+        AtomicReference<BatchFileOperation> batchFileOperation = new AtomicReference<>();
         int studyId = scm.lockAndUpdate(studyName, studyConfiguration -> {
             boolean resume = getOptions().getBoolean(RESUME.key(), RESUME.defaultValue());
-            StudyConfigurationManager.addBatchOperation(studyConfiguration, REMOVE_OPERATION_NAME, Collections.emptyList(), resume,
-                    BatchFileOperation.Type.REMOVE);
+            batchFileOperation.set(StudyConfigurationManager.addBatchOperation(
+                    studyConfiguration,
+                    REMOVE_OPERATION_NAME,
+                    Collections.emptyList(),
+                    resume,
+                    BatchFileOperation.Type.REMOVE));
             return studyConfiguration;
         }).getStudyId();
 
@@ -227,7 +283,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         try {
             Runtime.getRuntime().addShutdownHook(hook);
             ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
-            getDBAdaptor().removeStudy(studyName, new QueryOptions(options));
+            getDBAdaptor().removeStudy(studyName, batchFileOperation.get().getTimestamp(), new QueryOptions(options));
 
             scm.lockAndUpdate(studyName, studyConfiguration -> {
                 for (Integer fileId : studyConfiguration.getIndexedFiles()) {
@@ -349,7 +405,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
 
                             if (doMerge) {
                                 logger.info("Load - Merge '{}'", input);
-                                filesToMerge.add(storagePipeline.getOptions().getInt(Options.FILE_ID.key()));
+                                filesToMerge.add(storagePipeline.getFileId());
                                 resultsToMerge.add(result);
 
                                 if (filesToMerge.size() == batchLoad || !iterator.hasNext()) {
@@ -406,8 +462,13 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
 
                 }
                 if (doMerge) {
-                    annotateLoadedFiles(outdirUri, inputFiles, results, getOptions());
-                    calculateStatsForLoadedFiles(outdirUri, inputFiles, results, getOptions());
+                    StudyConfiguration studyConfiguration = storageResultMap.get(inputFiles.get(0)).getStudyConfiguration();
+                    ObjectMap options = getOptions();
+                    options.put(Options.STUDY.key(), studyConfiguration.getStudyName());
+
+                    annotateLoadedFiles(outdirUri, inputFiles, results, options);
+                    calculateStatsForLoadedFiles(outdirUri, inputFiles, results, options);
+                    searchIndexLoadedFiles(inputFiles, options);
                 }
             }
 
@@ -449,13 +510,20 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     @Override
     protected boolean doQuerySearchManager(Query query, QueryOptions options) throws StorageEngineException {
         if (super.doQuerySearchManager(query, options)) {
+            if (VariantSearchManager.UseSearchIndex.from(options).equals(VariantSearchManager.UseSearchIndex.YES)) {
+                // Query search manager is mandatory
+                return true;
+            }
             // Get set of valid params. Remove Modifier params
             Set<VariantQueryParam> queryParams = VariantQueryUtils.validParams(query);
             queryParams.removeAll(MODIFIER_QUERY_PARAMS);
 
             // REGION + [ STUDY ]
-            if (queryParams.equals(Collections.singleton(REGION))
-                    || queryParams.size() == 2 && queryParams.contains(REGION) && queryParams.contains(STUDY)) {
+            if (queryParams.contains(REGION) // Has region
+                    // Optionally, has study
+                    && (queryParams.size() == 1 || queryParams.size() == 2 && queryParams.contains(VariantQueryParam.STUDY))
+                    && options.getBoolean(QueryOptions.SKIP_COUNT, DEFAULT_SKIP_COUNT)) {   // Do not require total count
+                // Do not use SearchIndex either for intersect.
                 options.put(VariantSearchManager.USE_SEARCH_INDEX, VariantSearchManager.UseSearchIndex.NO);
                 return false;
             } else {
@@ -520,16 +588,21 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public Query preProcessQuery(Query originalQuery, StudyConfigurationManager studyConfigurationManager) throws StorageEngineException {
-        // Copy input query! Do not modify original query!
-        Query query = originalQuery == null ? new Query() : new Query(originalQuery);
+    public Query preProcessQuery(Query originalQuery, QueryOptions options) throws StorageEngineException {
+        Query query = super.preProcessQuery(originalQuery, options);
         List<String> studyNames = studyConfigurationManager.getStudyNames(QueryOptions.empty());
         CellBaseUtils cellBaseUtils = getCellBaseUtils();
 
         if (isValidParam(query, VariantQueryParam.STUDY)
                 && studyNames.size() == 1
+                && !isNegated(query.getString(VariantQueryParam.STUDY.key()))
                 && !isValidParam(query, FILE)
-                && !isValidParam(query, SAMPLE)) {
+                && !isValidParam(query, FILTER)
+                && !isValidParam(query, QUAL)
+                && !isValidParam(query, INFO)
+                && !isValidParam(query, SAMPLE)
+                && !isValidParam(query, FORMAT)
+                && !isValidParam(query, GENOTYPE)) {
             query.remove(VariantQueryParam.STUDY.key());
         }
 

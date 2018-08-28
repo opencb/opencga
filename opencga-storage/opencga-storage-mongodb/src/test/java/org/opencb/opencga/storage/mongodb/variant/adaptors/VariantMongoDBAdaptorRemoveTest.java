@@ -94,7 +94,7 @@ public class VariantMongoDBAdaptorRemoveTest extends VariantStorageBaseTest impl
 
 
         //Calculate stats
-        QueryOptions options = new QueryOptions(VariantStorageEngine.Options.STUDY_ID.key(), STUDY_ID)
+        QueryOptions options = new QueryOptions(VariantStorageEngine.Options.STUDY.key(), STUDY_NAME)
                 .append(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100)
                 .append(DefaultVariantStatisticsManager.OUTPUT, outputUri)
                 .append(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME, "cohort1.cohort2.stats");
@@ -131,7 +131,7 @@ public class VariantMongoDBAdaptorRemoveTest extends VariantStorageBaseTest impl
 
     @Test
     public void removeStudyTest() throws Exception {
-        ((VariantMongoDBAdaptor) dbAdaptor).removeStudy(studyConfiguration.getStudyName(), new QueryOptions("purge", false));
+        ((VariantMongoDBAdaptor) dbAdaptor).removeStudy(studyConfiguration.getStudyName(), System.currentTimeMillis(), new QueryOptions("purge", false));
         for (Variant variant : dbAdaptor) {
             for (Map.Entry<String, StudyEntry> entry : variant.getStudiesMap().entrySet()) {
                 assertFalse(entry.getValue().getStudyId().equals(studyConfiguration.getStudyId() + ""));
@@ -143,7 +143,7 @@ public class VariantMongoDBAdaptorRemoveTest extends VariantStorageBaseTest impl
 
     @Test
     public void removeAndPurgeStudyTest() throws Exception {
-        ((VariantMongoDBAdaptor) dbAdaptor).removeStudy(studyConfiguration.getStudyName(), new QueryOptions("purge", true));
+        ((VariantMongoDBAdaptor) dbAdaptor).removeStudy(studyConfiguration.getStudyName(), System.currentTimeMillis(), new QueryOptions("purge", true));
         for (Variant variant : dbAdaptor) {
             for (Map.Entry<String, StudyEntry> entry : variant.getStudiesMap().entrySet()) {
                 assertFalse(entry.getValue().getStudyId().equals(studyConfiguration.getStudyId() + ""));

@@ -17,6 +17,7 @@
 package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
+import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -28,6 +29,7 @@ import org.opencb.opencga.app.cli.main.options.IndividualCommandOptions;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.acls.permissions.IndividualAclEntry;
@@ -76,6 +78,9 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
             case "group-by":
                 queryResponse = groupBy();
                 break;
+            case "facet":
+                queryResponse = facet();
+                break;
             case "samples":
                 queryResponse = getSamples();
                 break;
@@ -118,13 +123,12 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap params = new ObjectMap();
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ID.key(), individualsCommandOptions.createCommandOptions.name);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FAMILY.key(), individualsCommandOptions.createCommandOptions.family);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FATHER_UID.key(), individualsCommandOptions.createCommandOptions.fatherId);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.MOTHER_UID.key(), individualsCommandOptions.createCommandOptions.motherId);
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FATHER.key(), individualsCommandOptions.createCommandOptions.fatherId);
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.MOTHER.key(), individualsCommandOptions.createCommandOptions.motherId);
         String sex = individualsCommandOptions.createCommandOptions.sex;
         if (individualsCommandOptions.createCommandOptions.sex != null) {
             try {
-                params.put(IndividualDBAdaptor.QueryParams.SEX.key(), Individual.Sex.valueOf(sex));
+                params.put(IndividualDBAdaptor.QueryParams.SEX.key(), IndividualProperty.Sex.valueOf(sex));
             } catch (IllegalArgumentException e) {
                 logger.error("{} not recognized as a proper individual sex", sex);
                 return null;
@@ -172,9 +176,8 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(),
                 resolveStudy(individualsCommandOptions.searchCommandOptions.study));
         query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ID.key(), individualsCommandOptions.searchCommandOptions.name);
-        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FATHER_UID.key(), individualsCommandOptions.searchCommandOptions.fatherId);
-        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.MOTHER_UID.key(), individualsCommandOptions.searchCommandOptions.motherId);
-        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FAMILY.key(), individualsCommandOptions.searchCommandOptions.family);
+        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FATHER.key(), individualsCommandOptions.searchCommandOptions.fatherId);
+        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.MOTHER.key(), individualsCommandOptions.searchCommandOptions.motherId);
         query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SEX.key(), individualsCommandOptions.searchCommandOptions.sex);
         query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ETHNICITY.key(), individualsCommandOptions.searchCommandOptions.ethnicity);
         // TODO: Remove these 2 deprecated parameters in future release
@@ -214,16 +217,15 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap params = new ObjectMap();
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ID.key(), individualsCommandOptions.updateCommandOptions.name);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FAMILY.key(), individualsCommandOptions.updateCommandOptions.family);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FATHER_UID.key(), individualsCommandOptions.updateCommandOptions.fatherId);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.MOTHER_UID.key(), individualsCommandOptions.updateCommandOptions.motherId);
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FATHER.key(), individualsCommandOptions.updateCommandOptions.fatherId);
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.MOTHER.key(), individualsCommandOptions.updateCommandOptions.motherId);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.DATE_OF_BIRTH.key(),
                 individualsCommandOptions.updateCommandOptions.dateOfBirth);
 
         String sex = individualsCommandOptions.updateCommandOptions.sex;
         if (individualsCommandOptions.updateCommandOptions.sex != null) {
             try {
-                params.put(IndividualDBAdaptor.QueryParams.SEX.key(), Individual.Sex.valueOf(sex));
+                params.put(IndividualDBAdaptor.QueryParams.SEX.key(), IndividualProperty.Sex.valueOf(sex));
             } catch (IllegalArgumentException e) {
                 logger.error("{} not recognized as a proper individual sex", sex);
                 return null;
@@ -262,9 +264,8 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), resolveStudy(individualsCommandOptions.groupByCommandOptions.study));
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.UID.key(), individualsCommandOptions.groupByCommandOptions.id);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ID.key(), individualsCommandOptions.groupByCommandOptions.name);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FATHER_UID.key(), individualsCommandOptions.groupByCommandOptions.fatherId);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.MOTHER_UID.key(), individualsCommandOptions.groupByCommandOptions.motherId);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FAMILY.key(), individualsCommandOptions.groupByCommandOptions.family);
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FATHER.key(), individualsCommandOptions.groupByCommandOptions.fatherId);
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.MOTHER.key(), individualsCommandOptions.groupByCommandOptions.motherId);
         params.put(IndividualDBAdaptor.QueryParams.SEX.key(), individualsCommandOptions.groupByCommandOptions.sex);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ETHNICITY.key(), individualsCommandOptions.groupByCommandOptions.ethnicity);
         // TODO: Remove this deprecated parameters in future release
@@ -322,6 +323,42 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         bodyParams.putIfNotNull("sample", commandOptions.sample);
 
         return openCGAClient.getIndividualClient().updateAcl(commandOptions.memberId, queryParams, bodyParams);
+    }
+
+    private QueryResponse facet() throws IOException {
+        logger.debug("Individual facets");
+
+        IndividualCommandOptions.FacetCommandOptions commandOptions = individualsCommandOptions.facetCommandOptions;
+
+        Query query = new Query();
+        query.putIfNotEmpty("creationYear", commandOptions.creationYear);
+        query.putIfNotEmpty("creationMonth", commandOptions.creationMonth);
+        query.putIfNotEmpty("creationDay", commandOptions.creationDay);
+        query.putIfNotEmpty("creationDayOfWeek", commandOptions.creationDayOfWeek);
+        query.putIfNotEmpty("status", commandOptions.status);
+        query.putIfNotEmpty("lifeStatus", commandOptions.lifeStatus);
+        query.putIfNotEmpty("affectationStatus", commandOptions.affectationStatus);
+        query.putIfNotEmpty("numSamples", commandOptions.numSamples);
+        query.putIfNotEmpty("numMultiples", commandOptions.numMultiples);
+        query.putIfNotEmpty("multiplesType", commandOptions.multiplesType);
+        query.putIfNotEmpty("sex", commandOptions.sex);
+        query.putIfNotEmpty("karyotypicSex", commandOptions.karyotypicSex);
+        query.putIfNotEmpty("ethnicity", commandOptions.ethnicity);
+        query.putIfNotEmpty("population", commandOptions.population);
+        query.putIfNotEmpty("phenotypes", commandOptions.phenotypes);
+        query.putIfNotEmpty("release", commandOptions.release);
+        query.putIfNotEmpty("version", commandOptions.version);
+        query.putIfNotNull("hasFather", commandOptions.hasFather);
+        query.putIfNotNull("hasMother", commandOptions.hasMother);
+        query.putIfNotNull("parentalConsanguinity", commandOptions.parentalConsanguinity);
+        query.putIfNotEmpty(Constants.ANNOTATION, commandOptions.annotation);
+
+        QueryOptions options = new QueryOptions();
+        options.put("defaultStats", commandOptions.defaultStats);
+        options.putIfNotNull("facet", commandOptions.facet);
+        options.putIfNotNull("facetRange", commandOptions.facetRange);
+
+        return openCGAClient.getIndividualClient().facet(commandOptions.study, query, options);
     }
 
 }

@@ -1,89 +1,87 @@
 package org.opencb.opencga.core.models.clinical;
 
+import org.opencb.biodata.models.commons.Phenotype;
+
+import java.util.List;
 import java.util.Map;
 
 public class ReportedEvent {
 
     private String id;
-    private String phenotype;
+    private List<Phenotype> phenotypes;
+    private List<String> consequenceTypeIds;
     private GenomicFeature genomicFeature;
     private ReportedModeOfInheritance modeOfInheritance;
-    private Panel panel;
-    private VariantClassification variantClassification;
+    private String panelId;
+    private ClinicalSignificance clinicalSignificance;
     private Penetrance penetrance;
     private double score;
     @Deprecated
     private Map<String, Float> vendorSpecificScores;
     private boolean fullyExplainsPhenotype;
     private int groupOfVariants;
+    private RoleInCancer roleInCancer;
+    private boolean actionable;
     private String justification;
     private String tier;
 
     public enum ReportedModeOfInheritance {
-        monoallelic,
-        monoallelic_not_imprinted,
-        monoallelic_maternally_imprinted,
-        monoallelic_paternally_imprinted,
-        biallelic,
-        monoallelic_and_biallelic,
-        monoallelic_and_more_severe_biallelic,
-        xlinked_biallelic,
-        xlinked_monoallelic,
-        mitochondrial,
-        unknown
+        MONOALLELIC,
+        MONOALLELIC_NOT_IMPRINTED,
+        MONOALLELIC_MATERNALLY_IMPRINTED,
+        MONOALLELIC_PATERNALLY_IMPRINTED,
+        BIALLELIC,
+        MONOALLELIC_AND_BIALLELIC,
+        MONOALLELIC_AND_MORE_SEVERE_BIALLELIC,
+        XLINKED_BIALLELIC,
+        XLINKED_MONOALLELIC,
+        MITOCHRONDRIAL,
+        UNKNOWN
     }
 
-    public enum VariantClassification {
-        pathogenic_variant,
-        likely_pathogenic_variant,
-        variant_of_unknown_clinical_significance,
-        likely_benign_variant,
-        benign_variant,
-        not_assessed
+    public enum ClinicalSignificance {
+        PATHOGENIC_VARIANT,
+        LIKELY_PATHOGENIC_VARIANT,
+        VARIANT_OF_UNKNOWN_CLINICAL_SIGNIFICANCE,
+        LINKELY_BENIGN_VARIANT,
+        BENIGN_VARIANT,
+        NOT_ASSESSED
     }
 
     public enum Penetrance {
-        complete,
-        incomplete
+        COMPLETE,
+        INCOMPLETE
+    }
+
+    enum RoleInCancer {
+        oncogene,
+        tumor_suppressor_gene,
+        both
     }
 
     public ReportedEvent() {
     }
 
-    public ReportedEvent(String id, String phenotype, GenomicFeature genomicFeature, ReportedModeOfInheritance modeOfInheritance, Panel
-            panel, VariantClassification variantClassification, Penetrance penetrance, double score, boolean fullyExplainsPhenotype, int
-            groupOfVariants, String justification, String tier) {
+    public ReportedEvent(String id, List<Phenotype> phenotypes, List<String> consequenceTypeIds, GenomicFeature genomicFeature,
+                         ReportedModeOfInheritance modeOfInheritance, String panelId, ClinicalSignificance clinicalSignificance,
+                         Penetrance penetrance, double score, Map<String, Float> vendorSpecificScores, boolean fullyExplainsPhenotype,
+                         int groupOfVariants, RoleInCancer roleInCancer, boolean actionable, String justification, String tier) {
         this.id = id;
-        this.phenotype = phenotype;
+        this.phenotypes = phenotypes;
+        this.consequenceTypeIds = consequenceTypeIds;
         this.genomicFeature = genomicFeature;
         this.modeOfInheritance = modeOfInheritance;
-        this.panel = panel;
-        this.variantClassification = variantClassification;
+        this.panelId = panelId;
+        this.clinicalSignificance = clinicalSignificance;
         this.penetrance = penetrance;
         this.score = score;
+        this.vendorSpecificScores = vendorSpecificScores;
         this.fullyExplainsPhenotype = fullyExplainsPhenotype;
         this.groupOfVariants = groupOfVariants;
+        this.roleInCancer = roleInCancer;
+        this.actionable = actionable;
         this.justification = justification;
         this.tier = tier;
-    }
-
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("ReportedEvent{");
-        sb.append("id='").append(id).append('\'');
-        sb.append(", phenotype='").append(phenotype).append('\'');
-        sb.append(", genomicFeature=").append(genomicFeature);
-        sb.append(", modeOfInheritance=").append(modeOfInheritance);
-        sb.append(", panel=").append(panel);
-        sb.append(", variantClassification=").append(variantClassification);
-        sb.append(", penetrance=").append(penetrance);
-        sb.append(", score=").append(score);
-        sb.append(", fullyExplainsPhenotype=").append(fullyExplainsPhenotype);
-        sb.append(", groupOfVariants=").append(groupOfVariants);
-        sb.append(", eventJustification='").append(justification).append('\'');
-        sb.append(", tier='").append(tier).append('\'');
-        sb.append('}');
-        return sb.toString();
     }
 
     public String getId() {
@@ -95,12 +93,21 @@ public class ReportedEvent {
         return this;
     }
 
-    public String getPhenotype() {
-        return phenotype;
+    public List<Phenotype> getPhenotypes() {
+        return phenotypes;
     }
 
-    public ReportedEvent setPhenotype(String phenotype) {
-        this.phenotype = phenotype;
+    public ReportedEvent setPhenotypes(List<Phenotype> phenotypes) {
+        this.phenotypes = phenotypes;
+        return this;
+    }
+
+    public List<String> getConsequenceTypeIds() {
+        return consequenceTypeIds;
+    }
+
+    public ReportedEvent setConsequenceTypeIds(List<String> consequenceTypeIds) {
+        this.consequenceTypeIds = consequenceTypeIds;
         return this;
     }
 
@@ -122,21 +129,21 @@ public class ReportedEvent {
         return this;
     }
 
-    public Panel getPanel() {
-        return panel;
+    public String getPanelId() {
+        return panelId;
     }
 
-    public ReportedEvent setPanel(Panel panel) {
-        this.panel = panel;
+    public ReportedEvent setPanelId(String panelId) {
+        this.panelId = panelId;
         return this;
     }
 
-    public VariantClassification getVariantClassification() {
-        return variantClassification;
+    public ClinicalSignificance getClinicalSignificance() {
+        return clinicalSignificance;
     }
 
-    public ReportedEvent setVariantClassification(VariantClassification variantClassification) {
-        this.variantClassification = variantClassification;
+    public ReportedEvent setClinicalSignificance(ClinicalSignificance clinicalSignificance) {
+        this.clinicalSignificance = clinicalSignificance;
         return this;
     }
 
@@ -158,6 +165,15 @@ public class ReportedEvent {
         return this;
     }
 
+    public Map<String, Float> getVendorSpecificScores() {
+        return vendorSpecificScores;
+    }
+
+    public ReportedEvent setVendorSpecificScores(Map<String, Float> vendorSpecificScores) {
+        this.vendorSpecificScores = vendorSpecificScores;
+        return this;
+    }
+
     public boolean isFullyExplainsPhenotype() {
         return fullyExplainsPhenotype;
     }
@@ -176,11 +192,29 @@ public class ReportedEvent {
         return this;
     }
 
-    public String getEventJustification() {
+    public RoleInCancer getRoleInCancer() {
+        return roleInCancer;
+    }
+
+    public ReportedEvent setRoleInCancer(RoleInCancer roleInCancer) {
+        this.roleInCancer = roleInCancer;
+        return this;
+    }
+
+    public boolean isActionable() {
+        return actionable;
+    }
+
+    public ReportedEvent setActionable(boolean actionable) {
+        this.actionable = actionable;
+        return this;
+    }
+
+    public String getJustification() {
         return justification;
     }
 
-    public ReportedEvent setEventJustification(String justification) {
+    public ReportedEvent setJustification(String justification) {
         this.justification = justification;
         return this;
     }

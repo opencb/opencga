@@ -26,16 +26,12 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.core.models.Family;
-import org.opencb.opencga.core.models.Individual;
-import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.slf4j.Logger;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Created by jacobo on 12/09/14.
@@ -43,12 +39,16 @@ import java.util.stream.Collectors;
 public class MongoDBAdaptor extends AbstractDBAdaptor {
 
     static final String PRIVATE_UID = "uid";
+    static final String PRIVATE_UUID = "uuid";
     static final String PRIVATE_ID = "id";
+    static final String PRIVATE_FQN = "fqn";
     static final String PRIVATE_PROJECT = "_project";
-    static final String PRIVATE_PROJECT_UID = "_project.uid";
-    static final String PRIVATE_PROJECT_ID = "_project.id";
+    static final String PRIVATE_PROJECT_ID = PRIVATE_PROJECT + '.' + PRIVATE_ID;
+    static final String PRIVATE_PROJECT_UID = PRIVATE_PROJECT + '.' + PRIVATE_UID;
+    static final String PRIVATE_PROJECT_UUID = PRIVATE_PROJECT + '.' + PRIVATE_UUID;
     static final String PRIVATE_OWNER_ID = "_ownerId";
     static final String PRIVATE_STUDY_ID = "studyUid";
+    private static final String VERSION = "version";
 
     static final String FILTER_ROUTE_PROJECTS = "projects.";
     static final String FILTER_ROUTE_STUDIES = "projects.studies.";
@@ -58,15 +58,18 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     static final String FILTER_ROUTE_SAMPLES = "projects.studies.samples.";
     static final String FILTER_ROUTE_FILES = "projects.studies.files.";
     static final String FILTER_ROUTE_JOBS = "projects.studies.jobs.";
-    static final String FILTER_ROUTE_PANELS = "projects.studies.panels.";
 
     static final String LAST_OF_VERSION = "_lastOfVersion";
     static final String RELEASE_FROM_VERSION = "_releaseFromVersion";
     static final String LAST_OF_RELEASE = "_lastOfRelease";
     static final String PRIVATE_CREATION_DATE = "_creationDate";
+    static final String MODIFICATION_DATE = "modificationDate";
+    static final String PRIVATE_MODIFICATION_DATE = "_modificationDate";
     static final String PERMISSION_RULES_APPLIED = "_permissionRulesApplied";
 
     static final String INTERNAL_DELIMITER = "__";
+
+    public static final String NATIVE_QUERY = "nativeQuery";
 
     // Possible update actions
     static final String SET = "SET";
@@ -146,67 +149,6 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
                 andBsonList.add(filter);
             }
         }
-    }
-
-    // Auxiliar methods used in family/get and clinicalAnalysis/get to retrieve the whole referenced documents
-    protected Individual getIndividual(Individual individual) {
-        Individual retIndividual = individual;
-        if (individual != null && individual.getUid() > 0) {
-            // Fetch individual information
-            QueryResult<Individual> individualQueryResult = null;
-            try {
-                individualQueryResult = dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(individual.getUid(),
-                        QueryOptions.empty());
-            } catch (CatalogDBException e) {
-                logger.error(e.getMessage(), e);
-            }
-            if (individualQueryResult != null && individualQueryResult.getNumResults() == 1) {
-                retIndividual = individualQueryResult.first();
-
-                // Fetch samples from individual
-                List<Long> samples = individual.getSamples().stream().map(Sample::getUid).collect(Collectors.toList());
-                Query query = new Query(SampleDBAdaptor.QueryParams.UID.key(), samples);
-                try {
-                    QueryResult<Sample> sampleQueryResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, QueryOptions.empty());
-                    retIndividual.setSamples(sampleQueryResult.getResult());
-                } catch (CatalogDBException e) {
-                    logger.error(e.getMessage(), e);
-                }
-            }
-        }
-        return retIndividual;
-    }
-
-    protected Sample getSample(Sample sample) {
-        Sample retSample = sample;
-        if (sample != null && sample.getUid() > 0) {
-            QueryResult<Sample> sampleQueryResult = null;
-            try {
-                sampleQueryResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(sample.getUid(), QueryOptions.empty());
-            } catch (CatalogDBException e) {
-                logger.error(e.getMessage(), e);
-            }
-            if (sampleQueryResult != null && sampleQueryResult.getNumResults() == 1) {
-                retSample = sampleQueryResult.first();
-            }
-        }
-        return retSample;
-    }
-
-    protected Family getFamily(Family family) {
-        Family retFamily = family;
-        if (family != null && family.getUid() > 0) {
-            QueryResult<Family> familyQueryResult = null;
-            try {
-                familyQueryResult = dbAdaptorFactory.getCatalogFamilyDBAdaptor().get(family.getUid(), QueryOptions.empty());
-            } catch (CatalogDBException e) {
-                logger.error(e.getMessage(), e);
-            }
-            if (familyQueryResult != null && familyQueryResult.getNumResults() == 1) {
-                retFamily = familyQueryResult.first();
-            }
-        }
-        return retFamily;
     }
 
     protected QueryResult rank(MongoDBCollection collection, Bson query, String groupByField, String idField, int numResults, boolean asc) {
@@ -381,6 +323,119 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         }
 
         return document;
+    }
+
+    /**
+     * Generate complex query where [{id - version}, {id2 - version2}] pairs will be queried.
+     *
+     * @param query Query object.
+     * @param bsonQueryList Final bson query object.
+     * @throws CatalogDBException If the size of the array of ids does not match the size of the array of version.
+     * @return a boolean indicating whether the complex query was generated or not.
+     */
+    boolean generateUidVersionQuery(Query query, List<Bson> bsonQueryList) throws CatalogDBException {
+        if (!query.containsKey(VERSION) || query.getAsIntegerList(VERSION).size() == 1) {
+               return false;
+        }
+        if (!query.containsKey(PRIVATE_UID) && !query.containsKey(PRIVATE_ID) && !query.containsKey(PRIVATE_UUID)) {
+            return false;
+        }
+        int numIds = 0;
+        numIds += query.containsKey(PRIVATE_ID) ? 1 : 0;
+        numIds += query.containsKey(PRIVATE_UID) ? 1 : 0;
+        numIds += query.containsKey(PRIVATE_UUID) ? 1 : 0;
+
+        if (numIds > 1) {
+            List<Integer> versionList = query.getAsIntegerList(VERSION);
+            if (versionList.size() > 1) {
+                throw new CatalogDBException("Cannot query by more than one version when more than one id type is being queried");
+            }
+            return false;
+        }
+
+        String idQueried = PRIVATE_UID;
+        idQueried = query.containsKey(PRIVATE_ID) ? PRIVATE_ID : idQueried;
+        idQueried = query.containsKey(PRIVATE_UUID) ? PRIVATE_UUID : idQueried;
+
+        List idList;
+        if (PRIVATE_UID.equals(idQueried)) {
+            idList = query.getAsLongList(PRIVATE_UID);
+        } else {
+            idList = query.getAsStringList(idQueried);
+        }
+        List<Integer> versionList = query.getAsIntegerList(VERSION);
+
+        if (versionList.size() > 1 && versionList.size() != idList.size()) {
+            throw new CatalogDBException("The size of the array of versions should match the size of the array of ids to be queried");
+        }
+
+        List<Bson> samplesQuery = new ArrayList<>();
+        for (int i = 0; i < idList.size(); i++) {
+            samplesQuery.add(new Document()
+                    .append(idQueried, idList.get(i))
+                    .append(VERSION, versionList.get(i))
+            );
+        }
+
+        if (!samplesQuery.isEmpty()) {
+            bsonQueryList.add(Filters.or(samplesQuery));
+
+            query.remove(idQueried);
+            query.remove(VERSION);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Removes any other entity projections made. This method should be called by any entity containing inner entities:
+     * Family -> Individual; Individual -> Sample; File -> Sample; Cohort -> Sample
+     *
+     * @param options current query options object.
+     * @param projectionKey Projection key to be removed from the query options.
+     * @return new QueryOptions after removing the inner projectionKey projections.
+     */
+    protected QueryOptions removeInnerProjections(QueryOptions options, String projectionKey) {
+        QueryOptions queryOptions = ParamUtils.defaultObject(options, QueryOptions::new);
+
+        if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
+            List<String> includeList = queryOptions.getAsStringList(QueryOptions.INCLUDE);
+            List<String> newInclude = new ArrayList<>(includeList.size());
+            boolean projectionKeyExcluded = false;
+            for (String include : includeList) {
+                if (!include.startsWith(projectionKey + ".")) {
+                    newInclude.add(include);
+                } else {
+                    projectionKeyExcluded = true;
+                }
+            }
+            if (newInclude.isEmpty()) {
+                queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(PRIVATE_ID, projectionKey));
+            } else {
+                if (projectionKeyExcluded) {
+                    newInclude.add(projectionKey);
+                }
+                queryOptions.put(QueryOptions.INCLUDE, newInclude);
+            }
+        }
+        if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
+            List<String> excludeList = queryOptions.getAsStringList(QueryOptions.EXCLUDE);
+            List<String> newExclude = new ArrayList<>(excludeList.size());
+            for (String exclude : excludeList) {
+                if (!exclude.startsWith(projectionKey + ".")) {
+                    newExclude.add(exclude);
+                }
+            }
+            if (newExclude.isEmpty()) {
+                queryOptions.remove(QueryOptions.EXCLUDE);
+            } else {
+                queryOptions.put(QueryOptions.EXCLUDE, newExclude);
+            }
+        }
+
+        return queryOptions;
     }
 
     protected void unmarkPermissionRule(MongoDBCollection collection, long studyId, String permissionRuleId) {

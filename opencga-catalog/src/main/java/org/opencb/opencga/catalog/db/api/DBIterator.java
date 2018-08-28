@@ -24,6 +24,8 @@ import java.util.Iterator;
  */
 public interface DBIterator<E> extends Iterator<E>, Closeable {
 
+    String INCLUDE_ACLS = DBAdaptor.INCLUDE_ACLS;
+
     @Override
     void close();
 

@@ -135,8 +135,10 @@ public class VepVariantAnnotator extends VariantAnnotator {
             }
         });
 
+        long timestamp = System.currentTimeMillis();
         for (int i = 0; i < numConsumers; i++) {
             executor.execute(new Runnable() {
+
                 @Override
                 public void run() {
                     try {
@@ -145,14 +147,14 @@ public class VepVariantAnnotator extends VariantAnnotator {
                         while (elem != lastElement) {
                             batch.add(elem);
                             if (batch.size() == batchSize) {
-                                variantDBAdaptor.updateAnnotations(batch, new QueryOptions());
+                                variantDBAdaptor.updateAnnotations(batch, timestamp, new QueryOptions());
                                 batch.clear();
                                 logger.debug("thread updated batch");
                             }
                             elem = queue.take();
                         }
                         if (!batch.isEmpty()) { //Upload remaining elements
-                            variantDBAdaptor.updateAnnotations(batch, new QueryOptions());
+                            variantDBAdaptor.updateAnnotations(batch, timestamp, new QueryOptions());
                         }
                         logger.debug("thread finished updating annotations");
                     } catch (InterruptedException e) {

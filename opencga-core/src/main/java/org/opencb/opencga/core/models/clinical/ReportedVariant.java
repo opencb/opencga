@@ -8,10 +8,11 @@ import java.util.Map;
 
 public class ReportedVariant extends Variant {
 
+    private double deNovoQualityScore;
     private List<ReportedEvent> reportedEvents;
-    @Deprecated
-    private List<CalledGenotype> calledGenotypes;
     private List<Comment> comments;
+
+    // TODO maybe this parameter should be in Variant
     private Map<String, Object> attributes;
 
     public ReportedVariant() {
@@ -21,24 +22,18 @@ public class ReportedVariant extends Variant {
         super(avro);
     }
 
-    public ReportedVariant(VariantAvro avro, List<ReportedEvent> reportedEvents, List<CalledGenotype> calledGenotypes,
-                           List<Comment> comments, Map<String, Object> attributes) {
+    public ReportedVariant(VariantAvro avro, List<ReportedEvent> reportedEvents, List<Comment> comments, Map<String, Object> attributes) {
         super(avro);
 
         this.reportedEvents = reportedEvents;
-        this.calledGenotypes = calledGenotypes;
         this.comments = comments;
         this.attributes = attributes;
     }
-
-//    public ReportedVariant(Variant variant) {
-//    }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("ReportedVariant{");
         sb.append("reportedEvents=").append(reportedEvents);
-        sb.append(", calledGenotypes=").append(calledGenotypes);
         sb.append(", comments=").append(comments);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
@@ -51,15 +46,6 @@ public class ReportedVariant extends Variant {
 
     public ReportedVariant setReportedEvents(List<ReportedEvent> reportedEvents) {
         this.reportedEvents = reportedEvents;
-        return this;
-    }
-
-    public List<CalledGenotype> getCalledGenotypes() {
-        return calledGenotypes;
-    }
-
-    public ReportedVariant setCalledGenotypes(List<CalledGenotype> calledGenotypes) {
-        this.calledGenotypes = calledGenotypes;
         return this;
     }
 

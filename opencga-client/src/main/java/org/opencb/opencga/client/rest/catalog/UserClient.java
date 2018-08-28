@@ -26,6 +26,7 @@ import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.models.User;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 
 /**
  * Created by imedina on 04/05/16.
@@ -63,21 +64,21 @@ public class UserClient extends CatalogClient<User, User> {
             ObjectMap objectMap = new ObjectMap("body", json);
             response = execute(USERS_URL, user, "login", objectMap, POST, ObjectMap.class);
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new UncheckedIOException(e);
         }
         return response;
     }
 
-    public QueryResponse<ObjectMap> refresh() {
-        QueryResponse<ObjectMap> response = null;
+    public QueryResponse<ObjectMap> refresh() throws ClientException {
+        QueryResponse<ObjectMap> response;
         ObjectMap p = new ObjectMap();
         ObjectMapper mapper = new ObjectMapper();
         try {
             String json = mapper.writeValueAsString(p);
             ObjectMap objectMap = new ObjectMap("body", json);
             response = execute(USERS_URL, this.getUserId(null), "login", objectMap, POST, ObjectMap.class);
-        } catch (ClientException | IOException e) {
-            e.printStackTrace();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
         return response;
     }

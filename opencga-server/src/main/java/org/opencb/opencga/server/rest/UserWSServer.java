@@ -37,6 +37,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
+import java.util.*;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
@@ -202,20 +203,6 @@ public class UserWSServer extends OpenCGAWSServer {
         }
     }
 
-//    @GET
-//    @Path("/{user}/delete")
-//    @ApiOperation(value = "Delete a user [WARNING]",
-//            notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
-//                    "planned to be fully implemented and tested in version 1.4.0")
-//    public Response delete(@ApiParam(value = "Comma separated list of user ids", required = true) @PathParam("user") String userId) {
-//        try {
-//            List<QueryResult<User>> deletedUsers = catalogManager.getUserManager().delete(userId, queryOptions, sessionId);
-//            return createOkResponse(deletedUsers);
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
-
     @POST
     @Path("/{user}/configs/update")
     @ApiOperation(value = "Add or remove a custom user configuration", response = Map.class,
@@ -224,7 +211,7 @@ public class UserWSServer extends OpenCGAWSServer {
     public Response updateConfiguration(
             @ApiParam(value = "User id", required = true) @PathParam("user") String userId,
             @ApiParam(value = "Action to be performed: ADD or REMOVE a group", defaultValue = "ADD", required = true)
-                @QueryParam("action") ParamUtils.BasicUpdateAction action,
+            @QueryParam("action") ParamUtils.BasicUpdateAction action,
             @ApiParam(name = "params", value = "JSON containing anything useful for the application such as user or default preferences. " +
                     "When removing, only the id will be necessary.", required = true) CustomConfig params) {
         try {
@@ -268,7 +255,7 @@ public class UserWSServer extends OpenCGAWSServer {
     public Response updateFilters(
             @ApiParam(value = "User id", required = true) @PathParam("user") String userId,
             @ApiParam(value = "Action to be performed: ADD or REMOVE a group", defaultValue = "ADD", required = true)
-                @QueryParam("action") ParamUtils.BasicUpdateAction action,
+            @QueryParam("action") ParamUtils.BasicUpdateAction action,
             @ApiParam(name = "params", value = "Filter parameters. When removing, only the filter name will be necessary", required = true)
                     User.Filter params) {
         try {

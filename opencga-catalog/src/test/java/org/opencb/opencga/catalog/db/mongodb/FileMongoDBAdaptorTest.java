@@ -17,7 +17,6 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import org.bson.Document;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -28,7 +27,6 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 
@@ -44,7 +42,7 @@ import static org.junit.Assert.*;
 public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
-    public void createFileToStudyTest() throws CatalogException, IOException {
+    public void createFileToStudyTest() throws CatalogException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         assertTrue(studyId >= 0);
         File file;
@@ -55,27 +53,27 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 FileAclEntry.FilePermissions.VIEW_CONTENT.name(), FileAclEntry.FilePermissions.VIEW_HEADER.name(),
                 FileAclEntry.FilePermissions.DELETE.name())));
         acl.push(new FileAclEntry("jmmut", Collections.emptyList()));
-        System.out.println(catalogFileDBAdaptor.insert(file, studyId, null));
+        System.out.println(catalogFileDBAdaptor.insert(studyId, file, null, null));
         file = new File("file.sam", File.Type.FILE, File.Format.PLAIN, File.Bioformat.ALIGNMENT, "data/file.sam", "",
                 new File.FileStatus(File.FileStatus.STAGE), 1000, 1);
-        System.out.println(catalogFileDBAdaptor.insert(file, studyId, null));
+        System.out.println(catalogFileDBAdaptor.insert(studyId, file, null, null));
         file = new File("file.bam", File.Type.FILE, File.Format.BINARY, File.Bioformat.ALIGNMENT, "data/file.bam", "",
                 new File.FileStatus(File.FileStatus.STAGE), 1000, 1);
-        System.out.println(catalogFileDBAdaptor.insert(file, studyId, null));
+        System.out.println(catalogFileDBAdaptor.insert(studyId, file, null, null));
         file = new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.VARIANT, "data/file2.vcf", "",
                 new File.FileStatus(File.FileStatus.STAGE), 1000, 1);
 
         try {
-            System.out.println(catalogFileDBAdaptor.insert(file, -20, null));
+            System.out.println(catalogFileDBAdaptor.insert(-20, file, null, null));
             fail("Expected \"StudyId not found\" exception");
         } catch (CatalogDBException e) {
             System.out.println(e);
         }
 
-        System.out.println(catalogFileDBAdaptor.insert(file, studyId, null));
+        System.out.println(catalogFileDBAdaptor.insert(studyId, file, null, null));
 
         try {
-            System.out.println(catalogFileDBAdaptor.insert(file, studyId, null));
+            System.out.println(catalogFileDBAdaptor.insert(studyId, file, null, null));
             fail("Expected \"File already exist\" exception");
         } catch (CatalogDBException e) {
             System.out.println(e);

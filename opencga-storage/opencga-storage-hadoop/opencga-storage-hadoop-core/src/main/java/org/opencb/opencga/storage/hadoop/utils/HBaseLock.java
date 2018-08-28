@@ -186,7 +186,7 @@ public class HBaseLock {
         }
 
         if (currentLock.hashCode() != lockToken) {
-            throw new IllegalLockStatusException(lockToken, currentLock, lockValue);
+            throw new IllegalLockStatusException(row, column, lockToken, currentLock, lockValue);
         }
 
         logger.debug("Unlock lock with token " + lockToken);
@@ -286,8 +286,10 @@ public class HBaseLock {
     }
 
     public static class IllegalLockStatusException extends IllegalStateException {
-        IllegalLockStatusException(long lockToken, String currentLock, String[] lockValue) {
-            super("Inconsistent lock status. You don't have the lock!"
+        IllegalLockStatusException(byte[] row, byte[] column, long lockToken, String currentLock, String[] lockValue) {
+            super("Inconsistent lock status. You don't have the lock! "
+                    + "Row: '" + Bytes.toStringBinary(row) + "', "
+                    + "column: '" + Bytes.toStringBinary(column) + "'. "
                     + lockToken + " != " + currentLock.hashCode() + " from " + Arrays.toString(lockValue));
         }
     }

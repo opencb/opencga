@@ -65,7 +65,7 @@ function changeVariableIds(variables) {
         var variable = variables[i];
 
         variable["id"] = variable["name"];
-        variable["name"] = variable["title"];
+        variable["name"] = typeof variable["title"] !== "undefined" ? variable["title"] : null;
 
         delete variable["title"];
 

@@ -17,7 +17,6 @@
 package org.opencb.opencga.app.cli.main;
 
 import com.beust.jcommander.JCommander;
-import com.beust.jcommander.ParameterDescription;
 import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
@@ -26,14 +25,14 @@ import org.opencb.opencga.app.cli.analysis.options.AlignmentCommandOptions;
 import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
 import org.opencb.opencga.app.cli.main.options.*;
 import org.opencb.opencga.core.common.GitRepositoryState;
-import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.QueryAnnotationCommandOptions.QUERY_ANNOTATION_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationQueryCommandOptions.ANNOTATION_QUERY_COMMAND;
 
 /**
  * Created by imedina on AdminMain.
@@ -143,6 +142,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         fileSubCommands.addCommand("relink", fileCommandOptions.relinkCommandOptions);
         fileSubCommands.addCommand("delete", fileCommandOptions.deleteCommandOptions);
         fileSubCommands.addCommand("refresh", fileCommandOptions.refreshCommandOptions);
+        fileSubCommands.addCommand("facet", fileCommandOptions.facetCommandOptions);
 //        fileSubCommands.addCommand("variants", fileCommandOptions.variantsCommandOptions);
         fileSubCommands.addCommand("acl", fileCommandOptions.aclsCommandOptions);
         fileSubCommands.addCommand("acl-update", fileCommandOptions.aclsUpdateCommandOptions);
@@ -170,6 +170,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         individualSubCommands.addCommand("delete", individualCommandOptions.deleteCommandOptions);
         individualSubCommands.addCommand("group-by", individualCommandOptions.groupByCommandOptions);
         individualSubCommands.addCommand("samples", individualCommandOptions.sampleCommandOptions);
+        individualSubCommands.addCommand("facet", individualCommandOptions.facetCommandOptions);
         individualSubCommands.addCommand("acl", individualCommandOptions.aclsCommandOptions);
         individualSubCommands.addCommand("acl-update", individualCommandOptions.aclsUpdateCommandOptions);
         individualSubCommands.addCommand("annotation-sets-create", individualCommandOptions.annotationCreateCommandOptions);
@@ -185,6 +186,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         familySubCommands.addCommand("info", familyCommandOptions.infoCommandOptions);
         familySubCommands.addCommand("search", familyCommandOptions.searchCommandOptions);
         familySubCommands.addCommand("group-by", familyCommandOptions.groupByCommandOptions);
+        familySubCommands.addCommand("facet", familyCommandOptions.facetCommandOptions);
 //        familySubCommands.addCommand("update", familyCommandOptions.updateCommandOptions);
         familySubCommands.addCommand("acl", familyCommandOptions.aclsCommandOptions);
         familySubCommands.addCommand("acl-update", familyCommandOptions.aclsUpdateCommandOptions);
@@ -193,6 +195,14 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         familySubCommands.addCommand("annotation-sets-search", familyCommandOptions.annotationSearchCommandOptions);
         familySubCommands.addCommand("annotation-sets-update", familyCommandOptions.annotationUpdateCommandOptions);
         familySubCommands.addCommand("annotation-sets-delete", familyCommandOptions.annotationDeleteCommandOptions);
+
+        panelCommandOptions = new PanelCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
+        jCommander.addCommand("panels", panelCommandOptions);
+        JCommander panelSubcommands = jCommander.getCommands().get("panels");
+        panelSubcommands.addCommand("info", panelCommandOptions.infoCommandOptions);
+        panelSubcommands.addCommand("search", panelCommandOptions.searchCommandOptions);
+        panelSubcommands.addCommand("acl", panelCommandOptions.aclsCommandOptions);
+        panelSubcommands.addCommand("acl-update", panelCommandOptions.aclsUpdateCommandOptions);
 
         sampleCommandOptions = new SampleCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand("samples", sampleCommandOptions);
@@ -205,6 +215,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         sampleSubCommands.addCommand("delete", sampleCommandOptions.deleteCommandOptions);
         sampleSubCommands.addCommand("group-by", sampleCommandOptions.groupByCommandOptions);
         sampleSubCommands.addCommand("individuals", sampleCommandOptions.individualCommandOptions);
+        sampleSubCommands.addCommand("facet", sampleCommandOptions.facetCommandOptions);
         sampleSubCommands.addCommand("acl", sampleCommandOptions.aclsCommandOptions);
         sampleSubCommands.addCommand("acl-update", sampleCommandOptions.aclsUpdateCommandOptions);
         sampleSubCommands.addCommand("annotation-sets-create", sampleCommandOptions.annotationCreateCommandOptions);
@@ -235,6 +246,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         cohortSubCommands.addCommand("update", cohortCommandOptions.updateCommandOptions);
         cohortSubCommands.addCommand("delete", cohortCommandOptions.deleteCommandOptions);
         cohortSubCommands.addCommand("group-by", cohortCommandOptions.groupByCommandOptions);
+        cohortSubCommands.addCommand("facet", cohortCommandOptions.facetCommandOptions);
         cohortSubCommands.addCommand("acl", cohortCommandOptions.aclsCommandOptions);
         cohortSubCommands.addCommand("acl-update", cohortCommandOptions.aclsUpdateCommandOptions);
         cohortSubCommands.addCommand("annotation-sets-create", cohortCommandOptions.annotationCreateCommandOptions);
@@ -256,7 +268,8 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         JCommander variantSubCommands = jCommander.getCommands().get("variant");
         variantSubCommands.addCommand("index", variantCommandOptions.indexVariantCommandOptions);
         variantSubCommands.addCommand("query", variantCommandOptions.queryVariantCommandOptions);
-        variantSubCommands.addCommand(QUERY_ANNOTATION_COMMAND, variantCommandOptions.queryAnnotationCommandOptions);
+        variantSubCommands.addCommand(ANNOTATION_QUERY_COMMAND, variantCommandOptions.annotationQueryCommandOptions);
+        variantSubCommands.addCommand(ANNOTATION_METADATA_COMMAND, variantCommandOptions.annotationMetadataCommandOptions);
 
     }
 

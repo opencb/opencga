@@ -27,9 +27,9 @@ import static org.opencb.opencga.core.common.FieldUtils.defaultObject;
  */
 public class Job extends PrivateStudyUid {
 
-    private String uuid;
     private String id;
     private String name;
+    private String uuid;
 
     /**
      * Id of the user that created the job.
@@ -43,6 +43,7 @@ public class Job extends PrivateStudyUid {
      * Job creation date.
      */
     private String creationDate;
+    private String modificationDate;
     private String description;
 
     /**
@@ -109,20 +110,20 @@ public class Job extends PrivateStudyUid {
 
     public Job(String name, String toolId, String execution, Type type, String description, Map<String, String> params,
                Map<String, Object> attributes) {
-        this(-1, name, name, "", toolId, type, TimeUtils.getTime(), description, -1, -1, execution, "", "", false, new JobStatus(), -1,
+        this(-1, null, name, "", toolId, type, TimeUtils.getTime(), description, -1, -1, execution, "", "", false, new JobStatus(), -1,
                 null, null, null, null, params, -1, attributes, null);
     }
 
     public Job(String name, String userId, String executable, Type type, List<File> input, List<File> output, File outDir,
                Map<String, String> params, int release) {
-        this(-1, name, name, userId, "", type, TimeUtils.getTime(), "", -1, -1, "", executable, "", false,
+        this(-1, null, name, userId, "", type, TimeUtils.getTime(), "", -1, -1, "", executable, "", false,
                 new JobStatus(JobStatus.PREPARED), -1, outDir, input, output, null, params, release, null, null);
     }
 
     public Job(String name, String userId, String toolName, String description, String commandLine, File outDir, List<File> input,
                int release) {
         // FIXME: Modify this to take into account both toolName and executable for RC2
-        this(-1, name, name, userId, toolName, Type.ANALYSIS, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, null, null,
+        this(-1, null, name, userId, toolName, Type.ANALYSIS, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, null, null,
                 commandLine, false, new JobStatus(JobStatus.PREPARED), 0, outDir, input, null, null, null, release, null, null);
 
 
@@ -226,17 +227,19 @@ public class Job extends PrivateStudyUid {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Job{");
-        sb.append("uuid='").append(uuid).append('\'');
-        sb.append(", id='").append(id).append('\'');
+        sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
+        sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", userId='").append(userId).append('\'');
         sb.append(", toolId='").append(toolId).append('\'');
         sb.append(", type=").append(type);
         sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", startTime=").append(startTime);
         sb.append(", endTime=").append(endTime);
         sb.append(", execution='").append(execution).append('\'');
+        sb.append(", executable='").append(executable).append('\'');
         sb.append(", commandLine='").append(commandLine).append('\'');
         sb.append(", visited=").append(visited);
         sb.append(", status=").append(status);
@@ -327,6 +330,15 @@ public class Job extends PrivateStudyUid {
 
     public Job setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public Job setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 

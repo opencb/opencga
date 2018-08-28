@@ -35,27 +35,28 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
-import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
+import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
-import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.mr.VariantToVcfSliceMapper;
 import org.opencb.opencga.storage.hadoop.variant.archive.mr.VcfSliceCombiner;
 import org.opencb.opencga.storage.hadoop.variant.archive.mr.VcfSliceReducer;
 import org.opencb.opencga.storage.hadoop.variant.archive.mr.VcfSliceWritable;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantFileMetadataDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -83,8 +84,8 @@ public class ArchiveDriver extends Configured implements Tool {
         URI inputFile = URI.create(conf.get(CONFIG_ARCHIVE_INPUT_FILE_VCF));
         URI inputMetaFile = URI.create(conf.get(CONFIG_ARCHIVE_INPUT_FILE_VCF_META));
         String tableName = conf.get(CONFIG_ARCHIVE_TABLE_NAME);
-        int studyId = conf.getInt(VariantStorageEngine.Options.STUDY_ID.key(), -1);
-        int fileId = conf.getInt(VariantStorageEngine.Options.FILE_ID.key(), -1);
+        int studyId = conf.getInt(HadoopVariantStorageEngine.STUDY_ID, -1);
+        int fileId = conf.getInt(HadoopVariantStorageEngine.FILE_ID, -1);
         GenomeHelper genomeHelper = new GenomeHelper(conf);
 
 /*  SERVER details  */
@@ -185,7 +186,7 @@ public class ArchiveDriver extends Configured implements Tool {
                 .append(outputTable).append(' ')
                 .append(studyId).append(' ')
                 .append(fileId);
-        AbstractAnalysisTableDriver.addOtherParams(other, stringBuilder);
+        AbstractVariantsTableDriver.addOtherParams(other, stringBuilder);
         return stringBuilder.toString();
     }
 
@@ -227,8 +228,8 @@ public class ArchiveDriver extends Configured implements Tool {
         conf.set(CONFIG_ARCHIVE_INPUT_FILE_VCF_META, toolArgs[1]);
         conf = HBaseManager.addHBaseSettings(conf, toolArgs[2]);
         conf.set(CONFIG_ARCHIVE_TABLE_NAME, toolArgs[3]);
-        conf.set(VariantStorageEngine.Options.STUDY_ID.key(), toolArgs[4]);
-        conf.set(VariantStorageEngine.Options.FILE_ID.key(), toolArgs[5]);
+        conf.set(HadoopVariantStorageEngine.STUDY_ID, toolArgs[4]);
+        conf.set(HadoopVariantStorageEngine.FILE_ID, toolArgs[5]);
         //set the configuration back, so that Tool can configure itself
         driver.setConf(conf);
 

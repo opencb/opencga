@@ -24,6 +24,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.*;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
@@ -35,15 +36,16 @@ import org.opencb.commons.datastore.core.result.FacetedQueryResult;
 import org.opencb.commons.datastore.core.result.FacetedQueryResultItem;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.FileUtils;
+import org.opencb.opencga.core.SolrManager;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchModel;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
+import org.opencb.opencga.storage.core.variant.search.VariantSearchUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,6 +62,12 @@ import java.util.concurrent.TimeUnit;
  */
 public class VariantSearchManager {
 
+    public static final String CONF_SET = "OpenCGAConfSet-1.4.x";
+
+    public static final String SEARCH_ENGINE_ID = "solr";
+    public static final String USE_SEARCH_INDEX = "useSearchIndex";
+    public static final int DEFAULT_INSERT_BATCH_SIZE = 10000;
+
     private SolrManager solrManager;
 
     private SolrQueryParser solrQueryParser;
@@ -69,17 +77,26 @@ public class VariantSearchManager {
 
     private Logger logger;
 
-    public static final int DEFAULT_INSERT_BATCH_SIZE = 10000;
-    public static final String CONF_SET = "OpenCGAConfSet";
-    public static final String SEARCH_ENGINE_ID = "solr";
-    public static final String USE_SEARCH_INDEX = "useSearchIndex";
-
     public enum UseSearchIndex {
         YES, NO, AUTO;
+
         public static UseSearchIndex from(Map<String, Object> options) {
             return options == null || !options.containsKey(USE_SEARCH_INDEX)
                     ? AUTO
                     : UseSearchIndex.valueOf(options.get(USE_SEARCH_INDEX).toString().toUpperCase());
+        }
+    }
+
+    public enum SyncStatus {
+        SYNCHRONIZED("Y"), NOT_SYNCHRONIZED("N"), UNKNOWN("?");
+        private final String c;
+
+        SyncStatus(String c) {
+            this.c = c;
+        }
+
+        public String key() {
+            return c;
         }
     }
 
@@ -110,22 +127,23 @@ public class VariantSearchManager {
         return solrManager.isAlive(collection);
     }
 
-    public void create(String coreName) throws VariantSearchException {
-        solrManager.create(coreName, "OpenCGAConfSet");
+    public void create(String coreName) throws SolrException {
+        solrManager.create(coreName, CONF_SET);
     }
 
-    public void create(String dbName, String configSet) throws VariantSearchException {
+    public void create(String dbName, String configSet) throws SolrException {
         solrManager.create(dbName, configSet);
     }
-    public void createCore(String coreName, String configSet) throws VariantSearchException {
+
+    public void createCore(String coreName, String configSet) throws SolrException {
         solrManager.createCore(coreName, configSet);
     }
 
-    public void createCollection(String collectionName, String configSet) throws VariantSearchException {
+    public void createCollection(String collectionName, String configSet) throws SolrException {
         solrManager.createCollection(collectionName, configSet);
     }
 
-    public boolean exists(String dbName) throws VariantSearchException {
+    public boolean exists(String dbName) throws SolrException {
         return solrManager.exists(dbName);
     }
 
@@ -133,7 +151,7 @@ public class VariantSearchManager {
         return solrManager.existsCore(coreName);
     }
 
-    public boolean existsCollection(String collectionName) throws VariantSearchException {
+    public boolean existsCollection(String collectionName) throws SolrException {
         return solrManager.existsCollection(collectionName);
     }
 
@@ -143,10 +161,10 @@ public class VariantSearchManager {
      * @param collection Collection name
      * @param path       Path to the file to load
      * @throws IOException            IOException
-     * @throws VariantSearchException SolrServerException
+     * @throws SolrException          SolrServerException
      * @throws StorageEngineException SolrServerException
      */
-    public void load(String collection, Path path) throws IOException, VariantSearchException, StorageEngineException {
+    public void load(String collection, Path path) throws IOException, SolrException, StorageEngineException {
         // TODO: can we use VariantReaderUtils as implemented in the function load00 below ?
         // TODO: VarriantReaderUtils supports JSON, AVRO and VCF file formats.
 
@@ -169,16 +187,20 @@ public class VariantSearchManager {
      * @param collection        Collection name
      * @param variantDBIterator Iterator to retrieve the variants to load
      * @param progressLogger    Progress logger
+     * @param loadListener      Load listener
+     * @return VariantSearchLoadResult
      * @throws IOException            IOException
-     * @throws VariantSearchException VariantSearchException
+     * @throws SolrException SolrException
      */
-    public void load(String collection, VariantDBIterator variantDBIterator, ProgressLogger progressLogger)
-            throws IOException, VariantSearchException {
+    public VariantSearchLoadResult load(String collection, VariantDBIterator variantDBIterator, ProgressLogger progressLogger,
+                                        VariantSearchLoadListener loadListener)
+            throws IOException, SolrException {
         if (variantDBIterator == null) {
-            throw new VariantSearchException("VariantDBIterator parameter is null");
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "VariantDBIterator parameter is null");
         }
 
         int count = 0;
+        int numLoadedVariants = 0;
         List<Variant> variantList = new ArrayList<>(insertBatchSize);
         while (variantDBIterator.hasNext()) {
             Variant variant = variantDBIterator.next();
@@ -186,17 +208,59 @@ public class VariantSearchManager {
             variantList.add(variant);
             count++;
             if (count % insertBatchSize == 0) {
+                loadListener.preLoad(variantList);
+                numLoadedVariants += variantList.size();
                 insert(collection, variantList);
+                loadListener.postLoad(variantList);
                 variantList.clear();
             }
         }
 
         // Insert the remaining variants
         if (CollectionUtils.isNotEmpty(variantList)) {
+            loadListener.preLoad(variantList);
+            numLoadedVariants += variantList.size();
             insert(collection, variantList);
+            loadListener.postLoad(variantList);
         }
+        loadListener.close();
 
         logger.debug("Variant Search loading done: {} variants indexed", count);
+        return new VariantSearchLoadResult(count, numLoadedVariants, 0);
+    }
+
+    /**
+     * Delete variants a Solr core/collection from a variant DB iterator.
+     *
+     * @param collection        Collection name
+     * @param variantDBIterator Iterator to retrieve the variants to remove
+     * @param progressLogger    Progress logger
+     * @return VariantSearchLoadResult
+     * @throws IOException            IOException
+     * @throws SolrException SolrException
+     */
+    public int delete(String collection, VariantDBIterator variantDBIterator, ProgressLogger progressLogger)
+            throws IOException, SolrException {
+        if (variantDBIterator == null) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "VariantDBIterator parameter is null");
+        }
+
+        int count = 0;
+        List<String> variantList = new ArrayList<>(insertBatchSize);
+        while (variantDBIterator.hasNext()) {
+            Variant variant = variantDBIterator.next();
+            progressLogger.increment(1, () -> "up to position " + variant.toString());
+            variantList.add(variant.toString());
+            count++;
+            if (count % insertBatchSize == 0 || !variantDBIterator.hasNext()) {
+                delete(collection, variantList);
+                variantList.clear();
+            }
+        }
+
+
+        logger.debug("Variant Search delete done: {} variants removed", count);
+        return count;
     }
 
     /**
@@ -207,11 +271,11 @@ public class VariantSearchManager {
      * @param query        Query
      * @param queryOptions Query options
      * @return List of Variant objects
-     * @throws IOException            IOException
-     * @throws VariantSearchException VariantSearchException
+     * @throws IOException   IOException
+     * @throws SolrException SolrException
      */
     public VariantQueryResult<Variant> query(String collection, Query query, QueryOptions queryOptions)
-            throws IOException, VariantSearchException {
+            throws IOException, SolrException {
         StopWatch stopWatch = StopWatch.createStarted();
         List<Variant> results;
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
@@ -227,7 +291,7 @@ public class VariantSearchManager {
             return new VariantQueryResult<>("", dbTime,
                     results.size(), solrResponse.getResults().getNumFound(), "", "", results, null, SEARCH_ENGINE_ID);
         } catch (SolrServerException e) {
-            throw new VariantSearchException("Error fetching from Solr", e);
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }
     }
 
@@ -239,11 +303,11 @@ public class VariantSearchManager {
      * @param query        Query
      * @param queryOptions Query options
      * @return List of VariantSearchModel objects
-     * @throws IOException            IOException
-     * @throws VariantSearchException VariantSearchException
+     * @throws IOException   IOException
+     * @throws SolrException SolrException
      */
     public VariantQueryResult<VariantSearchModel> nativeQuery(String collection, Query query, QueryOptions queryOptions)
-            throws IOException, VariantSearchException {
+            throws IOException, SolrException {
         StopWatch stopWatch = StopWatch.createStarted();
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         try {
@@ -254,17 +318,17 @@ public class VariantSearchManager {
             return new VariantQueryResult<>("", dbTime,
                     solrResponseBeans.size(), solrResponse.getResults().getNumFound(), "", "", solrResponseBeans, null, SEARCH_ENGINE_ID);
         } catch (SolrServerException e) {
-            throw new VariantSearchException("Error fetching from Solr", e);
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error fetching from Solr", e);
         }
     }
 
     public VariantSolrIterator iterator(String collection, Query query, QueryOptions queryOptions)
-            throws VariantSearchException, IOException {
+            throws SolrException, IOException {
         try {
             SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
             return new VariantSolrIterator(solrManager.getSolrClient(), collection, solrQuery);
         } catch (SolrServerException e) {
-            throw new VariantSearchException(e.getMessage(), e);
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
         }
     }
 
@@ -276,16 +340,16 @@ public class VariantSearchManager {
      * @param query        Query
      * @param queryOptions Query options
      * @return Solr VariantSearch iterator
-     * @throws IOException            IOException
-     * @throws VariantSearchException VariantSearchException
+     * @throws IOException   IOException
+     * @throws SolrException SolrException
      */
     public VariantSearchSolrIterator nativeIterator(String collection, Query query, QueryOptions queryOptions)
-            throws VariantSearchException, IOException {
+            throws SolrException, IOException {
         try {
             SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
             return new VariantSearchSolrIterator(solrManager.getSolrClient(), collection, solrQuery);
         } catch (SolrServerException e) {
-            throw new VariantSearchException(e.getMessage(), e);
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
         }
     }
 
@@ -297,11 +361,11 @@ public class VariantSearchManager {
      * @param query        Query
      * @param queryOptions Query options (contains the facet and facetRange options)
      * @return List of Variant objects
-     * @throws IOException            IOException
-     * @throws VariantSearchException VariantSearchException
+     * @throws IOException   IOException
+     * @throws SolrException SolrException
      */
     public FacetedQueryResult facetedQuery(String collection, Query query, QueryOptions queryOptions)
-            throws IOException, VariantSearchException {
+            throws IOException, SolrException {
         StopWatch stopWatch = StopWatch.createStarted();
         try {
             SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
@@ -309,10 +373,9 @@ public class VariantSearchManager {
             FacetedQueryResultItem item = toFacetedQueryResultItem(queryOptions, response);
             return new FacetedQueryResult("", (int) stopWatch.getTime(), 1, 1, "Faceted data from Solr", "", item);
         } catch (SolrServerException e) {
-            throw new VariantSearchException(e.getMessage(), e);
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
         }
     }
-
 
     /**-------------------------------------
      *  P R I V A T E    M E T H O D S
@@ -321,10 +384,10 @@ public class VariantSearchManager {
      * Insert a list of variants into Solr.
      *
      * @param variants List of variants to insert
-     * @throws IOException            IOException
-     * @throws VariantSearchException VariantSearchException
+     * @throws IOException   IOException
+     * @throws SolrException SolrException
      */
-    private void insert(String collection, List<Variant> variants) throws IOException, VariantSearchException {
+    private void insert(String collection, List<Variant> variants) throws IOException, SolrException {
         if (variants != null && CollectionUtils.isNotEmpty(variants)) {
             List<VariantSearchModel> variantSearchModels = variantSearchToVariantConverter.convertListToStorageType(variants);
 
@@ -336,7 +399,7 @@ public class VariantSearchManager {
                         solrManager.getSolrClient().commit(collection);
                     }
                 } catch (SolrServerException e) {
-                    throw new VariantSearchException(e.getMessage(), e);
+                    throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
                 }
             }
         }
@@ -347,9 +410,9 @@ public class VariantSearchManager {
      *
      * @param path Path to the JSON file
      * @throws IOException
-     * @throws VariantSearchException
+     * @throws SolrException
      */
-    private void loadJson(String collection, Path path) throws IOException, VariantSearchException {
+    private void loadJson(String collection, Path path) throws IOException, SolrException {
         // This opens json and json.gz files automatically
         try (BufferedReader bufferedReader = FileUtils.newBufferedReader(path)) {
             // TODO: get the buffer size from configuration file
@@ -376,7 +439,7 @@ public class VariantSearchManager {
         }
     }
 
-    private void loadAvro(String collection, Path path) throws IOException, VariantSearchException, StorageEngineException {
+    private void loadAvro(String collection, Path path) throws IOException, SolrException, StorageEngineException {
         // reader
         VariantReader reader = VariantReaderUtils.getVariantReader(path, null);
 
@@ -392,12 +455,25 @@ public class VariantSearchManager {
         reader.close();
     }
 
+    private void delete(String collection, List<String> variants) throws IOException, SolrException {
+        if (variants != null && CollectionUtils.isNotEmpty(variants)) {
+            UpdateResponse updateResponse;
+            try {
+                updateResponse = solrManager.getSolrClient().deleteById(collection, variants);
+                if (updateResponse.getStatus() == 0) {
+                    solrManager.getSolrClient().commit(collection);
+                }
+            } catch (SolrServerException e) {
+                throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
+            }
+        }
+    }
 
     private FacetedQueryResultItem.Field processSolrPivot(String name, int index, Map<String, Set<String>> includes, PivotField pivot) {
         String countName;
         FacetedQueryResultItem.Field field = null;
         if (pivot.getPivot() != null && CollectionUtils.isNotEmpty(pivot.getPivot())) {
-            field = new FacetedQueryResultItem().new Field();
+            field = new FacetedQueryResultItem.Field();
             field.setName(name.split(",")[index]);
 
             long total = 0;
@@ -411,9 +487,8 @@ public class VariantSearchManager {
                         || (!countName.startsWith("ENSG0") && !countName.startsWith("ENST0"))) {
                     // and then check if this has to be include
                     if (toInclude(includes, field.getName(), solrPivot.getValue().toString())) {
-                        FacetedQueryResultItem.Count count = new FacetedQueryResultItem()
-                                .new Count(updateValueIfSoAcc(field.getName(), countName),
-                                solrPivot.getCount(), nestedField);
+                        FacetedQueryResultItem.Count count = new FacetedQueryResultItem.Count(updateValueIfSoAcc(field.getName(),
+                                countName), solrPivot.getCount(), nestedField);
                         counts.add(count);
                     }
                     total += solrPivot.getCount();
@@ -485,7 +560,7 @@ public class VariantSearchManager {
         List<FacetedQueryResultItem.Field> fields = new ArrayList<>();
         if (response.getFacetFields() != null) {
             for (FacetField solrField : response.getFacetFields()) {
-                FacetedQueryResultItem.Field field = new FacetedQueryResultItem().new Field();
+                FacetedQueryResultItem.Field field = new FacetedQueryResultItem.Field();
                 field.setName(solrField.getName());
 
                 long total = 0;
@@ -497,8 +572,8 @@ public class VariantSearchManager {
                             || (!countName.startsWith("ENSG0") && !countName.startsWith("ENST0"))) {
                         // and then check if this has to be include
                         if (toInclude(includes, field.getName(), solrCount.getName())) {
-                            FacetedQueryResultItem.Count count = new FacetedQueryResultItem()
-                                    .new Count(updateValueIfSoAcc(field.getName(), countName), solrCount.getCount(), null);
+                            FacetedQueryResultItem.Count count = new FacetedQueryResultItem.Count(updateValueIfSoAcc(field.getName(),
+                                    countName), solrCount.getCount(), null);
                             counts.add(count);
                         }
                         total += solrCount.getCount();
@@ -519,7 +594,7 @@ public class VariantSearchManager {
                 List<PivotField> solrPivots = facetPivot.getVal(i);
                 if (solrPivots != null && CollectionUtils.isNotEmpty(solrPivots)) {
                     // init field
-                    FacetedQueryResultItem.Field field = new FacetedQueryResultItem().new Field();
+                    FacetedQueryResultItem.Field field = new FacetedQueryResultItem.Field();
                     field.setName(facetPivot.getName(i).split(",")[0]);
 
                     long total = 0;
@@ -533,9 +608,8 @@ public class VariantSearchManager {
                                 || (!countName.startsWith("ENSG0") && !countName.startsWith("ENST0"))) {
                             // and then check if this has to be include
                             if (toInclude(includes, field.getName(), solrPivot.getValue().toString())) {
-                                FacetedQueryResultItem.Count count = new FacetedQueryResultItem()
-                                        .new Count(updateValueIfSoAcc(field.getName(), solrPivot.getValue().toString()),
-                                        solrPivot.getCount(), nestedField);
+                                FacetedQueryResultItem.Count count = new FacetedQueryResultItem.Count(updateValueIfSoAcc(field.getName(),
+                                        solrPivot.getValue().toString()), solrPivot.getCount(), nestedField);
                                 counts.add(count);
                             }
                             total += solrPivot.getCount();
@@ -561,7 +635,7 @@ public class VariantSearchManager {
                     total += count;
                     counts.add(count);
                 }
-                ranges.add(new FacetedQueryResultItem().new Range(solrRange.getName(),
+                ranges.add(new FacetedQueryResultItem.Range(solrRange.getName(),
                         (Number) solrRange.getStart(), (Number) solrRange.getEnd(),
                         (Number) solrRange.getGap(), total, counts));
             }
@@ -575,7 +649,7 @@ public class VariantSearchManager {
                 for (String key : intersectionMap.keySet()) {
                     List<List<String>> intersectionLists = intersectionMap.get(key);
                     for (List<String> list : intersectionLists) {
-                        FacetedQueryResultItem.Intersection intersection = new FacetedQueryResultItem().new Intersection();
+                        FacetedQueryResultItem.Intersection intersection = new FacetedQueryResultItem.Intersection();
                         intersection.setName(key);
                         intersection.setSize(list.size());
                         if (list.size() == 2) {
@@ -584,7 +658,7 @@ public class VariantSearchManager {
                             counts.put(name, (long) response.getFacetQuery().get(name));
                             name = list.get(1);
                             counts.put(name, (long) response.getFacetQuery().get(name));
-                            name = list.get(0) + "__" + list.get(1);
+                            name = list.get(0) + VariantSearchUtils.FIELD_SEPARATOR + list.get(1);
                             counts.put(name, (long) response.getFacetQuery().get(name));
                             intersection.setCounts(counts);
 
@@ -599,13 +673,14 @@ public class VariantSearchManager {
                             counts.put(name, (long) response.getFacetQuery().get(name));
                             name = list.get(2);
                             counts.put(name, (long) response.getFacetQuery().get(name));
-                            name = list.get(0) + "__" + list.get(1);
+                            name = list.get(0) + VariantSearchUtils.FIELD_SEPARATOR + list.get(1);
                             counts.put(name, (long) response.getFacetQuery().get(name));
-                            name = list.get(0) + "__" + list.get(2);
+                            name = list.get(0) + VariantSearchUtils.FIELD_SEPARATOR + list.get(2);
                             counts.put(name, (long) response.getFacetQuery().get(name));
-                            name = list.get(1) + "__" + list.get(2);
+                            name = list.get(1) + VariantSearchUtils.FIELD_SEPARATOR + list.get(2);
                             counts.put(name, (long) response.getFacetQuery().get(name));
-                            name = list.get(0) + "__" + list.get(1) + "__" + list.get(2);
+                            name = list.get(0) + VariantSearchUtils.FIELD_SEPARATOR + list.get(1)
+                                    + VariantSearchUtils.FIELD_SEPARATOR + list.get(2);
                             counts.put(name, (long) response.getFacetQuery().get(name));
                             intersection.setCounts(counts);
 

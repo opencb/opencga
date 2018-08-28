@@ -17,9 +17,11 @@
 package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import org.bson.Document;
-import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.VariableSet;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,14 +30,14 @@ import java.util.List;
 /**
  * Created by pfurio on 19/01/16.
  */
-public class FileConverter extends GenericDocumentComplexConverter<File> {
+public class FileConverter extends AnnotableConverter<File> {
 
     public FileConverter() {
         super(File.class);
     }
 
     @Override
-    public File convertToDataModelType(Document document) {
+    public File convertToDataModelType(Document document, QueryOptions options) {
         if (document.get("job") != null && document.get("job") instanceof List && ((List) document.get("job")).size() > 0) {
             document.put("job", ((List) document.get("job")).get(0));
         } else {
@@ -47,22 +49,19 @@ public class FileConverter extends GenericDocumentComplexConverter<File> {
         } else {
             document.put("experiment", new Document("uid", -1));
         }
-        return super.convertToDataModelType(document);
+        return super.convertToDataModelType(document, options);
     }
 
     @Override
-    public Document convertToStorageType(File file) {
-        Document document = super.convertToStorageType(file);
+    public Document convertToStorageType(File file, List<VariableSet> variableSetList) {
+        Document document = super.convertToStorageType(file, variableSetList);
+        document.remove(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key());
+
         document.put("uid", file.getUid());
         document.put("studyUid", file.getStudyUid());
 
         long jobId = file.getJob() != null ? (file.getJob().getUid() == 0 ? -1L : file.getJob().getUid()) : -1L;
         document.put("job", new Document("uid", jobId));
-
-        long experimentId = file.getExperiment() != null
-                ? (file.getExperiment().getId() == 0 ? -1L : file.getExperiment().getId())
-                : -1L;
-        document.put("experiment", new Document("uid", experimentId));
 
         document.put("samples", convertSamples(file.getSamples()));
 

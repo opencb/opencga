@@ -19,13 +19,19 @@
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/users/$userA,$userB/projects?sid=$sessionId&limit=5 |500|  Content-Type: application/json ||
 
-!3 Update User (POST)
+!3 Update User 
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"name" : "post_update_name", "email" : "new@email.com", "organization" : "organization"}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/users/$user/update?sid=$sessionId | 200 |  Content-Type: application/json | jsonbody.response[0].result[0].name == 'post_update_name'  && jsonbody.error === ''|
 
-!3 (Negative) Update User (POST)
+!3 (Negative) Update User ID
+!|Table: Rest Fixture | $baseURL |
+| setBody | {"id" : "post_update_name_id"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/users/$user/update?sid=$sessionId |400|Content-Type: text/plain| |
+
+!3 (Negative) Update User 
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"name" : "post-update_name", "email" : "new"}|
 | setHeader|Content-Type:application/json|

@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.models;
 
+import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.Collections;
@@ -29,14 +30,15 @@ import static org.opencb.opencga.core.common.FieldUtils.defaultObject;
  */
 public class Family extends Annotable {
 
-    private String uuid;
     private String id;
     private String name;
+    private String uuid;
 
-    private List<OntologyTerm> phenotypes;
+    private List<Phenotype> phenotypes;
     private List<Individual> members;
 
     private String creationDate;
+    private String modificationDate;
     private FamilyStatus status;
     private int expectedSize;
     private String description;
@@ -48,13 +50,13 @@ public class Family extends Annotable {
     public Family() {
     }
 
-    public Family(String id, String name, List<OntologyTerm> phenotypes, List<Individual> members, String description,
+    public Family(String id, String name, List<Phenotype> phenotypes, List<Individual> members, String description,
                   int expectedSize, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this(id, name, phenotypes, members, TimeUtils.getTime(), new FamilyStatus(Status.READY), description, expectedSize, -1, 1,
                 annotationSets, attributes);
     }
 
-    public Family(String id, String name, List<OntologyTerm> phenotypes, List<Individual> members, String creationDate,
+    public Family(String id, String name, List<Phenotype> phenotypes, List<Individual> members, String creationDate,
                   FamilyStatus status, String description, int expectedSize, int release, int version, List<AnnotationSet> annotationSets,
                   Map<String, Object> attributes) {
         this.id = id;
@@ -105,12 +107,13 @@ public class Family extends Annotable {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Family{");
-        sb.append("uuid='").append(uuid).append('\'');
-        sb.append(", id='").append(id).append('\'');
+        sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
+        sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", phenotypes=").append(phenotypes);
         sb.append(", members=").append(members);
         sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", status=").append(status);
         sb.append(", expectedSize=").append(expectedSize);
         sb.append(", description='").append(description).append('\'');
@@ -161,11 +164,11 @@ public class Family extends Annotable {
         return this;
     }
 
-    public List<OntologyTerm> getPhenotypes() {
+    public List<Phenotype> getPhenotypes() {
         return phenotypes;
     }
 
-    public Family setPhenotypes(List<OntologyTerm> phenotypes) {
+    public Family setPhenotypes(List<Phenotype> phenotypes) {
         this.phenotypes = phenotypes;
         return this;
     }
@@ -185,6 +188,15 @@ public class Family extends Annotable {
 
     public Family setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public Family setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 

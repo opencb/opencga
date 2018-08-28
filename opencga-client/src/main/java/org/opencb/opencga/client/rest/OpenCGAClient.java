@@ -109,9 +109,9 @@ public class OpenCGAClient {
         return (CohortClient) clients.get("COHORT");
     }
 
-    public PanelClient getPanelClient() {
-        clients.putIfAbsent("PANEL", new PanelClient(userId, sessionId, clientConfiguration));
-        return (PanelClient) clients.get("PANEL");
+    public DiseasePanelClient getPanelClient() {
+        clients.putIfAbsent("PANEL", new DiseasePanelClient(userId, sessionId, clientConfiguration));
+        return (DiseasePanelClient) clients.get("PANEL");
     }
 
     public FamilyClient getFamilyClient() {

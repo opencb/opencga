@@ -39,8 +39,9 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
 
     enum QueryParams implements QueryParam {
-        UID("uid", DECIMAL, ""),
         ID("id", TEXT, ""),
+        UID("uid", DECIMAL, ""),
+        UUID("uuid", TEXT, ""),
         NAME("name", TEXT, ""),
         TYPE("type", TEXT, ""),
         CREATION_DATE("creationDate", DATE, ""),

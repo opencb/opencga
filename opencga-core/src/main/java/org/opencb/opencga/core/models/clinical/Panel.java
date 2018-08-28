@@ -1,5 +1,6 @@
 package org.opencb.opencga.core.models.clinical;
 
+@Deprecated
 public class Panel {
 
     private String name;

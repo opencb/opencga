@@ -26,6 +26,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.GENE;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.GENOTYPE;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.SAMPLE;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.AND;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.OR;
+
 /**
  * Created on 29/01/16 .
  *
@@ -62,6 +68,23 @@ public class VariantQueryException extends IllegalArgumentException {
     public static VariantQueryException malformedParam(VariantQueryParam queryParam, String value, String message) {
         return new VariantQueryException("Malformed \"" + queryParam.key() + "\" query : \"" + value + "\". "
                 +  message);
+    }
+
+    public static VariantQueryException mixedAndOrOperators() {
+        return new VariantQueryException("Unable to mix AND (" + AND + ") and OR (" + OR + ") in the same query.");
+    }
+
+    public static VariantQueryException mixedAndOrOperators(VariantQueryParam param1, VariantQueryParam param2) {
+        return new VariantQueryException("Unable to mix AND (" + AND + ") and OR (" + OR + ") across filters "
+                + "\"" + param1.key() + "\" and \"" + param2.key() + "\".");
+    }
+
+    public static VariantQueryException mixedAndOrOperators(VariantQueryParam param, String value) {
+        return VariantQueryException.malformedParam(param, value, "Unable to mix AND (" + AND + ") and OR (" + OR + ") in the same query.");
+    }
+
+    public static VariantQueryException geneNotFound(String gene) {
+        return VariantQueryException.malformedParam(GENE, gene, "Gene not found!");
     }
 
     public static VariantQueryException studyNotFound(String study) {
@@ -122,6 +145,10 @@ public class VariantQueryException extends IllegalArgumentException {
 
     public static VariantQueryException fileNotFound(Object file, Object study) {
         return new VariantQueryException("File " + file + " not found in study " + study);
+    }
+
+    public static VariantQueryException incompatibleSampleAndGenotypeOperators() {
+        return new VariantQueryException("Unable to mix AND/OR operators in filters " + SAMPLE.key() + " and " + GENOTYPE.key());
     }
 
     public static VariantQueryException unknownVariantField(String projectionOp, String field) {

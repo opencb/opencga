@@ -16,14 +16,18 @@
 
 package org.opencb.opencga.catalog.db.api;
 
+import org.apache.commons.collections.map.LinkedMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.AnnotationSetManager;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.VariableSet;
 
 import java.util.HashMap;
 import java.util.List;
@@ -34,13 +38,15 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public interface FileDBAdaptor extends DBAdaptor<File> {
+public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
 
     enum QueryParams implements QueryParam {
-        UID("uid", INTEGER_ARRAY, ""),
         ID("id", TEXT, ""),
+        UID("uid", INTEGER_ARRAY, ""),
+        UUID("uuid", TEXT, ""),
         NAME("name", TEXT_ARRAY, ""),
         TYPE("type", TEXT_ARRAY, ""),
+        CHECKSUM("checksum", TEXT, ""),
         FORMAT("format", TEXT_ARRAY, ""),
         BIOFORMAT("bioformat", TEXT_ARRAY, ""),
         URI("uri", TEXT_ARRAY, ""),
@@ -65,6 +71,7 @@ public interface FileDBAdaptor extends DBAdaptor<File> {
         SOFTWARE_COMMIT("software.commit", TEXT, ""),
         SAMPLES("samples", TEXT_ARRAY, ""),
         SAMPLE_UIDS("samples.uid", INTEGER_ARRAY, ""),
+        TAGS("tags", TEXT_ARRAY, ""),
 
         JOB_UID("job.uid", INTEGER_ARRAY, ""),
 
@@ -82,6 +89,9 @@ public interface FileDBAdaptor extends DBAdaptor<File> {
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
         STATS("stats", TEXT, ""),
         NSTATS("nstats", DECIMAL, ""),
+
+        ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
+        ANNOTATION(Constants.ANNOTATION, TEXT_ARRAY, ""),
 
         DIRECTORY("directory", TEXT, ""),
         STUDY_UID("studyUid", INTEGER_ARRAY, ""),
@@ -131,6 +141,43 @@ public interface FileDBAdaptor extends DBAdaptor<File> {
         }
     }
 
+    enum UpdateParams {
+        NAME(QueryParams.NAME.key()),
+        FORMAT(QueryParams.FORMAT.key()),
+        BIOFORMAT(QueryParams.BIOFORMAT.key()),
+        CHECKSUM(QueryParams.CHECKSUM.key()),
+        STATS(QueryParams.STATS.key()),
+        DESCRIPTION(QueryParams.DESCRIPTION.key()),
+        JOB_UID(QueryParams.JOB_UID.key()),
+        SOFTWARE(QueryParams.SOFTWARE.key()),
+        SAMPLES(QueryParams.SAMPLES.key()),
+        ATTRIBUTES(QueryParams.ATTRIBUTES.key()),
+        ANNOTATION_SETS(QueryParams.ANNOTATION_SETS.key()),
+        ANNOTATIONS(AnnotationSetManager.ANNOTATIONS);
+
+        private static Map<String, UpdateParams> map;
+        static {
+            map = new LinkedMap();
+            for (UpdateParams params : UpdateParams.values()) {
+                map.put(params.key(), params);
+            }
+        }
+
+        private final String key;
+
+        UpdateParams(String key) {
+            this.key = key;
+        }
+
+        public String key() {
+            return key;
+        }
+
+        public static UpdateParams getParam(String key) {
+            return map.get(key);
+        }
+    }
+
     default boolean exists(long fileId) throws CatalogDBException {
         return count(new Query(QueryParams.UID.key(), fileId)).first() > 0;
     }
@@ -157,13 +204,14 @@ public interface FileDBAdaptor extends DBAdaptor<File> {
     /***
      * Inserts the passed file in the database.
      *
-     * @param file The file to be inserted in the database.
      * @param studyId Id of the study where the file belongs to.
+     * @param file The file to be inserted in the database.
+     * @param variableSetList Variable set list.
      * @param options Options to filter the output that will be returned after the insertion of the file.
      * @return A QueryResult object containing information regarding the inserted file.
      * @throws CatalogDBException when the file could not be inserted due to different reasons.
      */
-    QueryResult<File> insert(File file, long studyId, QueryOptions options) throws CatalogDBException;
+    QueryResult<File> insert(long studyId, File file, List<VariableSet> variableSetList, QueryOptions options) throws CatalogDBException;
 
     /***
      * Retrieves the file from the database containing the fileId given.

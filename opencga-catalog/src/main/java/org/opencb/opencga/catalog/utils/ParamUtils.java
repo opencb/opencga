@@ -91,6 +91,7 @@ public class ParamUtils {
 
     public static void checkPath(Path path, String paramName) throws CatalogParameterException {
         checkObj(path, paramName);
+        // FIXME: What if the path contains ":" ?
         if (path.isAbsolute()) {
             throw new CatalogParameterException("Error in path: Path '" + path + "' can't be absolute");
         } else if (path.toString().matches("\\.|\\.\\.")) {
@@ -164,6 +165,7 @@ public class ParamUtils {
         ADD,
         SET,
         REMOVE,
-        RESET
+        RESET,
+        REPLACE
     }
 }

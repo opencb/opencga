@@ -16,6 +16,12 @@
 
 package org.opencb.opencga.core.models;
 
+import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.pedigree.IndividualProperty.AffectationStatus;
+import org.opencb.biodata.models.pedigree.IndividualProperty.KaryotypicSex;
+import org.opencb.biodata.models.pedigree.IndividualProperty.LifeStatus;
+import org.opencb.biodata.models.pedigree.IndividualProperty.Sex;
+import org.opencb.biodata.models.pedigree.Multiples;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.acls.AclParams;
 
@@ -28,34 +34,28 @@ import static org.opencb.opencga.core.common.FieldUtils.defaultObject;
  */
 public class Individual extends Annotable {
 
-    private String uuid;
     private String id;
     private String name;
+    private String uuid;
 
     private Individual father;
     private Individual mother;
     private Multiples multiples;
+    private Location location;
 
-    @Deprecated
-    private long fatherId;
-    @Deprecated
-    private long motherId;
-    @Deprecated
-    private String family;
     private Sex sex;
     private KaryotypicSex karyotypicSex;
     private String ethnicity;
-    @Deprecated
-    private Species species;
     private Population population;
     private String dateOfBirth;
     private int release;
     private int version;
     private String creationDate;
+    private String modificationDate;
     private Status status;
     private LifeStatus lifeStatus;
     private AffectationStatus affectationStatus;
-    private List<OntologyTerm> phenotypes;
+    private List<Phenotype> phenotypes;
     private List<Sample> samples;
     private boolean parentalConsanguinity;
 
@@ -63,68 +63,39 @@ public class Individual extends Annotable {
 
     private Map<String, Object> attributes;
 
-    public enum Sex {
-        MALE, FEMALE, UNKNOWN, UNDETERMINED
-    }
-
-    public enum LifeStatus {
-        ALIVE, ABORTED, DECEASED, UNBORN, STILLBORN, MISCARRIAGE, UNKNOWN
-    }
-
-    public enum AffectationStatus {
-        CONTROL, AFFECTED, UNAFFECTED, UNKNOWN
-    }
-
-    public enum KaryotypicSex {
-        UNKNOWN, XX, XY, XO, XXY, XXX, XXYY, XXXY, XXXX, XYY, OTHER
-    }
-
     public Individual() {
     }
 
-    public Individual(String id, String name, long fatherId, long motherId, String family, Sex sex, String ethnicity, Population population,
-                      int release, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
-        this(id, name, new Individual(), new Individual(), new Multiples(), fatherId, motherId, family, sex, null, ethnicity, new Species(),
-                population, "", release, 1, TimeUtils.getTime(), new Status(), LifeStatus.UNKNOWN, AffectationStatus.UNKNOWN,
-                Collections.emptyList(), Collections.emptyList(), false, annotationSets, attributes);
+    public Individual(String id, String name, Sex sex, String ethnicity, Population population, int release,
+                      List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+        this(id, name, new Individual(), new Individual(), new Multiples(), new Location(), sex, null,
+                ethnicity, population, "", release, 1, TimeUtils.getTime(), new Status(), LifeStatus.UNKNOWN,
+                AffectationStatus.UNKNOWN, Collections.emptyList(), Collections.emptyList(), false, annotationSets, attributes);
     }
 
-    public Individual(String id, String name, Individual father, Individual mother, Multiples multiples, Sex sex,
+    public Individual(String id, String name, Individual father, Individual mother, Multiples multiples, Location location, Sex sex,
                       KaryotypicSex karyotypicSex, String ethnicity, Population population, LifeStatus lifeStatus,
                       AffectationStatus affectationStatus, String dateOfBirth, List<Sample> samples, boolean parentalConsanguinity,
-                      int release, List<AnnotationSet> annotationSets, List<OntologyTerm> phenotypeList) {
-        this(id, name, father, mother, multiples, -1, -1, null, sex, karyotypicSex, ethnicity, null, population, dateOfBirth,
-                release, 1, TimeUtils.getTime(), new Status(), lifeStatus, affectationStatus, phenotypeList, samples, parentalConsanguinity,
-                annotationSets, Collections.emptyMap());
+                      int release, List<AnnotationSet> annotationSets, List<Phenotype> phenotypeList) {
+        this(id, name, father, mother, multiples, location, sex, karyotypicSex, ethnicity, population,
+                dateOfBirth, release, 1, TimeUtils.getTime(), new Status(), lifeStatus, affectationStatus, phenotypeList, samples,
+                parentalConsanguinity, annotationSets, Collections.emptyMap());
     }
 
-    public Individual(String id, String name, long fatherId, long motherId, String family, Sex sex, KaryotypicSex karyotypicSex,
-                      String ethnicity, Population population, LifeStatus lifeStatus, AffectationStatus affectationStatus,
-                      String dateOfBirth, boolean parentalConsanguinity, int release, List<AnnotationSet> annotationSets,
-                      List<OntologyTerm> phenotypeList) {
-
-        this(id, name, new Individual(), new Individual(), new Multiples(), fatherId, motherId, family, sex, karyotypicSex, ethnicity,
-                new Species(), population, dateOfBirth, release, 1, TimeUtils.getTime(), new Status(), lifeStatus, affectationStatus,
-                phenotypeList, new ArrayList<>(), parentalConsanguinity, annotationSets, Collections.emptyMap());
-    }
-
-    public Individual(String id, String name, Individual father, Individual mother, Multiples multiples, long fatherId, long motherId,
-                      String family, Sex sex, KaryotypicSex karyotypicSex, String ethnicity, Species species, Population population,
-                      String dateOfBirth, int release, int version, String creationDate, Status status, LifeStatus lifeStatus,
-                      AffectationStatus affectationStatus, List<OntologyTerm> phenotypes, List<Sample> samples,
-                      boolean parentalConsanguinity, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+    public Individual(String id, String name, Individual father, Individual mother, Multiples multiples, Location location, Sex sex,
+                      KaryotypicSex karyotypicSex, String ethnicity, Population population, String dateOfBirth, int release, int version,
+                      String creationDate, Status status, LifeStatus lifeStatus, AffectationStatus affectationStatus,
+                      List<Phenotype> phenotypes, List<Sample> samples, boolean parentalConsanguinity,
+                      List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.father = defaultObject(father, Individual::new);
         this.mother = defaultObject(mother, Individual::new);
-        this.multiples = defaultObject(multiples, Multiples::new);;
-        this.fatherId = fatherId;
-        this.motherId = motherId;
-        this.family = family;
+        this.multiples = defaultObject(multiples, Multiples::new);
+        this.location = location;
         this.sex = sex;
         this.karyotypicSex = karyotypicSex;
         this.ethnicity = ethnicity;
-        this.species = species;
         this.population = defaultObject(population, Population::new);
         this.dateOfBirth = dateOfBirth;
         this.release = release;
@@ -139,62 +110,6 @@ public class Individual extends Annotable {
         this.annotationSets = annotationSets;
         this.attributes = defaultObject(attributes, HashMap::new);
     }
-
-    @Deprecated
-    public static class Species {
-
-        private String taxonomyCode;
-        private String scientificName;
-        private String commonName;
-
-
-        public Species() {
-            this.taxonomyCode = "";
-            this.scientificName = "";
-            this.commonName = "";
-        }
-
-        public Species(String commonName, String scientificName, String taxonomyCode) {
-            this.taxonomyCode = taxonomyCode;
-            this.scientificName = scientificName;
-            this.commonName = commonName;
-        }
-
-        @Override
-        public String toString() {
-            final StringBuilder sb = new StringBuilder("Species{");
-            sb.append("taxonomyCode='").append(taxonomyCode).append('\'');
-            sb.append(", scientificName='").append(scientificName).append('\'');
-            sb.append(", commonName='").append(commonName).append('\'');
-            sb.append('}');
-            return sb.toString();
-        }
-
-        public String getTaxonomyCode() {
-            return taxonomyCode;
-        }
-
-        public void setTaxonomyCode(String taxonomyCode) {
-            this.taxonomyCode = taxonomyCode;
-        }
-
-        public String getScientificName() {
-            return scientificName;
-        }
-
-        public void setScientificName(String scientificName) {
-            this.scientificName = scientificName;
-        }
-
-        public String getCommonName() {
-            return commonName;
-        }
-
-        public void setCommonName(String commonName) {
-            this.commonName = commonName;
-        }
-    }
-
 
     public static class Population {
 
@@ -254,24 +169,22 @@ public class Individual extends Annotable {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Individual{");
-        sb.append("uuid='").append(uuid).append('\'');
-        sb.append(", id='").append(id).append('\'');
+        sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
+        sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", father=").append(father);
         sb.append(", mother=").append(mother);
         sb.append(", multiples=").append(multiples);
-        sb.append(", fatherId=").append(fatherId);
-        sb.append(", motherId=").append(motherId);
-        sb.append(", family='").append(family).append('\'');
+        sb.append(", location=").append(location);
         sb.append(", sex=").append(sex);
         sb.append(", karyotypicSex=").append(karyotypicSex);
         sb.append(", ethnicity='").append(ethnicity).append('\'');
-        sb.append(", species=").append(species);
         sb.append(", population=").append(population);
         sb.append(", dateOfBirth='").append(dateOfBirth).append('\'');
         sb.append(", release=").append(release);
         sb.append(", version=").append(version);
         sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", status=").append(status);
         sb.append(", lifeStatus=").append(lifeStatus);
         sb.append(", affectationStatus=").append(affectationStatus);
@@ -282,6 +195,44 @@ public class Individual extends Annotable {
         sb.append(", annotationSets=").append(annotationSets);
         sb.append('}');
         return sb.toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Individual)){
+            return false;
+        }
+        Individual that = (Individual) o;
+        return release == that.release
+                && version == that.version
+                && parentalConsanguinity == that.parentalConsanguinity
+                && Objects.equals(uuid, that.uuid)
+                && Objects.equals(id, that.id)
+                && Objects.equals(name, that.name)
+                && Objects.equals(father, that.father)
+                && Objects.equals(mother, that.mother)
+                && Objects.equals(multiples, that.multiples)
+                && sex == that.sex
+                && karyotypicSex == that.karyotypicSex
+                && Objects.equals(ethnicity, that.ethnicity)
+                && Objects.equals(population, that.population)
+                && Objects.equals(dateOfBirth, that.dateOfBirth)
+                && Objects.equals(creationDate, that.creationDate)
+                && Objects.equals(status, that.status)
+                && lifeStatus == that.lifeStatus
+                && affectationStatus == that.affectationStatus
+                && Objects.equals(phenotypes, that.phenotypes)
+                && Objects.equals(samples, that.samples)
+                && Objects.equals(attributes, that.attributes);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(uuid, id, name, father, mother, multiples, sex, karyotypicSex, ethnicity, population, dateOfBirth, release,
+                version, creationDate, status, lifeStatus, affectationStatus, phenotypes, samples, parentalConsanguinity, attributes);
     }
 
     @Override
@@ -323,33 +274,6 @@ public class Individual extends Annotable {
         return this;
     }
 
-    public long getFatherId() {
-        return fatherId;
-    }
-
-    public Individual setFatherId(long fatherId) {
-        this.fatherId = fatherId;
-        return this;
-    }
-
-    public long getMotherId() {
-        return motherId;
-    }
-
-    public Individual setMotherId(long motherId) {
-        this.motherId = motherId;
-        return this;
-    }
-
-    public String getFamily() {
-        return family;
-    }
-
-    public Individual setFamily(String family) {
-        this.family = family;
-        return this;
-    }
-
     public Individual getFather() {
         return father;
     }
@@ -374,6 +298,15 @@ public class Individual extends Annotable {
 
     public Individual setMultiples(Multiples multiples) {
         this.multiples = multiples;
+        return this;
+    }
+
+    public Location getLocation() {
+        return location;
+    }
+
+    public Individual setLocation(Location location) {
+        this.location = location;
         return this;
     }
 
@@ -404,15 +337,6 @@ public class Individual extends Annotable {
         return this;
     }
 
-    public Species getSpecies() {
-        return species;
-    }
-
-    public Individual setSpecies(Species species) {
-        this.species = species;
-        return this;
-    }
-
     public Population getPopulation() {
         return population;
     }
@@ -428,6 +352,15 @@ public class Individual extends Annotable {
 
     public Individual setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public Individual setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 
@@ -485,11 +418,11 @@ public class Individual extends Annotable {
         return this;
     }
 
-    public List<OntologyTerm> getPhenotypes() {
+    public List<Phenotype> getPhenotypes() {
         return phenotypes;
     }
 
-    public Individual setPhenotypes(List<OntologyTerm> phenotypes) {
+    public Individual setPhenotypes(List<Phenotype> phenotypes) {
         this.phenotypes = phenotypes;
         return this;
     }

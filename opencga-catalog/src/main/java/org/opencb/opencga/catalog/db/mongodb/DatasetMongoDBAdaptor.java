@@ -168,6 +168,11 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
     }
 
     @Override
+    public QueryResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException {
+        throw new NotImplementedException("Get not implemented for dataset");
+    }
+
+    @Override
     public QueryResult<Dataset> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
         update(new Query(QueryParams.ID.key(), id), parameters, QueryOptions.empty());

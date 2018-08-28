@@ -25,18 +25,23 @@ import java.util.*;
  */
 public class Project extends PrivateFields {
 
-    private String uuid;
     private String id;
     private String name;
+    private String uuid;
     @Deprecated
     private String alias;
+    /**
+     * Full Qualified Name (user@projectId).
+      */
     private String fqn;
     private String creationDate;
+    private String modificationDate;
     private String description;
     private String organization;
     private Organism organism;
     private int currentRelease;
     private Status status;
+    @Deprecated
     private String lastModified;
     private long size;
 
@@ -168,11 +173,13 @@ public class Project extends PrivateFields {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Project{");
-        sb.append("uuid='").append(uuid).append('\'');
-        sb.append(", id='").append(id).append('\'');
+        sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
+        sb.append(", uuid='").append(uuid).append('\'');
+        sb.append(", alias='").append(alias).append('\'');
         sb.append(", fqn='").append(fqn).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", organization='").append(organization).append('\'');
         sb.append(", organism=").append(organism);
@@ -244,6 +251,15 @@ public class Project extends PrivateFields {
 
     public Project setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public Project setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 

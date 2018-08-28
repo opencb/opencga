@@ -8,6 +8,7 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,31 +28,53 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractHBaseDriver.class);
     protected String table;
 
+    public AbstractHBaseDriver() {
+    }
+
+    public AbstractHBaseDriver(Configuration conf) {
+        super(conf);
+    }
+
     protected abstract String getJobName();
+
+    private Job newJob() throws IOException {
+        Job job = Job.getInstance(getConf(), getJobName());
+        job.getConfiguration().set("mapreduce.job.user.classpath.first", "true");
+        job.setJarByClass(AbstractHBaseDriver.class);    // class that contains mapper
+        return job;
+    }
 
     protected abstract void setupJob(Job job, String table) throws IOException;
 
-    protected void parseAndValidateParameters() {
+    protected void parseAndValidateParameters() throws IOException {
+        /* -------------------------------*/
+        // Validate parameters CHECK
+        if (StringUtils.isEmpty(table)) {
+            throw new IllegalArgumentException("No table specified!");
+        }
     }
 
     protected String getUsage() {
-        return "Usage: " + getClass().getSimpleName()
-                + " [generic options] <table> (<key> <value>)*";
+        return "Usage: " + getClass().getSimpleName() + " [generic options] <table> (<key> <value>)*";
     }
 
     protected int getFixedSizeArgs() {
         return 1;
     }
 
-    protected void parseAndValidateArgs(String[] args) {
-    }
-
-    protected void preExecution() {
+    protected void preExecution() throws IOException, StorageEngineException {
 
     }
 
-    protected void postExecution(boolean succeed) {
+    protected void postExecution(Job job) throws IOException, StorageEngineException {
+        postExecution(job.isSuccessful());
+    }
 
+    protected void postExecution(boolean succeed) throws IOException, StorageEngineException {
+
+    }
+
+    protected void close() throws IOException, StorageEngineException {
     }
 
     @Override
@@ -61,40 +84,32 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         HBaseConfiguration.addHbaseResources(conf);
         getConf().setClassLoader(AbstractHBaseDriver.class.getClassLoader());
         configFromArgs(args);
-        parseAndValidateParameters();
 
-//        int maxKeyValueSize = conf.getInt(HadoopVariantStorageEngine.MAPREDUCE_HBASE_KEYVALUE_SIZE_MAX, 10485760); // 10MB
-//        logger.info("HBASE: set " + ConnectionConfiguration.MAX_KEYVALUE_SIZE_KEY + " to " + maxKeyValueSize);
-//        conf.setInt(ConnectionConfiguration.MAX_KEYVALUE_SIZE_KEY, maxKeyValueSize); // always overwrite server default (usually 1MB)
+        // Other user defined validations
+        parseAndValidateParameters();
 
         /* -------------------------------*/
         // JOB setup
-        Job job = Job.getInstance(getConf(), getJobName());
-        job.getConfiguration().set("mapreduce.job.user.classpath.first", "true");
-        job.setJarByClass(AbstractHBaseDriver.class);    // class that contains mapper
-
-//        // Increase the ScannerTimeoutPeriod to avoid ScannerTimeoutExceptions
-//        // See opencb/opencga#352 for more info.
-//        int scannerTimeout = getConf().getInt(MAPREDUCE_HBASE_SCANNER_TIMEOUT,
-//                getConf().getInt(HConstants.HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD, HConstants.DEFAULT_HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD));
-//        logger.info("Set Scanner timeout to " + scannerTimeout + " ...");
-//        job.getConfiguration().setInt(HConstants.HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD, scannerTimeout);
-
+        Job job = newJob();
         setupJob(job, table);
 
 
         preExecution();
 
+        LOGGER.info("=================================================");
+        LOGGER.info("Execute " + getJobName());
+        LOGGER.info("=================================================");
         boolean succeed = executeJob(job);
         if (!succeed) {
             LOGGER.error("error with job!");
         }
-        postExecution(succeed);
+        postExecution(job);
+        close();
 
         return succeed ? 0 : 1;
     }
 
-    protected final void configFromArgs(String[] args) {
+    private void configFromArgs(String[] args) {
         int fixedSizeArgs = getFixedSizeArgs();
 
         System.out.println(Arrays.toString(args));
@@ -110,15 +125,11 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
             getConf().set(args[i], args[i + 1]);
         }
 
+        parseFixedParams(args);
+    }
+
+    protected void parseFixedParams(String[] args) {
         table = args[0];
-
-        /* -------------------------------*/
-        // Validate parameters CHECK
-        if (StringUtils.isEmpty(table)) {
-            throw new IllegalArgumentException("No table specified!");
-        }
-
-        parseAndValidateArgs(args);
     }
 
     private boolean executeJob(Job job) throws IOException, InterruptedException, ClassNotFoundException {

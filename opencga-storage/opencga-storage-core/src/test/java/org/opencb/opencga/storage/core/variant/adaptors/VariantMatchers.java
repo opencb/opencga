@@ -224,6 +224,23 @@ public class VariantMatchers {
         };
     }
 
+    public static Matcher<VariantAnnotation> hasPopMaf(String study, String population, Matcher<? super Float> subMatcher) {
+        return new FeatureMatcher<VariantAnnotation, Float>(subMatcher, "with Population minnor allele Frequency (" + study + ", " + population + ")", "PopulationMAF") {
+            @Override
+            protected Float featureValueOf(VariantAnnotation actual) {
+                if (actual.getPopulationFrequencies() != null) {
+                    for (PopulationFrequency populationFrequency : actual.getPopulationFrequencies()) {
+                        if (populationFrequency.getStudy().equalsIgnoreCase(study)
+                                && populationFrequency.getPopulation().equalsIgnoreCase(population)) {
+                            return Math.min(populationFrequency.getAltAlleleFreq(), populationFrequency.getRefAlleleFreq());
+                        }
+                    }
+                }
+                return 0F;
+            }
+        };
+    }
+
     public static Matcher<VariantAnnotation> hasPopRefFreq(String study, String population, Matcher<? super Float> subMatcher) {
         return new FeatureMatcher<VariantAnnotation, Float>(subMatcher, "with Population reference allele Frequency (" + study + ", " + population + ")", "PopulationRefFreq") {
             @Override
@@ -373,6 +390,15 @@ public class VariantMatchers {
         };
     }
 
+    public static Matcher<FileEntry> withAttribute(String attribute, Matcher<? super String> subMatcher) {
+        return new FeatureMatcher<FileEntry, String>(subMatcher, "with attribute " + attribute, attribute) {
+            @Override
+            protected String featureValueOf(FileEntry actual) {
+                return actual.getAttributes().get(attribute);
+            }
+        };
+    }
+
     public static Matcher<StudyEntry> withStats(final String cohortName, Matcher<? super VariantStats> subMatcher) {
         return new FeatureMatcher<StudyEntry, VariantStats>(subMatcher, "with stats " + cohortName, "Stats") {
             @Override
@@ -441,6 +467,20 @@ public class VariantMatchers {
             @Override
             public void describeTo(Description description) {
                 description.appendText(describe);
+            }
+        };
+    }
+
+    public static Matcher<String> asNumber(Matcher<? super Double> subMatcher) {
+        return new FeatureMatcher<String, Double>(subMatcher, "as number", "as number") {
+            @Override
+            protected Double featureValueOf(String actual) {
+                try {
+                    return Double.valueOf(actual);
+                } catch (NumberFormatException e) {
+                    return null;
+//                    throw e;
+                }
             }
         };
     }
@@ -519,6 +559,10 @@ public class VariantMatchers {
                 description.appendText("<= " + n);
             }
         };
+    }
+
+    public static <T> Matcher<Iterable<? super T>> isEmpty() {
+        return not(hasItem(anything()));
     }
 
     public static <T> long count(List<T> objects, Matcher<? super T> matcher) {

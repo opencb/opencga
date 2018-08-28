@@ -24,7 +24,6 @@ import com.mongodb.MongoWriteException;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
 import com.mongodb.util.JSON;
-import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
@@ -52,24 +51,6 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.PRIVATE_UID;
 class MongoDBUtils {
 
     // Special queryOptions keys
-    /**
-     * SKIP_CHECK is used when deleting a document. If SKIP_CHECK is set to false, the document will be deleted no matter if other
-     * documents might depend on that one.
-     * @deprecated Use {@link DBAdaptor#SKIP_CHECK}
-     */
-    @Deprecated
-    public static final String SKIP_CHECK = DBAdaptor.SKIP_CHECK;
-    /**
-     * @deprecated Use {@link DBAdaptor#FORCE} instead.
-     */
-    @Deprecated
-    public static final String FORCE = DBAdaptor.FORCE;
-    /**
-     * KEEP_OUTPUT_FILES is used when deleting/removing a job. If it is set to true, it will mean that the output files that have been
-     * generated with the job going to be deleted/removed will be kept. Otherwise, those files will be also deleted/removed.
-     */
-    public static final String KEEP_OUTPUT_FILES = "keepOutputFiles";
-
     public static final Set<String> DATASTORE_OPTIONS = Arrays.asList("include", "exclude", "sort", "limit", "skip").stream()
             .collect(Collectors.toSet());
     public static final Set<String> OTHER_OPTIONS = Arrays.asList("of", "sid", "sessionId", "metadata", "includeProjects",
@@ -207,42 +188,6 @@ class MongoDBUtils {
     }
 //    static final String TO_REPLACE_DOTS = "\uff0e";
 
-    /**
-     * Merges the key-values from source into target.
-     * @param target target Document.
-     * @param source source Document.
-     */
-    static void mergeDocument(Document target, Document source) {
-        if (source == null || target == null) {
-            return;
-        }
-
-        for (Map.Entry<String, Object> entry : source.entrySet()) {
-            String[] split = StringUtils.split(entry.getKey(), ".");
-            List<String> myKeys = new ArrayList<>(split.length);
-            myKeys.addAll(Arrays.asList(split));
-
-            if (myKeys.size() == 1) {
-                target.put(entry.getKey(), entry.getValue());
-            } else {
-                Document tmpDocument = target;
-                while (myKeys.size() > 0) {
-                    if (myKeys.size() == 1) {
-                        tmpDocument.put(myKeys.get(0), entry.getValue());
-                    } else {
-                        Document auxDocument = (Document) tmpDocument.get(myKeys.get(0));
-                        if (auxDocument == null) {
-                            tmpDocument.put(myKeys.get(0), new Document());
-                            auxDocument = (Document) tmpDocument.get(myKeys.get(0));
-                        }
-                        tmpDocument = auxDocument;
-                        myKeys.remove(0);
-                    }
-                }
-            }
-        }
-    }
-
     /***
      * Scan all the DBObject and replace all the dots in keys with.
      * @param object object
@@ -287,7 +232,8 @@ class MongoDBUtils {
      * Filter "include" and "exclude" options.
      * <p>
      * Include and Exclude options are as absolute routes. This method removes all the values that are not in the
-     * specified route. For the values in the route, the route is removed.
+     * specified route. For the values in the route, the route is removed. Also, if there are additional options such as INCLUDE_ACLS,
+     * it will add the proper field to the include filter.
      * <p>
      * [
      * name,
@@ -331,6 +277,9 @@ class MongoDBUtils {
                 }
                 if (listName.equals("include")) {
                     filteredList.add(PRIVATE_UID);
+                    if (options.getBoolean(DBAdaptor.INCLUDE_ACLS)) {
+                        filteredList.add(AuthorizationMongoDBAdaptor.QueryParams.ACL.key());
+                    }
                 } else if (listName.equals("exclude")) {
                     filteredList.remove(PRIVATE_UID);
                 }

@@ -22,14 +22,14 @@ import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.cellbase.core.api.GeneDBAdaptor;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created on 30/03/17.
@@ -38,26 +38,75 @@ import java.util.Set;
  */
 public class CellBaseUtils {
 
+    private static Logger logger = LoggerFactory.getLogger(CellBaseUtils.class);
     private static final int GENE_EXTRA_REGION = 5000;
     private final CellBaseClient cellBaseClient;
+    public static final QueryOptions GENE_QUERY_OPTIONS = new QueryOptions(QueryOptions.INCLUDE,
+            "id,name,chromosome,start,end,transcripts.id,transcripts.name,transcripts.proteinId");
+
 
     public CellBaseUtils(CellBaseClient cellBaseClient) {
         this.cellBaseClient = cellBaseClient;
     }
 
     public Region getGeneRegion(String geneStr) {
-        QueryOptions params = new QueryOptions(QueryOptions.INCLUDE, "name,chromosome,start,end");
+        List<Region> regions = getGeneRegion(Collections.singletonList(geneStr));
+        if (regions.isEmpty()) {
+            return null;
+        } else {
+            return regions.get(0);
+        }
+    }
+
+    public List<Region> getGeneRegion(List<String> geneStrs) {
+        List<Region> regions = new ArrayList<>(geneStrs.size());
         try {
-            Gene gene = cellBaseClient.getGeneClient().get(Collections.singletonList(geneStr), params).firstResult();
-            if (gene != null) {
+            long ts = System.currentTimeMillis();
+            QueryResponse<Gene> response = cellBaseClient.getGeneClient().get(geneStrs, GENE_QUERY_OPTIONS);
+            logger.info("Query genes " + geneStrs + " -> " + (System.currentTimeMillis() - ts) / 1000.0 + "s ");
+            List<String> missingGenes = null;
+            for (QueryResult<Gene> result : response.getResponse()) {
+                Gene gene = null;
+                // It may happen that CellBase returns more than 1 result for the same gene name.
+                // Pick the gene where the given geneStr matches with the name,id,transcript.id,transcript.name or transcript.proteinId
+                if (result.getResult().size() > 1) {
+                    String geneStr = result.getId();
+                    for (Gene aGene : result.getResult()) {
+                        if (geneStr.equals(aGene.getName())
+                                || geneStr.equals(aGene.getId())
+                                || aGene.getTranscripts().stream().anyMatch(t -> geneStr.equals(t.getName()))
+                                || aGene.getTranscripts().stream().anyMatch(t -> geneStr.equals(t.getId()))
+                                || aGene.getTranscripts().stream().anyMatch(t -> geneStr.equals(t.getProteinID()))) {
+                            if (gene != null) {
+                                // More than one gene found!
+                                // Leave gene empty, so it is marked as "not found"
+                                gene = null;
+                                break;
+                            }
+                            gene = aGene;
+                        }
+                    }
+                } else {
+                    gene = result.first();
+                }
+                if (gene == null) {
+                    if (missingGenes == null) {
+                        missingGenes = new ArrayList<>();
+                    }
+                    missingGenes.add(result.getId());
+                    continue;
+                }
                 int start = Math.max(0, gene.getStart() - GENE_EXTRA_REGION);
                 int end = gene.getEnd() + GENE_EXTRA_REGION;
-                return new Region(gene.getChromosome(), start, end);
-            } else {
-                return null;
+                Region region = new Region(gene.getChromosome(), start, end);
+                regions.add(region);
             }
+            if (missingGenes != null) {
+                throw VariantQueryException.geneNotFound(String.join(",", missingGenes));
+            }
+            return regions;
         } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            throw VariantQueryException.internalException(e);
         }
     }
 
@@ -73,7 +122,7 @@ public class CellBaseUtils {
                 }
             }
         } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            throw VariantQueryException.internalException(e);
         }
         return genes;
     }
@@ -98,7 +147,7 @@ public class CellBaseUtils {
                     }
                 }
             } catch (IOException e) {
-                throw new UncheckedIOException(e);
+                throw VariantQueryException.internalException(e);
             }
         }
         return genes;

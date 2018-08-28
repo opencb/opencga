@@ -22,6 +22,7 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParse
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConsolidationDrive;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +37,7 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngi
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public abstract class AbstractFillFromArchiveTask implements Task<Result, Put> {
+public abstract class AbstractFillFromArchiveTask implements Task<Result, AbstractFillFromArchiveTask.FillResult> {
 
     protected static final Comparator<Variant> VARIANT_COMPARATOR = Comparator
             .comparing(Variant::getStart)
@@ -56,6 +57,38 @@ public abstract class AbstractFillFromArchiveTask implements Task<Result, Put> {
     protected long timestamp = HConstants.LATEST_TIMESTAMP;
 
     private final Map<String, Long> stats = new HashMap<>();
+
+    public static final class FillResult {
+        private List<Put> variantPuts;
+        private List<Put> samplesIndexPuts;
+
+        private FillResult(List<Put> variantPuts, List<Put> samplesIndexPuts) {
+            this.variantPuts = variantPuts;
+            this.samplesIndexPuts = samplesIndexPuts;
+        }
+
+        /**
+         * Get the list of PUT mutations over the Variants table.
+         * This mutations will contain values for new FILE and SAMPLE columns.
+         *
+         * @return List of PUT mutations
+         */
+        public List<Put> getVariantPuts() {
+            return variantPuts;
+        }
+
+        /**
+         * Get the list of PUT mutations over the SampleIndex table.
+         * This mutations will contain values of pending variants that should be added to the table.
+         *
+         * @see SampleIndexConsolidationDrive
+         *
+         * @return List of PUT mutations
+         */
+        public List<Put> getSamplesIndexPuts() {
+            return samplesIndexPuts;
+        }
+    }
 
     protected AbstractFillFromArchiveTask(StudyConfiguration studyConfiguration,
                                           GenomeHelper helper,
@@ -104,18 +137,23 @@ public abstract class AbstractFillFromArchiveTask implements Task<Result, Put> {
     public void post() throws IOException { }
 
     @Override
-    public List<Put> apply(List<Result> list) throws IOException {
-        List<Put> puts = new ArrayList<>(list.size());
+    public List<FillResult> apply(List<Result> list) throws IOException {
+        List<FillResult> results = new ArrayList<>(list.size());
         for (Result result : list) {
-            StopWatch stopWatch = new StopWatch().start();
-            Context context = buildContext(result);
-            increment("BUILD_CONTEXT", context.fileBatch, stopWatch);
-            puts.addAll(fillGaps(context));
+            results.add(apply(result));
         }
-        return puts;
+        return results;
     }
 
-    public List<Put> fillGaps(Context context) throws IOException {
+    public FillResult apply(Result result) throws IOException {
+        StopWatch stopWatch = new StopWatch().start();
+        Context context = buildContext(result);
+        increment("BUILD_CONTEXT", context.fileBatch, stopWatch);
+
+        return fillGaps(context);
+    }
+
+    public FillResult fillGaps(Context context) throws IOException {
         Map<Variant, Set<Integer>> variantsToFill = context.getVariantsToFill();
 
         // Use a sorted map to fetch VcfSlice orderly
@@ -130,6 +168,7 @@ public abstract class AbstractFillFromArchiveTask implements Task<Result, Put> {
 
         // Store all PUT operations, one for each variant
         Map<Variant, Put> putsMap = new TreeMap<>(VARIANT_COMPARATOR);
+        List<Put> sampleIndexPuts = new ArrayList<>();
         for (Map.Entry<Integer, List<Variant>> entry : fileToVariantsMap.entrySet()) {
             Integer fileId = entry.getKey();
             List<Variant> variants = entry.getValue();
@@ -153,7 +192,7 @@ public abstract class AbstractFillFromArchiveTask implements Task<Result, Put> {
                 Put put = putsMap.computeIfAbsent(variant, this::createPut);
 
                 StopWatch stopWatch = new StopWatch().start();
-                VariantOverlappingStatus overlappingStatus = fillGapsTask.fillGaps(variant, sampleIds, put, fileId,
+                VariantOverlappingStatus overlappingStatus = fillGapsTask.fillGaps(variant, sampleIds, put, sampleIndexPuts, fileId,
                         nonRefVcfSlice, nonRefIterator, refVcfSlice, refIterator);
                 increment("OVERLAPPING_STATUS_" + String.valueOf(overlappingStatus), context.fileBatch, 1);
                 increment("OVERLAPPING_STATUS_" + String.valueOf(overlappingStatus), context.fileBatch, stopWatch);
@@ -161,20 +200,20 @@ public abstract class AbstractFillFromArchiveTask implements Task<Result, Put> {
             context.clearVcfSlice(fileId);
         }
 
-        List<Put> puts = new ArrayList<>(variantsToFill.size());
+        List<Put> variantPuts = new ArrayList<>(variantsToFill.size());
         for (Put put : putsMap.values()) {
             if (!put.isEmpty()) {
-                puts.add(put);
+                variantPuts.add(put);
             } else {
                 increment("PUTS_EMPTY", context.fileBatch, 1);
             }
         }
-        if (puts.isEmpty()) {
+        if (variantPuts.isEmpty()) {
             increment("PUTS_NONE", context.fileBatch, 1);
         } else {
-            increment("PUTS", context.fileBatch, puts.size());
+            increment("PUTS", context.fileBatch, variantPuts.size());
         }
-        return puts;
+        return new FillResult(variantPuts, sampleIndexPuts);
     }
 
     protected Put createPut(Variant v) {

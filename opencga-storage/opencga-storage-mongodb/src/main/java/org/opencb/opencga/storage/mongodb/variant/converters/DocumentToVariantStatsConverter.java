@@ -17,21 +17,17 @@
 package org.opencb.opencga.storage.mongodb.variant.converters;
 
 import org.bson.Document;
+import org.opencb.biodata.models.feature.AllelesCode;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.stats.VariantStats;
-import org.opencb.commons.datastore.core.ComplexTypeConverter;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -40,10 +36,8 @@ import java.util.stream.Collectors;
  * @author Cristina Yenyxe Gonzalez Garcia &lt;cyenyxe@ebi.ac.uk&gt;
  * @author Jose Miguel Mut Lopez &lt;jmmut@ebi.ac.uk&gt;
  */
-public class DocumentToVariantStatsConverter implements ComplexTypeConverter<VariantStats, Document> {
+public class DocumentToVariantStatsConverter {
 
-    public static final QueryOptions STUDY_CONFIGURATION_MANAGER_QUERY_OPTIONS = new QueryOptions()
-            .append(StudyConfigurationManager.CACHED, true).append(StudyConfigurationManager.READ_ONLY, true);
     private static final Pattern MISSING_ALLELE = Pattern.compile("-1", Pattern.LITERAL);
 
     public DocumentToVariantStatsConverter() {
@@ -85,7 +79,6 @@ public class DocumentToVariantStatsConverter implements ComplexTypeConverter<Var
         this.studyConfigurationManager = studyConfigurationManager;
     }
 
-    @Override
     public VariantStats convertToDataModelType(Document object) {
         return convertToDataModelType(object, null);
     }
@@ -112,8 +105,10 @@ public class DocumentToVariantStatsConverter implements ComplexTypeConverter<Var
             int value = ((Number) o.getValue()).intValue();
             Genotype g = getGenotype(genotypeStr);
             genotypesCount.put(g, value);
-            alleleNumber += value * g.getAllelesIdx().length;
-            gtNumber += value;
+            if (g.getCode() != AllelesCode.ALLELES_MISSING) {
+                alleleNumber += value * g.getAllelesIdx().length;
+                gtNumber += value;
+            }
         }
         stats.setGenotypeCount(genotypesCount);
         if (alleleNumber == 0) {
@@ -122,9 +117,16 @@ public class DocumentToVariantStatsConverter implements ComplexTypeConverter<Var
             stats.setAlleleCount(alleleNumber);
         }
 
-        HashMap<Genotype, Float> genotypesFreq = new HashMap<>();
-        for (Map.Entry<Genotype, Integer> entry : genotypesCount.entrySet()) {
-            genotypesFreq.put(entry.getKey(), entry.getValue().floatValue() / gtNumber);
+        Map<Genotype, Float> genotypesFreq;
+        if (gtNumber > 0) {
+            genotypesFreq = new HashMap<>();
+            for (Map.Entry<Genotype, Integer> entry : genotypesCount.entrySet()) {
+                if (entry.getKey().getCode() != AllelesCode.ALLELES_MISSING) {
+                    genotypesFreq.put(entry.getKey(), entry.getValue().floatValue() / gtNumber);
+                }
+            }
+        } else {
+            genotypesFreq = Collections.emptyMap();
         }
         stats.setGenotypeFreq(genotypesFreq);
 
@@ -182,7 +184,6 @@ public class DocumentToVariantStatsConverter implements ComplexTypeConverter<Var
         return genotype;
     }
 
-    @Override
     public Document convertToStorageType(VariantStats vs) {
         // Basic fields
         Document mongoStats = new Document(MAF_FIELD, vs.getMaf());
@@ -311,7 +312,7 @@ public class DocumentToVariantStatsConverter implements ComplexTypeConverter<Var
         if (studyConfigurations != null && studyConfigurations.containsKey(studyId)) {
             return studyConfigurations.get(studyId);
         } else {
-            return studyConfigurationManager.getStudyConfiguration(studyId, STUDY_CONFIGURATION_MANAGER_QUERY_OPTIONS).first();
+            return studyConfigurationManager.getStudyConfiguration(studyId, StudyConfigurationManager.RO_CACHED_OPTIONS).first();
         }
     }
 

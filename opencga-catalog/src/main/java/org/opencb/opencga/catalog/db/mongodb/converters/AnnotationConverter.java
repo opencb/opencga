@@ -34,7 +34,7 @@ public class AnnotationConverter {
     }
 
 
-    public List<Document>   annotationToDB(VariableSet variableSet, AnnotationSet annotationSet) {
+    public List<Document> annotationToDB(VariableSet variableSet, AnnotationSet annotationSet) {
         return annotationToDB(variableSet, annotationSet.getId(), annotationSet.getAnnotations());
     }
 

@@ -131,7 +131,7 @@ public class JobWSServer extends OpenCGAWSServer {
             String jobName = StringUtils.isEmpty(inputJob.name) ? jobId : inputJob.name;
             Job job = new Job(-1, jobId, jobName, "", inputJob.toolName, null, "", inputJob.description, inputJob.startTime,
                     inputJob.endTime, inputJob.execution, "", inputJob.commandLine, false, jobStatus, -1,
-                    new File().setUid(Long.parseLong(inputJob.outDir)), parseToListOfFiles(inputJob.input),
+                    new File().setPath(inputJob.outDir), parseToListOfFiles(inputJob.input),
                     parseToListOfFiles(inputJob.output), Collections.emptyList(), inputJob.params, -1, inputJob.attributes,
                     inputJob.resourceManagerAttributes);
 
@@ -237,6 +237,7 @@ public class JobWSServer extends OpenCGAWSServer {
         }
     }
 
+
     @DELETE
     @Path("/delete")
     @ApiOperation(value = "Delete existing jobs")
@@ -256,6 +257,7 @@ public class JobWSServer extends OpenCGAWSServer {
             query.remove("study");
             return createOkResponse(jobManager.delete(studyStr, query, queryOptions, sessionId));
         } catch (Exception e) {
+
             return createErrorResponse(e);
         }
     }

@@ -43,6 +43,7 @@ public abstract class ResourceManager<R extends PrivateStudyUid> extends Abstrac
      * @throws CatalogException when more than one entry is found.
      */
     public AbstractManager.MyResource<R> getUid(String entryStr, @Nullable String studyStr, String sessionId) throws CatalogException {
+        ParamUtils.checkObj(entryStr, "id");
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
@@ -200,20 +201,6 @@ public abstract class ResourceManager<R extends PrivateStudyUid> extends Abstrac
      * @throws CatalogException CatalogException.
      */
     public abstract QueryResult<R> get(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException;
-
-    /**
-     * Obtain an entry iterator to iterate over the matching entries.
-     *
-     * @param studyId   study id.
-     * @param query     Query object.
-     * @param options   QueryOptions object.
-     * @param sessionId Session id of the user logged in.
-     * @return An iterator.
-     * @throws CatalogException if there is any internal error.
-     */
-    public DBIterator<R> iterator(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException {
-        return iterator(String.valueOf(studyId), query, options, sessionId);
-    }
 
     /**
      * Obtain an entry iterator to iterate over the matching entries.
