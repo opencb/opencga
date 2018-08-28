@@ -246,7 +246,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
         public String name;
         public String description;
 
-        public DiseasePanel panel;
+        public List<DiseasePanel> panels;
         public Software software;
         public Analyst analyst;
         public List<Version> versions;
@@ -259,8 +259,8 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
         public List<ReportedVariant> reportedVariants;
 
         public Interpretation toClinicalInterpretation() {
-            return new Interpretation(id, name, description, panel, software, analyst, versions, filters, creationDate, comments,
-                    attributes, reportedVariants);
+            return new Interpretation(id, name, description, panels, software, analyst, versions, filters, creationDate, reportedVariants,
+                    comments, attributes);
         }
     }
 
