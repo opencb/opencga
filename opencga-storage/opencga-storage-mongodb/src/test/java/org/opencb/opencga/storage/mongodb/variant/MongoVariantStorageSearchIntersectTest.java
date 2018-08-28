@@ -23,11 +23,11 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.VariantStorageSearchIntersectTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 
 import static org.junit.Assert.assertFalse;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.INCLUDE_STUDY;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.REGION;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
+import static org.junit.Assert.assertTrue;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
 /**
  * Created on 04/07/17.
@@ -52,8 +52,12 @@ public class MongoVariantStorageSearchIntersectTest extends VariantStorageSearch
         MongoDBVariantStorageEngine engine = getVariantStorageEngine();
 
         // SPECIAL CASE FOR MONGO
+        assertTrue(engine.doQuerySearchManager(new Query(REGION.key(), "3:44-55"), new QueryOptions(VariantField.SUMMARY, true).append(VariantSearchManager.USE_SEARCH_INDEX, VariantSearchManager.UseSearchIndex.YES)));
         assertFalse(engine.doQuerySearchManager(new Query(REGION.key(), "3:44-55"), new QueryOptions(VariantField.SUMMARY, true)));
         assertFalse(engine.doQuerySearchManager(new Query(REGION.key(), "3:44-55").append(STUDY.key(), 3), new QueryOptions(VariantField.SUMMARY, true)));
         assertFalse(engine.doQuerySearchManager(new Query(REGION.key(), "3:44-55").append(STUDY.key(), 3).append(INCLUDE_STUDY.key(), 3), new QueryOptions(VariantField.SUMMARY, true)));
+        assertFalse(engine.doQuerySearchManager(new Query(REGION.key(), "3:44-55").append(STUDY.key(), 3).append(INCLUDE_STUDY.key(), 3), new QueryOptions(VariantField.SUMMARY, true).append(QueryOptions.SKIP_COUNT, true)));
+        assertTrue(engine.doQuerySearchManager(new Query(REGION.key(), "3:44-55").append(STUDY.key(), 3).append(INCLUDE_STUDY.key(), 3), new QueryOptions(VariantField.SUMMARY, true).append(QueryOptions.SKIP_COUNT, false)));
+        assertTrue(engine.doQuerySearchManager(new Query(REGION.key(), "3:44-55").append(STUDY.key(), 3).append(INCLUDE_STUDY.key(), 3).append(GENE.key(), "ASDF"), new QueryOptions(VariantField.SUMMARY, true).append(QueryOptions.SKIP_COUNT, false)));
     }
 }

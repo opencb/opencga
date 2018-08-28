@@ -9,7 +9,7 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
@@ -26,7 +26,7 @@ import static org.opencb.opencga.storage.hadoop.variant.gaps.PrepareFillMissingM
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class PrepareFillMissingDriver extends AbstractAnalysisTableDriver {
+public class PrepareFillMissingDriver extends AbstractVariantsTableDriver {
 
     private static final Logger LOG = LoggerFactory.getLogger(PrepareFillMissingDriver.class);
 
@@ -38,7 +38,8 @@ public class PrepareFillMissingDriver extends AbstractAnalysisTableDriver {
     }
 
     @Override
-    protected void parseAndValidateParameters() {
+    protected void parseAndValidateParameters() throws IOException {
+        super.parseAndValidateParameters();
     }
 
     @Override

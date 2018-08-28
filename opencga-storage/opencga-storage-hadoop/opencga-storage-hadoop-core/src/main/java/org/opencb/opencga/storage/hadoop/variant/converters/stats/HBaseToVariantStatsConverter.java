@@ -130,17 +130,17 @@ public class HBaseToVariantStatsConverter extends AbstractPhoenixConverter {
             stats.setRefAlleleFreq(protoStats.getRefAlleleFreq());
 
             Map<Genotype, Float> genotypesFreq = new HashMap<>();
-            for (Map.Entry<String, Integer> entry : protoStats.getGenotypesCount().entrySet()) {
+            for (Map.Entry<String, Integer> entry : protoStats.getGenotypeCountMap().entrySet()) {
                 Genotype g = new Genotype(entry.getKey());
                 stats.addGenotype(g, entry.getValue(), false);
-                Float freq = protoStats.getGenotypesFreq().get(entry.getKey());
+                Float freq = protoStats.getGenotypeFreqMap().get(entry.getKey());
                 if (freq != null) {
                     genotypesFreq.put(g, freq);
                 }
             }
-            stats.setGenotypesFreq(genotypesFreq);
-            stats.setMissingAlleles(protoStats.getMissingAlleles());
-            stats.setMissingGenotypes(protoStats.getMissingGenotypes());
+            stats.setGenotypeFreq(genotypesFreq);
+            stats.setMissingAlleleCount(protoStats.getMissingAlleleCount());
+            stats.setMissingGenotypeCount(protoStats.getMissingGenotypeCount());
 
         } catch (InvalidProtocolBufferException e) {
             throw new RuntimeException(e);

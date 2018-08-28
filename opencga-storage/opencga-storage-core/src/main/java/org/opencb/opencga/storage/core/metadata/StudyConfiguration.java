@@ -63,6 +63,10 @@ public class StudyConfiguration {
     private Set<Integer> calculatedStats;
     private Set<Integer> invalidStats;
 
+    private Map<Integer, Integer> searchIndexedSampleSets;
+    private Map<Integer, BatchFileOperation.Status> searchIndexedSampleSetsStatus;
+
+
     private List<BatchFileOperation> batches;
 
     private Aggregation aggregation;
@@ -94,6 +98,10 @@ public class StudyConfiguration {
         this.samplesInFiles = new HashMap<>(other.samplesInFiles);
         this.calculatedStats = new LinkedHashSet<>(other.calculatedStats);
         this.invalidStats = new LinkedHashSet<>(other.invalidStats);
+        this.searchIndexedSampleSets = other.searchIndexedSampleSets == null
+                ? new HashMap<>() : new HashMap<>(other.searchIndexedSampleSets);
+        this.searchIndexedSampleSetsStatus = other.searchIndexedSampleSetsStatus == null
+                ? new HashMap<>() : new HashMap<>(other.searchIndexedSampleSetsStatus);
         this.batches = new ArrayList<>(other.batches.size());
         for (BatchFileOperation batch : other.batches) {
             this.batches.add(new BatchFileOperation(batch));
@@ -136,6 +144,8 @@ public class StudyConfiguration {
         this.samplesInFiles = new HashMap<>();
         this.calculatedStats = new LinkedHashSet<>();
         this.invalidStats = new LinkedHashSet<>();
+        this.searchIndexedSampleSets = new HashMap<>();
+        this.searchIndexedSampleSetsStatus = new HashMap<>();
         this.batches = new ArrayList<>();
         this.aggregation = Aggregation.NONE;
         this.timeStamp = 0L;
@@ -274,6 +284,24 @@ public class StudyConfiguration {
         this.invalidStats = invalidStats;
     }
 
+    public Map<Integer, Integer> getSearchIndexedSampleSets() {
+        return searchIndexedSampleSets;
+    }
+
+    public StudyConfiguration setSearchIndexedSampleSets(Map<Integer, Integer> searchIndexedSampleSets) {
+        this.searchIndexedSampleSets = searchIndexedSampleSets;
+        return this;
+    }
+
+    public Map<Integer, BatchFileOperation.Status> getSearchIndexedSampleSetsStatus() {
+        return searchIndexedSampleSetsStatus;
+    }
+
+    public StudyConfiguration setSearchIndexedSampleSetsStatus(Map<Integer, BatchFileOperation.Status> searchIndexedSampleSetsStatus) {
+        this.searchIndexedSampleSetsStatus = searchIndexedSampleSetsStatus;
+        return this;
+    }
+
     public List<BatchFileOperation> getBatches() {
         return batches;
     }
@@ -321,6 +349,13 @@ public class StudyConfiguration {
                 .stream()
                 .filter(l -> l.getKey().equalsIgnoreCase(key))
                 .collect(Collectors.toMap(VariantFileHeaderComplexLine::getId, l -> l));
+    }
+
+    public VariantFileHeaderComplexLine getVariantHeaderLine(String key, String id) {
+        return variantHeader.getComplexLines()
+                .stream()
+                .filter(l -> l.getKey().equalsIgnoreCase(key) && l.getId().equalsIgnoreCase(id))
+                .findFirst().orElse(null);
     }
 
     public StudyConfiguration setVariantHeader(VariantFileHeader header) {

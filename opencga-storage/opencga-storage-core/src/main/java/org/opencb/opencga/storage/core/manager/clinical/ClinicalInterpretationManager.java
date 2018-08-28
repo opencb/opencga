@@ -145,7 +145,7 @@ public class ClinicalInterpretationManager extends StorageManager {
             if (studyIds.size() == 1) {
                 // This checks that the user has permission to the clinical analysis, family, sample or individual
                 QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager()
-                        .get(String.valueOf(studyIds.get(0)), query, QueryOptions.empty(), token);
+                        .get(studyIds.get(0), query, QueryOptions.empty(), token);
 
                 if (clinicalAnalysisQueryResult.getResult().isEmpty()) {
                     throw new ClinicalVariantException("Either the ID does not exist or the user does not have permissions to view it");

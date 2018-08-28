@@ -53,12 +53,6 @@
         <dependency>
             <groupId>org.opencb.hpg-bigdata</groupId>
             <artifactId>hpg-bigdata-core</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.spark</groupId>
-                    <artifactId>spark-sql_2.11</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>junit</groupId>

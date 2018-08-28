@@ -43,6 +43,7 @@ public class User {
     private Account account;
 
     private UserStatus status;
+    @Deprecated
     private String lastModified;
     private long size;
     private long quota;
@@ -246,6 +247,8 @@ public class User {
     public static class UserStatus extends Status {
 
         public static final String BANNED = "BANNED";
+
+        public static final List<String> STATUS_LIST = Arrays.asList(READY, DELETED, BANNED);
 
         public UserStatus(String status, String message) {
             if (isValid(status)) {

@@ -5,7 +5,8 @@
 \alias{OpencgaLogin}
 \title{Login to OpenCGA Web Services}
 \usage{
-opencgaLogin(opencga, userid = NULL, passwd = NULL, interactive = FALSE)
+opencgaLogin(opencga, userid = NULL, passwd = NULL, interactive = FALSE,
+  autoRenew = FALSE, showToken = FALSE)
 }
 \arguments{
 \item{userid}{a charatcer with the username}
@@ -38,5 +39,4 @@ con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
 conf <- "/path/to/conf/client-configuration.yml"
 con <- initOpencgaR(opencgaConfig=conf)
 con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
-}
 }

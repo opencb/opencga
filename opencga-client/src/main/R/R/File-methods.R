@@ -17,53 +17,53 @@
 #' \url{http://bioinfo.hpc.cam.ac.uk/opencga/webservices/}
 #' @export
 
-setMethod("fileClient", "OpencgaR", function(OpencgaR, f, action, params=NULL) {
+setMethod("fileClient", "OpencgaR", function(OpencgaR, f, action, params=NULL, ...) {
     category <- "files"
     switch(action,
            content=fetchOpenCGA(object=OpencgaR, category=category, categoryId=f, 
-                                action="content", params=params, httpMethod="GET"),
+                                action="content", params=params, httpMethod="GET", ...),
            tree=fetchOpenCGA(object=OpencgaR, category=category, categoryId=f, 
-                             action="tree", params=params, httpMethod="GET"),
+                             action="tree", params=params, httpMethod="GET", ...),
            groupBy=fetchOpenCGA(object=OpencgaR, category=category,  
-                                action="groupBy", params=params, httpMethod="GET"),
+                                action="groupBy", params=params, httpMethod="GET", ...),
            search=fetchOpenCGA(object=OpencgaR, category=category,  
-                               action="search", params=params, httpMethod="GET"),
+                               action="search", params=params, httpMethod="GET", ...),
            acl=fetchOpenCGA(object=OpencgaR, category=category, categoryId=f, 
-                            action="acl", params=params, httpMethod="GET"),
+                            action="acl", params=params, httpMethod="GET", ...),
            info=fetchOpenCGA(object=OpencgaR, category=category, categoryId=f, 
-                             action="info", params=params, httpMethod="GET"),
+                             action="info", params=params, httpMethod="GET", ...),
            bioformats=fetchOpenCGA(object=OpencgaR, category=category,  
-                                   action="bioformats", params=params, httpMethod="GET"),
+                                   action="bioformats", params=params, httpMethod="GET", ...),
            formats=fetchOpenCGA(object=OpencgaR, category=category,  
-                                action="formats", params=params, httpMethod="GET"),
+                                action="formats", params=params, httpMethod="GET", ...),
            delete=fetchOpenCGA(object=OpencgaR, category=category, categoryId=f, 
-                               action="delete", params=params, httpMethod="GET"),
+                               action="delete", params=params, httpMethod="GET", ...),
            download=fetchOpenCGA(object=OpencgaR, category=category, categoryId=f, 
-                                 action="download", params=params, httpMethod="GET"),
+                                 action="download", params=params, httpMethod="GET", ...),
            grep=fetchOpenCGA(object=OpencgaR, category=category, categoryId=f, 
-                             action="grep", params=params, httpMethod="GET"),
+                             action="grep", params=params, httpMethod="GET", ...),
            refresh=fetchOpenCGA(object=OpencgaR, category=category, categoryId=f, 
-                                action="refresh", params=params, httpMethod="GET"),
+                                action="refresh", params=params, httpMethod="GET", ...),
            list=fetchOpenCGA(object=OpencgaR, category=category, categoryId=f, 
-                             action="list", params=params, httpMethod="GET"),
+                             action="list", params=params, httpMethod="GET", ...),
            scan=fetchOpenCGA(object=OpencgaR, category=category, categoryId=f, 
-                             action="scan", params=params, httpMethod="GET"),
+                             action="scan", params=params, httpMethod="GET", ...),
            update=fetchOpenCGA(object=OpencgaR, category=category, categoryId=f, 
-                               action="update", params=params, httpMethod="POST"),
+                               action="update", params=params, httpMethod="POST", ...),
            upload=fetchOpenCGA(object=OpencgaR, category=category, 
-                               action="upload", params=params, httpMethod="POST"),
+                               action="upload", params=params, httpMethod="POST", ...),
            create=fetchOpenCGA(object=OpencgaR, category=category,  
-                               action="create", params=params, httpMethod="POST")
+                               action="create", params=params, httpMethod="POST", ...)
     )
 })
 
 #' @export
-setMethod("fileAclClient", "OpencgaR", function(OpencgaR, f, memberId, action, params=NULL) {
+setMethod("fileAclClient", "OpencgaR", function(OpencgaR, f, memberId, action, params=NULL, ...) {
     category <- "files"
     switch(action,
            update=fetchOpenCGA(object=OpencgaR, category=category, subcategory="acl", 
                                subcategoryId=memberId, action="update", 
-                               params=params, httpMethod="POST")
+                               params=params, httpMethod="POST", ...)
     )
 })
 

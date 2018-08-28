@@ -25,6 +25,9 @@ class HBaseVariantMetadataUtils {
     private static final byte[] LOCK_COLUMN = Bytes.toBytes("lock");
     private static final byte[] STATUS_COLUMN = Bytes.toBytes("status");
 
+    static final String COUNTER_PREFIX = "COUNTER_";
+    static final byte[] COUNTER_PREFIX_BYTES = Bytes.toBytes(COUNTER_PREFIX);
+
     public enum Type {
         PROJECT, STUDY_CONFIGURATION, STUDIES, VARIANT_FILE_METADATA, FILES;
 
@@ -101,6 +104,11 @@ class HBaseVariantMetadataUtils {
 
     static byte[] getStatusColumn() {
         return STATUS_COLUMN;
+    }
+
+    static byte[] getCounterColumn(StudyConfiguration studyConfiguration, String idType) {
+        String id = COUNTER_PREFIX + idType + (studyConfiguration == null ? "" : ("_" + studyConfiguration.getStudyId()));
+        return Bytes.toBytes(id);
     }
 
     static boolean createMetaTableIfNeeded(HBaseManager hBaseManager, String tableName, byte[] columnFamily) throws IOException {

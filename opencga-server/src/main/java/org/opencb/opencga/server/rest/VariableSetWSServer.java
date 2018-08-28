@@ -37,7 +37,7 @@ import java.util.List;
  */
 @Path("/{apiVersion}/variableset")
 @Produces("application/json")
-@Api(value = "VariableSet", position = 8, description = "Methods for working with 'variableset' endpoint")
+@Api(value = "VariableSet (DEPRECATED)", position = 8, description = "Methods for working with 'variableset' endpoint")
 public class VariableSetWSServer extends OpenCGAWSServer {
 
 
@@ -58,7 +58,7 @@ public class VariableSetWSServer extends OpenCGAWSServer {
     @POST
     @Path("/create")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Create variable set", position = 1, response = VariableSet.class)
+    @ApiOperation(value = "Create variable set [DEPRECATED]", position = 1, response = VariableSet.class)
     public Response createSet(
             @ApiParam(value = "DEPRECATED: studyId", hidden = true) @QueryParam("studyId") String studyIdStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
@@ -99,7 +99,7 @@ public class VariableSetWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{variableset}/info")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Get VariableSet info", position = 2, response = VariableSet.class)
+    @ApiOperation(value = "Get VariableSet info [DEPRECATED]", position = 2, response = VariableSet.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
                     example = "name,attributes", dataType = "string", paramType = "query"),
@@ -122,7 +122,7 @@ public class VariableSetWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{variableset}/summary")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Get VariableSet summary", position = 2, response = VariableSetSummary.class)
+    @ApiOperation(value = "Get VariableSet summary [DEPRECATED]", position = 2, response = VariableSetSummary.class)
     public Response variablesetSummary(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
@@ -140,7 +140,7 @@ public class VariableSetWSServer extends OpenCGAWSServer {
     @GET
     @Path("/search")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Get VariableSet info", position = 2, response = VariableSet[].class)
+    @ApiOperation(value = "Get VariableSet info [DEPRECATED]", position = 2, response = VariableSet[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
                     example = "name,attributes", dataType = "string", paramType = "query"),
@@ -182,20 +182,10 @@ public class VariableSetWSServer extends OpenCGAWSServer {
         public String description;
     }
 
-    @POST
-    @Path("/{variableset}/update")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some variableset attributes [PENDING]", position = 3, response = VariableSet.class)
-    public Response updateByPost(
-            @ApiParam(value = "Variable set id or name", required = true) @PathParam("variableset") String variablesetId,
-            @ApiParam(value="JSON containing the parameters to be updated", required = true) VariableSetUpdateParameters params) {
-        return createErrorResponse("update - POST", "PENDING");
-    }
-
     @GET
     @Path("/{variableset}/delete")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Delete an unused variable Set", position = 4)
+    @ApiOperation(value = "Delete an unused variable Set [DEPRECATED]", position = 4)
     public Response delete(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
             @ApiParam(value = "Variable set id or name", required = true) @PathParam("variableset") String variablesetId) {
@@ -210,7 +200,7 @@ public class VariableSetWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{variableset}/field/add")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Add a new field in a variable set", position = 5)
+    @ApiOperation(value = "Add a new field in a variable set [DEPRECATED]", position = 5)
     public Response addFieldToVariableSet(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
             @ApiParam(value = "Variable set id or name", required = true) @PathParam("variableset") String variablesetId,
@@ -228,7 +218,7 @@ public class VariableSetWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{variableset}/field/delete")
-    @ApiOperation(value = "Delete one field from a variable set", position = 6)
+    @ApiOperation(value = "Delete one field from a variable set [DEPRECATED]", position = 6)
     public Response renameFieldInVariableSet(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
             @ApiParam(value = "Variable set id or name", required = true) @PathParam("variableset") String variablesetId,
@@ -245,7 +235,7 @@ public class VariableSetWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{variableset}/field/rename")
-    @ApiOperation(value = "Rename the field id of a field in a variable set", position = 7)
+    @ApiOperation(value = "Rename the field id of a field in a variable set [DEPRECATED]", position = 7)
     public Response renameFieldInVariableSet(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
             @ApiParam(value = "Variable set id or name", required = true) @PathParam("variableset") String variablesetId,

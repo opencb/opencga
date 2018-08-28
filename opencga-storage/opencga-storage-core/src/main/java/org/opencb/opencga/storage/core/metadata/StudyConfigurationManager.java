@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.core.metadata;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -53,6 +54,8 @@ import static org.opencb.opencga.storage.core.variant.annotation.annotators.Abst
 public class StudyConfigurationManager implements AutoCloseable {
     public static final String CACHED = "cached";
     public static final String READ_ONLY = "ro";
+    public static final QueryOptions RO_CACHED_OPTIONS = new QueryOptions(READ_ONLY, true)
+            .append(CACHED, true);
     protected static Logger logger = LoggerFactory.getLogger(StudyConfigurationManager.class);
 
     private final ProjectMetadataAdaptor projectDBAdaptor;
@@ -102,6 +105,17 @@ public class StudyConfigurationManager implements AutoCloseable {
         studyDBAdaptor.unLockStudy(studyId, lockId, lockName);
     }
 
+    public StudyConfiguration createStudy(String studyName) throws StorageEngineException {
+        lockAndUpdateProject(projectMetadata -> {
+            if (!getStudies(null).containsKey(studyName)) {
+                StudyConfiguration studyConfiguration = new StudyConfiguration(newStudyId(), studyName);
+                updateStudyConfiguration(studyConfiguration, null);
+            }
+            return projectMetadata;
+        });
+        return getStudyConfiguration(studyName, null).first();
+    }
+
     public interface UpdateFunction<T, E extends Exception> {
         T update(T t) throws E;
     }
@@ -114,6 +128,7 @@ public class StudyConfigurationManager implements AutoCloseable {
 
     public <E extends Exception> StudyConfiguration lockAndUpdate(int studyId, UpdateFunction<StudyConfiguration, E> updater)
             throws StorageEngineException, E {
+        checkStudyId(studyId);
         long lock = lockStudy(studyId);
         try {
             StudyConfiguration sc = getStudyConfiguration(studyId, new QueryOptions(CACHED, false)).first();
@@ -229,8 +244,8 @@ public class StudyConfigurationManager implements AutoCloseable {
         return studyDBAdaptor.getStudyIds(options);
     }
 
-    public Map<String, Integer> getStudies(QueryOptions options) {
-        return studyDBAdaptor.getStudies(options);
+    public BiMap<String, Integer> getStudies(QueryOptions options) {
+        return HashBiMap.create(studyDBAdaptor.getStudies(options));
     }
 
     public final QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
@@ -386,8 +401,15 @@ public class StudyConfigurationManager implements AutoCloseable {
         }
         try {
             ProjectMetadata projectMetadata = getProjectMetadata().first();
+            int countersHash = (projectMetadata == null ? Collections.emptyMap() : projectMetadata.getCounters()).hashCode();
+
             projectMetadata = function.update(projectMetadata);
-            projectDBAdaptor.updateProjectMetadata(projectMetadata);
+            int newCountersHash = (projectMetadata == null ? Collections.emptyMap() : projectMetadata.getCounters()).hashCode();
+
+            // If the function modifies the internal counters, update them
+            boolean updateCounters = countersHash != newCountersHash;
+
+            projectDBAdaptor.updateProjectMetadata(projectMetadata, updateCounters);
             return projectMetadata;
         } finally {
             projectDBAdaptor.unLockProject(lock);
@@ -559,7 +581,7 @@ public class StudyConfigurationManager implements AutoCloseable {
             Collection<Integer> studyIds = studies.values();
             Integer fileIdFromStudy;
             for (Integer id : studyIds) {
-                StudyConfiguration sc = getStudyConfiguration(id, new QueryOptions(READ_ONLY, true).append(CACHED, true)).first();
+                StudyConfiguration sc = getStudyConfiguration(id, RO_CACHED_OPTIONS).first();
                 fileIdFromStudy = getFileIdFromStudy(fileId != null ? fileId : fileObj, sc);
                 if (fileIdFromStudy != null) {
                     return Pair.of(sc.getStudyId(), fileIdFromStudy);
@@ -600,7 +622,29 @@ public class StudyConfigurationManager implements AutoCloseable {
      * @return File id within this study. Null if the file does not exist.
      */
     public static Integer getFileIdFromStudy(Object fileObj, StudyConfiguration studyConfiguration) {
-        return getResourceIdFromStudy(fileObj, studyConfiguration, studyConfiguration.getFileIds());
+        return getFileIdFromStudy(fileObj, studyConfiguration, false);
+    }
+
+
+    /**
+     * Get fileId from a given study configuration.
+     *
+     * @param fileObj            File object
+     * @param studyConfiguration Study configuration.
+     * @param indexed            Only return indexed files
+     * @return File id within this study. Null if the file does not exist.
+     */
+    public static Integer getFileIdFromStudy(Object fileObj, StudyConfiguration studyConfiguration, boolean indexed) {
+        Integer fileId = getResourceIdFromStudy(fileObj, studyConfiguration, studyConfiguration.getFileIds());
+        if (indexed && fileId != null) {
+            if (studyConfiguration.getIndexedFiles().contains(fileId)) {
+                return fileId;
+            } else {
+                return null;
+            }
+        } else {
+            return fileId;
+        }
     }
 
     /**
@@ -782,98 +826,34 @@ public class StudyConfigurationManager implements AutoCloseable {
         return getResourceIdFromStudy(cohortObj, sc, sc.getCohortIds());
     }
 
+    public static Set<Integer> getFileIdsFromSampleIds(StudyConfiguration studyConfiguration, Integer sampleId) {
+        return getFileIdsFromSampleIds(studyConfiguration, Collections.singleton(sampleId));
+    }
+
+    public static Set<Integer> getFileIdsFromSampleIds(StudyConfiguration studyConfiguration, Collection<Integer> sampleIds) {
+        Set<Integer> fileIds = new HashSet<>();
+        for (Map.Entry<Integer, LinkedHashSet<Integer>> entry : studyConfiguration.getSamplesInFiles().entrySet()) {
+            if (studyConfiguration.getIndexedFiles().contains(entry.getKey()) && !Collections.disjoint(entry.getValue(), sampleIds)) {
+                fileIds.add(entry.getKey());
+            }
+        }
+        return fileIds;
+    }
+
     /*
      * Before load file, the StudyConfiguration has to be updated with the new sample names.
-     * Will read param SAMPLE_UIDS like [<sampleName>:<sampleId>,]*
-     * If SAMPLE_UIDS is missing, will auto-generate sampleIds
+     * If SAMPLE_IDS is missing, will auto-generate sampleIds
      * Will fail if:
-     * param SAMPLE_UIDS is malformed
-     * any given sampleId is not an integer
      * any given sampleName is not in the input file
      * any given sampleName was already in the StudyConfiguration (so, was already loaded)
-     * some sample was missing in the given SAMPLE_UIDS param
      *
      */
-    public static void checkAndUpdateStudyConfiguration(StudyConfiguration studyConfiguration, int fileId, VariantFileMetadata fileMetadata,
-                                                        ObjectMap options)
+    public void registerFileSamples(StudyConfiguration studyConfiguration, int fileId, VariantFileMetadata fileMetadata, ObjectMap options)
             throws StorageEngineException {
-        if (options.containsKey(VariantStorageEngine.Options.SAMPLE_IDS.key())
-                && !options.getAsStringList(VariantStorageEngine.Options.SAMPLE_IDS.key()).isEmpty()) {
-            for (String sampleEntry : options.getAsStringList(VariantStorageEngine.Options.SAMPLE_IDS.key())) {
-                String[] split = VariantQueryUtils.splitStudyResource(sampleEntry);
-                if (split.length != 2) {
-                    throw new StorageEngineException("Param " + sampleEntry + " is malformed");
-                }
-                String sampleName = split[0];
-                int sampleId;
-                try {
-                    sampleId = Integer.parseInt(split[1]);
-                } catch (NumberFormatException e) {
-                    throw new StorageEngineException("SampleId " + split[1] + " is not an integer", e);
-                }
 
-                if (!fileMetadata.getSamplesPosition().containsKey(sampleName)) {
-                    //ERROR
-                    throw new StorageEngineException("Given sampleName '" + sampleName + "' is not in the input file");
-                } else {
-                    if (!studyConfiguration.getSampleIds().containsKey(sampleName)) {
-                        //Add sample to StudyConfiguration
-                        studyConfiguration.getSampleIds().put(sampleName, sampleId);
-                    } else {
-                        if (studyConfiguration.getSampleIds().get(sampleName) != sampleId) {
-                            throw new StorageEngineException("Sample " + sampleName + ":" + sampleId
-                                    + " was already present. It was in the StudyConfiguration with a different sampleId: "
-                                    + studyConfiguration.getSampleIds().get(sampleName));
-                        }
-                    }
-                }
-            }
-
-            //Check that all samples has a sampleId
-            List<String> missingSamples = new LinkedList<>();
-            for (String sample : fileMetadata.getSampleIds()) {
-                if (!studyConfiguration.getSampleIds().containsKey(sample)) {
-                    missingSamples.add(sample);
-                } /*else {
-                    Integer sampleId = studyConfiguration.getSampleIds().get(sample);
-                    if (studyConfiguration.getIndexedSamples().contains(sampleId)) {
-                        logger.warn("Sample " + sample + ":" + sampleId + " was already loaded.
-                        It was in the StudyConfiguration.indexedSamples");
-                    }
-                }*/
-            }
-            if (!missingSamples.isEmpty()) {
-                throw new StorageEngineException("Samples " + missingSamples.toString() + " has not assigned sampleId");
-            }
-
-        } else {
-            //Find the grader sample Id in the studyConfiguration, in order to add more sampleIds if necessary.
-            int maxId = studyConfiguration.getSampleIds().values().stream().max(Integer::compareTo).orElse(0);
-
-            //Assign new sampleIds
-            for (String sample : fileMetadata.getSampleIds()) {
-                if (!studyConfiguration.getSampleIds().containsKey(sample)) {
-                    //If the sample was not in the original studyId, a new SampleId is assigned.
-
-                    int sampleId;
-                    int samplesSize = studyConfiguration.getSampleIds().size();
-                    Integer samplePosition = fileMetadata.getSamplesPosition().get(sample);
-                    if (!studyConfiguration.getSampleIds().containsValue(samplePosition) && samplePosition != 0) {
-                        //1- Use with the SamplePosition
-                        sampleId = samplePosition;
-                    } else if (!studyConfiguration.getSampleIds().containsValue(samplesSize) && samplesSize != 0) {
-                        //2- Use the number of samples in the StudyConfiguration.
-                        sampleId = samplesSize;
-                    } else {
-                        //3- Use the maxId
-                        sampleId = maxId + 1;
-                    }
-                    studyConfiguration.getSampleIds().put(sample, sampleId);
-                    if (sampleId > maxId) {
-                        maxId = sampleId;
-                    }
-                }
-            }
+        //Assign new sampleIds
+        for (String sample : fileMetadata.getSampleIds()) {
+            registerSample(studyConfiguration, sample);
         }
 
         if (studyConfiguration.getSamplesInFiles().containsKey(fileId)) {
@@ -899,6 +879,76 @@ public class StudyConfigurationManager implements AutoCloseable {
         }
     }
 
+    protected void registerSample(StudyConfiguration studyConfiguration, String sample) throws StorageEngineException {
+        if (!studyConfiguration.getSampleIds().containsKey(sample)) {
+            //If the sample was not in the original studyId, a new SampleId is assigned.
+
+            int sampleId = newSampleId(studyConfiguration);
+            studyConfiguration.getSampleIds().put(sample, sampleId);
+        }
+    }
+
+    public int registerSearchIndexSamples(StudyConfiguration studyConfiguration, List<String> samples, boolean resume)
+            throws StorageEngineException {
+        if (samples == null || samples.isEmpty()) {
+            throw new StorageEngineException("Missing samples to index");
+        }
+
+        List<Integer> sampleIds = new ArrayList<>(samples.size());
+
+        List<String> alreadyIndexedSamples = new ArrayList<>();
+        Set<Integer> searchIndexSampleSets = new HashSet<>();
+
+        for (String sample : samples) {
+            Integer sampleId = getSampleIdFromStudy(sample, studyConfiguration);
+            if (sampleId == null) {
+                throw VariantQueryException.sampleNotFound(sample, studyConfiguration.getStudyName());
+            }
+            sampleIds.add(sampleId);
+            Integer searchIndex = studyConfiguration.getSearchIndexedSampleSets().get(sampleId);
+            if (searchIndex != null) {
+                searchIndexSampleSets.add(searchIndex);
+                alreadyIndexedSamples.add(sample);
+            }
+        }
+
+        final int id;
+        if (!alreadyIndexedSamples.isEmpty()) {
+            // All samples are already indexed, and in the same collection
+            if (alreadyIndexedSamples.size() == samples.size() && searchIndexSampleSets.size() == 1) {
+                id = searchIndexSampleSets.iterator().next();
+                BatchFileOperation.Status status = studyConfiguration.getSearchIndexedSampleSetsStatus().get(id);
+                switch (status) {
+                    case DONE:
+                    case READY:
+                        throw new StorageEngineException("Samples already in search index.");
+                    case RUNNING:
+                        // Resume if resume=true
+                        if (!resume) {
+                            throw new StorageEngineException("Samples already being indexed. Resume operation to continue.");
+                        }
+                    case ERROR:
+                        // Resume
+                        logger.info("Resume load of secondary index in status " + status);
+                        break;
+                    default:
+                        throw new IllegalStateException("Unknown status " + status);
+                }
+
+            } else {
+                throw new StorageEngineException("Samples " + alreadyIndexedSamples + " already in search index");
+            }
+        } else {
+            id = newSearchIndexSamplesId(studyConfiguration);
+            for (Integer sampleId : sampleIds) {
+                studyConfiguration.getSearchIndexedSampleSets().put(sampleId, id);
+            }
+            studyConfiguration.getSearchIndexedSampleSetsStatus().put(id, BatchFileOperation.Status.RUNNING);
+        }
+
+        return id;
+    }
+
     /**
      * Check if the StudyConfiguration is correct.
      *
@@ -910,12 +960,6 @@ public class StudyConfigurationManager implements AutoCloseable {
             throw new StorageEngineException("StudyConfiguration is null");
         }
         checkStudyId(studyConfiguration.getStudyId());
-        if (studyConfiguration.getFileIds().size() != StudyConfiguration.inverseMap(studyConfiguration.getFileIds()).size()) {
-            throw new StorageEngineException("StudyConfiguration has duplicated fileIds");
-        }
-        if (studyConfiguration.getCohortIds().size() != StudyConfiguration.inverseMap(studyConfiguration.getCohortIds()).size()) {
-            throw new StorageEngineException("StudyConfiguration has duplicated cohortIds");
-        }
     }
 
     /**
@@ -927,23 +971,19 @@ public class StudyConfigurationManager implements AutoCloseable {
      * fileId was already in the studyConfiguration.indexedFiles
      *
      * @param studyConfiguration Study Configuration
-     * @param fileId    FileId to add. If negative, will generate a new one
      * @param fileName  File name
      * @return fileId related to that file.
      * @throws StorageEngineException if the file is not valid for being loaded
      */
-    public static int checkNewFile(StudyConfiguration studyConfiguration, int fileId, String fileName) throws StorageEngineException {
-        Map<Integer, String> idFiles = StudyConfiguration.inverseMap(studyConfiguration.getFileIds());
+    public int registerFile(StudyConfiguration studyConfiguration, String fileName) throws StorageEngineException {
+        Map<Integer, String> idFiles = studyConfiguration.getFileIds().inverse();
+        int fileId;
 
-        // Don't allow negative values or zero
-        if (fileId <= 0) {
-            if (studyConfiguration.getFileIds().containsKey(fileName)) {
-                fileId = studyConfiguration.getFileIds().get(fileName);
-            } else {
-                fileId = studyConfiguration.getFileIds().values().stream().max(Integer::compareTo).orElse(0) + 1;
-                studyConfiguration.getFileIds().put(fileName, fileId);
-            }
-            //throw new StorageEngineException("Invalid fileId " + fileId + " for file " + fileName + ". FileId must be positive.");
+        if (studyConfiguration.getFileIds().containsKey(fileName)) {
+            fileId = studyConfiguration.getFileIds().get(fileName);
+        } else {
+            fileId = newFileId(studyConfiguration);
+            studyConfiguration.getFileIds().put(fileName, fileId);
         }
 
         if (studyConfiguration.getFileIds().containsKey(fileName)) {
@@ -967,6 +1007,63 @@ public class StudyConfigurationManager implements AutoCloseable {
         }
         return fileId;
     }
+
+    public void registerCohorts(StudyConfiguration studyConfiguration, Map<String, ? extends Collection<String>> cohorts)
+            throws StorageEngineException {
+        for (Map.Entry<String, ? extends Collection<String>> entry : cohorts.entrySet()) {
+            String cohortName = entry.getKey();
+            Collection<String> samples = entry.getValue();
+
+            Integer cohortId = studyConfiguration.getCohortIds().get(cohortName);
+            if (cohortId == null) {
+                cohortId = newCohortId(studyConfiguration);
+                studyConfiguration.getCohortIds().put(cohortName, cohortId);
+            }
+
+            Set<Integer> sampleIds = new LinkedHashSet<>(samples.size());
+            for (String sample : samples) {
+                Integer sampleId = studyConfiguration.getSampleIds().get(sample);
+                if (sampleId == null) {
+                    sampleId = newSampleId(studyConfiguration);
+                    studyConfiguration.getSampleIds().put(sample, sampleId);
+                }
+                sampleIds.add(sampleId);
+            }
+
+            Set<Integer> oldSamples = studyConfiguration.getCohorts().put(cohortId, sampleIds);
+            if (oldSamples != null && !oldSamples.equals(sampleIds)) {
+                // Cohort has been modified!
+                if (studyConfiguration.getCalculatedStats().contains(cohortId)) {
+                    studyConfiguration.getCalculatedStats().remove(cohortId);
+                    studyConfiguration.getInvalidStats().add(cohortId);
+                }
+            }
+        }
+    }
+
+    protected int newFileId(StudyConfiguration studyConfiguration) throws StorageEngineException {
+//        return studyConfiguration.getFileIds().values().stream().max(Integer::compareTo).orElse(0) + 1;
+        return projectDBAdaptor.generateId(studyConfiguration, "file");
+    }
+
+    protected int newSampleId(StudyConfiguration studyConfiguration) throws StorageEngineException {
+//        return studyConfiguration.getSampleIds().values().stream().max(Integer::compareTo).orElse(0) + 1;
+        return projectDBAdaptor.generateId(studyConfiguration, "sample");
+    }
+
+    protected int newCohortId(StudyConfiguration studyConfiguration) throws StorageEngineException {
+//        return studyConfiguration.getCohortIds().values().stream().max(Integer::compareTo).orElse(0) + 1;
+        return projectDBAdaptor.generateId(studyConfiguration, "cohort");
+    }
+
+    protected int newStudyId() throws StorageEngineException {
+        return projectDBAdaptor.generateId(null, "study");
+    }
+
+    protected int newSearchIndexSamplesId(StudyConfiguration studyConfiguration) throws StorageEngineException {
+        return projectDBAdaptor.generateId(studyConfiguration, "searchIndexSamples");
+    }
+
 
     public static void checkStudyId(int studyId) throws StorageEngineException {
         if (studyId < 0) {

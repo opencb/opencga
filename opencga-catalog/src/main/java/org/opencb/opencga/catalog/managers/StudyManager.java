@@ -33,8 +33,12 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
-import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidator;
+import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
+import org.opencb.opencga.catalog.stats.solr.converters.*;
+import org.opencb.opencga.catalog.utils.AnnotationUtils;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
@@ -49,8 +53,11 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import javax.naming.NamingException;
+import java.io.IOException;
 import java.net.URI;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -65,7 +72,7 @@ public class StudyManager extends AbstractManager {
 
     private static final String MEMBERS = "@members";
     private static final String ADMINS = "@admins";
-//[A-Za-z]([-_.]?[A-Za-z0-9]
+    //[A-Za-z]([-_.]?[A-Za-z0-9]
     private static final String USER_PATTERN = "[A-Za-z][[-_.]?[A-Za-z0-9]?]*";
     private static final String PROJECT_PATTERN = "[A-Za-z0-9][[-_.]?[A-Za-z0-9]?]*";
     private static final String STUDY_PATTERN = "[A-Za-z0-9\\-_.]+|\\*";
@@ -82,8 +89,8 @@ public class StudyManager extends AbstractManager {
         logger = LoggerFactory.getLogger(StudyManager.class);
     }
 
-    public Long getProjectId(long studyId) throws CatalogException {
-        return studyDBAdaptor.getProjectIdByStudyId(studyId);
+    public String getProjectId(long studyId) throws CatalogException {
+        return studyDBAdaptor.getProjectIdByStudyUid(studyId);
     }
 
     public List<Study> resolveIds(List<String> studyList, String userId) throws CatalogException {
@@ -93,7 +100,7 @@ public class StudyManager extends AbstractManager {
                 studyStr = studyList.get(0);
             }
 
-            return smartResolutor(studyStr, userId).getResult();
+            return smartResolutor(studyStr, userId, null).getResult();
         }
 
         List<Study> returnList = new ArrayList<>(studyList.size());
@@ -104,63 +111,100 @@ public class StudyManager extends AbstractManager {
     }
 
     public Study resolveId(String studyStr, String userId) throws CatalogException {
-        QueryResult<Study> studyQueryResult = smartResolutor(studyStr, userId);
+        return resolveId(studyStr, userId, null);
+    }
+
+    public Study resolveId(String studyStr, String userId, QueryOptions options) throws CatalogException {
+        QueryResult<Study> studyQueryResult = smartResolutor(studyStr, userId, options);
 
         if (studyQueryResult.getNumResults() > 1) {
-            throw new CatalogException("More than one study found. Please, be more specific. The accepted pattern is "
-                    + "[ownerId@projectId:studyId]");
+            String studyMessage = "";
+            if (StringUtils.isNotEmpty(studyStr)) {
+                studyMessage = " given '" + studyStr + "'";
+            }
+            throw new CatalogException("More than one study found" + studyMessage + ". Please, be more specific."
+                    + " The accepted pattern is [ownerId@projectId:studyId]");
         }
 
         return studyQueryResult.first();
     }
 
-    private QueryResult<Study> smartResolutor(String studyStr, String userId) throws CatalogException {
+    private QueryResult<Study> smartResolutor(String studyStr, String userId, QueryOptions options) throws CatalogException {
         String owner = null;
         String project = null;
-        String study = null;
+
+        Query query = new Query();
+        QueryOptions queryOptions;
+        if (options == null) {
+            queryOptions = new QueryOptions();
+        } else {
+            queryOptions = new QueryOptions(options);
+        }
 
         if (StringUtils.isNotEmpty(studyStr)) {
-            Matcher matcher = USER_PROJECT_STUDY_PATTERN.matcher(studyStr);
-            if (matcher.find()) {
-                // studyStr contains the full path (owner@project:study)
-                owner = matcher.group(1);
-                project = matcher.group(2);
-                study = matcher.group(3);
+            if (UUIDUtils.isOpenCGAUUID(studyStr)) {
+                query.putIfNotEmpty(StudyDBAdaptor.QueryParams.UUID.key(), studyStr);
             } else {
-                matcher = PROJECT_STUDY_PATTERN.matcher(studyStr);
+                String study;
+
+                Matcher matcher = USER_PROJECT_STUDY_PATTERN.matcher(studyStr);
                 if (matcher.find()) {
-                    // studyStr contains the path (project:study)
-                    project = matcher.group(1);
-                    study = matcher.group(2);
+                    // studyStr contains the full path (owner@project:study)
+                    owner = matcher.group(1);
+                    project = matcher.group(2);
+                    study = matcher.group(3);
                 } else {
-                    // studyStr only contains the study information
-                    study = studyStr;
+                    matcher = PROJECT_STUDY_PATTERN.matcher(studyStr);
+                    if (matcher.find()) {
+                        // studyStr contains the path (project:study)
+                        project = matcher.group(1);
+                        study = matcher.group(2);
+                    } else {
+                        // studyStr only contains the study information
+                        study = studyStr;
+                    }
                 }
+
+                if (study.equals("*")) {
+                    // If the user is asking for all the studies...
+                    study = null;
+                }
+
+                query.putIfNotEmpty(StudyDBAdaptor.QueryParams.ID.key(), study);
             }
         }
 
-        // Empty study if we are actually asking for all possible
-        if (!StringUtils.isEmpty(study) && study.equals("*")) {
-            study = null;
-        }
-
-        Query query = new Query();
         query.putIfNotEmpty(StudyDBAdaptor.QueryParams.OWNER.key(), owner);
         query.putIfNotEmpty(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), project);
-        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.ID.key(), study);
-        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.ALIAS.key(), study);
+//        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.ALIAS.key(), study);
 
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.UID.key(), StudyDBAdaptor.QueryParams.ALIAS.key(),
-                StudyDBAdaptor.QueryParams.CREATION_DATE.key(), StudyDBAdaptor.QueryParams.FQN.key(), StudyDBAdaptor.QueryParams.URI.key()
-        ));
+        if (queryOptions.isEmpty()) {
+            queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                    StudyDBAdaptor.QueryParams.UUID.key(), StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.UID.key(),
+                    StudyDBAdaptor.QueryParams.ALIAS.key(), StudyDBAdaptor.QueryParams.CREATION_DATE.key(),
+                    StudyDBAdaptor.QueryParams.FQN.key(), StudyDBAdaptor.QueryParams.URI.key()
+            ));
+        } else {
+            List<String> includeList = new ArrayList<>(queryOptions.getAsStringList(QueryOptions.INCLUDE));
+            includeList.addAll(Arrays.asList(
+                    StudyDBAdaptor.QueryParams.UUID.key(), StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.UID.key(),
+                    StudyDBAdaptor.QueryParams.ALIAS.key(), StudyDBAdaptor.QueryParams.CREATION_DATE.key(),
+                    StudyDBAdaptor.QueryParams.FQN.key(), StudyDBAdaptor.QueryParams.URI.key()));
+            // We create a new object in case there was an exclude or any other field. We only want to include fields in this case
+            queryOptions = new QueryOptions(QueryOptions.INCLUDE, includeList);
+        }
 
-        QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, options, userId);
+        QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, queryOptions, userId);
 
         if (studyQueryResult.getNumResults() == 0) {
-            studyQueryResult = studyDBAdaptor.get(query, options);
+            studyQueryResult = studyDBAdaptor.get(query, queryOptions);
             if (studyQueryResult.getNumResults() == 0) {
-                throw new CatalogException("No study found or the user " + userId + " does not have permissions to view any.");
+                String studyMessage = "";
+                if (StringUtils.isNotEmpty(studyStr)) {
+                    studyMessage = " given '" + studyStr + "'";
+                }
+                throw new CatalogException("No study found" + studyMessage + " or the user '" + userId
+                        + "'  does not have permissions to view any.");
             } else {
                 throw CatalogAuthorizationException.deny(userId, "view", "study", studyQueryResult.first().getFqn(), null);
             }
@@ -223,6 +267,7 @@ public class StudyManager extends AbstractManager {
 
         File rootFile = new File(".", File.Type.DIRECTORY, null, null, "", "study root folder",
                 new File.FileStatus(File.FileStatus.READY), 0, project.getCurrentRelease());
+        rootFile.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
         files.add(rootFile);
 
         // We set all the permissions for the owner of the study.
@@ -235,6 +280,7 @@ public class StudyManager extends AbstractManager {
                 attributes);
 
         /* CreateStudy */
+        study.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.STUDY));
         QueryResult<Study> result = studyDBAdaptor.insert(project, study, options);
         study = result.getResult().get(0);
 
@@ -962,7 +1008,7 @@ public class StudyManager extends AbstractManager {
 
         VariableSet variableSet = new VariableSet(id, name, unique, confidential, description, variablesSet,
                 getCurrentRelease(study, userId), attributes);
-        CatalogAnnotationsValidator.checkVariableSet(variableSet);
+        AnnotationUtils.checkVariableSet(variableSet);
 
         QueryResult<VariableSet> queryResult = studyDBAdaptor.createVariableSet(study.getUid(), variableSet);
         auditManager.recordCreation(AuditRecord.Resource.variableSet, queryResult.first().getUid(), userId, queryResult.first(), null,
@@ -1014,6 +1060,12 @@ public class StudyManager extends AbstractManager {
 
     public QueryResult<VariableSet> addFieldToVariableSet(String studyStr, String variableSetStr, Variable variable, String sessionId)
             throws CatalogException {
+        if (StringUtils.isEmpty(variable.getId())) {
+            if (StringUtils.isEmpty(variable.getName())) {
+                throw new CatalogException("Missing variable id");
+            }
+            variable.setId(variable.getName());
+        }
         MyResourceId resource = getVariableSetId(variableSetStr, studyStr, sessionId);
         String userId = resource.getUser();
 
@@ -1173,8 +1225,152 @@ public class StudyManager extends AbstractManager {
         }
     }
 
+    public boolean indexCatalogIntoSolr(String token) throws CatalogException {
+
+        String userId = catalogManager.getUserManager().getUserId(token);
+
+        if (authorizationManager.checkIsAdmin(userId)) {
+            // Get all the studies
+            Query query = new Query();
+            QueryOptions options = new QueryOptions()
+                    .append(QueryOptions.INCLUDE, Arrays.asList(StudyDBAdaptor.QueryParams.UID.key(), StudyDBAdaptor.QueryParams.ID.key(),
+                            StudyDBAdaptor.QueryParams.FQN.key(), StudyDBAdaptor.QueryParams.VARIABLE_SET.key()))
+                    .append(DBAdaptor.INCLUDE_ACLS, true);
+            QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, options);
+            if (studyQueryResult.getNumResults() == 0) {
+                throw new CatalogException("Could not index catalog into solr. No studies found");
+            }
+
+            CatalogSolrManager catalogSolrManager = new CatalogSolrManager(this.catalogManager);
+            // Create solr collections if they don't exist
+            catalogSolrManager.createSolrCollections();
+
+            ExecutorService threadPool = Executors.newFixedThreadPool(4);
+            for (Study study : studyQueryResult.getResult()) {
+                Map<String, Set<String>> studyAcls =
+                        SolrConverterUtil.parseInternalOpenCGAAcls((List<Map<String, Object>>) study.getAttributes().get("OPENCGA_ACL"));
+                // We replace the current studyAcls for the parsed one
+                study.getAttributes().put("OPENCGA_ACL", studyAcls);
+
+                threadPool.submit(() -> indexCohort(catalogSolrManager, study));
+                threadPool.submit(() -> indexFile(catalogSolrManager, study));
+                threadPool.submit(() -> indexFamily(catalogSolrManager, study));
+                threadPool.submit(() -> indexIndividual(catalogSolrManager, study));
+                threadPool.submit(() -> indexSample(catalogSolrManager, study));
+            }
+
+            threadPool.shutdown();
+
+            return true;
+        }
+        return false;
+    }
 
     // **************************   Private methods  ******************************** //
+
+    private Boolean indexCohort(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException, IOException {
+
+        Query query = new Query()
+                .append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                .append(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), Constants.ALL_STATUS);
+        QueryOptions cohortQueryOptions = new QueryOptions()
+                .append(QueryOptions.INCLUDE, Arrays.asList(CohortDBAdaptor.QueryParams.ID.key(), CohortDBAdaptor.QueryParams.NAME.key(),
+                        CohortDBAdaptor.QueryParams.CREATION_DATE.key(), CohortDBAdaptor.QueryParams.STATUS.key(),
+                        CohortDBAdaptor.QueryParams.RELEASE.key(), CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key(),
+                        CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key(), CohortDBAdaptor.QueryParams.TYPE.key()))
+                .append(DBAdaptor.INCLUDE_ACLS, true)
+                .append(Constants.FLATTENED_ANNOTATIONS, true);
+
+        catalogSolrManager.insertCatalogCollection(this.cohortDBAdaptor.iterator(query,
+                cohortQueryOptions), new CatalogCohortToSolrCohortConverter(study), CatalogSolrManager.COHORT_SOLR_COLLECTION);
+        return true;
+    }
+
+    private Boolean indexFile(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException, IOException {
+        Query query = new Query()
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), Constants.ALL_STATUS);
+        QueryOptions fileQueryOptions = new QueryOptions()
+                .append(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ID.key(),
+                        FileDBAdaptor.QueryParams.NAME.key(), FileDBAdaptor.QueryParams.TYPE.key(), FileDBAdaptor.QueryParams.FORMAT.key(),
+                        FileDBAdaptor.QueryParams.CREATION_DATE.key(), FileDBAdaptor.QueryParams.BIOFORMAT.key(),
+                        FileDBAdaptor.QueryParams.RELEASE.key(), FileDBAdaptor.QueryParams.STATUS.key(),
+                        FileDBAdaptor.QueryParams.EXTERNAL.key(), FileDBAdaptor.QueryParams.SIZE.key(),
+                        FileDBAdaptor.QueryParams.SOFTWARE.key(), FileDBAdaptor.QueryParams.EXPERIMENT_UID.key(),
+                        FileDBAdaptor.QueryParams.RELATED_FILES.key(), FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(),
+                        FileDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
+                .append(DBAdaptor.INCLUDE_ACLS, true)
+                .append(Constants.FLATTENED_ANNOTATIONS, true);
+
+        catalogSolrManager.insertCatalogCollection(this.fileDBAdaptor.iterator(query,
+                fileQueryOptions), new CatalogFileToSolrFileConverter(study), CatalogSolrManager.FILE_SOLR_COLLECTION);
+        return true;
+    }
+
+
+    private Boolean indexFamily(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException, IOException {
+        Query query = new Query()
+                .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                .append(FamilyDBAdaptor.QueryParams.STATUS_NAME.key(), Constants.ALL_STATUS);
+        QueryOptions familyQueryOptions = new QueryOptions()
+                .append(QueryOptions.INCLUDE, Arrays.asList(FamilyDBAdaptor.QueryParams.ID.key(),
+                        FamilyDBAdaptor.QueryParams.CREATION_DATE.key(), FamilyDBAdaptor.QueryParams.STATUS.key(),
+                        FamilyDBAdaptor.QueryParams.MEMBER_UID.key(), FamilyDBAdaptor.QueryParams.RELEASE.key(),
+                        FamilyDBAdaptor.QueryParams.VERSION.key(), FamilyDBAdaptor.QueryParams.ANNOTATION_SETS.key(),
+                        FamilyDBAdaptor.QueryParams.PHENOTYPES.key(), FamilyDBAdaptor.QueryParams.EXPECTED_SIZE.key()))
+                .append(DBAdaptor.INCLUDE_ACLS, true)
+                .append(Constants.FLATTENED_ANNOTATIONS, true);
+
+        catalogSolrManager.insertCatalogCollection(this.familyDBAdaptor.iterator(query,
+                familyQueryOptions), new CatalogFamilyToSolrFamilyConverter(study), CatalogSolrManager.FAMILY_SOLR_COLLECTION);
+        return true;
+    }
+
+
+    private Boolean indexIndividual(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException, IOException {
+        Query query = new Query()
+                .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                .append(IndividualDBAdaptor.QueryParams.STATUS_NAME.key(), Constants.ALL_STATUS);
+        QueryOptions individualQueryOptions = new QueryOptions()
+                .append(QueryOptions.INCLUDE, Arrays.asList(IndividualDBAdaptor.QueryParams.ID.key(),
+                        IndividualDBAdaptor.QueryParams.FATHER_UID.key(), IndividualDBAdaptor.QueryParams.MOTHER_UID.key(),
+                        IndividualDBAdaptor.QueryParams.MULTIPLES.key(), IndividualDBAdaptor.QueryParams.SEX.key(),
+                        IndividualDBAdaptor.QueryParams.ETHNICITY.key(), IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
+                        IndividualDBAdaptor.QueryParams.RELEASE.key(), IndividualDBAdaptor.QueryParams.CREATION_DATE.key(),
+                        IndividualDBAdaptor.QueryParams.VERSION.key(),
+                        IndividualDBAdaptor.QueryParams.STATUS.key(), IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(),
+                        IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(), IndividualDBAdaptor.QueryParams.PHENOTYPES.key(),
+                        IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), IndividualDBAdaptor.QueryParams.PARENTAL_CONSANGUINITY.key(),
+                        IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(), IndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
+                .append(DBAdaptor.INCLUDE_ACLS, true)
+                .append(Constants.FLATTENED_ANNOTATIONS, true);
+
+        catalogSolrManager.insertCatalogCollection(this.individualDBAdaptor.iterator(query,
+                individualQueryOptions), new CatalogIndividualToSolrIndividualConverter(study),
+                CatalogSolrManager.INDIVIDUAL_SOLR_COLLECTION);
+        return true;
+    }
+
+    private Boolean indexSample(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException, IOException {
+        Query query = new Query()
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                .append(SampleDBAdaptor.QueryParams.STATUS_NAME.key(), Constants.ALL_STATUS);
+        QueryOptions sampleQueryOptions = new QueryOptions()
+                .append(QueryOptions.INCLUDE, Arrays.asList(SampleDBAdaptor.QueryParams.ID.key(), SampleDBAdaptor.QueryParams.SOURCE.key(),
+                        SampleDBAdaptor.QueryParams.RELEASE.key(), SampleDBAdaptor.QueryParams.VERSION.key(),
+                        SampleDBAdaptor.QueryParams.CREATION_DATE.key(), SampleDBAdaptor.QueryParams.STATUS.key(),
+                        SampleDBAdaptor.QueryParams.TYPE.key(), SampleDBAdaptor.QueryParams.SOMATIC.key(),
+                        SampleDBAdaptor.QueryParams.PHENOTYPES.key(), SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(),
+                        SampleDBAdaptor.QueryParams.UID.key()))
+                .append(DBAdaptor.INCLUDE_ACLS, true)
+                .append(Constants.FLATTENED_ANNOTATIONS, true);
+
+        catalogSolrManager.insertCatalogCollection(this.sampleDBAdaptor.iterator(query,
+                sampleQueryOptions), new CatalogSampleToSolrSampleConverter(study), CatalogSolrManager.SAMPLE_SOLR_COLLECTION);
+        return true;
+    }
+
+
     private int getProjectCurrentRelease(long projectId) throws CatalogException {
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key());
         QueryResult<Project> projectQueryResult = projectDBAdaptor.get(projectId, options);
@@ -1263,4 +1459,29 @@ public class StudyManager extends AbstractManager {
         }
         return studyDBAdaptor.getOwnerId(study.getUid());
     }
+
+    public String getProjectFqn(String studyFqn) throws CatalogException {
+        Matcher matcher = USER_PROJECT_STUDY_PATTERN.matcher(studyFqn);
+        if (matcher.find()) {
+            // studyStr contains the full path (owner@project:study)
+            String owner = matcher.group(1);
+            String project = matcher.group(2);
+            return owner + '@' + project;
+        } else {
+            throw new CatalogException("Invalid Study FQN. The accepted pattern is [ownerId@projectId:studyId]");
+        }
+    }
+
+//    private Map<Long, String> getAllStudiesIdAndUid(List<Study> studies) {
+//        Map<Long, String> allStudiesIdAndUids = new HashMap<>();
+//
+//        for (Study study : studies) {
+//            String id = study.getFqn().replace(":", "__");
+//            long uid = study.getUid();
+//            allStudiesIdAndUids.put(uid, id);
+//        }
+//        return allStudiesIdAndUids;
+//
+//    }
+
 }

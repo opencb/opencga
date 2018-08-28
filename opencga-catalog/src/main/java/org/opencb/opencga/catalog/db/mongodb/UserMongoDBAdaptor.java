@@ -371,6 +371,11 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     }
 
     @Override
+    public QueryResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException {
+        throw new NotImplementedException("Get not implemented for user");
+    }
+
+    @Override
     public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
         Map<String, Object> userParameters = new HashMap<>();
@@ -641,7 +646,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
             try {
                 switch (queryParam) {
                     case ID:
-                        addOrQuery(PRIVATE_ID, queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(PRIVATE_ID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case ATTRIBUTES:
                         addAutoOrQuery(entry.getKey(), entry.getKey(), query, queryParam.type(), andBsonList);
@@ -654,11 +659,16 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
                         mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
                         addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
                         break;
+                    case STATUS_NAME:
+                        // Convert the status to a positive status
+                        query.put(queryParam.key(),
+                                Status.getPositiveStatus(User.UserStatus.STATUS_LIST, query.getString(queryParam.key())));
+                        addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
                     case NAME:
                     case EMAIL:
                     case PASSWORD:
                     case ORGANIZATION:
-                    case STATUS_NAME:
                     case STATUS_MSG:
                     case STATUS_DATE:
                     case LAST_MODIFIED:

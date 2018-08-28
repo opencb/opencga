@@ -16,6 +16,10 @@
 
 package org.opencb.opencga.storage.core.variant.adaptors;
 
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.core.Region;
@@ -46,8 +50,16 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
  */
 public final class VariantQueryUtils {
 
-    private static final Pattern OPERATION_PATTERN = Pattern.compile("^([^=<>~!]*)(<=?|>=?|!=?|!?=?~|==?)([^=<>~!]+.*)$");
-    private static final Pattern GENOTYPE_FILTER_PATTERN = Pattern.compile("(?<sample>[^,;]+):(?<gts>([^:;,]+,?)+)(?<op>[;,.])");
+    private static final Pattern OPERATION_PATTERN = Pattern.compile("^([^=<>~!]*)(<?<=?|>>?=?|!=?|!?=?~|==?)([^=<>~!]+.*)$");
+    private static final String KEY = "key";
+    private static final String VALUE = "value";
+    private static final String OP = "op";
+    // <KEY>:<VALUE><OP>
+    // e.g.
+    //      HG0096:0/1,1/1,HG0097:1/1
+    //      HG0096:DP<3,GQ>4,HG0097:DP<6
+    private static final Pattern MULTI_KEY_VALUE_FILTER_PATTERN =
+            Pattern.compile("(?<" + KEY + ">[^,;]+):(?<" + VALUE + ">([^:;,]+[,;]?)+)(?<" + OP + ">[;,.])");
 
     public static final String OR = ",";
     public static final char OR_CHAR = ',';
@@ -63,8 +75,15 @@ public final class VariantQueryUtils {
     public static final String ALL = "all";
     public static final String GT = "GT";
 
+    private static final int LIMIT_DEFAULT = 1000;
+    private static final int LIMIT_MAX = 5000;
+
+    // Some private query params
     public static final QueryParam ANNOT_EXPRESSION_GENES = QueryParam.create("annot_expression_genes", "", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam ANNOT_GO_GENES = QueryParam.create("annot_go_genes", "", QueryParam.Type.TEXT_ARRAY);
+    public static final QueryParam ANNOT_GENE_REGIONS = QueryParam.create("annot_gene_regions", "", QueryParam.Type.TEXT_ARRAY);
+    public static final QueryParam VARIANTS_TO_INDEX = QueryParam.create("variantsToIndex",
+            "Select variants that need to be updated in the SearchEngine", QueryParam.Type.BOOLEAN);
 
     public static final Set<VariantQueryParam> MODIFIER_QUERY_PARAMS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             INCLUDE_STUDY,
@@ -76,6 +95,7 @@ public final class VariantQueryUtils {
             UNKNOWN_GENOTYPE,
             SAMPLE_METADATA
     )));
+    public static final boolean DEFAULT_SKIP_COUNT = true;
 
     private static Logger logger = LoggerFactory.getLogger(VariantQueryUtils.class);
 
@@ -92,6 +112,14 @@ public final class VariantQueryUtils {
         public String separator() {
             return separator;
         }
+    }
+
+    private static final ObjectMapper QUERY_MAPPER = new ObjectMapper().addMixIn(Variant.class, VariantMixin.class);
+
+    interface VariantMixin {
+        // Serialize variants with "toString". Used to serialize queries.
+        @JsonValue
+        String toString();
     }
 
     private VariantQueryUtils() {
@@ -192,10 +220,10 @@ public final class VariantQueryUtils {
         final String annotation = VariantField.ANNOTATION.fieldName();
         for (String field : queryOptions.getAsStringList(key)) {
             String newField;
-            if (!field.startsWith(annotation + '.')) {
-                newField = annotation + '.' + field;
-            } else {
+            if (field.startsWith(annotation + '.') || field.equals(annotation)) {
                 newField = field;
+            } else {
+                newField = annotation + '.' + field;
             }
 
             if (VariantField.get(newField) == null) {
@@ -421,6 +449,14 @@ public final class VariantQueryUtils {
         private final Map<Integer, List<Integer>> files;
 //        private final Map<Integer, List<Integer>> cohortIds;
 
+        public SelectVariantElements(StudyConfiguration studyConfiguration, List<Integer> samples, List<Integer> files) {
+            this.fields = VariantField.getIncludeFields(null);
+            this.studies = Collections.singletonList(studyConfiguration.getStudyId());
+            this.studyConfigurations = Collections.singletonMap(studyConfiguration.getStudyId(), studyConfiguration);
+            this.samples = Collections.singletonMap(studyConfiguration.getStudyId(), samples);
+            this.files = Collections.singletonMap(studyConfiguration.getStudyId(), files);
+        }
+
         private SelectVariantElements(Set<VariantField> fields, List<Integer> studies, Map<Integer, StudyConfiguration> studyConfigurations,
                                       Map<Integer, List<Integer>> samples, Map<Integer, List<Integer>> files) {
             this.fields = fields;
@@ -545,6 +581,27 @@ public final class VariantQueryUtils {
         List<Integer> studyIds;
         if (studiesList == null) {
             studyIds = studyConfigurationManager.getStudyIds(options);
+            if (studyIds.size() > 1) {
+                Map<Integer, List<Integer>> map = null;
+                if (isIncludeSamplesDefined(query, fields)) {
+                    map = getIncludeSamples(query, options, studyIds,
+                            studyId -> studyConfigurationManager.getStudyConfiguration(studyId, null).first());
+                } else if (isIncludeFilesDefined(query, fields)) {
+                    map = getIncludeFiles(query, studyIds, fields,
+                            studyId -> studyConfigurationManager.getStudyConfiguration(studyId, null).first());
+                }
+                if (map != null) {
+                    List<Integer> studyIdsFromSubFields = new ArrayList<>();
+                    for (Map.Entry<Integer, List<Integer>> entry : map.entrySet()) {
+                        if (!entry.getValue().isEmpty()) {
+                            studyIdsFromSubFields.add(entry.getKey());
+                        }
+                    }
+                    if (!studyIdsFromSubFields.isEmpty()) {
+                        studyIds = studyIdsFromSubFields;
+                    }
+                }
+            }
         } else {
             studyIds = studyConfigurationManager.getStudyIds(studiesList, options);
         }
@@ -627,17 +684,9 @@ public final class VariantQueryUtils {
             } else if (returnAllFiles) {
                 fileIds = new ArrayList<>(sc.getIndexedFiles());
             } else if (includeSamplesList != null && !includeSamplesList.isEmpty()) {
-                Set<Integer> fileSet = new LinkedHashSet<>();
-                for (String sample : includeSamplesList) {
-                    Integer sampleId = StudyConfigurationManager.getSampleIdFromStudy(sample, sc);
-                    if (sampleId != null) {
-                        for (Integer indexedFile : sc.getIndexedFiles()) {
-                            if (sc.getSamplesInFiles().get(indexedFile).contains(sampleId)) {
-                                fileSet.add(indexedFile);
-                            }
-                        }
-                    }
-                }
+                List<Integer> sampleIds = includeSamplesList.stream()
+                        .map(sample -> StudyConfigurationManager.getSampleIdFromStudy(sample, sc)).collect(Collectors.toList());
+                Set<Integer> fileSet = StudyConfigurationManager.getFileIdsFromSampleIds(sc, sampleIds);
                 fileIds = new ArrayList<>(fileSet);
             } else {
                 // Return all files
@@ -664,7 +713,7 @@ public final class VariantQueryUtils {
      * @param fields                    Returned fields
      * @return List of fileIds to return.
      */
-    private static List<String> getIncludeFilesList(Query query, Set<VariantField> fields) {
+    public static List<String> getIncludeFilesList(Query query, Set<VariantField> fields) {
         List<String> includeFiles;
         if (!fields.contains(VariantField.STUDIES_FILES)) {
             includeFiles = Collections.emptyList();
@@ -675,7 +724,7 @@ public final class VariantQueryUtils {
     }
 
     private static List<String> getIncludeFilesList(Query query) {
-        List<String> includeFiles;
+        List<String> includeFiles = null;
         if (query.containsKey(INCLUDE_FILE.key())) {
             String files = query.getString(INCLUDE_FILE.key());
             if (files.equals(ALL)) {
@@ -685,16 +734,23 @@ public final class VariantQueryUtils {
             } else {
                 includeFiles = query.getAsStringList(INCLUDE_FILE.key());
             }
-        } else if (query.containsKey(FILE.key())) {
+            return includeFiles;
+        }
+        if (isValidParam(query, FILE)) {
             String files = query.getString(FILE.key());
             includeFiles = splitValue(files, checkOperator(files))
                     .stream()
                     .filter(value -> !isNegated(value))
                     .collect(Collectors.toList());
-            if (includeFiles.isEmpty()) {
-                includeFiles = null;
+        }
+        if (isValidParam(query, INFO)) {
+            Map<String, String> infoMap = parseInfo(query).getValue();
+            if (includeFiles == null) {
+                includeFiles = new ArrayList<>(infoMap.size());
             }
-        } else {
+            includeFiles.addAll(infoMap.keySet());
+        }
+        if (CollectionUtils.isEmpty(includeFiles)) {
             includeFiles = null;
         }
         return includeFiles;
@@ -722,15 +778,20 @@ public final class VariantQueryUtils {
 
     public static Map<String, List<String>> getSamplesMetadata(Query query, QueryOptions options,
                                                                StudyConfigurationManager studyConfigurationManager) {
+        if (VariantField.getIncludeFields(options).contains(VariantField.STUDIES)) {
+            List<Integer> includeStudies = getIncludeStudies(query, options, studyConfigurationManager);
+            Function<Integer, StudyConfiguration> studyProvider = studyId ->
+                    studyConfigurationManager.getStudyConfiguration(studyId, options).first();
+            return getIncludeSamples(query, options, includeStudies, studyProvider, (sc, s) -> s, StudyConfiguration::getStudyName);
+        } else {
+            return Collections.emptyMap();
+        }
+    }
+
+    public static Map<String, List<String>> getSamplesMetadataIfRequested(Query query, QueryOptions options,
+                                                                          StudyConfigurationManager studyConfigurationManager) {
         if (query.getBoolean(SAMPLE_METADATA.key(), false)) {
-            if (VariantField.getIncludeFields(options).contains(VariantField.STUDIES)) {
-                List<Integer> includeStudies = getIncludeStudies(query, options, studyConfigurationManager);
-                Function<Integer, StudyConfiguration> studyProvider = studyId ->
-                        studyConfigurationManager.getStudyConfiguration(studyId, options).first();
-                return getIncludeSamples(query, options, includeStudies, studyProvider, (sc, s) -> s, StudyConfiguration::getStudyName);
-            } else {
-                return Collections.emptyMap();
-            }
+            return getSamplesMetadata(query, options, studyConfigurationManager);
         } else {
             return null;
         }
@@ -848,14 +909,21 @@ public final class VariantQueryUtils {
                         .collect(Collectors.toList());
             }
             if (isValidParam(query, GENOTYPE)) {
-                HashMap<Object, List<String>> map = new HashMap<>();
+                HashMap<Object, List<String>> map = new LinkedHashMap<>();
                 parseGenotypeFilter(query.getString(GENOTYPE.key()), map);
                 if (samples == null) {
                     samples = new ArrayList<>(map.size());
                 }
                 map.keySet().stream().map(Object::toString).forEach(samples::add);
             }
-            if (samples != null && samples.isEmpty()) {
+            if (isValidParam(query, FORMAT)) {
+                Map<String, String> formatMap = parseFormat(query).getValue();
+                if (samples == null) {
+                    samples = new ArrayList<>(formatMap.size());
+                }
+                samples.addAll(formatMap.keySet());
+            }
+            if (CollectionUtils.isEmpty(samples)) {
                 samples = null;
             }
         }
@@ -934,32 +1002,179 @@ public final class VariantQueryUtils {
     }
 
     /**
-     * Partes the genotype filter.
+     * Parse INFO param.
+     *
+     * @param query Query to parse
+     * @return a pair with the internal QueryOperation (AND/OR) and a map between Files and INFO filters.
+     */
+    public static Pair<QueryOperation, Map<String, String>> parseInfo(Query query) {
+        if (!isValidParam(query, INFO)) {
+            return Pair.of(null, Collections.emptyMap());
+        }
+        String value = query.getString(INFO.key());
+        if (value.contains(IS)) {
+            return parseMultiKeyValueFilter(INFO, value);
+        } else {
+            List<String> files = query.getAsStringList(FILE.key());
+            files.removeIf(VariantQueryUtils::isNegated);
+
+            if (files.isEmpty()) {
+                throw VariantQueryException.malformedParam(INFO, value, "Missing \"" + FILE.key() + "\" param.");
+            }
+
+            QueryOperation operator = checkOperator(value);
+
+            Map<String, String> map = new LinkedHashMap<>(files.size());
+            for (String file : files) {
+                map.put(file, value);
+            }
+
+            return Pair.of(operator, map);
+        }
+    }
+
+    /**
+     * Parse FORMAT param.
+     *
+     * @param query Query to parse
+     * @return a pair with the internal QueryOperation (AND/OR) and a map between Samples and FORMAT filters.
+     */
+    public static Pair<QueryOperation, Map<String, String>> parseFormat(Query query) {
+        if (!isValidParam(query, FORMAT)) {
+            return Pair.of(null, Collections.emptyMap());
+        }
+        String value = query.getString(FORMAT.key());
+        if (value.contains(IS)) {
+            return parseMultiKeyValueFilter(FORMAT, value);
+        } else {
+            QueryOperation operator = checkOperator(value);
+            QueryOperation samplesOperator;
+
+            List<String> samples;
+            String sampleFilter = query.getString(SAMPLE.key());
+            Pair<QueryOperation, List<String>> pair = splitValue(sampleFilter);
+            samples = new LinkedList<>(pair.getValue());
+            samplesOperator = pair.getKey();
+            samples.removeIf(VariantQueryUtils::isNegated);
+
+            if (samples.isEmpty()) {
+                HashMap<Object, List<String>> genotypeMap = new HashMap<>();
+                samplesOperator = parseGenotypeFilter(query.getString(GENOTYPE.key()), genotypeMap);
+                samples = genotypeMap.keySet().stream().map(Object::toString).collect(Collectors.toList());
+            }
+
+            if (operator == null && samples.size() > 1) {
+                operator = samplesOperator;
+            }
+
+            if (samples.isEmpty()) {
+                throw VariantQueryException.malformedParam(FORMAT, value,
+                        "Missing \"" + SAMPLE.key() + "\" or \"" + GENOTYPE.key() + "\" param.");
+            }
+
+            Map<String, String> map = new LinkedHashMap<>(samples.size());
+            for (String sample : samples) {
+                map.put(sample, value);
+            }
+
+            return Pair.of(operator, map);
+        }
+    }
+    private static Pair<QueryOperation, Map<String, String>> parseMultiKeyValueFilter(VariantQueryParam param, String stringValue) {
+        Map<String, String> map = new LinkedHashMap<>();
+
+        StringTokenizer tokenizer = new StringTokenizer(stringValue, OR + AND, true);
+        String key = "";
+        String values = "";
+        String op = "";
+        QueryOperation operation = null;
+
+        while (tokenizer.hasMoreElements()) {
+            String token = tokenizer.nextToken();
+
+            if (token.contains(IS)) {
+                if (!key.isEmpty()) {
+                    // Prev operator is the main operator
+                    if (AND.equals(op)) {
+                        if (operation == QueryOperation.OR) {
+                            throw VariantQueryException.mixedAndOrOperators(param, stringValue);
+                        } else {
+                            operation = QueryOperation.AND;
+                        }
+                    } else if (OR.equals(op)) {
+                        if (operation == QueryOperation.AND) {
+                            throw VariantQueryException.mixedAndOrOperators(param, stringValue);
+                        } else {
+                            operation = QueryOperation.OR;
+                        }
+                    }
+
+                    // Add prev key/value to map
+                    String finalValues = values;
+                    QueryOperation finalOperation = operation;
+                    map.compute(key, (k, v) -> {
+                        if (v == null) {
+                            return finalValues;
+                        } else {
+                            return v + finalOperation.separator() + finalValues;
+                        }
+                    });
+                }
+
+
+                String[] split = token.split(IS, 2);
+                key = split[0];
+                values = split[1];
+            } else if (token.equals(OR) || token.equals(AND)) {
+                op = token;
+            } else {
+                if (key.isEmpty()) {
+                    throw VariantQueryException.malformedParam(param, stringValue);
+                }
+                values += op + token;
+            }
+        }
+
+        if (!key.isEmpty()) {
+            String finalValues = values;
+            QueryOperation finalOperation = operation;
+            map.compute(key, (k, v) -> {
+                if (v == null) {
+                    return finalValues;
+                } else {
+                    return v + finalOperation.separator() + finalValues;
+                }
+            });
+        }
+
+        return Pair.of(operation, map);
+    }
+
+    /**
+     * Parse the genotype filter.
      *
      * @param sampleGenotypes Genotypes filter value
      * @param map             Initialized map to be filled with the sample to list of genotypes
      * @return QueryOperation between samples
      */
     public static QueryOperation parseGenotypeFilter(String sampleGenotypes, Map<Object, List<String>> map) {
-        Matcher matcher = GENOTYPE_FILTER_PATTERN.matcher(sampleGenotypes + '.');
+        Matcher matcher = MULTI_KEY_VALUE_FILTER_PATTERN.matcher(sampleGenotypes + '.');
 
         QueryOperation operation = null;
         while (matcher.find()) {
-            String gts = matcher.group("gts");
-            String sample = matcher.group("sample");
-            String op = matcher.group("op");
+            String gts = matcher.group(VALUE);
+            String sample = matcher.group(KEY);
+            String op = matcher.group(OP);
             map.put(sample, Arrays.asList(gts.split(",")));
             if (AND.equals(op)) {
                 if (operation == QueryOperation.OR) {
-                    throw VariantQueryException.malformedParam(GENOTYPE, sampleGenotypes,
-                            "Unable to mix AND (" + AND + ") and OR (" + OR + ") in the same query.");
+                    throw VariantQueryException.mixedAndOrOperators(GENOTYPE, sampleGenotypes);
                 } else {
                     operation = QueryOperation.AND;
                 }
             } else if (OR.equals(op)) {
                 if (operation == QueryOperation.AND) {
-                    throw VariantQueryException.malformedParam(GENOTYPE, sampleGenotypes,
-                            "Unable to mix AND (" + AND + ") and OR (" + OR + ") in the same query.");
+                    throw VariantQueryException.mixedAndOrOperators(GENOTYPE, sampleGenotypes);
                 } else {
                     operation = QueryOperation.OR;
                 }
@@ -998,6 +1213,80 @@ public final class VariantQueryUtils {
         return soAccession;
     }
 
+    public static Query extractGenotypeFromFormatFilter(Query query) {
+        Pair<QueryOperation, Map<String, String>> formatPair = parseFormat(query);
+
+        if (formatPair.getValue().values().stream().anyMatch(v -> v.contains("GT"))) {
+            if (isValidParam(query, SAMPLE) || isValidParam(query, GENOTYPE)) {
+                throw VariantQueryException.malformedParam(FORMAT, query.getString(FORMAT.key()),
+                        "Can not be used along with filter \"" + GENOTYPE.key() + "\" or \"" + SAMPLE.key() + '"');
+            }
+
+            StringBuilder formatBuilder = new StringBuilder();
+            StringBuilder genotypeBuilder = new StringBuilder();
+
+            for (Map.Entry<String, String> entry : formatPair.getValue().entrySet()) {
+                String sample = entry.getKey();
+                String gt = "";
+                String other = "";
+                String op = "";
+                String gtOp = "";
+                if (entry.getValue().contains("GT")) {
+                    StringTokenizer tokenizer = new StringTokenizer(entry.getValue(), AND + OR, true);
+                    boolean gtFilter = false;
+                    while (tokenizer.hasMoreTokens()) {
+                        String token = tokenizer.nextToken();
+                        if (token.equals(OR) || token.equals(AND)) {
+                            op = token;
+                        } else if (StringUtils.containsAny(token, '>', '<', '=', '~')) {
+                            gtFilter = false;
+                        }
+                        if (token.contains("GT")) {
+                            if (!op.isEmpty()) {
+                                gtOp = op;
+                            }
+                            gtFilter = true;
+                            gt += splitOperator(token)[2];
+                        } else if (gtFilter) {
+                            gt += token;
+                        } else {
+                            other += token;
+                        }
+                    }
+                } else {
+                    other = entry.getValue();
+                }
+
+                if (!other.isEmpty()) {
+                    if (formatBuilder.length() > 0) {
+                        formatBuilder.append(formatPair.getLeft().separator());
+                    }
+                    if (other.endsWith(OR) || other.endsWith(AND)) {
+                        other = other.substring(0, other.length() - 1);
+                    }
+                    formatBuilder.append(sample).append(IS).append(other);
+                }
+                if (!gt.isEmpty()) {
+                    if (genotypeBuilder.length() > 0) {
+                        genotypeBuilder.append(formatPair.getLeft().separator());
+                    }
+                    if (gt.endsWith(OR) || gtOp.equals(OR)) {
+                        throw VariantQueryException.malformedParam(FORMAT, query.getString(FORMAT.key()), "Unable to add GT filter with "
+                                + "operator OR (" + OR + ").");
+                    } else if (gt.endsWith(AND)) {
+                        gt = gt.substring(0, gt.length() - 1);
+                    }
+                    genotypeBuilder.append(sample).append(IS).append(gt);
+                }
+            }
+
+            query.put(GENOTYPE.key(), genotypeBuilder.toString());
+            query.put(FORMAT.key(), formatBuilder.toString());
+        }
+
+        return query;
+    }
+
     /**
      * Checks that the filter value list contains only one type of operations.
      *
@@ -1028,7 +1317,7 @@ public final class VariantQueryUtils {
             }
         }
         if (containsAnd && containsOr) {
-            throw new VariantQueryException("Can't merge in the same query filter, AND and OR operators");
+            throw VariantQueryException.mixedAndOrOperators();
         } else if (containsAnd) {   // && !containsOr  -> true
             return QueryOperation.AND;
         } else if (containsOr) {    // && !containsAnd  -> true
@@ -1168,6 +1457,19 @@ public final class VariantQueryUtils {
         }
     }
 
+    public static void convertGenesToRegionsQuery(Query query, CellBaseUtils cellBaseUtils) {
+        VariantQueryXref variantQueryXref = VariantQueryUtils.parseXrefs(query);
+        List<String> genes = variantQueryXref.getGenes();
+        if (!genes.isEmpty()) {
+
+            List<Region> regions = cellBaseUtils.getGeneRegion(genes);
+
+            regions = mergeRegions(regions);
+
+            query.put(ANNOT_GENE_REGIONS.key(), regions);
+        }
+    }
+
     public static List<Region> mergeRegions(List<Region> regions) {
         if (regions != null && regions.size() > 1) {
             regions = new ArrayList<>(regions);
@@ -1189,5 +1491,40 @@ public final class VariantQueryUtils {
         }
         return regions;
     }
+
+    public static String printQuery(Query query) {
+        if (query == null) {
+            return "{}";
+        } else {
+            try {
+                return QUERY_MAPPER.writeValueAsString(query);
+            } catch (JsonProcessingException e) {
+                logger.debug("Error writing json variant", e);
+                return query.toString();
+            }
+        }
+    }
+
+
+    public static QueryOptions addDefaultLimit(QueryOptions queryOptions) {
+        return addDefaultLimit(queryOptions, LIMIT_MAX, LIMIT_DEFAULT);
+    }
+
+    public static QueryOptions addDefaultLimit(QueryOptions queryOptions, int limitMax, int limitDefault) {
+        queryOptions = queryOptions == null ? new QueryOptions() : queryOptions;
+        // Add default limit
+        int limit = getDefaultLimit(queryOptions.getInt(QueryOptions.LIMIT, -1), limitMax, limitDefault);
+        queryOptions.put(QueryOptions.LIMIT,  limit);
+        return queryOptions;
+    }
+
+    public static int getDefaultLimit(int limit, int limitMax, int limitDefault) {
+        if (limit > limitMax) {
+            logger.info("Unable to return more than {} variants. Change limit from {} to {}", limitMax, limit, limitMax);
+        }
+        limit = (limit > 0) ? Math.min(limit, limitMax) : limitDefault;
+        return limit;
+    }
+
 
 }

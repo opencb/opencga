@@ -16,11 +16,14 @@
 
 package org.opencb.opencga.storage.hadoop.variant.converters.annotation;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.client.Put;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantBuilder;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.tools.Converter;
+import org.opencb.opencga.storage.core.variant.annotation.converters.VariantTraitAssociationToEvidenceEntryConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
@@ -29,9 +32,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.ADDITIONAL_ATTRIBUTES_KEY;
-import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.ADDITIONAL_ATTRIBUTES_VARIANT_ID;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.VARIANT_ID;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.parseConsequenceType;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.VariantColumn.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory.generateVariantRowKey;
 
@@ -43,8 +48,19 @@ import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPho
 public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverter
         implements Converter<VariantAnnotation, Map<PhoenixHelper.Column, ?>> {
 
+    private VariantTraitAssociationToEvidenceEntryConverter evidenceEntryConverter;
+
+    private int annotationId;
+
+    @Deprecated
     public VariantAnnotationToPhoenixConverter(byte[] columnFamily) {
+        this(columnFamily, -1);
+    }
+
+    public VariantAnnotationToPhoenixConverter(byte[] columnFamily, int annotationId) {
         super(columnFamily);
+        evidenceEntryConverter = new VariantTraitAssociationToEvidenceEntryConverter();
+        this.annotationId = annotationId;
     }
 
     private final Logger logger = LoggerFactory.getLogger(VariantAnnotationToPhoenixConverter.class);
@@ -54,12 +70,20 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
 
         HashMap<PhoenixHelper.Column, Object> map = new HashMap<>();
 
+        // If there are VariantTraitAssociation, and there are none TraitAssociations (EvidenceEntry), convert
+        if (variantAnnotation.getVariantTraitAssociation() != null && CollectionUtils.isEmpty(variantAnnotation.getTraitAssociation())) {
+            List<EvidenceEntry> evidenceEntries = evidenceEntryConverter.convert(variantAnnotation.getVariantTraitAssociation());
+            variantAnnotation.setTraitAssociation(evidenceEntries);
+        }
+
         map.put(FULL_ANNOTATION, variantAnnotation.toString());
+        map.put(ANNOTATION_ID, annotationId);
 
         Set<String> genes = new HashSet<>();
+        Set<String> gnSo = new HashSet<>();
         Set<String> transcripts = new HashSet<>();
         Set<String> flags = new HashSet<>();
-        Set<Integer> so = new HashSet<>();
+        Set<Integer> soList = new HashSet<>();
         Set<String> biotype = new HashSet<>();
         Set<Double> polyphen = new HashSet<>();
         Set<Double> sift = new HashSet<>();
@@ -71,6 +95,7 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
         Set<String> drugs = new HashSet<>();
         Set<String> proteinKeywords = new HashSet<>();
         // Contains all the xrefs, and the id, the geneNames and transcripts
+        Set<ClinicalSignificance> clinicalSignificanceSet = new HashSet<>();
         Set<String> xrefs = new HashSet<>();
 
         addNotNull(xrefs, variantAnnotation.getId());
@@ -84,13 +109,35 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
             addNotNull(transcripts, consequenceType.getEnsemblTranscriptId());
             addNotNull(biotype, consequenceType.getBiotype());
             addAllNotNull(flags, consequenceType.getTranscriptAnnotationFlags());
+
+            ProteinVariantAnnotation proteinVariantAnnotation = consequenceType.getProteinVariantAnnotation();
             for (SequenceOntologyTerm sequenceOntologyTerm : consequenceType.getSequenceOntologyTerms()) {
                 String accession = sequenceOntologyTerm.getAccession();
-                addNotNull(so, Integer.parseInt(accession.substring(3)));
+                int so = parseConsequenceType(accession);
+                addNotNull(soList, so);
+
+                if (StringUtils.isNotEmpty(consequenceType.getGeneName())) {
+                    gnSo.add(buildGeneSO(consequenceType.getGeneName(), so));
+                }
+                if (StringUtils.isNotEmpty(consequenceType.getEnsemblGeneId())) {
+                    gnSo.add(buildGeneSO(consequenceType.getEnsemblGeneId(), so));
+                }
+                if (StringUtils.isNotEmpty(consequenceType.getEnsemblTranscriptId())) {
+                    gnSo.add(buildGeneSO(consequenceType.getEnsemblTranscriptId(), so));
+                }
+                if (proteinVariantAnnotation != null) {
+                    if (StringUtils.isNotEmpty(proteinVariantAnnotation.getUniprotAccession())) {
+                        gnSo.add(buildGeneSO(proteinVariantAnnotation.getUniprotAccession(), so));
+                    }
+                    if (StringUtils.isNotEmpty(proteinVariantAnnotation.getUniprotName())) {
+                        gnSo.add(buildGeneSO(proteinVariantAnnotation.getUniprotName(), so));
+                    }
+                }
+
             }
-            if (consequenceType.getProteinVariantAnnotation() != null) {
-                if (consequenceType.getProteinVariantAnnotation().getSubstitutionScores() != null) {
-                    for (Score score : consequenceType.getProteinVariantAnnotation().getSubstitutionScores()) {
+            if (proteinVariantAnnotation != null) {
+                if (proteinVariantAnnotation.getSubstitutionScores() != null) {
+                    for (Score score : proteinVariantAnnotation.getSubstitutionScores()) {
                         if (score.getSource().equalsIgnoreCase("sift")) {
                             addNotNull(sift, score.getScore());
                             addNotNull(siftDesc, score.getDescription());
@@ -100,12 +147,12 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
                         }
                     }
                 }
-                if (consequenceType.getProteinVariantAnnotation().getKeywords() != null) {
-                    proteinKeywords.addAll(consequenceType.getProteinVariantAnnotation().getKeywords());
+                if (proteinVariantAnnotation.getKeywords() != null) {
+                    proteinKeywords.addAll(proteinVariantAnnotation.getKeywords());
                 }
-                addNotNull(xrefs, consequenceType.getProteinVariantAnnotation().getUniprotName());
-                addNotNull(xrefs, consequenceType.getProteinVariantAnnotation().getUniprotAccession());
-                addNotNull(xrefs, consequenceType.getProteinVariantAnnotation().getUniprotVariantId());
+                addNotNull(xrefs, proteinVariantAnnotation.getUniprotName());
+                addNotNull(xrefs, proteinVariantAnnotation.getUniprotAccession());
+                addNotNull(xrefs, proteinVariantAnnotation.getUniprotVariantId());
             }
         }
 
@@ -118,6 +165,17 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
             if (variantAnnotation.getVariantTraitAssociation().getClinvar() != null) {
                 for (ClinVar clinVar : variantAnnotation.getVariantTraitAssociation().getClinvar()) {
                     addNotNull(xrefs, clinVar.getAccession());
+                }
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(variantAnnotation.getTraitAssociation())) {
+            for (EvidenceEntry evidenceEntry : variantAnnotation.getTraitAssociation()) {
+                if (evidenceEntry.getVariantClassification() != null) {
+                    ClinicalSignificance clinicalSignificance = evidenceEntry.getVariantClassification().getClinicalSignificance();
+                    if (clinicalSignificance != null) {
+                        clinicalSignificanceSet.add(clinicalSignificance);
+                    }
                 }
             }
         }
@@ -152,7 +210,8 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
         map.put(GENES, genes);
         map.put(TRANSCRIPTS, transcripts);
         map.put(BIOTYPE, biotype);
-        map.put(SO, so);
+        map.put(GENE_SO, gnSo);
+        map.put(SO, soList);
         map.put(POLYPHEN, sortProteinSubstitutionScores(polyphen));
         map.put(POLYPHEN_DESC, polyphenDesc);
         map.put(SIFT, sortProteinSubstitutionScores(sift));
@@ -163,6 +222,7 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
         map.put(GENE_TRAITS_NAME, geneTraitName);
         map.put(DRUG, drugs);
         map.put(XREFS, xrefs);
+        map.put(CLINICAL_SIGNIFICANCE, clinicalSignificanceSet.stream().map(ClinicalSignificance::toString).collect(Collectors.toList()));
 
         if (variantAnnotation.getConservation() != null) {
             for (Score score : variantAnnotation.getConservation()) {
@@ -185,7 +245,7 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
             }
         }
 
-        VariantType variantType = Variant.inferType(variantAnnotation.getReference(), variantAnnotation.getAlternate());
+        VariantType variantType = VariantBuilder.inferType(variantAnnotation.getReference(), variantAnnotation.getAlternate());
         if (StringUtils.isNotBlank(variantAnnotation.getId())) {
             if (variantType.equals(VariantType.SNV)) {
                 variantType = VariantType.SNP;
@@ -198,16 +258,20 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
         return map;
     }
 
+    public static String buildGeneSO(String gene, Integer so) {
+        return gene == null ? null : gene + '_' + so;
+    }
+
     Put buildPut(VariantAnnotation variantAnnotation) {
         Map<PhoenixHelper.Column, ?> map = convert(variantAnnotation);
 
         byte[] bytesRowKey;
         if (variantAnnotation.getAdditionalAttributes() != null
-                && variantAnnotation.getAdditionalAttributes().containsKey(ADDITIONAL_ATTRIBUTES_KEY)) {
+                && variantAnnotation.getAdditionalAttributes().containsKey(GROUP_NAME.key())) {
             String variantString = variantAnnotation.getAdditionalAttributes()
-                    .get(ADDITIONAL_ATTRIBUTES_KEY)
+                    .get(GROUP_NAME.key())
                     .getAttribute()
-                    .get(ADDITIONAL_ATTRIBUTES_VARIANT_ID);
+                    .get(VARIANT_ID.key());
             bytesRowKey = generateVariantRowKey(new Variant(variantString));
         } else {
             bytesRowKey = VariantPhoenixKeyFactory.generateSimpleVariantRowKey(

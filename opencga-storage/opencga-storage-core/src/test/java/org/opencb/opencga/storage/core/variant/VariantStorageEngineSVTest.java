@@ -6,6 +6,7 @@ import org.junit.Test;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.exceptions.NonStandardCompliantSampleField;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.commons.datastore.core.Query;
@@ -13,7 +14,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
@@ -56,11 +57,9 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
         input1 = getResourceUri("variant-test-sv.vcf");
         studyConfiguration = new StudyConfiguration(1, "s1");
         pipelineResult1 = runDefaultETL(input1, variantStorageEngine, studyConfiguration, new QueryOptions()
-                .append(VariantStorageEngine.Options.FILE_ID.key(), 1)
                 .append(VariantStorageEngine.Options.ANNOTATE.key(), true));
         input2 = getResourceUri("variant-test-sv_2.vcf");
         pipelineResult2 = runDefaultETL(input2, variantStorageEngine, studyConfiguration, new QueryOptions()
-                .append(VariantStorageEngine.Options.FILE_ID.key(), 2)
                 .append(VariantStorageEngine.Options.ANNOTATE.key(), true));
     }
 
@@ -116,6 +115,12 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
             actualStudyEntry.getFiles().get(0).setFileId("");
             assertEquals(expectedStudyEntry.getFiles().get(0), actualStudyEntry.getFiles().get(0));
 
+
+            if (actual.getAlternate().equals("<DEL:ME:ALU>") || actual.getType().equals(VariantType.BREAKEND)) {
+                System.err.println("WARN: Variant " + actual + (actual.getAnnotation() == null ? " without annotation" : " with annotation"));
+            } else {
+                assertNotNull(actual.toString(), actual.getAnnotation());
+            }
         }
     }
 

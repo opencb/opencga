@@ -25,6 +25,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.Error;
+import org.opencb.commons.datastore.core.result.FacetedQueryResult;
 import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
@@ -36,8 +37,11 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
+import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -50,6 +54,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -77,11 +82,16 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     @Override
     Sample smartResolutor(long studyUid, String entry, String user) throws CatalogException {
         Query query = new Query()
-                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                .append(SampleDBAdaptor.QueryParams.ID.key(), entry);
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+
+        if (UUIDUtils.isOpenCGAUUID(entry)) {
+            query.put(SampleDBAdaptor.QueryParams.UUID.key(), entry);
+        } else {
+            query.put(SampleDBAdaptor.QueryParams.ID.key(), entry);
+        }
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                SampleDBAdaptor.QueryParams.UID.key(), SampleDBAdaptor.QueryParams.STUDY_UID.key(), SampleDBAdaptor.QueryParams.ID.key(),
-                SampleDBAdaptor.QueryParams.RELEASE.key(), SampleDBAdaptor.QueryParams.VERSION.key(),
+                SampleDBAdaptor.QueryParams.UUID.key(), SampleDBAdaptor.QueryParams.UID.key(), SampleDBAdaptor.QueryParams.STUDY_UID.key(),
+                SampleDBAdaptor.QueryParams.ID.key(), SampleDBAdaptor.QueryParams.RELEASE.key(), SampleDBAdaptor.QueryParams.VERSION.key(),
                 SampleDBAdaptor.QueryParams.STATUS.key()));
         QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query, options, user);
         if (sampleQueryResult.getNumResults() == 0) {
@@ -159,6 +169,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         // 2. We create the sample
         sample.setRelease(catalogManager.getStudyManager().getCurrentRelease(study, userId));
+        sample.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.SAMPLE));
         QueryResult<Sample> queryResult = sampleDBAdaptor.insert(study.getUid(), sample, variableSetList, options);
         auditManager.recordCreation(AuditRecord.Resource.sample, queryResult.first().getUid(), userId, queryResult.first(), null, null);
 
@@ -216,13 +227,14 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(sessionId);
-        Study study = studyManager.resolveId(studyStr, userId);
+        Study study = studyManager.resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
+                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
         fixQueryObject(study, query, sessionId);
 
         // Fix query if it contains any annotation
-        fixQueryAnnotationSearch(study.getUid(), query);
-        fixQueryOptionAnnotation(options);
+        AnnotationUtils.fixQueryAnnotationSearch(study, query);
+        AnnotationUtils.fixQueryOptionAnnotation(options);
 
         query.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
@@ -256,11 +268,12 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
+                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
         // Fix query if it contains any annotation
-        fixQueryAnnotationSearch(study.getUid(), query);
-        fixQueryOptionAnnotation(options);
+        AnnotationUtils.fixQueryAnnotationSearch(study, query);
+        AnnotationUtils.fixQueryOptionAnnotation(options);
 
         fixQueryObject(study, query, sessionId);
 
@@ -285,10 +298,11 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         query = ParamUtils.defaultObject(query, Query::new);
 
         String userId = userManager.getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
+                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
         // Fix query if it contains any annotation
-        fixQueryAnnotationSearch(study.getUid(), query);
+        AnnotationUtils.fixQueryAnnotationSearch(study, query);
         fixQueryObject(study, query, sessionId);
 
         query.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
@@ -328,9 +342,10 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             }
 
             userId = catalogManager.getUserManager().getUserId(sessionId);
-            study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+            study = catalogManager.getStudyManager().resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
+                    StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
-            fixQueryAnnotationSearch(study.getUid(), finalQuery);
+            AnnotationUtils.fixQueryAnnotationSearch(study, finalQuery);
             fixQueryObject(study, finalQuery, sessionId);
             finalQuery.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
@@ -383,7 +398,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
                     ObjectMap fileUpdateParams = new ObjectMap()
                             .append(FileDBAdaptor.QueryParams.SAMPLES.key(), remainingSampleList);
-                    catalogManager.getFileManager().unsafeUpdate(study.getUid(), file, fileUpdateParams, QueryOptions.empty(), userId);
+                    catalogManager.getFileManager().unsafeUpdate(study, file, fileUpdateParams, QueryOptions.empty(), userId);
 
                     // If the file has been left orphan, are we intended to delete it as well?
                     if (remainingSampleList.isEmpty() && !"NONE".equals(params.getString(Constants.EMPTY_FILES_ACTION))) {
@@ -445,7 +460,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 if (individualQueryResult.getNumResults() > 0) {
                     if (individualQueryResult.getNumResults() > 1) {
                         logger.error("Critical error: More than one individual detected pointing to sample {}. The list of individual ids "
-                                + "are: {}", sample.getId(),
+                                        + "are: {}", sample.getId(),
                                 individualQueryResult.getResult().stream().map(Individual::getId).collect(Collectors.toList()));
                     }
                     for (Individual individual : individualQueryResult.getResult()) {
@@ -499,7 +514,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     public QueryResult<Sample> updateAnnotationSet(String studyStr, String sampleStr, List<AnnotationSet> annotationSetList,
-                                                 ParamUtils.UpdateAction action, QueryOptions options, String token)
+                                                   ParamUtils.UpdateAction action, QueryOptions options, String token)
             throws CatalogException {
         ObjectMap params = new ObjectMap(AnnotationSetManager.ANNOTATION_SETS, annotationSetList);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -529,12 +544,12 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     public QueryResult<Sample> removeAnnotationSet(String studyStr, String sampleStr, String annotationSetId, QueryOptions options,
-                                                String token) throws CatalogException {
+                                                   String token) throws CatalogException {
         return removeAnnotationSets(studyStr, sampleStr, Collections.singletonList(annotationSetId), options, token);
     }
 
     public QueryResult<Sample> removeAnnotationSets(String studyStr, String sampleStr, List<String> annotationSetIdList,
-                                                 QueryOptions options, String token) throws CatalogException {
+                                                    QueryOptions options, String token) throws CatalogException {
         List<AnnotationSet> annotationSetList = annotationSetIdList
                 .stream()
                 .map(id -> new AnnotationSet().setId(id))
@@ -544,6 +559,9 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
     public QueryResult<Sample> updateAnnotations(String studyStr, String sampleStr, String annotationSetId, Map<String, Object> annotations,
                                   ParamUtils.CompleteUpdateAction action, QueryOptions options, String token) throws CatalogException {
+        if (annotations == null || annotations.isEmpty()) {
+            return new QueryResult<>(sampleStr, -1, -1, -1, "Nothing to do: The map of annotations is empty", "", Collections.emptyList());
+        }
         ObjectMap params = new ObjectMap(AnnotationSetManager.ANNOTATIONS, new AnnotationSet(annotationSetId, "", annotations));
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         options.put(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATIONS, action));
@@ -558,7 +576,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     public QueryResult<Sample> resetAnnotations(String studyStr, String sampleStr, String annotationSetId, List<String> annotations,
-                                                 QueryOptions options, String token) throws CatalogException {
+                                                QueryOptions options, String token) throws CatalogException {
         return updateAnnotations(studyStr, sampleStr, annotationSetId, new ObjectMap("reset", StringUtils.join(annotations, ",")),
                 ParamUtils.CompleteUpdateAction.RESET, options, token);
     }
@@ -868,7 +886,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
         // Fix query if it contains any annotation
-        fixQueryAnnotationSearch(study.getUid(), userId, query, true);
+        AnnotationUtils.fixQueryAnnotationSearch(study, userId, query, authorizationManager);
 
         authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.VIEW_SAMPLES);
 
@@ -897,8 +915,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
         // Fix query if it contains any annotation
-        fixQueryAnnotationSearch(study.getUid(), userId, query, true);
-        fixQueryOptionAnnotation(options);
+        AnnotationUtils.fixQueryAnnotationSearch(study, userId, query, authorizationManager);
+        AnnotationUtils.fixQueryOptionAnnotation(options);
 
         // Add study id to the query
         query.put(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
@@ -1059,7 +1077,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 break;
             case ADD:
                 queryResults = authorizationManager.addAcls(resource.getStudy().getUid(), resource.getResourceList().stream()
-                                .map(Sample::getUid).collect(Collectors.toList()), members, permissions, Entity.SAMPLE);
+                        .map(Sample::getUid).collect(Collectors.toList()), members, permissions, Entity.SAMPLE);
                 if (sampleAclParams.isPropagate()) {
                     try {
                         Individual.IndividualAclParams aclParams = new Individual.IndividualAclParams(sampleAclParams.getPermissions(),
@@ -1074,7 +1092,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 break;
             case REMOVE:
                 queryResults = authorizationManager.removeAcls(resource.getResourceList().stream().map(Sample::getUid)
-                                .collect(Collectors.toList()), members, permissions, Entity.SAMPLE);
+                        .collect(Collectors.toList()), members, permissions, Entity.SAMPLE);
                 if (sampleAclParams.isPropagate()) {
                     try {
                         Individual.IndividualAclParams aclParams = new Individual.IndividualAclParams(sampleAclParams.getPermissions(),
@@ -1090,7 +1108,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 break;
             case RESET:
                 queryResults = authorizationManager.removeAcls(resource.getResourceList().stream().map(Sample::getUid)
-                                .collect(Collectors.toList()), members, null, Entity.SAMPLE);
+                        .collect(Collectors.toList()), members, null, Entity.SAMPLE);
                 if (sampleAclParams.isPropagate()) {
                     try {
                         Individual.IndividualAclParams aclParams = new Individual.IndividualAclParams(sampleAclParams.getPermissions(),
@@ -1109,6 +1127,20 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         }
 
         return queryResults;
+    }
+
+    public FacetedQueryResult facet(String studyStr, Query query, QueryOptions queryOptions, String sessionId)
+            throws CatalogException, IOException {
+        CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);
+
+        String userId = userManager.getUserId(sessionId);
+        // We need to add variableSets and groups to avoid additional queries as it will be used in the catalogSolrManager
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(StudyDBAdaptor.QueryParams.VARIABLE_SET.key(), StudyDBAdaptor.QueryParams.GROUPS.key())));
+
+        AnnotationUtils.fixQueryAnnotationSearch(study, userId, query, authorizationManager);
+
+        return catalogSolrManager.facetedQuery(study, CatalogSolrManager.SAMPLE_SOLR_COLLECTION, query, queryOptions, userId);
     }
 
 
@@ -1183,5 +1215,9 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             }
         }
         return sampleId;
+    }
+
+    public DBIterator<Sample> indexSolr(Query query) throws CatalogException {
+        return sampleDBAdaptor.iterator(query, null, null);
     }
 }

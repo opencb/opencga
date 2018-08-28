@@ -16,10 +16,7 @@
 
 package org.opencb.opencga.core.models;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -28,18 +25,20 @@ import java.util.Objects;
  */
 public class Cohort extends Annotable {
 
-    private String uuid;
     private String id;
     @Deprecated
     private String name;
+    private String uuid;
     private Study.Type type;
     private String creationDate;
+    private String modificationDate;
     private CohortStatus status;
     private String description;
 
     private List<Sample> samples;
     private Family family;
 
+    @Deprecated
     private Map<String, Object> stats;
     private int release;
     private Map<String, Object> attributes;
@@ -81,6 +80,8 @@ public class Cohort extends Annotable {
         public static final String NONE = "NONE";
         public static final String CALCULATING = "CALCULATING";
         public static final String INVALID = "INVALID";
+
+        public static final List<String> STATUS_LIST = Arrays.asList(READY, DELETED, NONE, CALCULATING, INVALID);
 
         public CohortStatus(String status, String message) {
             if (isValid(status)) {
@@ -165,13 +166,16 @@ public class Cohort extends Annotable {
         }
     }
 
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Cohort{");
-        sb.append("uuid='").append(uuid).append('\'');
-        sb.append(", id='").append(id).append('\'');
+        sb.append("id='").append(id).append('\'');
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", type=").append(type);
         sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", status=").append(status);
         sb.append(", description='").append(description).append('\'');
         sb.append(", samples=").append(samples);
@@ -214,10 +218,12 @@ public class Cohort extends Annotable {
         return this;
     }
 
+    @Deprecated
     public String getName() {
         return name;
     }
 
+    @Deprecated
     public Cohort setName(String name) {
         this.name = name;
         return this;
@@ -238,6 +244,15 @@ public class Cohort extends Annotable {
 
     public Cohort setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public Cohort setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 
@@ -313,7 +328,9 @@ public class Cohort extends Annotable {
             return false;
         }
         Cohort cohort = (Cohort) o;
-        return id == cohort.id
+        return release == cohort.release
+                && Objects.equals(uuid, cohort.uuid)
+                && Objects.equals(id, cohort.id)
                 && Objects.equals(name, cohort.name)
                 && type == cohort.type
                 && Objects.equals(creationDate, cohort.creationDate)
@@ -327,7 +344,7 @@ public class Cohort extends Annotable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, type, creationDate, status, description, samples, family, stats, attributes);
+        return Objects.hash(uuid, id, name, type, creationDate, status, description, samples, family, stats, release, attributes);
     }
 
 }

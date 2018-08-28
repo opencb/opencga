@@ -1,74 +1,78 @@
 package org.opencb.opencga.core.models.clinical;
 
-import org.opencb.opencga.core.models.ClinicalAnalysis;
-import org.opencb.opencga.core.models.Software;
+import org.opencb.biodata.models.commons.Analyst;
+import org.opencb.biodata.models.commons.Software;
+import org.opencb.opencga.core.models.DiseasePanel;
 
 import java.util.List;
 import java.util.Map;
 
 public class Interpretation {
 
-    private long id;
+    private String id;
+    @Deprecated
     private String name;
     private String description;
 
-    private ClinicalAnalysis clinicalAnalysis;
+    private String clinicalAnalysisId;
 
+    private List<DiseasePanel> panels;
     private Software software;
     private Analyst analyst;
     private List<Version> versions;
     private Map<String, Object> filters;
     private String creationDate;
 
+    private List<ReportedVariant> reportedVariants;
+
     private List<Comment> comments;
     private Map<String, Object> attributes;
 
-    private List<ReportedVariant> reportedVariants;
 
     public Interpretation() {
     }
 
-    public Interpretation(long id, String name, String description, ClinicalAnalysis clinicalAnalysis, Software software, Analyst
-            analyst, List<Version> versions, Map<String, Object> filters, String creationDate, List<Comment> comments,
-                          Map<String, Object> attributes, List<ReportedVariant> reportedVariants) {
+    public Interpretation(String id, String name, String description, List<DiseasePanel> panels, Software software, Analyst analyst,
+                          List<Version> versions, Map<String, Object> filters, String creationDate, List<ReportedVariant> reportedVariants,
+                          List<Comment> comments, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.description = description;
-        this.clinicalAnalysis = clinicalAnalysis;
+        this.panels = panels;
         this.software = software;
         this.analyst = analyst;
         this.versions = versions;
         this.filters = filters;
         this.creationDate = creationDate;
+        this.reportedVariants = reportedVariants;
         this.comments = comments;
         this.attributes = attributes;
-        this.reportedVariants = reportedVariants;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Interpretation{");
-        sb.append("id=").append(id);
+        sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
-        sb.append(", clinicalAnalysis=").append(clinicalAnalysis);
+        sb.append(", panels=").append(panels);
         sb.append(", software=").append(software);
         sb.append(", analyst=").append(analyst);
         sb.append(", versions=").append(versions);
         sb.append(", filters=").append(filters);
         sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", reportedVariants=").append(reportedVariants);
         sb.append(", comments=").append(comments);
         sb.append(", attributes=").append(attributes);
-        sb.append(", reportedVariants=").append(reportedVariants);
         sb.append('}');
         return sb.toString();
     }
 
-    public long getId() {
+    public String getId() {
         return id;
     }
 
-    public Interpretation setId(long id) {
+    public Interpretation setId(String id) {
         this.id = id;
         return this;
     }
@@ -91,12 +95,12 @@ public class Interpretation {
         return this;
     }
 
-    public ClinicalAnalysis getClinicalAnalysis() {
-        return clinicalAnalysis;
+    public List<DiseasePanel> getPanels() {
+        return panels;
     }
 
-    public Interpretation setClinicalAnalysis(ClinicalAnalysis clinicalAnalysis) {
-        this.clinicalAnalysis = clinicalAnalysis;
+    public Interpretation setPanels(List<DiseasePanel> panels) {
+        this.panels = panels;
         return this;
     }
 
@@ -145,6 +149,15 @@ public class Interpretation {
         return this;
     }
 
+    public List<ReportedVariant> getReportedVariants() {
+        return reportedVariants;
+    }
+
+    public Interpretation setReportedVariants(List<ReportedVariant> reportedVariants) {
+        this.reportedVariants = reportedVariants;
+        return this;
+    }
+
     public List<Comment> getComments() {
         return comments;
     }
@@ -160,15 +173,6 @@ public class Interpretation {
 
     public Interpretation setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
-        return this;
-    }
-
-    public List<ReportedVariant> getReportedVariants() {
-        return reportedVariants;
-    }
-
-    public Interpretation setReportedVariants(List<ReportedVariant> reportedVariants) {
-        this.reportedVariants = reportedVariants;
         return this;
     }
 }

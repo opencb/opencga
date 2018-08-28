@@ -39,7 +39,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager.UseSearchIndex;
-import org.opencb.opencga.storage.core.variant.solr.SolrExternalResource;
+import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 
 import java.io.IOException;
@@ -64,7 +64,7 @@ import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchM
 public abstract class VariantStorageSearchIntersectTest extends VariantStorageBaseTest {
 
     @ClassRule
-    public static SolrExternalResource solr = new SolrExternalResource();
+    public static VariantSolrExternalResource solr = new VariantSolrExternalResource();
 
     protected VariantDBAdaptor dbAdaptor;
     private StudyConfiguration studyConfiguration;
@@ -105,7 +105,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
 
         //Calculate stats
         if (params.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key(), true)) {
-            QueryOptions options = new QueryOptions(VariantStorageEngine.Options.STUDY_ID.key(), STUDY_ID)
+            QueryOptions options = new QueryOptions(VariantStorageEngine.Options.STUDY.key(), STUDY_NAME)
                     .append(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100)
                     .append(DefaultVariantStatisticsManager.OUTPUT, outputUri)
                     .append(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME, "cohort1.cohort2.stats");

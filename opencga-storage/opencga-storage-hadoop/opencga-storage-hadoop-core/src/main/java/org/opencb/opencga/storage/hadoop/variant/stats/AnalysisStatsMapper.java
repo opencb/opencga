@@ -30,7 +30,7 @@ import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsCalculator
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.VariantStatsToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.mr.AbstractHBaseVariantMapper;
-import org.opencb.opencga.storage.hadoop.variant.mr.AnalysisTableMapReduceHelper;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,11 +84,11 @@ public class AnalysisStatsMapper extends AbstractHBaseVariantMapper<ImmutableByt
                 if (null != convert) {
                     context.write(key, convert);
                     done = true;
-                    context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "stats.put").increment(1);
+                    context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "stats.put").increment(1);
                 }
             }
             if (done) {
-                context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "variants").increment(1);
+                context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "variants").increment(1);
             }
         } catch (IllegalStateException e) {
             throw new IllegalStateException("Problem with row [hex:" + Bytes.toHex(key.copyBytes()) + "]", e);

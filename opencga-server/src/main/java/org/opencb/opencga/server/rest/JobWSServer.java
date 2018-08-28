@@ -237,6 +237,7 @@ public class JobWSServer extends OpenCGAWSServer {
         }
     }
 
+
     @DELETE
     @Path("/delete")
     @ApiOperation(value = "Delete existing jobs")
@@ -256,6 +257,7 @@ public class JobWSServer extends OpenCGAWSServer {
             query.remove("study");
             return createOkResponse(jobManager.delete(studyStr, query, queryOptions, sessionId));
         } catch (Exception e) {
+
             return createErrorResponse(e);
         }
     }

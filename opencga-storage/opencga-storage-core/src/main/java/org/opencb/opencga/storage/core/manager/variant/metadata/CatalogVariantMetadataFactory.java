@@ -41,10 +41,9 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
                     IndividualDBAdaptor.QueryParams.UID.key(),
                     IndividualDBAdaptor.QueryParams.ID.key(),
                     IndividualDBAdaptor.QueryParams.SEX.key(),
-                    IndividualDBAdaptor.QueryParams.FAMILY.key(),
                     IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(),
-                    IndividualDBAdaptor.QueryParams.MOTHER_UID.key(),
-                    IndividualDBAdaptor.QueryParams.FATHER_UID.key()
+                    IndividualDBAdaptor.QueryParams.MOTHER.key(),
+                    IndividualDBAdaptor.QueryParams.FATHER.key()
             ));
     public static final int CATALOG_QUERY_BATCH_SIZE = 1000;
     public static final String BASIC_METADATA = "basic";
@@ -79,8 +78,7 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
                 .collect(Collectors.toMap(StudyConfiguration::getStudyName, StudyConfiguration::getStudyId));
         try {
             for (VariantStudyMetadata studyMetadata : metadata.getStudies()) {
-                int studyId = studyConfigurationMap.get(studyMetadata.getId());
-
+                String studyId = studyMetadata.getId();
                 fillStudy(studyId, studyMetadata);
 
                 List<org.opencb.biodata.models.metadata.Individual> individuals = new ArrayList<>(CATALOG_QUERY_BATCH_SIZE);
@@ -106,15 +104,15 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
         return metadata;
     }
 
-    private void fillStudy(long studyId, VariantStudyMetadata studyMetadata) throws CatalogException {
+    private void fillStudy(String studyId, VariantStudyMetadata studyMetadata) throws CatalogException {
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.DESCRIPTION.key());
 
         // Just add file description
-        Study study = catalogManager.getStudyManager().get(String.valueOf(studyId), options, sessionId).first();
+        Study study = catalogManager.getStudyManager().get(studyId, options, sessionId).first();
         studyMetadata.setDescription(study.getDescription());
     }
 
-    private void fillIndividuals(Integer studyId, List<org.opencb.biodata.models.metadata.Individual> individuals) throws CatalogException {
+    private void fillIndividuals(String studyId, List<org.opencb.biodata.models.metadata.Individual> individuals) throws CatalogException {
         Map<String, org.opencb.biodata.models.metadata.Individual> individualMap = individuals
                 .stream()
                 .collect(Collectors.toMap(org.opencb.biodata.models.metadata.Individual::getId, i -> i));
@@ -127,32 +125,25 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
             org.opencb.biodata.models.metadata.Individual individual = individualMap.get(catalogIndividual.getName());
 
             individual.setSex(catalogIndividual.getSex().name());
-            individual.setFamily(catalogIndividual.getFamily());
+//            individual.setFamily(catalogIndividual.getFamily());
             individual.setPhenotype(catalogIndividual.getAffectationStatus().toString());
 
-            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key());
-            if (catalogIndividual.getMotherId() > 0) {
-                String motherName = catalogManager.getIndividualManager().get(String.valueOf(studyId),
-                        String.valueOf(catalogIndividual.getMotherId()), options, sessionId).first().getName();
-                individual.setMother(motherName);
+            if (catalogIndividual.getMother() != null) {
+                individual.setMother(catalogIndividual.getMother().getId());
             }
-            if (catalogIndividual.getFatherId() > 0) {
-                String fatherName = catalogManager.getIndividualManager().get(String.valueOf(studyId),
-                        String.valueOf(catalogIndividual.getFatherId()), options, sessionId).first().getName();
-                individual.setFather(fatherName);
+            if (catalogIndividual.getFather() != null) {
+                individual.setFather(catalogIndividual.getFather().getId());
             }
         }
     }
 
-    private void fillSamples(int studyId, List<org.opencb.biodata.models.metadata.Sample> samples) throws CatalogException {
+    private void fillSamples(String studyId, List<org.opencb.biodata.models.metadata.Sample> samples) throws CatalogException {
         Map<String, org.opencb.biodata.models.metadata.Sample> samplesMap = samples
                 .stream()
                 .collect(Collectors.toMap(org.opencb.biodata.models.metadata.Sample::getId, i -> i));
-        Query query = new Query(2)
-                .append(SampleDBAdaptor.QueryParams.ID.key(), new ArrayList<>(samplesMap.keySet()))
-                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
+        Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), new ArrayList<>(samplesMap.keySet()));
 
-        List<Sample> catalogSamples = catalogManager.getSampleManager().get(String.valueOf((long) studyId), query, SAMPLE_QUERY_OPTIONS,
+        List<Sample> catalogSamples = catalogManager.getSampleManager().get(studyId, query, SAMPLE_QUERY_OPTIONS,
                 sessionId).getResult();
         for (Sample catalogSample : catalogSamples) {
             org.opencb.biodata.models.metadata.Sample sample = samplesMap.get(catalogSample.getId());

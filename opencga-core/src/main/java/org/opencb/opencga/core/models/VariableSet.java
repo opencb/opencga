@@ -24,6 +24,7 @@ import java.util.Set;
  */
 public class VariableSet extends PrivateFields {
 
+    // TODO: Properly add after releasing v1.4.0
     private String uuid;
     private String id;
     private String name;

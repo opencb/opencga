@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import org.junit.*;
 import org.junit.rules.ExpectedException;
+import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -201,20 +202,20 @@ public class SampleMongoDBAdaptorTest {
 
     @Test
     public void searchByOntology() throws CatalogDBException {
-        List<OntologyTerm> ontologyList = Arrays.asList(
-                new OntologyTerm("hpo:123", "One hpo term", "hpo"),
-                new OntologyTerm("hpo:456", "Another hpo term", "hpo"),
-                new OntologyTerm("go:123", "My go term", "go")
+        List<Phenotype> ontologyList = Arrays.asList(
+                new Phenotype("hpo:123", "One hpo term", "hpo", Phenotype.Status.UNKNOWN),
+                new Phenotype("hpo:456", "Another hpo term", "hpo", Phenotype.Status.UNKNOWN),
+                new Phenotype("go:123", "My go term", "go", Phenotype.Status.UNKNOWN)
         );
-        Sample sample1 = new Sample().setId("sample1").setPhenotypes(ontologyList);
+        Sample sample1 = new Sample().setId("sample1").setPhenotypes(ontologyList).setStatus(new Status());
 
         ontologyList = Arrays.asList(
-                new OntologyTerm("hpo:789", "One hpo term", "hpo"),
-                new OntologyTerm("hpo:xxx", "Another hpo term", "hpo"),
-                new OntologyTerm("hpo:456", "Another hpo term", "hpo"),
-                new OntologyTerm("go:yyy", "My go term", "go")
+                new Phenotype("hpo:789", "One hpo term", "hpo", Phenotype.Status.UNKNOWN),
+                new Phenotype("hpo:xxx", "Another hpo term", "hpo", Phenotype.Status.UNKNOWN),
+                new Phenotype("hpo:456", "Another hpo term", "hpo", Phenotype.Status.UNKNOWN),
+                new Phenotype("go:yyy", "My go term", "go", Phenotype.Status.UNKNOWN)
         );
-        Sample sample2 = new Sample().setId("sample2").setPhenotypes(ontologyList);
+        Sample sample2 = new Sample().setId("sample2").setPhenotypes(ontologyList).setStatus(new Status());
 
         catalogSampleDBAdaptor.insert(studyId, sample1, new QueryOptions()).first().getUid();
         catalogSampleDBAdaptor.insert(studyId, sample2, new QueryOptions()).first().getUid();
@@ -317,17 +318,16 @@ public class SampleMongoDBAdaptorTest {
         QueryOptions queryOptions = new QueryOptions();
 
         // We create a new sample with the individual
-        Sample sample = new Sample().setId("sample1");
+        Sample sample = new Sample().setId("sample1").setStatus(new Status());
         QueryResult<Sample> sampleQR = catalogSampleDBAdaptor.insert(studyId, sample, queryOptions);
         long sampleId = sampleQR.first().getUid();
 
         // We create an individual
         String individualName = "individualName";
-        String individualFamily = "Smith";
         Individual individual = new Individual()
                 .setId(individualName)
-                .setFamily(individualFamily)
-                .setSamples(Arrays.asList(new Sample().setUid(sampleId).setVersion(1)));
+                .setStatus(new Status())
+                .setSamples(Arrays.asList(new Sample().setUid(sampleId).setVersion(1).setStatus(new Status())));
         dbAdaptorFactory.getCatalogIndividualDBAdaptor().insert(studyId, individual, queryOptions);
 
         // Get the sample

@@ -31,7 +31,7 @@ import org.opencb.opencga.catalog.db.api.AnnotationSetDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotationConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.managers.AnnotationSetManager;
+import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.Annotable;
@@ -325,20 +325,41 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
 
                 List<Document> annotationList = (List<Document>) queryResult.first().get(AnnotationSetParams.ANNOTATION_SETS.key());
                 Map<String, String> annotationSetIdVariableSetUidMap = new HashMap<>();
+                // This variable will contain a map of variable set ids pointing to all the annotationSet ids using the variable set
+                Map<String, Set<String>> variableSetAnnotationsets = new HashMap<>();
+                Set<String> existingAnnotationSets = new HashSet<>();
                 for (Document document : annotationList) {
-                    annotationSetIdVariableSetUidMap.put(document.getString(AnnotationSetParams.ANNOTATION_SET_NAME.key()),
-                            String.valueOf(document.getLong(AnnotationSetParams.VARIABLE_SET_ID.key())));
+                    String variableSetId = String.valueOf(document.getLong(AnnotationSetParams.VARIABLE_SET_ID.key()));
+                    String annSetId = document.getString(AnnotationSetParams.ANNOTATION_SET_NAME.key());
+
+                    annotationSetIdVariableSetUidMap.put(annSetId, variableSetId);
+
+                    if (!variableSetAnnotationsets.containsKey(variableSetId)) {
+                        variableSetAnnotationsets.put(variableSetId, new HashSet<>());
+                    }
+                    variableSetAnnotationsets.get(variableSetId).add(annSetId);
+                    existingAnnotationSets.add(annSetId);
                 }
 
                 for (AnnotationSet annotationSet : annotationSetList) {
+                    if (!existingAnnotationSets.contains(annotationSet.getId())) {
+                        throw new CatalogDBException("Could not delete: AnnotationSet " + annotationSet.getId() + " not found");
+                    }
 
                     // 1. Remove annotationSet
                     removeAnnotationSet(entryId, annotationSet.getId(), isVersioned);
 
-                    // 2. Unset variable set map uid - id
-                    Map<String, String> variableSetMapToRemove = new HashMap<>();
-                    variableSetMapToRemove.put(annotationSetIdVariableSetUidMap.get(annotationSet.getId()), null);
-                    removePrivateVariableMap(entryId, variableSetMapToRemove, isVersioned);
+                    String variableSetId = annotationSetIdVariableSetUidMap.get(annotationSet.getId());
+                    // Remove the annotation set from the variableSetAnnotationsets
+                    variableSetAnnotationsets.get(variableSetId).remove(annotationSet.getId());
+
+                    // Only if the variableSet is not being annotated by any annotationSet, we can remove the private variableSetMap
+                    if (variableSetAnnotationsets.get(variableSetId).isEmpty()) {
+                        // 2. Unset variable set map uid - id
+                        Map<String, String> variableSetMapToRemove = new HashMap<>();
+                        variableSetMapToRemove.put(variableSetId, null);
+                        removePrivateVariableMap(entryId, variableSetMapToRemove, isVersioned);
+                    }
                 }
 
             }
@@ -738,7 +759,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
 
             List<Document> documentList = new ArrayList<>();
             for (String annotation : annotationArray) {
-                Matcher matcher = AnnotationSetManager.ANNOTATION_PATTERN.matcher(annotation);
+                Matcher matcher = AnnotationUtils.ANNOTATION_PATTERN.matcher(annotation);
 
                 if (matcher.find()) {
                     // Split the annotation by key - value
@@ -835,7 +856,6 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                             logger.error("Internal error: Could not find the type of the variable {}:{}", variableSet, key);
                             throw new CatalogDBException("Internal error. Could not find the type of the variable " + variableSet + ":"
                                     + key);
-
                         }
 
                         List<Document> valueList;
@@ -848,7 +868,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
 
                         Document queryDocument = new Document()
                                 .append(AnnotationSetParams.ID.key(), key)
-                                .append(AnnotationSetParams.VARIABLE_SET_ID.key(), Long.parseLong(variableSet));
+                                .append(AnnotationSetParams.VARIABLE_SET_ID.key(), variableTypeMap.getLong(variableSet));
                         queryDocument.putAll(valueList.get(0));
 
                         // Add the query to the document query list

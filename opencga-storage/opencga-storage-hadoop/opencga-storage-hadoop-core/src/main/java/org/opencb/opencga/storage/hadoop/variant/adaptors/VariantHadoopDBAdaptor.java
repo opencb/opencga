@@ -31,6 +31,7 @@ import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
@@ -38,11 +39,10 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
@@ -63,6 +63,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHel
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantSqlQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
+import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchIndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,6 +78,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.SEARCH_INDEX_LAST_TIMESTAMP;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 
@@ -104,7 +106,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     private HBaseManager hBaseManager;
 
     public VariantHadoopDBAdaptor(HBaseManager hBaseManager, HBaseCredentials credentials, StorageConfiguration configuration,
-                                  Configuration conf, CellBaseUtils cellBaseUtils, HBaseVariantTableNameGenerator tableNameGenerator)
+                                  Configuration conf, HBaseVariantTableNameGenerator tableNameGenerator)
             throws IOException {
         this.credentials = credentials;
         this.configuration = conf;
@@ -125,7 +127,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
         clientSideSkip = !options.getBoolean(PhoenixHelper.PHOENIX_SERVER_OFFSET_AVAILABLE, true);
         this.queryParser = new VariantSqlQueryParser(genomeHelper, this.variantTable,
-                studyConfigurationManager.get(), cellBaseUtils, clientSideSkip);
+                studyConfigurationManager.get(), clientSideSkip);
 
         phoenixFetchSize = options.getInt(HadoopVariantStorageEngine.DBADAPTOR_PHOENIX_FETCH_SIZE, -1);
 
@@ -250,7 +252,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             numTotalResults = variants.size();
         } else {
             if (options.getInt(QueryOptions.LIMIT, -1) > 0) {
-                if (options.getBoolean(QueryOptions.SKIP_COUNT, true)) {
+                if (options.getBoolean(QueryOptions.SKIP_COUNT, DEFAULT_SKIP_COUNT)) {
                     numTotalResults = -1;
                 } else {
                     numTotalResults = count(query).first();
@@ -261,7 +263,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             }
         }
 
-        Map<String, List<String>> samples = getSamplesMetadata(query, options, getStudyConfigurationManager());
+        Map<String, List<String>> samples = getSamplesMetadataIfRequested(query, options, getStudyConfigurationManager());
         return new VariantQueryResult<>("getVariants", ((int) iterator.getTimeFetching()), variants.size(), numTotalResults,
                 warn, error, variants, samples, HadoopVariantStorageEngine.STORAGE_ENGINE_ID);
     }
@@ -299,7 +301,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         validateAnnotationQuery(query);
 
         byte[] annotationColumn;
-        if (name.equals(VariantAnnotationManager.LATEST)) {
+        if (name.equals(VariantAnnotationManager.CURRENT)) {
             annotationColumn = VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes();
         } else {
             ProjectMetadata.VariantAnnotationMetadata saved = getStudyConfigurationManager().getProjectMetadata().first().
@@ -320,9 +322,12 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                     throw VariantQueryException.internalException(e);
                 }
             }).iterator();
-            HBaseToVariantAnnotationConverter converter = new HBaseToVariantAnnotationConverter(genomeHelper)
+            long ts = getStudyConfigurationManager().getProjectMetadata().first().getAttributes()
+                    .getLong(SEARCH_INDEX_LAST_TIMESTAMP.key());
+            HBaseToVariantAnnotationConverter converter = new HBaseToVariantAnnotationConverter(genomeHelper, ts)
+                    .setAnnotationIds(getStudyConfigurationManager().getProjectMetadata().first().getAnnotation())
                     .setIncludeFields(selectElements.getFields());
-            converter.setAnnotationColumn(annotationColumn);
+            converter.setAnnotationColumn(annotationColumn, name);
             Iterator<Result> iterator = Iterators.concat(iterators);
             int skip = options.getInt(QueryOptions.SKIP);
             if (skip > 0) {
@@ -472,9 +477,9 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         } else {
 
             logger.debug("Table name = " + variantTable);
+            logger.info("Query : " + VariantQueryUtils.printQuery(query));
             VariantSqlQueryParser.VariantPhoenixSQLQuery phoenixQuery = queryParser.parse(query, options);
             String sql = phoenixQuery.getSql();
-            logger.info("Query : " + query.toJson());
             logger.info(sql);
             logger.debug("Creating {} iterator", VariantHBaseResultSetIterator.class);
             try {
@@ -574,18 +579,30 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         phoenixHelper.updateStatsColumns(getJdbcConnection(), variantTable, studyConfiguration);
     }
 
+    /**
+     * @deprecated This method should not be used for batch load.
+     */
     @Override
-    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions) {
+    @Deprecated
+    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp,
+                                   QueryOptions queryOptions) {
         return updateStats(variantStatsWrappers,
-                getStudyConfigurationManager().getStudyConfiguration(studyName, queryOptions).first(), queryOptions);
+                getStudyConfigurationManager().getStudyConfiguration(studyName, queryOptions).first(), timestamp, queryOptions);
     }
 
+    /**
+     * @deprecated This method should not be used for batch load.
+     */
     @Override
+    @Deprecated
     public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration,
-                                   QueryOptions options) {
+                                   long timestamp, QueryOptions options) {
 
         VariantStatsToHBaseConverter converter = new VariantStatsToHBaseConverter(genomeHelper, studyConfiguration);
         List<Put> puts = converter.apply(variantStatsWrappers);
+        for (Put put : puts) {
+            HadoopVariantSearchIndexUtils.addNotSyncStatus(put, genomeHelper.getColumnFamily());
+        }
 
         long start = System.currentTimeMillis();
         try (Table table = getConnection().getTable(TableName.valueOf(variantTable))) {
@@ -607,13 +624,15 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
     @Override
     @Deprecated
-    public QueryResult updateAnnotations(List<org.opencb.biodata.models.variant.avro.VariantAnnotation> variantAnnotations,
-                                         QueryOptions queryOptions) {
+    public QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations,
+                                         long timestamp, QueryOptions queryOptions) {
 
         long start = System.currentTimeMillis();
 
         final GenomeHelper genomeHelper1 = new GenomeHelper(configuration);
-        VariantAnnotationToPhoenixConverter converter = new VariantAnnotationToPhoenixConverter(genomeHelper1.getColumnFamily());
+        int currentAnnotationId = getStudyConfigurationManager().getProjectMetadata().first().getAnnotation().getCurrent().getId();
+        VariantAnnotationToPhoenixConverter converter = new VariantAnnotationToPhoenixConverter(genomeHelper1.getColumnFamily(),
+                currentAnnotationId);
         Iterable<Map<PhoenixHelper.Column, ?>> records = converter.apply(variantAnnotations);
 
         String fullTableName = VariantPhoenixHelper.getEscapedFullTableName(variantTable, getConfiguration());
@@ -630,7 +649,8 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public QueryResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, QueryOptions options) {
+    public QueryResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, long timeStamp,
+                                               QueryOptions options) {
         throw new UnsupportedOperationException();
     }
 

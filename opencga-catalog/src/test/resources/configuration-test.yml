@@ -40,6 +40,16 @@ email:
   from: ""
   ssl: false
 
+hooks:
+  user@1000G:phase1:   # Full Qualified Name of the study.
+    file:               # Entity where the hook will be checked
+     - field: "name"     # Field of the entity to be checked
+       value: "~(.*)vcf.gz$"    # Value to be checked
+       stage: "CREATE"   # Stage when the hook will be checked
+       action: "ADD"     # Action to be performed
+       where: "tags"     # Field over which the action will be performed
+       what: "VCF,FILE"        # Value to be updated
+
 catalog:
   # offset: Starting point for the catalog internal ids. Use a big offset number (1000000 for instance) if you plan to use numerical ids
   #         for names or aliases of any entity.
@@ -51,6 +61,14 @@ catalog:
     password: ""
     options:
       authenticationDatabase: ""
+  search:   ## Solr configuration, by default is the same than storage
+    host: http://localhost:8983/solr/
+    mode: "cloud"
+    user: ""
+    password: ""
+    timeout: 30000
+    insertBatchSize: 2000
+
 authentication:
   expiration: 1000
 #LDAP configuration example

@@ -16,6 +16,9 @@
 
 package org.opencb.opencga.core.models;
 
+import org.opencb.biodata.models.commons.OntologyTerm;
+import org.opencb.opencga.core.models.clinical.Interpretation;
+
 import java.util.List;
 import java.util.Map;
 
@@ -24,10 +27,10 @@ import java.util.Map;
  */
 public class ClinicalAnalysis extends PrivateStudyUid {
 
-    private String uuid;
     private String id;
     @Deprecated
     private String name;
+    private String uuid;
     private String description;
     private Type type;
 
@@ -38,9 +41,10 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     private List<Individual> subjects;
     private Family family;
-    private List<ClinicalInterpretation> interpretations;
+    private List<Interpretation> interpretations;
 
     private String creationDate;
+    private String modificationDate;
     private Status status;
     private int release;
     private Map<String, Object> attributes;
@@ -50,6 +54,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     }
 
     // Todo: Think about a better place to have this enum
+    @Deprecated
     public enum Action {
         ADD,
         SET,
@@ -60,7 +65,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     }
 
     public ClinicalAnalysis(String id, String description, Type type, OntologyTerm disease, File germline, File somatic,
-                            List<Individual> subjects, Family family, List<ClinicalInterpretation> interpretations, String creationDate,
+                            List<Individual> subjects, Family family, List<Interpretation> interpretations, String creationDate,
                             Status status, int release, Map<String, Object> attributes) {
         this.id = id;
         this.description = description;
@@ -80,9 +85,9 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClinicalAnalysis{");
-        sb.append("uuid='").append(uuid).append('\'');
-        sb.append(", id='").append(id).append('\'');
+        sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
+        sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", type=").append(type);
         sb.append(", disease=").append(disease);
@@ -92,6 +97,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         sb.append(", family=").append(family);
         sb.append(", interpretations=").append(interpretations);
         sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", status=").append(status);
         sb.append(", release=").append(release);
         sb.append(", attributes=").append(attributes);
@@ -201,11 +207,11 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
-    public List<ClinicalInterpretation> getInterpretations() {
+    public List<Interpretation> getInterpretations() {
         return interpretations;
     }
 
-    public ClinicalAnalysis setInterpretations(List<ClinicalInterpretation> interpretations) {
+    public ClinicalAnalysis setInterpretations(List<Interpretation> interpretations) {
         this.interpretations = interpretations;
         return this;
     }
@@ -216,6 +222,15 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     public ClinicalAnalysis setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public ClinicalAnalysis setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 
@@ -246,6 +261,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
+    @Deprecated
     public static class ClinicalInterpretation {
 
         private String id;

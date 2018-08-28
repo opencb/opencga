@@ -39,6 +39,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.Variable;
@@ -111,6 +112,10 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         long newId = getNewId();
         study.setUid(newId);
 
+        if (StringUtils.isEmpty(study.getUuid())) {
+            study.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.STUDY));
+        }
+
         //Empty nested fields
         List<File> files = study.getFiles();
         study.setFiles(Collections.emptyList());
@@ -137,6 +142,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         studyObject.put(PRIVATE_PROJECT, new Document()
                 .append(PRIVATE_ID, project.getId())
                 .append(PRIVATE_UID, project.getUid())
+                .append(PRIVATE_UUID, project.getUuid())
         );
         studyObject.put(PRIVATE_OWNER_ID, StringUtils.split(project.getFqn(), "@")[0]);
 
@@ -152,7 +158,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         String errorMsg = updateResult.getErrorMsg() != null ? updateResult.getErrorMsg() : "";
 
         for (File file : files) {
-            String fileErrorMsg = dbAdaptorFactory.getCatalogFileDBAdaptor().insert(file, study.getUid(), options).getErrorMsg();
+            String fileErrorMsg = dbAdaptorFactory.getCatalogFileDBAdaptor().insert(study.getUid(), file, Collections.emptyList(), options)
+                    .getErrorMsg();
             if (fileErrorMsg != null && !fileErrorMsg.isEmpty()) {
                 errorMsg += file.getName() + ":" + fileErrorMsg + ", ";
             }
@@ -174,18 +181,16 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
 
         for (Dataset dataset : datasets) {
-            String fileErrorMsg = dbAdaptorFactory.getCatalogDatasetDBAdaptor().insert(dataset, study.getUid(), options)
-                    .getErrorMsg();
+            String fileErrorMsg = dbAdaptorFactory.getCatalogDatasetDBAdaptor().insert(dataset, study.getUid(), options).getErrorMsg();
             if (fileErrorMsg != null && !fileErrorMsg.isEmpty()) {
                 errorMsg += dataset.getName() + ":" + fileErrorMsg + ", ";
             }
         }
 
-        for (DiseasePanel diseasePanel : panels) {
-            String fileErrorMsg = dbAdaptorFactory.getCatalogPanelDBAdaptor().insert(diseasePanel, study.getUid(), options)
-                    .getErrorMsg();
+        for (DiseasePanel panel : panels) {
+            String fileErrorMsg = dbAdaptorFactory.getCatalogPanelDBAdaptor().insert(study.getUid(), panel, options).getErrorMsg();
             if (fileErrorMsg != null && !fileErrorMsg.isEmpty()) {
-                errorMsg += diseasePanel.getName() + ":" + fileErrorMsg + ", ";
+                errorMsg += panel.getName() + ":" + fileErrorMsg + ", ";
             }
         }
 
@@ -229,18 +234,31 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public long getProjectIdByStudyId(long studyId) throws CatalogDBException {
-        Query query = new Query(QueryParams.UID.key(), studyId);
+    public long getProjectUidByStudyUid(long studyUid) throws CatalogDBException {
+        Document privateProjet = getPrivateProject(studyUid);
+        Object id = privateProjet.get(PRIVATE_UID);
+        return id instanceof Number ? ((Number) id).longValue() : Long.parseLong(id.toString());
+    }
+
+    @Override
+    public String getProjectIdByStudyUid(long studyUid) throws CatalogDBException {
+        Document privateProjet = getPrivateProject(studyUid);
+        return privateProjet.getString(PRIVATE_ID);
+    }
+
+    private Document getPrivateProject(long studyUid) throws CatalogDBException {
+        Query query = new Query(QueryParams.UID.key(), studyUid);
         QueryOptions queryOptions = new QueryOptions("include", FILTER_ROUTE_STUDIES + PRIVATE_PROJECT_UID);
         QueryResult result = nativeGet(query, queryOptions);
 
+        Document privateProjet;
         if (!result.getResult().isEmpty()) {
             Document study = (Document) result.getResult().get(0);
-            Object id = study.get(PRIVATE_PROJECT_UID);
-            return id instanceof Number ? ((Number) id).longValue() : Long.parseLong(id.toString());
+            privateProjet = study.get(PRIVATE_PROJECT, Document.class);
         } else {
-            throw CatalogDBException.uidNotFound("Study", studyId);
+            throw CatalogDBException.uidNotFound("Study", studyUid);
         }
+        return privateProjet;
     }
 
     @Override
@@ -283,7 +301,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         operations.add(Aggregates.match(Filters.eq(PRIVATE_STUDY_ID, studyId)));
         operations.add(Aggregates.group("$" + PRIVATE_STUDY_ID, Accumulators.sum("size", "$diskUsage")));
 
-        QueryResult<Document> aggregate = dbAdaptorFactory.getCatalogFileDBAdaptor().getFileCollection()
+        QueryResult<Document> aggregate = dbAdaptorFactory.getCatalogFileDBAdaptor().getCollection()
                 .aggregate(operations, null);
         if (aggregate.getNumResults() == 1) {
             Object size = aggregate.getResult().get(0).get("size");
@@ -561,7 +579,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
 
         // Remove all permission rules that are pending of some actions such as deletion
-        permissionRules.removeIf(permissionRule -> StringUtils.split(permissionRule.getId(), INTERNAL_DELIMITER, 2).length == 2);
+        permissionRules.removeIf(permissionRule ->
+                StringUtils.splitByWholeSeparatorPreserveAllTokens(permissionRule.getId(), INTERNAL_DELIMITER, 2).length == 2);
 
         return new QueryResult<>(String.valueOf(studyId), studyQueryResult.getDbTime(), permissionRules.size(), permissionRules.size(),
                 "", "", permissionRules);
@@ -629,6 +648,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             dbAdaptorFactory.getCatalogCohortDBAdaptor().addVariableToAnnotations(variableSetId, variable);
             dbAdaptorFactory.getCatalogIndividualDBAdaptor().addVariableToAnnotations(variableSetId, variable);
             dbAdaptorFactory.getCatalogFamilyDBAdaptor().addVariableToAnnotations(variableSetId, variable);
+            dbAdaptorFactory.getCatalogFileDBAdaptor().addVariableToAnnotations(variableSetId, variable);
         }
         return endQuery("Add field to variable set", startTime, getVariableSet(variableSetId, null));
     }
@@ -699,7 +719,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         QueryResult<UpdateResult> queryResult = studyCollection.update(bsonQuery, update, null);
         if (queryResult.first().getModifiedCount() != 1) {
             throw new CatalogDBException("Remove field from Variable Set. Could not remove the field " + name
-                    + " from the variableSet id " +  variableSetId);
+                    + " from the variableSet id " + variableSetId);
         }
 
         // Remove all the annotations from that field
@@ -707,6 +727,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         dbAdaptorFactory.getCatalogCohortDBAdaptor().removeAnnotationField(variableSetId, name);
         dbAdaptorFactory.getCatalogIndividualDBAdaptor().removeAnnotationField(variableSetId, name);
         dbAdaptorFactory.getCatalogFamilyDBAdaptor().removeAnnotationField(variableSetId, name);
+        dbAdaptorFactory.getCatalogFileDBAdaptor().removeAnnotationField(variableSetId, name);
 
         return endQuery("Remove field from Variable Set", startTime, getVariableSet(variableSetId, null));
     }
@@ -722,8 +743,9 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     /**
      * Checks if the variable given is present in the variableSet.
+     *
      * @param variableSet Variable set.
-     * @param variableId VariableId that will be checked.
+     * @param variableId  VariableId that will be checked.
      * @throws CatalogDBException when the variableId is not present in the variableSet.
      */
     private void checkVariableInVariableSet(VariableSet variableSet, String variableId) throws CatalogDBException {
@@ -735,8 +757,9 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     /**
      * Checks if the variable given is not present in the variableSet.
+     *
      * @param variableSet Variable set.
-     * @param variableId VariableId that will be checked.
+     * @param variableId  VariableId that will be checked.
      * @throws CatalogDBException when the variableId is present in the variableSet.
      */
     private void checkVariableNotInVariableSet(VariableSet variableSet, String variableId) throws CatalogDBException {
@@ -1192,6 +1215,12 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
 
         if (!studyParameters.isEmpty()) {
+            // Update modificationDate param
+            String time = TimeUtils.getTime();
+            Date date = TimeUtils.toDate(time);
+            studyParameters.put(MODIFICATION_DATE, time);
+            studyParameters.put(PRIVATE_MODIFICATION_DATE, date);
+
             Document updates = new Document("$set", studyParameters);
             Long nModified = studyCollection.update(parseQuery(query, false), updates, null).getNumTotalResults();
             return endQuery("Study update", startTime, Collections.singletonList(nModified));
@@ -1476,13 +1505,15 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     @Override
     public DBIterator<Study> iterator(Query query, QueryOptions options) throws CatalogDBException {
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
-        return new StudyMongoDBIterator<>(mongoCursor, studyConverter);
+        return new StudyMongoDBIterator<>(mongoCursor, options, studyConverter);
     }
 
     @Override
     public DBIterator nativeIterator(Query query, QueryOptions options) throws CatalogDBException {
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
-        return new StudyMongoDBIterator<>(mongoCursor);
+        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+        queryOptions.put(NATIVE_QUERY, true);
+        MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions);
+        return new StudyMongoDBIterator<>(mongoCursor, options);
     }
 
     @Override
@@ -1490,28 +1521,30 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             throws CatalogDBException, CatalogAuthorizationException {
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
         Function<Document, Boolean> iteratorFilter = (d) -> checkCanViewStudy(d, user);
-        return new StudyMongoDBIterator<>(mongoCursor, studyConverter, iteratorFilter);
+        return new StudyMongoDBIterator<>(mongoCursor, options, studyConverter, iteratorFilter);
     }
 
     @Override
     public DBIterator nativeIterator(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
+        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+        queryOptions.put(NATIVE_QUERY, true);
+        MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions);
         Function<Document, Boolean> iteratorFilter = (d) -> checkCanViewStudy(d, user);
-        return new StudyMongoDBIterator<Document>(mongoCursor, iteratorFilter);
+        return new StudyMongoDBIterator<Document>(mongoCursor, options, iteratorFilter);
     }
 
     private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
-        if (options.containsKey(QueryOptions.INCLUDE)) {
-            options = new QueryOptions(options);
-            List<String> includeList = new ArrayList<>(options.getAsStringList(QueryOptions.INCLUDE));
+        QueryOptions qOptions = new QueryOptions(options);
+        if (qOptions.containsKey(QueryOptions.INCLUDE)) {
+            List<String> includeList = new ArrayList<>(qOptions.getAsStringList(QueryOptions.INCLUDE));
             includeList.add("_ownerId");
             includeList.add("_acl");
             includeList.add(QueryParams.GROUPS.key());
-            options.put(QueryOptions.INCLUDE, includeList);
+            qOptions.put(QueryOptions.INCLUDE, includeList);
         }
-        options = filterOptions(options, FILTER_ROUTE_STUDIES);
+        qOptions = filterOptions(qOptions, FILTER_ROUTE_STUDIES);
 
         if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
             query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
@@ -1520,7 +1553,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         logger.debug("Study native get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
 
-        return studyCollection.nativeQuery().find(bson, options).iterator();
+        return studyCollection.nativeQuery().find(bson, qOptions).iterator();
     }
 
     @Override
@@ -1588,13 +1621,16 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             try {
                 switch (queryParam) {
                     case UID:
-                        addOrQuery(PRIVATE_UID, queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(PRIVATE_UID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case PROJECT_UID:
-                        addOrQuery(PRIVATE_PROJECT_UID, queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(PRIVATE_PROJECT_UID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case PROJECT_ID:
-                        addOrQuery(PRIVATE_PROJECT_ID, queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(PRIVATE_PROJECT_ID, queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
+                    case PROJECT_UUID:
+                        addAutoOrQuery(PRIVATE_PROJECT_UUID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case ATTRIBUTES:
                         addAutoOrQuery(entry.getKey(), entry.getKey(), query, queryParam.type(), andBsonList);
@@ -1618,8 +1654,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                                 && query.getString(QueryParams.ID.key()).equals(query.getString(QueryParams.ALIAS.key()))) {
                             if (!idOrAliasFlag) {
                                 List<Document> orList = Arrays.asList(
-                                    new Document(QueryParams.ID.key(), query.getString(QueryParams.ID.key())),
-                                    new Document(QueryParams.ALIAS.key(), query.getString(QueryParams.ALIAS.key()))
+                                        new Document(QueryParams.ID.key(), query.getString(QueryParams.ID.key())),
+                                        new Document(QueryParams.ALIAS.key(), query.getString(QueryParams.ALIAS.key()))
                                 );
                                 andBsonList.add(new Document("$or", orList));
                                 idOrAliasFlag = true;
@@ -1628,10 +1664,16 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                             addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         }
                         break;
+                    case STATUS_NAME:
+                        // Convert the status to a positive status
+                        query.put(queryParam.key(),
+                                Status.getPositiveStatus(Status.STATUS_LIST, query.getString(queryParam.key())));
+                        addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
+                    case UUID:
                     case NAME:
                     case DESCRIPTION:
                     case CIPHER:
-                    case STATUS_NAME:
                     case STATUS_MSG:
                     case STATUS_DATE:
                     case LAST_MODIFIED:

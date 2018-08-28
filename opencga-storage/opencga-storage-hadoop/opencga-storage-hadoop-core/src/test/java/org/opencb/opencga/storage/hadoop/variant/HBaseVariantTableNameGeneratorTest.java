@@ -48,7 +48,7 @@ public class HBaseVariantTableNameGeneratorTest {
 
     @Test
     public void archiveNameWithDBNameUnderscore() throws Exception {
-        assertEquals(DB_NAME + "_archive_44", HBaseVariantTableNameGenerator.getArchiveTableName(DB_NAME + "_", 44, ""));
+        assertEquals(DB_NAME + "_archive_44", HBaseVariantTableNameGenerator.getArchiveTableName("", DB_NAME + "_", 44));
     }
 
     @Test

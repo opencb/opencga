@@ -33,7 +33,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.getSamplesMetadata;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.getSamplesMetadataIfRequested;
 
 /**
  * @author Ignacio Medina <igmecas@gmail.com>
@@ -67,7 +67,8 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      * @return A QueryResult with the result of the query
      */
     default VariantQueryResult<Variant> get(Iterator<?> variants, Query query, QueryOptions options) {
-        return iterator(variants, query, options).toQueryResult(getSamplesMetadata(query, options, getStudyConfigurationManager()));
+        return iterator(variants, query, options)
+                .toQueryResult(getSamplesMetadataIfRequested(query, options, getStudyConfigurationManager()));
     }
 
     /**
@@ -162,16 +163,12 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
         return VariantQueryUtils.getIncludeSamples(query, options, getStudyConfigurationManager());
     }
 
-    @Deprecated
-    default QueryResult addStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions) {
-        return updateStats(variantStatsWrappers, studyName, queryOptions);
-    }
+    QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp, QueryOptions queryOptions);
 
-    QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions);
+    QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration, long timestamp,
+                            QueryOptions options);
 
-    QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration, QueryOptions options);
-
-    QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
+    QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, long timestamp, QueryOptions queryOptions);
 
     /**
      * Update custom annotation for all the variants with in a given region.
@@ -179,10 +176,11 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      * @param query       Region to update
      * @param name        Custom annotation name.
      * @param attribute   Custom annotation for the region
+     * @param timeStamp   Timestamp of the operation
      * @param options     Other options
      * @return            Result of the insertion
      */
-    QueryResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, QueryOptions options);
+    QueryResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, long timeStamp, QueryOptions options);
 
     StudyConfigurationManager getStudyConfigurationManager();
 

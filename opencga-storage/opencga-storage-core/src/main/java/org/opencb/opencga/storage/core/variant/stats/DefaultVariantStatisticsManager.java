@@ -25,10 +25,13 @@ import com.google.common.base.Throwables;
 import org.apache.avro.generic.GenericRecord;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.models.variant.stats.VariantSourceStats;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.biodata.tools.variant.stats.AggregationUtils;
 import org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator;
 import org.opencb.commons.ProgressLogger;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataReader;
@@ -56,10 +59,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-import static org.opencb.opencga.storage.core.metadata.StudyConfigurationManager.checkStudyConfiguration;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 
 /**
@@ -72,13 +75,13 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
     public static final String STATS_LOAD_PARALLEL = "stats.load.parallel";
     public static final boolean DEFAULT_STATS_LOAD_PARALLEL = true;
 
-    private static final String VARIANT_STATS_SUFFIX = ".variants.stats.json.gz";
-    private static final String SOURCE_STATS_SUFFIX = ".source.stats.json.gz";
+    protected static final String VARIANT_STATS_SUFFIX = ".variants.stats.json.gz";
+    protected static final String SOURCE_STATS_SUFFIX = ".source.stats.json.gz";
 
     private final JsonFactory jsonFactory;
-    private final ObjectMapper jsonObjectMapper;
+    protected final ObjectMapper jsonObjectMapper;
     private final VariantDBAdaptor dbAdaptor;
-    private long numStatsToLoad = 0;
+    protected long numStatsToLoad = 0;
     protected static Logger logger = LoggerFactory.getLogger(DefaultVariantStatisticsManager.class);
 
     public DefaultVariantStatisticsManager(VariantDBAdaptor dbAdaptor) {
@@ -105,7 +108,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
     }
 
 
-    private OutputStream getOutputStream(Path filePath, QueryOptions options) throws IOException {
+    protected OutputStream getOutputStream(Path filePath, QueryOptions options) throws IOException {
         OutputStream outputStream = new FileOutputStream(filePath.toFile());
         logger.info("will write stats to {}", filePath);
         if (filePath.toString().endsWith(".gz")) {
@@ -130,14 +133,25 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
         return variantDBAdaptor.iterator(iteratorQuery, iteratorQueryOptions);
     }
 
-    public URI createStats(VariantDBAdaptor variantDBAdaptor, URI output, String study, List<String> cohorts,
+    public final URI createStats(VariantDBAdaptor variantDBAdaptor, URI output, String study, List<String> cohorts,
                            QueryOptions options) throws IOException, StorageEngineException {
 
         StudyConfigurationManager studyConfigurationManager = variantDBAdaptor.getStudyConfigurationManager();
         StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(study, options).first();
         Map<String, Set<String>> cohortsMap = new HashMap<>(cohorts.size());
         for (String cohort : cohorts) {
-            cohortsMap.put(cohort, Collections.emptySet());
+            if (studyConfiguration.isAggregated()) {
+                cohortsMap.put(cohort, Collections.emptySet());
+            } else {
+                Integer cohortId = studyConfiguration.getCohortIds().get(cohort);
+                if (cohortId == null) {
+                    throw new StorageEngineException("Unknown cohort " + cohort);
+                }
+                Set<String> samples = studyConfiguration.getCohorts().get(cohortId).stream()
+                        .map(studyConfiguration.getSampleIds().inverse()::get)
+                        .collect(Collectors.toCollection(LinkedHashSet::new));
+                cohortsMap.put(cohort, samples);
+            }
         }
         return createStats(variantDBAdaptor, output, cohortsMap, null, studyConfiguration, options);
     }
@@ -172,8 +186,8 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
         }
 
         //Parse query options
-        int batchSize = options.getInt(Options.LOAD_BATCH_SIZE.key(), 100); // future optimization, threads, etc
-        int numTasks = options.getInt(Options.LOAD_THREADS.key(), 6);
+        int batchSize = options.getInt(Options.LOAD_BATCH_SIZE.key(), Options.LOAD_BATCH_SIZE.defaultValue());
+        int numTasks = options.getInt(Options.LOAD_THREADS.key(), Options.LOAD_THREADS.defaultValue());
         boolean overwrite = options.getBoolean(Options.OVERWRITE_STATS.key(), false);
         boolean updateStats = options.getBoolean(Options.UPDATE_STATS.key(), false);
         Properties tagmap = VariantStatisticsManager.getAggregationMappingProperties(options);
@@ -191,18 +205,9 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
             }
         }
 
-        checkAndUpdateStudyConfigurationCohorts(studyConfiguration, cohorts, cohortIds, overwrite, updateStats);
-        if (!overwrite) {
-            for (String cohortName : cohorts.keySet()) {
-                Integer cohortId = studyConfiguration.getCohortIds().get(cohortName);
-                if (studyConfiguration.getInvalidStats().contains(cohortId)) {
-                    logger.debug("Cohort \"{}\":{} is invalid. Need to overwrite stats. Using overwrite = true", cohortName, cohortId);
-                    overwrite = true;
-                }
-            }
-        }
-        checkStudyConfiguration(studyConfiguration);
+        studyConfiguration = preCalculateStats(cohorts, studyConfiguration, overwrite, updateStats, options);
 
+        overwrite = checkOverwrite(cohorts, studyConfiguration, overwrite);
 
         VariantSourceStats variantSourceStats = new VariantSourceStats(null/*FILE_ID*/, Integer.toString(studyConfiguration.getStudyId()));
 
@@ -215,22 +220,12 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
         logger.info("ReaderQueryOptions: " + readerOptions.toJson());
         VariantDBReader reader = new VariantDBReader(studyConfiguration, variantDBAdaptor, readerQuery, readerOptions);
         List<Task<Variant, String>> tasks = new ArrayList<>(numTasks);
-        boolean skipCount = options.getBoolean(QueryOptions.SKIP_COUNT, false);
-        ProgressLogger progressLogger = new ProgressLogger("Calculated stats:",
-                () -> {
-                    if (skipCount) {
-                        return 0L;
-                    } else {
-                        numStatsToLoad = variantDBAdaptor.count(readerQuery).first();
-                        return numStatsToLoad;
-                    }
-                }, 200).setBatchSize(5000);
+        ProgressLogger progressLogger = buildCreateStatsProgressLogger(dbAdaptor, readerQuery, readerOptions);
         for (int i = 0; i < numTasks; i++) {
-            tasks.add(new VariantStatsWrapperTask(overwrite, cohorts, studyConfiguration, variantSourceStats, tagmap, progressLogger));
+            tasks.add(new VariantStatsWrapperTask(overwrite, cohorts, studyConfiguration, variantSourceStats, tagmap, progressLogger,
+                    getAggregation(studyConfiguration, options)));
         }
-        Path variantStatsPath = Paths.get(output.getPath() + VARIANT_STATS_SUFFIX);
-        logger.info("will write stats to {}", variantStatsPath);
-        StringDataWriter writer = new StringDataWriter(variantStatsPath, true);
+        StringDataWriter writer = buildVariantStatsStringDataWriter(output);
 
         // runner
         ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder().setNumTasks(numTasks).setBatchSize(batchSize).build();
@@ -255,6 +250,35 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
         return output;
     }
 
+    protected StudyConfiguration preCalculateStats(Map<String, Set<String>> cohorts, StudyConfiguration studyConfiguration,
+                                                   boolean overwrite, boolean updateStats, ObjectMap options)
+            throws StorageEngineException {
+        return dbAdaptor.getStudyConfigurationManager().lockAndUpdate(studyConfiguration.getStudyName(), sc -> {
+            dbAdaptor.getStudyConfigurationManager().registerCohorts(sc, cohorts);
+            checkAndUpdateStudyConfigurationCohorts(sc, cohorts, overwrite, updateStats, getAggregation(sc, options));
+            return sc;
+        });
+    }
+
+    protected ProgressLogger buildCreateStatsProgressLogger(VariantDBAdaptor variantDBAdaptor, Query readerQuery, QueryOptions options) {
+        boolean skipCount = options.getBoolean(QueryOptions.SKIP_COUNT, false);
+        return new ProgressLogger("Calculated stats:",
+                () -> {
+                    if (skipCount) {
+                        return 0L;
+                    } else {
+                        numStatsToLoad = variantDBAdaptor.count(readerQuery).first();
+                        return numStatsToLoad;
+                    }
+                }, 200).setBatchSize(5000);
+    }
+
+    protected StringDataWriter buildVariantStatsStringDataWriter(URI output) {
+        Path variantStatsPath = Paths.get(output.getPath() + VARIANT_STATS_SUFFIX);
+        logger.info("will write stats to {}", variantStatsPath);
+        return new StringDataWriter(variantStatsPath, true);
+    }
+
     class VariantStatsWrapperTask implements ParallelTaskRunner.Task<Variant, String> {
 
         private boolean overwrite;
@@ -269,8 +293,8 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
         private VariantStatisticsCalculator variantStatisticsCalculator;
 
         VariantStatsWrapperTask(boolean overwrite, Map<String, Set<String>> cohorts,
-                                StudyConfiguration studyConfiguration,
-                                VariantSourceStats variantSourceStats, Properties tagmap, ProgressLogger progressLogger) {
+                                StudyConfiguration studyConfiguration, VariantSourceStats variantSourceStats, Properties tagmap,
+                                ProgressLogger progressLogger, Aggregation aggregation) {
             this.overwrite = overwrite;
             this.cohorts = cohorts;
             this.studyConfiguration = studyConfiguration;
@@ -282,7 +306,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
             this.variantSourceStats = variantSourceStats;
             this.tagmap = tagmap;
             variantStatisticsCalculator = new VariantStatisticsCalculator(overwrite);
-            variantStatisticsCalculator.setAggregationType(studyConfiguration.getAggregation(), tagmap);
+            variantStatisticsCalculator.setAggregationType(aggregation, tagmap);
         }
 
         @Override
@@ -481,57 +505,22 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
      * * if a cohort is already calculated, it is not an error if overwrite was provided
      *
      */
-    static List<Integer> checkAndUpdateStudyConfigurationCohorts(StudyConfiguration studyConfiguration,
-                                                          Map<String, Set<String>> cohorts,
-                                                          Map<String, Integer> cohortIds,
-                                                          boolean overwrite, boolean updateStats)
+    protected static List<Integer> checkAndUpdateStudyConfigurationCohorts(StudyConfiguration studyConfiguration,
+                                                                           Map<String, Set<String>> cohorts,
+                                                                           boolean overwrite, boolean updateStats, Aggregation aggregation)
             throws StorageEngineException {
         List<Integer> cohortIdList = new ArrayList<>();
 
         for (Map.Entry<String, Set<String>> entry : cohorts.entrySet()) {
             String cohortName = entry.getKey();
             Set<String> samples = entry.getValue();
-            final int cohortId;
-
-
-            // get a valid cohortId
-            if (cohortIds == null || cohortIds.isEmpty()) {
-                if (studyConfiguration.getCohortIds().containsKey(cohortName)) {
-                    cohortId = studyConfiguration.getCohortIds().get(cohortName);
-                } else {
-                    //Auto-generate cohortId. Max CohortId + 1
-                    // if there are no cohorts and we are creating the first as 0
-                    cohortId = studyConfiguration.getCohortIds().isEmpty()
-                            ? 0
-                            : Collections.max(studyConfiguration.getCohortIds().values()) + 1;
-                }
-            } else {
-                if (!cohortIds.containsKey(cohortName)) {
-                    //ERROR Missing cohortId
-                    throw new StorageEngineException("Missing cohortId for the cohort : " + cohortName);
-                }
-                cohortId = cohortIds.get(entry.getKey());
-            }
-
-            // check that the cohortId-cohortName is consistent with StudyConfiguration
-            if (studyConfiguration.getCohortIds().containsKey(cohortName)) {
-                if (!studyConfiguration.getCohortIds().get(cohortName).equals(cohortId)) {
-                    //ERROR Duplicated cohortName
-                    throw new StorageEngineException("Duplicated cohortName " + cohortName + ":" + cohortId
-                            + ". Appears in the StudyConfiguration as "
-                            + cohortName + ":" + studyConfiguration.getCohortIds().get(cohortName));
-                }
-            } else if (studyConfiguration.getCohortIds().containsValue(cohortId)) {
-                //ERROR Duplicated cohortId
-                throw new StorageEngineException("Duplicated cohortId " + cohortName + ":" + cohortId
-                        + ". Appears in the StudyConfiguration as "
-                        + StudyConfiguration.inverseMap(studyConfiguration.getCohortIds()).get(cohortId) + ":" + cohortId);
-            }
+            final int cohortId = studyConfiguration.getCohortIds().get(cohortName);
 
             final Set<Integer> sampleIds;
             if (samples == null || samples.isEmpty()) {
                 //There are not provided samples for this cohort. Take samples from StudyConfiguration
-                if (studyConfiguration.isAggregated()) {
+                boolean aggregated = AggregationUtils.isAggregated(aggregation);
+                if (aggregated) {
                     samples = Collections.emptySet();
                     sampleIds = Collections.emptySet();
                 } else {
@@ -595,6 +584,10 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
         return cohortIdList;
     }
 
+    private static Aggregation getAggregation(StudyConfiguration studyConfiguration, ObjectMap options) {
+        return AggregationUtils.valueOf(options.getString(Options.AGGREGATED_TYPE.key(), studyConfiguration.getAggregation().toString()));
+    }
+
     void checkAndUpdateCalculatedCohorts(StudyConfiguration studyConfiguration, URI uri, boolean updateStats)
             throws IOException, StorageEngineException {
         /** Select input path **/
@@ -611,6 +604,19 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
                 throw new IOException("File " + uri + " is empty");
             }
         }
+    }
+
+    protected static boolean checkOverwrite(Map<String, Set<String>> cohorts, StudyConfiguration studyConfiguration, boolean overwrite) {
+        if (!overwrite) {
+            for (String cohortName : cohorts.keySet()) {
+                Integer cohortId = studyConfiguration.getCohortIds().get(cohortName);
+                if (studyConfiguration.getInvalidStats().contains(cohortId)) {
+                    logger.debug("Cohort \"{}\":{} is invalid. Need to overwrite stats. Using overwrite = true", cohortName, cohortId);
+                    overwrite = true;
+                }
+            }
+        }
+        return overwrite;
     }
 
 }

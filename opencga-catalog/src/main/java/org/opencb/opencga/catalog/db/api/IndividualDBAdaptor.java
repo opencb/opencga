@@ -40,15 +40,16 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> {
 
     enum QueryParams implements QueryParam {
-        UID("uid", INTEGER_ARRAY, ""),
         ID("id", TEXT, ""),
+        UID("uid", INTEGER_ARRAY, ""),
+        UUID("uuid", TEXT, ""),
         NAME("name", TEXT, ""),
         FATHER("father", TEXT, ""),
         MOTHER("mother", TEXT, ""),
         FATHER_UID("father.uid", DECIMAL, ""),
         MOTHER_UID("mother.uid", DECIMAL, ""),
         MULTIPLES("multiples", TEXT, ""),
-        FAMILY("family", TEXT, ""),
+        LOCATION("location", TEXT_ARRAY, ""),
         SEX("sex", TEXT, ""),
         SAMPLES("samples", TEXT_ARRAY, ""),
         SAMPLE_UIDS("samples.uid", INTEGER_ARRAY, ""),
@@ -135,6 +136,7 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         DATE_OF_BIRTH(QueryParams.DATE_OF_BIRTH.key()),
         KARYOTYPIC_SEX(QueryParams.KARYOTYPIC_SEX.key()),
         SEX(QueryParams.SEX.key()),
+        LOCATION(QueryParams.LOCATION.key()),
         MULTIPLES(QueryParams.MULTIPLES.key()),
         ATTRIBUTES(QueryParams.ATTRIBUTES.key()),
         SAMPLES(QueryParams.SAMPLES.key()),

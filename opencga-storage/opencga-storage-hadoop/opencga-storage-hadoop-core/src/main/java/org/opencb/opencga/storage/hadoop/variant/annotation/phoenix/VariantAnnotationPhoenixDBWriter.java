@@ -61,7 +61,9 @@ public class VariantAnnotationPhoenixDBWriter extends VariantAnnotationDBWriter 
 
         this.genomeHelper = dbAdaptor.getGenomeHelper();
         this.closeConnection = closeConnection;
-        this.converter = new VariantAnnotationToPhoenixConverter(genomeHelper.getColumnFamily());
+        int currentAnnotationId = dbAdaptor.getStudyConfigurationManager()
+                .getProjectMetadata().first().getAnnotation().getCurrent().getId();
+        this.converter = new VariantAnnotationToPhoenixConverter(genomeHelper.getColumnFamily(), currentAnnotationId);
         this.variantTable = variantTable;
         List<PhoenixHelper.Column> columns = new ArrayList<>();
         Collections.addAll(columns, VariantPhoenixHelper.VariantColumn.values());

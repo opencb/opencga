@@ -83,7 +83,7 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void deleteProjectTest() throws CatalogException {
-        Project p = new Project("2000G", "Project about some more genomes", "Tomorrow", "Cool", new Status(), "", 3000, "", null, 1);
+        Project p = new Project("2000G", "Project about some more genomes", null, "Cool", new Status(), "", 3000, "", null, 1);
         QueryResult<Project> result = catalogProjectDBAdaptor.insert(p, user1.getId(), null);
         System.out.println(result.first().getStatus());
         p = result.first();

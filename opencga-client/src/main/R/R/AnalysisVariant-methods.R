@@ -11,32 +11,32 @@
 #' \url{http://bioinfo.hpc.cam.ac.uk/opencga/webservices/}
 #' @export
 
-setMethod("analysisVariantClient", "OpencgaR", function(OpencgaR, action, params=NULL) {
+setMethod("analysisVariantClient", "OpencgaR", function(OpencgaR, action, params=NULL, ...) {
     category <- "analysis"
     subcategory <- "variant"
     switch(action,
            facet=fetchOpenCGA(object=OpencgaR, category=category, 
                               subcategory=subcategory, action=action, 
-                              params=params, httpMethod="GET"),
+                              params=params, httpMethod="GET", ...),
            ibs=fetchOpenCGA(object=OpencgaR, category=category, 
                             subcategory=subcategory, action=action, 
-                            params=params, httpMethod="GET"),
+                            params=params, httpMethod="GET", ...),
            index=fetchOpenCGA(object=OpencgaR, category=category, 
                               subcategory=subcategory, action=action, 
-                              params=params, httpMethod="GET"),
+                              params=params, httpMethod="GET", ...),
            query=fetchOpenCGA(object=OpencgaR, category=category, 
                               subcategory=subcategory, action=action, 
-                              params=params, httpMethod="GET"),
+                              params=params, httpMethod="GET", ...),
            #TODO: Implement POST method for query
            samples=fetchOpenCGA(object=OpencgaR, category=category, 
                                 subcategory=subcategory, action=action, 
-                                params=params, httpMethod="GET"),
+                                params=params, httpMethod="GET", ...),
            stats=fetchOpenCGA(object=OpencgaR, category=category, 
                               subcategory=subcategory, action=action, 
-                              params=params, httpMethod="GET"),
+                              params=params, httpMethod="GET", ...),
            validate=fetchOpenCGA(object=OpencgaR, category=category, 
                                  subcategory=subcategory, action=action, 
-                                 params=params, httpMethod="POST")
+                                 params=params, httpMethod="POST", ...)
     )
 })
 

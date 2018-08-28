@@ -9,7 +9,9 @@
 
 !3 Delete userA 
 !|Table: Rest Fixture | $baseURL  |
-| GET | /v1/users/$userA/delete?&sid=$userASessionId |200|  Content-Type: application/json |jsonbody.error === ''|
+#| GET | /v1/users/$userA/delete?&sid=$userASessionId |200|  Content-Type: application/json |jsonbody.error === ''|
+#| DELETE | /v1/users/delete?&sid=$userASessionId&id=$userA |200|  Content-Type: application/json |jsonbody.error === ''|
+
 
 !3 Login userB 
 !|Table: Rest Fixture | $baseURL  |
@@ -18,13 +20,20 @@
 | POST | /v1/users/$userB/login |200|  Content-Type: application/json ||
 |let|userBSessionId|js|response.jsonbody.response[0].result[0].sessionId||
 
+!3 Remove Anonymous from Study
+!| Table: Rest Fixture | $baseURL |
+| setBody | {  "users": "*",  "action": "REMOVE"} |
+| setHeader | Content-Type:application/json |
+| POST | /v1/studies/$studyId/groups/members/update?sid=$sessionId | 200 | Content-Type: application/json ||
+
 !3 Delete userB 
 !|Table: Rest Fixture | $baseURL  |
-| GET | /v1/users/$userB/delete?&sid=$userBSessionId |200|  Content-Type: application/json |jsonbody.error === ''|
+#| GET | /v1/users/$userB/delete?&sid=$userBSessionId |200|  Content-Type: application/json |jsonbody.error === ''|
+#| DELETE | /v1/users/delete?&sid=$userBSessionId&id=$userB |200|  Content-Type: application/json |jsonbody.error === ''|
 
-!3 Delete Global Variable Set  
-!|Table: Rest Fixture  | $baseURL |
-| GET | /v1/variableset/$gVariableSetId/delete?sid=$sessionId&projectId=$projectId |200| Content-Type : application/json|jsonbody.error === ''|
+#!3 Delete Global Variable Set  
+#!|Table: Rest Fixture  | $baseURL |
+#| GET | /v1/variableset/$gVariableSetId/delete?sid=$sessionId&projectId=$projectId |200| Content-Type : application/json|jsonbody.error === ''|
 
 #!3 Delete Project
 #!|Table: Rest Fixture  | $baseURL |

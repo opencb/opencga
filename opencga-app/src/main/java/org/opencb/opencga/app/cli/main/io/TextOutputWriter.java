@@ -222,10 +222,16 @@ public class TextOutputWriter extends AbstractOutputWriter {
 
             for (Study study : queryResult.getResult()) {
                 sb.append(String.format("%s\t%s\t%s\t%s\t%d\t%d\t%s\t%d\t%d\t%d\t%d\t%d\t%s\n",
-                        study.getId(), study.getName(), study.getType(), study.getDescription(), study.getGroups().size(),
-                        study.getSize(), study.getFiles().size(), study.getSamples().size(), study.getCohorts().size(),
-                        study.getIndividuals().size(), study.getJobs().size(), study.getVariableSets().size(),
-                        study.getStatus().getName()));
+                        StringUtils.defaultIfEmpty(study.getId(), "-"), StringUtils.defaultIfEmpty(study.getName(), "-"),
+                        study.getType(), StringUtils.defaultIfEmpty(study.getDescription(), "-"),
+                        study.getGroups() != null ? study.getGroups().size() : -1, study.getSize(),
+                        study.getFiles() != null ? study.getFiles().size() : -1,
+                        study.getSamples() != null ? study.getSamples().size() : -1,
+                        study.getCohorts() != null ? study.getCohorts().size() : -1,
+                        study.getIndividuals() != null ? study.getIndividuals().size() : -1,
+                        study.getJobs() != null ? study.getJobs().size() : -1,
+                        study.getVariableSets() != null ? study.getVariableSets().size() : -1,
+                        study.getStatus() != null ? StringUtils.defaultIfEmpty(study.getStatus().getName(), "-") : "-"));
             }
         }
 
@@ -260,11 +266,22 @@ public class TextOutputWriter extends AbstractOutputWriter {
             sb.append(String.format("%s%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%d\t%s\t%s\t%s\n", format,
                     StringUtils.defaultIfEmpty(file.getId(), "-"), StringUtils.defaultIfEmpty(file.getName(), "-"),
                     file.getType(), file.getFormat(), file.getBioformat(), StringUtils.defaultIfEmpty(file.getDescription(), "-"),
-                    StringUtils.defaultIfEmpty(file.getPath(), "-"), StringUtils.defaultIfEmpty(file.getUri().toString(), "-"),
+                    StringUtils.defaultIfEmpty(file.getPath(), "-"), file.getUri(),
                     file.getStatus() != null ? StringUtils.defaultIfEmpty(file.getStatus().getName(), "-") : "-", file.getSize(),
                     indexStatus,
-                    StringUtils.join(file.getRelatedFiles().stream().map(File.RelatedFile::getFileId).collect(Collectors.toList()), ", "),
-                    StringUtils.join(file.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()), ", ")));
+                    file.getRelatedFiles() != null ?
+                            StringUtils.join(file.getRelatedFiles()
+                                    .stream()
+                                    .map(File.RelatedFile::getFileId)
+                                    .collect(Collectors.toList()), ", ")
+                            : "-",
+                    file.getSamples() != null ?
+                            StringUtils.join(file.getSamples()
+                                    .stream()
+                                    .map(Sample::getUid)
+                                    .collect(Collectors.toList()), ", ")
+                            : "-")
+            );
         }
     }
 
@@ -292,7 +309,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 individualName = StringUtils.defaultIfEmpty(sample.getIndividual().getName(), "-");
             }
             sb.append(String.format("%s%s\t%s\t%s\t%s\t%s\t%s\t%s\n", format, StringUtils.defaultIfEmpty(sample.getId(), "-"),
-                    StringUtils.defaultIfEmpty(sample.getName(), "-"), StringUtils.defaultIfEmpty(sample.getSource(), "-"),
+                    StringUtils.defaultIfEmpty(sample.getId(), "-"), StringUtils.defaultIfEmpty(sample.getSource(), "-"),
                     StringUtils.defaultIfEmpty(sample.getDescription(), "-"),
                     sample.getStatus() != null ? StringUtils.defaultIfEmpty(sample.getStatus().getName(), "-") : "-", individualId,
                             individualName));
@@ -309,7 +326,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
 
             for (Cohort cohort : queryResult.getResult()) {
                 sb.append(String.format("%s\t%s\t%s\t%s\t%s\t%d\t%s\t%s\n", StringUtils.defaultIfEmpty(cohort.getId(), "-"),
-                        StringUtils.defaultIfEmpty(cohort.getName(), "-"), cohort.getType(),
+                        StringUtils.defaultIfEmpty(cohort.getId(), "-"), cohort.getType(),
                         StringUtils.defaultIfEmpty(cohort.getDescription(), "-"),
                         cohort.getStatus() != null ? StringUtils.defaultIfEmpty(cohort.getStatus().getName(), "-") : "-",
                         cohort.getSamples().size(), cohort.getSamples().size() > 0 ? StringUtils.join(cohort.getSamples(), ", ") : "NA",
