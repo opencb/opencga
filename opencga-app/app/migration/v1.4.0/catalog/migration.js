@@ -222,6 +222,12 @@ migrateCollection("file", {"uuid": {$exists: false}}, {attributes: 0, stats: 0},
     setChanges["id"] = doc["path"].replace(/\//g, ":");
     setChanges["uuid"] = generateOpenCGAUUID("FILE", setChanges["_creationDate"]);
 
+    /* Check bigwig format autodetection */
+    if (doc.name.endsWith(".bw")) {
+        setChanges["format"] = "BIGWIG";
+        setChanges["bioformat"] = "COVERAGE";
+    }
+
     unsetChanges["acl"] = "";
     unsetChanges["_studyId"] = "";
 
