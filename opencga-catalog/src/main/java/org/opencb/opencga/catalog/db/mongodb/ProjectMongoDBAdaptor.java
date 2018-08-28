@@ -741,6 +741,12 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
+                    case STATUS_NAME:
+                        // Convert the status to a positive status
+                        query.put(queryParam.key(),
+                                Status.getPositiveStatus(Status.STATUS_LIST, query.getString(queryParam.key())));
+                        addAutoOrQuery("projects." + queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
                     case NAME:
                     case UUID:
                     case ID:
@@ -752,7 +758,6 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                     case ORGANISM_COMMON_NAME:
                     case ORGANISM_TAXONOMY_CODE:
                     case ORGANISM_ASSEMBLY:
-                    case STATUS_NAME:
                     case STATUS_MSG:
                     case STATUS_DATE:
                     case LAST_MODIFIED:

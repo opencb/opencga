@@ -248,6 +248,8 @@ public class User {
 
         public static final String BANNED = "BANNED";
 
+        public static final List<String> STATUS_LIST = Arrays.asList(READY, DELETED, BANNED);
+
         public UserStatus(String status, String message) {
             if (isValid(status)) {
                 init(status, message);

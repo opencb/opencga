@@ -1006,6 +1006,12 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
+                    case STATUS_NAME:
+                        // Convert the status to a positive status
+                        query.put(queryParam.key(),
+                                Status.getPositiveStatus(Status.STATUS_LIST, query.getString(queryParam.key())));
+                        addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
                     case ID:
                     case UUID:
                     case NAME:
@@ -1014,7 +1020,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                     case DATE_OF_BIRTH:
                     case SEX:
                     case ETHNICITY:
-                    case STATUS_NAME:
                     case STATUS_MSG:
                     case STATUS_DATE:
                     case POPULATION_NAME:
