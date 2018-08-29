@@ -51,15 +51,6 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 public final class VariantQueryUtils {
 
     private static final Pattern OPERATION_PATTERN = Pattern.compile("^([^=<>~!]*)(<?<=?|>>?=?|!=?|!?=?~|==?)([^=<>~!]+.*)$");
-    private static final String KEY = "key";
-    private static final String VALUE = "value";
-    private static final String OP = "op";
-    // <KEY>:<VALUE><OP>
-    // e.g.
-    //      HG0096:0/1,1/1,HG0097:1/1
-    //      HG0096:DP<3,GQ>4,HG0097:DP<6
-    private static final Pattern MULTI_KEY_VALUE_FILTER_PATTERN =
-            Pattern.compile("(?<" + KEY + ">[^,;]+):(?<" + VALUE + ">([^:;,]+[,;]?)+)(?<" + OP + ">[;,.])");
 
     public static final String OR = ",";
     public static final char OR_CHAR = ',';
@@ -1080,6 +1071,7 @@ public final class VariantQueryUtils {
             return Pair.of(operator, map);
         }
     }
+
     private static Pair<QueryOperation, Map<String, String>> parseMultiKeyValueFilter(VariantQueryParam param, String stringValue) {
         Map<String, String> map = new LinkedHashMap<>();
 
@@ -1122,9 +1114,9 @@ public final class VariantQueryUtils {
                 }
 
 
-                String[] split = token.split(IS, 2);
-                key = split[0];
-                values = split[1];
+                int idx = token.lastIndexOf(IS);
+                key = token.substring(0, idx);
+                values = token.substring(idx + 1);
             } else if (token.equals(OR) || token.equals(AND)) {
                 op = token;
             } else {
@@ -1158,30 +1150,14 @@ public final class VariantQueryUtils {
      * @return QueryOperation between samples
      */
     public static QueryOperation parseGenotypeFilter(String sampleGenotypes, Map<Object, List<String>> map) {
-        Matcher matcher = MULTI_KEY_VALUE_FILTER_PATTERN.matcher(sampleGenotypes + '.');
 
-        QueryOperation operation = null;
-        while (matcher.find()) {
-            String gts = matcher.group(VALUE);
-            String sample = matcher.group(KEY);
-            String op = matcher.group(OP);
-            map.put(sample, Arrays.asList(gts.split(",")));
-            if (AND.equals(op)) {
-                if (operation == QueryOperation.OR) {
-                    throw VariantQueryException.mixedAndOrOperators(GENOTYPE, sampleGenotypes);
-                } else {
-                    operation = QueryOperation.AND;
-                }
-            } else if (OR.equals(op)) {
-                if (operation == QueryOperation.AND) {
-                    throw VariantQueryException.mixedAndOrOperators(GENOTYPE, sampleGenotypes);
-                } else {
-                    operation = QueryOperation.OR;
-                }
-            }
+        Pair<QueryOperation, Map<String, String>> pair = parseMultiKeyValueFilter(GENOTYPE, sampleGenotypes);
+
+        for (Map.Entry<String, String> entry : pair.getValue().entrySet()) {
+            map.put(entry.getKey(), splitValue(entry.getValue(), QueryOperation.OR));
         }
 
-        return operation;
+        return pair.getKey();
     }
 
     public static int parseConsequenceType(String so) {

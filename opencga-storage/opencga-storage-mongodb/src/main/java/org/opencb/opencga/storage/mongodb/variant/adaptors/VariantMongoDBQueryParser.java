@@ -177,13 +177,18 @@ public class VariantMongoDBQueryParser {
             }
 
             /* ANNOTATION PARAMS */
-            parseAnnotationQueryParams(query, builder);
+            QueryBuilder annotationQuery = new QueryBuilder();
+            parseAnnotationQueryParams(query, annotationQuery);
+            builder.and(annotationQuery.get());
 
             /* STUDIES */
-            final StudyConfiguration defaultStudyConfiguration = parseStudyQueryParams(query, builder);
+            QueryBuilder studyQuery = new QueryBuilder();
+            final StudyConfiguration defaultStudyConfiguration = parseStudyQueryParams(query, studyQuery);
 
             /* STATS PARAMS */
-            parseStatsQueryParams(query, builder, defaultStudyConfiguration);
+            parseStatsQueryParams(query, studyQuery, defaultStudyConfiguration);
+            builder.and(studyQuery.get());
+
         }
 
         logger.debug("----------------------");
