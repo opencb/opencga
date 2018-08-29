@@ -10,173 +10,174 @@
 !3 Create Job 
 !|Table: Rest Fixture | $baseURL |
 | setBody |{ "name": "$jobName1", "toolName" : "opencga",   "commandLine": "opencga-analysis.sh"  }|
-| setHeader|Content-Type:application/json|
-| POST | /v1/jobs/create?sid=$sessionId&study=$study |200|  Content-Type: application/json ||
+| POST | /v1/jobs/create?study=$study |200|  Content-Type: application/json ||
 |let|jobId|js|response.jsonbody.response[0].result[0].id||
 
 !3 Create Second Job 
 !|Table: Rest Fixture | $baseURL |
 | setBody |{ "name": "$jobName2", "toolName" : "opencga",   "commandLine": "opencga-analysis.sh",  "outDirId": "/"}|
-| setHeader|Content-Type:application/json|
-| POST | /v1/jobs/create?sid=$sessionId&study=$study |200|  Content-Type: application/json ||
+| POST | /v1/jobs/create?study=$study |200|  Content-Type: application/json ||
 |let|jobId2|js|response.jsonbody.response[0].result[0].id||
 
 !3 Search Job 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/jobs/search?sid=$sessionId&study=$study&name=$jobName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$jobId'|
+| GET | /v1/jobs/search?study=$study&name=$jobName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$jobId'|
 
 !3 Search A Job 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/jobs/search?sid=$sessionId&study=$study&name=$jobName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$jobId' && jsonbody.response[0].result[0].toolId == 'opencga' && jsonbody.response[0].result[0].visited == false|
+| GET | /v1/jobs/search?study=$study&name=$jobName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$jobId' && jsonbody.response[0].result[0].toolId == 'opencga' && jsonbody.response[0].result[0].visited == false|
 
 !3 Get Job Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
+|setHeaders|!-Content-Type : application/json
+Authorization : Bearer -!|
 | GET | /v1/jobs/$jobId/info |403|Content-Type: application/json|jsonbody.error != ''|
 
 !3 Create VIEW_JOBS ACL For Study
 !|Table: Rest Fixture | $baseURL |
 | setBody | {  "permissions" : "VIEW_JOBS",  "action": "SET",  "study": "$studyId"}|
-| setHeader|Content-Type:application/json|
-| POST | /v1/studies/acl/*/update?sid=$sessionId|200|Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions[0] == 'VIEW_JOBS'|
+| POST | /v1/studies/acl/*/update|200|Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions[0] == 'VIEW_JOBS'|
 
 !3 Get Job Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
+|setHeaders|!-Content-Type : application/json
+Authorization : Bearer -!|
 | GET | /v1/jobs/$jobId/info |200|Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].result[0].id == '$jobId'|
 
 !3 Delete VIEW_JOBS ACL For Study
 !|Table: Rest Fixture | $baseURL |
 | setBody | {  "permissions" : "VIEW_JOBS",  "action": "REMOVE",  "study": "$studyId"}|
-| setHeader|Content-Type:application/json|
-| POST | /v1/studies/acl/*/update?sid=$sessionId|200|Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions.length == '0.0'|
+| POST | /v1/studies/acl/*/update|200|Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions.length == '0.0'|
 
 !3 Get Job Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
+|setHeaders|!-Content-Type : application/json
+Authorization : Bearer -!|
 | GET | /v1/jobs/$jobId/info |403|Content-Type: application/json|jsonbody.error != ''|
 
 !3 Create Job ACL For Ananomous
 !|Table: Rest Fixture | $baseURL |
 |setBody|{"permissions": "VIEW", "action":"SET", "job": "$jobId"}|
-|setHeader|Content-Type:application/json|
-|POST| /v1/jobs/acl/*/update?sid=$sessionId |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions[0] == 'VIEW'|
+|POST| /v1/jobs/acl/*/update |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions[0] == 'VIEW'|
 
 !3 Get Job Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
+|setHeaders|!-Content-Type : application/json
+Authorization : Bearer -!|
 | GET | /v1/jobs/$jobId/info |200|Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].result[0].id == '$jobId'|
 
 !3 Delete Job ACL For Ananomous
 !|Table: Rest Fixture | $baseURL |
 |setBody|{ "action":"RESET", "job": "$jobId"}|
-|setHeader|Content-Type:application/json|
-|POST| /v1/jobs/acl/*/update?sid=$sessionId |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0.0'|
+|POST| /v1/jobs/acl/*/update |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0.0'|
 
 !3 Get Job Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
+|setHeaders|!-Content-Type : application/json
+Authorization : Bearer -!|
 | GET | /v1/jobs/$jobId/info |403|Content-Type: application/json|jsonbody.error != ''|
 
 !3 Find Info About Multiple Jobs
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/jobs/$jobId,$jobId2/info?sid=$sessionId&study=$study|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$jobId' && jsonbody.response[1].result[0].id == '$jobId2'|
+| GET | /v1/jobs/$jobId,$jobId2/info?study=$study|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$jobId' && jsonbody.response[1].result[0].id == '$jobId2'|
 
 !3 Find Info About Multiple Jobs In Reverse Order
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/jobs/$jobId2,$jobId/info?sid=$sessionId&study=$study|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$jobId2' && jsonbody.response[1].result[0].id == '$jobId'|
+| GET | /v1/jobs/$jobId2,$jobId/info?study=$study|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$jobId2' && jsonbody.response[1].result[0].id == '$jobId'|
 
 !3 Find Info About Multiple Jobs With One Invalid Entry
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/jobs/$jobId,$jobId2,000/info?sid=$sessionId&study=$study|500|  Content-Type: application/json |jsonbody.error == "Job 000 not found"|
+| GET | /v1/jobs/$jobId,$jobId2,000/info?study=$study|500|  Content-Type: application/json |jsonbody.error == "Job 000 not found"|
 
 !3 Find Info About Multiple Jobs With One Invalid Entry And Silent True
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/jobs/$jobId,$jobId2,000/info?sid=$sessionId&study=$study&silent=true|200|  Content-Type: application/json ||
+| GET | /v1/jobs/$jobId,$jobId2,000/info?study=$study&silent=true|200|  Content-Type: application/json ||
 
 !3 First Visit For A Job 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/jobs/$jobId/visit?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result[0].visited == true|
+| GET | /v1/jobs/$jobId/visit|200|  Content-Type: application/json |jsonbody.response[0].result[0].visited == true|
 
 !3 Check Updated Visited Related To a Job
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/jobs/search?sid=$sessionId&study=$study&name=$jobName1|200|  Content-Type: application/json |jsonbody.response[0].result[0].visited == true|
+| GET | /v1/jobs/search?study=$study&name=$jobName1|200|  Content-Type: application/json |jsonbody.response[0].result[0].visited == true|
 
 !3 Get Jobs as Groups
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/jobs/groupBy?sid=$sessionId&study=$study&fields=toolName%2CcommandLine|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].numResults > '0'|
+| GET | /v1/jobs/groupBy?study=$study&fields=toolName%2CcommandLine|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].numResults > '0'|
 
 !3 Get ACL For Job
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/jobs/$jobId/acl?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
+| GET | /v1/jobs/$jobId/acl|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
 
 !3 Create ACL For A Member 
 !|Table: Rest Fixture | $baseURL |
 | setBody | {  "permissions": "VIEW",  "action" : "ADD", "job": "$jobId"}|
-| setHeader|Content-Type:application/json|
-| POST | /v1/jobs/acl/$userA/update?sid=$sessionId |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions[0] == 'VIEW'|
+| POST | /v1/jobs/acl/$userA/update |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions[0] == 'VIEW'|
 
 !3 Get ACL For A Member
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/jobs/$jobId/acl?sid=$sessionId&name=$jobName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions[0] == 'VIEW'|
+| GET | /v1/jobs/$jobId/acl?name=$jobName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions[0] == 'VIEW'|
 
 !3 Update ACL For A Member
 !|Table: Rest Fixture | $baseURL |
 | setBody | {  "add": "DELETE" }|
-| setHeader|Content-Type:application/json|
-| POST | /v1/jobs/$jobId/acl/$userA/update?sid=$sessionId&name=$jobName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2'|
+| POST | /v1/jobs/$jobId/acl/$userA/update?name=$jobName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2'|
 
 !3 Get Updated ACL For The Member
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/jobs/$jobId/acl?sid=$sessionId&study=$study&name=$jobName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2.0'|
+| GET | /v1/jobs/$jobId/acl?study=$study&name=$jobName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2.0'|
 
 !3 Get ACL For Multiple Jobs
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/jobs/$jobId,$jobId2/acl?sid=$sessionId&study=$study|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2.0' && jsonbody.response[1].result.length == '0.0'|
+| GET | /v1/jobs/$jobId,$jobId2/acl?study=$study|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2.0' && jsonbody.response[1].result.length == '0.0'|
 
 !3 Get ACL For Multiple Jobs In Reverse Order
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/jobs/$jobId2,$jobId/acl?sid=$sessionId&study=$study|200|Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0.0' && jsonbody.response[1].result[0].member == '$userA' && jsonbody.response[1].result[0].permissions.length == '2.0'|
+| GET | /v1/jobs/$jobId2,$jobId/acl?study=$study|200|Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0.0' && jsonbody.response[1].result[0].member == '$userA' && jsonbody.response[1].result[0].permissions.length == '2.0'|
 
 !3 Get ACL For Multiple Jobs With One Invalid Entry
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/jobs/$jobId,000,$jobId2/acl?sid=$sessionId&study=$study|500|  Content-Type: application/json |jsonbody.error == "Job 000 not found"|
+| GET | /v1/jobs/$jobId,000,$jobId2/acl?study=$study|500|  Content-Type: application/json |jsonbody.error == "Job 000 not found"|
 
 !3 Get ACL For Multiple Jobs With One Invalid Entry And Silent True
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/jobs/$jobId,000,$jobId2/acl?sid=$sessionId&study=$study&silent=true|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2.0' && jsonbody.response[1].result.length == '0.0'|
+| GET | /v1/jobs/$jobId,000,$jobId2/acl?study=$study&silent=true|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2.0' && jsonbody.response[1].result.length == '0.0'|
 
 !3 Delete ACL For A Member
 !|Table: Rest Fixture | $baseURL |
 | setBody | { "action" : "RESET", "job": "$jobId"}|
-| setHeader|Content-Type:application/json|
-| POST | /v1/jobs/acl/$userA/update?sid=$sessionId |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].id == '$jobId' && jsonbody.response[0].result.length == '0'|
+| POST | /v1/jobs/acl/$userA/update |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].id == '$jobId' && jsonbody.response[0].result.length == '0'|
 
 !3 Get Deleted ACL For The Member
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/jobs/$jobId/acl?sid=$sessionId&study=$study&name=$jobName1|200|  Content-Type: application/json |jsonbody.error == ''|
+| GET | /v1/jobs/$jobId/acl?study=$study&name=$jobName1|200|  Content-Type: application/json |jsonbody.error == ''|
 
 !3 Delete Job ( Mix of TWO jobs, jobID1 and jobName2 )
 !|Table: Rest Fixture | $baseURL |
-| DELETE | /v1/jobs/delete?sid=$sessionId&study=$study&name=$jobName2*&id=$jobId|200|  Content-Type: application/json ||
+| DELETE | /v1/jobs/delete?study=$study&name=$jobName2*&id=$jobId|200|  Content-Type: application/json ||
 
 !3 Delete a Job
 !|Table: Rest Fixture | $baseURL |
-| DELETE | /v1/jobs/delete?sid=$sessionId&study=$study&name=$jobName1|200|  Content-Type: application/json ||
-#| GET | /v1/jobs/$jobId/delete?sid=$sessionId&study=$study&name=$jobName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$jobId'|
+| DELETE | /v1/jobs/delete?study=$study&name=$jobName1|200|  Content-Type: application/json ||
+#| GET | /v1/jobs/$jobId/delete?study=$study&name=$jobName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$jobId'|
 
 !3 Search Deleted Job 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/jobs/search?sid=$sessionId&study=$study&name=$jobName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
+| GET | /v1/jobs/search?study=$study&name=$jobName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
 
 !3 Search Second Job 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/jobs/search?sid=$sessionId&study=$study&name=$jobName2|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].name == '$jobName2'|
+| GET | /v1/jobs/search?study=$study&name=$jobName2|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].name == '$jobName2'|
 
 !3 (Negative) Delete Job ( Mix of TWO jobs, one ID and one Name)
 !|Table: Rest Fixture | $baseURL |
-| DELETE | /v1/jobs/delete?sid=$sessionId&study=$study&name=$jobName2&id=$jobId1|500|  Content-Type: application/json ||
+| DELETE | /v1/jobs/delete?study=$study&name=$jobName2&id=$jobId1|500|  Content-Type: application/json ||
 
 !3 Delete Second Job
 !|Table: Rest Fixture | $baseURL |
-| DELETE | /v1/jobs/delete?sid=$sessionId&study=$study&id=$jobId2|200|  Content-Type: application/json ||
-#| GET | /v1/jobs/$jobId2/delete?sid=$sessionId&study=$study&name=$jobName2|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].name == '$jobName2'|
+| DELETE | /v1/jobs/delete?study=$study&id=$jobId2|200|  Content-Type: application/json ||
+#| GET | /v1/jobs/$jobId2/delete?study=$study&name=$jobName2|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].name == '$jobName2'|
 
 !3 Search Deleted Job 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/jobs/search?sid=$sessionId&study=$study&name=$jobName2|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
+| GET | /v1/jobs/search?study=$study&name=$jobName2|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
