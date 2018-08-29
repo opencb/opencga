@@ -261,7 +261,7 @@ Authorization : Bearer -!|
 
 !3 Get Annotation Set
 !| Table: Rest Fixture | $baseURL |
-| GET | /v1/families/$familyId/annotationsets/?name=$annotationSetName&sid=$sessionId | 200 | Content-Type: application/json | jsonbody.response[0].result[0].name == '$annotationSetName' |
+| GET | /v1/families/$familyId/annotationsets/?name=$annotationSetName | 200 | Content-Type: application/json | jsonbody.response[0].result[0].name == '$annotationSetName' |
 
 !3 Search Annotation Set
 !| Table: Rest Fixture | $baseURL |
