@@ -148,7 +148,7 @@ public class DocumentToVariantAnnotationConverterTest {
 
 //        System.out.println("annotation = " + jsonObjectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(variantAnnotation));
         dbObject = new Document()
-                .append(ANNOT_ID_FIELD, "?")
+                .append(ANNOT_ID_FIELD, null)
                 .append(DISPLAY_CONSEQUENCE_TYPE_FIELD, 1583)
                 .append(CONSEQUENCE_TYPE_FIELD, asList(
                         new Document(CT_GENE_NAME_FIELD, "TOMM40")
