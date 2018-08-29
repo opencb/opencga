@@ -274,7 +274,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/groupBy")
-    @ApiOperation(value = "Group families by several fields", position = 10,
+    @ApiOperation(value = "Group families by several fields", position = 10, hidden = true,
             notes = "Only group by categorical variables. Grouping by continuous variables might cause unexpected behaviour")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "count", value = "Count the number of elements matching the group", dataType = "boolean",
