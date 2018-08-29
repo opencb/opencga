@@ -50,8 +50,7 @@
 
 !3 Get File Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
-|setHeaders|!-Content-Type : application/json
-Authorization : Bearer -!|
+| setHeader | Authorization : Bearer |
 | GET | /v1/files/$fileId/info |403|Content-Type: application/json|jsonbody.error != ''|
 
 !3 Create VIEW_FILES ACL For Study
@@ -61,8 +60,7 @@ Authorization : Bearer -!|
 
 !3 Get File Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
-|setHeaders|!-Content-Type : application/json
-Authorization : Bearer -!|
+| setHeader | Authorization : Bearer |
 | GET | /v1/files/$fileId/info |200|Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].result[0].id == "$fileId"|
 | GET | /v1/files/$fileId/info ||Content-Type: application/json||
 
@@ -73,8 +71,7 @@ Authorization : Bearer -!|
 
 !3 Get File Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
-|setHeaders|!-Content-Type : application/json
-Authorization : Bearer -!|
+| setHeader | Authorization : Bearer |
 | GET | /v1/files/$fileId/info |403|Content-Type: application/json|jsonbody.error != ''|
 
 !3 Create File ACL For Ananomous
@@ -84,8 +81,7 @@ Authorization : Bearer -!|
 
 !3 Get File Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
-|setHeaders|!-Content-Type : application/json
-Authorization : Bearer -!|
+| setHeader | Authorization : Bearer |
 | GET | /v1/files/$fileId/info |200|Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].result[0].id == "$fileId"|
 
 !3 Delete File ACL For Ananomous
@@ -95,8 +91,7 @@ Authorization : Bearer -!|
 
 !3 Get File Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
-|setHeaders|!-Content-Type : application/json
-Authorization : Bearer -!|
+| setHeader | Authorization : Bearer |
 | GET | /v1/files/$fileId/info |403|Content-Type: application/json|jsonbody.error != ''|
 
 !3 Get File & Folder Info 

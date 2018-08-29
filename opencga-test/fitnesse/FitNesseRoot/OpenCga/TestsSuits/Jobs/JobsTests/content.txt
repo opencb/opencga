@@ -29,8 +29,7 @@
 
 !3 Get Job Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
-|setHeaders|!-Content-Type : application/json
-Authorization : Bearer -!|
+| setHeader | Authorization : Bearer |
 | GET | /v1/jobs/$jobId/info |403|Content-Type: application/json|jsonbody.error != ''|
 
 !3 Create VIEW_JOBS ACL For Study
@@ -40,8 +39,7 @@ Authorization : Bearer -!|
 
 !3 Get Job Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
-|setHeaders|!-Content-Type : application/json
-Authorization : Bearer -!|
+| setHeader | Authorization : Bearer |
 | GET | /v1/jobs/$jobId/info |200|Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].result[0].id == '$jobId'|
 
 !3 Delete VIEW_JOBS ACL For Study
@@ -51,8 +49,7 @@ Authorization : Bearer -!|
 
 !3 Get Job Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
-|setHeaders|!-Content-Type : application/json
-Authorization : Bearer -!|
+| setHeader | Authorization : Bearer |
 | GET | /v1/jobs/$jobId/info |403|Content-Type: application/json|jsonbody.error != ''|
 
 !3 Create Job ACL For Ananomous
@@ -62,8 +59,7 @@ Authorization : Bearer -!|
 
 !3 Get Job Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
-|setHeaders|!-Content-Type : application/json
-Authorization : Bearer -!|
+| setHeader | Authorization : Bearer |
 | GET | /v1/jobs/$jobId/info |200|Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].result[0].id == '$jobId'|
 
 !3 Delete Job ACL For Ananomous
@@ -73,8 +69,7 @@ Authorization : Bearer -!|
 
 !3 Get Job Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
-|setHeaders|!-Content-Type : application/json
-Authorization : Bearer -!|
+| setHeader | Authorization : Bearer |
 | GET | /v1/jobs/$jobId/info |403|Content-Type: application/json|jsonbody.error != ''|
 
 !3 Find Info About Multiple Jobs

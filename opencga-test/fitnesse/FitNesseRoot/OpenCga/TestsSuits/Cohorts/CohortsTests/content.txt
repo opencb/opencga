@@ -37,14 +37,12 @@
 
 !3 Get Study Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
-|setHeaders|!-Content-Type : application/json
-Authorization : Bearer -!|
+| setHeader | Authorization : Bearer |
 | GET | /v1/studies/$studyId/info |403|Content-Type: application/json|jsonbody.error == "Permission denied. User '*' cannot view study { id: $user@$project:$studyId }"|
 
 !3 Get Cohort Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
-|setHeaders|!-Content-Type : application/json
-Authorization : Bearer -!|
+| setHeader | Authorization : Bearer |
 | GET | /v1/cohorts/$cohortId/info?study=$study |403|Content-Type: application/json|jsonbody.error != ''|
 
 !3 Create VIEW_COHORTS ACL For Study
@@ -54,8 +52,7 @@ Authorization : Bearer -!|
 
 !3 Get Cohort Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
-|setHeaders|!-Content-Type : application/json
-Authorization : Bearer -!|
+| setHeader | Authorization : Bearer |
 | GET | /v1/cohorts/$cohortId/info?study=$study |200|Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].result[0].id == '$cohortId'|
 
 !3 Delete Anonymous User For Study
@@ -73,14 +70,12 @@ Authorization : Bearer -!|
 
 !3 Get Study Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
-|setHeaders|!-Content-Type : application/json
-Authorization : Bearer -!|
+| setHeader | Authorization : Bearer |
 | GET | /v1/studies/$studyId/info |403|Content-Type: application/json|jsonbody.error == "Permission denied. User '*' cannot view study { id: $user@$project:$studyId }"|
 
 !3 Get Cohort Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
-|setHeaders|!-Content-Type : application/json
-Authorization : Bearer -!|
+| setHeader | Authorization : Bearer |
 | GET | /v1/cohorts/$cohortId/info?study=$study |403|Content-Type: application/json|jsonbody.error != ''|
 
 !3 Create Cohort ACL For Ananomous
@@ -94,8 +89,7 @@ Authorization : Bearer -!|
 
 !3 Get Cohort Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
-|setHeaders|!-Content-Type : application/json
-Authorization : Bearer -!|
+| setHeader | Authorization : Bearer |
 | GET | /v1/cohorts/$cohortId/info?study=$study |200|Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].result[0].id == '$cohortId'|
 
 !3 Delete Cohort ACL For Ananomous
@@ -105,8 +99,7 @@ Authorization : Bearer -!|
 
 !3 Get Cohort Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
-|setHeaders|!-Content-Type : application/json
-Authorization : Bearer -!|
+| setHeader | Authorization : Bearer |
 | GET | /v1/cohorts/$cohortId/info?study=$study |403|Content-Type: application/json|jsonbody.error != ''|
 
 !3 Get Cohort ACL

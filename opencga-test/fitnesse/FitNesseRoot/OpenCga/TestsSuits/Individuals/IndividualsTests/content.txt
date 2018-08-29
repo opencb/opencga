@@ -82,8 +82,7 @@
 
 !3 Get Individual Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
-|setHeaders|!-Content-Type : application/json
-Authorization : Bearer -!|
+| setHeader | Authorization : Bearer |
 | GET | /v1/individuals/$individualId/info |403|Content-Type: application/json|jsonbody.error != ''|
 
 !3 Create VIEW_INDIVIDUALS ACL For Study
@@ -93,8 +92,7 @@ Authorization : Bearer -!|
 
 !3 Get Individual Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
-|setHeaders|!-Content-Type : application/json
-Authorization : Bearer -!|
+| setHeader | Authorization : Bearer |
 | GET | /v1/individuals/$individualId/info |200|Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].result[0].id == '$individualId'|
 
 !3 Delete VIEW_INDIVIDUALS ACL For Study
@@ -104,8 +102,7 @@ Authorization : Bearer -!|
 
 !3 Get Individual Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
-|setHeaders|!-Content-Type : application/json
-Authorization : Bearer -!|
+| setHeader | Authorization : Bearer |
 | GET | /v1/individuals/$individualId/info |403|Content-Type: application/json|jsonbody.error != ''|
 
 !3 Create Individual ACL For Ananomous
@@ -115,8 +112,7 @@ Authorization : Bearer -!|
 
 !3 Get Individual Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
-|setHeaders|!-Content-Type : application/json
-Authorization : Bearer -!|
+| setHeader | Authorization : Bearer |
 | GET | /v1/individuals/$individualId/info |200|Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].result[0].id == '$individualId'|
 
 !3 Delete Individual ACL For Ananomous
@@ -126,8 +122,7 @@ Authorization : Bearer -!|
 
 !3 Get Individual Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
-|setHeaders|!-Content-Type : application/json
-Authorization : Bearer -!|
+| setHeader | Authorization : Bearer |
 | GET | /v1/individuals/$individualId/info |403|Content-Type: application/json|jsonbody.error != ''|
 
 !3 Get Two Individuals

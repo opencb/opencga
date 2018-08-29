@@ -116,8 +116,7 @@
 
 !3 Get Sample As anonymous
 !|Table: Rest Fixture | $baseURL |
-|setHeaders|!-Content-Type : application/json
-Authorization : Bearer -!|
+| setHeader | Authorization : Bearer |
 | GET | /v1/samples/$sampleId/info|403| Content-Type: application/json |jsonbody.error != ''|
 
 !3 Create VIEW_SAMPLE ACL For Study
@@ -127,8 +126,7 @@ Authorization : Bearer -!|
 
 !3 Get Sample As Ananomous
 !|Table: Rest Fixture | $baseURL |
-|setHeaders|!-Content-Type : application/json
-Authorization : Bearer -!|
+| setHeader | Authorization : Bearer |
 | GET | /v1/samples/$sampleId/info?study=$studyId |200|Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$sampleId'|
 
 !3 Delete VIEW_SAMPLE ACL For Study
@@ -138,8 +136,7 @@ Authorization : Bearer -!|
 
 !3 Get Sample As Anonymous
 !|Table: Rest Fixture | $baseURL |
-|setHeaders|!-Content-Type : application/json
-Authorization : Bearer -!|
+| setHeader | Authorization : Bearer |
 | GET | /v1/samples/$sampleId/info?study=$studyId|403|Content-Type: application/json |jsonbody.error == "Permission denied. * is not allowed to see the sample $sampleId"|
 
 !3 Create Sample ACL For Anonymous
@@ -155,8 +152,7 @@ Authorization : Bearer -!|
 
 !3 Search Sample As Anonymous
 !|Table: Rest Fixture | $baseURL |
-|setHeaders|!-Content-Type : application/json
-Authorization : Bearer -!|
+| setHeader | Authorization : Bearer |
 | GET | /v1/samples/search?study=$study&name=$updatedName|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$sampleId'|
 
 !3 Delete Sample ACL For Anonymous
@@ -172,8 +168,7 @@ Authorization : Bearer -!|
 
 !3 Search Sample As Anonymous
 !|Table: Rest Fixture | $baseURL |
-|setHeaders|!-Content-Type : application/json
-Authorization : Bearer -!|
+| setHeader | Authorization : Bearer |
 | GET | /v1/samples/search?study=$study&name=$updatedName|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0.0'|
 
 !3 Delete Sample ACL For Anonymous
@@ -266,8 +261,7 @@ Authorization : Bearer -!|
 
 !3 Get Sample
 !|Table: Rest Fixture | $baseURL |
-|setHeaders|!-Content-Type : application/json
-Authorization : Bearer -!|
+| setHeader | Authorization : Bearer |
 | GET | /v1/samples/$sampleId2/info?sid=$userBSessionId|403|  Content-Type: application/json ||
 
 !3 Update Sample ACL (add)
@@ -277,8 +271,7 @@ Authorization : Bearer -!|
 
 !3 Get Sample (Annotation Set MUST NOT Present)
 !|Table: Rest Fixture | $baseURL |
-|setHeaders|!-Content-Type : application/json
-Authorization : Bearer -!|
+| setHeader | Authorization : Bearer |
 | GET | /v1/samples/$sampleId2/info?sid=$userBSessionId|200|  Content-Type: application/json ||
 |let||js|!-res="noAnnotationSet";if(response.jsonbody.response[0].result[0].annotationSets.length) {res = response.jsonbody.response[0].result[0].annotationSets.length;}res;-!|noAnnotationSet|
 
@@ -289,8 +282,7 @@ Authorization : Bearer -!|
 
 !3 Get Sample (Annotation Set MUST Present)
 !|Table: Rest Fixture | $baseURL |
-|setHeaders|!-Content-Type : application/json
-Authorization : Bearer -!|
+| setHeader | Authorization : Bearer |
 | GET | /v1/samples/$sampleId2/info?sid=$userBSessionId|200|  Content-Type: application/json ||
 |let||js|!-res="Nothing";if(response.jsonbody.response[0].result[0]["annotationSets"]) {res = response.jsonbody.response[0].result[0].annotationSets.length;}res;-!|1.0|
 
