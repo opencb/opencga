@@ -155,11 +155,16 @@ public class ProjectManager extends AbstractManager {
         // We just need to retrieve the project information now
         Query query = new Query();
         if (StringUtils.isEmpty(auxProject) && isUuid) {
-            query.put(ProjectDBAdaptor.QueryParams.UUID.key(), projectStr);
+            query.putIfNotEmpty(ProjectDBAdaptor.QueryParams.UUID.key(), projectStr);
         } else {
-            query.put(ProjectDBAdaptor.QueryParams.ID.key(), auxProject);
+            query.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ID.key(), auxProject);
         }
         query.putIfNotEmpty(ProjectDBAdaptor.QueryParams.USER_ID.key(), auxOwner);
+//        if (StringUtils.isNotEmpty(auxOwner)) {
+//            query.putIfNotEmpty(ProjectDBAdaptor.QueryParams.USER_ID.key(), auxOwner);
+//        } else {
+//            query.put(ProjectDBAdaptor.QueryParams.USER_ID.key(), userId);
+//        }
 
         QueryOptions options = new QueryOptions()
                 .append(QueryOptions.INCLUDE, Arrays.asList(
@@ -168,13 +173,13 @@ public class ProjectManager extends AbstractManager {
                         ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key()));
 //                .append(QueryOptions.EXCLUDE, "studies");
 
-        QueryResult<Project> projectQueryResult = projectDBAdaptor.get(query, options);
+        QueryResult<Project> projectQueryResult = projectDBAdaptor.get(query, options, userId);
 
         if (StringUtils.isEmpty(auxOwner) && projectQueryResult.getNumResults() > 0) {
-            String ownProjectFqn = userId + "@" + auxProject;
+            String ownProjectFqn = userId + "@";
             for (Project project : projectQueryResult.getResult()) {
                 // We check if the user owns any of the projects
-                if (ownProjectFqn.equals(project.getFqn())) {
+                if (project.getFqn().startsWith(ownProjectFqn)) {
                     // We return the user's project
                     return project;
                 }
@@ -365,7 +370,7 @@ public class ProjectManager extends AbstractManager {
 
         QueryResult<Project> queryResult = new QueryResult<>();
         if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ID.key())) {
-            editId(projectId, parameters.getString(ProjectDBAdaptor.QueryParams.ID.key()), sessionId);
+            editId(project, parameters.getString(ProjectDBAdaptor.QueryParams.ID.key()), sessionId);
 
             //Clone and remove alias from parameters. Do not modify the original parameter
             parameters = new ObjectMap(parameters);
@@ -427,18 +432,22 @@ public class ProjectManager extends AbstractManager {
         return queryResult;
     }
 
-    public QueryResult<Project> editId(long projectUid, String newProjectId, String sessionId)
+    void editId(Project project, String newProjectId, String sessionId)
             throws CatalogException {
         ParamUtils.checkAlias(newProjectId, "new project id");
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = this.catalogManager.getUserManager().getUserId(sessionId);
-        authorizationManager.checkCanEditProject(projectUid, userId);
+        authorizationManager.checkCanEditProject(project.getUid(), userId);
+
+        String owner = project.getFqn().split("@")[0];
+        if (StringUtils.isEmpty(owner)) {
+            throw new CatalogException("Internal error. Project fqn required");
+        }
 
         userDBAdaptor.updateUserLastModified(userId);
-        projectDBAdaptor.editId(projectUid, newProjectId);
-        auditManager.recordUpdate(AuditRecord.Resource.project, projectUid, userId,
+        projectDBAdaptor.editId(owner, project.getUid(), project.getId(), newProjectId);
+        auditManager.recordUpdate(AuditRecord.Resource.project, project.getUid(), userId,
                 new ObjectMap(ProjectDBAdaptor.QueryParams.ID.key(), newProjectId), null, null);
-        return projectDBAdaptor.get(projectUid, QueryOptions.empty());
     }
 
     public QueryResult<Integer> incrementRelease(String projectStr, String sessionId) throws CatalogException {

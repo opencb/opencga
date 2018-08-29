@@ -1257,6 +1257,34 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
+    public void updateProjectId(long projectUid, String newProjectId) throws CatalogDBException {
+        Query query = new Query(QueryParams.PROJECT_UID.key(), projectUid);
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                QueryParams.FQN.key(), QueryParams.UID.key()
+        ));
+        QueryResult<Study> studyQueryResult = get(query, options);
+
+        for (Study study : studyQueryResult.getResult()) {
+            String[] split = study.getFqn().split("@");
+            String[] split1 = split[1].split(":");
+            String newFqn = split[0] + "@" + newProjectId + ":" + split1[1];
+
+            // Update the internal project id and fqn
+            Bson update = new Document("$set", new Document()
+                    .append(QueryParams.FQN.key(), newFqn)
+                    .append(PRIVATE_PROJECT_ID, newProjectId)
+            );
+
+            Bson bsonQuery = Filters.eq(QueryParams.UID.key(), study.getUid());
+
+            QueryResult<UpdateResult> result = studyCollection.update(bsonQuery, update, null);
+            if (result.getResult().get(0).getModifiedCount() == 0) {    //Check if the the project id was modified
+                throw new CatalogDBException("CRITICAL: Could not update new project id references in study " + study.getFqn());
+            }
+        }
+    }
+
+    @Override
     public QueryResult<Study> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
 

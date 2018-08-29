@@ -62,7 +62,7 @@ public class ProjectCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--project"}, description = "Project id or alias", required = true, arity = 1)
+        @Parameter(names = {"--project"}, description = "Project id", required = true, arity = 1)
         public String project;
     }
 
@@ -75,7 +75,10 @@ public class ProjectCommandOptions {
         @Parameter(names = {"-n", "--name"}, description = "Project name", required = true, arity = 1)
         public String name;
 
-        @Parameter(names = {"-a", "--alias"}, description = "Alias", required = true, arity = 1)
+        @Parameter(names = {"--id"}, description = "Project id", required = true, arity = 1)
+        public String id;
+
+        @Parameter(names = {"-a", "--alias"}, description = "Alias", arity = 1)
         public String alias;
 
         @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
