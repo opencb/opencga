@@ -212,7 +212,7 @@ Authorization : Bearer -!|
 
 !3 Get Permission Rule For Sample 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/permissionRules?entity=SAMPLES&sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '1' && jsonbody.response[0].result[0].id == 'PR1' && jsonbody.response[0].result[0].members == '$userA'|
+| GET | /v1/studies/$studyId/permissionRules?entity=SAMPLES|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '1' && jsonbody.response[0].result[0].id == 'PR1' && jsonbody.response[0].result[0].members == '$userA'|
 
 !3 Create Second Permission Rule For Sample 
 !|Table: Rest Fixture | $baseURL |
@@ -221,7 +221,7 @@ Authorization : Bearer -!|
 
 !3 Get All Permission Rules For Sample 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/permissionRules?entity=SAMPLES&sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '2'|
+| GET | /v1/studies/$studyId/permissionRules?entity=SAMPLES|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '2'|
 
 !3 Create Permission Rule For Files 
 !|Table: Rest Fixture | $baseURL |
@@ -230,7 +230,7 @@ Authorization : Bearer -!|
 
 !3 Get Permission Rule For Files 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/permissionRules?entity=FILES&sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '1' && jsonbody.response[0].result[0].id == 'PR1' && jsonbody.response[0].result[0].members == '$userA'|
+| GET | /v1/studies/$studyId/permissionRules?entity=FILES|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '1' && jsonbody.response[0].result[0].id == 'PR1' && jsonbody.response[0].result[0].members == '$userA'|
 
 !3 Create Second Permission Rule For Files 
 !|Table: Rest Fixture | $baseURL |
@@ -239,7 +239,7 @@ Authorization : Bearer -!|
 
 !3 Get All Permission Rules For Files 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/permissionRules?entity=FILES&sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '2'|
+| GET | /v1/studies/$studyId/permissionRules?entity=FILES|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '2'|
 
 !3 Create Permission Rule For Cohorts 
 !|Table: Rest Fixture | $baseURL |
@@ -248,7 +248,7 @@ Authorization : Bearer -!|
 
 !3 Get Permission Rule For Cohorts 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/permissionRules?entity=COHORTS&sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '1' && jsonbody.response[0].result[0].id == 'PR1' && jsonbody.response[0].result[0].members == '$userA'|
+| GET | /v1/studies/$studyId/permissionRules?entity=COHORTS|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '1' && jsonbody.response[0].result[0].id == 'PR1' && jsonbody.response[0].result[0].members == '$userA'|
 
 !3 Create Second Permission Rule For Cohorts 
 !|Table: Rest Fixture | $baseURL |
@@ -257,7 +257,7 @@ Authorization : Bearer -!|
 
 !3 Get All Permission Rules For Cohorts 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/permissionRules?entity=COHORTS&sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '2'|
+| GET | /v1/studies/$studyId/permissionRules?entity=COHORTS|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '2'|
 
 !3 Create Permission Rule For Individual 
 !|Table: Rest Fixture | $baseURL |
@@ -266,7 +266,7 @@ Authorization : Bearer -!|
 
 !3 Get Permission Rule For Individual 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/permissionRules?entity=INDIVIDUALS&sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '1' && jsonbody.response[0].result[0].id == 'PR1' && jsonbody.response[0].result[0].members == '$userA'|
+| GET | /v1/studies/$studyId/permissionRules?entity=INDIVIDUALS|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '1' && jsonbody.response[0].result[0].id == 'PR1' && jsonbody.response[0].result[0].members == '$userA'|
 
 !3 Create Second Permission Rule For Individual 
 !|Table: Rest Fixture | $baseURL |
@@ -275,7 +275,7 @@ Authorization : Bearer -!|
 
 !3 Get All Permission Rules For Individual 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/permissionRules?entity=INDIVIDUALS&sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '2'|
+| GET | /v1/studies/$studyId/permissionRules?entity=INDIVIDUALS|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '2'|
 
 !3 Create Permission Rule For Family 
 !|Table: Rest Fixture | $baseURL |
@@ -284,7 +284,7 @@ Authorization : Bearer -!|
 
 !3 Get Permission Rule For Family 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/permissionRules?entity=FAMILIES&sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '1' && jsonbody.response[0].result[0].id == 'PR1' && jsonbody.response[0].result[0].members == '$userA'|
+| GET | /v1/studies/$studyId/permissionRules?entity=FAMILIES|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '1' && jsonbody.response[0].result[0].id == 'PR1' && jsonbody.response[0].result[0].members == '$userA'|
 
 !3 Create Second Permission Rule For Family 
 !|Table: Rest Fixture | $baseURL |
@@ -293,7 +293,7 @@ Authorization : Bearer -!|
 
 !3 Get All Permission Rules For Family 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/permissionRules?entity=FAMILIES&sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '2'|
+| GET | /v1/studies/$studyId/permissionRules?entity=FAMILIES|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '2'|
 
 !3 Create Permission Rule For Jobs 
 !|Table: Rest Fixture | $baseURL |
@@ -302,7 +302,7 @@ Authorization : Bearer -!|
 
 !3 Get Permission Rule For Jobs 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/permissionRules?entity=JOBS&sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '1' && jsonbody.response[0].result[0].id == 'PR1' && jsonbody.response[0].result[0].members == '$userA'|
+| GET | /v1/studies/$studyId/permissionRules?entity=JOBS|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '1' && jsonbody.response[0].result[0].id == 'PR1' && jsonbody.response[0].result[0].members == '$userA'|
 
 !3 Create Second Permission Rule For Jobs
 !|Table: Rest Fixture | $baseURL |
@@ -311,7 +311,7 @@ Authorization : Bearer -!|
 
 !3 Get All Permission Rules For Jobs 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/permissionRules?entity=JOBS&sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '2'|
+| GET | /v1/studies/$studyId/permissionRules?entity=JOBS|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '2'|
 
 !3 Create Permission Rule For CLINICAL ANALYSES 
 !|Table: Rest Fixture | $baseURL |
@@ -320,7 +320,7 @@ Authorization : Bearer -!|
 
 !3 Get Permission Rule For CLINICAL ANALYSES 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/permissionRules?entity=CLINICAL_ANALYSES&sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '1' && jsonbody.response[0].result[0].id == 'PR1' && jsonbody.response[0].result[0].members == '$userA'|
+| GET | /v1/studies/$studyId/permissionRules?entity=CLINICAL_ANALYSES|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '1' && jsonbody.response[0].result[0].id == 'PR1' && jsonbody.response[0].result[0].members == '$userA'|
 
 !3 Create Second Permission Rule For CLINICAL ANALYSES  
 !|Table: Rest Fixture | $baseURL |
@@ -329,21 +329,21 @@ Authorization : Bearer -!|
 
 !3 Get All Permission Rules For CLINICAL ANALYSES 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/permissionRules?entity=CLINICAL_ANALYSES&sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '2'|
+| GET | /v1/studies/$studyId/permissionRules?entity=CLINICAL_ANALYSES|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '2'|
 
 !3 Delete First Permission Rule For CLINICAL ANALYSES 
 !|Table: Rest Fixture | $baseURL |
 | setBody | { "id": "PR1"}|
-| POST | /v1/studies/$studyId/permissionRules/update?entity=CLINICAL_ANALYSES&action=REMOVE&sid=$sessionId|200|  Content-Type: application/json ||
+| POST | /v1/studies/$studyId/permissionRules/update?entity=CLINICAL_ANALYSES&action=REMOVE|200|  Content-Type: application/json ||
 
 !3 Delete Second Permission Rule For CLINICAL ANALYSES 
 !|Table: Rest Fixture | $baseURL |
 | setBody | { "id": "PR2"}|
-| POST | /v1/studies/$studyId/permissionRules/update?entity=CLINICAL_ANALYSES&action=REMOVE&sid=$sessionId|200|  Content-Type: application/json ||
+| POST | /v1/studies/$studyId/permissionRules/update?entity=CLINICAL_ANALYSES&action=REMOVE|200|  Content-Type: application/json ||
 
 !3 Get All Permission Rules For CLINICAL ANALYSES 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/permissionRules?entity=CLINICAL_ANALYSES&sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '0'|
+| GET | /v1/studies/$studyId/permissionRules?entity=CLINICAL_ANALYSES|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '0'|
 
 !3 Create Variable Set  
 !|Table: Rest Fixture  | $baseURL |
