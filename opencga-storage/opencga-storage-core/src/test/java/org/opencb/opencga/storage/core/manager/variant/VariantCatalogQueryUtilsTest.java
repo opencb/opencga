@@ -55,16 +55,16 @@ public class VariantCatalogQueryUtilsTest {
         catalog.getStudyManager().create("p1", "s1", null, "s1", Study.Type.CONTROL_SET, null, null, null, null, null, null, null, null, null, null, sessionId);
         catalog.getStudyManager().create("p1", "s2", null, "s2", Study.Type.CONTROL_SET, null, null, null, null, null, null, null, null, null, null, sessionId);
         catalog.getStudyManager().create("p1", "s3", null, "s3", Study.Type.CONTROL_SET, null, null, null, null, null, null, null, null, null, null, sessionId);
-        file1 = createFile("file1.vcf");
-        file2 = createFile("file2.vcf");
+        file1 = createFile("data/file1.vcf");
+        file2 = createFile("data/file2.vcf");
         createSample("sample1");
         createSample("sample2");
         catalog.getCohortManager().create("s1", new Cohort().setId("c1").setSamples(Collections.emptyList()), null, sessionId);
 
         catalog.getProjectManager().incrementRelease("p1", sessionId);
-        file3 = createFile("file3.vcf");
-        file4 = createFile("file4.vcf");
-        file5 = createFile("file5.vcf", false);
+        file3 = createFile("data/file3.vcf");
+        file4 = createFile("data/file4.vcf");
+        file5 = createFile("data/file5.vcf", false);
         createSample("sample3");
         createSample("sample4");
         catalog.getCohortManager().create("s1", new Cohort().setId("c2").setSamples(Collections.emptyList()), null, sessionId);
@@ -85,7 +85,7 @@ public class VariantCatalogQueryUtilsTest {
     }
 
     public static File createFile(String path, boolean indexed) throws CatalogException {
-        File file = catalog.getFileManager().create("s1", File.Type.FILE, File.Format.VCF, File.Bioformat.VARIANT, path, null, null, null, 10, -1, null, -1, null, null, false, "", null, sessionId).first();
+        File file = catalog.getFileManager().create("s1", File.Type.FILE, File.Format.VCF, File.Bioformat.VARIANT, path, null, null, null, 10, -1, null, -1, null, null, true, "", null, sessionId).first();
         if (indexed) {
             int release = catalog.getProjectManager().get("p1", null, sessionId).first().getCurrentRelease();
             catalog.getFileManager().updateFileIndexStatus(file, Status.READY, "", release, sessionId);

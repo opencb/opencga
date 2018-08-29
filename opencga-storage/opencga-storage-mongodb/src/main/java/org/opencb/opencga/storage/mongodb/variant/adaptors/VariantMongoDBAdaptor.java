@@ -1126,16 +1126,22 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         studyEntryConverter = new DocumentToStudyVariantEntryConverter(false, selectVariantElements.getFiles(), samplesConverter);
         studyEntryConverter.setStudyConfigurationManager(studyConfigurationManager);
         ProjectMetadata projectMetadata = getStudyConfigurationManager().getProjectMetadata().first();
-        Map<Integer, String> map = projectMetadata.getAnnotation().getSaved()
-                .stream()
-                .collect(Collectors.toMap(
-                        ProjectMetadata.VariantAnnotationMetadata::getId,
-                        ProjectMetadata.VariantAnnotationMetadata::getName));
-        if (projectMetadata.getAnnotation().getCurrent() != null) {
-            map.put(projectMetadata.getAnnotation().getCurrent().getId(), projectMetadata.getAnnotation().getCurrent().getName());
+        Map<Integer, String> annotationIds;
+        if (projectMetadata != null) {
+            annotationIds = projectMetadata.getAnnotation().getSaved()
+                    .stream()
+                    .collect(Collectors.toMap(
+                            ProjectMetadata.VariantAnnotationMetadata::getId,
+                            ProjectMetadata.VariantAnnotationMetadata::getName));
+            ProjectMetadata.VariantAnnotationMetadata current = projectMetadata.getAnnotation().getCurrent();
+            if (current != null) {
+                annotationIds.put(current.getId(), current.getName());
+            }
+        } else {
+            annotationIds = Collections.emptyMap();
         }
         return new DocumentToVariantConverter(studyEntryConverter,
-                new DocumentToVariantStatsConverter(studyConfigurationManager), returnedStudies, map);
+                new DocumentToVariantStatsConverter(studyConfigurationManager), returnedStudies, annotationIds);
     }
 
     public void createIndexes(QueryOptions options) {

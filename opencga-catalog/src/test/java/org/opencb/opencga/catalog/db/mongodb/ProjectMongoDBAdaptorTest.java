@@ -120,16 +120,16 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 user1.getId(), null).first();
         Project p2 = catalogProjectDBAdaptor.insert(new Project("p2", "project2", null, "Cool", new Status(), "", 3000, "", null, 1),
                 user1.getId(), null).first();
-        catalogProjectDBAdaptor.editId(p1.getUid(), "newpmp");
+        catalogProjectDBAdaptor.editId(user1.getId(), p1.getUid(), "p1", "newpmp");
 
         try {
-            catalogProjectDBAdaptor.editId(-1, "falseProject");
+            catalogProjectDBAdaptor.editId(user1.getId(), -1, "", "falseProject");
             fail("renamed project with projectId=-1");
         } catch (CatalogDBException e) {
             System.out.println("correct exception: " + e);
         }
         try {
-            catalogProjectDBAdaptor.editId(p1.getUid(), p2.getId());
+            catalogProjectDBAdaptor.editId(user1.getId(), p1.getUid(), "newpmp", p2.getId());
             fail("renamed project with name collision");
         } catch (CatalogDBException e) {
             System.out.println("correct exception: " + e);

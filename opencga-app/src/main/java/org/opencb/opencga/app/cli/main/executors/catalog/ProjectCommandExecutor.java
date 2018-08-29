@@ -84,7 +84,8 @@ public class ProjectCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap params = new ObjectMap();
         // First we populate the organism information using the client configuration
         params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.NAME.key(), projectsCommandOptions.createCommandOptions.name);
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ID.key(), projectsCommandOptions.createCommandOptions.alias);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ID.key(), projectsCommandOptions.createCommandOptions.id);
+        params.putIfNotEmpty("alias", projectsCommandOptions.createCommandOptions.alias);
 
         ProjectCommandOptions.CreateCommandOptions commandOptions = projectsCommandOptions.createCommandOptions;
         Project.Organism organism = clientConfiguration.getOrganism();
