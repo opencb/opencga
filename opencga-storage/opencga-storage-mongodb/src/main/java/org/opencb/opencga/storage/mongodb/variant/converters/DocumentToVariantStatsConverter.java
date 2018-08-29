@@ -79,15 +79,21 @@ public class DocumentToVariantStatsConverter {
         this.studyConfigurationManager = studyConfigurationManager;
     }
 
-    public void convertToDataModelType(Document object, VariantStats stats) {
+    public VariantStats convertToDataModelType(Document object) {
+        return convertToDataModelType(object, null);
+    }
+
+    public VariantStats convertToDataModelType(Document object, Variant variant) {
+        VariantStats stats = new VariantStats();
+
         // Basic fields
         stats.setMaf(((Number) object.get(MAF_FIELD)).floatValue());
         stats.setMgf(((Number) object.get(MGF_FIELD)).floatValue());
         stats.setMafAllele((String) object.get(MAFALLELE_FIELD));
         stats.setMgfGenotype((String) object.get(MGFGENOTYPE_FIELD));
 
-        stats.setMissingAlleles(((Number) object.get(MISSALLELE_FIELD)).intValue());
-        stats.setMissingGenotypes(((Number) object.get(MISSGENOTYPE_FIELD)).intValue());
+        stats.setMissingAlleleCount(((Number) object.get(MISSALLELE_FIELD)).intValue());
+        stats.setMissingGenotypeCount(((Number) object.get(MISSGENOTYPE_FIELD)).intValue());
 
         // Genotype counts
         int alleleNumber = 0;
@@ -104,8 +110,12 @@ public class DocumentToVariantStatsConverter {
                 gtNumber += value;
             }
         }
-
-        stats.setGenotypesCount(genotypesCount);
+        stats.setGenotypeCount(genotypesCount);
+        if (alleleNumber == 0) {
+            stats.setAlleleCount(-1);
+        } else {
+            stats.setAlleleCount(alleleNumber);
+        }
 
         Map<Genotype, Float> genotypesFreq;
         if (gtNumber > 0) {
@@ -118,15 +128,22 @@ public class DocumentToVariantStatsConverter {
         } else {
             genotypesFreq = Collections.emptyMap();
         }
-        stats.setGenotypesFreq(genotypesFreq);
+        stats.setGenotypeFreq(genotypesFreq);
 
         if (object.containsKey(ALT_FREQ_FIELD)) {
+            // This field is not present in files loaded before v1.3.3
             stats.setRefAlleleFreq(((Number) object.get(REF_FREQ_FIELD)).floatValue());
             stats.setAltAlleleFreq(((Number) object.get(ALT_FREQ_FIELD)).floatValue());
-            stats.setRefAlleleCount(Math.round(stats.getRefAlleleFreq() * alleleNumber));
-            stats.setAltAlleleCount(Math.round(stats.getAltAlleleFreq() * alleleNumber));
-        } else if (stats.getGenotypesCount().isEmpty()) {
-            if (stats.getRefAllele().equals(stats.getMafAllele())) {
+            if (alleleNumber == 0) {
+                stats.setRefAlleleCount(-1);
+                stats.setAltAlleleCount(-1);
+            } else {
+                stats.setRefAlleleCount(Math.round(stats.getRefAlleleFreq() * alleleNumber));
+                stats.setAltAlleleCount(Math.round(stats.getAltAlleleFreq() * alleleNumber));
+            }
+        } else if (stats.getGenotypeCount().isEmpty()) {
+            // Aggregated files usually don't have Genotype Count
+            if (variant.getReference().equals(stats.getMafAllele())) {
                 stats.setRefAlleleFreq(stats.getMaf());
                 stats.setAltAlleleFreq(1 - stats.getMaf());
             } else {
@@ -134,8 +151,10 @@ public class DocumentToVariantStatsConverter {
                 stats.setRefAlleleFreq(1 - stats.getMaf());
             }
         } else {
+            // To calculate the alleleFrequency and so on, we need to get the alleleCounts from the genotypeCounts
+            // This code should not be called with datasets loaded after v1.3.3
             int[] alleleCounts = {0, 0};
-            for (Map.Entry<Genotype, Integer> entry : stats.getGenotypesCount().entrySet()) {
+            for (Map.Entry<Genotype, Integer> entry : stats.getGenotypeCount().entrySet()) {
                 for (int i : entry.getKey().getAllelesIdx()) {
                     if (i == 0 || i == 1) {
                         alleleCounts[i] += entry.getValue();
@@ -153,6 +172,7 @@ public class DocumentToVariantStatsConverter {
                 stats.setAltAlleleFreq(alleleCounts[1] / ((float) alleleNumber));
             }
         }
+        return stats;
     }
 
     private Genotype getGenotype(String genotypeStr) {
@@ -172,13 +192,13 @@ public class DocumentToVariantStatsConverter {
         mongoStats.append(MGF_FIELD, vs.getMgf());
         mongoStats.append(MAFALLELE_FIELD, vs.getMafAllele());
         mongoStats.append(MGFGENOTYPE_FIELD, vs.getMgfGenotype());
-        mongoStats.append(MISSALLELE_FIELD, vs.getMissingAlleles());
-        mongoStats.append(MISSGENOTYPE_FIELD, vs.getMissingGenotypes());
+        mongoStats.append(MISSALLELE_FIELD, vs.getMissingAlleleCount());
+        mongoStats.append(MISSGENOTYPE_FIELD, vs.getMissingGenotypeCount());
 
         // Genotype counts
         Document genotypes = new Document();
-        for (Map.Entry<Genotype, Integer> g : vs.getGenotypesCount().entrySet()) {
-            String genotypeStr = g.getKey().toString().replace(".", "-1");
+        for (Map.Entry<Genotype, Integer> g : vs.getGenotypeCount().entrySet()) {
+            String genotypeStr = DocumentToSamplesConverter.genotypeToStorageType(g.getKey().toString());
             genotypes.append(genotypeStr, g.getValue());
         }
         mongoStats.append(NUMGT_FIELD, genotypes);
@@ -194,18 +214,15 @@ public class DocumentToVariantStatsConverter {
      */
     public void convertCohortsToDataModelType(List<Document> cohortsStats, Variant variant) {
         for (Document vs : cohortsStats) {
-            VariantStats variantStats = new VariantStats();
-            variantStats.setRefAllele(variant.getReference());
-            variantStats.setAltAllele(variant.getAlternate());
-            convertToDataModelType(vs, variantStats);
+            VariantStats variantStats = convertToDataModelType(vs, variant);
             if (variant != null) {
-                variantStats.setRefAllele(variant.getReference());
-                variantStats.setAltAllele(variant.getAlternate());
-                variantStats.setVariantType(variant.getType());
+//                variantStats.setRefAllele(variant.getReference());
+//                variantStats.setAltAllele(variant.getAlternate());
+//                variantStats.setVariantType(variant.getType());
 //                    Integer fid = (Integer) vs.get(FILE_ID);
                 String sid = getStudyName((Integer) vs.get(STUDY_ID));
                 String cid = getCohortName((Integer) vs.get(STUDY_ID), (Integer) vs.get(COHORT_ID));
-                StudyEntry sourceEntry = null;
+                StudyEntry sourceEntry;
                 if (sid != null && cid != null) {
                     sourceEntry = variant.getStudiesMap().get(sid);
                     if (sourceEntry != null) {

@@ -30,7 +30,6 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.FileEntry;
-import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -46,7 +45,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBItera
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
-import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
@@ -653,7 +651,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
                         assertTrue(entry.getValue().getStats().containsKey(cohortName));
                         assertEquals(variant + " has incorrect stats for cohort \"" + cohortName + "\":" + cohortId,
                                 studyConfiguration.getCohorts().get(cohortId).size(),
-                                entry.getValue().getStats().get(cohortName).getGenotypesCount().values().stream().reduce((a, b) -> a + b)
+                                entry.getValue().getStats().get(cohortName).getGenotypeCount().values().stream().reduce((a, b) -> a + b)
                                         .orElse(0).intValue());
                     } catch (AssertionError error) {
                         System.out.println(variant + " = " + variant.toJson());
@@ -736,29 +734,6 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
 
         variantStorageEngine.getDBAdaptor().getStudyConfigurationManager().variantFileMetadataIterator(new Query(), new QueryOptions())
                 .forEachRemaining(vs -> assertNotEquals("2", vs.getId()));
-    }
-
-    @Test
-    public void loadSVFilesTest() throws Exception {
-        URI input = getResourceUri("variant-test-sv.vcf");
-        StudyConfiguration studyConfiguration = new StudyConfiguration(1, "s1");
-        runDefaultETL(input, variantStorageEngine, studyConfiguration, new QueryOptions()
-                .append(VariantStorageEngine.Options.ANNOTATE.key(), true));
-        URI input2 = getResourceUri("variant-test-sv_2.vcf");
-        runDefaultETL(input2, variantStorageEngine, studyConfiguration, new QueryOptions()
-                .append(VariantStorageEngine.Options.ANNOTATE.key(), true));
-
-        for (Variant variant : variantStorageEngine.getDBAdaptor()) {
-            if (variant.getAlternate().equals("<DEL:ME:ALU>") || variant.getType().equals(VariantType.BREAKEND)) {
-                System.err.println("WARN: Variant " + variant + (variant.getAnnotation() == null ? " without annotation" : " with annotation"));
-            } else {
-                assertNotNull(variant.toString(), variant.getAnnotation());
-            }
-        }
-
-        checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyConfiguration, true, false, false, 24 + 7);
-
-        variantStorageEngine.exportData(null, VariantWriterFactory.VariantOutputFormat.VCF, new Query(), new QueryOptions(QueryOptions.SORT, true));
     }
 
 }

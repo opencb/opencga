@@ -202,10 +202,10 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
 
                     VariantStats cohortStats = cohortsStats.get(entry.getKey());
                     assertEquals("Stats for cohort " + entry.getKey() + " have less genotypes than expected. "
-                                    + cohortStats.getGenotypesCount(),
+                                    + cohortStats.getGenotypeCount(),
                             studyConfiguration.getCohorts().get(entry.getValue()).size(),  //Check numGenotypes are correct (equals to
                             // the number of samples)
-                            cohortStats.getGenotypesCount().values().stream().reduce(0, (a, b) -> a + b).intValue());
+                            cohortStats.getGenotypeCount().values().stream().reduce(0, (a, b) -> a + b).intValue());
 
                     HashMap<Genotype, Integer> genotypeCount = new HashMap<>();
                     for (Integer sampleId : studyConfiguration.getCohorts().get(entry.getValue())) {
@@ -216,13 +216,13 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
 
                     VariantStats stats = VariantStatsCalculator.calculate(variant, genotypeCount);
 
-                    stats.getGenotypesCount().entrySet().removeIf(e -> e.getValue() == 0);
-                    stats.getGenotypesFreq().entrySet().removeIf(e -> e.getValue() == 0);
-                    cohortStats.getGenotypesCount().entrySet().removeIf(e -> e.getValue() == 0);
-                    cohortStats.getGenotypesFreq().entrySet().removeIf(e -> e.getValue() == 0);
+                    stats.getGenotypeCount().entrySet().removeIf(e -> e.getValue() == 0);
+                    stats.getGenotypeFreq().entrySet().removeIf(e -> e.getValue() == 0);
+                    cohortStats.getGenotypeCount().entrySet().removeIf(e -> e.getValue() == 0);
+                    cohortStats.getGenotypeFreq().entrySet().removeIf(e -> e.getValue() == 0);
 
-                    assertEquals(stats.getGenotypesCount(), cohortStats.getGenotypesCount());
-                    assertEquals(stats.getGenotypesFreq(), cohortStats.getGenotypesFreq());
+                    assertEquals(stats.getGenotypeCount(), cohortStats.getGenotypeCount());
+                    assertEquals(stats.getGenotypeFreq(), cohortStats.getGenotypeFreq());
                     assertEquals(stats.getMaf(), cohortStats.getMaf());
                     if (StringUtils.isNotEmpty(stats.getMafAllele()) || StringUtils.isNotEmpty(cohortStats.getMafAllele())) {
                         assertEquals(stats.getMafAllele(), cohortStats.getMafAllele());

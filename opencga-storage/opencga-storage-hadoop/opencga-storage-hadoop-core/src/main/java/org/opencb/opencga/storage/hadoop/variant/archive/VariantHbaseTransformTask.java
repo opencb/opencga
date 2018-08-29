@@ -175,14 +175,19 @@ public class VariantHbaseTransformTask implements ParallelTaskRunner.Task<Varian
     }
 
     private long[] getCoveredSlicePositions(Variant var) {
-        return getCoveredSlicePositions(var.getChromosome(), var.getStart(), var.getEnd(), getHelper().getChunkSize());
+        return getCoveredSlicePositions(var.getStart(), var.getEnd(), getHelper().getChunkSize());
     }
 
-    public static long[] getCoveredSlicePositions(String chromosome, long start, long end, int chunkSize) {
+    public static long[] getCoveredSlicePositions(long start, long end, int chunkSize) {
         long startChunk = VariantToProtoVcfRecord.getSlicePosition((int) start, chunkSize);
         long endChunk = VariantToProtoVcfRecord.getSlicePosition((int) end, chunkSize);
         if (endChunk == startChunk) {
             return new long[]{startChunk};
+        } else if (endChunk < startChunk) {
+            // This may happen in insertions starting in a chunk
+            long aux = endChunk;
+            endChunk = startChunk;
+            startChunk = aux;
         }
         int len = (int) ((endChunk - startChunk) / chunkSize) + 1;
         long[] ret = new long[len];

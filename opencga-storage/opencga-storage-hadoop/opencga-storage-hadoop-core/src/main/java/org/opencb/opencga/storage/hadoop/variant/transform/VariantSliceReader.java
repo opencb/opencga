@@ -171,7 +171,7 @@ public class VariantSliceReader implements DataReader<ImmutablePair<Long, List<V
 
 
     private long[] getCoveredSlicePositions(Variant var) {
-        return VariantHbaseTransformTask.getCoveredSlicePositions(var.getChromosome(), var.getStart(), var.getEnd(), chunkSize);
+        return VariantHbaseTransformTask.getCoveredSlicePositions(var.getStart(), var.getEnd(), chunkSize);
     }
 
 }

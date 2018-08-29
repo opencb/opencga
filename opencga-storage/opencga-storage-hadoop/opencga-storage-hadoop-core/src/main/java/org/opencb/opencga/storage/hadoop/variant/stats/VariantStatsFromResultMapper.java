@@ -65,8 +65,7 @@ public class VariantStatsFromResultMapper extends TableMapper<ImmutableBytesWrit
     protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
         context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "variants").increment(1);
         Variant variant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(value.getRow());
-        VariantStatsWrapper wrapper = new VariantStatsWrapper(variant.getChromosome(), variant.getStart(), variant.getEnd(),
-                new HashMap<>(calculators.size()), null);
+        VariantStatsWrapper wrapper = new VariantStatsWrapper(variant, new HashMap<>(calculators.size()));
 
         calculators.forEach((cohort, calculator) -> {
             VariantStats stats = calculator.apply(value);

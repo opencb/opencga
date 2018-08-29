@@ -974,7 +974,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
             if (!cohorts.isEmpty()) {
                 String id = variantConverter.buildStorageId(new Variant(wrapper.getChromosome(), wrapper.getStart(), wrapper.getEnd(),
-                        variantStats.getRefAllele(), variantStats.getAltAllele()).setSv(wrapper.getSv()));
+                        wrapper.getReference(), wrapper.getAlternate()).setSv(wrapper.getSv()));
 
                 Document find = new Document("_id", id);
                 if (overwrite) {
