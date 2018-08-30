@@ -333,8 +333,6 @@ public class UserWSServer extends OpenCGAWSServer {
     }
 
     public static class UserCreatePOST {
-        @Deprecated
-        public String userId;
         @JsonProperty(required = true)
         public String id;
         @JsonProperty(required = true)
@@ -346,9 +344,6 @@ public class UserWSServer extends OpenCGAWSServer {
         public String organization;
 
         public boolean checkValidParams() {
-            if (StringUtils.isNotEmpty(userId) && StringUtils.isEmpty(id)) {
-                id = userId;
-            }
             if (StringUtils.isEmpty("id") || StringUtils.isEmpty("name") || StringUtils.isEmpty("email")
                     || StringUtils.isEmpty("password")) {
                 return false;
