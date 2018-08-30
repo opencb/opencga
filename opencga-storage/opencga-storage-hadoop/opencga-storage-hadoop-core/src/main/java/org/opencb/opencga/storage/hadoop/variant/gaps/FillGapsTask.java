@@ -134,7 +134,7 @@ public class FillGapsTask {
 ////                    throw new IllegalStateException(msg);
 //                    logger.warn(msg);
 //                }
-                return processMultipleOverlappings(variant, missingSamples, put, fileId);
+                return processMultipleOverlappings(variant, missingSamples, put, sampleIndexPuts, fileId);
             }
         } else {
             vcfRecord = overlappingRecords.get(0).getRight();
@@ -193,10 +193,7 @@ public class FillGapsTask {
                     String gt = studyEntry.getSamplesData().get(samplePosition).get(gtIdx);
                     // Only genotypes without the main alternate (0/2, 2/3, ...) should be written as pending.
                     if (SampleIndexDBLoader.validGenotype(gt) && !hasMainAlternate(gt)) {
-                        Put sampleIndexPut = new Put(
-                                SampleIndexConverter.toRowKey(sampleId, variant.getChromosome(), variant.getStart()),
-                                put.getTimeStamp());
-                        sampleIndexPut.addColumn(helper.getColumnFamily(), SampleIndexConverter.toPendingColumn(variant, gt), null);
+                        Put sampleIndexPut = buildSampleIndexPut(variant, put, sampleId, gt);
                         sampleIndexPuts.add(sampleIndexPut);
                     }
                 }
@@ -238,13 +235,20 @@ public class FillGapsTask {
         return overlappingStatus;
     }
 
-    protected VariantOverlappingStatus processMultipleOverlappings(Variant variant, Set<Integer> missingSamples, Put put, Integer fileId) {
+    protected VariantOverlappingStatus processMultipleOverlappings(Variant variant, Set<Integer> missingSamples, Put put,
+                                                                   List<Put> sampleIndexPuts, Integer fileId) {
         VariantOverlappingStatus overlappingStatus = MULTI;
 
+        String gt = "2/2";
         LinkedHashMap<String, Integer> samplePosition = getSamplePosition(fileId);
         List<List<String>> samplesData = new ArrayList<>(samplePosition.size());
         for (int i = 0; i < samplePosition.size(); i++) {
-            samplesData.add(Collections.singletonList("2/2"));
+            samplesData.add(Collections.singletonList(gt));
+        }
+
+        for (Integer sampleId : missingSamples) {
+            Put sampleIndexPut = buildSampleIndexPut(variant, put, sampleId, gt);
+            sampleIndexPuts.add(sampleIndexPut);
         }
 
         VariantBuilder builder = Variant.newBuilder(
@@ -266,6 +270,14 @@ public class FillGapsTask {
         studyConverter.convert(builder.build(), put, missingSamples, overlappingStatus);
 
         return overlappingStatus;
+    }
+
+    private Put buildSampleIndexPut(Variant variant, Put put, Integer sampleId, String gt) {
+        Put sampleIndexPut = new Put(
+                SampleIndexConverter.toRowKey(sampleId, variant.getChromosome(), variant.getStart()),
+                put.getTimeStamp());
+        sampleIndexPut.addColumn(helper.getColumnFamily(), SampleIndexConverter.toPendingColumn(variant, gt), null);
+        return sampleIndexPut;
     }
 
     protected boolean hasMainAlternate(String gt) {

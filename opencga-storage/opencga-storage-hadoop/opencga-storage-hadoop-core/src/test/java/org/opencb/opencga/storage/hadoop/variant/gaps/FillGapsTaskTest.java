@@ -152,7 +152,9 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
 
     @Test
     public void testFillGapsConflictingFiles() throws Exception {
-        StudyConfiguration studyConfiguration = load(new QueryOptions(), Arrays.asList(getResourceUri("gaps/file1.genome.vcf"), getResourceUri("gaps/file2.genome.vcf")));
+        StudyConfiguration studyConfiguration = load(new QueryOptions(), Arrays.asList(
+                getResourceUri("gaps/file1.genome.vcf"),
+                getResourceUri("gaps/file2.genome.vcf")));
 
         HadoopVariantStorageEngine variantStorageEngine = (HadoopVariantStorageEngine) this.variantStorageEngine;
 
@@ -377,6 +379,7 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
             StudyConfiguration sc = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(study, null).first();
             for (Integer fileId : sc.getIndexedFiles()) {
                 for (int sampleId : sc.getSamplesInFiles().get(fileId)) {
+                    String message = "Sample '" + sc.getSampleIds().inverse().get(sampleId) + "' : " + sampleId;
                     int countFromIndex = 0;
                     Iterator<Map<String, List<Variant>>> iterator = sampleIndexDBAdaptor.rawIterator(sc.getStudyId(), sampleId);
                     while (iterator.hasNext()) {
@@ -384,24 +387,26 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
                         for (Map.Entry<String, List<Variant>> entry : map.entrySet()) {
                             String gt = entry.getKey();
                             List<Variant> variants = entry.getValue();
-                            countFromIndex++;
-                            VariantQueryResult<Variant> result = dbAdaptor.get(new Query(VariantQueryParam.ID.key(), variants).append(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleId), null);
-                            assertEquals(variants.size(), result.getNumResults());
+                            countFromIndex += variants.size();
+                            VariantQueryResult<Variant> result = dbAdaptor.get(new Query(VariantQueryParam.ID.key(), variants)
+                                    .append(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleId), null);
+                            assertEquals(message, variants.size(), result.getNumResults());
                             for (Variant variant : result.getResult()) {
-                                assertEquals(gt, variant.getStudies().get(0).getSampleData(0).get(0));
+                                assertEquals(message, gt, variant.getStudies().get(0).getSampleData(0).get(0));
                             }
                         }
                     }
 
                     int countFromVariants = 0;
                     for (Variant variant : dbAdaptor.get(new Query(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleId), null).getResult()) {
-                        if (SampleIndexDBLoader.validGenotype(variant.getStudies().get(0).getSampleData(0).get(0))) {
+                        String gt = variant.getStudies().get(0).getSampleData(0).get(0);
+                        if (!gt.equals(GenotypeClass.UNKNOWN_GENOTYPE) && SampleIndexDBLoader.validGenotype(gt)) {
                             countFromVariants++;
                         }
                     }
 
-                    assertNotEquals(0, countFromIndex);
-                    assertNotEquals(countFromVariants, countFromIndex);
+                    assertNotEquals(message, 0, countFromIndex);
+                    assertEquals(message, countFromVariants, countFromIndex);
                 }
             }
         }

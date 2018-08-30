@@ -100,7 +100,6 @@ public class FillGapsFromArchiveTask extends AbstractFillFromArchiveTask {
             for (Variant variant : variants) {
                 variantsToFill.put(variant, new HashSet<>(fileIds));
             }
-            System.out.println("variantsToFill = " + variantsToFill);
             return variantsToFill;
         }
 
