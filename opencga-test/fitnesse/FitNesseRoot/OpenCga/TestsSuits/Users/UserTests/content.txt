@@ -3,74 +3,68 @@
 
 !3 Get User
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/users/$user/info?sid=$sessionId&exclude=projects |  |  Content-Type: application/json | jsonbody.response[0].result[0].id == '$user'|
-| GET | /v1/users/$userB/info?sid=$sessionId&exclude=projects |  |  Content-Type: application/json ||
+| GET | /v1/users/$user/info?exclude=projects |  |  Content-Type: application/json | jsonbody.response[0].result[0].id == '$user'|
+| GET | /v1/users/$userB/info?exclude=projects |  |  Content-Type: application/json ||
 
 !3 Get User With Invalid Sesssion ID
 !|Table: Rest Fixture | $baseURL |
+| setHeader | Authorization : Bearer |
 | GET | /v1/users/$user/info?sid=egLKqc2p8H5eMoXAfk |401|  Content-Type: application/json | jsonbody.error == "Invalid authentication token : egLKqc2p8H5eMoXAfk"|
 
 !3 Get Projects for User
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/users/$user/projects?sid=$sessionId&limit=5 | 200 |  Content-Type: application/json | jsonbody.response[0].result.length > 0 && jsonbody.error === ''|
+| GET | /v1/users/$user/projects?limit=5 | 200 |  Content-Type: application/json | jsonbody.response[0].result.length > 0 && jsonbody.error === ''|
 
 # Error message displayed is not correct and can be improved
 !3 (Negative) Get Projects for User With Multiple Ids
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/users/$userA,$userB/projects?sid=$sessionId&limit=5 |500|  Content-Type: application/json ||
+| GET | /v1/users/$userA,$userB/projects?limit=5 |500|  Content-Type: application/json ||
 
 !3 Update User 
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"name" : "post_update_name", "email" : "new@email.com", "organization" : "organization"}|
-| setHeader|Content-Type:application/json|
-| POST | /v1/users/$user/update?sid=$sessionId | 200 |  Content-Type: application/json | jsonbody.response[0].result[0].name == 'post_update_name'  && jsonbody.error === ''|
+| POST | /v1/users/$user/update | 200 |  Content-Type: application/json | jsonbody.response[0].result[0].name == 'post_update_name'  && jsonbody.error === ''|
 
 !3 (Negative) Update User ID
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"id" : "post_update_name_id"}|
-| setHeader|Content-Type:application/json|
-| POST | /v1/users/$user/update?sid=$sessionId |400|Content-Type: text/plain| |
+| POST | /v1/users/$user/update |400|Content-Type: text/plain| |
 
 !3 (Negative) Update User 
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"name" : "post-update_name", "email" : "new"}|
-| setHeader|Content-Type:application/json|
-| POST | /v1/users/$user/update?sid=$sessionId |  |  Content-Type: application/json | jsonbody.error == 'email not valid'|
+| POST | /v1/users/$user/update |  |  Content-Type: application/json | jsonbody.error == 'email not valid'|
 
 !3 Change User Password
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"password" :"user_P@ssword","npassword" : "new_P@ssword"}|
-| setHeader|Content-Type:application/json|
-| POST | /v1/users/$user/password?sid=$sessionId | 200 |  Content-Type: application/json | jsonbody.response[0].id == 'changePassword'  && jsonbody.error === ''|
+| POST | /v1/users/$user/password | 200 |  Content-Type: application/json | jsonbody.response[0].id == 'changePassword'  && jsonbody.error === ''|
 
 !3 Login User A
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"password" : "p@ssword"}|
-| setHeader|Content-Type:application/json|
 | POST | /v1/users/$userA/login |200|  Content-Type: application/json ||
 |let|userASessionId|js|response.jsonbody.response[0].result[0].sessionId||
 
 !3 (Negative) Use User expired SessionID 
 !|Table: Rest Fixture | $baseURL |
-| setHeader|Content-Type:application/json|
+| setHeader | Authorization : Bearer |
 | GET | /v1/users/$user/info?sid=$userASessionId |500|  Content-Type: application/json |jsonbody.error == 'Invalid sessionId for user: $user'|
 
 !3 Login User (GET)
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"password" : "new_P@ssword"}|
-| setHeader|Content-Type:application/json|
 | POST | /v1/users/$user/login |200|  Content-Type: application/json ||
 |let|sessionId|js|response.jsonbody.response[0].result[0].sessionId||
 
 !3 Change Back User Password
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"password" :"new_P@ssword","npassword" : "user_P@ssword"}|
-| setHeader|Content-Type:application/json|
-| POST | /v1/users/$user/password?sid=$sessionId | 200 |  Content-Type: application/json | jsonbody.response[0].id == 'changePassword'  && jsonbody.error === ''|
+| POST | /v1/users/$user/password | 200 |  Content-Type: application/json | jsonbody.response[0].id == 'changePassword'  && jsonbody.error === ''|
 
 !3 Delete User 
 #!|Table: Rest Fixture | $baseURL |
-#| GET | /v1/users/$user/delete?sid=$sessionId | 200 |  Content-Type: application/json | jsonbody.error == "The user {$user} is successfully deleted"|
+#| GET | /v1/users/$user/delete | 200 |  Content-Type: application/json | jsonbody.error == "The user {$user} is successfully deleted"|
 
 
 
