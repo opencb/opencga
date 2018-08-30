@@ -96,12 +96,14 @@ public class VariantPhoenixKeyFactory {
                 + PUnsignedInt.INSTANCE.getByteSize()
                 + PVarchar.INSTANCE.estimateByteSizeFromLength(ref.length());
         alt = buildSVAlternate(alt, sv);
-        if (!alt.isEmpty()) {
+        if (alt.isEmpty()) {
+            // If alt is empty, add separator
+            if (sv != null) {
+                size += QueryConstants.SEPARATOR_BYTE_ARRAY.length;
+            }
+        } else {
             size += QueryConstants.SEPARATOR_BYTE_ARRAY.length
                     + PVarchar.INSTANCE.estimateByteSizeFromLength(alt.length());
-        } else {
-            // If alt is empty, add separator
-            size += QueryConstants.SEPARATOR_BYTE_ARRAY.length;
         }
         if (sv != null) {
             size += PUnsignedInt.INSTANCE.getByteSize() * OPTIONAL_PRIMARY_KEY.size() + QueryConstants.SEPARATOR_BYTE_ARRAY.length;
@@ -125,10 +127,8 @@ public class VariantPhoenixKeyFactory {
             offset += PVarchar.INSTANCE.toBytes(alt, rk, offset);
 
         }
-        if (alt.isEmpty() || sv != null) {
-            rk[offset++] = QueryConstants.SEPARATOR_BYTE;
-        }
         if (sv != null) {
+            rk[offset++] = QueryConstants.SEPARATOR_BYTE;
             offset += PUnsignedInt.INSTANCE.toBytes(end, rk, offset);
             offset += PUnsignedInt.INSTANCE.toBytes(sv.getCiStartLeft() == null ? 0 : sv.getCiStartLeft(), rk, offset);
             offset += PUnsignedInt.INSTANCE.toBytes(sv.getCiStartRight() == null ? 0 : sv.getCiStartRight(), rk, offset);
