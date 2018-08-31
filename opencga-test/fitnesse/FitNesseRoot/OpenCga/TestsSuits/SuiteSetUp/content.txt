@@ -32,7 +32,7 @@
 
 !3 Create User
 !|Table: Rest Fixture  | $baseURL |
-| setBody |  { "name": "$user", "userId": "$user","email": "test@test.com", "password" : "user_P@ssword",  "account": "full" }|
+| setBody |  { "name": "$user", "id": "$user","email": "test@test.com", "password" : "user_P@ssword",  "account": "full" }|
 | setHeader|Content-Type:application/json|
 | POST | /v1/admin/users/create?sid=$root |200| Content-Type : application/json| jsonbody.error === '' && jsonbody.response[0].result[0].id == '$user'|
 
@@ -84,7 +84,7 @@ Authorization : Bearer $sessionId -!|
 #userA has Full Permissions
 !3 Create userA  
 !|Table: Rest Fixture  | $baseURL |
-| setBody |  { "name": "$userA", "userId": "$userA","email": "test@test.com", "password" : "p@ssword" , "account": "full" }|
+| setBody |  { "name": "$userA", "id": "$userA","email": "test@test.com", "password" : "p@ssword" , "account": "full" }|
 | setHeaders|!- Content-Type:application/json 
 Authorization : Bearer -!|
 | POST | /v1/admin/users/create?sid=$root|200| Content-Type : application/json| jsonbody.error === '' |
@@ -92,7 +92,7 @@ Authorization : Bearer -!|
 #userB has Empty(no) Permissions
 !3 Create userB  
 !|Table: Rest Fixture  | $baseURL |
-| setBody |  { "name": "$userB", "userId": "$userB","email": "test@test.com", "password" : "p@ssword" ,  "account": "full" }|
+| setBody |  { "name": "$userB", "id": "$userB","email": "test@test.com", "password" : "p@ssword" ,  "account": "full" }|
 | setHeaders|!- Content-Type:application/json 
 Authorization : Bearer -!|
 | POST | /v1/admin/users/create?sid=$root |200| Content-Type : application/json| jsonbody.error === '' |
