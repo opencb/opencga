@@ -9,6 +9,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -156,6 +158,19 @@ public class HBaseToStudyEntryConverterTest {
                 .addSampleData("S5", listOf("0/1", ".", "."))
                 .addSampleData("S6", listOf(".", ".", "."));
         Assert.assertEquals(s.toString(), expected, s);
+    }
+
+    @Test
+    public void testGetAlternateCoordinate() {
+        Assert.assertEquals(new AlternateCoordinate("1", 10035, 10035, "A", "<NON_REF>", VariantType.NO_VARIATION),
+                HBaseToStudyEntryConverter.getAlternateCoordinate("1:10035:10035:A:<NON_REF>:NO_VARIATION"));
+
+        Assert.assertEquals(new AlternateCoordinate("1", 10035, 10035, "A", "<DUP:TANDEM>", VariantType.DUPLICATION),
+                HBaseToStudyEntryConverter.getAlternateCoordinate("1:10035:10035:A:<DUP:TANDEM>:DUPLICATION"));
+
+        Assert.assertEquals(new AlternateCoordinate("1", 10035, 10035, "A", "A]chr1:1234]", VariantType.BREAKEND),
+                HBaseToStudyEntryConverter.getAlternateCoordinate("1:10035:10035:A:A]chr1:1234]:BREAKEND"));
+
     }
 
     private PhoenixArray arrayOf(String... values) {

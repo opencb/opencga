@@ -72,6 +72,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     public static final int FILE_QUAL_IDX = 3;
     public static final int FILE_FILTER_IDX = 4;
     public static final int FILE_INFO_START_IDX = 5;
+    public static final String ALTERNATE_COORDINATE_SEPARATOR = ":";
 
     private final StudyConfigurationManager scm;
     private final HBaseToVariantStatsConverter statsConverter;
@@ -709,21 +710,25 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         studyEntry.setSecondaryAlternates(alternateCoordinates);
     }
 
-    public List<AlternateCoordinate> getAlternateCoordinates(String s) {
+    public static List<AlternateCoordinate> getAlternateCoordinates(String s) {
         return Arrays.stream(s.split(","))
-                .map(this::getAlternateCoordinate)
+                .map(HBaseToStudyEntryConverter::getAlternateCoordinate)
                 .collect(Collectors.toList());
     }
 
-    public AlternateCoordinate getAlternateCoordinate(String s) {
-        String[] split = s.split(":");
+    // Alternate field may contain the separator char
+    public static AlternateCoordinate getAlternateCoordinate(String s) {
+        String[] split = s.split(ALTERNATE_COORDINATE_SEPARATOR, 5);
+        int idx = split[4].lastIndexOf(ALTERNATE_COORDINATE_SEPARATOR);
+        String alternate = split[4].substring(0, idx);
+        VariantType type = VariantType.valueOf(split[4].substring(idx + 1));
         return new AlternateCoordinate(
                 split[0],
                 Integer.parseInt(split[1]),
                 Integer.parseInt(split[2]),
                 split[3],
-                split[4],
-                VariantType.valueOf(split[5])
+                alternate,
+                type
         );
     }
 
