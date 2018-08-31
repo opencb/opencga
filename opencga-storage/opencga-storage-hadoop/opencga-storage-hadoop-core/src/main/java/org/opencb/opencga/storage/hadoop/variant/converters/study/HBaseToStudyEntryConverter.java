@@ -414,9 +414,10 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         attributes.put(StudyEntry.FILTER, (String) (fileColumn.getElement(FILE_FILTER_IDX)));
         String alternate = (String) (fileColumn.getElement(FILE_SEC_ALTS_IDX));
         String fileName = studyConfiguration.getFileIds().inverse().get(Integer.parseInt(fileId));
-        if (StringUtils.isNotEmpty(alternate)) {
-            alternateFileMap.computeIfAbsent(alternate, (key) -> new ArrayList<>()).add(fileName);
-        }
+
+        // Add all combinations of secondary alternates, even the combination of "none secondary alternates", i.e. empty string
+        alternateFileMap.computeIfAbsent(alternate, (key) -> new ArrayList<>()).add(fileName);
+
         List<String> fixedAttributes = HBaseToVariantConverter.getFixedAttributes(studyConfiguration);
         int i = FILE_INFO_START_IDX;
         for (String attribute : fixedAttributes) {
@@ -636,7 +637,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     }
 
     /**
-     * Add secondary alternates to the StudyEntry. Merge secondar alternates if needed.
+     * Add secondary alternates to the StudyEntry. Merge secondary alternates if needed.
      *
      * @param variant            Variant coordinates.
      * @param studyEntry         Study Entry all samples data
@@ -711,9 +712,13 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     }
 
     public static List<AlternateCoordinate> getAlternateCoordinates(String s) {
-        return Arrays.stream(s.split(","))
-                .map(HBaseToStudyEntryConverter::getAlternateCoordinate)
-                .collect(Collectors.toList());
+        if (StringUtils.isEmpty(s)) {
+            return Collections.emptyList();
+        } else {
+            return Arrays.stream(s.split(","))
+                    .map(HBaseToStudyEntryConverter::getAlternateCoordinate)
+                    .collect(Collectors.toList());
+        }
     }
 
     // Alternate field may contain the separator char
