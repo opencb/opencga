@@ -21,6 +21,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
@@ -84,7 +85,6 @@ public class ProjectManagerTest extends GenericTest {
 
         studyId = catalogManager.getStudyManager().create(project1, "phase1", null, "Phase 1", Study.Type.TRIO, null, "Done", null, null, null, null, null, null, null, null, sessionIdUser).first().getFqn();
         studyId2 = catalogManager.getStudyManager().create(project1, "phase3", null, "Phase 3", Study.Type.CASE_CONTROL, null, "d", null, null, null, null, null, null, null, null, sessionIdUser).first().getFqn();
-
 
         studyId3 = catalogManager.getStudyManager().create(project2, "s1", null, "Study 1", Study.Type.CONTROL_SET, null, "", null, null, null, null, null, null, null, null, sessionIdUser2).first().getFqn();
     }
