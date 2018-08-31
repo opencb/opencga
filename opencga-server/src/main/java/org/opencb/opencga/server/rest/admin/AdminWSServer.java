@@ -196,7 +196,7 @@ public class AdminWSServer extends OpenCGAWSServer {
 //    public Response stats() {
 //        return createErrorResponse(new NotImplementedException());
 //    }
-//
+
     @POST
     @Path("/database/jwt")
     @ApiOperation(value = "Change JWT secret key")

@@ -68,10 +68,15 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Create a new study", response = Study.class)
     public Response createStudyPOST(
+            @Deprecated @ApiParam(value = "Deprecated: Project id") @QueryParam("projectId") String projectId,
             @ApiParam(value = "Project id") @QueryParam("project") String project,
             @ApiParam(value = "study", required = true) StudyCreateParams study) {
         try {
             study = ObjectUtils.defaultIfNull(study, new StudyCreateParams());
+
+            if (StringUtils.isNotEmpty(projectId) && StringUtils.isEmpty(project)) {
+                project = projectId;
+            }
 
             String studyId = StringUtils.isEmpty(study.id) ? study.alias : study.id;
             return createOkResponse(catalogManager.getStudyManager().create(project, studyId, study.alias, study.name, study.type, null,

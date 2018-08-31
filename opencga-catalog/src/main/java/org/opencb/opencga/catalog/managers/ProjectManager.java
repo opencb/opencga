@@ -67,7 +67,7 @@ public class ProjectManager extends AbstractManager {
      * Fetch the project qualifying the projectStr structure as long as userId has permissions to see it.
      *
      * @param projectStr string that can contain the full qualified name (owner@projectId) or just the projectId.
-     * @param userId user asking for the project information.
+     * @param userId     user asking for the project information.
      * @return a QueryResult containing the project.
      * @throws CatalogException if multiple projects are found.
      */
@@ -96,106 +96,66 @@ public class ProjectManager extends AbstractManager {
             }
         }
 
-        if (!userId.equals(auxOwner)) {
-            // We first query all the studies matching the parameters
-            Query query = new Query();
-            query.putIfNotEmpty(StudyDBAdaptor.QueryParams.OWNER.key(), auxOwner);
-            if (isUuid) {
-                query.putIfNotEmpty(StudyDBAdaptor.QueryParams.PROJECT_UUID.key(), projectStr);
-            } else {
-                query.putIfNotEmpty(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), auxProject);
-            }
-
-            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key());
-            QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, queryOptions, userId);
-
-//            if (studyQueryResult.getNumResults() == 0) {
-//                throw new CatalogException("Project " + projectStr + " not found or the user " + userId + " does not have permissions to "
-//                        + "view it.");
-//            }
-
-            if (studyQueryResult.getNumResults() > 0) {
-                Set<String> projectFqnSet = new HashSet<>();
-                for (Study study : studyQueryResult.getResult()) {
-                    projectFqnSet.add(StringUtils.split(study.getFqn(), ":")[0]);
-                }
-
-                if (projectFqnSet.size() == 1) {
-                    // We know which project the user is looking for
-                    for (String fqn : projectFqnSet) {
-                        String[] split = StringUtils.split(fqn, "@");
-                        auxOwner = split[0];
-                        auxProject = split[1];
-                    }
-                } else {
-                    // We will prioritise projects owned by the user
-                    List<String> ownedProjects = new ArrayList<>();
-                    for (String fqn : projectFqnSet) {
-                        if (fqn.startsWith(userId + "@")) {
-                            ownedProjects.add(fqn);
-                        }
-                    }
-
-                    if (ownedProjects.size() == 0 || ownedProjects.size() > 1) {
-                        throw new CatalogException("More than one project found. Please, be more specific. The accepted pattern is "
-                                + "[ownerId@projectId]");
-                    } else {
-                        String[] split = StringUtils.split(ownedProjects.get(0), "@");
-                        auxOwner = split[0];
-                        auxProject = split[1];
-                    }
-                }
-            }
-        }
-
-//        if (StringUtils.isEmpty(auxOwner)) {
-//            auxOwner = userId;
-//        }
-
-        // We just need to retrieve the project information now
-        Query query = new Query();
-        if (StringUtils.isEmpty(auxProject) && isUuid) {
-            query.putIfNotEmpty(ProjectDBAdaptor.QueryParams.UUID.key(), projectStr);
-        } else {
-            query.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ID.key(), auxProject);
-        }
-        query.putIfNotEmpty(ProjectDBAdaptor.QueryParams.USER_ID.key(), auxOwner);
-//        if (StringUtils.isNotEmpty(auxOwner)) {
-//            query.putIfNotEmpty(ProjectDBAdaptor.QueryParams.USER_ID.key(), auxOwner);
-//        } else {
-//            query.put(ProjectDBAdaptor.QueryParams.USER_ID.key(), userId);
-//        }
-
-        QueryOptions options = new QueryOptions()
+        QueryOptions projectOptions = new QueryOptions()
                 .append(QueryOptions.INCLUDE, Arrays.asList(
                         ProjectDBAdaptor.QueryParams.UID.key(), ProjectDBAdaptor.QueryParams.UUID.key(),
                         ProjectDBAdaptor.QueryParams.ID.key(), ProjectDBAdaptor.QueryParams.FQN.key(),
                         ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key()));
-//                .append(QueryOptions.EXCLUDE, "studies");
 
-        QueryResult<Project> projectQueryResult = projectDBAdaptor.get(query, options, userId);
-
-        if (StringUtils.isEmpty(auxOwner) && projectQueryResult.getNumResults() > 0) {
-            String ownProjectFqn = userId + "@";
-            for (Project project : projectQueryResult.getResult()) {
-                // We check if the user owns any of the projects
-                if (project.getFqn().startsWith(ownProjectFqn)) {
-                    // We return the user's project
-                    return project;
-                }
+        if (StringUtils.isEmpty(auxOwner) || auxOwner.equals(userId)) {
+            // We look for own projects
+            Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), userId);
+            if (isUuid) {
+                query.putIfNotEmpty(ProjectDBAdaptor.QueryParams.UUID.key(), projectStr);
+            } else {
+                query.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ID.key(), auxProject);
             }
-            throw CatalogAuthorizationException.deny(userId, "view", "project", auxProject, null);
+
+            QueryResult<Project> projectQueryResult = projectDBAdaptor.get(query, projectOptions);
+            if (projectQueryResult.getNumResults() > 1) {
+                throw new CatalogException("Please be more concrete with the project. More than one project found for " + userId + " user");
+            } else if (projectQueryResult.getNumResults() == 1) {
+                return projectQueryResult.first();
+            }
         }
 
-        if (projectQueryResult.getNumResults() == 0) {
-            logger.error("Internal error. Project " + projectStr + " {" + auxOwner + "@" + auxProject + "} not found");
-            throw new CatalogException("Internal error. Project " + projectStr + " not found");
-        } else if (projectQueryResult.getNumResults() > 1) {
-            logger.error("Internal error. More than one project found for " + auxOwner + "@" + auxProject);
-            throw new CatalogException("Internal error: More than one project found for " + projectStr);
+        // Look for shared projects. First, we will check all the studies in which the user is a member
+        Query query = new Query();
+        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.OWNER.key(), auxOwner);
+        if (isUuid) {
+            query.putIfNotEmpty(StudyDBAdaptor.QueryParams.PROJECT_UUID.key(), projectStr);
+        } else {
+            query.putIfNotEmpty(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), auxProject);
         }
 
-        return projectQueryResult.first();
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key());
+        QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, queryOptions, userId);
+
+        if (studyQueryResult.getNumResults() > 0) {
+            Set<String> projectFqnSet = new HashSet<>();
+            for (Study study : studyQueryResult.getResult()) {
+                projectFqnSet.add(StringUtils.split(study.getFqn(), ":")[0]);
+            }
+
+            if (projectFqnSet.size() == 1) {
+                query = new Query(ProjectDBAdaptor.QueryParams.FQN.key(), projectFqnSet);
+                return projectDBAdaptor.get(query, projectOptions).first();
+            } else {
+                throw new CatalogException("More than one project shared with user " + userId + ". Please, be more specific. "
+                        + "The accepted pattern is [ownerId@projectId]");
+            }
+        } else {
+            if (StringUtils.isNotEmpty(projectStr)) {
+                // Check if it is a matter of permissions
+                if (studyDBAdaptor.count(query).first() == 0) {
+                    throw new CatalogException("Project " + projectStr + " not found");
+                } else {
+                    throw CatalogAuthorizationException.deny(userId, "view", "project", projectStr, null);
+                }
+            } else {
+                throw new CatalogException("No projects shared or owned by user " + userId);
+            }
+        }
     }
 
     /**
