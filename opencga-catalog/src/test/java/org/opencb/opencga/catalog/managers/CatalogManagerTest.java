@@ -49,6 +49,19 @@ import static org.junit.Assert.*;
 public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
+    public void createStudyFailMoreThanOneProject() throws CatalogException {
+        catalogManager.getProjectManager().incrementRelease(project1, sessionIdUser);
+        catalogManager.getProjectManager().create("1000G2", "Project about some genomes", "", "ACME", "Homo sapiens",
+                null, null, "GRCh38", new QueryOptions(), sessionIdUser);
+
+        // Create a new study without providing the project. It should raise an error because the user owns more than one project
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("More than one project found");
+        catalogManager.getStudyManager().create(null, "phasexx", null, "Phase 1", Study.Type.TRIO, null, "Done", null, null, null, null,
+                null, null, null, null, sessionIdUser);
+    }
+
+    @Test
     public void testAdminUserExists() throws Exception {
         String token = catalogManager.getUserManager().login("admin", "admin");
         assertEquals("admin" ,catalogManager.getUserManager().getUserId(token));
@@ -306,8 +319,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("not found");
-        catalogManager.getProjectManager().update(projectId, options, null, sessionIdUser2);
-
+        catalogManager.getProjectManager().update(projectId, options, null, sessionIdUser);
     }
 
     /**
