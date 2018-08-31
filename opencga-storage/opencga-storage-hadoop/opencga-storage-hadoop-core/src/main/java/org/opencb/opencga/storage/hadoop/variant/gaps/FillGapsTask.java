@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.gaps;
 
+import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -143,23 +144,51 @@ public class FillGapsTask {
         Variant archiveVariant = convertToVariant(vcfSlice, vcfRecord, fileId);
 
         if (archiveVariant.getType().equals(VariantType.NO_VARIATION)) {
-            overlappingStatus = processReferenceOverlap(missingSamples, put, archiveVariant);
+            overlappingStatus = processReferenceOverlap(missingSamples, put, variant, archiveVariant);
         } else {
             overlappingStatus = processVariantOverlap(variant, missingSamples, put, sampleIndexPuts, archiveVariant);
         }
         return overlappingStatus;
     }
 
-    protected VariantOverlappingStatus processReferenceOverlap(Set<Integer> missingSamples, Put put, Variant archiveVariant) {
+    protected VariantOverlappingStatus processReferenceOverlap(Set<Integer> missingSamples, Put put,
+                                                               Variant variant, Variant archiveVariant) {
         VariantOverlappingStatus overlappingStatus = REFERENCE;
 
         FileEntry fileEntry = archiveVariant.getStudies().get(0).getFiles().get(0);
         fileEntry.getAttributes().remove(VCFConstants.END_KEY);
         if (StringUtils.isEmpty(fileEntry.getCall())) {
-            fileEntry.setCall(archiveVariant.getStart() + ":" + archiveVariant.getReference() + ":.:0");
+            fileEntry.setCall(archiveVariant.getStart() + ":" + archiveVariant.getReference() + ":" + archiveVariant.getAlternate() + ":0");
         }
+        // SYMBOLIC reference overlap -- <*> , <NON_REF>
+        if (VariantType.NO_VARIATION.equals(archiveVariant.getType())
+                && !archiveVariant.getAlternate().isEmpty()
+                && !archiveVariant.getAlternate().equals(Allele.NO_CALL_STRING)) {
 
-        studyConverter.convert(archiveVariant, put, missingSamples, overlappingStatus);
+            // Create template variant
+            Variant mergedVariant = new Variant(
+                    variant.getChromosome(),
+                    variant.getStart(),
+                    variant.getEnd(),
+                    variant.getReference(),
+                    variant.getAlternate());
+
+            StudyEntry studyEntry = new StudyEntry();
+            studyEntry.setFormat(archiveVariant.getStudies().get(0).getFormat());
+            studyEntry.setSortedSamplesPosition(new LinkedHashMap<>());
+            studyEntry.setSamplesData(new ArrayList<>());
+            mergedVariant.addStudyEntry(studyEntry);
+            mergedVariant.setType(variant.getType());
+
+            // Merge NO_VARIATION into the template variant
+            mergedVariant = variantMerger.merge(mergedVariant, archiveVariant);
+
+            // Convert study information to PUT
+            studyConverter.convert(mergedVariant, put, missingSamples, overlappingStatus);
+
+        } else {
+            studyConverter.convert(archiveVariant, put, missingSamples, overlappingStatus);
+        }
         return overlappingStatus;
     }
 
