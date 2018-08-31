@@ -36,19 +36,19 @@
 
 !3 Create Analyst User
 !|Table: Rest Fixture  | $baseURL |
-| setBody |  { "name": "$analyst", "userId": "$analyst","email": "test@test.com", "password" : "p@ssword" }|
+| setBody |  { "name": "$analyst", "id": "$analyst","email": "test@test.com", "password" : "p@ssword" }|
 | setHeader|Content-Type:application/json|
 | POST | /v1/admin/users/create?sid=$root |200| Content-Type : application/json| jsonbody.error === '' |
 
 !3 Create Read Only User (ROU)
 !|Table: Rest Fixture  | $baseURL |
-| setBody |  { "name": "$ROU", "userId": "$ROU","email": "test@test.com", "password" : "p@ssword" }|
+| setBody |  { "name": "$ROU", "id": "$ROU","email": "test@test.com", "password" : "p@ssword" }|
 | setHeader|Content-Type:application/json|
 | POST | /v1/admin/users/create?sid=$root|200| Content-Type : application/json| jsonbody.error === '' |
 
 !3 Create Admin User
 !|Table: Rest Fixture  | $baseURL |
-| setBody |  { "name": "$admin", "userId": "$admin","email": "test@test.com", "password" : "p@ssword" }|
+| setBody |  { "name": "$admin", "id": "$admin","email": "test@test.com", "password" : "p@ssword" }|
 | setHeader|Content-Type:application/json|
 | POST | /v1/admin/users/create?sid=$root |200| Content-Type : application/json| jsonbody.error === '' |
 
