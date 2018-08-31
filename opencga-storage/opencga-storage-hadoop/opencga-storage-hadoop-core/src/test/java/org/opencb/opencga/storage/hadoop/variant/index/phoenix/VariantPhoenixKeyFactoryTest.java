@@ -11,8 +11,8 @@ import org.opencb.biodata.models.variant.Variant;
 import java.sql.SQLException;
 import java.util.*;
 
-import static org.junit.Assert.*;
-import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.OPTIONAL_PRIMARY_KEY;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created on 25/06/18.
@@ -61,20 +61,12 @@ public class VariantPhoenixKeyFactoryTest {
         Set<VariantPhoenixHelper.VariantColumn> nullableColumn = new HashSet<>(Arrays.asList(
                 VariantPhoenixHelper.VariantColumn.REFERENCE,
                 VariantPhoenixHelper.VariantColumn.ALTERNATE
-//                VariantPhoenixHelper.VariantColumn.SV_END,
-//                VariantPhoenixHelper.VariantColumn.CI_START_L,
-//                VariantPhoenixHelper.VariantColumn.CI_START_R,
-//                VariantPhoenixHelper.VariantColumn.CI_END_L,
-//                VariantPhoenixHelper.VariantColumn.CI_END_R
         ));
 
         PTableImpl table;
         try {
             List<PColumn> columns = new ArrayList<>();
             for (PhoenixHelper.Column column : VariantPhoenixHelper.PRIMARY_KEY) {
-                if (!variant.isSV() && OPTIONAL_PRIMARY_KEY.contains(column)) {
-                    break;
-                }
                 columns.add(PColumnImpl.createFromProto(PTableProtos.PColumn.newBuilder()
                         .setColumnNameBytes(ByteStringer.wrap(PNameFactory.newName(column.column()).getBytes()))
                         .setDataType(column.getPDataType().getSqlTypeName())
@@ -89,27 +81,12 @@ public class VariantPhoenixKeyFactoryTest {
         }
 
         ImmutableBytesWritable key = new ImmutableBytesWritable();
-        if (variant.isSV()) {
-            table.newKey(key, new byte[][]{
-                    Bytes.toBytes(variant.getChromosome()),
-                    Bytes.toBytes(variant.getStart()),
-                    Bytes.toBytes(variant.getReference()),
-                    Bytes.toBytes(variant.getAlternate()),
-                    Bytes.toBytes(variant.getEnd()),
-                    Bytes.toBytes(variant.getSv()==null||variant.getSv().getCiStartLeft() == null ? 0 : variant.getSv().getCiStartLeft()),
-                    Bytes.toBytes(variant.getSv()==null||variant.getSv().getCiStartRight() == null ? 0 : variant.getSv().getCiStartRight()),
-                    Bytes.toBytes(variant.getSv()==null||variant.getSv().getCiEndLeft() == null ? 0 : variant.getSv().getCiEndLeft()),
-                    Bytes.toBytes(variant.getSv()==null||variant.getSv().getCiEndRight() == null ? 0 : variant.getSv().getCiEndRight()),
-                    Bytes.toBytes(variant.getSv()==null||variant.getSv().getCopyNumber() == null ? 0 : variant.getSv().getCopyNumber())
-            });
-        } else {
-            table.newKey(key, new byte[][]{
-                    Bytes.toBytes(variant.getChromosome()),
-                    Bytes.toBytes(variant.getStart()),
-                    Bytes.toBytes(variant.getReference()),
-                    Bytes.toBytes(variant.getAlternate())
-            });
-        }
+        table.newKey(key, new byte[][]{
+                Bytes.toBytes(variant.getChromosome()),
+                Bytes.toBytes(variant.getStart()),
+                Bytes.toBytes(variant.getReference()),
+                Bytes.toBytes(VariantPhoenixKeyFactory.buildSVAlternate(variant.getAlternate(), variant.getEnd(), variant.getSv())),
+        });
 
         if (key.getLength() == key.get().length) {
             return key.get();

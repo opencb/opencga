@@ -39,6 +39,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static junit.framework.TestCase.*;
+import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertNotEquals;
@@ -389,10 +390,11 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
 
         for (String sample : StudyConfiguration.getIndexedSamples(sc).keySet()) {
             VariantQueryResult<Variant> queryResult = dbAdaptor.get(new Query(VariantQueryParam.SAMPLE.key(), sample)
-                    .append(VariantQueryParam.INCLUDE_SAMPLE.key(), VariantQueryUtils.ALL).append(VariantQueryParam.INCLUDE_FILE.key(), VariantQueryUtils.ALL), new QueryOptions());
+                    .append(VariantQueryParam.INCLUDE_SAMPLE.key(), VariantQueryUtils.ALL)
+                    .append(VariantQueryParam.INCLUDE_FILE.key(), VariantQueryUtils.ALL), new QueryOptions("explain", true));
             assertThat(queryResult, everyResult(allVariants,
                     withStudy(STUDY_NAME,
-                            withSampleData(sample, "GT", anyOf(containsString("1"), containsString("2"), containsString("3"))))));
+                            withSampleData(sample, "GT", containsString("1")))));
         }
     }
 

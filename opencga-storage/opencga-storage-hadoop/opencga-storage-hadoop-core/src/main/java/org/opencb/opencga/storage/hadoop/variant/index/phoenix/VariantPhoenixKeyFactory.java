@@ -32,8 +32,6 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.OPTIONAL_PRIMARY_KEY;
-
 /**
  * Created on 25/04/17.
  *
@@ -41,12 +39,8 @@ import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPho
  */
 public class VariantPhoenixKeyFactory {
 
-    private static final int END_OFFSET = 0 * Bytes.SIZEOF_INT;
-    private static final int CI_START_L_OFFSET = 1 * Bytes.SIZEOF_INT;
-    private static final int CI_START_R_OFFSET = 2 * Bytes.SIZEOF_INT;
-    private static final int CI_END_L_OFFSET = 3 * Bytes.SIZEOF_INT;
-    private static final int CI_END_R_OFFSET = 4 * Bytes.SIZEOF_INT;
-    private static final String INS_SEQ_SEPARATOR = "_";
+    protected static final String SV_ALTERNATE_SEPARATOR = "|";
+    protected static final String SV_ALTERNATE_SEPARATOR_SPLIT = "\\" + SV_ALTERNATE_SEPARATOR;
 
     public static byte[] generateVariantRowKey(String chrom, int position) {
         return generateSimpleVariantRowKey(chrom, position, "", "");
@@ -95,19 +89,12 @@ public class VariantPhoenixKeyFactory {
                 + QueryConstants.SEPARATOR_BYTE_ARRAY.length
                 + PUnsignedInt.INSTANCE.getByteSize()
                 + PVarchar.INSTANCE.estimateByteSizeFromLength(ref.length());
-        alt = buildSVAlternate(alt, sv);
-        if (alt.isEmpty()) {
-            // If alt is empty, add separator
-            if (sv != null) {
-                size += QueryConstants.SEPARATOR_BYTE_ARRAY.length;
-            }
-        } else {
+        alt = buildSVAlternate(alt, end, sv);
+        if (!alt.isEmpty()) {
             size += QueryConstants.SEPARATOR_BYTE_ARRAY.length
                     + PVarchar.INSTANCE.estimateByteSizeFromLength(alt.length());
         }
-        if (sv != null) {
-            size += PUnsignedInt.INSTANCE.getByteSize() * OPTIONAL_PRIMARY_KEY.size() + QueryConstants.SEPARATOR_BYTE_ARRAY.length;
-        }
+
         byte[] rk = new byte[size];
 
         int offset = 0;
@@ -125,28 +112,32 @@ public class VariantPhoenixKeyFactory {
         }
         if (!alt.isEmpty()) {
             offset += PVarchar.INSTANCE.toBytes(alt, rk, offset);
-
-        }
-        if (sv != null) {
-            rk[offset++] = QueryConstants.SEPARATOR_BYTE;
-            offset += PUnsignedInt.INSTANCE.toBytes(end, rk, offset);
-            offset += PUnsignedInt.INSTANCE.toBytes(sv.getCiStartLeft() == null ? 0 : sv.getCiStartLeft(), rk, offset);
-            offset += PUnsignedInt.INSTANCE.toBytes(sv.getCiStartRight() == null ? 0 : sv.getCiStartRight(), rk, offset);
-            offset += PUnsignedInt.INSTANCE.toBytes(sv.getCiEndLeft() == null ? 0 : sv.getCiEndLeft(), rk, offset);
-            offset += PUnsignedInt.INSTANCE.toBytes(sv.getCiEndRight() == null ? 0 : sv.getCiEndRight(), rk, offset);
         }
 
 //        assert offset == size;
         return rk;
     }
 
-    private static String buildSVAlternate(String alternate, StructuralVariation sv) {
+    // visible for test
+    static String buildSVAlternate(String alternate, Integer end, StructuralVariation sv) {
         if (sv != null) {
-            if (StringUtils.isNotEmpty(sv.getLeftSvInsSeq()) || StringUtils.isNotEmpty(sv.getRightSvInsSeq())) {
-                alternate = alternate + INS_SEQ_SEPARATOR + sv.getLeftSvInsSeq() + INS_SEQ_SEPARATOR + sv.getRightSvInsSeq();
-            } else if (StructuralVariantType.TANDEM_DUPLICATION.equals(sv.getType())) {
+            if (StructuralVariantType.TANDEM_DUPLICATION.equals(sv.getType())) {
                 alternate = VariantBuilder.DUP_TANDEM_ALT;
             }
+
+            alternate = alternate
+                    + SV_ALTERNATE_SEPARATOR + end
+                    + SV_ALTERNATE_SEPARATOR + (sv.getCiStartLeft() == null ? 0 : sv.getCiStartLeft())
+                    + SV_ALTERNATE_SEPARATOR + (sv.getCiStartRight() == null ? 0 : sv.getCiStartRight())
+                    + SV_ALTERNATE_SEPARATOR + (sv.getCiEndLeft() == null ? 0 : sv.getCiEndLeft())
+                    + SV_ALTERNATE_SEPARATOR + (sv.getCiEndRight() == null ? 0 : sv.getCiEndRight());
+
+            if (StringUtils.isNotEmpty(sv.getLeftSvInsSeq()) || StringUtils.isNotEmpty(sv.getRightSvInsSeq())) {
+                alternate = alternate
+                        + SV_ALTERNATE_SEPARATOR + sv.getLeftSvInsSeq()
+                        + SV_ALTERNATE_SEPARATOR + sv.getRightSvInsSeq();
+            }
+
         }
         return alternate;
     }
@@ -162,19 +153,9 @@ public class VariantPhoenixKeyFactory {
             reference = resultSet.getString(VariantPhoenixHelper.VariantColumn.REFERENCE.column());
             alternate = resultSet.getString(VariantPhoenixHelper.VariantColumn.ALTERNATE.column());
 
-            Integer end = resultSet.getInt(VariantPhoenixHelper.VariantColumn.SV_END.column());
-            if (end == 0) {
-                end = null;
-            }
-
             String type = resultSet.getString(VariantPhoenixHelper.VariantColumn.TYPE.column());
 
-            int ciStartL = resultSet.getInt(VariantPhoenixHelper.VariantColumn.CI_START_L.column());
-            int ciStartR = resultSet.getInt(VariantPhoenixHelper.VariantColumn.CI_START_R.column());
-            int ciEndL = resultSet.getInt(VariantPhoenixHelper.VariantColumn.CI_END_L.column());
-            int ciEndR = resultSet.getInt(VariantPhoenixHelper.VariantColumn.CI_END_R.column());
-
-            return buildVariant(chromosome, start, end, reference, alternate, type, ciStartL, ciStartR, ciEndL, ciEndR);
+            return buildVariant(chromosome, start, reference, alternate, type);
         } catch (RuntimeException | SQLException e) {
             throw new IllegalStateException("Fail to parse variant: " + chromosome
                     + ':' + start
@@ -193,38 +174,18 @@ public class VariantPhoenixKeyFactory {
         int refAltSeparator = ArrayUtils.indexOf(variantRowKey, (byte) 0, referenceOffset);
         String reference;
         String alternate;
-        Integer end = null;
-        int ciStartL = 0;
-        int ciStartR = 0;
-        int ciEndL = 0;
-        int ciEndR = 0;
         if (refAltSeparator < 0) {
             reference = (String) PVarchar.INSTANCE.toObject(variantRowKey, referenceOffset, variantRowKey.length - referenceOffset,
                     PVarchar.INSTANCE);
             alternate = "";
         } else {
-            int altSvSeparator = ArrayUtils.indexOf(variantRowKey, (byte) 0, refAltSeparator + 1);
             reference = (String) PVarchar.INSTANCE.toObject(variantRowKey, referenceOffset, refAltSeparator - referenceOffset,
                     PVarchar.INSTANCE);
-
             alternate = (String) PVarchar.INSTANCE.toObject(variantRowKey, refAltSeparator + 1,
-                    (altSvSeparator == -1 ? variantRowKey.length : altSvSeparator) - (refAltSeparator + 1), PVarchar.INSTANCE);
-            if (altSvSeparator > 0) {
-                int offset = altSvSeparator + 1; // Advance offset to point just after the separator
-                end = (Integer) PUnsignedInt.INSTANCE.toObject(variantRowKey,
-                        offset + END_OFFSET, Bytes.SIZEOF_INT, PUnsignedInt.INSTANCE);
-                ciStartL = (Integer) PUnsignedInt.INSTANCE.toObject(variantRowKey,
-                        offset + CI_START_L_OFFSET, Bytes.SIZEOF_INT, PUnsignedInt.INSTANCE);
-                ciStartR = (Integer) PUnsignedInt.INSTANCE.toObject(variantRowKey,
-                        offset + CI_START_R_OFFSET, Bytes.SIZEOF_INT, PUnsignedInt.INSTANCE);
-                ciEndL = (Integer) PUnsignedInt.INSTANCE.toObject(variantRowKey,
-                        offset + CI_END_L_OFFSET, Bytes.SIZEOF_INT, PUnsignedInt.INSTANCE);
-                ciEndR = (Integer) PUnsignedInt.INSTANCE.toObject(variantRowKey,
-                        offset + CI_END_R_OFFSET, Bytes.SIZEOF_INT, PUnsignedInt.INSTANCE);
-            }
+                    variantRowKey.length - (refAltSeparator + 1), PVarchar.INSTANCE);
         }
         try {
-            return buildVariant(chromosome, position, end, reference, alternate, null, ciStartL, ciStartR, ciEndL, ciEndR);
+            return buildVariant(chromosome, position, reference, alternate, null);
         } catch (RuntimeException e) {
             throw new IllegalStateException("Fail to parse variant: " + chromosome
                     + ':' + position
@@ -234,16 +195,38 @@ public class VariantPhoenixKeyFactory {
         }
     }
 
-    private static Variant buildVariant(String chromosome, int start, Integer end, String reference, String alternate, String type,
-                                        int ciStartL, int ciStartR, int ciEndL, int ciEndR) {
+    private static Variant buildVariant(String chromosome, int start, String reference, String alternate, String type) {
+
+        Integer end = null;
+        int ciStartL = 0;
+        int ciStartR = 0;
+        int ciEndL = 0;
+        int ciEndR = 0;
+        String insSeqL = null;
+        String insSeqR = null;
+        if (alternate != null && alternate.contains(SV_ALTERNATE_SEPARATOR)) {
+            String[] s = alternate.split(SV_ALTERNATE_SEPARATOR_SPLIT);
+            alternate = s[0];
+            end = Integer.parseInt(s[1]);
+            ciStartL = Integer.parseInt(s[2]);
+            ciStartR = Integer.parseInt(s[3]);
+            ciEndL = Integer.parseInt(s[4]);
+            ciEndR = Integer.parseInt(s[5]);
+
+            if (s.length > 6) {
+                insSeqL = s[6];
+                insSeqR = s[7];
+            }
+
+            if (end == 0) {
+                end = null;
+            }
+        }
+
         VariantBuilder builder = new VariantBuilder(chromosome, start, end, reference, alternate);
 
-        if (alternate != null && alternate.contains(INS_SEQ_SEPARATOR)) {
-            String[] alternateSplit = alternate.split(INS_SEQ_SEPARATOR);
-            alternate = alternateSplit[0];
-
-            builder.setAlternate(alternate);
-            builder.setSvInsSeq(alternateSplit[1], alternateSplit[2]);
+        if (insSeqL != null) {
+            builder.setSvInsSeq(insSeqL, insSeqR);
         }
 
         if (end != null) {

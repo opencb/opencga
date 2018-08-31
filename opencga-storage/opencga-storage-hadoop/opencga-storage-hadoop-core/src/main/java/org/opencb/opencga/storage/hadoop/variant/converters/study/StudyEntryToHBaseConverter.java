@@ -94,6 +94,20 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
         byte[] rowKey = VariantPhoenixKeyFactory.generateVariantRowKey(variant);
         Put put = new Put(rowKey);
         add(put, VariantPhoenixHelper.VariantColumn.TYPE, variant.getType().toString());
+        if (variant.getSv() != null) {
+            if (variant.getSv().getCiStartLeft() != null) {
+                add(put, VariantPhoenixHelper.VariantColumn.CI_START_L, variant.getSv().getCiStartLeft());
+            }
+            if (variant.getSv().getCiStartRight() != null) {
+                add(put, VariantPhoenixHelper.VariantColumn.CI_START_R, variant.getSv().getCiStartRight());
+            }
+            if (variant.getSv().getCiEndLeft() != null) {
+                add(put, VariantPhoenixHelper.VariantColumn.CI_END_L, variant.getSv().getCiEndLeft());
+            }
+            if (variant.getSv().getCiEndRight() != null) {
+                add(put, VariantPhoenixHelper.VariantColumn.CI_END_R, variant.getSv().getCiEndRight());
+            }
+        }
         add(put, studyColumn, 0);
         if (releaseColumn != null) {
             add(put, releaseColumn, true);

@@ -77,21 +77,9 @@ public class VariantPhoenixHelper {
             CHROMOSOME,
             POSITION,
             REFERENCE,
-            ALTERNATE,
-            SV_END,
-            CI_START_L,
-            CI_START_R,
-            CI_END_L,
-            CI_END_R
+            ALTERNATE
     ));
 
-    public static final List<Column> OPTIONAL_PRIMARY_KEY = Collections.unmodifiableList(Arrays.asList(
-            SV_END,
-            CI_START_L,
-            CI_START_R,
-            CI_END_L,
-            CI_END_R
-    ));
     public static final String FILL_MISSING_SUFIX = "_FM";
     public static final byte[] FILL_MISSING_SUFIX_BYTES = Bytes.toBytes(FILL_MISSING_SUFIX);
 
@@ -107,11 +95,6 @@ public class VariantPhoenixHelper {
         REFERENCE("REFERENCE", PVarchar.INSTANCE),
         ALTERNATE("ALTERNATE", PVarchar.INSTANCE),
 
-        /**
-         * Name "END" is an special keyword for phoenix.
-         * Also, this end will be present only for Structural Variants.
-         */
-        SV_END("SV_END", PUnsignedInt.INSTANCE),
         CI_START_L("CI_START_L", PUnsignedInt.INSTANCE),
         CI_START_R("CI_START_R", PUnsignedInt.INSTANCE),
         CI_END_L("CI_END_L", PUnsignedInt.INSTANCE),
@@ -416,11 +399,6 @@ public class VariantPhoenixHelper {
             switch (variantColumn) {
                 case CHROMOSOME:
                 case POSITION:
-                case SV_END:
-                case CI_START_L:
-                case CI_START_R:
-                case CI_END_L:
-                case CI_END_R:
                     sb.append(" \"").append(variantColumn).append("\" ").append(variantColumn.sqlType()).append(" NOT NULL , ");
                     break;
                 default:
