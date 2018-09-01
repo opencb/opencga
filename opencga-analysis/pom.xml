@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>1.4.0-rc-dev</version>
+        <version>1.4.0-rc1</version>
         <relativePath>..</relativePath>
     </parent>
 

@@ -24,7 +24,7 @@
 
     <groupId>org.opencb.opencga</groupId>
     <artifactId>opencga-test</artifactId>
-    <version>1.4.0-rc-dev</version>
+    <version>1.4.0-rc1</version>
     <packaging>pom</packaging>
 
     <dependencies>
