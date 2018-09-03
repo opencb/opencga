@@ -164,8 +164,8 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             if (params.getBoolean(VariantStorageEngine.Options.ANNOTATE.key())) {
                 for (int i = 0; i < 30  ; i++) {
                     allVariants = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.SORT, true));
-                    Long annotated = count(new Query(ANNOTATION_EXISTS.key(), true));
-                    Long all = count(new Query());
+                    Long annotated = dbAdaptor.count(new Query(ANNOTATION_EXISTS.key(), true)).first();
+                    Long all = dbAdaptor.count(new Query()).first();
 
                     System.out.println("count annotated = " + annotated);
                     System.out.println("count           = " + all);
@@ -1388,12 +1388,16 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         numResults = count(query);
         assertEquals(allVariants.getNumResults(), numResults);
 
+    }
+
+    @Test
+    public void testGetAllVariants_Negatedstudies() {
 //        query = new Query(STUDY.key(), NOT + studyConfiguration.getStudyId());
 //        numResults = count(query);
 //        assertEquals(0, numResults);
 
-        query = new Query(STUDY.key(), NOT + studyConfiguration.getStudyName());
-        numResults = count(query);
+        Query query = new Query(STUDY.key(), NOT + studyConfiguration.getStudyName());
+        long numResults = count(query);
         assertEquals(0, numResults);
 
     }
@@ -1413,11 +1417,14 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         numResults = count(query);
         assertEquals(NUM_VARIANTS, numResults);
 
+    }
+
+    @Test
+    public void testGetAllVariants_fileNotFound() {
         VariantQueryException e = VariantQueryException.missingStudyForFile("-1", Collections.singletonList(studyConfiguration.getStudyName()));
         thrown.expectMessage(e.getMessage());
         thrown.expect(e.getClass());
-        query = new Query(FILE.key(), -1);
-        count(query);
+        count(new Query(FILE.key(), -1));
 //        assertEquals("There is no file with ID -1", 0, numResults);
     }
 

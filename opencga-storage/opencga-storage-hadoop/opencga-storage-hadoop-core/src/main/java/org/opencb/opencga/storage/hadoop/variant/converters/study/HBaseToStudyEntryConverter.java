@@ -362,7 +362,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         sampleData = remapSamplesData(sampleData, formatsMap);
         Integer gtIdx = studyEntry.getFormatPositions().get("GT");
         // Replace UNKNOWN_GENOTYPE, if any
-        if (gtIdx != null && sampleData.get(gtIdx).equals(GenotypeClass.UNKNOWN_GENOTYPE)) {
+        if (gtIdx != null && GenotypeClass.UNKNOWN_GENOTYPE.equals(sampleData.get(gtIdx))) {
             sampleData.set(gtIdx, unknownGenotype);
         }
 

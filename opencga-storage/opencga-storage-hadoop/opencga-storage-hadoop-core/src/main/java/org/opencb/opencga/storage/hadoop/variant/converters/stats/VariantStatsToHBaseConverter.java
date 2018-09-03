@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.hadoop.variant.converters.stats;
 
 import org.apache.hadoop.hbase.client.Put;
+import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.Converter;
@@ -29,7 +30,6 @@ import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHel
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory.generateVariantRowKey;
@@ -93,15 +93,17 @@ public class VariantStatsToHBaseConverter extends AbstractPhoenixConverter imple
             builder.setMgf(stats.getMgf());
 
             if (stats.getGenotypeCount() != null) {
-                Map<String, Integer> map = new HashMap<>(stats.getGenotypeCount().size());
-                stats.getGenotypeCount().forEach((genotype, count) -> map.put(genotype.toString(), count));
-                builder.putAllGenotypeCount(map);
+                for (Map.Entry<Genotype, Integer> e : stats.getGenotypeCount().entrySet()) {
+                    builder.putGenotypeCount(e.getKey().toString(), e.getValue());
+                }
+//                assert builder.getGenotypeCount() == stats.getGenotypeCount().size();
             }
 
             if (stats.getGenotypeFreq() != null) {
-                Map<String, Float> map = new HashMap<>(stats.getGenotypeFreq().size());
-                stats.getGenotypeFreq().forEach((genotype, freq) -> map.put(genotype.toString(), freq));
-                builder.putAllGenotypeFreq(map);
+                for (Map.Entry<Genotype, Float> e : stats.getGenotypeFreq().entrySet()) {
+                    builder.putGenotypeFreq(e.getKey().toString(), e.getValue());
+                }
+//                assert builder.getGenotypeFreqCount() == stats.getGenotypeFreq().size();
             }
 
             add(put, statsColumn, builder.build().toByteArray());

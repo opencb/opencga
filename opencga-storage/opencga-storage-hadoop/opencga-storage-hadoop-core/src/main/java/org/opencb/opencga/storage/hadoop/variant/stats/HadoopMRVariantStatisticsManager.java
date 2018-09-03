@@ -15,7 +15,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -61,31 +60,14 @@ public class HadoopMRVariantStatisticsManager implements VariantStatisticsManage
 
         List<Integer> cohortIds = StudyConfigurationManager.getCohortIdsFromStudy(cohorts, sc);
 
-        String hadoopRoute = options.getString(HadoopVariantStorageEngine.HADOOP_BIN, "hadoop");
-        String jar = HadoopVariantStorageEngine.getJarWithDependencies(options);
-
         options.put(VariantStatsMapper.COHORTS, cohortIds);
         VariantStatsMapper.setAggregationMappingProperties(options, VariantStatisticsManager.getAggregationMappingProperties(options));
 
-        Class execClass = VariantStatsDriver.class;
-        String executable = hadoopRoute + " jar " + jar + ' ' + execClass.getName();
         String[] args = VariantStatsDriver.buildArgs(
                 dbAdaptor.getTableNameGenerator().getArchiveTableName(sc.getStudyId()),
                 dbAdaptor.getTableNameGenerator().getVariantTableName(),
                 sc.getStudyId(), Collections.emptyList(), options);
-
-        long startTime = System.currentTimeMillis();
-        logger.info("------------------------------------------------------");
-        logger.info("Calculate stats of cohorts {} into variants table '{}'", cohorts, dbAdaptor.getVariantTable());
-        logger.debug(executable + ' ' + Arrays.toString(args));
-        logger.info("------------------------------------------------------");
-        int exitValue = mrExecutor.run(executable, args);
-        logger.info("------------------------------------------------------");
-        logger.info("Exit value: {}", exitValue);
-        logger.info("Total time: {}s", (System.currentTimeMillis() - startTime) / 1000.0);
-        if (exitValue != 0) {
-            throw new StorageEngineException("Error calculating stats for cohorts " + cohorts);
-        }
+        mrExecutor.run(VariantStatsDriver.class, args, options, "Calculate stats of cohorts " + cohorts);
 
         dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(sc, options);
         try {
@@ -93,8 +75,6 @@ public class HadoopMRVariantStatisticsManager implements VariantStatisticsManage
         } catch (SQLException e) {
             throw new IOException(e);
         }
-
-        logger.info("Finishing stats calculation, time: {}s", (System.currentTimeMillis() - startTime) / 1000.0);
 
     }
 }
