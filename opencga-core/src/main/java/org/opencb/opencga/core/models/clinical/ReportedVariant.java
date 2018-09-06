@@ -22,9 +22,11 @@ public class ReportedVariant extends Variant {
         super(avro);
     }
 
-    public ReportedVariant(VariantAvro avro, List<ReportedEvent> reportedEvents, List<Comment> comments, Map<String, Object> attributes) {
+    public ReportedVariant(VariantAvro avro, double deNovoQualityScore, List<ReportedEvent> reportedEvents, List<Comment> comments,
+                           Map<String, Object> attributes) {
         super(avro);
 
+        this.deNovoQualityScore = deNovoQualityScore;
         this.reportedEvents = reportedEvents;
         this.comments = comments;
         this.attributes = attributes;
@@ -32,12 +34,22 @@ public class ReportedVariant extends Variant {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("ReportedVariant{");
-        sb.append("reportedEvents=").append(reportedEvents);
+        final StringBuffer sb = new StringBuffer("ReportedVariant{");
+        sb.append("deNovoQualityScore=").append(deNovoQualityScore);
+        sb.append(", reportedEvents=").append(reportedEvents);
         sb.append(", comments=").append(comments);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
+    }
+
+    public double getDeNovoQualityScore() {
+        return deNovoQualityScore;
+    }
+
+    public ReportedVariant setDeNovoQualityScore(double deNovoQualityScore) {
+        this.deNovoQualityScore = deNovoQualityScore;
+        return this;
     }
 
     public List<ReportedEvent> getReportedEvents() {

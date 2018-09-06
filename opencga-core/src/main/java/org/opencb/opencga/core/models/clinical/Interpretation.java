@@ -32,12 +32,13 @@ public class Interpretation {
     public Interpretation() {
     }
 
-    public Interpretation(String id, String name, String description, List<DiseasePanel> panels, Software software, Analyst analyst,
+    public Interpretation(String id, String name, String description, String clinicalAnalysisId, List<DiseasePanel> panels, Software software, Analyst analyst,
                           List<Version> versions, Map<String, Object> filters, String creationDate, List<ReportedVariant> reportedVariants,
                           List<Comment> comments, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.description = description;
+        this.clinicalAnalysisId = clinicalAnalysisId;
         this.panels = panels;
         this.software = software;
         this.analyst = analyst;

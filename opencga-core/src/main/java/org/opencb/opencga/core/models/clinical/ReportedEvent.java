@@ -13,7 +13,7 @@ public class ReportedEvent {
     private GenomicFeature genomicFeature;
     private ReportedModeOfInheritance modeOfInheritance;
     private String panelId;
-    private ClinicalSignificance clinicalSignificance;
+    private VariantClassification variantClassification;
     private Penetrance penetrance;
     private double score;
     @Deprecated
@@ -39,15 +39,6 @@ public class ReportedEvent {
         UNKNOWN
     }
 
-    public enum ClinicalSignificance {
-        PATHOGENIC_VARIANT,
-        LIKELY_PATHOGENIC_VARIANT,
-        VARIANT_OF_UNKNOWN_CLINICAL_SIGNIFICANCE,
-        LINKELY_BENIGN_VARIANT,
-        BENIGN_VARIANT,
-        NOT_ASSESSED
-    }
-
     public enum Penetrance {
         COMPLETE,
         INCOMPLETE
@@ -63,7 +54,7 @@ public class ReportedEvent {
     }
 
     public ReportedEvent(String id, List<Phenotype> phenotypes, List<String> consequenceTypeIds, GenomicFeature genomicFeature,
-                         ReportedModeOfInheritance modeOfInheritance, String panelId, ClinicalSignificance clinicalSignificance,
+                         ReportedModeOfInheritance modeOfInheritance, String panelId, VariantClassification variantClassification,
                          Penetrance penetrance, double score, Map<String, Float> vendorSpecificScores, boolean fullyExplainsPhenotype,
                          int groupOfVariants, RoleInCancer roleInCancer, boolean actionable, String justification, String tier) {
         this.id = id;
@@ -72,7 +63,7 @@ public class ReportedEvent {
         this.genomicFeature = genomicFeature;
         this.modeOfInheritance = modeOfInheritance;
         this.panelId = panelId;
-        this.clinicalSignificance = clinicalSignificance;
+        this.variantClassification = variantClassification;
         this.penetrance = penetrance;
         this.score = score;
         this.vendorSpecificScores = vendorSpecificScores;
@@ -138,12 +129,12 @@ public class ReportedEvent {
         return this;
     }
 
-    public ClinicalSignificance getClinicalSignificance() {
-        return clinicalSignificance;
+    public VariantClassification getVariantClassification() {
+        return variantClassification;
     }
 
-    public ReportedEvent setClinicalSignificance(ClinicalSignificance clinicalSignificance) {
-        this.clinicalSignificance = clinicalSignificance;
+    public ReportedEvent setVariantClassification(VariantClassification variantClassification) {
+        this.variantClassification = variantClassification;
         return this;
     }
 
