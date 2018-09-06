@@ -72,6 +72,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     public static final int FILE_QUAL_IDX = 3;
     public static final int FILE_FILTER_IDX = 4;
     public static final int FILE_INFO_START_IDX = 5;
+    public static final String ALTERNATE_COORDINATE_SEPARATOR = ":";
 
     private final StudyConfigurationManager scm;
     private final HBaseToVariantStatsConverter statsConverter;
@@ -215,11 +216,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 }
             }
 
-            Variant variant = new Variant(resultSet.getString(VariantPhoenixHelper.VariantColumn.CHROMOSOME.column()),
-                    resultSet.getInt(VariantPhoenixHelper.VariantColumn.POSITION.column()),
-                    resultSet.getString(VariantPhoenixHelper.VariantColumn.REFERENCE.column()),
-                    resultSet.getString(VariantPhoenixHelper.VariantColumn.ALTERNATE.column())
-            );
+            Variant variant = VariantPhoenixKeyFactory.extractVariantFromResultSet(resultSet);
 
             Map<Integer, Map<Integer, VariantStats>> stats = statsConverter.convert(resultSet);
 
@@ -365,7 +362,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         sampleData = remapSamplesData(sampleData, formatsMap);
         Integer gtIdx = studyEntry.getFormatPositions().get("GT");
         // Replace UNKNOWN_GENOTYPE, if any
-        if (gtIdx != null && sampleData.get(gtIdx).equals(GenotypeClass.UNKNOWN_GENOTYPE)) {
+        if (gtIdx != null && GenotypeClass.UNKNOWN_GENOTYPE.equals(sampleData.get(gtIdx))) {
             sampleData.set(gtIdx, unknownGenotype);
         }
 
@@ -417,9 +414,10 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         attributes.put(StudyEntry.FILTER, (String) (fileColumn.getElement(FILE_FILTER_IDX)));
         String alternate = (String) (fileColumn.getElement(FILE_SEC_ALTS_IDX));
         String fileName = studyConfiguration.getFileIds().inverse().get(Integer.parseInt(fileId));
-        if (StringUtils.isNotEmpty(alternate)) {
-            alternateFileMap.computeIfAbsent(alternate, (key) -> new ArrayList<>()).add(fileName);
-        }
+
+        // Add all combinations of secondary alternates, even the combination of "none secondary alternates", i.e. empty string
+        alternateFileMap.computeIfAbsent(alternate, (key) -> new ArrayList<>()).add(fileName);
+
         List<String> fixedAttributes = HBaseToVariantConverter.getFixedAttributes(studyConfiguration);
         int i = FILE_INFO_START_IDX;
         for (String attribute : fixedAttributes) {
@@ -639,7 +637,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     }
 
     /**
-     * Add secondary alternates to the StudyEntry. Merge secondar alternates if needed.
+     * Add secondary alternates to the StudyEntry. Merge secondary alternates if needed.
      *
      * @param variant            Variant coordinates.
      * @param studyEntry         Study Entry all samples data
@@ -673,8 +671,10 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 Variant sampleVariant = new Variant(
                         variant.getChromosome(),
                         variant.getStart(),
+                        variant.getEnd(),
                         variant.getReference(),
-                        variant.getAlternate());
+                        variant.getAlternate())
+                        .setSv(variant.getSv());
                 StudyEntry se = new StudyEntry("0");
                 se.setSecondaryAlternates(getAlternateCoordinates(secondaryAlternates));
                 se.setFormat(studyEntry.getFormat());
@@ -711,21 +711,29 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         studyEntry.setSecondaryAlternates(alternateCoordinates);
     }
 
-    public List<AlternateCoordinate> getAlternateCoordinates(String s) {
-        return Arrays.stream(s.split(","))
-                .map(this::getAlternateCoordinate)
-                .collect(Collectors.toList());
+    public static List<AlternateCoordinate> getAlternateCoordinates(String s) {
+        if (StringUtils.isEmpty(s)) {
+            return Collections.emptyList();
+        } else {
+            return Arrays.stream(s.split(","))
+                    .map(HBaseToStudyEntryConverter::getAlternateCoordinate)
+                    .collect(Collectors.toList());
+        }
     }
 
-    public AlternateCoordinate getAlternateCoordinate(String s) {
-        String[] split = s.split(":");
+    // Alternate field may contain the separator char
+    public static AlternateCoordinate getAlternateCoordinate(String s) {
+        String[] split = s.split(ALTERNATE_COORDINATE_SEPARATOR, 5);
+        int idx = split[4].lastIndexOf(ALTERNATE_COORDINATE_SEPARATOR);
+        String alternate = split[4].substring(0, idx);
+        VariantType type = VariantType.valueOf(split[4].substring(idx + 1));
         return new AlternateCoordinate(
                 split[0],
                 Integer.parseInt(split[1]),
                 Integer.parseInt(split[2]),
                 split[3],
-                split[4],
-                VariantType.valueOf(split[5])
+                alternate,
+                type
         );
     }
 

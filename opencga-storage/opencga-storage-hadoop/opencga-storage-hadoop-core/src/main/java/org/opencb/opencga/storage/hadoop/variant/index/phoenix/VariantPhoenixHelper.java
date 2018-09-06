@@ -73,7 +73,13 @@ public class VariantPhoenixHelper {
     public static final String HOM_REF = "0/0";
     public static final byte[] HOM_REF_BYTES = Bytes.toBytes(HOM_REF);
     private static final String STUDY_POP_FREQ_SEPARATOR = "_";
-    public static final List<Column> PRIMARY_KEY = Collections.unmodifiableList(Arrays.asList(CHROMOSOME, POSITION, REFERENCE, ALTERNATE));
+    public static final List<Column> PRIMARY_KEY = Collections.unmodifiableList(Arrays.asList(
+            CHROMOSOME,
+            POSITION,
+            REFERENCE,
+            ALTERNATE
+    ));
+
     public static final String FILL_MISSING_SUFIX = "_FM";
     public static final byte[] FILL_MISSING_SUFIX_BYTES = Bytes.toBytes(FILL_MISSING_SUFIX);
 
@@ -88,6 +94,11 @@ public class VariantPhoenixHelper {
         POSITION("POSITION", PUnsignedInt.INSTANCE),
         REFERENCE("REFERENCE", PVarchar.INSTANCE),
         ALTERNATE("ALTERNATE", PVarchar.INSTANCE),
+
+        CI_START_L("CI_START_L", PUnsignedInt.INSTANCE),
+        CI_START_R("CI_START_R", PUnsignedInt.INSTANCE),
+        CI_END_L("CI_END_L", PUnsignedInt.INSTANCE),
+        CI_END_R("CI_END_R", PUnsignedInt.INSTANCE),
 
         TYPE("TYPE", PVarchar.INSTANCE),
 

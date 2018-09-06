@@ -16,9 +16,10 @@
 
 package org.opencb.opencga.core.models;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Created by pfurio on 11/03/16.
@@ -34,6 +35,8 @@ public class Status {
      * DELETED name means that the object is marked as removed, so it can be completely removed from the database with a clean action.
      */
     public static final String DELETED = "DELETED";
+
+    public static final List<String> STATUS_LIST = Arrays.asList(READY, DELETED);
 
     private String name;
     private String date;
@@ -123,5 +126,46 @@ public class Status {
     @Override
     public int hashCode() {
         return Objects.hash(name, date, message);
+    }
+
+    public static String getPositiveStatus(List<String> acceptedStatusList, String status) {
+        List<String> positiveStatusList = new ArrayList<>();
+        List<String> negativeStatusList = new ArrayList<>();
+
+        String[] andSplit = status.split(";");
+        if (andSplit.length > 1) {
+            fillPositiveNegativeList(andSplit, positiveStatusList, negativeStatusList);
+        } else {
+            String[] orSplit = status.split(",");
+            fillPositiveNegativeList(orSplit, positiveStatusList, negativeStatusList);
+        }
+
+        if (!positiveStatusList.isEmpty()) {
+            return StringUtils.join(positiveStatusList, ",");
+        } else if (!negativeStatusList.isEmpty()) {
+            Set<String> allStatusSet = new HashSet<>(acceptedStatusList);
+            for (String s : negativeStatusList) {
+                allStatusSet.remove(s);
+            }
+            if (!allStatusSet.isEmpty()) {
+                return StringUtils.join(allStatusSet, ",");
+            } else {
+                return StringUtils.join(acceptedStatusList, ",");
+            }
+        } else {
+            return StringUtils.join(acceptedStatusList, ",");
+        }
+    }
+
+    private static void fillPositiveNegativeList(String[] statusList, List<String> positiveStatusList, List<String> negativeStatusList) {
+        for (String s : statusList) {
+            if (s.startsWith("!=")) {
+                negativeStatusList.add(s.replace("!=", ""));
+            } else if (s.startsWith("!")) {
+                negativeStatusList.add(s.replace("!", ""));
+            } else {
+                positiveStatusList.add(s);
+            }
+        }
     }
 }

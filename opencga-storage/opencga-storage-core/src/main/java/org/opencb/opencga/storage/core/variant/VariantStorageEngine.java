@@ -1074,6 +1074,44 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             query.put(ANNOT_CLINICAL_SIGNIFICANCE.key(), clinicalSignificanceList);
         }
 
+        if (isValidParam(query, ANNOT_SIFT)) {
+            String sift = query.getString(ANNOT_SIFT.key());
+            String[] split = splitOperator(sift);
+            if (StringUtils.isNotEmpty(split[0])) {
+                throw VariantQueryException.malformedParam(ANNOT_SIFT, sift);
+            }
+            if (isValidParam(query, ANNOT_PROTEIN_SUBSTITUTION)) {
+                String proteinSubstitution = query.getString(ANNOT_PROTEIN_SUBSTITUTION.key());
+                if (proteinSubstitution.contains("sift")) {
+                    throw VariantQueryException.malformedParam(ANNOT_SIFT,
+                            "Conflict with parameter \"" + ANNOT_PROTEIN_SUBSTITUTION.key() + "\"");
+                }
+                query.put(ANNOT_PROTEIN_SUBSTITUTION.key(), proteinSubstitution + AND + "sift" + split[1] + split[2]);
+            } else {
+                query.put(ANNOT_PROTEIN_SUBSTITUTION.key(), "sift" + split[1] + split[2]);
+            }
+            query.remove(ANNOT_SIFT);
+        }
+
+        if (isValidParam(query, ANNOT_POLYPHEN)) {
+            String polyphen = query.getString(ANNOT_POLYPHEN.key());
+            String[] split = splitOperator(polyphen);
+            if (StringUtils.isNotEmpty(split[0])) {
+                throw VariantQueryException.malformedParam(ANNOT_POLYPHEN, polyphen);
+            }
+            if (isValidParam(query, ANNOT_PROTEIN_SUBSTITUTION)) {
+                String proteinSubstitution = query.getString(ANNOT_PROTEIN_SUBSTITUTION.key());
+                if (proteinSubstitution.contains("sift")) {
+                    throw VariantQueryException.malformedParam(ANNOT_SIFT,
+                            "Conflict with parameter \"" + ANNOT_PROTEIN_SUBSTITUTION.key() + "\"");
+                }
+                query.put(ANNOT_PROTEIN_SUBSTITUTION.key(), proteinSubstitution + AND + "polyphen" + split[1] + split[2]);
+            } else {
+                query.put(ANNOT_PROTEIN_SUBSTITUTION.key(), "polyphen" + split[1] + split[2]);
+            }
+            query.remove(ANNOT_POLYPHEN);
+        }
+
         StudyConfiguration defaultStudyConfiguration = getDefaultStudyConfiguration(query, options, getStudyConfigurationManager());
         QueryOperation formatOperator = null;
         if (isValidParam(query, FORMAT)) {

@@ -114,7 +114,10 @@ public class StudyCommandOptions {
         @Parameter(names = {"-n", "--name"}, description = "Study name", required = true, arity = 1)
         public String name;
 
-        @Parameter(names = {"-a", "--alias"}, description = "Study alias", required = true, arity = 1)
+        @Parameter(names = {"--id"}, description = "Study id", required = true, arity = 1)
+        public String id;
+
+        @Parameter(names = {"-a", "--alias"}, description = "Study alias", arity = 1)
         public String alias;
 
         @Parameter(names = {"-t", "--type"}, description = "Type of study, ej.CASE_CONTROL,CASE_SET,...", arity = 1)

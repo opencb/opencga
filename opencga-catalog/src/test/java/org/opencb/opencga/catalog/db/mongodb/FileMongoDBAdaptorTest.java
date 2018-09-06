@@ -28,6 +28,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.Status;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 
 import java.io.IOException;
@@ -301,22 +302,21 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void testAddSamples() throws Exception {
         long studyUid = user3.getProjects().get(0).getStudies().get(0).getUid();
-        Sample sample1 = catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample1"), QueryOptions.empty())
-                .first();
-        Sample sample2 = catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample2"), QueryOptions.empty())
-                .first();
+        Sample sample1 = catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample1").setStatus(new Status()),
+                QueryOptions.empty()).first();
+        Sample sample2 = catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample2").setStatus(new Status()),
+                QueryOptions.empty()).first();
 
         File file = user3.getProjects().get(0).getStudies().get(0).getFiles().get(0);
-        catalogFileDBAdaptor.addSamplesToFile(file.getUid(),
-                Arrays.asList(sample1, sample2));
+        catalogFileDBAdaptor.addSamplesToFile(file.getUid(), Arrays.asList(sample1, sample2));
 
         QueryResult<File> fileQueryResult = catalogFileDBAdaptor.get(file.getUid(), QueryOptions.empty());
         assertEquals(2, fileQueryResult.first().getSamples().size());
         assertTrue(Arrays.asList(sample1.getUid(), sample2.getUid()).containsAll(
                 fileQueryResult.first().getSamples().stream().map(Sample::getUid).collect(Collectors.toList())));
 
-        Sample sample3 = catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample3"), QueryOptions.empty())
-                .first();
+        Sample sample3 = catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample3").setStatus(new Status()),
+                QueryOptions.empty()).first();
         // Test we avoid duplicities
         catalogFileDBAdaptor.addSamplesToFile(file.getUid(),
                 Arrays.asList(sample1, sample2, sample2, sample3));
@@ -329,12 +329,12 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void testRemoveSamples() throws Exception {
         long studyUid = user3.getProjects().get(0).getStudies().get(0).getUid();
-        Sample sample1 = catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample1"), QueryOptions.empty())
-                .first();
-        Sample sample2 = catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample2"), QueryOptions.empty())
-                .first();
-        Sample sample3 = catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample3"), QueryOptions.empty())
-                .first();
+        Sample sample1 = catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample1").setStatus(new Status()),
+                QueryOptions.empty()).first();
+        Sample sample2 = catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample2").setStatus(new Status()),
+                QueryOptions.empty()).first();
+        Sample sample3 = catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample3").setStatus(new Status()),
+                QueryOptions.empty()).first();
         File file = user3.getProjects().get(0).getStudies().get(0).getFiles().get(0);
         catalogFileDBAdaptor.addSamplesToFile(file.getUid(), Arrays.asList(sample1, sample2, sample3));
 

@@ -459,7 +459,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
                     if (cohorts.get(entry.getKey()) != null) {
                         assertEquals("Variant: " + variant.toString() + " does not have the correct number of samples in cohort '" + entry.getKey() + "'. jsonVariant: " + variant.toJson() ,
                                 cohorts.get(entry.getKey()).getSamples().size(),
-                                entry.getValue().getGenotypesCount().values().stream().reduce(Integer::sum).orElse(0).intValue());
+                                entry.getValue().getGenotypeCount().values().stream().reduce(Integer::sum).orElse(0).intValue());
                     }
                 }
             }

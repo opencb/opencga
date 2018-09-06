@@ -122,19 +122,14 @@ public abstract class AbstractPhoenixConverter {
 
     @SuppressWarnings("unchecked")
     public static <T> List<T> toModifiableList(Array value, int from, int to) {
-        try {
-            T[] array = (T[]) value.getArray();
-            ArrayList<T> list = new ArrayList<>(array.length);
-            to = to > 0 ? to : array.length;
-            for (int i = from; i < to; i++) {
-                T t = array[i];
-                list.add(t);
-            }
-            return list;
-//            return Arrays.asList((T[]) value.getArray());
-        } catch (SQLException e) {
-            throw new IllegalStateException(e);
+        PhoenixArray phoenixArray = (PhoenixArray) value;
+        to = to > 0 ? to : phoenixArray.getDimensions();
+        ArrayList<T> list = new ArrayList<>(to - from);
+        for (int i = from; i < to; i++) {
+            T t = (T) phoenixArray.getElement(i);
+            list.add(t);
         }
+        return list;
     }
 
     @SuppressWarnings("unchecked")

@@ -742,6 +742,12 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
                     case VARIANTS:
                         addAutoOrQuery(QueryParams.VARIANTS_ID.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
+                    case STATUS_NAME:
+                        // Convert the status to a positive status
+                        query.put(queryParam.key(),
+                                Status.getPositiveStatus(Status.STATUS_LIST, query.getString(queryParam.key())));
+                        addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
                     case ID:
                     case UUID:
                     case NAME:
@@ -759,7 +765,6 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
                     case GENES_CONFIDENCE:
                     case REGIONS_LOCATION:
                     case REGIONS_SCORE:
-                    case STATUS_NAME:
                     case STATUS_MSG:
                     case STATUS_DATE:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);

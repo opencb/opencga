@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.hadoop.variant.converters.stats;
 
 import org.apache.hadoop.hbase.client.Put;
+import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.Converter;
@@ -29,7 +30,6 @@ import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHel
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory.generateVariantRowKey;
@@ -59,10 +59,9 @@ public class VariantStatsToHBaseConverter extends AbstractPhoenixConverter imple
             return null;
         }
 
-        VariantStats firstStats = variantStatsWrapper.getCohortStats().entrySet().iterator().next().getValue();
         byte[] row = generateVariantRowKey(
-                variantStatsWrapper.getChromosome(), variantStatsWrapper.getStart(),
-                firstStats.getRefAllele(), firstStats.getAltAllele());
+                variantStatsWrapper.getChromosome(), variantStatsWrapper.getStart(), variantStatsWrapper.getEnd(),
+                variantStatsWrapper.getReference(), variantStatsWrapper.getAlternate(), variantStatsWrapper.getSv());
         Put put = new Put(row);
         for (Map.Entry<String, VariantStats> entry : variantStatsWrapper.getCohortStats().entrySet()) {
             Integer cohortId = studyConfiguration.getCohortIds().get(entry.getKey());
@@ -79,8 +78,9 @@ public class VariantStatsToHBaseConverter extends AbstractPhoenixConverter imple
                     .setAltAlleleCount(stats.getAltAlleleCount())
                     .setRefAlleleFreq(stats.getRefAlleleFreq())
                     .setRefAlleleCount(stats.getRefAlleleCount())
-                    .setMissingAlleles(stats.getMissingAlleles())
-                    .setMissingGenotypes(stats.getMissingGenotypes());
+                    .setAlleleCount(stats.getAlleleCount())
+                    .setMissingAlleleCount(stats.getMissingAlleleCount())
+                    .setMissingGenotypeCount(stats.getMissingGenotypeCount());
 
             if (stats.getMafAllele() != null) {
                 builder.setMafAllele(stats.getMafAllele());
@@ -92,16 +92,18 @@ public class VariantStatsToHBaseConverter extends AbstractPhoenixConverter imple
             }
             builder.setMgf(stats.getMgf());
 
-            if (stats.getGenotypesCount() != null) {
-                Map<String, Integer> map = new HashMap<>(stats.getGenotypesCount().size());
-                stats.getGenotypesCount().forEach((genotype, count) -> map.put(genotype.toString(), count));
-                builder.putAllGenotypesCount(map);
+            if (stats.getGenotypeCount() != null) {
+                for (Map.Entry<Genotype, Integer> e : stats.getGenotypeCount().entrySet()) {
+                    builder.putGenotypeCount(e.getKey().toString(), e.getValue());
+                }
+//                assert builder.getGenotypeCount() == stats.getGenotypeCount().size();
             }
 
-            if (stats.getGenotypesFreq() != null) {
-                Map<String, Float> map = new HashMap<>(stats.getGenotypesFreq().size());
-                stats.getGenotypesFreq().forEach((genotype, freq) -> map.put(genotype.toString(), freq));
-                builder.putAllGenotypesFreq(map);
+            if (stats.getGenotypeFreq() != null) {
+                for (Map.Entry<Genotype, Float> e : stats.getGenotypeFreq().entrySet()) {
+                    builder.putGenotypeFreq(e.getKey().toString(), e.getValue());
+                }
+//                assert builder.getGenotypeFreqCount() == stats.getGenotypeFreq().size();
             }
 
             add(put, statsColumn, builder.build().toByteArray());

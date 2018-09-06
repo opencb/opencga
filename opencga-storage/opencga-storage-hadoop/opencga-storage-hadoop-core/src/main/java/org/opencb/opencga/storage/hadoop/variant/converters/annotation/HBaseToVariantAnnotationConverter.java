@@ -251,8 +251,11 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
         String annotationId = this.defaultAnnotationId;
         if (defaultAnnotationId == null) {
             try {
-                int annotationIdNum = resultSet.getInt(VariantPhoenixHelper.VariantColumn.ANNOTATION_ID.column());
-                annotationId = annotationIds.get(annotationIdNum);
+                Integer annotationIdColumnIdx = findColumn(resultSet, VariantColumn.ANNOTATION_ID.column());
+                if (annotationIdColumnIdx != null) {
+                    int annotationIdNum = resultSet.getInt(VariantPhoenixHelper.VariantColumn.ANNOTATION_ID.column());
+                    annotationId = annotationIds.get(annotationIdNum);
+                }
             } catch (SQLException e) {
                 throw VariantQueryException.internalException(e);
             }

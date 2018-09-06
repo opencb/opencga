@@ -363,7 +363,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 throws CatalogException {
             if (release == null) {
                 AbstractManager.MyResources<File> uids = catalogManager.getFileManager().getUids(values, defaultStudyStr, sessionId);
-                return uids.getResourceList().stream().map(File::getId).collect(Collectors.toList());
+                return uids.getResourceList().stream().map(File::getName).collect(Collectors.toList());
             } else {
                 return validate(defaultStudyStr, values, release, param, catalogManager.getFileManager(), File::getName,
                         file -> ((int) file.getIndex().getRelease()), file -> {

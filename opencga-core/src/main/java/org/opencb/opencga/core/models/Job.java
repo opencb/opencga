@@ -190,6 +190,8 @@ public class Job extends PrivateStudyUid {
          */
         public static final String UNKNOWN = "UNKNOWN";
 
+        public static final List<String> STATUS_LIST = Arrays.asList(READY, DELETED, PREPARED, QUEUED, RUNNING, DONE, ERROR, UNKNOWN);
+
         public JobStatus(String status, String message) {
             if (isValid(status)) {
                 init(status, message);

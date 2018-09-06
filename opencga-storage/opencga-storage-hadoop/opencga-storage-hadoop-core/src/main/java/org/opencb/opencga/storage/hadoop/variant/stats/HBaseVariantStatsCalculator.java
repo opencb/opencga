@@ -171,7 +171,7 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
             }
 
             Map<Genotype, Integer> gtCountMap = new HashMap<>(gtStrCount.size());
-            gtStrCount.forEach((str, count) -> gtCountMap.compute(new Genotype(str, variant.getReference(), variant.getAlternate()),
+            gtStrCount.forEach((str, count) -> gtCountMap.compute(new Genotype(str),
                     (key, value) -> value == null ? count : value + count));
 
             return gtCountMap;

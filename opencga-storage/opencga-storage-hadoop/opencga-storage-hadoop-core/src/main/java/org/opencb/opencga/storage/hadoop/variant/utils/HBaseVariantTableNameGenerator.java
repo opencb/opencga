@@ -149,7 +149,7 @@ public class HBaseVariantTableNameGenerator {
         if (studyId <= 0) {
             throw new IllegalArgumentException("Can not get archive table name. Invalid studyId!");
         }
-        return buildTableName(namespace, "", dbName + ARCHIVE_SUFIX + studyId);
+        return buildTableName(namespace, dbName, ARCHIVE_SUFIX + studyId);
     }
 
     public static int getStudyIdFromArchiveTable(String archiveTable) {
@@ -158,46 +158,46 @@ public class HBaseVariantTableNameGenerator {
     }
 
     public static String getSampleIndexTableName(String namespace, String dbName, int studyId) {
-        return buildTableName(namespace, "", dbName + SAMPLE_SUFIX + studyId);
+        return buildTableName(namespace, dbName, SAMPLE_SUFIX + studyId);
     }
 
     public static String getVariantTableName(String dbName, ObjectMap options) {
-        return buildTableName(options.getString(HadoopVariantStorageEngine.HBASE_NAMESPACE, ""), "", dbName + VARIANTS_SUFIX);
+        return buildTableName(options.getString(HadoopVariantStorageEngine.HBASE_NAMESPACE, ""), dbName, VARIANTS_SUFIX);
     }
 
     public static String getVariantTableName(String dbName, Configuration conf) {
-        return buildTableName(conf.get(HadoopVariantStorageEngine.HBASE_NAMESPACE, ""), "", dbName + VARIANTS_SUFIX);
+        return buildTableName(conf.get(HadoopVariantStorageEngine.HBASE_NAMESPACE, ""), dbName, VARIANTS_SUFIX);
     }
 
     public static String getMetaTableName(String dbName, ObjectMap options) {
-        return buildTableName(options.getString(HadoopVariantStorageEngine.HBASE_NAMESPACE, ""), "", dbName + META_SUFIX);
+        return buildTableName(options.getString(HadoopVariantStorageEngine.HBASE_NAMESPACE, ""), dbName, META_SUFIX);
     }
 
     public static String getMetaTableName(String dbName, Configuration conf) {
-        return buildTableName(conf.get(HadoopVariantStorageEngine.HBASE_NAMESPACE, ""), "", dbName + META_SUFIX);
+        return buildTableName(conf.get(HadoopVariantStorageEngine.HBASE_NAMESPACE, ""), dbName, META_SUFIX);
     }
 
-    protected static String buildTableName(String namespace, String prefix, String tableName) {
+    protected static String buildTableName(String namespace, String dbName, String tableName) {
         StringBuilder sb = new StringBuilder();
 
         if (StringUtils.isNotEmpty(namespace)) {
-            if (tableName.contains(":")) {
-                if (!tableName.startsWith(namespace + ":")) {
-                    throw new IllegalArgumentException("Wrong namespace : '" + tableName + "'."
+            if (dbName.contains(":")) {
+                if (!dbName.startsWith(namespace + ":")) {
+                    throw new IllegalArgumentException("Wrong namespace : '" + dbName + "'."
                             + " Namespace mismatches with the read from configuration:" + namespace);
                 } else {
-                    tableName = tableName.substring(tableName.indexOf(':') + 1); // Remove '<namespace>:'
+                    dbName = dbName.substring(dbName.indexOf(':') + 1); // Remove '<namespace>:'
                 }
             }
             sb.append(namespace).append(':');
         }
-        if (StringUtils.isNotEmpty(prefix)) {
-            if (prefix.endsWith("_") && tableName.startsWith("_")) {
-                sb.append(prefix, 0, prefix.length() - 1);
+        if (StringUtils.isNotEmpty(dbName)) {
+            if (dbName.endsWith("_") && tableName.startsWith("_")) {
+                sb.append(dbName, 0, dbName.length() - 1);
             } else {
-                sb.append(prefix);
+                sb.append(dbName);
             }
-            if (!prefix.endsWith("_") && !tableName.startsWith("_")) {
+            if (!dbName.endsWith("_") && !tableName.startsWith("_")) {
                 sb.append("_");
             }
         }

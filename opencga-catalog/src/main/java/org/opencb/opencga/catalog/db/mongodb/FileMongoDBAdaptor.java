@@ -489,7 +489,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         StudyAclEntry.StudyPermissions studyPermission = (studyPermissions == null
                 ? StudyAclEntry.StudyPermissions.VIEW_FILES : studyPermissions);
 
-           // Get the study document
+        // Get the study document
         Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_UID.key()));
         QueryResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
@@ -851,6 +851,18 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
+                    case STATUS_NAME:
+                        // Convert the status to a positive status
+                        query.put(queryParam.key(),
+                                Status.getPositiveStatus(File.FileStatus.STATUS_LIST, query.getString(queryParam.key())));
+                        addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
+                    case INDEX_STATUS_NAME:
+                        // Convert the status to a positive status
+                        query.put(queryParam.key(),
+                                Status.getPositiveStatus(FileIndex.IndexStatus.STATUS_LIST, query.getString(queryParam.key())));
+                        addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
                     // Other parameter that can be queried.
                     case NAME:
                     case UUID:
@@ -866,7 +878,6 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                     case RELEASE:
                     case TAGS:
                     case STATUS:
-                    case STATUS_NAME:
                     case STATUS_MSG:
                     case STATUS_DATE:
                     case RELATED_FILES:
@@ -881,7 +892,6 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                     case INDEX:
                     case INDEX_USER_ID:
                     case INDEX_CREATION_DATE:
-                    case INDEX_STATUS_NAME:
                     case INDEX_STATUS_MESSAGE:
                     case INDEX_JOB_ID:
                     case INDEX_TRANSFORMED_FILE:

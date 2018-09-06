@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.core.variant.annotation;
 
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -23,6 +24,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.VARIANT_ID;
 import static org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.*;
 
 /**
@@ -158,7 +161,7 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
         for (VariantAnnotation annotation: variantStorageEngine.getAnnotation(annotationName, query, null).getResult()) {
             assertEquals("an id -- " + expectedId, annotation.getId());
 //            assertEquals("1", annotation.getAdditionalAttributes().get("opencga").getAttribute().get("release"));
-            assertEquals(expectedAnnotationName, annotation.getAdditionalAttributes().get(VariantField.AdditionalAttributes.GROUP_NAME.key())
+            assertEquals(expectedAnnotationName, annotation.getAdditionalAttributes().get(GROUP_NAME.key())
                     .getAttribute().get(VariantField.AdditionalAttributes.ANNOTATION_ID.key()));
             count++;
         }
@@ -197,6 +200,9 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
                 ct.setExonOverlap(Collections.emptyList());
                 ct.setTranscriptAnnotationFlags(Collections.emptyList());
                 a.setConsequenceTypes(Collections.singletonList(ct));
+                a.setAdditionalAttributes(
+                        Collections.singletonMap(GROUP_NAME.key(),
+                                new AdditionalAttribute(Collections.singletonMap(VARIANT_ID.key(), v.toString()))));
                 return a;
             }).collect(Collectors.toList());
         }
