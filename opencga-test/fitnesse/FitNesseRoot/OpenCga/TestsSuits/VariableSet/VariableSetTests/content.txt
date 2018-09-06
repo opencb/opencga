@@ -25,7 +25,7 @@
 | GET | /v1/variableset/search?sid=$sessionId&study=$studyId&id=$variableSetId1 |200| Content-Type : application/json|jsonbody.error == '' && jsonbody.response[0].result[0].id == '$variableSetId1'|
 
 #Enhancement Req # 545
-!3 Verify Variable Stored Value XXX
+!3 Verify Variable Stored Value
 !|Table: Rest Fixture  | $baseURL |
 | GET | /v1/variableset/search?sid=$sessionId&study=$studyId&id=$variableSetId1 |200| Content-Type : application/json|jsonbody.error == '' && jsonbody.response[0].result[0].variables.length == '2'|
 |let||js|!-res=0;if(response.jsonbody.response[0].result[0].variables[0].name == 'var_double') {res = response.jsonbody.response[0].result[0].variables[0].defaultValue;} else {res = response.jsonbody.response[0].result[0].variables[1].defaultValue;}res;-!|20.5|
