@@ -771,7 +771,8 @@ public class FileCommandOptions {
 //            @Parameter(names = {"--file"}, description = "Comma separated list of file ids, names or paths", arity = 1)
 //            public String file;
 
-            @Parameter(names = {"--sample"}, description = "Comma separated list of sample ids or names", arity = 1)
+            @Parameter(names = {"--sample"}, description = "Comma separated list of sample ids or file containing the list of ids "
+                    + "(one per line)", arity = 1)
             public String sample;
         }
 

@@ -255,7 +255,7 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap bodyParams = new ObjectMap();
         bodyParams.putIfNotNull("permissions", commandOptions.permissions);
         bodyParams.putIfNotNull("action", commandOptions.action);
-        bodyParams.putIfNotNull("cohort", commandOptions.id);
+        bodyParams.putIfNotNull("cohort", extractIdsFromListOrFile(commandOptions.id));
 
         return openCGAClient.getCohortClient().updateAcl(commandOptions.memberId, queryParams, bodyParams);
     }

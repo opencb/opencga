@@ -226,7 +226,7 @@ public class FamilyCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap bodyParams = new ObjectMap();
         bodyParams.putIfNotNull("permissions", commandOptions.permissions);
         bodyParams.putIfNotNull("action", commandOptions.action);
-        bodyParams.putIfNotNull("family", commandOptions.id);
+        bodyParams.putIfNotNull("family", extractIdsFromListOrFile(commandOptions.id));
 
         return openCGAClient.getFamilyClient().updateAcl(commandOptions.memberId, queryParams, bodyParams);
     }

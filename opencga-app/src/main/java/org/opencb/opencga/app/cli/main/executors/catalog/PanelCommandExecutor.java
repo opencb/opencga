@@ -141,7 +141,7 @@ public class PanelCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap bodyParams = new ObjectMap();
         bodyParams.putIfNotNull("permissions", commandOptions.permissions);
         bodyParams.putIfNotNull("action", commandOptions.action);
-        bodyParams.putIfNotNull("panel", commandOptions.id);
+        bodyParams.putIfNotNull("panel", extractIdsFromListOrFile(commandOptions.id));
 
         return openCGAClient.getPanelClient().updateAcl(commandOptions.memberId, queryParams, bodyParams);
     }

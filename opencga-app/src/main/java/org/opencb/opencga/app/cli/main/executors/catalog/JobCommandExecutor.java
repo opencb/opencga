@@ -206,7 +206,7 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap bodyParams = new ObjectMap();
         bodyParams.putIfNotNull("permissions", commandOptions.permissions);
         bodyParams.putIfNotNull("action", commandOptions.action);
-        bodyParams.putIfNotNull("job", commandOptions.id);
+        bodyParams.putIfNotNull("job", extractIdsFromListOrFile(commandOptions.id));
 
         return openCGAClient.getJobClient().updateAcl(commandOptions.memberId, queryParams, bodyParams);
     }
