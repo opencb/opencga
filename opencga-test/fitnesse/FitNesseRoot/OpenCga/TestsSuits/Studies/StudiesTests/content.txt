@@ -344,9 +344,16 @@
 
 !3 Create Variable Set  
 !|Table: Rest Fixture  | $baseURL |
-| setBody |  {"id" : "$VS1","unique": false, "confidential" : "false",  "name": "$vsName1",  "description": "string",  "variables": [{ "id" : "var_int", "name": "V1", "type" : "INTEGER", "required" : true,"multiValue": false }, {"id" : "var_double", "name": "V2", "type" : "DOUBLE", "defaultValue" : "20.5" , "required" : false,"multiValue": false }]}|
+| setBody |  {"id" : "$VS1","unique": false, "confidential" : "false",  "name": "$vsName1",  "description": "string",  "variables": [{ "id" : "var_int", "name": "V1", "type" : "INTEGER" ,"defaultValue" : "10", "required" : true,"multiValue": false }, {"id" : "var_double", "name": "V2", "type" : "DOUBLE", "defaultValue" : "20.5" , "required" : false,"multiValue": false }]}|
 | POST | /v1/studies/$study/variableSets/update?action=ADD |200| Content-Type : application/json||
 |let|variableSetId1|js|response.jsonbody.response[0].result[0].id||
+
+#Enhancement Req # 545
+!3 Verify Variable Stored Value
+!|Table: Rest Fixture  | $baseURL |
+| GET |  /v1/studies/$study/variableSets?study=$studyId&id=$variableSetId1 |200| Content-Type : application/json|jsonbody.error == '' && jsonbody.response[0].result[0].variables.length == '2'|
+|let||js|!-res=0;if(response.jsonbody.response[0].result[0].variables[0].id == 'var_double') {res = response.jsonbody.response[0].result[0].variables[0].defaultValue;} else {res = response.jsonbody.response[0].result[0].variables[1].defaultValue;}res;-!|20.5|
+|let||js|!-res=0;if(response.jsonbody.response[0].result[0].variables[0].id == 'var_int') {res = response.jsonbody.response[0].result[0].variables[0].defaultValue;} else {res = response.jsonbody.response[0].result[0].variables[1].defaultValue;}res;-!|10|
 
 !3 Create Nested Variable Set 2
 !|Table: Rest Fixture  | $baseURL |
