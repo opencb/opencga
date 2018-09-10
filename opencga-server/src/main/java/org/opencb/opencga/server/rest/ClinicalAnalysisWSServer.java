@@ -32,7 +32,6 @@ import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.clinical.Comment;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.clinical.ReportedVariant;
-import org.opencb.opencga.core.models.clinical.Version;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -242,25 +241,20 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 
     private static class ClinicalInterpretationParameters {
         public String id;
-        @Deprecated
-        public String name;
         public String description;
-
+        public String clinicalAnalysisId;
         public List<DiseasePanel> panels;
         public Software software;
         public Analyst analyst;
-        public List<Version> versions;
+        public List<Software> dependencies;
         public Map<String, Object> filters;
         public String creationDate;
-
+        public List<ReportedVariant> reportedVariants;
         public List<Comment> comments;
         public Map<String, Object> attributes;
-
-        public List<ReportedVariant> reportedVariants;
-
         public Interpretation toClinicalInterpretation() {
-            return new Interpretation(id, name, description, panels, software, analyst, versions, filters, creationDate, reportedVariants,
-                    comments, attributes);
+            return new Interpretation(id, description, clinicalAnalysisId, panels, software, analyst, dependencies, filters, creationDate,
+                    reportedVariants, comments, attributes);
         }
     }
 

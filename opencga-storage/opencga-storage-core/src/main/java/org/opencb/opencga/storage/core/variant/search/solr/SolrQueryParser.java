@@ -662,7 +662,7 @@ public class SolrQueryParser {
      * @param value         Parameter value
      * @return             A list of strings, each string represents a boolean condition
      */
-    private String parseCategoryTermValue(String name, String value) {
+    public String parseCategoryTermValue(String name, String value) {
         return parseCategoryTermValue(name, value, "", false);
     }
 
@@ -680,7 +680,7 @@ public class SolrQueryParser {
         return parseCategoryTermValue(name, value, "", partialSearch);
     }
 
-    private String parseCategoryTermValue(String name, String val, String valuePrefix, boolean partialSearch) {
+    public String parseCategoryTermValue(String name, String val, String valuePrefix, boolean partialSearch) {
         StringBuilder filter = new StringBuilder();
         if (StringUtils.isNotEmpty(val)) {
             String negation  = "";
@@ -724,7 +724,7 @@ public class SolrQueryParser {
         return filter.toString();
     }
 
-    private String parseNumericValue(String name, String value) {
+    public String parseNumericValue(String name, String value) {
         StringBuilder filter = new StringBuilder();
         Matcher matcher = NUMERIC_PATTERN.matcher(value);
         if (matcher.find()) {

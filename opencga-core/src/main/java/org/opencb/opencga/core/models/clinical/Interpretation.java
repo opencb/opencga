@@ -10,38 +10,43 @@ import java.util.Map;
 public class Interpretation {
 
     private String id;
-    @Deprecated
-    private String name;
     private String description;
-
     private String clinicalAnalysisId;
-
     private List<DiseasePanel> panels;
+
+    /**
+     * Interpretation algorithm tool used to generate this interpretation.
+     */
     private Software software;
     private Analyst analyst;
-    private List<Version> versions;
+    private List<Software> dependencies;
     private Map<String, Object> filters;
     private String creationDate;
 
     private List<ReportedVariant> reportedVariants;
 
     private List<Comment> comments;
+
+    /**
+     * Users can add custom information in this field.
+     * OpenCGA uses this field to store the Clinical Analysis object in key 'OPENCGA_CLINICAL_ANALYSIS'
+     */
     private Map<String, Object> attributes;
 
 
     public Interpretation() {
     }
 
-    public Interpretation(String id, String name, String description, List<DiseasePanel> panels, Software software, Analyst analyst,
-                          List<Version> versions, Map<String, Object> filters, String creationDate, List<ReportedVariant> reportedVariants,
-                          List<Comment> comments, Map<String, Object> attributes) {
+    public Interpretation(String id, String description, String clinicalAnalysisId, List<DiseasePanel> panels, Software software,
+                          Analyst analyst, List<Software> dependencies, Map<String, Object> filters, String creationDate,
+                          List<ReportedVariant> reportedVariants, List<Comment> comments, Map<String, Object> attributes) {
         this.id = id;
-        this.name = name;
         this.description = description;
+        this.clinicalAnalysisId = clinicalAnalysisId;
         this.panels = panels;
         this.software = software;
         this.analyst = analyst;
-        this.versions = versions;
+        this.dependencies = dependencies;
         this.filters = filters;
         this.creationDate = creationDate;
         this.reportedVariants = reportedVariants;
@@ -53,12 +58,12 @@ public class Interpretation {
     public String toString() {
         final StringBuilder sb = new StringBuilder("Interpretation{");
         sb.append("id='").append(id).append('\'');
-        sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
+        sb.append(", clinicalAnalysisId='").append(clinicalAnalysisId).append('\'');
         sb.append(", panels=").append(panels);
         sb.append(", software=").append(software);
         sb.append(", analyst=").append(analyst);
-        sb.append(", versions=").append(versions);
+        sb.append(", dependencies=").append(dependencies);
         sb.append(", filters=").append(filters);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", reportedVariants=").append(reportedVariants);
@@ -77,21 +82,21 @@ public class Interpretation {
         return this;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public Interpretation setName(String name) {
-        this.name = name;
-        return this;
-    }
-
     public String getDescription() {
         return description;
     }
 
     public Interpretation setDescription(String description) {
         this.description = description;
+        return this;
+    }
+
+    public String getClinicalAnalysisId() {
+        return clinicalAnalysisId;
+    }
+
+    public Interpretation setClinicalAnalysisId(String clinicalAnalysisId) {
+        this.clinicalAnalysisId = clinicalAnalysisId;
         return this;
     }
 
@@ -122,12 +127,12 @@ public class Interpretation {
         return this;
     }
 
-    public List<Version> getVersions() {
-        return versions;
+    public List<Software> getDependencies() {
+        return dependencies;
     }
 
-    public Interpretation setVersions(List<Version> versions) {
-        this.versions = versions;
+    public Interpretation setDependencies(List<Software> dependencies) {
+        this.dependencies = dependencies;
         return this;
     }
 
