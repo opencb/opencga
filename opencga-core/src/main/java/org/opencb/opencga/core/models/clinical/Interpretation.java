@@ -96,6 +96,15 @@ public class Interpretation {
         return this;
     }
 
+    public String getClinicalAnalysisId() {
+        return clinicalAnalysisId;
+    }
+
+    public Interpretation setClinicalAnalysisId(String clinicalAnalysisId) {
+        this.clinicalAnalysisId = clinicalAnalysisId;
+        return this;
+    }
+
     public List<DiseasePanel> getPanels() {
         return panels;
     }

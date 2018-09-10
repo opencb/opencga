@@ -44,10 +44,10 @@ public class ReportedEvent {
         INCOMPLETE
     }
 
-    enum RoleInCancer {
-        oncogene,
-        tumor_suppressor_gene,
-        both
+    public enum RoleInCancer {
+        ONCOGENE,
+        TUMOR_SUPPRESSOR_GENE,
+        BOTH
     }
 
     public ReportedEvent() {
