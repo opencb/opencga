@@ -3,7 +3,6 @@ package org.opencb.opencga.core.models.clinical;
 import org.opencb.biodata.models.commons.Phenotype;
 
 import java.util.List;
-import java.util.Map;
 
 public class ReportedEvent {
 
@@ -12,13 +11,15 @@ public class ReportedEvent {
     private List<String> consequenceTypeIds;
     private GenomicFeature genomicFeature;
     private ReportedModeOfInheritance modeOfInheritance;
+
+    /**
+     * This must be an ID of a panel exixting in Intepretation.panels.
+     */
     private String panelId;
-    private VariantClassification variantClassification;
+    private VariantClassification classification;
     private Penetrance penetrance;
     private double score;
-    @Deprecated
-    private Map<String, Float> vendorSpecificScores;
-    private boolean fullyExplainsPhenotype;
+    private boolean fullyExplainPhenotypes;
     private int groupOfVariants;
     private RoleInCancer roleInCancer;
     private boolean actionable;
@@ -54,25 +55,46 @@ public class ReportedEvent {
     }
 
     public ReportedEvent(String id, List<Phenotype> phenotypes, List<String> consequenceTypeIds, GenomicFeature genomicFeature,
-                         ReportedModeOfInheritance modeOfInheritance, String panelId, VariantClassification variantClassification,
-                         Penetrance penetrance, double score, Map<String, Float> vendorSpecificScores, boolean fullyExplainsPhenotype,
-                         int groupOfVariants, RoleInCancer roleInCancer, boolean actionable, String justification, String tier) {
+                         ReportedModeOfInheritance modeOfInheritance, String panelId, VariantClassification classification,
+                         Penetrance penetrance, double score, boolean fullyExplainPhenotypes, int groupOfVariants,
+                         RoleInCancer roleInCancer, boolean actionable, String justification, String tier) {
         this.id = id;
         this.phenotypes = phenotypes;
         this.consequenceTypeIds = consequenceTypeIds;
         this.genomicFeature = genomicFeature;
         this.modeOfInheritance = modeOfInheritance;
         this.panelId = panelId;
-        this.variantClassification = variantClassification;
+        this.classification = classification;
         this.penetrance = penetrance;
         this.score = score;
-        this.vendorSpecificScores = vendorSpecificScores;
-        this.fullyExplainsPhenotype = fullyExplainsPhenotype;
+        this.fullyExplainPhenotypes = fullyExplainPhenotypes;
         this.groupOfVariants = groupOfVariants;
         this.roleInCancer = roleInCancer;
         this.actionable = actionable;
         this.justification = justification;
         this.tier = tier;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("ReportedEvent{");
+        sb.append("id='").append(id).append('\'');
+        sb.append(", phenotypes=").append(phenotypes);
+        sb.append(", consequenceTypeIds=").append(consequenceTypeIds);
+        sb.append(", genomicFeature=").append(genomicFeature);
+        sb.append(", modeOfInheritance=").append(modeOfInheritance);
+        sb.append(", panelId='").append(panelId).append('\'');
+        sb.append(", classification=").append(classification);
+        sb.append(", penetrance=").append(penetrance);
+        sb.append(", score=").append(score);
+        sb.append(", fullyExplainPhenotypes=").append(fullyExplainPhenotypes);
+        sb.append(", groupOfVariants=").append(groupOfVariants);
+        sb.append(", roleInCancer=").append(roleInCancer);
+        sb.append(", actionable=").append(actionable);
+        sb.append(", justification='").append(justification).append('\'');
+        sb.append(", tier='").append(tier).append('\'');
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getId() {
@@ -129,12 +151,12 @@ public class ReportedEvent {
         return this;
     }
 
-    public VariantClassification getVariantClassification() {
-        return variantClassification;
+    public VariantClassification getClassification() {
+        return classification;
     }
 
-    public ReportedEvent setVariantClassification(VariantClassification variantClassification) {
-        this.variantClassification = variantClassification;
+    public ReportedEvent setClassification(VariantClassification classification) {
+        this.classification = classification;
         return this;
     }
 
@@ -156,21 +178,12 @@ public class ReportedEvent {
         return this;
     }
 
-    public Map<String, Float> getVendorSpecificScores() {
-        return vendorSpecificScores;
+    public boolean isFullyExplainPhenotypes() {
+        return fullyExplainPhenotypes;
     }
 
-    public ReportedEvent setVendorSpecificScores(Map<String, Float> vendorSpecificScores) {
-        this.vendorSpecificScores = vendorSpecificScores;
-        return this;
-    }
-
-    public boolean isFullyExplainsPhenotype() {
-        return fullyExplainsPhenotype;
-    }
-
-    public ReportedEvent setFullyExplainsPhenotype(boolean fullyExplainsPhenotype) {
-        this.fullyExplainsPhenotype = fullyExplainsPhenotype;
+    public ReportedEvent setFullyExplainPhenotypes(boolean fullyExplainPhenotypes) {
+        this.fullyExplainPhenotypes = fullyExplainPhenotypes;
         return this;
     }
 
