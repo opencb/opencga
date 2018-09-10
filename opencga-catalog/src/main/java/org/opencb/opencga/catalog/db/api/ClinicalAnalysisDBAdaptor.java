@@ -57,9 +57,9 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         SOMATIC_UID("somatic.uid", INTEGER, ""),
         GERMLINE("germline", TEXT_ARRAY, ""),
         GERMLINE_UID("germline.uid", INTEGER, ""),
-        SUBJECTS("subjects", TEXT_ARRAY, ""),
-        SUBJECT_UID("subjects.uid", INTEGER, ""),
-        SAMPLE_UID("subjects.samples.uid", INTEGER, ""),
+        PROBAND("proband", TEXT_ARRAY, ""),
+        PROBAND_UID("proband.uid", INTEGER, ""),
+        SAMPLE_UID("proband.samples.uid", INTEGER, ""),
         INTERPRETATIONS("interpretations", TEXT_ARRAY, ""),
         INTERPRETATIONS_ID("interpretations.id", TEXT_ARRAY, ""),
 

@@ -138,11 +138,11 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         ParamUtils.checkObj(clinicalAnalysis, "clinicalAnalysis");
-        ParamUtils.checkAlias(clinicalAnalysis.getId(), "name");
+        ParamUtils.checkAlias(clinicalAnalysis.getId(), "id");
         ParamUtils.checkObj(clinicalAnalysis.getType(), "type");
 
         validateSubjects(clinicalAnalysis, study, sessionId);
-        validateFamilyAndSubjects(clinicalAnalysis, study, sessionId);
+        validateFamilyAndSubject(clinicalAnalysis, study, sessionId);
 //        validateInterpretations(clinicalAnalysis.getInterpretations(), studyStr, sessionId);
 
         if (clinicalAnalysis.getGermline() != null && StringUtils.isNotEmpty(clinicalAnalysis.getGermline().getName())) {
@@ -193,59 +193,57 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     }
 
     private void validateSubjects(ClinicalAnalysis clinicalAnalysis, Study study, String sessionId) throws CatalogException {
-        if (clinicalAnalysis.getSubjects() == null || clinicalAnalysis.getSubjects().isEmpty()) {
-            throw new CatalogException("Missing subjects in clinical analysis");
+        Individual subject = clinicalAnalysis.getProband();
+
+        if (subject == null) {
+            throw new CatalogException("Missing subject in clinical analysis");
         }
 
-        for (Individual individual : clinicalAnalysis.getSubjects()) {
-            if (individual.getSamples() == null || individual.getSamples().isEmpty()) {
-                throw new CatalogException("Missing samples from subject " + individual.getName());
-            }
+
+        if (subject.getSamples() == null || subject.getSamples().isEmpty()) {
+            throw new CatalogException("Missing samples from subject " + subject.getId());
         }
 
-        for (Individual subject : clinicalAnalysis.getSubjects()) {
-            MyResource<Individual> resource = catalogManager.getIndividualManager().getUid(subject.getName(), study.getFqn(), sessionId);
-            subject.setUid(resource.getResource().getUid());
+        MyResource<Individual> resource = catalogManager.getIndividualManager().getUid(subject.getId(), study.getFqn(), sessionId);
+        subject.setUid(resource.getResource().getUid());
 
-            List<String> sampleIds = subject.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
-            MyResources<Sample> sampleResources = catalogManager.getSampleManager().getUids(sampleIds, study.getFqn(), sessionId);
-            if (sampleResources.getResourceList().size() < subject.getSamples().size()) {
-                throw new CatalogException("Missing some samples. Found " + sampleResources.getResourceList().size() + " out of "
-                        + subject.getSamples().size());
-            }
-            // We associate the samples to the subject
-            subject.setSamples(sampleResources.getResourceList());
-
-            // Check those samples are actually samples from the proband
-            Query query = new Query()
-                    .append(SampleDBAdaptor.QueryParams.UID.key(), subject.getSamples().stream()
-                            .map(Sample::getUid)
-                            .collect(Collectors.toList()))
-                    .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key(), subject.getUid());
-            QueryResult<Sample> countSamples = catalogManager.getSampleManager().count(study.getFqn(), query, sessionId);
-            if (countSamples.getNumTotalResults() < subject.getSamples().size()) {
-                throw new CatalogException("Not all the samples belong to the proband. Only " + countSamples.getNumTotalResults()
-                        + " out of the " + subject.getSamples().size() + " belong to the individual.");
-            }
+        List<String> sampleIds = subject.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
+        MyResources<Sample> sampleResources = catalogManager.getSampleManager().getUids(sampleIds, study.getFqn(), sessionId);
+        if (sampleResources.getResourceList().size() < subject.getSamples().size()) {
+            throw new CatalogException("Missing some samples. Found " + sampleResources.getResourceList().size() + " out of "
+                    + subject.getSamples().size());
         }
+        // We associate the samples to the subject
+        subject.setSamples(sampleResources.getResourceList());
+
+        // Check those samples are actually samples from the proband
+        Query query = new Query()
+                .append(SampleDBAdaptor.QueryParams.UID.key(), subject.getSamples().stream()
+                        .map(Sample::getUid)
+                        .collect(Collectors.toList()))
+                .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key(), subject.getUid());
+        QueryResult<Sample> countSamples = catalogManager.getSampleManager().count(study.getFqn(), query, sessionId);
+        if (countSamples.getNumTotalResults() < subject.getSamples().size()) {
+            throw new CatalogException("Not all the samples belong to the proband. Only " + countSamples.getNumTotalResults()
+                    + " out of the " + subject.getSamples().size() + " belong to the individual.");
+        }
+
     }
 
-    private void validateFamilyAndSubjects(ClinicalAnalysis clinicalAnalysis, Study study, String sessionId) throws CatalogException {
-        if (clinicalAnalysis.getFamily() != null && StringUtils.isNotEmpty(clinicalAnalysis.getFamily().getName())) {
-            MyResource<Family> familyResource = catalogManager.getFamilyManager().getUid(clinicalAnalysis.getFamily().getName(),
+    private void validateFamilyAndSubject(ClinicalAnalysis clinicalAnalysis, Study study, String sessionId) throws CatalogException {
+        if (clinicalAnalysis.getFamily() != null && StringUtils.isNotEmpty(clinicalAnalysis.getFamily().getId())) {
+            MyResource<Family> familyResource = catalogManager.getFamilyManager().getUid(clinicalAnalysis.getFamily().getId(),
                     study.getFqn(), sessionId);
             clinicalAnalysis.setFamily(familyResource.getResource());
 
-            for (Individual subject : clinicalAnalysis.getSubjects()) {
-                // Check the proband is an actual member of the family
-                Query query = new Query()
-                        .append(FamilyDBAdaptor.QueryParams.UID.key(), familyResource.getResource().getUid())
-                        .append(FamilyDBAdaptor.QueryParams.MEMBER_UID.key(), subject.getUid());
-                QueryResult<Family> count = catalogManager.getFamilyManager().count(study.getFqn(), query, sessionId);
-                if (count.getNumTotalResults() == 0) {
-                    throw new CatalogException("The member " + subject.getUid() + " does not belong to the family "
-                            + clinicalAnalysis.getFamily().getName());
-                }
+            // Check the proband is an actual member of the family
+            Query query = new Query()
+                    .append(FamilyDBAdaptor.QueryParams.UID.key(), familyResource.getResource().getUid())
+                    .append(FamilyDBAdaptor.QueryParams.MEMBER_UID.key(), clinicalAnalysis.getProband().getUid());
+            QueryResult<Family> count = catalogManager.getFamilyManager().count(study.getFqn(), query, sessionId);
+            if (count.getNumTotalResults() == 0) {
+                throw new CatalogException("The member " + clinicalAnalysis.getProband().getId() + " does not belong to the family "
+                        + clinicalAnalysis.getFamily().getId());
             }
         }
     }
@@ -261,7 +259,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             ClinicalAnalysisDBAdaptor.QueryParams queryParam = ClinicalAnalysisDBAdaptor.QueryParams.getParam(param.getKey());
             switch (queryParam) {
                 case ID:
-                    ParamUtils.checkAlias(parameters.getString(queryParam.key()), "name");
+                    ParamUtils.checkAlias(parameters.getString(queryParam.key()), "id");
                     break;
                 case INTERPRETATIONS:
                     // Get the file uid
@@ -274,7 +272,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                     }
                     break;
                 case FAMILY:
-                case SUBJECTS:
+                case PROBAND:
                     break;
                 default:
                     throw new CatalogException("Cannot update " + queryParam);
@@ -282,12 +280,12 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         }
 
         if (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key())
-                || parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.SUBJECTS.key())) {
+                || parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key())) {
             // Fetch current information to autocomplete the validation
             Query query = new Query(ClinicalAnalysisDBAdaptor.QueryParams.UID.key(), resource.getResource().getUid());
             QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE,
                     Arrays.asList(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(),
-                            ClinicalAnalysisDBAdaptor.QueryParams.SUBJECTS.key()));
+                            ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key()));
             QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult = get(studyStr, query, queryOptions, sessionId);
             ClinicalAnalysis clinicalAnalysis = clinicalAnalysisQueryResult.first();
 
@@ -300,22 +298,17 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                     Family family = jsonObjectMapper.readValue(familyString, Family.class);
                     clinicalAnalysis.setFamily(family);
                 }
-                if (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.SUBJECTS.key())) {
-                    List<String> subjectStrings = new ArrayList<>();
-                    for (Object o : parameters.getAsList(ClinicalAnalysisDBAdaptor.QueryParams.SUBJECTS.key())) {
-                        subjectStrings.add(jsonObjectMapper.writeValueAsString(o));
-                    }
-                    List<Individual> subjectList = new ArrayList<>(subjectStrings.size());
-                    for (String subjectString : subjectStrings) {
-                        subjectList.add(jsonObjectMapper.readValue(subjectString, Individual.class));
-                    }
-                    clinicalAnalysis.setSubjects(subjectList);
+                if (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key())) {
+                    String subjectString = jsonObjectMapper.writeValueAsString(
+                            parameters.get(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key()));
+                    Individual subject = jsonObjectMapper.readValue(subjectString, Individual.class);
+                    clinicalAnalysis.setProband(subject);
                 }
                 validateSubjects(clinicalAnalysis, resource.getStudy(), sessionId);
-                validateFamilyAndSubjects(clinicalAnalysis, resource.getStudy(), sessionId);
+                validateFamilyAndSubject(clinicalAnalysis, resource.getStudy(), sessionId);
 
                 parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(), clinicalAnalysis.getFamily());
-                parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.SUBJECTS.key(), clinicalAnalysis.getSubjects());
+                parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key(), clinicalAnalysis.getProband());
 
             } catch (IOException e) {
                 logger.error("Error checking families and subjects: {}", e.getMessage(), e);
@@ -394,7 +387,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         if (query.containsKey("subject")) {
             MyResource<Individual> probandResource = catalogManager.getIndividualManager().getUid(query.getString("subject"),
                     study.getFqn(), sessionId);
-            query.put(ClinicalAnalysisDBAdaptor.QueryParams.SUBJECT_UID.key(), probandResource.getResource().getUid());
+            query.put(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND_UID.key(), probandResource.getResource().getUid());
             query.remove("subject");
         }
         if (query.containsKey("germline")) {

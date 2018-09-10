@@ -231,11 +231,11 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
     }
 
     private static class SampleParams {
-        public String name;
+        public String id;
     }
 
-    private static class SubjectParams {
-        public String name;
+    private static class SubjectParam {
+        public String id;
         public List<SampleParams> samples;
     }
 
@@ -270,7 +270,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
         public String germline;
         public String somatic;
 
-        public List<SubjectParams> subjects;
+        public SubjectParam subject;
         public String family;
         public List<ClinicalInterpretationParameters> interpretations;
 
@@ -278,18 +278,14 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 
         public ClinicalAnalysis toClinicalAnalysis() {
 
-            List<Individual> individuals = null;
-            if (subjects != null && !subjects.isEmpty()) {
-                individuals = new ArrayList<>();
-                for (SubjectParams subject : subjects) {
-                    Individual individual = new Individual().setName(subject.name);
-                    if (subject.samples != null) {
-                        List<Sample> sampleList = subject.samples.stream()
-                                .map(sample -> new Sample().setId(sample.name))
-                                .collect(Collectors.toList());
-                        individual.setSamples(sampleList);
-                    }
-                    individuals.add(individual);
+            Individual individual = null;
+            if (subject != null) {
+                individual = new Individual().setId(subject.id);
+                if (subject.samples != null) {
+                    List<Sample> sampleList = subject.samples.stream()
+                            .map(sample -> new Sample().setId(sample.id))
+                            .collect(Collectors.toList());
+                    individual.setSamples(sampleList);
                 }
             }
 
@@ -298,7 +294,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 
             Family f = null;
             if (StringUtils.isNotEmpty(family)) {
-                f = new Family().setName(family);
+                f = new Family().setId(family);
             }
 
             List<Interpretation> interpretationList =
@@ -307,7 +303,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
                             .map(ClinicalInterpretationParameters::toClinicalInterpretation).collect(Collectors.toList())
                             : new ArrayList<>();
             String clinicalId = StringUtils.isEmpty(id) ? name : id;
-            return new ClinicalAnalysis(clinicalId, description, type, disease, germlineFile, somaticFile, individuals, f,
+            return new ClinicalAnalysis(clinicalId, description, type, disease, germlineFile, somaticFile, individual, f,
                     interpretationList, null, null, 1, attributes).setName(name);
         }
     }

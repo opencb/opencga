@@ -39,7 +39,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     private File germline;
     private File somatic;
 
-    private List<Individual> subjects;
+    private Individual proband;
     private Family family;
     private List<Interpretation> interpretations;
 
@@ -64,16 +64,16 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     public ClinicalAnalysis() {
     }
 
-    public ClinicalAnalysis(String id, String description, Type type, OntologyTerm disease, File germline, File somatic,
-                            List<Individual> subjects, Family family, List<Interpretation> interpretations, String creationDate,
-                            Status status, int release, Map<String, Object> attributes) {
+    public ClinicalAnalysis(String id, String description, Type type, OntologyTerm disease, File germline, File somatic, Individual proband,
+                            Family family, List<Interpretation> interpretations, String creationDate, Status status, int release,
+                            Map<String, Object> attributes) {
         this.id = id;
         this.description = description;
         this.type = type;
         this.disease = disease;
         this.germline = germline;
         this.somatic = somatic;
-        this.subjects = subjects;
+        this.proband = proband;
         this.family = family;
         this.interpretations = interpretations;
         this.creationDate = creationDate;
@@ -93,7 +93,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         sb.append(", disease=").append(disease);
         sb.append(", germline=").append(germline);
         sb.append(", somatic=").append(somatic);
-        sb.append(", subjects=").append(subjects);
+        sb.append(", proband=").append(proband);
         sb.append(", family=").append(family);
         sb.append(", interpretations=").append(interpretations);
         sb.append(", creationDate='").append(creationDate).append('\'');
@@ -189,12 +189,12 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
-    public List<Individual> getSubjects() {
-        return subjects;
+    public Individual getProband() {
+        return proband;
     }
 
-    public ClinicalAnalysis setSubjects(List<Individual> subjects) {
-        this.subjects = subjects;
+    public ClinicalAnalysis setProband(Individual proband) {
+        this.proband = proband;
         return this;
     }
 

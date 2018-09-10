@@ -144,7 +144,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             document.getSet().put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
         }
 
-        String[] acceptedObjectParams = {QueryParams.FAMILY.key(), QueryParams.SUBJECTS.key()};
+        String[] acceptedObjectParams = {QueryParams.FAMILY.key(), QueryParams.PROBAND.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         clinicalConverter.validateFamilyToUpdate(document.getSet());
         clinicalConverter.validateSubjectsToUpdate(document.getSet());
@@ -406,7 +406,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         } else {
             qOptions = new QueryOptions();
         }
-        qOptions = removeInnerProjections(qOptions, QueryParams.SUBJECTS.key());
+        qOptions = removeInnerProjections(qOptions, QueryParams.PROBAND.key());
         qOptions = removeInnerProjections(qOptions, QueryParams.FAMILY.key());
 
         logger.debug("Clinical analysis query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
@@ -627,7 +627,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     case UUID:
                     case TYPE:
                     case SAMPLE_UID:
-                    case SUBJECT_UID:
+                    case PROBAND_UID:
                     case FAMILY_UID:
                     case GERMLINE_UID:
                     case SOMATIC_UID:

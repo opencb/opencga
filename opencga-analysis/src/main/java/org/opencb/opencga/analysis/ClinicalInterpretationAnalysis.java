@@ -26,7 +26,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.DiseasePanel;
-import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
@@ -124,9 +123,9 @@ public class ClinicalInterpretationAnalysis extends OpenCgaAnalysis {
 
         if (StringUtils.isNotEmpty(clinicalAnalysisId)) {
             ClinicalAnalysis clinicalAnalysis = getClinicalAnalysis();
-
-            for (Individual individual : clinicalAnalysis.getSubjects()) {
-                samples.add(individual.getSamples().get(0).getId());
+            if (clinicalAnalysis.getProband() != null && clinicalAnalysis.getProband().getSamples() != null
+                    && !clinicalAnalysis.getProband().getSamples().isEmpty()) {
+                samples.add(getClinicalAnalysis().getProband().getSamples().get(0).getId());
             }
         }
 

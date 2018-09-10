@@ -19,7 +19,6 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 import org.bson.Document;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
-import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Sample;
 
 import java.util.ArrayList;
@@ -49,25 +48,19 @@ public class ClinicalAnalysisConverter extends GenericDocumentComplexConverter<C
         long germlineId = object.getGermline() != null ? (object.getGermline().getUid() == 0 ? -1L : object.getGermline().getUid()) : -1L;
         document.put("germline", new Document("uid", germlineId));
 
-        if (object.getSubjects() != null && !object.getSubjects().isEmpty()) {
-            List<Document> subjects = new ArrayList<>(object.getSubjects().size());
-
-            for (Individual individual : object.getSubjects()) {
-                long probandId = individual.getUid() <= 0 ? -1L : individual.getUid();
-                List<Document> sampleList = new ArrayList<>();
-                if (individual.getSamples() != null) {
-                    for (Sample sample : individual.getSamples()) {
-                        sampleList.add(new Document("uid", sample.getUid()));
-                    }
+        if (object.getProband() != null) {
+            long probandId = object.getProband().getUid() <= 0 ? -1L : object.getProband().getUid();
+            List<Document> sampleList = new ArrayList<>();
+            if (object.getProband().getSamples() != null) {
+                for (Sample sample : object.getProband().getSamples()) {
+                    sampleList.add(new Document("uid", sample.getUid()));
                 }
-
-                subjects.add(new Document()
-                        .append("uid", probandId)
-                        .append("samples", sampleList)
-                );
             }
 
-            document.put("subjects", subjects);
+            document.put("proband", new Document()
+                    .append("uid", probandId)
+                    .append("samples", sampleList)
+            );
         }
 
         validateDocumentToUpdate(document);
@@ -76,9 +69,9 @@ public class ClinicalAnalysisConverter extends GenericDocumentComplexConverter<C
     }
 
     public void validateDocumentToUpdate(Document document) {
-       validateInterpretationToUpdate(document);
-       validateFamilyToUpdate(document);
-       validateSubjectsToUpdate(document);
+        validateInterpretationToUpdate(document);
+        validateFamilyToUpdate(document);
+        validateSubjectsToUpdate(document);
     }
 
     public void validateFamilyToUpdate(Document document) {
@@ -91,31 +84,26 @@ public class ClinicalAnalysisConverter extends GenericDocumentComplexConverter<C
     }
 
     public void validateSubjectsToUpdate(Document document) {
-        List<Document> subjectList = (List) document.get("subjects");
-        if (subjectList != null) {
-            List<Document> finalSubjects = new ArrayList<>(subjectList.size());
+        Document proband = (Document) document.get("proband");
+        if (proband != null && !proband.isEmpty()) {
 
-            for (Document individual : subjectList) {
-                long probandId = getLongValue(individual, "uid");
-                probandId = probandId <= 0 ? -1L : probandId;
+            long probandId = getLongValue(proband, "uid");
+            probandId = probandId <= 0 ? -1L : probandId;
 
-                List<Document> sampleDocList = (List) individual.get("samples");
-                List<Document> sampleList = new ArrayList<>(sampleDocList.size());
-                if (sampleDocList != null) {
-                    for (Document sampleDocument : sampleDocList) {
-                        long sampleId = getLongValue(sampleDocument, "uid");
-                        sampleId = sampleId <= 0 ? -1L : sampleId;
-                        sampleList.add(new Document("uid", sampleId));
-                    }
+            List<Document> sampleDocList = (List) proband.get("samples");
+            List<Document> sampleList = new ArrayList<>(sampleDocList.size());
+            if (sampleDocList != null) {
+                for (Document sampleDocument : sampleDocList) {
+                    long sampleId = getLongValue(sampleDocument, "uid");
+                    sampleId = sampleId <= 0 ? -1L : sampleId;
+                    sampleList.add(new Document("uid", sampleId));
                 }
-
-                finalSubjects.add(new Document()
-                        .append("uid", probandId)
-                        .append("samples", sampleList)
-                );
             }
 
-            document.put("subjects", finalSubjects);
+            document.put("proband", new Document()
+                    .append("uid", probandId)
+                    .append("samples", sampleList)
+            );
         }
     }
 
