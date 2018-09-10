@@ -16,10 +16,8 @@
 
 package org.opencb.opencga.server.rest;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -49,7 +47,6 @@ import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
-import org.opencb.opencga.server.rest.json.mixin.FileMixin;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -1319,10 +1316,6 @@ public class FileWSServer extends OpenCGAWSServer {
         public Map<String, Object> attributes;
 
         public ObjectMap toFileObjectMap() throws JsonProcessingException {
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.addMixIn(File.class, FileMixin.class);
-            mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-
             File file = new File()
                     .setName(name)
                     .setDescription(description)
@@ -1333,7 +1326,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     .setSoftware(software)
                     .setAttributes(attributes);
 
-            ObjectMap params = new ObjectMap(mapper.writeValueAsString(file));
+            ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(file));
             params.putIfNotNull("samples", samples);
             params.putIfNotNull(FileDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSets);
 

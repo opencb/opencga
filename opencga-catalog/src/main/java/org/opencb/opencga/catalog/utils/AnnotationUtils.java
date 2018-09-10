@@ -17,7 +17,6 @@
 package org.opencb.opencga.catalog.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -39,6 +38,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.managers.AnnotationSetManager.*;
+import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
 /**
  * Created by jacobo on 14/12/14.
@@ -521,7 +521,7 @@ public class AnnotationUtils {
             return ((Map) value);
         }
         try {
-            return new ObjectMap(new ObjectMapper().writeValueAsString(value));
+            return new ObjectMap(getDefaultObjectMapper().writeValueAsString(value));
         } catch (JsonProcessingException e) {
             throw new CatalogException(e);
         }

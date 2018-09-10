@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 import static org.opencb.opencga.catalog.db.api.SampleDBAdaptor.QueryParams.ANNOTATION;
+import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
 public class SampleManagerTest extends AbstractManagerTest {
 
@@ -211,7 +212,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         AnnotationSet annotationSet = new AnnotationSet("annotation1", vs1.getId(), annotations);
         AnnotationSet annotationSet1 = new AnnotationSet("annotation2", vs1.getId(), annotations);
 
-        ObjectMapper jsonObjectMapper = new ObjectMapper();
+        ObjectMapper jsonObjectMapper = getDefaultObjectMapper();
         ObjectMap updateAnnotation = new ObjectMap()
                 // Update the annotation values
                 .append(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Arrays.asList(
@@ -252,7 +253,7 @@ public class SampleManagerTest extends AbstractManagerTest {
                 .append("HEIGHT", 180);
         AnnotationSet annotationSet = new AnnotationSet("annotation1", vs1.getId(), annotations);
 
-        ObjectMapper jsonObjectMapper = new ObjectMapper();
+        ObjectMapper jsonObjectMapper = getDefaultObjectMapper();
         ObjectMap updateAnnotation = new ObjectMap()
                 // Update the annotation values
                 .append(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Arrays.asList(

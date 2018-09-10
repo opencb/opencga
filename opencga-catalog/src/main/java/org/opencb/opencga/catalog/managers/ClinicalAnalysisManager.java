@@ -45,6 +45,8 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
+
 /**
  * Created by pfurio on 05/06/17.
  */
@@ -289,7 +291,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult = get(studyStr, query, queryOptions, sessionId);
             ClinicalAnalysis clinicalAnalysis = clinicalAnalysisQueryResult.first();
 
-            ObjectMapper jsonObjectMapper = new ObjectMapper();
+            ObjectMapper jsonObjectMapper = getDefaultObjectMapper();
 
             try {
                 if (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key())) {

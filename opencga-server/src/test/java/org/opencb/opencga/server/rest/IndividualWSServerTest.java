@@ -16,8 +16,6 @@
 
 package org.opencb.opencga.server.rest;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.avro.generic.GenericRecord;
 import org.junit.*;
@@ -49,6 +47,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.opencb.opencga.core.common.JacksonUtils.getCompleteOpenCGAObjectMapper;
 
 /**
  * Created by jacobo on 22/06/15.
@@ -66,13 +65,11 @@ public class IndividualWSServerTest {
     private long in4;
 
     {
-        jsonObjectMapper = new ObjectMapper();
+        jsonObjectMapper = getCompleteOpenCGAObjectMapper();
         jsonObjectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
         jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
         jsonObjectMapper.addMixIn(Genotype.class, GenotypeJsonMixin.class);
         jsonObjectMapper.addMixIn(Alignment.AlignmentDifference.class, AlignmentDifferenceJsonMixin.class);
-        jsonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        jsonObjectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
     }
 
     @Rule

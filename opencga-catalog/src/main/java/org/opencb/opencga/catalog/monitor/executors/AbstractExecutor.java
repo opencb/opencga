@@ -16,13 +16,15 @@
 
 package org.opencb.opencga.catalog.monitor.executors;
 
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.ObjectReader;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import org.opencb.opencga.core.models.Job;
 import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Path;
+
+import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
 /**
  * Created by pfurio on 22/08/16.
@@ -44,7 +46,7 @@ public abstract class AbstractExecutor {
     protected ObjectReader objectReader;
 
     public AbstractExecutor() {
-        objectMapper = new ObjectMapper();
+        objectMapper = getDefaultObjectMapper();
         objectReader = objectMapper.reader(Job.JobStatus.class);
     }
 

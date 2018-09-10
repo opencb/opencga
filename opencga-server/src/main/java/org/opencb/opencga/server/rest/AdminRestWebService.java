@@ -32,6 +32,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.opencb.opencga.core.common.JacksonUtils.getCompleteOpenCGAObjectMapper;
+
 /**
  * Created on 03/09/15.
  *
@@ -96,7 +98,7 @@ public class AdminRestWebService {
         queryResponse.setResponse(coll);
 
         try {
-            ObjectMapper jsonObjectMapper = new ObjectMapper();
+            ObjectMapper jsonObjectMapper = getCompleteOpenCGAObjectMapper();
             return buildResponse(Response.ok(jsonObjectMapper.writer().writeValueAsString(queryResponse), MediaType.APPLICATION_JSON_TYPE));
         } catch (JsonProcessingException e) {
             e.printStackTrace();

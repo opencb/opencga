@@ -42,6 +42,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.getMongoDBDocument;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.parseObject;
+import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
 /**
  * Created by imedina on 13/01/16.
@@ -77,7 +78,7 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
 
     public void createIndexes() {
         InputStream resourceAsStream = getClass().getResourceAsStream("/catalog-indexes.txt");
-        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectMapper objectMapper = getDefaultObjectMapper();
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(resourceAsStream));
         // We store all the indexes that are in the file in the indexes object
         Map<String, List<Map<String, ObjectMap>>> indexes = new HashMap<>();

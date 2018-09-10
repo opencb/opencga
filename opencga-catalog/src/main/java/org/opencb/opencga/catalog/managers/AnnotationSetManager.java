@@ -42,6 +42,8 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.*;
 
+import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
+
 /**
  * Created by pfurio on 06/07/16.
  */
@@ -141,7 +143,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
         MyResource resource = getUid(id, studyStr, sessionId);
         AnnotationSet annotationSet = new AnnotationSet(annotationSetName, null, newAnnotations, Collections.emptyMap());
         ObjectMap parameters;
-        ObjectMapper jsonObjectMapper = new ObjectMapper();
+        ObjectMapper jsonObjectMapper = getDefaultObjectMapper();
 
         try {
             parameters = new ObjectMap(jsonObjectMapper.writeValueAsString(annotationSet));
@@ -305,7 +307,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
             Object annotationSetsObject = parameters.get(ANNOTATION_SETS);
             if (annotationSetsObject != null) {
                 if (annotationSetsObject instanceof List) {
-                    ObjectMapper jsonObjectMapper = new ObjectMapper();
+                    ObjectMapper jsonObjectMapper = getDefaultObjectMapper();
 
                     ParamUtils.UpdateAction action = (ParamUtils.UpdateAction) actionMap.getOrDefault(ANNOTATION_SETS,
                             ParamUtils.UpdateAction.ADD);
@@ -435,7 +437,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                 ParamUtils.CompleteUpdateAction action = (ParamUtils.CompleteUpdateAction) actionMap.getOrDefault(ANNOTATIONS,
                         ParamUtils.CompleteUpdateAction.ADD);
 
-                ObjectMapper jsonObjectMapper = new ObjectMapper();
+                ObjectMapper jsonObjectMapper = getDefaultObjectMapper();
                 AnnotationSet annotationSet;
                 try {
                     annotationSet = jsonObjectMapper.readValue(jsonObjectMapper.writeValueAsString(annotationsObject),

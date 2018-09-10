@@ -1,8 +1,6 @@
 package org.opencb.opencga.server.rest;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -15,7 +13,6 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.DiseasePanel;
 import org.opencb.opencga.core.models.acls.AclParams;
-import org.opencb.opencga.server.rest.json.mixin.PanelMixin;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -275,10 +272,6 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
         }
 
         ObjectMap toObjectMap() throws JsonProcessingException {
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.addMixIn(DiseasePanel.class, PanelMixin.class);
-            mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-
             DiseasePanel panel = new DiseasePanel()
                     .setId(id)
                     .setName(name)
@@ -291,7 +284,7 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
                     .setRegions(regions)
                     .setAttributes(attributes);
 
-            return new ObjectMap(mapper.writeValueAsString(panel));
+            return new ObjectMap(jsonObjectMapper.writeValueAsString(panel));
         }
     }
 

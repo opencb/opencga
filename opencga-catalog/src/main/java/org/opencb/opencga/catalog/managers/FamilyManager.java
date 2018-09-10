@@ -17,7 +17,6 @@
 package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -64,6 +63,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
+import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
 /**
  * Created by pfurio on 02/05/17.
@@ -516,9 +516,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 || parameters.containsKey(FamilyDBAdaptor.QueryParams.MEMBERS.key())) {
             // We parse the parameters to a family object
             try {
-                ObjectMapper objectMapper = new ObjectMapper();
-                objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-                objectMapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
+                ObjectMapper objectMapper = getDefaultObjectMapper();
 
                 family = objectMapper.readValue(objectMapper.writeValueAsString(parameters), Family.class);
             } catch (IOException e) {
@@ -546,7 +544,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
             ObjectMap tmpParams;
             try {
-                ObjectMapper objectMapper = new ObjectMapper();
+                ObjectMapper objectMapper = getDefaultObjectMapper();
                 tmpParams = new ObjectMap(objectMapper.writeValueAsString(family));
             } catch (JsonProcessingException e) {
                 logger.error("{}", e.getMessage(), e);

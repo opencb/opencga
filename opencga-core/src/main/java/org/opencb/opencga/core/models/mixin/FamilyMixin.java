@@ -1,4 +1,4 @@
-package org.opencb.opencga.server.rest.json.mixin;
+package org.opencb.opencga.core.models.mixin;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 

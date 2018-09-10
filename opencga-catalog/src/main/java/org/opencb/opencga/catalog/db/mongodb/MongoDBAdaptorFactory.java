@@ -17,7 +17,6 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DuplicateKeyException;
 import org.apache.commons.lang3.StringUtils;
@@ -41,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.getMongoDBDocument;
+import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
 /**
  * Created by pfurio on 08/01/16.
@@ -207,7 +207,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     public ObjectMap getDatabaseStatus() {
         Document dbStatus = mongoManager.get(database, this.configuration).getServerStatus();
         try {
-            ObjectMap map = new ObjectMap(new ObjectMapper().writeValueAsString(dbStatus));
+            ObjectMap map = new ObjectMap(getDefaultObjectMapper().writeValueAsString(dbStatus));
             return new ObjectMap("ok", map.getInt("ok", 0) > 0);
         } catch (JsonProcessingException e) {
             logger.error(e.getMessage(), e);

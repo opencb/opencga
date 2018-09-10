@@ -93,10 +93,9 @@ public class UtilsWSServer extends OpenCGAWSServer {
             }
 
             try (BufferedReader br = Files.newBufferedReader(outFilePath2, Charset.defaultCharset())) {
-                ObjectMapper mapper = new ObjectMapper();
-                JsonFactory factory = mapper.getFactory();
+                JsonFactory factory = jsonObjectMapper.getFactory();
                 JsonParser jp = factory.createParser(br);
-                JsonNode jsonNode = mapper.readTree(jp);
+                JsonNode jsonNode = jsonObjectMapper.readTree(jp);
                 result.put("results", jsonNode);
             }
         } catch (Exception e) {

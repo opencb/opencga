@@ -53,6 +53,7 @@ import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.*;
+import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
 /**
  * Created by pfurio on 24/08/16.
@@ -456,7 +457,7 @@ public class FileManagerTest extends AbstractManagerTest {
         AnnotationSet annotationSet = new AnnotationSet("annotation1", vs1.getId(), annotations);
         AnnotationSet annotationSet1 = new AnnotationSet("annotation2", vs1.getId(), annotations);
 
-        ObjectMapper jsonObjectMapper = new ObjectMapper();
+        ObjectMapper jsonObjectMapper = getDefaultObjectMapper();
         ObjectMap updateAnnotation = new ObjectMap()
                 // Update the annotation values
                 .append(FileDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Arrays.asList(

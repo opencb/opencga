@@ -47,6 +47,8 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
+
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
@@ -474,7 +476,7 @@ public class ProjectManager extends AbstractManager {
             }
         }
 
-        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectMapper objectMapper = getDefaultObjectMapper();
 
         // Reading project
         Map<String, Object> project = (Map<String, Object>) objectMapper.readValue(inputDir.resolve("projects.json").toFile(), Map.class)
@@ -599,7 +601,7 @@ public class ProjectManager extends AbstractManager {
 
         release = Math.min(currentRelease, release);
 
-        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectMapper objectMapper = getDefaultObjectMapper();
 
         Query query = new Query(ProjectDBAdaptor.QueryParams.UID.key(), projectId);
         DBIterator dbIterator = projectDBAdaptor.nativeIterator(query, QueryOptions.empty());

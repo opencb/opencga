@@ -15,7 +15,6 @@
  */
 package org.opencb.opencga.catalog.managers;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -70,6 +69,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
 import static org.opencb.opencga.catalog.utils.FileMetadataReader.VARIANT_FILE_STATS;
+import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -282,7 +282,7 @@ public class FileManager extends AnnotationSetManager<File> {
             // Update variant stats
             Path statsFile = Paths.get(json.getUri().getRawPath());
             try (InputStream is = FileUtils.newInputStream(statsFile)) {
-                VariantFileMetadata fileMetadata = new ObjectMapper().readValue(is, VariantFileMetadata.class);
+                VariantFileMetadata fileMetadata = getDefaultObjectMapper().readValue(is, VariantFileMetadata.class);
                 VariantSetStats stats = fileMetadata.getStats();
                 params = new ObjectMap(FileDBAdaptor.QueryParams.STATS.key(), new ObjectMap(VARIANT_FILE_STATS, stats));
                 update(studyStr, vcf.getPath(), params, new QueryOptions(), sessionId);

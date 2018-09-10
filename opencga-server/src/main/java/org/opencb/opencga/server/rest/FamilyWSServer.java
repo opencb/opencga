@@ -16,9 +16,7 @@
 
 package org.opencb.opencga.server.rest;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -36,11 +34,12 @@ import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.AnnotationSet;
+import org.opencb.opencga.core.models.Family;
+import org.opencb.opencga.core.models.Individual;
+import org.opencb.opencga.core.models.Location;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.server.WebServiceException;
-import org.opencb.opencga.server.rest.json.mixin.FamilyMixin;
-import org.opencb.opencga.server.rest.json.mixin.IndividualMixin;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -651,17 +650,12 @@ public class FamilyWSServer extends OpenCGAWSServer {
         }
 
         public ObjectMap toFamilyObjectMap() throws JsonProcessingException {
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.addMixIn(Individual.class, IndividualMixin.class);
-            mapper.addMixIn(Family.class, FamilyMixin.class);
-            mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-
             List<ObjectMap> relatives = null;
             if (members != null) {
                 relatives = new ArrayList<>(members.size());
                 for (IndividualPOST member : members) {
                     Individual individual = member.toIndividualUpdate();
-                    ObjectMap objectMap = new ObjectMap(mapper.writeValueAsString(individual));
+                    ObjectMap objectMap = new ObjectMap(jsonObjectMapper.writeValueAsString(individual));
                     if (member.parentalConsanguinity == null) {
                         objectMap.remove("parentalConsanguinity");
                     }
@@ -678,7 +672,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
                     .setAttributes(attributes);
             family.setAnnotationSets(annotationSets);
 
-            ObjectMap params = new ObjectMap(mapper.writeValueAsString(family));
+            ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(family));
             params.putIfNotNull("members", relatives);
             params.putIfNotNull(FamilyDBAdaptor.UpdateParams.ANNOTATION_SETS.key(), annotationSets);
 

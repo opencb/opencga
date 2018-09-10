@@ -16,8 +16,8 @@
 
 package org.opencb.opencga.catalog.monitor.executors.old;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -27,8 +27,8 @@ import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.catalog.monitor.exceptions.ExecutionException;
+import org.opencb.opencga.core.models.Job;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +39,7 @@ import java.nio.file.Paths;
 import java.util.Objects;
 
 import static org.opencb.opencga.catalog.monitor.executors.AbstractExecutor.JOB_STATUS_FILE;
+import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
 /*
  * Created on 26/11/15.
@@ -243,7 +244,7 @@ public class LocalExecutorManager implements ExecutorManager {
 //        ExecutionOutputRecorder outputRecorder = new ExecutionOutputRecorder(catalogManager, sessionId);
 //        outputRecorder.recordJobOutputAndPostProcess(job, exitValue != 0);
 
-        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectMapper objectMapper = getDefaultObjectMapper();
         Path outdir = Paths.get((String) job.getAttributes().get(TMP_OUT_DIR));
         Job.JobStatus status = objectMapper.reader(Job.JobStatus.class).readValue(outdir.resolve(JOB_STATUS_FILE).toFile());
         /** Change status to READY or ERROR **/

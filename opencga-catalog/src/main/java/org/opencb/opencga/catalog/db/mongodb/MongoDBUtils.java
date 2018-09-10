@@ -16,7 +16,9 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
-import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.ErrorCategory;
@@ -44,6 +46,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.PRIVATE_ID;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.PRIVATE_UID;
+import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
 /**
  * Created by imedina on 21/11/14.
@@ -65,12 +68,7 @@ class MongoDBUtils {
     private static Map<Class, ObjectReader> jsonReaderMap;
 
     static {
-        jsonObjectMapper = new ObjectMapper();
-        jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
-        jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
-        jsonObjectMapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
-        jsonObjectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
+        jsonObjectMapper = getDefaultObjectMapper();
         jsonObjectWriter = jsonObjectMapper.writer();
         jsonReaderMap = new HashMap<>();
     }
