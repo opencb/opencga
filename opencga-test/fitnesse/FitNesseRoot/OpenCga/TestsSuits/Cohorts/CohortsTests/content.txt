@@ -312,6 +312,11 @@
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/cohorts/search?study=$study&annotation=annotationSet=$nestedAS&flattenAnnotations=false||  Content-Type: application/json |jsonbody.response[0].result[0].annotationSets[0].annotations["outer_var"][0]["inner_first_var"] == 1000.57  && jsonbody.response[0].result[0].annotationSets[0].annotations["outer_var"][0]["inner_second_var"] == 2000  |
 
+!3 Delete Anonymous User For Study
+!|Table: Rest Fixture | $baseURL |
+| setBody | {  "users" : "*",  "action": "REMOVE"}|
+| POST | /v1/studies/$studyId/groups/members/update|200|Content-Type: application/json |jsonbody.error == ''|
+
 !3 Delete All Cohorts
 !|Table: Rest Fixture | $baseURL |
 | DELETE | /v1/cohorts/delete?study=$study&id=$cohortId,$cohortId2,222||  Content-Type: application/json ||

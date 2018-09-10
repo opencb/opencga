@@ -442,8 +442,8 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap bodyParams = new ObjectMap();
         bodyParams.putIfNotNull("permissions", commandOptions.permissions);
         bodyParams.putIfNotNull("action", commandOptions.action);
-        bodyParams.putIfNotNull("file", commandOptions.id);
-        bodyParams.putIfNotNull("sample", commandOptions.sample);
+        bodyParams.putIfNotNull("file", extractIdsFromListOrFile(commandOptions.id));
+        bodyParams.putIfNotNull("sample", extractIdsFromListOrFile(commandOptions.sample));
 
         return openCGAClient.getFileClient().updateAcl(commandOptions.memberId, queryParams, bodyParams);
     }

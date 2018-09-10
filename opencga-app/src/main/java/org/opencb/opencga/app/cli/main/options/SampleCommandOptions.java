@@ -257,13 +257,16 @@ public class SampleCommandOptions {
 //            @Parameter(names = {"--sample"}, description = "Comma separated list of sample ids or names", arity = 1)
 //            public String sample;
 
-            @Parameter(names = {"--file"}, description = "Comma separated list of file ids, names or paths", arity = 1)
+            @Parameter(names = {"--file"}, description = "Comma separated list of file ids, names or paths or file containing the list of "
+                    + "ids (one per line)", arity = 1)
             public String file;
 
-            @Parameter(names = {"--individual"}, description = "Comma separated list of individual ids or names", arity = 1)
+            @Parameter(names = {"--individual"}, description = "Comma separated list of individual ids or file containing the list of ids "
+                    + "(one per line)", arity = 1)
             public String individual;
 
-            @Parameter(names = {"--cohort"}, description = "Comma separated list of cohort ids or names", arity = 1)
+            @Parameter(names = {"--cohort"}, description = "Comma separated list of cohort ids or file containing the list of ids "
+                    + "(one per line)", arity = 1)
             public String cohort;
 
             @Parameter(names = {"--propagate"}, description = "Flag parameter indicating whether to propagate the permissions to the " +

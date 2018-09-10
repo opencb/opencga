@@ -319,8 +319,8 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         bodyParams.putIfNotNull("permissions", commandOptions.permissions);
         bodyParams.putIfNotNull("action", commandOptions.action);
         bodyParams.putIfNotNull("propagate", commandOptions.propagate);
-        bodyParams.putIfNotNull("individual", commandOptions.id);
-        bodyParams.putIfNotNull("sample", commandOptions.sample);
+        bodyParams.putIfNotNull("individual", extractIdsFromListOrFile(commandOptions.id));
+        bodyParams.putIfNotNull("sample", extractIdsFromListOrFile(commandOptions.sample));
 
         return openCGAClient.getIndividualClient().updateAcl(commandOptions.memberId, queryParams, bodyParams);
     }

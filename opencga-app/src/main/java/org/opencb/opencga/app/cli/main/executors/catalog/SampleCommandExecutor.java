@@ -263,10 +263,10 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
         bodyParams.putIfNotNull("permissions", commandOptions.permissions);
         bodyParams.putIfNotNull("propagate", commandOptions.propagate);
         bodyParams.putIfNotNull("action", commandOptions.action);
-        bodyParams.putIfNotNull("sample", commandOptions.id);
-        bodyParams.putIfNotNull("individual", commandOptions.individual);
-        bodyParams.putIfNotNull("cohort", commandOptions.cohort);
-        bodyParams.putIfNotNull("file", commandOptions.file);
+        bodyParams.putIfNotNull("sample", extractIdsFromListOrFile(commandOptions.id));
+        bodyParams.putIfNotNull("individual", extractIdsFromListOrFile(commandOptions.individual));
+        bodyParams.putIfNotNull("cohort", extractIdsFromListOrFile(commandOptions.cohort));
+        bodyParams.putIfNotNull("file", extractIdsFromListOrFile(commandOptions.file));
 
         return openCGAClient.getSampleClient().updateAcl(commandOptions.memberId, queryParams, bodyParams);
     }

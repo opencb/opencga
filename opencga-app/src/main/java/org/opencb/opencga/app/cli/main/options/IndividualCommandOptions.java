@@ -345,7 +345,8 @@ public class IndividualCommandOptions {
 //            @Parameter(names = {"--individual"}, description = "Comma separated list of individual ids or names", arity = 1)
 //            public String individual;
 
-            @Parameter(names = {"--sample"}, description = "Comma separated list of sample ids or names", arity = 1)
+            @Parameter(names = {"--sample"}, description = "Comma separated list of sample ids or file containing the list of ids "
+                    + "(one per line)", arity = 1)
             public String sample;
 
             @Parameter(names = {"--propagate"}, description = "Flag parameter indicating whether to propagate the permissions to the " +

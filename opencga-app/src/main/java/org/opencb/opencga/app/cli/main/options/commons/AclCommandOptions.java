@@ -56,7 +56,7 @@ public class AclCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--id"}, description = "Comma separated list of ids or names", arity = 1)
+        @Parameter(names = {"--id"}, description = "Comma separated list of ids or file containing the list of ids (one per line)", arity = 1)
         public String id;
 
         @Parameter(names = {"-m", "--member"}, description = "Member id  ('userId', '@groupId' or '*')", required = true, arity = 1)
