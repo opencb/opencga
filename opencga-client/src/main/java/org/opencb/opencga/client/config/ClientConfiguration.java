@@ -86,25 +86,25 @@ public class ClientConfiguration {
         Map<String, String> envVariables = System.getenv();
         for (String variable : envVariables.keySet()) {
             switch (variable) {
-                case "OPENCGA.CLIENT.ORGANISM.TAXONOMY_CODE":
+                case "OPENCGA_CLIENT_ORGANISM_TAXONOMY_CODE":
                     configuration.getOrganism().setTaxonomyCode(Integer.parseInt(envVariables.get(variable)));
                     break;
-                case "OPENCGA.CLIENT.ORGANISM.SCIENTIFIC_NAME":
+                case "OPENCGA_CLIENT_ORGANISM_SCIENTIFIC_NAME":
                     configuration.getOrganism().setScientificName(envVariables.get(variable));
                     break;
-                case "OPENCGA.CLIENT.ORGANISM.COMMON_NAME":
+                case "OPENCGA_CLIENT_ORGANISM_COMMON_NAME":
                     configuration.getOrganism().setCommonName(envVariables.get(variable));
                     break;
-                case "OPENCGA.CLIENT.ORGANISM.ASSEMBLY":
+                case "OPENCGA_CLIENT_ORGANISM_ASSEMBLY":
                     configuration.getOrganism().setAssembly(envVariables.get(variable));
                     break;
-                case "OPENCGA.CLIENT.REST.HOST":
+                case "OPENCGA_CLIENT_REST_HOST":
                     configuration.getRest().setHost(envVariables.get(variable));
                     break;
-                case "OPENCGA.CLIENT.REST.TIMEOUT":
+                case "OPENCGA_CLIENT_REST_TIMEOUT":
                     configuration.getRest().setTimeout(Integer.valueOf(envVariables.get(variable)));
                     break;
-                case "OPENCGA.CLIENT.GRPC.HOST":
+                case "OPENCGA_CLIENT_GRPC_HOST":
                     configuration.getGrpc().setHost(envVariables.get(variable));
                     break;
                 default:

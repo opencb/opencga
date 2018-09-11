@@ -95,64 +95,64 @@ public class Configuration {
         Map<String, String> envVariables = System.getenv();
         for (String variable : envVariables.keySet()) {
             switch (variable) {
-                case "OPENCGA.DB.PREFIX":
+                case "OPENCGA_DB_PREFIX":
                     configuration.setDatabasePrefix(envVariables.get(variable));
                     break;
-                case "OPENCGA.USER.WORKSPACE":
+                case "OPENCGA_USER_WORKSPACE":
                     configuration.setDataDir(envVariables.get(variable));
                     break;
-                case "OPENCGA.JOBS.DIR":
+                case "OPENCGA_JOBS_DIR":
                     configuration.setTempJobsDir(envVariables.get(variable));
                     break;
-                case "OPENCGA.TOOLS.DIR":
+                case "OPENCGA_TOOLS_DIR":
                     configuration.setToolDir(envVariables.get(variable));
                     break;
-                case "OPENCGA.MONITOR.PORT":
+                case "OPENCGA_MONITOR_PORT":
                     configuration.getMonitor().setPort(Integer.parseInt(envVariables.get(variable)));
                     break;
-                case "OPENCGA.EXECUTION.MODE":
+                case "OPENCGA_EXECUTION_MODE":
                     configuration.getExecution().setMode(envVariables.get(variable));
                     break;
-                case "OPENCGA.MAIL.HOST":
+                case "OPENCGA_MAIL_HOST":
                     configuration.getEmail().setHost(envVariables.get(variable));
                     break;
-                case "OPENCGA.MAIL.PORT":
+                case "OPENCGA_MAIL_PORT":
                     configuration.getEmail().setPort(envVariables.get(variable));
                     break;
-                case "OPENCGA.MAIL.USER":
+                case "OPENCGA_MAIL_USER":
                     configuration.getEmail().setUser(envVariables.get(variable));
                     break;
-                case "OPENCGA.MAIL.PASSWORD":
+                case "OPENCGA_MAIL_PASSWORD":
                     configuration.getEmail().setPassword(envVariables.get(variable));
                     break;
-                case "OPENCGA.CATALOG.DB.HOSTS":
+                case "OPENCGA_CATALOG_DB_HOSTS":
                     configuration.getCatalog().getDatabase().setHosts(Arrays.asList(envVariables.get(variable).split(",")));
                     break;
-                case "OPENCGA.CATALOG.DB.USER":
+                case "OPENCGA_CATALOG_DB_USER":
                     configuration.getCatalog().getDatabase().setUser(envVariables.get(variable));
                     break;
-                case "OPENCGA.CATALOG.DB.PASSWORD":
+                case "OPENCGA_CATALOG_DB_PASSWORD":
                     configuration.getCatalog().getDatabase().setPassword(envVariables.get(variable));
                     break;
-                case "OPENCGA.CATALOG.DB.AUTHENTICATION_DATABASE":
+                case "OPENCGA_CATALOG_DB_AUTHENTICATION_DATABASE":
                     configuration.getCatalog().getDatabase().getOptions().put("authenticationDatabase", envVariables.get(variable));
                     break;
-                case "OPENCGA.CATALOG.DB.CONNECTIONS_PER_HOST":
+                case "OPENCGA_CATALOG_DB_CONNECTIONS_PER_HOST":
                     configuration.getCatalog().getDatabase().getOptions().put("connectionsPerHost", envVariables.get(variable));
                     break;
-                case "OPENCGA.CATALOG.SEARCH.HOST":
+                case "OPENCGA_CATALOG_SEARCH_HOST":
                     configuration.getCatalog().getSearch().setHost(envVariables.get(variable));
                     break;
-                case "OPENCGA.CATALOG.SEARCH.TIMEOUT":
+                case "OPENCGA_CATALOG_SEARCH_TIMEOUT":
                     configuration.getCatalog().getSearch().setTimeout(Integer.parseInt(envVariables.get(variable)));
                     break;
-                case "OPENCGA.CATALOG.SEARCH.BATCH":
+                case "OPENCGA_CATALOG_SEARCH_BATCH":
                     configuration.getCatalog().getSearch().setInsertBatchSize(Integer.parseInt(envVariables.get(variable)));
                     break;
-                case "OPENCGA.SERVER.REST.PORT":
+                case "OPENCGA_SERVER_REST_PORT":
                     configuration.getServer().getRest().setPort(Integer.parseInt(envVariables.get(variable)));
                     break;
-                case "OPENCGA.SERVER.GRPC.PORT":
+                case "OPENCGA_SERVER_GRPC_PORT":
                     configuration.getServer().getGrpc().setPort(Integer.parseInt(envVariables.get(variable)));
                     break;
                 default:
