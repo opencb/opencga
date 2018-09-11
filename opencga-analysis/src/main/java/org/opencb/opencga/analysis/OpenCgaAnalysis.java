@@ -30,7 +30,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-public class OpenCgaAnalysis {
+public abstract class OpenCgaAnalysis<T> {
 
     protected CatalogManager catalogManager;
     protected Configuration configuration;
@@ -45,6 +45,8 @@ public class OpenCgaAnalysis {
 
         init();
     }
+
+    public abstract AnalysisResult<T> execute() throws Exception;
 
     void init() {
         logger = LoggerFactory.getLogger(this.getClass().toString());

@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis;
+package org.opencb.opencga.analysis.clinical;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.analysis.AnalysisResult;
+import org.opencb.opencga.analysis.OpenCgaAnalysis;
 import org.opencb.opencga.catalog.db.api.DiseasePanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
@@ -35,7 +37,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ClinicalInterpretationAnalysis extends OpenCgaAnalysis {
+public class ClinicalInterpretationAnalysis extends OpenCgaAnalysis<Interpretation> {
 
     private ClinicalAnalysis clinicalAnalysis;
 
@@ -115,7 +117,8 @@ public class ClinicalInterpretationAnalysis extends OpenCgaAnalysis {
         return null;
     }
 
-    public void execute() throws Exception {
+    @Override
+    public AnalysisResult<Interpretation> execute() throws Exception {
         final String userId = catalogManager.getUserManager().getUserId(sessionId);
 
         List<String> samples = new ArrayList<>();
@@ -132,7 +135,7 @@ public class ClinicalInterpretationAnalysis extends OpenCgaAnalysis {
         // TODO throw a proper Exception
         if (StringUtils.isEmpty(this.panelId)) {
             logger.error("No disease panel provided");
-            return;
+            return null;
         }
 
         // fetch disease panel
@@ -175,6 +178,7 @@ public class ClinicalInterpretationAnalysis extends OpenCgaAnalysis {
             // save in catalog
         }
 
+        return null;
     }
 
     private List<String> getGeneIdsFromPanel(DiseasePanel diseasePanel) throws CatalogException {
