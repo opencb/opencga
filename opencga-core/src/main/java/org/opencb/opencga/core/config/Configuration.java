@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -86,7 +87,78 @@ public class Configuration {
                 break;
         }
         //TODO : create mandatory fileds check to avoid invalid or incomplete conf
+        overrideWithEnvironmentVariables(configuration);
         return configuration;
+    }
+
+    private static void overrideWithEnvironmentVariables(Configuration configuration) {
+        Map<String, String> envVariables = System.getenv();
+        for (String variable : envVariables.keySet()) {
+            switch (variable) {
+                case "OPENCGA.DB.PREFIX":
+                    configuration.setDatabasePrefix(envVariables.get(variable));
+                    break;
+                case "OPENCGA.USER.WORKSPACE":
+                    configuration.setDataDir(envVariables.get(variable));
+                    break;
+                case "OPENCGA.JOBS.DIR":
+                    configuration.setTempJobsDir(envVariables.get(variable));
+                    break;
+                case "OPENCGA.TOOLS.DIR":
+                    configuration.setToolDir(envVariables.get(variable));
+                    break;
+                case "OPENCGA.MONITOR.PORT":
+                    configuration.getMonitor().setPort(Integer.parseInt(envVariables.get(variable)));
+                    break;
+                case "OPENCGA.EXECUTION.MODE":
+                    configuration.getExecution().setMode(envVariables.get(variable));
+                    break;
+                case "OPENCGA.MAIL.HOST":
+                    configuration.getEmail().setHost(envVariables.get(variable));
+                    break;
+                case "OPENCGA.MAIL.PORT":
+                    configuration.getEmail().setPort(envVariables.get(variable));
+                    break;
+                case "OPENCGA.MAIL.USER":
+                    configuration.getEmail().setUser(envVariables.get(variable));
+                    break;
+                case "OPENCGA.MAIL.PASSWORD":
+                    configuration.getEmail().setPassword(envVariables.get(variable));
+                    break;
+                case "OPENCGA.CATALOG.DB.HOSTS":
+                    configuration.getCatalog().getDatabase().setHosts(Arrays.asList(envVariables.get(variable).split(",")));
+                    break;
+                case "OPENCGA.CATALOG.DB.USER":
+                    configuration.getCatalog().getDatabase().setUser(envVariables.get(variable));
+                    break;
+                case "OPENCGA.CATALOG.DB.PASSWORD":
+                    configuration.getCatalog().getDatabase().setPassword(envVariables.get(variable));
+                    break;
+                case "OPENCGA.CATALOG.DB.AUTHENTICATION_DATABASE":
+                    configuration.getCatalog().getDatabase().getOptions().put("authenticationDatabase", envVariables.get(variable));
+                    break;
+                case "OPENCGA.CATALOG.DB.CONNECTIONS_PER_HOST":
+                    configuration.getCatalog().getDatabase().getOptions().put("connectionsPerHost", envVariables.get(variable));
+                    break;
+                case "OPENCGA.CATALOG.SEARCH.HOST":
+                    configuration.getCatalog().getSearch().setHost(envVariables.get(variable));
+                    break;
+                case "OPENCGA.CATALOG.SEARCH.TIMEOUT":
+                    configuration.getCatalog().getSearch().setTimeout(Integer.parseInt(envVariables.get(variable)));
+                    break;
+                case "OPENCGA.CATALOG.SEARCH.BATCH":
+                    configuration.getCatalog().getSearch().setInsertBatchSize(Integer.parseInt(envVariables.get(variable)));
+                    break;
+                case "OPENCGA.SERVER.REST.PORT":
+                    configuration.getServer().getRest().setPort(Integer.parseInt(envVariables.get(variable)));
+                    break;
+                case "OPENCGA.SERVER.GRPC.PORT":
+                    configuration.getServer().getGrpc().setPort(Integer.parseInt(envVariables.get(variable)));
+                    break;
+                default:
+                    break;
+            }
+        }
     }
 
     @Override

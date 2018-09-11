@@ -73,13 +73,44 @@ public class ClientConfiguration {
                 clientConfiguration = objectMapper.readValue(configurationInputStream, ClientConfiguration.class);
                 break;
         }
-
+        overrideWithEnvironmentVariables(clientConfiguration);
         return clientConfiguration;
     }
 
     public void serialize(OutputStream configurationOutputStream) throws IOException {
         ObjectMapper jsonMapper = new ObjectMapper(new YAMLFactory());
         jsonMapper.writerWithDefaultPrettyPrinter().writeValue(configurationOutputStream, this);
+    }
+
+    private static void overrideWithEnvironmentVariables(ClientConfiguration configuration) {
+        Map<String, String> envVariables = System.getenv();
+        for (String variable : envVariables.keySet()) {
+            switch (variable) {
+                case "OPENCGA.CLIENT.ORGANISM.TAXONOMY_CODE":
+                    configuration.getOrganism().setTaxonomyCode(Integer.parseInt(envVariables.get(variable)));
+                    break;
+                case "OPENCGA.CLIENT.ORGANISM.SCIENTIFIC_NAME":
+                    configuration.getOrganism().setScientificName(envVariables.get(variable));
+                    break;
+                case "OPENCGA.CLIENT.ORGANISM.COMMON_NAME":
+                    configuration.getOrganism().setCommonName(envVariables.get(variable));
+                    break;
+                case "OPENCGA.CLIENT.ORGANISM.ASSEMBLY":
+                    configuration.getOrganism().setAssembly(envVariables.get(variable));
+                    break;
+                case "OPENCGA.CLIENT.REST.HOST":
+                    configuration.getRest().setHost(envVariables.get(variable));
+                    break;
+                case "OPENCGA.CLIENT.REST.TIMEOUT":
+                    configuration.getRest().setTimeout(Integer.valueOf(envVariables.get(variable)));
+                    break;
+                case "OPENCGA.CLIENT.GRPC.HOST":
+                    configuration.getGrpc().setHost(envVariables.get(variable));
+                    break;
+                default:
+                    break;
+            }
+        }
     }
 
     @Override
