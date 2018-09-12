@@ -20,7 +20,9 @@ import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +37,7 @@ public abstract class OpenCgaAnalysis<T> {
     protected CatalogManager catalogManager;
     protected Configuration configuration;
     protected StorageConfiguration storageConfiguration;
+    protected VariantStorageManager variantStorageManager;
 
     private String opencgaHome;
     protected String studyStr;
@@ -59,7 +62,8 @@ public abstract class OpenCgaAnalysis<T> {
             loadConfiguration();
             loadStorageConfiguration();
 
-            catalogManager = new CatalogManager(configuration);
+            this.catalogManager = new CatalogManager(configuration);
+            this.variantStorageManager = new VariantStorageManager(catalogManager, StorageEngineFactory.get(storageConfiguration));
         } catch (IOException | CatalogException e) {
             e.printStackTrace();
         }
