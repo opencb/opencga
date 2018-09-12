@@ -37,7 +37,7 @@
 
 !3 Change User Password
 !|Table: Rest Fixture | $baseURL |
-| setBody | {"password" :"user_P@ssword","npassword" : "new_P@ssword"}|
+| setBody | {"password" :"user_P@ssword","newPassword" : "new_P@ssword"}|
 | POST | /v1/users/$user/password | 200 |  Content-Type: application/json | jsonbody.response[0].id == 'changePassword'  && jsonbody.error === ''|
 
 !3 Login User A
