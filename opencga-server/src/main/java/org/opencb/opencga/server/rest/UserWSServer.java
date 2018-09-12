@@ -37,7 +37,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.util.*;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
@@ -135,13 +134,14 @@ public class UserWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Change the password of a user", notes = "It doesn't work if the user is authenticated against LDAP.")
     public Response changePasswordPost(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
-                                       @ApiParam(value = "JSON containing the params 'password' (old password) and 'npassword' (new "
+                                       @ApiParam(value = "JSON containing the params 'password' (old password) and 'newPassword' (new "
                                                + "password)", required = true) ChangePasswordModel params) {
         try {
-            if (StringUtils.isEmpty(params.password) && StringUtils.isEmpty(params.npassword)) {
-                throw new Exception("The json must contain the keys password and npassword.");
+            if (StringUtils.isEmpty(params.password) || (StringUtils.isEmpty(params.npassword) && StringUtils.isEmpty(params.newPassword))) {
+                throw new Exception("The json must contain the keys password and newPassword.");
             }
-            catalogManager.getUserManager().changePassword(userId, params.password, params.npassword);
+            params.newPassword = StringUtils.isNotEmpty(params.newPassword) ? params.newPassword : params.npassword;
+            catalogManager.getUserManager().changePassword(userId, params.password, params.newPassword);
             QueryResult result = new QueryResult("changePassword", 0, 0, 0, "", "", Collections.emptyList());
             return createOkResponse(result);
         } catch (Exception e) {
@@ -321,8 +321,10 @@ public class UserWSServer extends OpenCGAWSServer {
     public static class ChangePasswordModel {
         @JsonProperty(required = true)
         public String password;
-        @JsonProperty(required = true)
+        @Deprecated
         public String npassword;
+        @JsonProperty(required = true)
+        public String newPassword;
     }
 
     protected static class UserUpdatePOST {
