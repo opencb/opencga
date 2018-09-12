@@ -95,7 +95,7 @@ public class UserClient extends CatalogClient<User, User> {
     public QueryResponse<User> changePassword(String currentPassword, String newPassword, ObjectMap params)
             throws ClientException, IOException {
         ObjectMapper mapper = new ObjectMapper();
-        params = addParamsToObjectMap(params, "password", currentPassword, "npassword", newPassword);
+        params = addParamsToObjectMap(params, "password", currentPassword, "newPassword", newPassword);
         String json = mapper.writeValueAsString(params);
         ObjectMap objectMap = new ObjectMap("body", json);
         return execute(USERS_URL, getUserId(params), "password", objectMap, POST, User.class);

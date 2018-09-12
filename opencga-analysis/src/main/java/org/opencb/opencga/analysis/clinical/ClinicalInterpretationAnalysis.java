@@ -80,7 +80,7 @@ public class ClinicalInterpretationAnalysis extends OpenCgaAnalysis<Interpretati
             String saveName,
             Query query
     ) {
-        super(opencgaHome);
+        super(opencgaHome, studyStr, sessionId);
         this.sessionId = sessionId;
         this.studyStr = studyStr;
         this.clinicalAnalysisId = clinicalAnalysisId;

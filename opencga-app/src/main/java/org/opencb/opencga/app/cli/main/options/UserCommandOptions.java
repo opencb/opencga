@@ -142,7 +142,7 @@ public class UserCommandOptions {
         @Parameter(names = {"--password"}, description = "Old password", arity = 1, required = true)
         public String password;
 
-        @Parameter(names = {"--npassword"}, description = "New password", arity = 1, required = true)
+        @Parameter(names = {"--new-password"}, description = "New password", arity = 1, required = true)
         public String npassword;
     }
 
