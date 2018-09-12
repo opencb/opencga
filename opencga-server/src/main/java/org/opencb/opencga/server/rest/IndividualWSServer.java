@@ -49,6 +49,8 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
+
 /**
  * Created by jacobo on 22/06/15.
  */
@@ -793,7 +795,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     .setAttributes(attributes);
             individual.setAnnotationSets(annotationSets);
 
-            ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(individual));
+            ObjectMap params = new ObjectMap(getUpdateObjectMapper().writeValueAsString(individual));
             if (parentalConsanguinity == null) {
                 params.remove("parentalConsanguinity");
             }

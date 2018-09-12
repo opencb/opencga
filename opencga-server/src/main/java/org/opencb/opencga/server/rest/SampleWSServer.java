@@ -48,6 +48,8 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
+
 /**
  * Created by jacobo on 15/12/14.
  */
@@ -254,7 +256,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
             @ApiParam(value = "params") UpdateSamplePOST parameters) {
         try {
-            ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(parameters));
+            ObjectMap params = new ObjectMap(getUpdateObjectMapper().writeValueAsString(parameters));
             params.putIfNotNull(SampleDBAdaptor.UpdateParams.ANNOTATION_SETS.key(), parameters.annotationSets);
 
             if (annotationSetsAction == null) {

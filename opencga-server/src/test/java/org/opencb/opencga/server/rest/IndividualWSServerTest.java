@@ -47,7 +47,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.opencb.opencga.core.common.JacksonUtils.getCompleteOpenCGAObjectMapper;
+import static org.opencb.opencga.core.common.JacksonUtils.getExternalOpencgaObjectMapper;
 
 /**
  * Created by jacobo on 22/06/15.
@@ -65,7 +65,7 @@ public class IndividualWSServerTest {
     private long in4;
 
     {
-        jsonObjectMapper = getCompleteOpenCGAObjectMapper();
+        jsonObjectMapper = getExternalOpencgaObjectMapper();
         jsonObjectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
         jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
         jsonObjectMapper.addMixIn(Genotype.class, GenotypeJsonMixin.class);

@@ -16,9 +16,7 @@
 
 package org.opencb.opencga.server.rest;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.base.Splitter;
@@ -41,10 +39,8 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.server.WebServiceException;
-import org.opencb.opencga.core.models.mixin.PrivateUidMixin;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
@@ -68,7 +64,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.opencb.opencga.core.common.JacksonUtils.getCompleteOpenCGAObjectMapper;
+import static org.opencb.opencga.core.common.JacksonUtils.getExternalOpencgaObjectMapper;
 
 @ApplicationPath("/")
 @Path("/{apiVersion}")
@@ -109,8 +105,8 @@ public class OpenCGAWSServer {
     protected Query query;
     protected QueryOptions queryOptions;
 
-    protected static ObjectWriter jsonObjectWriter;
-    protected static ObjectMapper jsonObjectMapper;
+    private static ObjectWriter jsonObjectWriter;
+    private static ObjectMapper jsonObjectMapper;
 
     protected static Logger logger; // = LoggerFactory.getLogger(this.getClass());
 
@@ -130,7 +126,7 @@ public class OpenCGAWSServer {
     static {
         initialized = new AtomicBoolean(false);
 
-        jsonObjectMapper = getCompleteOpenCGAObjectMapper();
+        jsonObjectMapper = getExternalOpencgaObjectMapper();
         jsonObjectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
         jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
         jsonObjectMapper.addMixIn(Genotype.class, GenotypeJsonMixin.class);

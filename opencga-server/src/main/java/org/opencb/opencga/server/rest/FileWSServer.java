@@ -66,6 +66,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 
+import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
 
 
@@ -1326,7 +1327,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     .setSoftware(software)
                     .setAttributes(attributes);
 
-            ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(file));
+            ObjectMap params = new ObjectMap(getUpdateObjectMapper().writeValueAsString(file));
             params.putIfNotNull("samples", samples);
             params.putIfNotNull(FileDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSets);
 

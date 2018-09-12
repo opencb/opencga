@@ -36,6 +36,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
+
 
 @Path("/{apiVersion}/projects")
 @Produces(MediaType.APPLICATION_JSON)
@@ -172,7 +174,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
             ObjectUtils.defaultIfNull(updateParams, new ProjectUpdateParams());
 
             isSingleId(projectStr);
-            ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(updateParams));
+            ObjectMap params = new ObjectMap(getUpdateObjectMapper().writeValueAsString(updateParams));
             if (updateParams.organism != null) {
                 if (StringUtils.isNotEmpty(updateParams.organism.getAssembly())) {
                     params.append(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key(), updateParams.organism.getAssembly());

@@ -49,6 +49,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
+import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 import static org.opencb.opencga.storage.core.manager.CatalogUtils.parseSampleAnnotationQuery;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
@@ -467,7 +468,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             List<QueryResult> queryResults = new LinkedList<>();
             QueryResult queryResult;
             // Get all query options
-            QueryOptions postParams = new QueryOptions(jsonObjectMapper.writeValueAsString(params));
+            QueryOptions postParams = new QueryOptions(getUpdateObjectMapper().writeValueAsString(params));
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             Query query = getVariantQuery(postParams);
 

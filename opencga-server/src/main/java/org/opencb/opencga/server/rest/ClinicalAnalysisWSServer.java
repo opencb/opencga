@@ -40,6 +40,8 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
+
 /**
  * Created by pfurio on 05/06/17.
  */
@@ -84,7 +86,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
             @ApiParam(name = "params", value = "JSON containing clinical analysis information", required = true)
                     ClinicalAnalysisParameters params) {
         try {
-            ObjectMap parameters = new ObjectMap(jsonObjectMapper.writeValueAsString(params.toClinicalAnalysis()));
+            ObjectMap parameters = new ObjectMap(getUpdateObjectMapper().writeValueAsString(params.toClinicalAnalysis()));
 
             if (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key())) {
                 Map<String, Object> actionMap = new HashMap<>();
@@ -124,7 +126,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
             queryOptions.put(Constants.ACTIONS, actionMap);
 
             ObjectMap parameters = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key(),
-                    Arrays.asList(jsonObjectMapper.writeValueAsString(params.toClinicalInterpretation())));
+                    Arrays.asList(getUpdateObjectMapper().writeValueAsString(params.toClinicalInterpretation())));
 
             return createOkResponse(clinicalManager.update(studyStr, clinicalAnalysisStr, parameters, queryOptions, sessionId));
         } catch (Exception e) {
