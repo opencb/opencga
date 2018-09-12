@@ -108,7 +108,7 @@ public class ClinicalAnalysisMongoDBIterator<E> extends MongoDBIterator<E>  {
             clinicalAnalysisListBuffer.add(clinicalDocument);
             counter++;
 
-            // Extract all the subjects
+            // Extract the proband
             Document member = (Document) clinicalDocument.get(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key());
             if (member != null && !options.getBoolean(NATIVE_QUERY)
                     && !options.getBoolean(NATIVE_QUERY + "_" + ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key())) {

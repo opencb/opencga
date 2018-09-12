@@ -16,24 +16,38 @@
 
 package org.opencb.opencga.analysis.clinical;
 
+import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.core.pedigree.Individual;
+import org.opencb.biodata.models.core.pedigree.Pedigree;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisResult;
 import org.opencb.opencga.analysis.OpenCgaAnalysis;
+import org.opencb.opencga.analysis.exceptions.AnalysisException;
+import org.opencb.opencga.core.models.ClinicalAnalysis;
+import org.opencb.opencga.core.models.Family;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.clinical.ReportedEvent;
 import org.opencb.opencga.core.models.clinical.ReportedVariant;
 
-import java.util.List;
+import java.util.*;
 
 public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
 
-    public TieringAnalysis(String opencgaHome) {
-        super(opencgaHome);
+    private String clinicalAnalysisId;
+
+    public TieringAnalysis(String opencgaHome, String studyStr, String token) {
+        super(opencgaHome, studyStr, token);
     }
 
-    public TieringAnalysis(String opencgaHome, String id, ObjectMap config) {
-        super(opencgaHome);
+    public TieringAnalysis(String opencgaHome, String studyStr, String token, String clinicalAnalysisId, ObjectMap config) {
+        super(opencgaHome, studyStr, token);
+
+        this.clinicalAnalysisId = clinicalAnalysisId;
     }
 
     @Override
@@ -42,6 +56,34 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
 
         // set defaults
 
+        QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager().get(studyStr,
+                clinicalAnalysisId, QueryOptions.empty(), token);
+        if (clinicalAnalysisQueryResult.getNumResults() == 0) {
+            throw new AnalysisException("Clinical analysis " + clinicalAnalysisId + " not found in study " + studyStr);
+        }
+
+        ClinicalAnalysis clinicalAnalysis = clinicalAnalysisQueryResult.first();
+
+        if (clinicalAnalysis.getFamily() == null || StringUtils.isEmpty(clinicalAnalysis.getFamily().getId())) {
+            throw new AnalysisException("Missing family in clinical analysis " + clinicalAnalysisId);
+        }
+
+        Pedigree pedigree = getPedigreeFromFamily(clinicalAnalysis.getFamily());
+        List<Phenotype> phenotypes = clinicalAnalysis.getProband().getPhenotypes();
+
+        for (Phenotype phenotype : phenotypes) {
+            Map<String, List<String>> genotypes = ModeOfInheritance.dominant(pedigree, phenotype, false);
+            genotypes = ModeOfInheritance.dominant(pedigree, phenotype, true);
+            genotypes = ModeOfInheritance.recessive(pedigree, phenotype, false);
+            genotypes = ModeOfInheritance.recessive(pedigree, phenotype, true);
+
+            genotypes = ModeOfInheritance.xLinked(pedigree, phenotype, false);
+            genotypes = ModeOfInheritance.xLinked(pedigree, phenotype, true);
+            genotypes = ModeOfInheritance.yLinked(pedigree, phenotype);
+        }
+
+
+
         // createInterpretation()
 
         // dominant() + recessive() ...
@@ -49,6 +91,36 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
         // BAM coverage
 
         return null;
+    }
+
+    private Pedigree getPedigreeFromFamily(Family family) {
+        List<Individual> individuals = parseMembersToBiodataIndividuals(family.getMembers());
+        return new Pedigree(family.getId(), individuals, family.getPhenotypes(), family.getAttributes());
+    }
+
+    private List<Individual> parseMembersToBiodataIndividuals(List<org.opencb.opencga.core.models.Individual> members) {
+        Map<String, Individual> individualMap = new HashMap();
+
+        // Parse all the individuals
+        for (org.opencb.opencga.core.models.Individual member : members) {
+            Individual individual = new Individual(member.getId(), member.getName(), null, null, member.getMultiples(),
+                    Individual.Sex.getEnum(member.getSex().toString()), member.getLifeStatus(),
+                    Individual.AffectionStatus.getEnum(member.getAffectationStatus().toString()), member.getPhenotypes(),
+                    member.getAttributes());
+            individualMap.put(individual.getId(), individual);
+        }
+
+        // Fill parent information
+        for (org.opencb.opencga.core.models.Individual member : members) {
+            if (member.getFather() != null && StringUtils.isNotEmpty(member.getFather().getId())) {
+                individualMap.get(member.getId()).setFather(individualMap.get(member.getFather().getId()));
+            }
+            if (member.getMother() != null && StringUtils.isNotEmpty(member.getMother().getId())) {
+                individualMap.get(member.getId()).setMother(individualMap.get(member.getMother().getId()));
+            }
+        }
+
+        return new ArrayList<>(individualMap.values());
     }
 
     private List<ReportedVariant> dominant() {

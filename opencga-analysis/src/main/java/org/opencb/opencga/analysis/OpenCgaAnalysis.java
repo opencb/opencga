@@ -36,12 +36,16 @@ public abstract class OpenCgaAnalysis<T> {
     protected Configuration configuration;
     protected StorageConfiguration storageConfiguration;
 
-    protected String opencgaHome;
+    private String opencgaHome;
+    protected String studyStr;
+    protected String token;
 
     protected Logger logger;
 
-    public OpenCgaAnalysis(String opencgaHome) {
+    public OpenCgaAnalysis(String opencgaHome, String studyStr, String token) {
         this.opencgaHome = opencgaHome;
+        this.studyStr = studyStr;
+        this.token = token;
 
         init();
     }
