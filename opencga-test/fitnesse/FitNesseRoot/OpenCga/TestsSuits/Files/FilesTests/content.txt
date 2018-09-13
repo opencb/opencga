@@ -31,7 +31,6 @@
 | POST | /v1/files/create?study=$study |200|Content-Type: application/json||
 |let|fileId|js|response.jsonbody.response[0].result[0].id||
 
-
 !3 Create File 2
 !|Table: Rest Fixture | $baseURL |
 | setBody | {  "directory": "false", "path" : "${pathName}/file2", "parents" : "false", "description" : "testing file 2", "content" :"data for file 2 goes here"}|
@@ -164,6 +163,12 @@
 | POST | /v1/samples/create?study=$study |200|  Content-Type: application/json ||
 |let|sampleId2|js|response.jsonbody.response[0].result[0].id||
 
+!3 Create Sample 3
+!|Table: Rest Fixture | $baseURL |
+| setBody | {"name" : "sample3" }|
+| POST | /v1/samples/create?study=$study |200|  Content-Type: application/json ||
+|let|sampleId3|js|response.jsonbody.response[0].result[0].id||
+
 !3 Update File
 !|Table: Rest Fixture | $baseURL |
 | setBody |{ "samples" : ["$sampleId","$sampleId2"]}|
@@ -175,12 +180,12 @@
 
 !3 Update File With Same Sample Twice 
 !|Table: Rest Fixture | $baseURL |
-| setBody |{ "samples" : ["$sampleId,$sampleId"]}|
+| setBody |{ "samples" : ["$sampleId3,$sampleId3"]}|
 | POST | /v1/files/$fileId/update?study=$study |500|Content-Type: application/json||
 
 !3 Get Samples Attached to File
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/files/search?name=file&samples=$sampleId,$sampleId2 ||Content-Type: application/json|jsonbody.error === '' && jsonbody.response[0].result[0].samples[0].id == "$sampleId" && jsonbody.response[0].result[0].samples[1].id == "$sampleId2"|
+| GET | /v1/files/search?name=file&samples=$sampleId,$sampleId2 ||Content-Type: application/json|jsonbody.error === '' && jsonbody.response[0].result[0].samples[0].id == "$sampleId" && jsonbody.response[0].result[0].samples[1].id == "$sampleId2" && jsonbody.response[0].result[0].samples[2].id == "$sampleId3"|
 
 !3 Create Annotation Set For File 1
 !|Table: Rest Fixture  | $baseURL |
@@ -295,7 +300,7 @@
 
 !3 Delete All Samples
 !|Table: Rest Fixture | $baseURL |
-| DELETE | /v1/samples/delete?study=$study&id=$sampleId,$sampleId2&force=true|200|  Content-Type: application/json ||
+| DELETE | /v1/samples/delete?study=$study&id=$sampleId,$sampleId2,$sampleId3&force=true|200|  Content-Type: application/json ||
 
 !3 Search First Deleted Sample 
 !|Table: Rest Fixture | $baseURL |
@@ -304,6 +309,10 @@
 !3 Search Second Deleted Sample 
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/samples/search?study=$study&name=sample2|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
+
+!3 Search Third Deleted Sample 
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/samples/search?study=$study&name=sample3|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
 
 !3 Delete File
 !|Table: Rest Fixture | $baseURL |
