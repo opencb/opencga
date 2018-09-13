@@ -171,7 +171,7 @@
 
 !3 Get Member ACL
 !| Table: Rest Fixture | $baseURL |
-| GET | /v1/individuals/$individualId/acl?member=$userA | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2.0' |
+| GET | /v1/individuals/$individualId/acl?member=$userA&study=$study | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2.0' |
 
 !3 Search Individual (ALL)
 !| Table: Rest Fixture | $baseURL |
