@@ -124,7 +124,7 @@
 | setBody | {  "permissions" : "VIEW_SAMPLES",  "action": "SET",  "study": "$studyId"}|
 | POST | /v1/studies/acl/*/update|200|Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions[0] == 'VIEW_SAMPLES'|
 
-!3 Get Sample As Ananomous
+!3 Get Sample As Anonymous
 !|Table: Rest Fixture | $baseURL |
 | setHeader | Authorization : Bearer |
 | GET | /v1/samples/$sampleId/info?study=$studyId |200|Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$sampleId'|
