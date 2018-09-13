@@ -68,7 +68,6 @@ public class CatalogFileUtilsTest {
     public void before() throws CatalogException, IOException, URISyntaxException {
         Configuration configuration = Configuration.load(getClass().getResource("/configuration-test.yml")
                 .openStream());
-        configuration.getAdmin().setSecretKey("dummy");
         configuration.getAdmin().setAlgorithm("HS256");
         MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
                 .add("username", configuration.getCatalog().getDatabase().getUser())
@@ -81,7 +80,7 @@ public class CatalogFileUtilsTest {
 
         CatalogManagerExternalResource.clearCatalog(configuration);
         catalogManager = new CatalogManager(configuration);
-        catalogManager.installCatalogDB();
+        catalogManager.installCatalogDB("dummy", "admin");
 
         //Create USER
         catalogManager.getUserManager().create("user", "name", "mi@mail.com", "asdf", "", null, Account.FULL, null, null);

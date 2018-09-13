@@ -123,6 +123,8 @@ public class OpenCGAWSServer {
     private static final int MAX_LIMIT = 5000;
     private static final int MAX_ID_SIZE = 100;
 
+    private static String errorMessage;
+
     static {
         initialized = new AtomicBoolean(false);
 
@@ -159,10 +161,13 @@ public class OpenCGAWSServer {
             init();
         }
 
-        if (catalogManager == null) {
-            throw new IllegalStateException("OpenCGA was not properly initialized. Please, check if the configuration files are reachable "
-                    + "or properly defined.");
+        if (StringUtils.isNotEmpty(errorMessage)) {
+            throw new IllegalStateException(errorMessage);
         }
+//        if (catalogManager == null) {
+//            throw new IllegalStateException("OpenCGA was not properly initialized. Please, check if the configuration files are reachable "
+//                    + "or properly defined.");
+//        }
 
         try {
             verifyHeaders(httpHeaders);
@@ -214,6 +219,7 @@ public class OpenCGAWSServer {
             logger.info("|  * Server logfile: " + configDirPath.getParent().resolve("logs").resolve("server.log"));
             initLogger(configDirPath.getParent().resolve("logs"));
         } else {
+            errorMessage = "No valid configuration directory provided: '" + configDirString + "'";
             logger.error("No valid configuration directory provided: '{}'");
         }
 
@@ -232,21 +238,15 @@ public class OpenCGAWSServer {
             configuration = Configuration
                     .load(new FileInputStream(new File(configDir.toFile().getAbsolutePath() + "/configuration.yml")));
             catalogManager = new CatalogManager(configuration);
-            // TODO think about this
-            if (!catalogManager.existsCatalogDB()) {
-//                logger.info("|  * Catalog database created: '{}'", catalogConfiguration.getDatabase().getDatabase());
-                logger.info("|  * Catalog database created: '{}'", catalogManager.getCatalogDatabase());
-                catalogManager.installCatalogDB();
-            }
 
             logger.info("|  * Storage configuration file: '{}'", configDir.toFile().getAbsolutePath() + "/storage-configuration.yml");
             storageConfiguration = StorageConfiguration
                     .load(new FileInputStream(new File(configDir.toFile().getAbsolutePath() + "/storage-configuration.yml")));
             storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
             variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
-        } catch (IOException e) {
+        } catch (IOException | CatalogException e) {
+            errorMessage = e.getMessage();
             e.printStackTrace();
-        } catch (CatalogException e) {
             logger.error("Error while creating CatalogManager", e);
         }
     }

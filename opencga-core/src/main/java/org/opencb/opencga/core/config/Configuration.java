@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.core.config;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.opencb.commons.utils.FileUtils;
@@ -85,20 +87,27 @@ public class Configuration {
     }
 
     public static Configuration load(InputStream configurationInputStream, String format) throws IOException {
+        if (configurationInputStream == null) {
+            throw new IOException("Configuration file not found");
+        }
         Configuration configuration;
         ObjectMapper objectMapper;
         //TODO : create mandatory fields check to avoid invalid or incomplete conf
-        switch (format) {
-            case "json":
-                objectMapper = new ObjectMapper();
-                configuration = objectMapper.readValue(configurationInputStream, Configuration.class);
-                break;
-            case "yml":
-            case "yaml":
-            default:
-                objectMapper = new ObjectMapper(new YAMLFactory());
-                configuration = objectMapper.readValue(configurationInputStream, Configuration.class);
-                break;
+        try {
+            switch (format) {
+                case "json":
+                    objectMapper = new ObjectMapper();
+                    configuration = objectMapper.readValue(configurationInputStream, Configuration.class);
+                    break;
+                case "yml":
+                case "yaml":
+                default:
+                    objectMapper = new ObjectMapper(new YAMLFactory());
+                    configuration = objectMapper.readValue(configurationInputStream, Configuration.class);
+                    break;
+            }
+        } catch (IOException e) {
+            throw new IOException("Configuration file could not be parsed: " + e.getMessage(), e);
         }
 
         // We must always overwrite configuration with environment parameters
