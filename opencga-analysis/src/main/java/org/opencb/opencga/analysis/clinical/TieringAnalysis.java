@@ -230,20 +230,33 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
             // Calculate de novo variants
             Map<String, List<String>> probandGenotype = new HashMap<>();
             probandGenotype.put(clinicalAnalysis.getProband().getId(),
-                    Arrays.asList(ModeOfInheritance.toGenotypeString(ModeOfInheritance.GENOTYPE_1_1)));
-            putGenotypes(probandGenotype, query);
+                    Arrays.asList(ModeOfInheritance.toGenotypeString(ModeOfInheritance.GENOTYPE_0_0)));
+            putGenotypesNegated(probandGenotype, query);
 
             variantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), token);
-            // TODO: Are the de novo variants only interesting for the proband? We will consider so at the moment...
-            Map<Variant, List<String>> stringListMap = ModeOfInheritance.deNovoVariants(pedigree, variantQueryResult.getResult().iterator());
 
-            for (Map.Entry<Variant, List<String>> entry : stringListMap.entrySet()) {
-                // If among the list of individuals having a de novo variant, we find the proband...
-                if (entry.getValue().contains(clinicalAnalysis.getProband().getId())) {
-                    // TODO: We need to create another ReportedModeOfInheritance for de novo!!??
-                    generateReportedVariants(entry.getKey(), phenotype, diseasePanel, ReportedEvent.ReportedModeOfInheritance.UNKNOWN,
-                            reportedVariantMap);
-                }
+            List<Variant> deNovoVariantList = ModeOfInheritance.deNovoVariants(pedigree.getProband(),
+                    variantQueryResult.getResult().iterator());
+            // TODO: We need to create another ReportedModeOfInheritance for de novo!!??
+            generateReportedVariants(deNovoVariantList, phenotype, diseasePanel, ReportedEvent.ReportedModeOfInheritance.UNKNOWN,
+                    reportedVariantMap);
+
+            // Calculate compound heterozygous
+            probandGenotype = new HashMap<>();
+            probandGenotype.put(clinicalAnalysis.getProband().getId(),
+                    Arrays.asList(ModeOfInheritance.toGenotypeString(ModeOfInheritance.GENOTYPE_0_0),
+                            ModeOfInheritance.toGenotypeString(ModeOfInheritance.GENOTYPE_0_1)));
+            putGenotypes(probandGenotype, query);
+            for (DiseasePanel.GenePanel gene : diseasePanel.getGenes()) {
+                query.put(VariantQueryParam.ANNOT_XREF.key(), gene);
+
+                variantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), token);
+
+                List<Variant> compoundHetVariantList = ModeOfInheritance.compoundHeterozygosity(pedigree,
+                        variantQueryResult.getResult().iterator());
+                // TODO: We need to create another ReportedModeOfInheritance for compound heterozygous!!??
+                generateReportedVariants(compoundHetVariantList, phenotype, diseasePanel, ReportedEvent.ReportedModeOfInheritance.UNKNOWN,
+                        reportedVariantMap);
             }
         }
 
@@ -341,32 +354,33 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
         }
     }
 
-    private void generateReportedVariants(Variant variant, Phenotype phenotype, DiseasePanel diseasePanel,
+    private void generateReportedVariants(List<Variant> variantList, Phenotype phenotype, DiseasePanel diseasePanel,
                                           ReportedEvent.ReportedModeOfInheritance moi, Map<String, ReportedVariant> reportedVariantMap) {
+        for (Variant variant : variantList) {
+            if (!reportedVariantMap.containsKey(variant.getId())) {
+                reportedVariantMap.put(variant.getId(), new ReportedVariant(variant.getImpl(), 0, new ArrayList<>(),
+                        Collections.emptyList(), Collections.emptyMap()));
+            }
+            ReportedVariant reportedVariant = reportedVariantMap.get(variant.getId());
 
-        if (!reportedVariantMap.containsKey(variant.getId())) {
-            reportedVariantMap.put(variant.getId(), new ReportedVariant(variant.getImpl(), 0, new ArrayList<>(),
-                    Collections.emptyList(), Collections.emptyMap()));
-        }
-        ReportedVariant reportedVariant = reportedVariantMap.get(variant.getId());
+            // Sanity check
+            if (variant.getAnnotation() != null && ListUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
+                for (ConsequenceType ct: variant.getAnnotation().getConsequenceTypes()) {
+                    // Create the reported event
+                    ReportedEvent reportedEvent = new ReportedEvent()
+                            .setId("JT-PF-" + reportedVariant.getReportedEvents().size())
+                            .setPhenotypes(Collections.singletonList(phenotype))
+                            .setConsequenceTypeIds(Collections.singletonList(ct.getBiotype()))
+                            .setGenomicFeature(new GenomicFeature(ct.getEnsemblGeneId(), ct.getEnsemblTranscriptId(), ct.getGeneName(),
+                                    null, null))
+                            .setModeOfInheritance(moi)
+                            .setPanelId(diseasePanel.getId());
 
-        // Sanity check
-        if (variant.getAnnotation() != null && ListUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
-            for (ConsequenceType ct: variant.getAnnotation().getConsequenceTypes()) {
-                // Create the reported event
-                ReportedEvent reportedEvent = new ReportedEvent()
-                        .setId("JT-PF-" + reportedVariant.getReportedEvents().size())
-                        .setPhenotypes(Collections.singletonList(phenotype))
-                        .setConsequenceTypeIds(Collections.singletonList(ct.getBiotype()))
-                        .setGenomicFeature(new GenomicFeature(ct.getEnsemblGeneId(), ct.getEnsemblTranscriptId(), ct.getGeneName(),
-                                null, null))
-                        .setModeOfInheritance(moi)
-                        .setPanelId(diseasePanel.getId());
+                    // TODO: add additional reported event fields
 
-                // TODO: add additional reported event fields
-
-                // Add reported event to the reported variant
-                reportedVariant.getReportedEvents().add(reportedEvent);
+                    // Add reported event to the reported variant
+                    reportedVariant.getReportedEvents().add(reportedEvent);
+                }
             }
         }
     }
