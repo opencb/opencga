@@ -17,18 +17,20 @@
 package org.opencb.opencga.analysis.clinical;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.commons.Analyst;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.commons.Software;
+import org.opencb.biodata.models.core.Exon;
+import org.opencb.biodata.models.core.Gene;
+import org.opencb.biodata.models.core.Transcript;
 import org.opencb.biodata.models.core.pedigree.Individual;
 import org.opencb.biodata.models.core.pedigree.Pedigree;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.cellbase.client.rest.CellBaseClient;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.analysis.AnalysisResult;
 import org.opencb.opencga.analysis.OpenCgaAnalysis;
@@ -39,13 +41,13 @@ import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.DiseasePanel;
 import org.opencb.opencga.core.models.Family;
 import org.opencb.opencga.core.models.User;
-import org.opencb.opencga.core.models.clinical.GenomicFeature;
-import org.opencb.opencga.core.models.clinical.Interpretation;
-import org.opencb.opencga.core.models.clinical.ReportedEvent;
-import org.opencb.opencga.core.models.clinical.ReportedVariant;
+import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.results.VariantQueryResult;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
+import org.opencb.opencga.storage.core.manager.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -53,6 +55,11 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
 
     private String clinicalAnalysisId;
     private List<String> diseasePanelIds;
+
+    private int maxCoverage;
+
+    private CellBaseClient cellBaseClient;
+    private AlignmentStorageManager alignmentStorageManager;
 
     public TieringAnalysis(String opencgaHome, String studyStr, String token) {
         super(opencgaHome, studyStr, token);
@@ -64,7 +71,13 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
 
         this.clinicalAnalysisId = clinicalAnalysisId;
         this.diseasePanelIds = diseasePanelIds;
+
+        this.maxCoverage = 20;
+
+        this.cellBaseClient = new CellBaseClient(storageConfiguration.getCellbase().toClientConfiguration());
+        this.alignmentStorageManager = new AlignmentStorageManager(catalogManager, StorageEngineFactory.get(storageConfiguration));
     }
+
 
     @Override
     public AnalysisResult<Interpretation> execute() throws Exception {
@@ -103,12 +116,13 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
             }
         }
 
-//        diseasePanels.get(0).getGenes().get(0).getId()
-
         // Check sample and proband exists
 
         Pedigree pedigree = getPedigreeFromFamily(clinicalAnalysis.getFamily());
-        List<Phenotype> phenotypes = clinicalAnalysis.getProband().getPhenotypes();
+        Phenotype phenotype = new Phenotype()
+                .setId(clinicalAnalysis.getDisease().getId())
+                .setName(clinicalAnalysis.getDisease().getName())
+                .setSource(clinicalAnalysis.getDisease().getSource());
 
         // Query with the filters: genotypes, popFreq < 0.01, biotype = protein_coding, genes
         Query query = new Query()
@@ -122,56 +136,65 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
         ReportedEvent.Penetrance penetrance = ReportedEvent.Penetrance.COMPLETE;
         boolean penetranceBoolean = penetrance == ReportedEvent.Penetrance.COMPLETE;
 
-        for (Phenotype phenotype : phenotypes) {
-            for (DiseasePanel diseasePanel: diseasePanels) {
-                // Genes
-                query.put(VariantQueryParam.ANNOT_XREF.key(), diseasePanel.getGenes()
-                        .stream()
-                        .map(DiseasePanel.GenePanel::getId)
-                        .collect(Collectors.toList()));
+        // Reported low coverage map
+        Set<String> lowCoverageByGeneDone = new HashSet<>();
+        List<ReportedLowCoverage> reportedLowCoverages = new ArrayList<>();
 
-                // ---- dominant -----
-
-                // Genotypes following the format: {sample_1}:{gt_1}(,{gt_n})*(;{sample_n}:{gt_1}(,{gt_n})*)*
-                genotypes = ModeOfInheritance.dominant(pedigree, phenotype, penetranceBoolean);
-                putGenotypes(genotypes, query);
-                variantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), token);
-                generateReportedVariants(variantQueryResult, phenotype, diseasePanel, ReportedEvent.ReportedModeOfInheritance.MONOALLELIC,
-                        penetrance, reportedVariantMap);
-
-                // ---- recessive -----
-
-                genotypes = ModeOfInheritance.recessive(pedigree, phenotype, penetranceBoolean);
-                putGenotypes(genotypes, query);
-                variantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), token);
-                generateReportedVariants(variantQueryResult, phenotype, diseasePanel, ReportedEvent.ReportedModeOfInheritance.BIALLELIC,
-                        penetrance, reportedVariantMap);
-
-                // ---- xLinked -----
-
-                genotypes = ModeOfInheritance.xLinked(pedigree, phenotype, true);
-                putGenotypes(genotypes, query);
-                variantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), token);
-                generateReportedVariants(variantQueryResult, phenotype, diseasePanel,
-                        ReportedEvent.ReportedModeOfInheritance.XLINKED_MONOALLELIC, penetrance, reportedVariantMap);
-
-                genotypes = ModeOfInheritance.xLinked(pedigree, phenotype, false);
-                putGenotypes(genotypes, query);
-                variantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), token);
-                generateReportedVariants(variantQueryResult, phenotype, diseasePanel,
-                        ReportedEvent.ReportedModeOfInheritance.XLINKED_BIALLELIC, penetrance, reportedVariantMap);
-
-                // ---- yLinked -----
-
-                genotypes = ModeOfInheritance.yLinked(pedigree, phenotype);
-                putGenotypes(genotypes, query);
-                variantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), token);
-                // TODO: ReportedModeOfInheritance ???
-                generateReportedVariants(variantQueryResult, phenotype, diseasePanel,
-                        ReportedEvent.ReportedModeOfInheritance.UNKNOWN, penetrance, reportedVariantMap);
-
-                // TODO: additional MoI, i.e.: deNovo, compound heterozigous
+        for (DiseasePanel diseasePanel: diseasePanels) {
+            // Genes
+            List<String> geneNames = diseasePanel.getGenes()
+                    .stream()
+                    .map(DiseasePanel.GenePanel::getId)
+                    .collect(Collectors.toList());
+            for (String geneName: geneNames) {
+                if (!lowCoverageByGeneDone.contains(geneName)) {
+                    reportedLowCoverages.addAll(getReportedLowCoverages(geneName, maxCoverage));
+                    lowCoverageByGeneDone.add(geneName);
+                }
             }
+            query.put(VariantQueryParam.ANNOT_XREF.key(), geneNames);
+
+            // ---- dominant -----
+
+            // Genotypes following the format: {sample_1}:{gt_1}(,{gt_n})*(;{sample_n}:{gt_1}(,{gt_n})*)*
+            genotypes = ModeOfInheritance.dominant(pedigree, phenotype, penetranceBoolean);
+            putGenotypes(genotypes, query);
+            variantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), token);
+            generateReportedVariants(variantQueryResult, phenotype, diseasePanel, ReportedEvent.ReportedModeOfInheritance.MONOALLELIC,
+                    penetrance, reportedVariantMap);
+
+            // ---- recessive -----
+
+            genotypes = ModeOfInheritance.recessive(pedigree, phenotype, penetranceBoolean);
+            putGenotypes(genotypes, query);
+            variantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), token);
+            generateReportedVariants(variantQueryResult, phenotype, diseasePanel, ReportedEvent.ReportedModeOfInheritance.BIALLELIC,
+                    penetrance, reportedVariantMap);
+
+            // ---- xLinked -----
+
+            genotypes = ModeOfInheritance.xLinked(pedigree, phenotype, true);
+            putGenotypes(genotypes, query);
+            variantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), token);
+            generateReportedVariants(variantQueryResult, phenotype, diseasePanel,
+                    ReportedEvent.ReportedModeOfInheritance.XLINKED_MONOALLELIC, penetrance, reportedVariantMap);
+
+            genotypes = ModeOfInheritance.xLinked(pedigree, phenotype, false);
+            putGenotypes(genotypes, query);
+            variantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), token);
+            generateReportedVariants(variantQueryResult, phenotype, diseasePanel,
+                    ReportedEvent.ReportedModeOfInheritance.XLINKED_BIALLELIC, penetrance, reportedVariantMap);
+
+            // ---- yLinked -----
+
+            genotypes = ModeOfInheritance.yLinked(pedigree, phenotype);
+            putGenotypes(genotypes, query);
+            variantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), token);
+            // TODO: ReportedModeOfInheritance ???
+            generateReportedVariants(variantQueryResult, phenotype, diseasePanel,
+                    ReportedEvent.ReportedModeOfInheritance.UNKNOWN, penetrance, reportedVariantMap);
+
+            // TODO: additional MoI, i.e.: deNovo, compound heterozigous
         }
 
         // TODO: take into account BAM coverage
@@ -189,10 +212,38 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
                 .setPanels(diseasePanels)
                 .setFilters(null) //TODO
                 .setSoftware(new Software().setName("Tiering"))
-                .setReportedVariants(new ArrayList<>(reportedVariantMap.values()));
+                .setReportedVariants(new ArrayList<>(reportedVariantMap.values()))
+                .setReportedLowCoverages(reportedLowCoverages);
 
         // Return interpretation result
         return new AnalysisResult<>(interpretation);
+    }
+
+    private List<ReportedLowCoverage> getReportedLowCoverages(String geneName, int maxCoverage) {
+        List<ReportedLowCoverage> reportedLowCoverages = new ArrayList<>();
+        try {
+            // Get gene exons from CellBase
+            QueryResponse<Gene> geneQueryResponse = cellBaseClient.getGeneClient().get(Collections.singletonList(geneName),
+                    QueryOptions.empty());
+            List<RegionCoverage> regionCoverages = null;
+            for (Transcript transcript: geneQueryResponse.getResponse().get(0).first().getTranscripts()) {
+                for (Exon exon: transcript.getExons()) {
+                    // TODO: call alignmentStorageManager to get uncovered regions, i.e., regions with low coverage
+//                    regionCoverages = alignmentStorageManager.getUncoveredRegions(new Region(exon.getChromosome(), exon.getStart(),
+//                            exon.getEnd()), maxCoverage);
+                    for (RegionCoverage regionCoverage: regionCoverages) {
+                        ReportedLowCoverage reportedLowCoverage = new ReportedLowCoverage(regionCoverage)
+                                .setGeneName(geneName)
+                                .setId(exon.getId());
+                        reportedLowCoverages.add(reportedLowCoverage);
+                    }
+                }
+            }
+        } catch (IOException e) {
+            logger.error("Error getting low coverage regions for panel genes.", e.getMessage());
+        }
+        // And for that exon regions, get low coverage regions
+        return reportedLowCoverages;
     }
 
     private void putGenotypes(Map<String, List<String>> genotypes, Query query) {
