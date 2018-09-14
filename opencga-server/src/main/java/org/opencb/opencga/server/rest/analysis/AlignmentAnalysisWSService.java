@@ -148,6 +148,29 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     }
 
     @GET
+    @Path("/lowCoveredRegions")
+    @ApiOperation(value = "Fetch low covered regions of an alignment", position = 15, response = RegionCoverage.class)
+    public Response getLowCoveredRegions(
+            @ApiParam(value = "File id or name in Catalog", required = true) @QueryParam("file") String fileIdStr,
+            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Regions 'chr:start-end' to check for low covered subregions", required = true) @QueryParam("region") String regionStr,
+            @ApiParam(value = "Number of reads under which a region will will be considered low covered")
+                @DefaultValue("20") @QueryParam("threshold") int threshold) {
+        try {
+            isSingleId(fileIdStr);
+            AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
+            if (StringUtils.isNotEmpty(regionStr)) {
+                Region region = Region.parseRegion(regionStr);
+                return createOkResponse(alignmentStorageManager.getUncoveredRegions(studyStr, fileIdStr, region, threshold, sessionId));
+            } else {
+                return createErrorResponse("lowCoveredRegions", "Missing region");
+            }
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
     @Path("/coverage")
     @ApiOperation(value = "Fetch the coverage of an alignment file", position = 15, response = RegionCoverage.class)
     public Response getCoverage(@ApiParam(value = "File ID or name in Catalog", required = true) @QueryParam("file") String fileIdStr,

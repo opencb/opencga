@@ -252,7 +252,7 @@ public class AlignmentStorageManager extends StorageManager {
     }
 
     private void checkAlignmentFormat(File file) throws CatalogException {
-        if (!file.getBioformat().equals(File.Format.BAM)) {
+        if (!file.getFormat().equals(File.Format.BAM)) {
             throw new CatalogException("File " + file.getName() + " not supported. Expecting a BAM file.");
         }
     }
