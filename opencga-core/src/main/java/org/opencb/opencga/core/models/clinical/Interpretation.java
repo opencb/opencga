@@ -24,6 +24,7 @@ public class Interpretation {
     private String creationDate;
 
     private List<ReportedVariant> reportedVariants;
+    private List<ReportedLowCoverage> reportedLowCoverages;
 
     private List<Comment> comments;
 
@@ -39,7 +40,8 @@ public class Interpretation {
 
     public Interpretation(String id, String description, String clinicalAnalysisId, List<DiseasePanel> panels, Software software,
                           Analyst analyst, List<Software> dependencies, Map<String, Object> filters, String creationDate,
-                          List<ReportedVariant> reportedVariants, List<Comment> comments, Map<String, Object> attributes) {
+                          List<ReportedVariant> reportedVariants, List<ReportedLowCoverage> reportedLowCoverages,
+                          List<Comment> comments, Map<String, Object> attributes) {
         this.id = id;
         this.description = description;
         this.clinicalAnalysisId = clinicalAnalysisId;
@@ -50,13 +52,14 @@ public class Interpretation {
         this.filters = filters;
         this.creationDate = creationDate;
         this.reportedVariants = reportedVariants;
+        this.reportedLowCoverages = reportedLowCoverages;
         this.comments = comments;
         this.attributes = attributes;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("Interpretation{");
+        final StringBuffer sb = new StringBuffer("Interpretation{");
         sb.append("id='").append(id).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", clinicalAnalysisId='").append(clinicalAnalysisId).append('\'');
@@ -67,6 +70,7 @@ public class Interpretation {
         sb.append(", filters=").append(filters);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", reportedVariants=").append(reportedVariants);
+        sb.append(", reportedLowCoverages=").append(reportedLowCoverages);
         sb.append(", comments=").append(comments);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
@@ -160,6 +164,15 @@ public class Interpretation {
 
     public Interpretation setReportedVariants(List<ReportedVariant> reportedVariants) {
         this.reportedVariants = reportedVariants;
+        return this;
+    }
+
+    public List<ReportedLowCoverage> getReportedLowCoverages() {
+        return reportedLowCoverages;
+    }
+
+    public Interpretation setReportedLowCoverages(List<ReportedLowCoverage> reportedLowCoverages) {
+        this.reportedLowCoverages = reportedLowCoverages;
         return this;
     }
 

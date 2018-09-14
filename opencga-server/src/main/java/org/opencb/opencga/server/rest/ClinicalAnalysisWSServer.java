@@ -31,6 +31,7 @@ import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.clinical.Comment;
 import org.opencb.opencga.core.models.clinical.Interpretation;
+import org.opencb.opencga.core.models.clinical.ReportedLowCoverage;
 import org.opencb.opencga.core.models.clinical.ReportedVariant;
 
 import javax.servlet.http.HttpServletRequest;
@@ -252,11 +253,11 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
         public Map<String, Object> filters;
         public String creationDate;
         public List<ReportedVariant> reportedVariants;
+        public List<ReportedLowCoverage> reportedLowCoverages;
         public List<Comment> comments;
         public Map<String, Object> attributes;
         public Interpretation toClinicalInterpretation() {
-            return new Interpretation(id, description, clinicalAnalysisId, panels, software, analyst, dependencies, filters, creationDate,
-                    reportedVariants, comments, attributes);
+            return new Interpretation(id, description, clinicalAnalysisId, panels, software, analyst, dependencies, filters, creationDate, reportedVariants, reportedLowCoverages, comments, attributes);
         }
     }
 
