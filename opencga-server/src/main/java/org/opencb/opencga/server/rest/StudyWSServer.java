@@ -48,6 +48,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.utils.Constants.FLATTENED_ANNOTATIONS;
+import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 
 @Path("/{apiVersion}/studies")
@@ -139,7 +140,7 @@ public class StudyWSServer extends OpenCGAWSServer {
         try {
             ObjectUtils.defaultIfNull(updateParams, new StudyParams());
             QueryResult queryResult = catalogManager.getStudyManager().update(studyStr,
-                    new ObjectMap(jsonObjectMapper.writeValueAsString(updateParams)), null, sessionId);
+                    new ObjectMap(getUpdateObjectMapper().writeValueAsString(updateParams)), null, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

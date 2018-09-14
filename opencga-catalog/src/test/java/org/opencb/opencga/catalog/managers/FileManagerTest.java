@@ -33,8 +33,8 @@ import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 

@@ -147,7 +147,9 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         CatalogManager catalogManager = new CatalogManager(configuration);
         logger.info("\nInstalling database {} in {}\n", catalogManager.getCatalogDatabase(), configuration.getCatalog().getDatabase()
                 .getHosts());
-        catalogManager.installCatalogDB();
+
+        catalogManager.installCatalogDB(this.catalogCommandOptions.installCatalogCommandOptions.secretKey,
+                configuration.getAdmin().getPassword());
     }
 
     /**

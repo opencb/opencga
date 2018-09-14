@@ -121,12 +121,11 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     public void before() throws Exception {
         Configuration configuration = Configuration.load(getClass().getResource("/configuration-test.yml")
                 .openStream());
-        configuration.getAdmin().setSecretKey("dummy");
         configuration.getAdmin().setAlgorithm("HS256");
         CatalogManagerExternalResource.clearCatalog(configuration);
 
         catalogManager = new CatalogManager(configuration);
-        catalogManager.installCatalogDB();
+        catalogManager.installCatalogDB("dummy", "admin");
         fileManager = catalogManager.getFileManager();
 
         catalogManager.getUserManager().create(ownerUser, ownerUser, "email@ccc.ccc", password, "ASDF", null, Account.FULL, null, null);

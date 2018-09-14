@@ -182,14 +182,20 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
     public String readSecretKey() throws CatalogDBException {
         Bson query = METADATA_QUERY;
         QueryResult queryResult = this.metaCollection.find(query, new QueryOptions("include", "admin"));
-        return (MongoDBUtils.parseObject((Document) ((Document) queryResult.first()).get("admin"), Admin.class)).getSecretKey();
+        if (queryResult.getNumResults() == 1) {
+            return (MongoDBUtils.parseObject((Document) ((Document) queryResult.first()).get("admin"), Admin.class)).getSecretKey();
+        }
+        return "";
     }
 
     @Override
     public String readAlgorithm() throws CatalogDBException {
         Bson query = METADATA_QUERY;
         QueryResult queryResult = this.metaCollection.find(query, new QueryOptions("include", "admin"));
-        return (MongoDBUtils.parseObject((Document) ((Document) queryResult.first()).get("admin"), Admin.class)).getAlgorithm();
+        if (queryResult.getNumResults() == 1) {
+            return (MongoDBUtils.parseObject((Document) ((Document) queryResult.first()).get("admin"), Admin.class)).getAlgorithm();
+        }
+        return "";
     }
 
     @Override

@@ -6,6 +6,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Account;
 import org.opencb.opencga.core.models.Group;
@@ -150,6 +151,24 @@ public class AdminWSServer extends OpenCGAWSServer {
         }
     }
 
+    @POST
+    @Path("/install")
+    @ApiOperation(value = "Install OpenCGA database", notes = "Creates and initialises the OpenCGA database <br>"
+            + "<ul>"
+            + "<il><b>secretKey</b>: Secret key needed to authenticate through OpenCGA (JWT)</il><br>"
+            + "<il><b>password</b>: Password that will be set to perform future administrative operations over OpenCGA</il><br>"
+            + "<ul>")
+    public Response install(
+            @ApiParam(value = "JSON containing the mandatory parameters", required = true) InstallParams installParams
+    ) {
+        try {
+            catalogManager.installCatalogDB(installParams.secretKey, installParams.password);
+            return createOkResponse(new QueryResult<>("install ok"));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
     //    @GET
 //    @Path("/audit/stats")
 //    @ApiOperation(value = "Get some stats from the audit database")
@@ -233,6 +252,11 @@ public class AdminWSServer extends OpenCGAWSServer {
     }
 
     public static class JWTParams {
+        public String secretKey;
+    }
+
+    public static class InstallParams {
+        public String password;
         public String secretKey;
     }
 

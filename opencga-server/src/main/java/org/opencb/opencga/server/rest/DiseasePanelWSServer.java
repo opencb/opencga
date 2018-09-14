@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
+
 @Path("/{apiVersion}/diseasePanels")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Disease Panel (BETA)", position = 4, description = "Methods for working with 'diseasePanels' endpoint")
@@ -284,7 +286,7 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
                     .setRegions(regions)
                     .setAttributes(attributes);
 
-            return new ObjectMap(jsonObjectMapper.writeValueAsString(panel));
+            return new ObjectMap(getUpdateObjectMapper().writeValueAsString(panel));
         }
     }
 

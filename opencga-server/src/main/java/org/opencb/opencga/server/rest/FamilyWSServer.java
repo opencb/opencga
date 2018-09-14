@@ -49,6 +49,8 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
+
 /**
  * Created by pfurio on 03/05/17.
  */
@@ -655,7 +657,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
                 relatives = new ArrayList<>(members.size());
                 for (IndividualPOST member : members) {
                     Individual individual = member.toIndividualUpdate();
-                    ObjectMap objectMap = new ObjectMap(jsonObjectMapper.writeValueAsString(individual));
+                    ObjectMap objectMap = new ObjectMap(getUpdateObjectMapper().writeValueAsString(individual));
                     if (member.parentalConsanguinity == null) {
                         objectMap.remove("parentalConsanguinity");
                     }
@@ -672,7 +674,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
                     .setAttributes(attributes);
             family.setAnnotationSets(annotationSets);
 
-            ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(family));
+            ObjectMap params = new ObjectMap(getUpdateObjectMapper().writeValueAsString(family));
             params.putIfNotNull("members", relatives);
             params.putIfNotNull(FamilyDBAdaptor.UpdateParams.ANNOTATION_SETS.key(), annotationSets);
 

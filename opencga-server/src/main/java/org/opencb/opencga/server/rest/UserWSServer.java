@@ -41,6 +41,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
+import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
+
 
 @Path("/{apiVersion}/users")
 @Produces(MediaType.APPLICATION_JSON)
@@ -195,7 +197,7 @@ public class UserWSServer extends OpenCGAWSServer {
         try {
             ObjectUtils.defaultIfNull(parameters, new UserUpdatePOST());
 
-            ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(parameters));
+            ObjectMap params = new ObjectMap(getUpdateObjectMapper().writeValueAsString(parameters));
             QueryResult result = catalogManager.getUserManager().update(userId, params, null, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
@@ -289,7 +291,7 @@ public class UserWSServer extends OpenCGAWSServer {
             @ApiParam(name = "params", value = "Filter parameters", required = true) UpdateFilter params) {
         try {
             return createOkResponse(catalogManager.getUserManager().updateFilter(userId, name,
-                    new ObjectMap(jsonObjectMapper.writeValueAsString(params)), sessionId));
+                    new ObjectMap(getUpdateObjectMapper().writeValueAsString(params)), sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

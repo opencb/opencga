@@ -39,6 +39,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
+
 @Path("/{apiVersion}/util")
 @Produces("application/json")
 public class UtilsWSServer extends OpenCGAWSServer {
@@ -93,9 +95,9 @@ public class UtilsWSServer extends OpenCGAWSServer {
             }
 
             try (BufferedReader br = Files.newBufferedReader(outFilePath2, Charset.defaultCharset())) {
-                JsonFactory factory = jsonObjectMapper.getFactory();
+                JsonFactory factory = getUpdateObjectMapper().getFactory();
                 JsonParser jp = factory.createParser(br);
-                JsonNode jsonNode = jsonObjectMapper.readTree(jp);
+                JsonNode jsonNode = getUpdateObjectMapper().readTree(jp);
                 result.put("results", jsonNode);
             }
         } catch (Exception e) {

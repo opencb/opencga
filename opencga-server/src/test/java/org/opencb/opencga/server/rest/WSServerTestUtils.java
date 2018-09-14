@@ -41,6 +41,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
+import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
+
 /**
  * Created by ralonso on 9/25/14.
  */
@@ -58,8 +60,8 @@ public class WSServerTestUtils {
 //        ObjectReader reader = OpenCGAWSServer.jsonObjectMapper.reader(OpenCGAWSServer.jsonObjectMapper.getTypeFactory().constructParametrizedType(
 //                QueryResponse.class, QueryResponse.class, OpenCGAWSServer.jsonObjectMapper.getTypeFactory().constructParametrizedType(QueryResult.class, QueryResult.class, clazz)));
 //        return reader.readValue(json);
-        ObjectReader reader = OpenCGAWSServer.jsonObjectMapper.reader(
-                OpenCGAWSServer.jsonObjectMapper.getTypeFactory().constructParametrizedType(QueryResponse.class, QueryResult.class, clazz)
+        ObjectReader reader = getUpdateObjectMapper().reader(
+                getUpdateObjectMapper().getTypeFactory().constructParametrizedType(QueryResponse.class, QueryResult.class, clazz)
         );
         return reader.readValue(json);
     }
