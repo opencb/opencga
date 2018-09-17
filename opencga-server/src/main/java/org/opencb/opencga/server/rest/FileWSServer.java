@@ -1247,9 +1247,9 @@ public class FileWSServer extends OpenCGAWSServer {
     private final String defaultFacetRange = "size:0:214748364800:10737418240;numSamples:0:10:1";
 
     @GET
-    @Path("/facet")
-    @ApiOperation(value = "Fetch catalog sample facets", position = 15, response = QueryResponse.class)
-    public Response getFacets(
+    @Path("/stats")
+    @ApiOperation(value = "Fetch catalog file stats", position = 15, response = QueryResponse.class)
+    public Response getStats(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                 @QueryParam("study") String studyStr,
             @ApiParam(value = "Name") @QueryParam("name") String name,
@@ -1270,7 +1270,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Number of related files") @QueryParam("numRelatedFiles") String numRelatedFiles,
             @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
 
-            @ApiParam(value = "Calculate default stats", defaultValue = "false") @QueryParam("defaultStats") boolean defaultStats,
+            @ApiParam(value = "Calculate default stats", defaultValue = "false") @QueryParam("default") boolean defaultStats,
 
             @ApiParam(value = "List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: studies>>biotype;type") @QueryParam("facet") String facet,
             @ApiParam(value = "List of facet ranges separated by semicolons with the format {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1") @QueryParam("facetRange") String facetRange,
