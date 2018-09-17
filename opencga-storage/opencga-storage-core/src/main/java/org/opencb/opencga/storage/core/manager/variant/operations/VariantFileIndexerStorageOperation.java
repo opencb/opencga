@@ -316,6 +316,8 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         }
         Runtime.getRuntime().removeShutdownHook(hook);
 
+        variantStorageEngine.close();
+
         // Throw the exception!
         if (exception != null) {
             throw exception;
