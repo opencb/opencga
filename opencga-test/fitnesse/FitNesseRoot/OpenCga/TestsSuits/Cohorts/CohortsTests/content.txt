@@ -78,7 +78,7 @@
 | setHeader | Authorization : Bearer |
 | GET | /v1/cohorts/$cohortId/info?study=$study |403|Content-Type: application/json|jsonbody.error != ''|
 
-!3 Create Cohort ACL For Ananomous
+!3 Create Cohort ACL For Anonymous
 !|Table: Rest Fixture | $baseURL |
 |setBody|{"permissions": "VIEW", "action":"SET", "cohort": "$cohortId"}|
 |POST| /v1/cohorts/acl/*/update?study=$study |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions[0] == 'VIEW'|
@@ -92,7 +92,7 @@
 | setHeader | Authorization : Bearer |
 | GET | /v1/cohorts/$cohortId/info?study=$study |200|Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].result[0].id == '$cohortId'|
 
-!3 Delete Cohort ACL For Ananomous
+!3 Delete Cohort ACL For Anonymous
 !|Table: Rest Fixture | $baseURL |
 |setBody|{ "action":"RESET", "cohort": "$cohortId"}|
 |POST| /v1/cohorts/acl/*/update?study=$study |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0.0'|

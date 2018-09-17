@@ -57,15 +57,15 @@
 
 !3 Get Sample
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/samples/$sampleId/info|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$sampleId'|
+| GET | /v1/samples/$sampleId/info?study=$study|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$sampleId'|
 
 !3 Get Sample Including Individual
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/samples/$sampleId2/info?includeIndividual=true|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$sampleId2' && jsonbody.response[0].result[0].attributes.individual.id == '$individualId'|
+| GET | /v1/samples/$sampleId2/info?includeIndividual=true&study=$study|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$sampleId2' && jsonbody.response[0].result[0].attributes.individual.id == '$individualId'|
 
 !3 Get Individual
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/individuals/$individualId/info|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$individualId'|
+| GET | /v1/individuals/$individualId/info?study=$study|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$individualId'|
 
 !3 Get Multiple Samples
 !|Table: Rest Fixture | $baseURL |
@@ -91,12 +91,12 @@
 !3 Update Sample With Version Increment
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"name" : "$updatedName" }|
-| POST | /v1/samples/$sampleId/update?incVersion=true |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].name == '$updatedName' && jsonbody.response[0].result[0].version == '2'|
+| POST | /v1/samples/$sampleId/update?incVersion=true&study=$study |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].name == '$updatedName' && jsonbody.response[0].result[0].version == '2'|
 
 !3 Update Only Sample Version
 !|Table: Rest Fixture | $baseURL |
 | setBody | {}|
-| POST | /v1/samples/$sampleId/update?incVersion=true |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].version == '3'|
+| POST | /v1/samples/$sampleId/update?incVersion=true&study=$study |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].version == '3'|
 
 !3 Get Sample Returns Latest Version
 !|Table: Rest Fixture | $baseURL |
@@ -108,7 +108,7 @@
 
 !3 Get Sample (All Versions)
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/samples/$sampleId/info?allVersions=true|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == 3|
+| GET | /v1/samples/$sampleId/info?allVersions=true&study=$study|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == 3|
 
 !3 Get Samples as Groups
 !|Table: Rest Fixture | $baseURL |
@@ -124,7 +124,7 @@
 | setBody | {  "permissions" : "VIEW_SAMPLES",  "action": "SET",  "study": "$studyId"}|
 | POST | /v1/studies/acl/*/update|200|Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions[0] == 'VIEW_SAMPLES'|
 
-!3 Get Sample As Ananomous
+!3 Get Sample As Anonymous
 !|Table: Rest Fixture | $baseURL |
 | setHeader | Authorization : Bearer |
 | GET | /v1/samples/$sampleId/info?study=$studyId |200|Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$sampleId'|
@@ -142,13 +142,13 @@
 !3 Create Sample ACL For Anonymous
 !|Table: Rest Fixture | $baseURL |
 |setBody|{"permissions": "VIEW", "action":"SET", "sample": "$sampleId"}|
-|POST| /v1/samples/acl/*/update |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions[0] == 'VIEW'|
+|POST| /v1/samples/acl/*/update?study=$studyId |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions[0] == 'VIEW'|
 
 !3 Get Sample As Anonymous
 !|Table: Rest Fixture | $baseURL |
 |setHeaders|!-Content-Type : application/json
 Authorization : Bearer -!|
-| GET | /v1/samples/$sampleId/info|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$sampleId'|
+| GET | /v1/samples/$sampleId/info?study=$studyId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$sampleId'|
 
 !3 Search Sample As Anonymous
 !|Table: Rest Fixture | $baseURL |
@@ -158,13 +158,13 @@ Authorization : Bearer -!|
 !3 Delete Sample ACL For Anonymous
 !|Table: Rest Fixture | $baseURL |
 |setBody|{"permissions": "VIEW", "action":"REMOVE", "sample": "$sampleId"}|
-|POST| /v1/samples/acl/*/update |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions.length == '0.0'|
+|POST| /v1/samples/acl/*/update?study=$studyId |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions.length == '0.0'|
 
 !3 Get Sample As Anonymous
 !|Table: Rest Fixture | $baseURL |
 |setHeaders|!-Content-Type : application/json
 Authorization : Bearer -!|
-| GET | /v1/samples/$sampleId/info|403|Content-Type: application/json |jsonbody.error == "Permission denied. * is not allowed to see the sample $sampleId"|
+| GET | /v1/samples/$sampleId/info?study=$studyId|403|Content-Type: application/json |jsonbody.error == "Permission denied. * is not allowed to see the sample $sampleId"|
 
 !3 Search Sample As Anonymous
 !|Table: Rest Fixture | $baseURL |
@@ -174,21 +174,21 @@ Authorization : Bearer -!|
 !3 Delete Sample ACL For Anonymous
 !|Table: Rest Fixture | $baseURL |
 |setBody|{"action":"RESET", "sample": "$sampleId"}|
-|POST| /v1/samples/acl/*/update |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0.0'|
+|POST| /v1/samples/acl/*/update?study=$studyId |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0.0'|
 
 !3 Get Sample ACL
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/samples/$sampleId/acl|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result ==''|
+| GET | /v1/samples/$sampleId/acl?study=$study|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result ==''|
 
 !3 Create Sample ACL
 !|Table: Rest Fixture | $baseURL |
 |setBody|{"permissions": "DELETE", "action":"SET", "sample": "$sampleId"}|
-|POST| /v1/samples/acl/$userA/update |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions[0] == 'DELETE'|
+|POST| /v1/samples/acl/$userA/update?study=$study |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions[0] == 'DELETE'|
 
 !3 Update Sample ACL (add)
 !|Table: Rest Fixture | $baseURL |
 |setBody|{"add": "VIEW"}|
-|POST| /v1/samples/$sampleId/acl/$userA/update |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions[0] == 'VIEW'|
+|POST| /v1/samples/$sampleId/acl/$userA/update?study=$study |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions[0] == 'VIEW'|
 
 !3 Get Samples ACL
 !|Table: Rest Fixture | $baseURL |
@@ -209,21 +209,21 @@ Authorization : Bearer -!|
 !3 Update Sample ACL (remove)
 !|Table: Rest Fixture | $baseURL |
 |setBody|{"remove": "DELETE"}|
-|POST| /v1/samples/$sampleId/acl/$userA/update |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions[0] == 'VIEW'|
+|POST| /v1/samples/$sampleId/acl/$userA/update?study=$studyId |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions[0] == 'VIEW'|
 
 !3 Update Sample ACL (set)
 !|Table: Rest Fixture | $baseURL |
 |setBody|{"set": "DELETE"}|
-|POST| /v1/samples/$sampleId/acl/$userA/update |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions.length == '1'|
+|POST| /v1/samples/$sampleId/acl/$userA/update?study=$studyId |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions.length == '1'|
 
 !3 Get Member ACL
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/samples/$sampleId/acl?member=$userA|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length > '0'|
+| GET | /v1/samples/$sampleId/acl?member=$userA&study=$studyId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length > '0'|
 
 !3 DELETE Member ACL
 !|Table: Rest Fixture | $baseURL |
 | setBody | {    "action": "RESET",  "sample": "$sampleId" }|
-| POST | /v1/samples/acl/$userA/update|200|  Content-Type: application/json ||
+| POST | /v1/samples/acl/$userA/update?study=$study|200|  Content-Type: application/json ||
 #| POST | /v1/samples/acl/$userA/update|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].id == '$sampleId' && jsonbody.response[0].result.length == '0'|
 
 # Once we have Deleted Return Object, replace the above line with following line
@@ -231,7 +231,7 @@ Authorization : Bearer -!|
 
 !3 Get Member ACL
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/samples/$sampleId/acl?member=$userA|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
+| GET | /v1/samples/$sampleId/acl?member=$userA&study=$study|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
 
 !3 Update (SET) ACL Individual And Propagate to Sample 2
 !|Table: Rest Fixture | $baseURL |
@@ -240,16 +240,16 @@ Authorization : Bearer -!|
 
 !3 Get Member ACL From Sample 2
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/samples/$sampleId2/acl?member=$userA|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '1.0'|
+| GET | /v1/samples/$sampleId2/acl?member=$userA&study=$studyId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '1.0'|
 
 !3 DELETE Member ACL For Sample 2
 !|Table: Rest Fixture | $baseURL |
 | setBody | {    "action": "RESET",  "sample": "$sampleId2" }|
-| POST | /v1/samples/acl/$userA/update|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].id == '$sampleId2' && jsonbody.response[0].result.length == '0'|
+| POST | /v1/samples/acl/$userA/update?study=$studyId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
 
 !3 Get Member ACL From Sample 2
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/samples/$sampleId2/acl?member=$userA|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
+| GET | /v1/samples/$sampleId2/acl?member=$userA&study=$studyId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
 
 !3 Login user B
 !|Table: Rest Fixture | $baseURL  |
@@ -267,33 +267,33 @@ Authorization : Bearer -!|
 !3 Update Sample ACL (add)
 !|Table: Rest Fixture | $baseURL |
 |setBody|{"add": "VIEW"}|
-|POST| /v1/samples/$sampleId2/acl/$userB/update |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions[0] == 'VIEW'|
+|POST| /v1/samples/$sampleId2/acl/$userB/update?study=$studyId |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions[0] == 'VIEW'|
 
 !3 Get Sample (Annotation Set MUST NOT Present)
 !|Table: Rest Fixture | $baseURL |
 | setHeader | Authorization : Bearer |
-| GET | /v1/samples/$sampleId2/info?sid=$userBSessionId|200|  Content-Type: application/json ||
+| GET | /v1/samples/$sampleId2/info?sid=$userBSessionId&study=$studyId|200|  Content-Type: application/json ||
 |let||js|!-res="noAnnotationSet";if(response.jsonbody.response[0].result[0].annotationSets.length) {res = response.jsonbody.response[0].result[0].annotationSets.length;}res;-!|noAnnotationSet|
 
 !3 Update Sample ACL (add)
 !|Table: Rest Fixture | $baseURL |
 |setBody|{"add": "VIEW_ANNOTATIONS"}|
-|POST| /v1/samples/$sampleId2/acl/$userB/update |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions.length == '2'|
+|POST| /v1/samples/$sampleId2/acl/$userB/update?study=$studyId |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions.length == '2'|
 
 !3 Get Sample (Annotation Set MUST Present)
 !|Table: Rest Fixture | $baseURL |
 | setHeader | Authorization : Bearer |
-| GET | /v1/samples/$sampleId2/info?sid=$userBSessionId|200|  Content-Type: application/json ||
+| GET | /v1/samples/$sampleId2/info?sid=$userBSessionId&study=$studyId|200|  Content-Type: application/json ||
 |let||js|!-res="Nothing";if(response.jsonbody.response[0].result[0]["annotationSets"]) {res = response.jsonbody.response[0].result[0].annotationSets.length;}res;-!|1.0|
 
 !3 Search Annotation Set By Annotation
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/samples/$sampleId2/annotationsets/search?variableSet=$gVariableSetId&annotation=var_int=10|200|  Content-Type: application/json ||
+| GET | /v1/samples/$sampleId2/annotationsets/search?variableSet=$gVariableSetId&annotation=var_int=10&study=$studyId|200|  Content-Type: application/json ||
 
 !3 Create Nested Annotation
 !|Table: Rest Fixture | $baseURL |
 |setBody|{ "annotationSets":[{"id": "$aS1","variableSetId": "$gVariableSetId2","annotations": { "outer_var" : [{"inner_first_var":1000.57 , "inner_second_var":2000}]}}]}|
-|POST| /v1/samples/$sampleId2/update |200|  Content-Type: application/json |jsonbody.response[0].result[0].annotationSets.length == 2|
+|POST| /v1/samples/$sampleId2/update?study=$study |200|  Content-Type: application/json |jsonbody.response[0].result[0].annotationSets.length == 2|
 
 !3 Search Annotation Set By Variable Set
 !|Table: Rest Fixture | $baseURL |
@@ -343,42 +343,42 @@ Authorization : Bearer -!|
 !3 Delete Variable In Annotation
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"remove" : "var_double"}|
-|POST| /v1/samples/$sampleId2/annotationSets/$aS2/annotations/update?action=REMOVE  |200|  Content-Type: application/json ||
+|POST| /v1/samples/$sampleId2/annotationSets/$aS2/annotations/update?action=REMOVE&study=$studyId  |200|  Content-Type: application/json ||
 
 !3 (Negative) Delete Variable In Annotation
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"remove" : "var_int"}|
-|POST| /v1/samples/$sampleId2/annotationSets/$aS2/annotations/update?action=REMOVE  |500|  Content-Type: application/json |jsonbody.error == 'var_int: Cannot remove required variable.'|
+|POST| /v1/samples/$sampleId2/annotationSets/$aS2/annotations/update?action=REMOVE&study=$studyId  |500|  Content-Type: application/json |jsonbody.error == 'var_int: Cannot remove required variable.'|
 
 !3 Update Variable in An Annotation
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"var_int": "545"}|
-|POST| /v1/samples/$sampleId2/annotationSets/$aS2/annotations/update?action=ADD  |200|  Content-Type: application/json ||
+|POST| /v1/samples/$sampleId2/annotationSets/$aS2/annotations/update?action=ADD&study=$studyId  |200|  Content-Type: application/json ||
 
 !3 (Negative) Update Variable in An Annotation
 !|Table: Rest Fixture | $baseURL |
 | setBody |{"var_int": "542.5"}|
-|POST| /v1/samples/$sampleId2/annotationSets/$aS2/annotations/update |500|  Content-Type: application/json |jsonbody.error == 'Value 542.5 is not an integer number'|
+|POST| /v1/samples/$sampleId2/annotationSets/$aS2/annotations/update?study=$studyId |500|  Content-Type: application/json |jsonbody.error == 'Value 542.5 is not an integer number'|
 
 !3 (Negative) Update Variable in An Annotation
 !|Table: Rest Fixture | $baseURL |
 | setBody |{"var_double": "ABC"}|
-|POST| /v1/samples/$sampleId2/annotationSets/$aS2/annotations/update |500|  Content-Type: application/json |jsonbody.error == 'Value ABC is not a number'|
+|POST| /v1/samples/$sampleId2/annotationSets/$aS2/annotations/update?study=$studyId |500|  Content-Type: application/json |jsonbody.error == 'Value ABC is not a number'|
 
 !3 Update Variable in An Annotation
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"var_double": "2065.35"}|
-|POST| /v1/samples/$sampleId2/annotationSets/$aS2/annotations/update |200|  Content-Type: application/json ||
+|POST| /v1/samples/$sampleId2/annotationSets/$aS2/annotations/update?study=$studyId |200|  Content-Type: application/json ||
 
 !3 Group By Annotation
 !|Table: Rest Fixture | $baseURL |
-|GET| /v1/samples/groupBy?fields=annotation:$gVariableSetId:$aS2:var_int,date |200|  Content-Type: application/json ||
-|GET| /v1/samples/groupBy?fields=annotation:$gVariableSetId |200|  Content-Type: application/json ||
+|GET| /v1/samples/groupBy?study=$studyId&fields=annotation:$gVariableSetId:$aS2:var_int,date |200|  Content-Type: application/json ||
+|GET| /v1/samples/groupBy?study=$studyId&fields=annotation:$gVariableSetId |200|  Content-Type: application/json ||
 
 !3 Delete Annotation
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"annotationSets":[{"id": "$aS2"}]}|
-|POST| /v1/samples/$sampleId2/update?annotationSetsAction=REMOVE |200|  Content-Type: application/json ||
+|POST| /v1/samples/$sampleId2/update?study=$studyId&annotationSetsAction=REMOVE |200|  Content-Type: application/json ||
 
 !3 Get Flatten Annotation
 !|Table: Rest Fixture | $baseURL |
@@ -391,13 +391,13 @@ Authorization : Bearer -!|
 !3 Update Sample ACL (remove)
 !|Table: Rest Fixture | $baseURL |
 |setBody|{"remove": "VIEW_ANNOTATIONS"}|
-|POST| /v1/samples/$sampleId2/acl/$userB/update |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions.length == '1'|
+|POST| /v1/samples/$sampleId2/acl/$userB/update?study=$studyId |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions.length == '1'|
 
 !3 Get Sample (Annotation Set MUST NOT Present)
 !|Table: Rest Fixture | $baseURL |
 |setHeaders|!-Content-Type : application/json
 Authorization : Bearer -!|
-| GET | /v1/samples/$sampleId2/info?sid=$userBSessionId|200|  Content-Type: application/json ||
+| GET | /v1/samples/$sampleId2/info?sid=$userBSessionId&study=$studyId|200|  Content-Type: application/json ||
 |let||js|!-res="noAnnotationSet";if(response.jsonbody.response[0].result[0].annotationSets.length) {res = response.jsonbody.response[0].result[0].annotationSets.length;}res;-!|noAnnotationSet|
 
 !3 Update (SET) ACL Sample 2 And Connecting Individual
@@ -413,7 +413,7 @@ Authorization : Bearer -!|
 
 !3 Get Member ACL (Individual)
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/individuals/$individualId/acl?member=$userA|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '1.0' && jsonbody.response[0].result[0].permissions[0] == 'VIEW'|
+| GET | /v1/individuals/$individualId/acl?member=$userA&study=$study|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '1.0' && jsonbody.response[0].result[0].permissions[0] == 'VIEW'|
 
 !3 Search Sample (All With Limit)
 !|Table: Rest Fixture | $baseURL |
