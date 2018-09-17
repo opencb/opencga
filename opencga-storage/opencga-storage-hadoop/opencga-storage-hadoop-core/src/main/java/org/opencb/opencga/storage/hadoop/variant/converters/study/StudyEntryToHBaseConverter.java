@@ -112,8 +112,14 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
         if (releaseColumn != null) {
             add(put, releaseColumn, true);
         }
+        int size = put.size();
+        put = convert(variant, put, null);
 
-        return convert(variant, put, null);
+        if (size == put.size()) {
+            return null;
+        } else {
+            return put;
+        }
     }
 
     public Put convert(Variant variant, Put put) {
