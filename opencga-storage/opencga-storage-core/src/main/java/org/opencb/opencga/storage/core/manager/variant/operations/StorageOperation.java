@@ -222,7 +222,7 @@ public abstract class StorageOperation {
             String databasePrefix = catalogManager.getConfiguration().getDatabasePrefix();
 
             String dbName = buildDatabaseName(databasePrefix, userId, project.getId());
-            dataStore = new DataStore(StorageEngineFactory.get().getDefaultStorageManagerName(), dbName);
+            dataStore = new DataStore(StorageEngineFactory.get().getDefaultStorageEngineId(), dbName);
         }
         return dataStore;
     }

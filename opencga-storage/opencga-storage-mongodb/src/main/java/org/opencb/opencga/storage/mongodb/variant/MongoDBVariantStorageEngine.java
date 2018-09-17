@@ -211,7 +211,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         VariantSearchLoadResult searchIndex;
         long timeStamp = System.currentTimeMillis();
 
-        if (configuration.getSearch().getActive() && variantSearchManager.isAlive(dbName)) {
+        if (configuration.getSearch().isActive() && variantSearchManager.isAlive(dbName)) {
             // First remove trashed variants.
             ProgressLogger progressLogger = new ProgressLogger("Variants removed from Solr");
             try (VariantDBIterator removedVariants = getDBAdaptor().trashedVariants(timeStamp)) {
