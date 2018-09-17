@@ -1181,6 +1181,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             }
             genotypeParam = SAMPLE;
 
+            if (defaultStudyConfiguration == null) {
+                throw VariantQueryException.missingStudyForSamples(query.getAsStringList(SAMPLE.key()),
+                        getStudyConfigurationManager().getStudyNames(null));
+            }
             List<String> loadedGenotypes = defaultStudyConfiguration.getAttributes().getAsStringList(LOADED_GENOTYPES.key());
             if (CollectionUtils.isEmpty(loadedGenotypes)) {
                 loadedGenotypes = Arrays.asList(

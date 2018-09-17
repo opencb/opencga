@@ -41,6 +41,11 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
     protected static final String file12882 = "1K.end.platinum-genomes-vcf-NA12882_S1.genome.vcf.gz";
     protected static final String file12879 = "1K.end.platinum-genomes-vcf-NA12879_S1.genome.vcf.gz";
     protected static final String file12880 = "1K.end.platinum-genomes-vcf-NA12880_S1.genome.vcf.gz";
+    protected static final String sampleNA12877 = "NA12877";
+    protected static final String sampleNA12878 = "NA12878";
+    protected static final String sampleNA12882 = "NA12882";
+    protected static final String sampleNA12879 = "NA12879";
+    protected static final String sampleNA12880 = "NA12880";
     protected static boolean loaded = false;
     protected VariantDBAdaptor dbAdaptor;
     protected Query query;
@@ -736,6 +741,33 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
                 withFileId(file12877, with(FILTER, fileEntry -> fileEntry.getAttributes().get(FILTER), allOf(containsString("LowGQX"), containsString("LowMQ")))),
                 not(withFileId(file12878))
         ))));
+    }
+
+    @Test
+    public void testGetByFilterBySample() {
+        VariantQueryResult<Variant> allVariants = dbAdaptor.get(new Query()
+                .append(VariantQueryParam.INCLUDE_STUDY.key(), "S_1")
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleNA12877)
+                .append(VariantQueryParam.INCLUDE_FILE.key(), asList(file12877)), options);
+
+        query = new Query()
+                .append(VariantQueryParam.STUDY.key(), "S_1")
+                .append(VariantQueryParam.FILTER.key(), "LowGQX;LowMQ")
+                .append(VariantQueryParam.SAMPLE.key(), sampleNA12877);
+        queryResult = query(query, options);
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(
+                withFileId(file12877, withAttribute(FILTER, allOf(containsString("LowGQX"), containsString("LowMQ")))),
+                withSampleData(sampleNA12877, "GT", containsString("1"))
+        ))));
+
+
+        query = new Query()
+                .append(VariantQueryParam.STUDY.key(), "S_1")
+                .append(VariantQueryParam.FILTER.key(), "LowGQX;LowMQ")
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleNA12877);
+        queryResult = query(query, options);
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1",
+                withFileId(file12877, withAttribute(FILTER, allOf(containsString("LowGQX"), containsString("LowMQ")))))));
     }
 
     @Test

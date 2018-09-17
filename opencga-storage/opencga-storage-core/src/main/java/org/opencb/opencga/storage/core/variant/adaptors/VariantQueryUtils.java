@@ -1010,6 +1010,10 @@ public final class VariantQueryUtils {
             files.removeIf(VariantQueryUtils::isNegated);
 
             if (files.isEmpty()) {
+                files = query.getAsStringList(INCLUDE_FILE.key());
+            }
+
+            if (files.isEmpty()) {
                 throw VariantQueryException.malformedParam(INFO, value, "Missing \"" + FILE.key() + "\" param.");
             }
 
