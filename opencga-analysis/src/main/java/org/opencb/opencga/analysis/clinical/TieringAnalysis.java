@@ -289,7 +289,7 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
             List<RegionCoverage> regionCoverages;
             for (Transcript transcript: geneQueryResponse.getResponse().get(0).first().getTranscripts()) {
                 for (Exon exon: transcript.getExons()) {
-                    regionCoverages = alignmentStorageManager.getUncoveredRegions(studyStr, bamFileId,
+                    regionCoverages = alignmentStorageManager.getLowCoverageRegions(studyStr, bamFileId,
                             new Region(exon.getChromosome(), exon.getStart(), exon.getEnd()), maxCoverage, token).getResult();
                     for (RegionCoverage regionCoverage: regionCoverages) {
                         ReportedLowCoverage reportedLowCoverage = new ReportedLowCoverage(regionCoverage)
