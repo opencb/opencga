@@ -34,8 +34,9 @@
 !3 Create User
 !|Table: Rest Fixture  | $baseURL |
 | setBody |  { "name": "$user", "id": "$user","email": "test@test.com", "password" : "user_P@ssword",  "account": "full" }|
-| setHeader|Content-Type:application/json|
-| POST | /v1/admin/users/create?sid=$root |200| Content-Type : application/json| jsonbody.error === '' && jsonbody.response[0].result[0].id == '$user'|
+| setHeaders|!- Content-Type:application/json 
+Authorization : Bearer $root-!|
+| POST | /v1/admin/users/create |200| Content-Type : application/json| jsonbody.error === '' && jsonbody.response[0].result[0].id == '$user'|
 
 !3 (Negative) Create User With In-Valid ID 
 !|Table: Rest Fixture  | $baseURL |
