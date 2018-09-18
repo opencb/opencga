@@ -25,7 +25,7 @@ import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 @Path("/{apiVersion}/diseasePanels")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = "Disease Panel (BETA)", position = 4, description = "Methods for working with 'diseasePanels' endpoint")
+@Api(value = "Disease Panels", position = 4, description = "Methods for working with 'diseasePanels' endpoint")
 public class DiseasePanelWSServer extends OpenCGAWSServer {
 
     private DiseasePanelManager panelManager;
