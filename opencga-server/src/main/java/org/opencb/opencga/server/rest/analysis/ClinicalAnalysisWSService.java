@@ -60,6 +60,7 @@ public class ClinicalAnalysisWSService extends AnalysisWSService {
     public Response index(@ApiParam(value = "Comma separated list of interpretation IDs") @QueryParam(value = "interpretationId") String interpretationId,
                           @ApiParam(value = "Clinical analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String study) {
+//        ClinicalInterpretationManager clinicalInterpretationManager = new ClinicalInterpretationManager(catalogManager, )
         return Response.ok().build();
     }
 
