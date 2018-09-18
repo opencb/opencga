@@ -263,6 +263,9 @@ public class CatalogSolrQueryParser {
     }
 
     private ObjectMap generateVariableMap(List<VariableSet> variableSetList) {
+        if (variableSetList == null || variableSetList.isEmpty()) {
+            return new ObjectMap();
+        }
         // Full variable path -> Map
         //                         type:
         //                         variableSetId:
