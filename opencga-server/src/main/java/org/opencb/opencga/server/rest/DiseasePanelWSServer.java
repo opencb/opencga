@@ -263,6 +263,7 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
         public String author;
         public DiseasePanel.SourcePanel source;
 
+        public List<String> tags;
         public List<Phenotype> phenotypes;
         public List<DiseasePanel.VariantPanel> variants;
         public List<DiseasePanel.GenePanel> genes;
@@ -270,7 +271,7 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
         public Map<String, Object> attributes;
 
         DiseasePanel toPanel() {
-            return new DiseasePanel(id, name, 1, 1, author, source, description, phenotypes, variants, genes, regions, attributes);
+            return new DiseasePanel(id, name, 1, 1, author, source, description, tags, phenotypes, variants, genes, regions, attributes);
         }
 
         ObjectMap toObjectMap() throws JsonProcessingException {
@@ -280,6 +281,7 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
                     .setAuthor(author)
                     .setSource(source)
                     .setDescription(description)
+                    .setTags(tags)
                     .setPhenotypes(phenotypes)
                     .setVariants(variants)
                     .setGenes(genes)

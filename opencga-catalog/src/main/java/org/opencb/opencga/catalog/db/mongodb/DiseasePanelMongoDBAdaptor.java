@@ -421,6 +421,9 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
         final String[] acceptedMapParams = {UpdateParams.ATTRIBUTES.key()};
         filterMapParams(parameters, panelParameters, acceptedMapParams);
 
+        String[] acceptedParamsList = { UpdateParams.TAGS.key() };
+        filterStringListParams(parameters, panelParameters, acceptedParamsList);
+
         final String[] acceptedObjectParams = {UpdateParams.VARIANTS.key(), UpdateParams.PHENOTYPES.key(), UpdateParams.REGIONS.key(),
                 UpdateParams.GENES.key(), UpdateParams.SOURCE.key()};
         filterObjectParams(parameters, panelParameters, acceptedObjectParams);

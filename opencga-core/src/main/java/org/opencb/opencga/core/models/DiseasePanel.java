@@ -43,6 +43,8 @@ public class DiseasePanel extends PrivateStudyUid {
 
     private List<Phenotype> phenotypes;
 
+    private List<String> tags;
+
     private List<VariantPanel> variants;
     private List<GenePanel> genes;
     private List<RegionPanel> regions;
@@ -59,8 +61,8 @@ public class DiseasePanel extends PrivateStudyUid {
     }
 
     public DiseasePanel(String id, String name, int release, int version, String author, SourcePanel source, String description,
-                        List<Phenotype> phenotypes, List<VariantPanel> variants, List<GenePanel> genes, List<RegionPanel> regions,
-                        Map<String, Object> attributes) {
+                        List<String> tags, List<Phenotype> phenotypes, List<VariantPanel> variants, List<GenePanel> genes,
+                        List<RegionPanel> regions, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.release = release;
@@ -70,6 +72,7 @@ public class DiseasePanel extends PrivateStudyUid {
         this.status = new Status();
         this.source = source;
         this.description = description;
+        this.tags = tags;
         this.phenotypes = phenotypes;
         this.variants = variants;
         this.genes = genes;
@@ -293,6 +296,7 @@ public class DiseasePanel extends PrivateStudyUid {
         sb.append(", source=").append(source);
         sb.append(", description='").append(description).append('\'');
         sb.append(", phenotypes=").append(phenotypes);
+        sb.append(", tags=").append(tags);
         sb.append(", variants=").append(variants);
         sb.append(", genes=").append(genes);
         sb.append(", regions=").append(regions);
@@ -397,6 +401,15 @@ public class DiseasePanel extends PrivateStudyUid {
 
     public DiseasePanel setDescription(String description) {
         this.description = description;
+        return this;
+    }
+
+    public List<String> getTags() {
+        return tags;
+    }
+
+    public DiseasePanel setTags(List<String> tags) {
+        this.tags = tags;
         return this;
     }
 

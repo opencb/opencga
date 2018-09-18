@@ -55,6 +55,8 @@ public interface DiseasePanelDBAdaptor extends DBAdaptor<DiseasePanel> {
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
 
+        TAGS("tags", TEXT_ARRAY, ""),
+
         PHENOTYPES("phenotypes", TEXT_ARRAY, ""),
         PHENOTYPES_ID("phenotypes.id", TEXT, ""),
         PHENOTYPES_NAME("phenotypes.name", TEXT, ""),
@@ -129,6 +131,7 @@ public interface DiseasePanelDBAdaptor extends DBAdaptor<DiseasePanel> {
         PHENOTYPES(QueryParams.PHENOTYPES.key()),
         VARIANTS(QueryParams.VARIANTS.key()),
         GENES(QueryParams.GENES.key()),
+        TAGS(QueryParams.TAGS.key()),
         REGIONS(QueryParams.REGIONS.key()),
         AUTHOR(QueryParams.AUTHOR.key()),
         STATUS_NAME(QueryParams.STATUS_NAME.key()),
