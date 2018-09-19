@@ -54,7 +54,7 @@ public class FileCommandOptions {
     public UnlinkCommandOptions unlinkCommandOptions;
     public RefreshCommandOptions refreshCommandOptions;
     public GroupByCommandOptions groupByCommandOptions;
-    public FacetCommandOptions facetCommandOptions;
+    public StatsCommandOptions statsCommandOptions;
 //    public VariantsCommandOptions variantsCommandOptions;
 
     public FileAclCommandOptions.AclsCommandOptions aclsCommandOptions;
@@ -92,7 +92,7 @@ public class FileCommandOptions {
         this.linkCommandOptions = new LinkCommandOptions();
         this.uploadCommandOptions = new UploadCommandOptions();
         this.groupByCommandOptions = new GroupByCommandOptions();
-        this.facetCommandOptions = new FacetCommandOptions();
+        this.statsCommandOptions = new StatsCommandOptions();
 //        this.variantsCommandOptions = new VariantsCommandOptions();
 
         FileAclCommandOptions aclCommandOptions = new FileAclCommandOptions(commonCommandOptions);
@@ -785,13 +785,13 @@ public class FileCommandOptions {
         }
     }
 
-    @Parameters(commandNames = {"facet"}, commandDescription = "Facets in files")
-    public class FacetCommandOptions extends StudyOption {
+    @Parameters(commandNames = {"stats"}, commandDescription = "File stats")
+    public class StatsCommandOptions extends StudyOption {
 
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--default-stats"}, description = "Flag to calculate default stats", arity = 0)
+        @Parameter(names = {"--default"}, description = "Flag to calculate default stats", arity = 0)
         public boolean defaultStats;
 
         @Parameter(names = {"--creation-year"}, description = "Creation year.", arity = 1)
@@ -845,13 +845,13 @@ public class FileCommandOptions {
         @Parameter(names = {"--annotation"}, description = "Annotation. See documentation to see the options.", arity = 1)
         public String annotation;
 
-        @Parameter(names = {"--facet"}, description = "List of facet fields separated by semicolons, e.g.: studies;type. For nested "
-                + "faceted fields use >>, e.g.: studies>>biotype;type.", arity = 1)
-        public String facet;
+        @Parameter(names = {"--field"}, description = "List of fields separated by semicolons, e.g.: studies;type. For nested "
+                + "fields use >>, e.g.: studies>>biotype;type.", arity = 1)
+        public String field;
 
-        @Parameter(names = {"--facet-range"}, description = "List of facet ranges separated by semicolons with the format"
+        @Parameter(names = {"--field-range"}, description = "List of ranges separated by semicolons with the format"
                 + " {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1.", arity = 1)
-        public String facetRange;
+        public String fieldRange;
     }
 
 }

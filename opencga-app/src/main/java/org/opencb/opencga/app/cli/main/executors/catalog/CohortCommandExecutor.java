@@ -28,8 +28,6 @@ import org.opencb.opencga.app.cli.main.options.CohortCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
-import org.opencb.opencga.catalog.stats.solr.CatalogSolrQueryParser;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.Cohort;
 import org.opencb.opencga.core.models.Sample;
@@ -82,8 +80,8 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
             case "group-by":
                 queryResponse = groupBy();
                 break;
-            case "facet":
-                queryResponse = facet();
+            case "stats":
+                queryResponse = stats();
                 break;
             case "acl":
                 queryResponse = aclCommandExecutor.acls(cohortsCommandOptions.aclsCommandOptions, openCGAClient.getCohortClient());
@@ -222,10 +220,10 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
                 cohortsCommandOptions.groupByCommandOptions.fields,params);
     }
 
-    private QueryResponse facet() throws IOException {
-        logger.debug("Cohort facets");
+    private QueryResponse stats() throws IOException {
+        logger.debug("Cohort stats");
 
-        CohortCommandOptions.FacetCommandOptions commandOptions = cohortsCommandOptions.facetCommandOptions;
+        CohortCommandOptions.StatsCommandOptions commandOptions = cohortsCommandOptions.statsCommandOptions;
 
         Query query = new Query();
         query.putIfNotEmpty("creationYear", commandOptions.creationYear);
@@ -239,11 +237,11 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotEmpty(Constants.ANNOTATION, commandOptions.annotation);
 
         QueryOptions options = new QueryOptions();
-        options.put("defaultStats", commandOptions.defaultStats);
-        options.putIfNotNull("facet", commandOptions.facet);
-        options.putIfNotNull("facetRange", commandOptions.facetRange);
+        options.put("default", commandOptions.defaultStats);
+        options.putIfNotNull("field", commandOptions.field);
+        options.putIfNotNull("fieldRange", commandOptions.fieldRange);
 
-        return openCGAClient.getCohortClient().facet(commandOptions.study, query, options);
+        return openCGAClient.getCohortClient().stats(commandOptions.study, query, options);
     }
 
     private QueryResponse<CohortAclEntry> updateAcl() throws IOException, CatalogException {

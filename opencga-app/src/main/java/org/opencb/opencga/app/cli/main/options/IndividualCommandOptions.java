@@ -24,7 +24,6 @@ import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
-import org.opencb.opencga.core.models.Individual;
 
 import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 
@@ -41,7 +40,7 @@ public class IndividualCommandOptions {
     public DeleteCommandOptions deleteCommandOptions;
     public GroupByCommandOptions groupByCommandOptions;
     public SampleCommandOptions sampleCommandOptions;
-    public FacetCommandOptions facetCommandOptions;
+    public StatsCommandOptions statsCommandOptions;
 
     public IndividualAclCommandOptions.AclsCommandOptions aclsCommandOptions;
     public IndividualAclCommandOptions.AclsUpdateCommandOptions aclsUpdateCommandOptions;
@@ -72,7 +71,7 @@ public class IndividualCommandOptions {
         this.deleteCommandOptions = new DeleteCommandOptions();
         this.groupByCommandOptions = new GroupByCommandOptions();
         this.sampleCommandOptions = new SampleCommandOptions();
-        this.facetCommandOptions = new FacetCommandOptions();
+        this.statsCommandOptions = new StatsCommandOptions();
 
         AnnotationCommandOptions annotationCommandOptions = new AnnotationCommandOptions(commonCommandOptions);
         this.annotationCreateCommandOptions = annotationCommandOptions.getCreateCommandOptions();
@@ -362,13 +361,13 @@ public class IndividualCommandOptions {
         }
     }
 
-    @Parameters(commandNames = {"facet"}, commandDescription = "Facets in individuals")
-    public class FacetCommandOptions extends StudyOption {
+    @Parameters(commandNames = {"stats"}, commandDescription = "Individual stats")
+    public class StatsCommandOptions extends StudyOption {
 
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--default-stats"}, description = "Flag to calculate default stats", arity = 0)
+        @Parameter(names = {"--default"}, description = "Flag to calculate default stats", arity = 0)
         public boolean defaultStats;
 
         @Parameter(names = {"--creation-year"}, description = "Creation year.", arity = 1)
@@ -434,13 +433,13 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--annotation"}, description = "Annotation. See documentation to see the options.", arity = 1)
         public String annotation;
 
-        @Parameter(names = {"--facet"}, description = "List of facet fields separated by semicolons, e.g.: studies;type. For nested "
-                + "faceted fields use >>, e.g.: studies>>biotype;type.", arity = 1)
-        public String facet;
+        @Parameter(names = {"--field"}, description = "List of fields separated by semicolons, e.g.: studies;type. For nested "
+                + "fields use >>, e.g.: studies>>biotype;type.", arity = 1)
+        public String field;
 
-        @Parameter(names = {"--facet-range"}, description = "List of facet ranges separated by semicolons with the format"
+        @Parameter(names = {"--field-range"}, description = "List of field ranges separated by semicolons with the format"
                 + " {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1.", arity = 1)
-        public String facetRange;
+        public String fieldRange;
     }
 
 }
