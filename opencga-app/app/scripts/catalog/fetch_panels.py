@@ -28,9 +28,16 @@ for panel in panels['result']:
         print("Panel is not ready for interpretation: '" + panel['Name'] + "', version: '" + panel['CurrentVersion'] + "'")
     else:
         print("Processing " + panel['Name'] + "...")
+        # print(panel)
         req = urllib.request.Request('https://panelapp.genomicsengland.co.uk/WebServices/get_panel/' + panel['Panel_Id'] + '/')
         response = urllib.request.urlopen(req)
         panel_info = json.loads(response.read().decode('utf-8'))['result']
+        # print(panel_info)
+
+        # store categories
+        categories = []
+        categories.append({'name': panel_info['DiseaseGroup'], 'level': 1})
+        categories.append({'name': panel_info['DiseaseSubGroup'], 'level': 2})
 
         # store all phenotypes from the Panel
         phenotypes = []
@@ -41,31 +48,49 @@ for panel in panels['result']:
         # retrieve and store all genes
         genes = []
         for gene in panel_info['Genes']:
-            if not gene['EnsembleGeneIds']:
-                genes.append({'id': '', 'name': gene['GeneSymbol'], 'confidence': gene['LevelOfConfidence']})
-            else:
-                genes.append({'id': gene['EnsembleGeneIds'][0], 'name': gene['GeneSymbol'], 'confidence': gene['LevelOfConfidence']})
+            ensemblGeneId = ''
+            publications = []
+
+            # read the first Ensembl gene ID if exists
+            if gene['EnsembleGeneIds']:
+                ensemblGeneId = gene['EnsembleGeneIds'][0]
+
+            # read the publications
+            if gene['Publications']:
+                publications = gene['Publications']
+
+            # add panel gene
+            genes.append({
+                'id': ensemblGeneId,
+                'name': gene['GeneSymbol'],
+                'confidence': gene['LevelOfConfidence'],
+                'evidences': gene['Evidences'],
+                'publications': publications
+            })
 
         # prepare OpenCGA Panel data model
         opencga_panel = {
             'id': panel['Panel_Id'],
             'name': panel['Name'],
-            'version': 1,
-            'author': '',
-            'creationDate': datetime.date.today().isoformat(),
-            'source': {
-                'id': panel['Panel_Id'],
-                'project': 'PanelApp (GEL)',
-                'version': panel_info['version']
-            },
-            'description': panel_info['DiseaseSubGroup'] + ' (' + panel_info['DiseaseGroup'] + ')',
+            'categories': categories,
             'phenotypes': phenotypes,
+            'tags': [],
             'variants': [],
             'genes': genes,
             'regions': [],
+            'version': 1,
+            'author': '',
+            'source': {
+                'id': panel['Panel_Id'],
+                'name': panel['Name'],
+                'version': panel_info['version'],
+                'project': 'PanelApp (GEL)'
+            },
+            'creationDate': datetime.date.today().isoformat(),
+            'modificationDate': datetime.date.today().isoformat(),
+            'description': panel_info['DiseaseSubGroup'] + ' (' + panel_info['DiseaseGroup'] + ')',
             'attributes': {
-                'DiseaseGroup': panel_info['DiseaseGroup'],
-                'DiseaseSubGroup': panel_info['DiseaseSubGroup']
+                'PanelAppInfo': panel
             }
         }
 

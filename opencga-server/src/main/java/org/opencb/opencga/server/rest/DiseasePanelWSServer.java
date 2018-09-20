@@ -271,7 +271,7 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
         public Map<String, Object> attributes;
 
         DiseasePanel toPanel() {
-            return new DiseasePanel(id, name, 1, 1, author, source, description, tags, phenotypes, variants, genes, regions, attributes);
+            return new DiseasePanel(id, name, 1, 1, author, source, description, phenotypes, variants, genes, regions, tags, attributes);
         }
 
         ObjectMap toObjectMap() throws JsonProcessingException {
