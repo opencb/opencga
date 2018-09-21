@@ -51,11 +51,15 @@ public interface DiseasePanelDBAdaptor extends DBAdaptor<DiseasePanel> {
 
         SOURCE("source", TEXT_ARRAY, ""),
 
+        STATS("stats", TEXT_ARRAY, ""),
+
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
 
         TAGS("tags", TEXT_ARRAY, ""),
+        CATEGORIES("categories", TEXT_ARRAY, ""),
+        CATEGORIES_NAME("categories.name", TEXT_ARRAY, ""),
 
         PHENOTYPES("phenotypes", TEXT_ARRAY, ""),
         PHENOTYPES_ID("phenotypes.id", TEXT, ""),
@@ -131,10 +135,12 @@ public interface DiseasePanelDBAdaptor extends DBAdaptor<DiseasePanel> {
         PHENOTYPES(QueryParams.PHENOTYPES.key()),
         VARIANTS(QueryParams.VARIANTS.key()),
         GENES(QueryParams.GENES.key()),
+        CATEGORIES(QueryParams.CATEGORIES.key()),
         TAGS(QueryParams.TAGS.key()),
         REGIONS(QueryParams.REGIONS.key()),
         AUTHOR(QueryParams.AUTHOR.key()),
         STATUS_NAME(QueryParams.STATUS_NAME.key()),
+        STATS(QueryParams.STATS.key()),
         ATTRIBUTES(QueryParams.ATTRIBUTES.key());
 
         private static Map<String, UpdateParams> map;
