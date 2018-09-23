@@ -47,7 +47,9 @@ public class DiseasePanel extends PrivateStudyUid {
      */
     private int version;
 
+    @Deprecated
     private String author;
+
     /**
      * Information taken from the source of this panel.
      * For instance if the panel is taken from PanelApp this will contain the id, name and version in PanelApp.
@@ -164,15 +166,25 @@ public class DiseasePanel extends PrivateStudyUid {
         private String id;
         private String name;
         private String version;
+        private String author;
         private String project;
 
         public SourcePanel() {
         }
 
+        @Deprecated
         public SourcePanel(String id, String name, String version, String project) {
             this.id = id;
             this.name = name;
             this.version = version;
+            this.project = project;
+        }
+
+        public SourcePanel(String id, String name, String version, String author, String project) {
+            this.id = id;
+            this.name = name;
+            this.version = version;
+            this.author = author;
             this.project = project;
         }
 
@@ -182,6 +194,7 @@ public class DiseasePanel extends PrivateStudyUid {
             sb.append("id='").append(id).append('\'');
             sb.append(", name='").append(name).append('\'');
             sb.append(", version='").append(version).append('\'');
+            sb.append(", author='").append(author).append('\'');
             sb.append(", project='").append(project).append('\'');
             sb.append('}');
             return sb.toString();
@@ -211,6 +224,15 @@ public class DiseasePanel extends PrivateStudyUid {
 
         public SourcePanel setVersion(String version) {
             this.version = version;
+            return this;
+        }
+
+        public String getAuthor() {
+            return author;
+        }
+
+        public SourcePanel setAuthor(String author) {
+            this.author = author;
             return this;
         }
 
@@ -562,10 +584,12 @@ public class DiseasePanel extends PrivateStudyUid {
         return this;
     }
 
+    @Deprecated
     public String getAuthor() {
         return author;
     }
 
+    @Deprecated
     public DiseasePanel setAuthor(String author) {
         this.author = author;
         return this;

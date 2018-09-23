@@ -100,11 +100,11 @@ for page in [1, 2, 3]:
                 'genes': genes,
                 'regions': [],
                 'version': 1,
-                'author': '',
                 'source': {
                     'id': panel_info['id'],
                     'name': panel_info['name'],
                     'version': panel_info['version'],
+                    'author': '',
                     'project': 'PanelApp (GEL)'
                 },
                 'creationDate': datetime.date.today().isoformat(),
