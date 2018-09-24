@@ -268,6 +268,7 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
         public String id;
         public String name;
         public String description;
+        @Deprecated
         public String author;
         public DiseasePanel.SourcePanel source;
 

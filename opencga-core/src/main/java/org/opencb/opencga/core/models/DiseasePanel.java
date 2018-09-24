@@ -17,6 +17,7 @@
 package org.opencb.opencga.core.models;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.core.Xref;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -115,6 +116,10 @@ public class DiseasePanel extends PrivateStudyUid {
         this.modificationDate = TimeUtils.getTime();
         this.description = description;
         this.attributes = attributes;
+
+        if (StringUtils.isNotEmpty(author) && source != null && StringUtils.isEmpty(source.getAuthor())) {
+            this.source.setAuthor(author);
+        }
     }
 
     /**
