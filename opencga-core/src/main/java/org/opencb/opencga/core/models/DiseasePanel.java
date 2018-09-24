@@ -21,6 +21,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.core.Xref;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.ClinicalProperty.ModeOfInheritance;
+import org.opencb.opencga.core.models.ClinicalProperty.Penetrance;
+import org.opencb.opencga.core.models.clinical.ReportedEvent;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -317,7 +320,8 @@ public class DiseasePanel extends PrivateStudyUid {
          */
         private String name;
         private List<Xref> xrefs;
-        private String modeOfInheritance;
+        private ModeOfInheritance modeOfInheritance;
+        private Penetrance penetrance;
         private String confidence;
         private List<String> evidences;
         private List<String> publications;
@@ -325,12 +329,13 @@ public class DiseasePanel extends PrivateStudyUid {
         public GenePanel() {
         }
 
-        public GenePanel(String id, String name, List<Xref> xrefs, String modeOfInheritance, String confidence, List<String> evidences,
-                         List<String> publications) {
+        public GenePanel(String id, String name, List<Xref> xrefs, ModeOfInheritance modeOfInheritance, Penetrance penetrance,
+                         String confidence, List<String> evidences, List<String> publications) {
             this.id = id;
             this.name = name;
             this.xrefs = xrefs;
             this.modeOfInheritance = modeOfInheritance;
+            this.penetrance = penetrance;
             this.confidence = confidence;
             this.evidences = evidences;
             this.publications = publications;
@@ -342,7 +347,8 @@ public class DiseasePanel extends PrivateStudyUid {
             sb.append("id='").append(id).append('\'');
             sb.append(", name='").append(name).append('\'');
             sb.append(", xrefs=").append(xrefs);
-            sb.append(", modeOfInheritance='").append(modeOfInheritance).append('\'');
+            sb.append(", modeOfInheritance=").append(modeOfInheritance);
+            sb.append(", penetrance=").append(penetrance);
             sb.append(", confidence='").append(confidence).append('\'');
             sb.append(", evidences=").append(evidences);
             sb.append(", publications=").append(publications);
@@ -377,12 +383,21 @@ public class DiseasePanel extends PrivateStudyUid {
             return this;
         }
 
-        public String getModeOfInheritance() {
+        public ModeOfInheritance getModeOfInheritance() {
             return modeOfInheritance;
         }
 
-        public GenePanel setModeOfInheritance(String modeOfInheritance) {
+        public GenePanel setModeOfInheritance(ModeOfInheritance modeOfInheritance) {
             this.modeOfInheritance = modeOfInheritance;
+            return this;
+        }
+
+        public Penetrance getPenetrance() {
+            return penetrance;
+        }
+
+        public GenePanel setPenetrance(Penetrance penetrance) {
+            this.penetrance = penetrance;
             return this;
         }
 

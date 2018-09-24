@@ -39,18 +39,23 @@ import org.opencb.opencga.analysis.OpenCgaAnalysis;
 import org.opencb.opencga.analysis.exceptions.AnalysisException;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.ClinicalProperty.Penetrance;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.core.models.ClinicalProperty.ModeOfInheritance.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 
 public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
@@ -62,6 +67,8 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
 
     private CellBaseClient cellBaseClient;
     private AlignmentStorageManager alignmentStorageManager;
+
+    private final static String SEPARATOR = "__";
 
     public TieringAnalysis(String opencgaHome, String studyStr, String token) {
         super(opencgaHome, studyStr, token);
@@ -113,7 +120,6 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
                     + clinicalAnalysisId);
         }
 
-        // TODO: Do we have to raise an exception if no disease panels are provided?
         List<DiseasePanel> diseasePanels = new ArrayList<>();
         if (diseasePanelIds != null && !diseasePanelIds.isEmpty()) {
             List<QueryResult<DiseasePanel>> queryResults = catalogManager.getDiseasePanelManager()
@@ -130,6 +136,8 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
                 }
                 diseasePanels.add(queryResult.first());
             }
+        } else {
+            throw new AnalysisException("Missing disease panels");
         }
 
         // Check sample and proband exists
@@ -143,12 +151,8 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
                 .append(VariantQueryParam.ANNOT_BIOTYPE.key(), "protein_coding")
                 .append(VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "<0.01");
 
-        Map<String, List<String>> genotypes;
         VariantQueryResult<Variant> variantQueryResult;
         Map<String, ReportedVariant> reportedVariantMap = new HashMap<>();
-
-        ReportedEvent.Penetrance penetrance = ReportedEvent.Penetrance.COMPLETE;
-        boolean penetranceBoolean = penetrance == ReportedEvent.Penetrance.COMPLETE;
 
         // Reported low coverage map
         Set<String> lowCoverageByGeneDone = new HashSet<>();
@@ -167,14 +171,31 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
         String bamFileId = fileQueryResult.getNumResults() == 1 ? fileQueryResult.first().getUuid() : null;
 
         for (DiseasePanel diseasePanel: diseasePanels) {
-            // Genes
-            List<String> geneNames = diseasePanel.getGenes()
-                    .stream()
-                    .map(DiseasePanel.GenePanel::getId)
-                    .collect(Collectors.toList());
+            Map<String, List<String>> genePenetranceMap = new HashMap<>();
+
+            for (DiseasePanel.GenePanel genePanel : diseasePanel.getGenes()) {
+                String key;
+                if (genePanel.getModeOfInheritance() == null || genePanel.getModeOfInheritance() == UNKNOWN) {
+                    key = "all";
+                } else {
+                    if (genePanel.getPenetrance() == null) {
+                        key = genePanel.getModeOfInheritance().name() + SEPARATOR + Penetrance.COMPLETE;
+                    } else {
+                        key = genePanel.getModeOfInheritance().name() + SEPARATOR + genePanel.getPenetrance().name();
+                    }
+                }
+
+                if (!genePenetranceMap.containsKey(key)) {
+                    genePenetranceMap.put(key, new ArrayList<>());
+                }
+
+                // Add gene id to the list
+                genePenetranceMap.get(key).add(genePanel.getId());
+            }
 
             if (bamFileId != null) {
-                for (String geneName : geneNames) {
+                for (DiseasePanel.GenePanel genePanel : diseasePanel.getGenes()) {
+                    String geneName = genePanel.getId();
                     if (!lowCoverageByGeneDone.contains(geneName)) {
                         reportedLowCoverages.addAll(getReportedLowCoverages(geneName, bamFileId, maxCoverage));
                         lowCoverageByGeneDone.add(geneName);
@@ -182,81 +203,113 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
                 }
             }
 
-            // Genes
-            query.put(VariantQueryParam.ANNOT_XREF.key(), geneNames);
+            Map<String, List<String>> genotypes;
 
-            // ---- dominant -----
+            Penetrance penetrance;
+            boolean incompletePenetrance;
 
-            // Genotypes following the format: {sample_1}:{gt_1}(,{gt_n})*(;{sample_n}:{gt_1}(,{gt_n})*)*
-            genotypes = ModeOfInheritance.dominant(pedigree, phenotype, penetranceBoolean);
-            putGenotypes(genotypes, query);
-            variantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), token);
-            generateReportedVariants(variantQueryResult, phenotype, diseasePanel, ReportedEvent.ReportedModeOfInheritance.MONOALLELIC,
-                    penetrance, reportedVariantMap);
+            for (String key : genePenetranceMap.keySet()) {
+                if (key.equals("all")) {
+                    penetrance = Penetrance.COMPLETE;
+                    incompletePenetrance = penetrance == Penetrance.INCOMPLETE;
 
-            // ---- recessive -----
+                    genotypes = ModeOfInheritance.dominant(pedigree, phenotype, incompletePenetrance);
+                    queryAndGenerateReport(phenotype, query, reportedVariantMap, diseasePanel,
+                            ClinicalProperty.ModeOfInheritance.MONOALLELIC, penetrance, genotypes);
 
-            genotypes = ModeOfInheritance.recessive(pedigree, phenotype, penetranceBoolean);
-            putGenotypes(genotypes, query);
-            variantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), token);
-            generateReportedVariants(variantQueryResult, phenotype, diseasePanel, ReportedEvent.ReportedModeOfInheritance.BIALLELIC,
-                    penetrance, reportedVariantMap);
+                    genotypes = ModeOfInheritance.recessive(pedigree, phenotype, incompletePenetrance);
+                    queryAndGenerateReport(phenotype, query, reportedVariantMap, diseasePanel, ClinicalProperty.ModeOfInheritance.BIALLELIC,
+                            penetrance, genotypes);
 
-            // ---- xLinked -----
+                    genotypes = ModeOfInheritance.xLinked(pedigree, phenotype, false);
+                    queryAndGenerateReport(phenotype, query, reportedVariantMap, diseasePanel, XLINKED_BIALLELIC, penetrance, genotypes);
 
-            genotypes = ModeOfInheritance.xLinked(pedigree, phenotype, true);
-            putGenotypes(genotypes, query);
-            variantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), token);
-            generateReportedVariants(variantQueryResult, phenotype, diseasePanel,
-                    ReportedEvent.ReportedModeOfInheritance.XLINKED_MONOALLELIC, penetrance, reportedVariantMap);
+                    genotypes = ModeOfInheritance.xLinked(pedigree, phenotype, true);
+                    queryAndGenerateReport(phenotype, query, reportedVariantMap, diseasePanel, XLINKED_MONOALLELIC, penetrance, genotypes);
 
-            genotypes = ModeOfInheritance.xLinked(pedigree, phenotype, false);
-            putGenotypes(genotypes, query);
-            variantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), token);
-            generateReportedVariants(variantQueryResult, phenotype, diseasePanel,
-                    ReportedEvent.ReportedModeOfInheritance.XLINKED_BIALLELIC, penetrance, reportedVariantMap);
+                    genotypes = ModeOfInheritance.yLinked(pedigree, phenotype);
+                    queryAndGenerateReport(phenotype, query, reportedVariantMap, diseasePanel, YLINKED, penetrance, genotypes);
 
-            // ---- yLinked -----
 
-            genotypes = ModeOfInheritance.yLinked(pedigree, phenotype);
-            putGenotypes(genotypes, query);
-            variantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), token);
-            // TODO: ReportedModeOfInheritance ???
-            generateReportedVariants(variantQueryResult, phenotype, diseasePanel,
-                    ReportedEvent.ReportedModeOfInheritance.UNKNOWN, penetrance, reportedVariantMap);
+                    // Calculate de novo variants
+                    Map<String, List<String>> probandGenotype = new HashMap<>();
+                    probandGenotype.put(clinicalAnalysis.getProband().getId(),
+                            Arrays.asList(ModeOfInheritance.toGenotypeString(ModeOfInheritance.GENOTYPE_0_0)));
+                    putGenotypesNegated(probandGenotype, query);
 
-            // TODO: additional MoI, i.e.: deNovo, compound heterozigous
+                    variantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), token);
 
-            // Calculate de novo variants
-            Map<String, List<String>> probandGenotype = new HashMap<>();
-            probandGenotype.put(clinicalAnalysis.getProband().getId(),
-                    Arrays.asList(ModeOfInheritance.toGenotypeString(ModeOfInheritance.GENOTYPE_0_0)));
-            putGenotypesNegated(probandGenotype, query);
+                    List<Variant> deNovoVariantList = ModeOfInheritance.deNovoVariants(pedigree.getProband(),
+                            variantQueryResult.getResult().iterator());
+                    // TODO: We need to create another ReportedModeOfInheritance for de novo!!??
+                    generateReportedVariants(deNovoVariantList, phenotype, diseasePanel, ClinicalProperty.ModeOfInheritance.UNKNOWN,
+                            reportedVariantMap);
 
-            variantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), token);
+                    // Calculate compound heterozygous
+                    probandGenotype = new HashMap<>();
+                    probandGenotype.put(clinicalAnalysis.getProband().getId(),
+                            Arrays.asList(ModeOfInheritance.toGenotypeString(ModeOfInheritance.GENOTYPE_0_1)));
+                    putGenotypes(probandGenotype, query);
+                    for (DiseasePanel.GenePanel gene : diseasePanel.getGenes()) {
+                        query.put(VariantQueryParam.ANNOT_XREF.key(), gene);
 
-            List<Variant> deNovoVariantList = ModeOfInheritance.deNovoVariants(pedigree.getProband(),
-                    variantQueryResult.getResult().iterator());
-            // TODO: We need to create another ReportedModeOfInheritance for de novo!!??
-            generateReportedVariants(deNovoVariantList, phenotype, diseasePanel, ReportedEvent.ReportedModeOfInheritance.UNKNOWN,
-                    reportedVariantMap);
+                        variantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), token);
 
-            // Calculate compound heterozygous
-            probandGenotype = new HashMap<>();
-            probandGenotype.put(clinicalAnalysis.getProband().getId(),
-                    Arrays.asList(ModeOfInheritance.toGenotypeString(ModeOfInheritance.GENOTYPE_0_0),
-                            ModeOfInheritance.toGenotypeString(ModeOfInheritance.GENOTYPE_0_1)));
-            putGenotypes(probandGenotype, query);
-            for (DiseasePanel.GenePanel gene : diseasePanel.getGenes()) {
-                query.put(VariantQueryParam.ANNOT_XREF.key(), gene);
+                        List<Variant> compoundHetVariantList = ModeOfInheritance.compoundHeterozygosity(pedigree,
+                                variantQueryResult.getResult().iterator());
+                        // TODO: We need to create another ReportedModeOfInheritance for compound heterozygous!!??
+                        generateReportedVariants(compoundHetVariantList, phenotype, diseasePanel,
+                                ClinicalProperty.ModeOfInheritance.UNKNOWN, reportedVariantMap);
+                    }
 
-                variantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), token);
+                } else {
+                    String[] splitString = key.split(SEPARATOR);
 
-                List<Variant> compoundHetVariantList = ModeOfInheritance.compoundHeterozygosity(pedigree,
-                        variantQueryResult.getResult().iterator());
-                // TODO: We need to create another ReportedModeOfInheritance for compound heterozygous!!??
-                generateReportedVariants(compoundHetVariantList, phenotype, diseasePanel, ReportedEvent.ReportedModeOfInheritance.UNKNOWN,
-                        reportedVariantMap);
+                    ClinicalProperty.ModeOfInheritance moi = ClinicalProperty.ModeOfInheritance.valueOf(splitString[0]);
+                    penetrance = Penetrance.valueOf(splitString[1]);
+                    incompletePenetrance = penetrance == Penetrance.INCOMPLETE;
+
+                    // Genes
+                    query.put(VariantQueryParam.ANNOT_XREF.key(), genePenetranceMap.get(key));
+
+                    switch (moi) {
+                        case MONOALLELIC:
+                            genotypes = ModeOfInheritance.dominant(pedigree, phenotype, incompletePenetrance);
+                            queryAndGenerateReport(phenotype, query, reportedVariantMap, diseasePanel, moi, penetrance, genotypes);
+                            break;
+                        case BIALLELIC:
+                            genotypes = ModeOfInheritance.recessive(pedigree, phenotype, incompletePenetrance);
+                            queryAndGenerateReport(phenotype, query, reportedVariantMap, diseasePanel, moi, penetrance, genotypes);
+                            break;
+                        case MONOALLELIC_AND_BIALLELIC:
+                        case MONOALLELIC_AND_MORE_SEVERE_BIALLELIC:
+                            genotypes = ModeOfInheritance.dominant(pedigree, phenotype, incompletePenetrance);
+                            queryAndGenerateReport(phenotype, query, reportedVariantMap, diseasePanel, moi, penetrance, genotypes);
+
+                            genotypes = ModeOfInheritance.recessive(pedigree, phenotype, incompletePenetrance);
+                            queryAndGenerateReport(phenotype, query, reportedVariantMap, diseasePanel, moi, penetrance, genotypes);
+                            break;
+                        case XLINKED_BIALLELIC:
+                            genotypes = ModeOfInheritance.xLinked(pedigree, phenotype, false);
+                            queryAndGenerateReport(phenotype, query, reportedVariantMap, diseasePanel, moi, penetrance, genotypes);
+                            break;
+                        case XLINKED_MONOALLELIC:
+                            genotypes = ModeOfInheritance.xLinked(pedigree, phenotype, true);
+                            queryAndGenerateReport(phenotype, query, reportedVariantMap, diseasePanel, moi, penetrance, genotypes);
+                            break;
+                        case YLINKED:
+                            genotypes = ModeOfInheritance.yLinked(pedigree, phenotype);
+                            queryAndGenerateReport(phenotype, query, reportedVariantMap, diseasePanel, moi, penetrance, genotypes);
+                            break;
+                        case MITOCHRONDRIAL:
+                        case MONOALLELIC_NOT_IMPRINTED:
+                        case MONOALLELIC_MATERNALLY_IMPRINTED:
+                        case MONOALLELIC_PATERNALLY_IMPRINTED:
+                        case UNKNOWN:
+                        default:
+                            break;
+                    }
+                }
             }
         }
 
@@ -278,6 +331,15 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
 
         // Return interpretation result
         return new AnalysisResult<>(interpretation);
+    }
+
+    void queryAndGenerateReport(Phenotype phenotype, Query query, Map<String, ReportedVariant> reportedVariantMap,
+                                DiseasePanel diseasePanel, ClinicalProperty.ModeOfInheritance moi, Penetrance penetrance,
+                                Map<String, List<String>> genotypes) throws CatalogException, StorageEngineException, IOException {
+        VariantQueryResult<Variant> variantQueryResult;
+        putGenotypes(genotypes, query);
+        variantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), token);
+        generateReportedVariants(variantQueryResult, phenotype, diseasePanel, moi, penetrance, reportedVariantMap);
     }
 
     private List<ReportedLowCoverage> getReportedLowCoverages(String geneName, String bamFileId, int maxCoverage) {
@@ -322,7 +384,7 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
     }
 
     private void generateReportedVariants(VariantQueryResult<Variant> variantQueryResult, Phenotype phenotype, DiseasePanel diseasePanel,
-                                          ReportedEvent.ReportedModeOfInheritance moi, ReportedEvent.Penetrance penetrance,
+                                          ClinicalProperty.ModeOfInheritance moi, Penetrance penetrance,
                                           Map<String, ReportedVariant> reportedVariantMap) {
         for (Variant variant: variantQueryResult.getResult()) {
             if (!reportedVariantMap.containsKey(variant.getId())) {
@@ -355,7 +417,7 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
     }
 
     private void generateReportedVariants(List<Variant> variantList, Phenotype phenotype, DiseasePanel diseasePanel,
-                                          ReportedEvent.ReportedModeOfInheritance moi, Map<String, ReportedVariant> reportedVariantMap) {
+                                          ClinicalProperty.ModeOfInheritance moi, Map<String, ReportedVariant> reportedVariantMap) {
         for (Variant variant : variantList) {
             if (!reportedVariantMap.containsKey(variant.getId())) {
                 reportedVariantMap.put(variant.getId(), new ReportedVariant(variant.getImpl(), 0, new ArrayList<>(),
