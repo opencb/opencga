@@ -320,7 +320,7 @@ public class DiseasePanel extends PrivateStudyUid {
          */
         private String name;
         private List<Xref> xrefs;
-        private ModeOfInheritance modeOfInheritance;
+        private String modeOfInheritance;
         private Penetrance penetrance;
         private String confidence;
         private List<String> evidences;
@@ -329,7 +329,7 @@ public class DiseasePanel extends PrivateStudyUid {
         public GenePanel() {
         }
 
-        public GenePanel(String id, String name, List<Xref> xrefs, ModeOfInheritance modeOfInheritance, Penetrance penetrance,
+        public GenePanel(String id, String name, List<Xref> xrefs, String modeOfInheritance, Penetrance penetrance,
                          String confidence, List<String> evidences, List<String> publications) {
             this.id = id;
             this.name = name;
@@ -383,11 +383,11 @@ public class DiseasePanel extends PrivateStudyUid {
             return this;
         }
 
-        public ModeOfInheritance getModeOfInheritance() {
+        public String getModeOfInheritance() {
             return modeOfInheritance;
         }
 
-        public GenePanel setModeOfInheritance(ModeOfInheritance modeOfInheritance) {
+        public GenePanel setModeOfInheritance(String modeOfInheritance) {
             this.modeOfInheritance = modeOfInheritance;
             return this;
         }

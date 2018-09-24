@@ -261,7 +261,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
                             try {
                                 panel = DiseasePanel.load(FileUtils.openInputStream(filePath.toFile()));
                             } catch (IOException e) {
-                                logger.error("Could not load file {}", filePath.toString());
+                                logger.error("Could not load file {}. {}", filePath.toString(), e.getMessage());
                                 return;
                             }
                             try {

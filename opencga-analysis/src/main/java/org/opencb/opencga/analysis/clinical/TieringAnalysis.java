@@ -175,13 +175,13 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
 
             for (DiseasePanel.GenePanel genePanel : diseasePanel.getGenes()) {
                 String key;
-                if (genePanel.getModeOfInheritance() == null || genePanel.getModeOfInheritance() == UNKNOWN) {
+                if (StringUtils.isEmpty(genePanel.getModeOfInheritance())) {
                     key = "all";
                 } else {
                     if (genePanel.getPenetrance() == null) {
-                        key = genePanel.getModeOfInheritance().name() + SEPARATOR + Penetrance.COMPLETE;
+                        key = genePanel.getModeOfInheritance() + SEPARATOR + Penetrance.COMPLETE;
                     } else {
-                        key = genePanel.getModeOfInheritance().name() + SEPARATOR + genePanel.getPenetrance().name();
+                        key = genePanel.getModeOfInheritance() + SEPARATOR + genePanel.getPenetrance().name();
                     }
                 }
 
@@ -236,6 +236,7 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
                 } else {
                     String[] splitString = key.split(SEPARATOR);
 
+                    // TODO: splitString[0] is a free string, it will never match a valid ClinicalProperty.ModeOfInheritance
                     ClinicalProperty.ModeOfInheritance moi = ClinicalProperty.ModeOfInheritance.valueOf(splitString[0]);
                     penetrance = Penetrance.valueOf(splitString[1]);
                     incompletePenetrance = penetrance == Penetrance.INCOMPLETE;
