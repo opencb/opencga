@@ -69,15 +69,16 @@ public class VariantMetadataFactory {
                         }
                         return fileId;
                     }).collect(Collectors.toList());
-            Query query = new Query()
-                    .append(VariantFileMetadataDBAdaptor.VariantFileMetadataQueryParam.STUDY_ID.key(), studyConfiguration.getStudyId())
-                    .append(VariantFileMetadataDBAdaptor.VariantFileMetadataQueryParam.FILE_ID.key(), fileIds);
-            scm.variantFileMetadataIterator(query, new QueryOptions()).forEachRemaining(fileMetadata -> {
-                studyMetadata.getFiles().removeIf(file -> file.getId().equals(fileMetadata.getId()));
-                studyMetadata.getFiles().add(fileMetadata.getImpl());
-            });
+            if (fileIds != null && !fileIds.isEmpty()) {
+                Query query = new Query()
+                        .append(VariantFileMetadataDBAdaptor.VariantFileMetadataQueryParam.STUDY_ID.key(), studyConfiguration.getStudyId())
+                        .append(VariantFileMetadataDBAdaptor.VariantFileMetadataQueryParam.FILE_ID.key(), fileIds);
+                scm.variantFileMetadataIterator(query, new QueryOptions()).forEachRemaining(fileMetadata -> {
+                    studyMetadata.getFiles().removeIf(file -> file.getId().equals(fileMetadata.getId()));
+                    studyMetadata.getFiles().add(fileMetadata.getImpl());
+                });
+            }
         }
-
         return metadata;
     }
 
