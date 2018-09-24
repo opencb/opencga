@@ -514,7 +514,7 @@ public class VariantMongoDBQueryParser {
                         fileNames, builder, QueryOperation.AND, filesOperation,
                         f -> studyConfigurationManager.getFileIdPair(f, false, defaultStudyConfiguration).getValue());
             } else if (isValidParam(query, INCLUDE_FILE)) {
-                List<String> files = query.getAsStringList(INCLUDE_FILE.key());
+                List<String> files = getIncludeFilesList(query);
                 fileIds = new ArrayList<>(files.size());
                 for (String file : files) {
                     fileIds.add(studyConfigurationManager.getFileIdPair(file, false, defaultStudyConfiguration).getValue());

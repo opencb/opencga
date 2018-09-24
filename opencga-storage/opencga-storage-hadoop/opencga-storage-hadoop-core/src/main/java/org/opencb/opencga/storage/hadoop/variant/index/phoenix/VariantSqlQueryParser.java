@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.hadoop.variant.index.phoenix;
 
 import htsjdk.variant.vcf.VCFConstants;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -588,7 +589,7 @@ public class VariantSqlQueryParser {
 //            }
 //            filters.add(sb.toString());
         }
-
+        List<String> includeFiles = getIncludeFilesList(query);
         QueryOperation filtersOperation = null;
         List<String> filterValues = Collections.emptyList();
         if (isValidParam(query, FILTER)) {
@@ -596,7 +597,7 @@ public class VariantSqlQueryParser {
             filtersOperation = checkOperator(value);
             filterValues = splitValue(value, filtersOperation);
             if (!filterValues.isEmpty()) {
-                if (!isValidParam(query, FILE) && !isValidParam(query, INCLUDE_FILE)) {
+                if (CollectionUtils.isNotEmpty(includeFiles)) {
                     throw VariantQueryException.malformedParam(FILTER, value, "Missing \"" + FILE.key() + "\" filter");
                 }
             }
@@ -609,7 +610,7 @@ public class VariantSqlQueryParser {
             qualOperation = checkOperator(value);
             qualValues = splitValue(value, qualOperation);
             if (!qualValues.isEmpty()) {
-                if (!isValidParam(query, FILE) && !isValidParam(query, INCLUDE_FILE)) {
+                if (CollectionUtils.isNotEmpty(includeFiles)) {
                     throw VariantQueryException.malformedParam(QUAL, value, "Missing \"" + FILE.key() + "\" filter");
                 }
             }
@@ -631,7 +632,7 @@ public class VariantSqlQueryParser {
             files = splitValue(value, fileOperation);
         } else {
             if (!qualValues.isEmpty() || !filterValues.isEmpty()) {
-                files = query.getAsStringList(INCLUDE_FILE.key());
+                files = includeFiles;
                 fileOperation = QueryOperation.OR;
             }
         }

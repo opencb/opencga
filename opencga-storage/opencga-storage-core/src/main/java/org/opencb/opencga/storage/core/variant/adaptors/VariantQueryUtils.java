@@ -714,7 +714,7 @@ public final class VariantQueryUtils {
         return includeFiles;
     }
 
-    private static List<String> getIncludeFilesList(Query query) {
+    public static List<String> getIncludeFilesList(Query query) {
         List<String> includeFiles = null;
         if (query.containsKey(INCLUDE_FILE.key())) {
             String files = query.getString(INCLUDE_FILE.key());
