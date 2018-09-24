@@ -230,38 +230,9 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
                     genotypes = ModeOfInheritance.yLinked(pedigree, phenotype);
                     queryAndGenerateReport(phenotype, query, reportedVariantMap, diseasePanel, YLINKED, penetrance, genotypes);
 
+                    processDeNovo(clinicalAnalysis, pedigree, phenotype, query, reportedVariantMap, diseasePanel);
 
-                    // Calculate de novo variants
-                    Map<String, List<String>> probandGenotype = new HashMap<>();
-                    probandGenotype.put(clinicalAnalysis.getProband().getId(),
-                            Arrays.asList(ModeOfInheritance.toGenotypeString(ModeOfInheritance.GENOTYPE_0_0)));
-                    putGenotypesNegated(probandGenotype, query);
-
-                    variantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), token);
-
-                    List<Variant> deNovoVariantList = ModeOfInheritance.deNovoVariants(pedigree.getProband(),
-                            variantQueryResult.getResult().iterator());
-                    // TODO: We need to create another ReportedModeOfInheritance for de novo!!??
-                    generateReportedVariants(deNovoVariantList, phenotype, diseasePanel, ClinicalProperty.ModeOfInheritance.UNKNOWN,
-                            reportedVariantMap);
-
-                    // Calculate compound heterozygous
-                    probandGenotype = new HashMap<>();
-                    probandGenotype.put(clinicalAnalysis.getProband().getId(),
-                            Arrays.asList(ModeOfInheritance.toGenotypeString(ModeOfInheritance.GENOTYPE_0_1)));
-                    putGenotypes(probandGenotype, query);
-                    for (DiseasePanel.GenePanel gene : diseasePanel.getGenes()) {
-                        query.put(VariantQueryParam.ANNOT_XREF.key(), gene);
-
-                        variantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), token);
-
-                        List<Variant> compoundHetVariantList = ModeOfInheritance.compoundHeterozygosity(pedigree,
-                                variantQueryResult.getResult().iterator());
-                        // TODO: We need to create another ReportedModeOfInheritance for compound heterozygous!!??
-                        generateReportedVariants(compoundHetVariantList, phenotype, diseasePanel,
-                                ClinicalProperty.ModeOfInheritance.UNKNOWN, reportedVariantMap);
-                    }
-
+                    processCompoundHeterozygous(clinicalAnalysis, pedigree, phenotype, query, reportedVariantMap, diseasePanel);
                 } else {
                     String[] splitString = key.split(SEPARATOR);
 
@@ -301,6 +272,12 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
                             genotypes = ModeOfInheritance.yLinked(pedigree, phenotype);
                             queryAndGenerateReport(phenotype, query, reportedVariantMap, diseasePanel, moi, penetrance, genotypes);
                             break;
+                        case DE_NOVO:
+                            processDeNovo(clinicalAnalysis, pedigree, phenotype, query, reportedVariantMap, diseasePanel);
+                            break;
+                        case COMPOUND_HETEROZYGOUS:
+                            processCompoundHeterozygous(clinicalAnalysis, pedigree, phenotype, query, reportedVariantMap, diseasePanel);
+                            break;
                         case MITOCHRONDRIAL:
                         case MONOALLELIC_NOT_IMPRINTED:
                         case MONOALLELIC_MATERNALLY_IMPRINTED:
@@ -331,6 +308,44 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
 
         // Return interpretation result
         return new AnalysisResult<>(interpretation);
+    }
+
+    void processCompoundHeterozygous(ClinicalAnalysis clinicalAnalysis, Pedigree pedigree, Phenotype phenotype, Query query, Map<String, ReportedVariant> reportedVariantMap, DiseasePanel diseasePanel) throws Exception {
+        VariantQueryResult<Variant> variantQueryResult;
+        Map<String, List<String>> probandGenotype;
+
+        // Calculate compound heterozygous
+        probandGenotype = new HashMap<>();
+        probandGenotype.put(clinicalAnalysis.getProband().getId(),
+                Arrays.asList(ModeOfInheritance.toGenotypeString(ModeOfInheritance.GENOTYPE_0_1)));
+        putGenotypes(probandGenotype, query);
+        for (DiseasePanel.GenePanel gene : diseasePanel.getGenes()) {
+            query.put(VariantQueryParam.ANNOT_XREF.key(), gene);
+
+            variantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), token);
+
+            List<Variant> compoundHetVariantList = ModeOfInheritance.compoundHeterozygosity(pedigree,
+                    variantQueryResult.getResult().iterator());
+            // TODO: We need to create another ReportedModeOfInheritance for compound heterozygous!!??
+            generateReportedVariants(compoundHetVariantList, phenotype, diseasePanel,
+                    ClinicalProperty.ModeOfInheritance.COMPOUND_HETEROZYGOUS, reportedVariantMap);
+        }
+    }
+
+    void processDeNovo(ClinicalAnalysis clinicalAnalysis, Pedigree pedigree, Phenotype phenotype, Query query, Map<String, ReportedVariant> reportedVariantMap, DiseasePanel diseasePanel) throws CatalogException, StorageEngineException, IOException {
+        VariantQueryResult<Variant> variantQueryResult;
+        Map<String, List<String>> probandGenotype = new HashMap<>();
+        probandGenotype.put(clinicalAnalysis.getProband().getId(),
+                Arrays.asList(ModeOfInheritance.toGenotypeString(ModeOfInheritance.GENOTYPE_0_0)));
+        putGenotypesNegated(probandGenotype, query);
+
+        variantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), token);
+
+        List<Variant> deNovoVariantList = ModeOfInheritance.deNovoVariants(pedigree.getProband(),
+                variantQueryResult.getResult().iterator());
+        // TODO: We need to create another ReportedModeOfInheritance for de novo!!??
+        generateReportedVariants(deNovoVariantList, phenotype, diseasePanel, ClinicalProperty.ModeOfInheritance.DE_NOVO,
+                reportedVariantMap);
     }
 
     void queryAndGenerateReport(Phenotype phenotype, Query query, Map<String, ReportedVariant> reportedVariantMap,
