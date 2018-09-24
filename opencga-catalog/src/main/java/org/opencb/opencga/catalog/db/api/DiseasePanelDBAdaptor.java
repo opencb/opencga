@@ -79,7 +79,7 @@ public interface DiseasePanelDBAdaptor extends DBAdaptor<DiseasePanel> {
         REGIONS_LOCATION("regions.location", TEXT, ""),
         REGIONS_SCORE("regions.score", DOUBLE, ""),
 
-        AUTHOR("author", TEXT, ""),
+        AUTHOR("source.author", TEXT, ""),
 
         STUDY_ID("studyId", INTEGER_ARRAY, ""),
         STUDY_UID("studyUid", INTEGER_ARRAY, "");
