@@ -568,7 +568,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         VariantSearchManager variantSearchManager = getVariantSearchManager();
         // first, create the collection it it does not exist
         variantSearchManager.create(dbName);
-        if (!configuration.getSearch().getActive() || !variantSearchManager.isAlive(dbName)) {
+        if (!configuration.getSearch().isActive() || !variantSearchManager.isAlive(dbName)) {
             throw new StorageEngineException("Solr is not alive!");
         }
 
@@ -631,7 +631,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
         try {
             variantSearchManager.create(collectionName);
-            if (configuration.getSearch().getActive() && variantSearchManager.isAlive(collectionName)) {
+            if (configuration.getSearch().isActive() && variantSearchManager.isAlive(collectionName)) {
                 // then, load variants
                 QueryOptions queryOptions = new QueryOptions();
                 Query query = new Query(VariantQueryParam.STUDY.key(), study)
@@ -878,6 +878,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         if (variantSearchManager.get() == null) {
             synchronized (variantSearchManager) {
                 if (variantSearchManager.get() == null) {
+                    // TODO One day we should use reflection here reading from storage-configuration.yml
                     variantSearchManager.set(new VariantSearchManager(getStudyConfigurationManager(), configuration));
                 }
             }
@@ -1490,7 +1491,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     protected boolean searchActiveAndAlive() throws StorageEngineException {
-        return configuration.getSearch().getActive() && getVariantSearchManager() != null && getVariantSearchManager().isAlive(dbName);
+        return configuration.getSearch().isActive() && getVariantSearchManager() != null && getVariantSearchManager().isAlive(dbName);
     }
 
 

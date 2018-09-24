@@ -17,8 +17,13 @@
 package org.opencb.opencga.core.models;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.core.Xref;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.ClinicalProperty.ModeOfInheritance;
+import org.opencb.opencga.core.models.ClinicalProperty.Penetrance;
+import org.opencb.opencga.core.models.clinical.ReportedEvent;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,23 +36,36 @@ public class DiseasePanel extends PrivateStudyUid {
     private String name;
     private String uuid;
 
-    private int release;
-    private int version;
-
-    private String author;
-    private String creationDate;
-    private String modificationDate;
-    private Status status;
-    private SourcePanel source;
-    private String description;
-
+    private List<PanelCategory> categories;
     private List<Phenotype> phenotypes;
+    private List<String> tags;
 
     private List<VariantPanel> variants;
     private List<GenePanel> genes;
     private List<RegionPanel> regions;
+    private Map<String, Integer> stats;
+
+    private int release;
+    /**
+     * OpenCGA version of this panel, this is incremented when the panel is updated.
+     */
+    private int version;
+
+    @Deprecated
+    private String author;
+
+    /**
+     * Information taken from the source of this panel.
+     * For instance if the panel is taken from PanelApp this will contain the id, name and version in PanelApp.
+     */
+    private SourcePanel source;
+    private Status status;
+    private String creationDate;
+    private String modificationDate;
+    private String description;
 
     private Map<String, Object> attributes;
+
 
     public DiseasePanel() {
     }
@@ -58,9 +76,10 @@ public class DiseasePanel extends PrivateStudyUid {
         this.version = version;
     }
 
+    @Deprecated
     public DiseasePanel(String id, String name, int release, int version, String author, SourcePanel source, String description,
                         List<Phenotype> phenotypes, List<VariantPanel> variants, List<GenePanel> genes, List<RegionPanel> regions,
-                        Map<String, Object> attributes) {
+                        List<String> tags, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.release = release;
@@ -74,36 +93,117 @@ public class DiseasePanel extends PrivateStudyUid {
         this.variants = variants;
         this.genes = genes;
         this.regions = regions;
+        this.tags = tags;
         this.attributes = attributes;
     }
 
-    // Json loader
+    public DiseasePanel(String id, String name, List<PanelCategory> categories, List<Phenotype> phenotypes, List<String> tags,
+                        List<VariantPanel> variants, List<GenePanel> genes, List<RegionPanel> regions, Map<String, Integer> stats,
+                        int release, int version, String author, SourcePanel source, Status status, String description,
+                        Map<String, Object> attributes) {
+        this.id = id;
+        this.name = name;
+        this.categories = categories;
+        this.phenotypes = phenotypes;
+        this.tags = tags;
+        this.variants = variants;
+        this.genes = genes;
+        this.regions = regions;
+        this.stats = stats;
+        this.release = release;
+        this.version = version;
+        this.author = author;
+        this.source = source;
+        this.status = status;
+        this.creationDate = TimeUtils.getTime();
+        this.modificationDate = TimeUtils.getTime();
+        this.description = description;
+        this.attributes = attributes;
+
+        if (StringUtils.isNotEmpty(author) && source != null && StringUtils.isEmpty(source.getAuthor())) {
+            this.source.setAuthor(author);
+        }
+    }
+
+    /**
+     * Static method to load and parse a JSON string from an InputStream.
+     * @param diseasePanelInputStream InputStream with the JSON string representing this panel.
+     * @return A DiseasePanel object.
+     * @throws IOException Propagate Jackson IOException.
+     */
     public static DiseasePanel load(InputStream diseasePanelInputStream) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper();
         return objectMapper.readValue(diseasePanelInputStream, DiseasePanel.class);
     }
 
+
+    public static class PanelCategory {
+
+        private String name;
+        private int level;
+
+        public PanelCategory() {
+        }
+
+        public PanelCategory(String name, int level) {
+            this.name = name;
+            this.level = level;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public PanelCategory setName(String name) {
+            this.name = name;
+            return this;
+        }
+
+        public int getLevel() {
+            return level;
+        }
+
+        public PanelCategory setLevel(int level) {
+            this.level = level;
+            return this;
+        }
+    }
+
     public static class SourcePanel {
 
         private String id;
-        private String project;
+        private String name;
         private String version;
+        private String author;
+        private String project;
 
         public SourcePanel() {
         }
 
-        public SourcePanel(String id, String project, String version) {
+        @Deprecated
+        public SourcePanel(String id, String name, String version, String project) {
             this.id = id;
-            this.project = project;
+            this.name = name;
             this.version = version;
+            this.project = project;
+        }
+
+        public SourcePanel(String id, String name, String version, String author, String project) {
+            this.id = id;
+            this.name = name;
+            this.version = version;
+            this.author = author;
+            this.project = project;
         }
 
         @Override
         public String toString() {
             final StringBuilder sb = new StringBuilder("SourcePanel{");
             sb.append("id='").append(id).append('\'');
-            sb.append(", project='").append(project).append('\'');
+            sb.append(", name='").append(name).append('\'');
             sb.append(", version='").append(version).append('\'');
+            sb.append(", author='").append(author).append('\'');
+            sb.append(", project='").append(project).append('\'');
             sb.append('}');
             return sb.toString();
         }
@@ -117,12 +217,12 @@ public class DiseasePanel extends PrivateStudyUid {
             return this;
         }
 
-        public String getProject() {
-            return project;
+        public String getName() {
+            return name;
         }
 
-        public SourcePanel setProject(String project) {
-            this.project = project;
+        public SourcePanel setName(String name) {
+            this.name = name;
             return this;
         }
 
@@ -134,26 +234,47 @@ public class DiseasePanel extends PrivateStudyUid {
             this.version = version;
             return this;
         }
+
+        public String getAuthor() {
+            return author;
+        }
+
+        public SourcePanel setAuthor(String author) {
+            this.author = author;
+            return this;
+        }
+
+        public String getProject() {
+            return project;
+        }
+
+        public SourcePanel setProject(String project) {
+            this.project = project;
+            return this;
+        }
     }
 
     public static class VariantPanel {
 
         private String id;
-        private String phenotype;
+        private List<String> evidences;
+        private List<String> publications;
 
         public VariantPanel() {
         }
 
-        public VariantPanel(String id, String phenotype) {
+        public VariantPanel(String id, String phenotype, List<String> evidences, List<String> publications) {
             this.id = id;
-            this.phenotype = phenotype;
+            this.evidences = evidences;
+            this.publications = publications;
         }
 
         @Override
         public String toString() {
             final StringBuilder sb = new StringBuilder("VariantPanel{");
             sb.append("id='").append(id).append('\'');
-            sb.append(", phenotype='").append(phenotype).append('\'');
+            sb.append(", evidences=").append(evidences);
+            sb.append(", publications=").append(publications);
             sb.append('}');
             return sb.toString();
         }
@@ -167,36 +288,57 @@ public class DiseasePanel extends PrivateStudyUid {
             return this;
         }
 
-        public String getPhenotype() {
-            return phenotype;
+        public List<String> getEvidences() {
+            return evidences;
         }
 
-        public VariantPanel setPhenotype(String phenotype) {
-            this.phenotype = phenotype;
+        public VariantPanel setEvidences(List<String> evidences) {
+            this.evidences = evidences;
+            return this;
+        }
+
+        public List<String> getPublications() {
+            return publications;
+        }
+
+        public VariantPanel setPublications(List<String> publications) {
+            this.publications = publications;
             return this;
         }
     }
 
+
     public static class GenePanel {
 
         /**
-         * Ensembl ID is used as id
+         * Ensembl ID is used as id.
          */
         private String id;
 
         /**
-         * HGNC Gene Symbol is used as name
+         * HGNC Gene Symbol is used as name.
          */
         private String name;
+        private List<Xref> xrefs;
+        private ModeOfInheritance modeOfInheritance;
+        private Penetrance penetrance;
         private String confidence;
+        private List<String> evidences;
+        private List<String> publications;
 
         public GenePanel() {
         }
 
-        public GenePanel(String id, String name, String confidence) {
+        public GenePanel(String id, String name, List<Xref> xrefs, ModeOfInheritance modeOfInheritance, Penetrance penetrance,
+                         String confidence, List<String> evidences, List<String> publications) {
             this.id = id;
             this.name = name;
+            this.xrefs = xrefs;
+            this.modeOfInheritance = modeOfInheritance;
+            this.penetrance = penetrance;
             this.confidence = confidence;
+            this.evidences = evidences;
+            this.publications = publications;
         }
 
         @Override
@@ -204,7 +346,12 @@ public class DiseasePanel extends PrivateStudyUid {
             final StringBuilder sb = new StringBuilder("GenePanel{");
             sb.append("id='").append(id).append('\'');
             sb.append(", name='").append(name).append('\'');
+            sb.append(", xrefs=").append(xrefs);
+            sb.append(", modeOfInheritance=").append(modeOfInheritance);
+            sb.append(", penetrance=").append(penetrance);
             sb.append(", confidence='").append(confidence).append('\'');
+            sb.append(", evidences=").append(evidences);
+            sb.append(", publications=").append(publications);
             sb.append('}');
             return sb.toString();
         }
@@ -227,12 +374,57 @@ public class DiseasePanel extends PrivateStudyUid {
             return this;
         }
 
+        public List<Xref> getXrefs() {
+            return xrefs;
+        }
+
+        public GenePanel setXrefs(List<Xref> xrefs) {
+            this.xrefs = xrefs;
+            return this;
+        }
+
+        public ModeOfInheritance getModeOfInheritance() {
+            return modeOfInheritance;
+        }
+
+        public GenePanel setModeOfInheritance(ModeOfInheritance modeOfInheritance) {
+            this.modeOfInheritance = modeOfInheritance;
+            return this;
+        }
+
+        public Penetrance getPenetrance() {
+            return penetrance;
+        }
+
+        public GenePanel setPenetrance(Penetrance penetrance) {
+            this.penetrance = penetrance;
+            return this;
+        }
+
         public String getConfidence() {
             return confidence;
         }
 
         public GenePanel setConfidence(String confidence) {
             this.confidence = confidence;
+            return this;
+        }
+
+        public List<String> getEvidences() {
+            return evidences;
+        }
+
+        public GenePanel setEvidences(List<String> evidences) {
+            this.evidences = evidences;
+            return this;
+        }
+
+        public List<String> getPublications() {
+            return publications;
+        }
+
+        public GenePanel setPublications(List<String> publications) {
+            this.publications = publications;
             return this;
         }
     }
@@ -284,18 +476,21 @@ public class DiseasePanel extends PrivateStudyUid {
         sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", uuid='").append(uuid).append('\'');
-        sb.append(", release=").append(release);
-        sb.append(", version=").append(version);
-        sb.append(", author='").append(author).append('\'');
-        sb.append(", creationDate='").append(creationDate).append('\'');
-        sb.append(", modificationDate='").append(modificationDate).append('\'');
-        sb.append(", status=").append(status);
-        sb.append(", source=").append(source);
-        sb.append(", description='").append(description).append('\'');
+        sb.append(", categories=").append(categories);
         sb.append(", phenotypes=").append(phenotypes);
+        sb.append(", tags=").append(tags);
         sb.append(", variants=").append(variants);
         sb.append(", genes=").append(genes);
         sb.append(", regions=").append(regions);
+        sb.append(", stats=").append(stats);
+        sb.append(", release=").append(release);
+        sb.append(", version=").append(version);
+        sb.append(", author='").append(author).append('\'');
+        sb.append(", source=").append(source);
+        sb.append(", status=").append(status);
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
+        sb.append(", description='").append(description).append('\'');
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -310,15 +505,6 @@ public class DiseasePanel extends PrivateStudyUid {
         return this;
     }
 
-    public String getUuid() {
-        return uuid;
-    }
-
-    public DiseasePanel setUuid(String uuid) {
-        this.uuid = uuid;
-        return this;
-    }
-
     public String getName() {
         return name;
     }
@@ -328,75 +514,21 @@ public class DiseasePanel extends PrivateStudyUid {
         return this;
     }
 
-    public int getVersion() {
-        return version;
+    public String getUuid() {
+        return uuid;
     }
 
-    public DiseasePanel setVersion(int version) {
-        this.version = version;
+    public DiseasePanel setUuid(String uuid) {
+        this.uuid = uuid;
         return this;
     }
 
-    public int getRelease() {
-        return release;
+    public List<PanelCategory> getCategories() {
+        return categories;
     }
 
-    public DiseasePanel setRelease(int release) {
-        this.release = release;
-        return this;
-    }
-
-    public String getAuthor() {
-        return author;
-    }
-
-    public DiseasePanel setAuthor(String author) {
-        this.author = author;
-        return this;
-    }
-
-    public String getCreationDate() {
-        return creationDate;
-    }
-
-    public DiseasePanel setCreationDate(String creationDate) {
-        this.creationDate = creationDate;
-        return this;
-    }
-
-    public String getModificationDate() {
-        return modificationDate;
-    }
-
-    public DiseasePanel setModificationDate(String modificationDate) {
-        this.modificationDate = modificationDate;
-        return this;
-    }
-
-    public Status getStatus() {
-        return status;
-    }
-
-    public DiseasePanel setStatus(Status status) {
-        this.status = status;
-        return this;
-    }
-
-    public SourcePanel getSource() {
-        return source;
-    }
-
-    public DiseasePanel setSource(SourcePanel source) {
-        this.source = source;
-        return this;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public DiseasePanel setDescription(String description) {
-        this.description = description;
+    public DiseasePanel setCategories(List<PanelCategory> categories) {
+        this.categories = categories;
         return this;
     }
 
@@ -406,6 +538,15 @@ public class DiseasePanel extends PrivateStudyUid {
 
     public DiseasePanel setPhenotypes(List<Phenotype> phenotypes) {
         this.phenotypes = phenotypes;
+        return this;
+    }
+
+    public List<String> getTags() {
+        return tags;
+    }
+
+    public DiseasePanel setTags(List<String> tags) {
+        this.tags = tags;
         return this;
     }
 
@@ -433,6 +574,89 @@ public class DiseasePanel extends PrivateStudyUid {
 
     public DiseasePanel setRegions(List<RegionPanel> regions) {
         this.regions = regions;
+        return this;
+    }
+
+    public Map<String, Integer> getStats() {
+        return stats;
+    }
+
+    public DiseasePanel setStats(Map<String, Integer> stats) {
+        this.stats = stats;
+        return this;
+    }
+
+    public int getRelease() {
+        return release;
+    }
+
+    public DiseasePanel setRelease(int release) {
+        this.release = release;
+        return this;
+    }
+
+    public int getVersion() {
+        return version;
+    }
+
+    public DiseasePanel setVersion(int version) {
+        this.version = version;
+        return this;
+    }
+
+    @Deprecated
+    public String getAuthor() {
+        return author;
+    }
+
+    @Deprecated
+    public DiseasePanel setAuthor(String author) {
+        this.author = author;
+        return this;
+    }
+
+    public SourcePanel getSource() {
+        return source;
+    }
+
+    public DiseasePanel setSource(SourcePanel source) {
+        this.source = source;
+        return this;
+    }
+
+    public Status getStatus() {
+        return status;
+    }
+
+    public DiseasePanel setStatus(Status status) {
+        this.status = status;
+        return this;
+    }
+
+    public String getCreationDate() {
+        return creationDate;
+    }
+
+    public DiseasePanel setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public DiseasePanel setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
+        return this;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public DiseasePanel setDescription(String description) {
+        this.description = description;
         return this;
     }
 

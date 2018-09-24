@@ -136,6 +136,12 @@ public class PanelCommandOptions {
         @Parameter(names = {"--author"}, description = "author", arity = 1)
         public String author;
 
+        @Parameter(names = {"--tags"}, description = "tags", arity = 1)
+        public String tags;
+
+        @Parameter(names = {"--categories"}, description = "categories", arity = 1)
+        public String categories;
+
         @Parameter(names = {"--creationDate"}, description = "creationDate", arity = 1)
         public String creationDate;
 

@@ -209,8 +209,8 @@ public class AlignmentStorageManager extends StorageManager {
         return alignmentStorageEngine.getDBAdaptor().coverage(fileInfo.getPhysicalFilePath(), region, windowSize);
     }
 
-    public QueryResult<RegionCoverage> getUncoveredRegions(String studyIdStr, String fileIdStr, Region region, int maxCoverage,
-                                                           String sessionId) throws Exception {
+    public QueryResult<RegionCoverage> getLowCoverageRegions(String studyIdStr, String fileIdStr, Region region, int minCoverage,
+                                                             String sessionId) throws Exception {
         QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(studyIdStr, fileIdStr,
                 new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.URI.key(),
                         FileDBAdaptor.QueryParams.BIOFORMAT.key(), FileDBAdaptor.QueryParams.FORMAT.key())), sessionId);
@@ -221,7 +221,8 @@ public class AlignmentStorageManager extends StorageManager {
         checkAlignmentBioformat(fileQueryResult.first());
         checkAlignmentFormat(fileQueryResult.first());
 
-        return alignmentStorageEngine.getDBAdaptor().getUncoveredRegions(Paths.get(fileQueryResult.first().getUri()), region, maxCoverage);
+        return alignmentStorageEngine.getDBAdaptor()
+                .getLowCoverageRegions(Paths.get(fileQueryResult.first().getUri()), region, minCoverage);
     }
 
     public QueryResult<Long> count(String studyIdStr, String fileIdStr, Query query, QueryOptions options, String sessionId)

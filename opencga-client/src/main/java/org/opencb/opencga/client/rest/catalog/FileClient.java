@@ -102,10 +102,10 @@ public class FileClient extends CatalogClient<File, FileAclEntry> {
         return execute(FILES_URL, "groupBy", params, GET, File.class);
     }
 
-    public QueryResponse<FacetedQueryResult> facet(String study, Query query, QueryOptions queryOptions) throws IOException {
+    public QueryResponse<FacetedQueryResult> stats(String study, Query query, QueryOptions queryOptions) throws IOException {
         ObjectMap params = new ObjectMap(query);
         params.putAll(queryOptions);
         params.put("study", study);
-        return execute(FILES_URL, "facet", params, GET, FacetedQueryResult.class);
+        return execute(FILES_URL, "stats", params, GET, FacetedQueryResult.class);
     }
 }

@@ -26,6 +26,7 @@ public class SearchConfiguration {
     private String mode;
     private String user;
     private String password;
+    private String manager;
     private boolean active;
     private int timeout;
     @Deprecated
@@ -36,14 +37,18 @@ public class SearchConfiguration {
     private static final String DEFAULT_MODE = "cloud";
     private static final String DEFAULT_USER = "";
     private static final String DEFAULT_PASSWORD = "";
+    private static final String DEFAULT_MANAGER = "";
     private static final boolean DEFAULT_ACTIVE = true;
     private static final int DEFAULT_TIMEOUT = 30000;
     private static final int DEFAULT_INSERT_BATCH_SIZE = 10000;
 
+
     public SearchConfiguration() {
-        this(DEFAULT_HOST, DEFAULT_MODE, DEFAULT_USER, DEFAULT_PASSWORD, DEFAULT_ACTIVE, DEFAULT_TIMEOUT, DEFAULT_INSERT_BATCH_SIZE);
+        this(DEFAULT_HOST, DEFAULT_MODE, DEFAULT_USER, DEFAULT_PASSWORD, DEFAULT_MANAGER, DEFAULT_ACTIVE, DEFAULT_TIMEOUT,
+                DEFAULT_INSERT_BATCH_SIZE);
     }
 
+    @Deprecated
     public SearchConfiguration(String host, String mode, String user, String password, boolean active, int timeout, int insertBatchSize) {
         this.host = host;
         this.mode = mode;
@@ -55,6 +60,19 @@ public class SearchConfiguration {
         this.rows = insertBatchSize;
     }
 
+    public SearchConfiguration(String host, String mode, String user, String password, String manager, boolean active, int timeout,
+                               int insertBatchSize) {
+        this.host = host;
+        this.mode = mode;
+        this.user = user;
+        this.password = password;
+        this.manager = manager;
+        this.active = active;
+        this.timeout = timeout;
+        this.rows = insertBatchSize;
+        this.insertBatchSize = insertBatchSize;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("SearchConfiguration{");
@@ -62,6 +80,7 @@ public class SearchConfiguration {
         sb.append(", mode='").append(mode).append('\'');
         sb.append(", user='").append(user).append('\'');
         sb.append(", password='").append(password).append('\'');
+        sb.append(", manager='").append(manager).append('\'');
         sb.append(", active=").append(active);
         sb.append(", timeout=").append(timeout);
         sb.append(", rows=").append(rows);
@@ -106,7 +125,16 @@ public class SearchConfiguration {
         return this;
     }
 
-    public boolean getActive() {
+    public String getManager() {
+        return manager;
+    }
+
+    public SearchConfiguration setManager(String manager) {
+        this.manager = manager;
+        return this;
+    }
+
+    public boolean isActive() {
         return active;
     }
 
@@ -119,16 +147,8 @@ public class SearchConfiguration {
         return timeout;
     }
 
-    public void setTimeout(int timeout) {
+    public SearchConfiguration setTimeout(int timeout) {
         this.timeout = timeout;
-    }
-
-    public int getInsertBatchSize() {
-        return insertBatchSize;
-    }
-
-    public SearchConfiguration setInsertBatchSize(int insertBatchSize) {
-        this.insertBatchSize = insertBatchSize;
         return this;
     }
 
@@ -140,6 +160,15 @@ public class SearchConfiguration {
     @Deprecated
     public SearchConfiguration setRows(int rows) {
         this.rows = rows;
+        return this;
+    }
+
+    public int getInsertBatchSize() {
+        return insertBatchSize;
+    }
+
+    public SearchConfiguration setInsertBatchSize(int insertBatchSize) {
+        this.insertBatchSize = insertBatchSize;
         return this;
     }
 }

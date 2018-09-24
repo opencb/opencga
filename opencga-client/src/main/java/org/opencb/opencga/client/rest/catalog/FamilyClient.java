@@ -54,11 +54,11 @@ public class FamilyClient extends AnnotationClient<Family, FamilyAclEntry> {
         return execute(FAMILY_URL, "groupBy", params, GET, ObjectMap.class);
     }
 
-    public QueryResponse<FacetedQueryResult> facet(String study, Query query, QueryOptions queryOptions) throws IOException {
+    public QueryResponse<FacetedQueryResult> stats(String study, Query query, QueryOptions queryOptions) throws IOException {
         ObjectMap params = new ObjectMap(query);
         params.putAll(queryOptions);
         params.put("study", study);
-        return execute(FAMILY_URL, "facet", params, GET, FacetedQueryResult.class);
+        return execute(FAMILY_URL, "stats", params, GET, FacetedQueryResult.class);
     }
 
 }

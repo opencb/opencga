@@ -19,6 +19,7 @@ package org.opencb.opencga.app.cli;
 import com.beust.jcommander.JCommander;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.jsonwebtoken.Jwts;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
@@ -26,6 +27,7 @@ import org.apache.log4j.LogManager;
 import org.apache.log4j.RollingFileAppender;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.client.config.ClientConfiguration;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.slf4j.Logger;
@@ -37,7 +39,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -136,7 +138,7 @@ public abstract class CommandExecutor {
 
             if (cliSession != null) {
                 this.sessionId = cliSession.getToken();
-                this.userId = cliSession.getUserId();
+                this.userId = cliSession.getUser();
             }
 
         } catch (IOException e) {
@@ -285,11 +287,15 @@ public abstract class CommandExecutor {
     }
 
 
-    protected void loadCliSessionFile() throws IOException {
+    protected void loadCliSessionFile() {
         Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga", SESSION_FILENAME);
         if (Files.exists(sessionPath)) {
-            this.cliSession = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                    .readValue(sessionPath.toFile(), CliSession.class);
+            try {
+                this.cliSession = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                        .readValue(sessionPath.toFile(), CliSession.class);
+            } catch (IOException e) {
+                privateLogger.debug("Could not parse the session file properly");
+            }
         }
     }
 
@@ -300,14 +306,22 @@ public abstract class CommandExecutor {
             Files.createDirectory(sessionPath);
         }
         sessionPath = sessionPath.resolve(SESSION_FILENAME);
-        new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(sessionPath.toFile(), new CliSession(user, session, studies));
+        CliSession cliSession = new CliSession(clientConfiguration.getRest().getHost(), user, session, studies);
+
+        // we remove the part where the token signature is to avoid key verification
+        int i = session.lastIndexOf('.');
+        String withoutSignature = session.substring(0, i+1);
+        Date expiration = Jwts.parser().parseClaimsJwt(withoutSignature).getBody().getExpiration();
+
+        cliSession.setExpirationTime(TimeUtils.getTime(expiration));
+
+        new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(sessionPath.toFile(), cliSession);
     }
 
     protected void updateCliSessionFile() throws IOException {
         Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga", SESSION_FILENAME);
         if (Files.exists(sessionPath)) {
             ObjectMapper objectMapper = new ObjectMapper();
-//            CliSession cliSession = objectMapper.readValue(sessionPath.toFile(), CliSession.class);
             objectMapper.writerWithDefaultPrettyPrinter().writeValue(sessionPath.toFile(), cliSession);
         }
     }
@@ -327,11 +341,7 @@ public abstract class CommandExecutor {
     protected void logoutCliSessionFile() throws IOException {
         Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga", SESSION_FILENAME);
         if (Files.exists(sessionPath)) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            CliSession cliSession = objectMapper.readValue(sessionPath.toFile(), CliSession.class);
-            cliSession.setLogout(LocalDateTime.now().toString());
-            cliSession.setProjectsAndStudies(null);
-            objectMapper.writerWithDefaultPrettyPrinter().writeValue(sessionPath.toFile(), cliSession);
+            Files.delete(sessionPath);
         }
     }
 

@@ -22,6 +22,7 @@ import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.tools.alignment.BamManager;
+import org.opencb.biodata.tools.alignment.exceptions.AlignmentCoverageException;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.FileUtils;
@@ -306,7 +307,7 @@ public class AlignmentCommandExecutor extends CommandExecutor {
 //        }
     }
 
-    private void coverage() throws IOException {
+    private void coverage() throws IOException, AlignmentCoverageException {
         StorageAlignmentCommandOptions.CoverageAlignmentsCommandOptions coverageAlignmentsCommandOptions
                 = alignmentCommandOptions.coverageAlignmentsCommandOptions;
 

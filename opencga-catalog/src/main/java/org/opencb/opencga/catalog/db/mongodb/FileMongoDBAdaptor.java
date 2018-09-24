@@ -68,6 +68,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     private final MongoDBCollection fileCollection;
     private FileConverter fileConverter;
 
+    public static final String REVERSE_NAME = "_reverse";
+
     /***
      * CatalogMongoFileDBAdaptor constructor.
      *
@@ -440,6 +442,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         Document set = new Document("$set", new Document()
                 .append(QueryParams.ID.key(), fileId)
                 .append(QueryParams.NAME.key(), fileName)
+                .append(REVERSE_NAME, StringUtils.reverse(fileName))
                 .append(QueryParams.PATH.key(), filePath)
                 .append(QueryParams.URI.key(), fileUri));
         QueryResult<UpdateResult> update = fileCollection.update(query, set, null);
@@ -865,6 +868,18 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                         break;
                     // Other parameter that can be queried.
                     case NAME:
+                        String name = query.getString(queryParam.key());
+                        if (name.startsWith("~") && name.endsWith("$")) {
+                            // We remove ~ and $
+                            name = name.substring(1, name.length() - 1);
+                            // We store the name value reversed
+                            query.put(queryParam.key(), "~^" + StringUtils.reverse(name));
+                            // We look for the name field in the REVERSE db field
+                            addAutoOrQuery(REVERSE_NAME, queryParam.key(), query, queryParam.type(), andBsonList);
+                        } else {
+                            addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        }
+                        break;
                     case UUID:
                     case TYPE:
                     case FORMAT:

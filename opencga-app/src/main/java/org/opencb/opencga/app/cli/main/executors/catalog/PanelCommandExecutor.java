@@ -114,6 +114,8 @@ public class PanelCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotNull(DiseasePanelDBAdaptor.QueryParams.GENES.key(), panelsCommandOptions.searchCommandOptions.genes);
         query.putIfNotNull(DiseasePanelDBAdaptor.QueryParams.DESCRIPTION.key(), panelsCommandOptions.searchCommandOptions.description);
         query.putIfNotNull(DiseasePanelDBAdaptor.QueryParams.AUTHOR.key(), panelsCommandOptions.searchCommandOptions.author);
+        query.putIfNotNull(DiseasePanelDBAdaptor.QueryParams.TAGS.key(), panelsCommandOptions.searchCommandOptions.tags);
+        query.putIfNotNull(DiseasePanelDBAdaptor.QueryParams.CATEGORIES.key(), panelsCommandOptions.searchCommandOptions.categories);
         query.putIfNotNull(DiseasePanelDBAdaptor.QueryParams.CREATION_DATE.key(), panelsCommandOptions.searchCommandOptions.creationDate);
         query.putIfNotNull(DiseasePanelDBAdaptor.QueryParams.RELEASE.key(), panelsCommandOptions.searchCommandOptions.release);
         query.putIfNotNull(DiseasePanelDBAdaptor.QueryParams.SNAPSHOT.key(), panelsCommandOptions.searchCommandOptions.snapshot);

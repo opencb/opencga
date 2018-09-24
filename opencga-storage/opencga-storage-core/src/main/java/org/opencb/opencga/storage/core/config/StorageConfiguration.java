@@ -43,6 +43,7 @@ public class StorageConfiguration {
     private ServerConfiguration server;
     private CacheConfiguration cache;
     private SearchConfiguration search;
+    private SearchConfiguration clinical;
 
     private BenchmarkConfiguration benchmark;
     private List<StorageEngineConfiguration> storageEngines;
@@ -61,31 +62,9 @@ public class StorageConfiguration {
         this.server = new ServerConfiguration();
         this.cache = new CacheConfiguration();
         this.search = new SearchConfiguration();
+        this.clinical = new SearchConfiguration();
     }
 
-//    /*
-//     * This method attempts to find and load the configuration from installation directory,
-//     * if not exists then loads JAR storage-configuration.yml.
-//     *
-//     * @throws IOException If any IO problem occurs
-//     */
-//    @Deprecated
-//    public static StorageConfiguration load() throws IOException {
-//        String appHome = System.getProperty("app.home", System.getenv("OPENCGA_HOME"));
-//        Path path = Paths.get(appHome + "/conf/storage-configuration.yml");
-//        if (appHome != null && Files.exists(path)) {
-//            logger.debug("Loading configuration from '{}'", appHome + "/conf/storage-configuration.yml");
-//            return StorageConfiguration
-//                    .load(new FileInputStream(new File(appHome + "/conf/storage-configuration.yml")));
-//        } else {
-//            logger.debug("Loading configuration from '{}'",
-//                    StorageConfiguration.class.getClassLoader()
-//                            .getResourceAsStream("storage-configuration.yml")
-//                            .toString());
-//            return StorageConfiguration
-//                    .load(StorageConfiguration.class.getClassLoader().getResourceAsStream("storage-configuration.yml"));
-//        }
-//    }
 
     public static StorageConfiguration load(InputStream configurationInputStream) throws IOException {
         return load(configurationInputStream, "yaml");
@@ -170,6 +149,8 @@ public class StorageConfiguration {
         sb.append(", server=").append(server);
         sb.append(", cache=").append(cache);
         sb.append(", search=").append(search);
+        sb.append(", clinical=").append(clinical);
+        sb.append(", benchmark=").append(benchmark);
         sb.append(", storageEngines=").append(storageEngines);
         sb.append('}');
         return sb.toString();
@@ -179,40 +160,45 @@ public class StorageConfiguration {
         return defaultStorageEngineId;
     }
 
-    public void setDefaultStorageEngineId(String defaultStorageEngineId) {
+    public StorageConfiguration setDefaultStorageEngineId(String defaultStorageEngineId) {
         this.defaultStorageEngineId = defaultStorageEngineId;
+        return this;
     }
 
     public String getLogLevel() {
         return logLevel;
     }
 
-    public void setLogLevel(String logLevel) {
+    public StorageConfiguration setLogLevel(String logLevel) {
         this.logLevel = logLevel;
+        return this;
     }
 
     public String getLogFile() {
         return logFile;
     }
 
-    public void setLogFile(String logFile) {
+    public StorageConfiguration setLogFile(String logFile) {
         this.logFile = logFile;
+        return this;
     }
 
     public CellBaseConfiguration getCellbase() {
         return cellbase;
     }
 
-    public void setCellbase(CellBaseConfiguration cellbase) {
+    public StorageConfiguration setCellbase(CellBaseConfiguration cellbase) {
         this.cellbase = cellbase;
+        return this;
     }
 
     public ServerConfiguration getServer() {
         return server;
     }
 
-    public void setServer(ServerConfiguration server) {
+    public StorageConfiguration setServer(ServerConfiguration server) {
         this.server = server;
+        return this;
     }
 
     public CacheConfiguration getCache() {
@@ -233,75 +219,30 @@ public class StorageConfiguration {
         return this;
     }
 
+    public SearchConfiguration getClinical() {
+        return clinical;
+    }
+
+    public StorageConfiguration setClinical(SearchConfiguration clinical) {
+        this.clinical = clinical;
+        return this;
+    }
+
     public BenchmarkConfiguration getBenchmark() {
         return benchmark;
     }
 
-    public void setBenchmark(BenchmarkConfiguration benchmark) {
+    public StorageConfiguration setBenchmark(BenchmarkConfiguration benchmark) {
         this.benchmark = benchmark;
+        return this;
     }
 
     public List<StorageEngineConfiguration> getStorageEngines() {
         return storageEngines;
     }
 
-    public void setStorageEngines(List<StorageEngineConfiguration> storageEngines) {
+    public StorageConfiguration setStorageEngines(List<StorageEngineConfiguration> storageEngines) {
         this.storageEngines = storageEngines;
+        return this;
     }
-
-    //    public String getDefaultStorageEngineId() {
-//        return defaultStorageEngineId;
-//    }
-//
-//    public void setDefaultStorageEngineId(String defaultStorageEngineId) {
-//        this.defaultStorageEngineId = defaultStorageEngineId;
-//    }
-//
-//    public String getLogLevel() {
-//        return logLevel;
-//    }
-//
-//    public void setLogLevel(String logLevel) {
-//        this.logLevel = logLevel;
-//    }
-//
-//    public String getLogFile() {
-//        return logFile;
-//    }
-//
-//    public void setLogFile(String logFile) {
-//        this.logFile = logFile;
-//    }
-//
-//    public CellBaseConfiguration getCellbase() {
-//        return cellbase;
-//    }
-//
-//    public void setCellbase(CellBaseConfiguration cellbase) {
-//        this.cellbase = cellbase;
-//    }
-//
-//    public QueryServerConfiguration getServer() {
-//        return server;
-//    }
-//
-//    public void setServer(QueryServerConfiguration server) {
-//        this.server = server;
-//    }
-//
-//    public List<StorageEngineConfiguration> getStorageEngine() {
-//        return storageEngines;
-//    }
-//
-//    public void setStorageEngine(List<StorageEngineConfiguration> storageEngines) {
-//        this.storageEngines = storageEngines;
-//    }
-//
-//    public String getStudyMetadataManager() {
-//        return studyMetadataManager;
-//    }
-//
-//    public void setStudyMetadataManager(String studyMetadataManager) {
-//        this.studyMetadataManager = studyMetadataManager;
-//    }
 }

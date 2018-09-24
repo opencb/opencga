@@ -23,7 +23,6 @@ import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AnnotationCommandExecutor;
-import org.opencb.opencga.app.cli.main.options.CohortCommandOptions;
 import org.opencb.opencga.app.cli.main.options.FamilyCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
@@ -67,8 +66,8 @@ public class FamilyCommandExecutor extends OpencgaCommandExecutor {
             case "search":
                 queryResponse = search();
                 break;
-            case "facet":
-                queryResponse = facet();
+            case "stats":
+                queryResponse = stats();
                 break;
 //            case "update":
 //                queryResponse = update();
@@ -172,10 +171,10 @@ public class FamilyCommandExecutor extends OpencgaCommandExecutor {
         }
     }
 
-    private QueryResponse facet() throws IOException {
-        logger.debug("Family facets");
+    private QueryResponse stats() throws IOException {
+        logger.debug("Family stats");
 
-        FamilyCommandOptions.FacetCommandOptions commandOptions = familyCommandOptions.facetCommandOptions;
+        FamilyCommandOptions.StatsCommandOptions commandOptions = familyCommandOptions.statsCommandOptions;
 
         Query query = new Query();
         query.putIfNotEmpty("creationYear", commandOptions.creationYear);
@@ -191,11 +190,11 @@ public class FamilyCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotEmpty(Constants.ANNOTATION, commandOptions.annotation);
 
         QueryOptions options = new QueryOptions();
-        options.put("defaultStats", commandOptions.defaultStats);
-        options.putIfNotNull("facet", commandOptions.facet);
-        options.putIfNotNull("facetRange", commandOptions.facetRange);
+        options.put("default", commandOptions.defaultStats);
+        options.putIfNotNull("field", commandOptions.field);
+        options.putIfNotNull("fieldRange", commandOptions.fieldRange);
 
-        return openCGAClient.getFamilyClient().facet(commandOptions.study, query, options);
+        return openCGAClient.getFamilyClient().stats(commandOptions.study, query, options);
     }
 
 //

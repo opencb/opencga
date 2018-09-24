@@ -119,6 +119,8 @@ public class DiseasePanelManager extends ResourceManager<DiseasePanel> {
         panel.setAuthor(ParamUtils.defaultString(panel.getAuthor(), ""));
         panel.setCreationDate(TimeUtils.getTime());
         panel.setStatus(new Status());
+        panel.setCategories(ParamUtils.defaultObject(panel.getCategories(), Collections.emptyList()));
+        panel.setTags(ParamUtils.defaultObject(panel.getTags(), Collections.emptyList()));
         panel.setDescription(ParamUtils.defaultString(panel.getDescription(), ""));
         panel.setPhenotypes(ParamUtils.defaultObject(panel.getPhenotypes(), Collections.emptyList()));
         panel.setVariants(ParamUtils.defaultObject(panel.getVariants(), Collections.emptyList()));
@@ -126,6 +128,15 @@ public class DiseasePanelManager extends ResourceManager<DiseasePanel> {
         panel.setGenes(ParamUtils.defaultObject(panel.getGenes(), Collections.emptyList()));
         panel.setAttributes(ParamUtils.defaultObject(panel.getAttributes(), Collections.emptyMap()));
         panel.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.PANEL));
+
+        if (panel.getStats() == null || panel.getStats().isEmpty()) {
+            Map<String, Integer> stats = new HashMap<>();
+            stats.put("numberOfVariants", panel.getVariants().size());
+            stats.put("numberOfGenes", panel.getGenes().size());
+            stats.put("numberOfRegions", panel.getRegions().size());
+
+            panel.setStats(stats);
+        }
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
