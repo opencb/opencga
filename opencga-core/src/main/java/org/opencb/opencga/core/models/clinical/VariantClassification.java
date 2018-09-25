@@ -1,5 +1,6 @@
 package org.opencb.opencga.core.models.clinical;
 
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.models.ClinicalProperty;
@@ -73,14 +74,18 @@ public class VariantClassification {
     public static Set<String> PROTEIN_LENGTH_CHANGING = new HashSet<>(Arrays.asList("stop_gained", "stop_lost", "frameshift_variant",
             "inframe_insertion", "inframe_deletion", "splice_acceptor_variant", "splice_donor_variant"));
 
-    public static List<String> calculateAcmgClassification(ReportedVariant reportedVariant) {
+    public static List<String> calculateAcmgClassification(Variant variant) {
+        return calculateAcmgClassification(variant, null);
+    }
+
+    public static List<String> calculateAcmgClassification(Variant variant, ReportedEvent reportedEvent) {
         Set<String> acmg = new HashSet<>();
 
         // TODO: PM1
         //   Manual: PS3, PS4, PM3
         //   ?? PM6, PP1 (Cosegregation),
 
-        for (ConsequenceType consequenceType: reportedVariant.getAnnotation().getConsequenceTypes()) {
+        for (ConsequenceType consequenceType: variant.getAnnotation().getConsequenceTypes()) {
             for (SequenceOntologyTerm so: consequenceType.getSequenceOntologyTerms()) {
                 // PVS1
                 if (LOF.contains(so.getName())) {
@@ -89,7 +94,7 @@ public class VariantClassification {
 
                 // PS1
                 if ("synonymous_variant".equals(so.getName())) {
-                    for (EvidenceEntry evidenceEntry : reportedVariant.getAnnotation().getTraitAssociation()) {
+                    for (EvidenceEntry evidenceEntry : variant.getAnnotation().getTraitAssociation()) {
                         if ("clinvar".equals(evidenceEntry.getSource().getName())
                                 && (evidenceEntry.getVariantClassification().getClinicalSignificance() == org.opencb.biodata.models.variant.avro.ClinicalSignificance.pathogenic
                                 || evidenceEntry.getVariantClassification().getClinicalSignificance() == org.opencb.biodata.models.variant.avro.ClinicalSignificance.likely_pathogenic)) {
@@ -113,8 +118,8 @@ public class VariantClassification {
             //  PP3, BP4
             if (consequenceType.getProteinVariantAnnotation() != null
                     && ListUtils.isNotEmpty(consequenceType.getProteinVariantAnnotation().getSubstitutionScores())
-                    && ListUtils.isNotEmpty(reportedVariant.getAnnotation().getFunctionalScore())
-                    && ListUtils.isNotEmpty(reportedVariant.getAnnotation().getConservation())) {
+                    && ListUtils.isNotEmpty(variant.getAnnotation().getFunctionalScore())
+                    && ListUtils.isNotEmpty(variant.getAnnotation().getConservation())) {
                 double sift = Double.MIN_VALUE;
                 double polyphen = Double.MIN_VALUE;
                 double scaledCadd = Double.MIN_VALUE;
@@ -129,13 +134,13 @@ public class VariantClassification {
                             break;
                     }
                 }
-                for (Score score: reportedVariant.getAnnotation().getFunctionalScore()) {
+                for (Score score: variant.getAnnotation().getFunctionalScore()) {
                     if ("cadd_scaled".equals(score.getSource())) {
                         scaledCadd = score.getScore();
                         break;
                     }
                 }
-                for (Score score: reportedVariant.getAnnotation().getConservation()) {
+                for (Score score: variant.getAnnotation().getConservation()) {
                     if ("gerp".equals(score.getSource())) {
                         gerp = score.getScore();
                         break;
@@ -153,19 +158,21 @@ public class VariantClassification {
             }
         }
 
-        for (ReportedEvent reportedEvent : reportedVariant.getReportedEvents()) {
+        if (reportedEvent != null) {
             if (reportedEvent.getModeOfInheritance() == ClinicalProperty.ModeOfInheritance.DE_NOVO) {
                 acmg.add("PS2");
+            } else if (reportedEvent.getModeOfInheritance() == ClinicalProperty.ModeOfInheritance.COMPOUND_HETEROZYGOUS) {
+                acmg.add("PM3");
             }
         }
 
         // PM2, BA1
-        if (ListUtils.isEmpty(reportedVariant.getAnnotation().getPopulationFrequencies())) {
+        if (ListUtils.isEmpty(variant.getAnnotation().getPopulationFrequencies())) {
             acmg.add("PM2");
         } else {
             boolean above5 = false;
             boolean hasPopFreq = false;
-            for (PopulationFrequency populationFrequency: reportedVariant.getAnnotation().getPopulationFrequencies()) {
+            for (PopulationFrequency populationFrequency: variant.getAnnotation().getPopulationFrequencies()) {
                 // TODO: check it!
                 if (populationFrequency.getAltAlleleFreq() != 0) {
                     hasPopFreq = true;
@@ -189,7 +196,7 @@ public class VariantClassification {
             }
         }
 
-        for (EvidenceEntry evidenceEntry : reportedVariant.getAnnotation().getTraitAssociation()) {
+        for (EvidenceEntry evidenceEntry : variant.getAnnotation().getTraitAssociation()) {
             if ("clinvar".equals(evidenceEntry.getSource().getName())
                     && (evidenceEntry.getVariantClassification().getClinicalSignificance() == org.opencb.biodata.models.variant.avro.ClinicalSignificance.benign
                     || evidenceEntry.getVariantClassification().getClinicalSignificance() == org.opencb.biodata.models.variant.avro.ClinicalSignificance.likely_benign)) {
