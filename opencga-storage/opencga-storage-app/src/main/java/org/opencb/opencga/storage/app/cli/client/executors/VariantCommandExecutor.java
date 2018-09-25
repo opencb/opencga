@@ -208,7 +208,7 @@ public class VariantCommandExecutor extends CommandExecutor {
                 logger.error("Subcommand not valid");
                 break;
         }
-
+        variantStorageEngine.close();
     }
 
     private void index() throws URISyntaxException, IOException, StorageEngineException, FileFormatException {

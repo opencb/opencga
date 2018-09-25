@@ -17,7 +17,6 @@
 package org.opencb.opencga.storage.hadoop.variant.transform;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.ProgressLogger;
@@ -44,18 +43,18 @@ public class VariantSliceReader implements DataReader<ImmutablePair<Long, List<V
     private final int chunkSize;
     private final String studyId;
     private final String fileId;
-    private final VariantReader reader;
+    private final DataReader<Variant> reader;
     // chromosome -> slice -> variants
     // LinkedHashMap will preserve the reading order for the chromosomes
     private final LinkedHashMap<String, TreeMap<Long, List<Variant>>> bufferTree;
     private String currentChromosome = null;
     private final ProgressLogger progressLogger;
 
-    public VariantSliceReader(int chunkSize, VariantReader reader, int studyId, int fileId) {
+    public VariantSliceReader(int chunkSize, DataReader<Variant> reader, int studyId, int fileId) {
         this(chunkSize, reader, studyId, fileId, null);
     }
 
-    public VariantSliceReader(int chunkSize, VariantReader reader, int studyId, int fileId, ProgressLogger progressLogger) {
+    public VariantSliceReader(int chunkSize, DataReader<Variant> reader, int studyId, int fileId, ProgressLogger progressLogger) {
         this.chunkSize = chunkSize;
         this.studyId = String.valueOf(studyId);
         this.fileId = String.valueOf(fileId);

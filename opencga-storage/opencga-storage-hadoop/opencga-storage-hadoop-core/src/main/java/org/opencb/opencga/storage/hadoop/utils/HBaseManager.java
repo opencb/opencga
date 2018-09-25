@@ -108,9 +108,10 @@ public class HBaseManager implements AutoCloseable {
         if (this.closeConnection.get()) {
             Connection con = this.connection.getAndSet(null);
             if (null != con) {
-                LOGGER.info("Close Hadoop DB connection {}", con);
+                LOGGER.info("Close HBase connection {}", con);
                 con.close();
                 OPEN_CONNECTIONS.decrementAndGet();
+                LOGGER.info("Remaining HBase open connections: {}", getOpenConnections());
 //                CONNECTIONS.remove(con);
             }
         }

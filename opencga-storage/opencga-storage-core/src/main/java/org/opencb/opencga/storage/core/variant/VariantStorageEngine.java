@@ -1182,6 +1182,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             }
             genotypeParam = SAMPLE;
 
+            if (defaultStudyConfiguration == null) {
+                throw VariantQueryException.missingStudyForSamples(query.getAsStringList(SAMPLE.key()),
+                        getStudyConfigurationManager().getStudyNames(null));
+            }
             List<String> loadedGenotypes = defaultStudyConfiguration.getAttributes().getAsStringList(LOADED_GENOTYPES.key());
             if (CollectionUtils.isEmpty(loadedGenotypes)) {
                 loadedGenotypes = Arrays.asList(
@@ -1407,7 +1411,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         } else {
             try {
                 StopWatch watch = StopWatch.createStarted();
-                long count = getVariantSearchManager().query(dbName, query, new QueryOptions(QueryOptions.LIMIT, 0)).getNumTotalResults();
+                long count = getVariantSearchManager().count(dbName, query);
                 int time = (int) watch.getTime(TimeUnit.MILLISECONDS);
                 return new QueryResult<>("count", time, 1, 1, "", "", Collections.singletonList(count));
             } catch (IOException | SolrException e) {
@@ -1424,7 +1428,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         try {
             if (doQuerySearchManager(query, new QueryOptions(QueryOptions.COUNT, true))) {
                 approxCount = false;
-                count = getVariantSearchManager().query(dbName, query, new QueryOptions(QueryOptions.LIMIT, 0)).getNumTotalResults();
+                count = getVariantSearchManager().count(dbName, query);
             } else {
                 sampling = options.getInt(APPROXIMATE_COUNT_SAMPLING_SIZE.key(),
                         getOptions().getInt(APPROXIMATE_COUNT_SAMPLING_SIZE.key(), APPROXIMATE_COUNT_SAMPLING_SIZE.defaultValue()));
