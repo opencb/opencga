@@ -12,6 +12,7 @@ import org.opencb.opencga.catalog.managers.DiseasePanelManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.DiseasePanel;
+import org.opencb.opencga.core.models.Status;
 import org.opencb.opencga.core.models.acls.AclParams;
 
 import javax.servlet.http.HttpServletRequest;
@@ -42,7 +43,8 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Create a disease panel", response = DiseasePanel[].class)
     public Response createPanel(
             @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
-            @ApiParam(value = "When filled in with an installation disease panel ID, it will import the installation disease panel to the selected study to be used")
+            @ApiParam(value = "When filled in with an installation disease panel ID, it will import the installation disease panel to"
+                    + " the selected study to be used")
                 @QueryParam("importPanelId") String panelId,
             @ApiParam(name = "params", value = "Disease panel parameters") PanelPOST params) {
         try {
@@ -128,6 +130,8 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Disease panel variants") @QueryParam("variants") String variants,
             @ApiParam(value = "Disease panel genes") @QueryParam("genes") String genes,
             @ApiParam(value = "Disease panel regions") @QueryParam("regions") String regions,
+            @ApiParam(value = "Disease panel categories") @QueryParam("categories") String categories,
+            @ApiParam(value = "Disease panel tags") @QueryParam("tags") String tags,
             @ApiParam(value = "Disease panel description") @QueryParam("description") String description,
             @ApiParam(value = "Disease panel author") @QueryParam("author") String author,
             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
@@ -171,6 +175,8 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Disease panel variants") @QueryParam("variants") String variants,
             @ApiParam(value = "Disease panel genes") @QueryParam("genes") String genes,
             @ApiParam(value = "Disease panel regions") @QueryParam("regions") String regions,
+            @ApiParam(value = "Disease panel categories") @QueryParam("categories") String categories,
+            @ApiParam(value = "Disease panel tags") @QueryParam("tags") String tags,
             @ApiParam(value = "Disease panel description") @QueryParam("description") String description,
             @ApiParam(value = "Disease panel author") @QueryParam("author") String author,
             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
@@ -198,6 +204,8 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
             @ApiParam(value = "Disease panel name") @QueryParam("name") String name,
             @ApiParam(value = "Disease panel phenotypes") @QueryParam("phenotypes") String phenotypes,
+            @ApiParam(value = "Disease panel categories") @QueryParam("categories") String categories,
+            @ApiParam(value = "Disease panel tags") @QueryParam("tags") String tags,
             @ApiParam(value = "Disease panel variants") @QueryParam("variants") String variants,
             @ApiParam(value = "Disease panel genes") @QueryParam("genes") String genes,
             @ApiParam(value = "Disease panel regions") @QueryParam("regions") String regions,
@@ -256,36 +264,44 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
         }
     }
 
-    private static class PanelPOST {
+    public static class PanelPOST {
         public String id;
         public String name;
         public String description;
+        @Deprecated
         public String author;
         public DiseasePanel.SourcePanel source;
 
+        public List<DiseasePanel.PanelCategory> categories;
         public List<String> tags;
         public List<Phenotype> phenotypes;
         public List<DiseasePanel.VariantPanel> variants;
         public List<DiseasePanel.GenePanel> genes;
         public List<DiseasePanel.RegionPanel> regions;
+
+        public Map<String, Integer> stats;
+
         public Map<String, Object> attributes;
 
-        DiseasePanel toPanel() {
-            return new DiseasePanel(id, name, 1, 1, author, source, description, phenotypes, variants, genes, regions, tags, attributes);
+        public DiseasePanel toPanel() {
+            return new DiseasePanel(id, name, categories, phenotypes, tags, variants, genes, regions, stats, 1, 1, author, source,
+                    new Status(), description, attributes);
         }
 
-        ObjectMap toObjectMap() throws JsonProcessingException {
+        public ObjectMap toObjectMap() throws JsonProcessingException {
             DiseasePanel panel = new DiseasePanel()
                     .setId(id)
                     .setName(name)
                     .setAuthor(author)
                     .setSource(source)
                     .setDescription(description)
+                    .setCategories(categories)
                     .setTags(tags)
                     .setPhenotypes(phenotypes)
                     .setVariants(variants)
                     .setGenes(genes)
                     .setRegions(regions)
+                    .setStats(stats)
                     .setAttributes(attributes);
 
             return new ObjectMap(getUpdateObjectMapper().writeValueAsString(panel));

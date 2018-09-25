@@ -428,7 +428,15 @@ public class FileMetadataReader {
 
     public static VariantFileMetadata readVariantFileMetadata(File file, URI fileUri)
             throws IOException {
-        if (file.getFormat() == File.Format.VCF || FileUtils.detectFormat(fileUri) == File.Format.VCF) {
+
+        File.Format format = file.getFormat();
+        File.Format detectFormat = FileUtils.detectFormat(fileUri);
+        if (format == File.Format.VCF
+                || format == File.Format.GVCF
+                || format == File.Format.BCF
+                || detectFormat == File.Format.VCF
+                || detectFormat == File.Format.GVCF
+                || detectFormat == File.Format.BCF) {
             VariantFileMetadata metadata = new VariantFileMetadata(String.valueOf(file.getUid()), file.getName());
             metadata.setId(String.valueOf(file.getUid()));
             return VariantMetadataUtils.readVariantFileMetadata(Paths.get(fileUri.getPath()), metadata);

@@ -21,7 +21,7 @@ public abstract class AbstractHBaseDataWriter<T, M extends Mutation> implements 
     private BufferedMutator mutator;
 
     public AbstractHBaseDataWriter(HBaseManager hBaseManager, String tableName) {
-        this.hBaseManager = new HBaseManager(hBaseManager);
+        this.hBaseManager = new HBaseManager(hBaseManager.getConf());
         this.tableName = tableName;
     }
 
@@ -65,6 +65,7 @@ public abstract class AbstractHBaseDataWriter<T, M extends Mutation> implements 
     public boolean close() {
         try {
             mutator.close();
+            hBaseManager.close();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

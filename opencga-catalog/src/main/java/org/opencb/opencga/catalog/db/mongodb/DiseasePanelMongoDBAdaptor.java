@@ -418,14 +418,14 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
         final String[] acceptedParams = {UpdateParams.NAME.key(), UpdateParams.DESCRIPTION.key(), UpdateParams.AUTHOR.key()};
         filterStringParams(parameters, panelParameters, acceptedParams);
 
-        final String[] acceptedMapParams = {UpdateParams.ATTRIBUTES.key()};
+        final String[] acceptedMapParams = {UpdateParams.ATTRIBUTES.key(), UpdateParams.STATS.key()};
         filterMapParams(parameters, panelParameters, acceptedMapParams);
 
-        String[] acceptedParamsList = { UpdateParams.TAGS.key() };
+        String[] acceptedParamsList = { UpdateParams.TAGS.key()};
         filterStringListParams(parameters, panelParameters, acceptedParamsList);
 
         final String[] acceptedObjectParams = {UpdateParams.VARIANTS.key(), UpdateParams.PHENOTYPES.key(), UpdateParams.REGIONS.key(),
-                UpdateParams.GENES.key(), UpdateParams.SOURCE.key()};
+                UpdateParams.GENES.key(), UpdateParams.SOURCE.key(), UpdateParams.CATEGORIES.key()};
         filterObjectParams(parameters, panelParameters, acceptedObjectParams);
 
         if (parameters.containsKey(UpdateParams.ID.key())) {
@@ -745,6 +745,9 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
                     case VARIANTS:
                         addAutoOrQuery(QueryParams.VARIANTS_ID.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
+                    case CATEGORIES:
+                        addAutoOrQuery(QueryParams.CATEGORIES_NAME.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        break;
                     case STATUS_NAME:
                         // Convert the status to a positive status
                         query.put(queryParam.key(),
@@ -758,6 +761,8 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
                     case VERSION:
                     case DESCRIPTION:
                     case AUTHOR:
+                    case TAGS:
+                    case CATEGORIES_NAME:
                     case VARIANTS_ID:
                     case VARIANTS_PHENOTYPE:
                     case PHENOTYPES_ID:

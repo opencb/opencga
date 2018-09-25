@@ -236,7 +236,10 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             String token = catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
 
-            if (StringUtils.isNotEmpty(catalogCommandOptions.diseasePanelCatalogCommandOptions.panelImport)) {
+            if (catalogCommandOptions.diseasePanelCatalogCommandOptions.panelAppImport) {
+                catalogManager.getDiseasePanelManager().importPanelApp(token,
+                        catalogCommandOptions.diseasePanelCatalogCommandOptions.overwrite);
+            } else if (StringUtils.isNotEmpty(catalogCommandOptions.diseasePanelCatalogCommandOptions.panelImport)) {
                 importPanels(catalogManager, token);
             } else if (StringUtils.isNotEmpty(catalogCommandOptions.diseasePanelCatalogCommandOptions.delete)) {
                 deletePanels(catalogManager, token);
@@ -261,7 +264,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
                             try {
                                 panel = DiseasePanel.load(FileUtils.openInputStream(filePath.toFile()));
                             } catch (IOException e) {
-                                logger.error("Could not load file {}", filePath.toString());
+                                logger.error("Could not load file {}. {}", filePath.toString(), e.getMessage());
                                 return;
                             }
                             try {

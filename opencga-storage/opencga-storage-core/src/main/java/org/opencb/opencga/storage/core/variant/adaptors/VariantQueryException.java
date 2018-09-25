@@ -129,6 +129,13 @@ public class VariantQueryException extends IllegalArgumentException {
         return new VariantQueryException("Unknown sample \"" + sample + "\". Please, specify the study belonging."
                 + (availableStudies == null || availableStudies.isEmpty() ? "" : " Available studies: " + availableStudies));
     }
+    public static VariantQueryException missingStudyForSamples(Collection<String> samples, Collection<String> availableStudies) {
+        if (samples.size() == 1) {
+            return missingStudyForSample(samples.iterator().next(), availableStudies);
+        }
+        return new VariantQueryException("Unknown samples " + samples + ". Please, specify the study belonging."
+                + (availableStudies == null || availableStudies.isEmpty() ? "" : " Available studies: " + availableStudies));
+    }
 
     public static VariantQueryException missingStudyForFile(String file, Collection<String> availableStudies) {
         return new VariantQueryException("Unknown file \"" + file + "\". Please, specify the study belonging."

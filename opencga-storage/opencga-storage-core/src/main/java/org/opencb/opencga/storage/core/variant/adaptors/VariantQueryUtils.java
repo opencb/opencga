@@ -714,7 +714,7 @@ public final class VariantQueryUtils {
         return includeFiles;
     }
 
-    private static List<String> getIncludeFilesList(Query query) {
+    public static List<String> getIncludeFilesList(Query query) {
         List<String> includeFiles = null;
         if (query.containsKey(INCLUDE_FILE.key())) {
             String files = query.getString(INCLUDE_FILE.key());
@@ -1008,6 +1008,10 @@ public final class VariantQueryUtils {
         } else {
             List<String> files = query.getAsStringList(FILE.key());
             files.removeIf(VariantQueryUtils::isNegated);
+
+            if (files.isEmpty()) {
+                files = query.getAsStringList(INCLUDE_FILE.key());
+            }
 
             if (files.isEmpty()) {
                 throw VariantQueryException.malformedParam(INFO, value, "Missing \"" + FILE.key() + "\" param.");

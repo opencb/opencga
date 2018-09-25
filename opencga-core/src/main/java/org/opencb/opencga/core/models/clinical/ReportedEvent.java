@@ -4,13 +4,15 @@ import org.opencb.biodata.models.commons.Phenotype;
 
 import java.util.List;
 
+import static org.opencb.opencga.core.models.ClinicalProperty.*;
+
 public class ReportedEvent {
 
     private String id;
     private List<Phenotype> phenotypes;
     private List<String> consequenceTypeIds;
     private GenomicFeature genomicFeature;
-    private ReportedModeOfInheritance modeOfInheritance;
+    private ModeOfInheritance modeOfInheritance;
 
     /**
      * This must be an ID of a panel exixting in Intepretation.panels.
@@ -26,36 +28,11 @@ public class ReportedEvent {
     private String justification;
     private String tier;
 
-    public enum ReportedModeOfInheritance {
-        MONOALLELIC,
-        MONOALLELIC_NOT_IMPRINTED,
-        MONOALLELIC_MATERNALLY_IMPRINTED,
-        MONOALLELIC_PATERNALLY_IMPRINTED,
-        BIALLELIC,
-        MONOALLELIC_AND_BIALLELIC,
-        MONOALLELIC_AND_MORE_SEVERE_BIALLELIC,
-        XLINKED_BIALLELIC,
-        XLINKED_MONOALLELIC,
-        MITOCHRONDRIAL,
-        UNKNOWN
-    }
-
-    public enum Penetrance {
-        COMPLETE,
-        INCOMPLETE
-    }
-
-    public enum RoleInCancer {
-        ONCOGENE,
-        TUMOR_SUPPRESSOR_GENE,
-        BOTH
-    }
-
     public ReportedEvent() {
     }
 
     public ReportedEvent(String id, List<Phenotype> phenotypes, List<String> consequenceTypeIds, GenomicFeature genomicFeature,
-                         ReportedModeOfInheritance modeOfInheritance, String panelId, VariantClassification classification,
+                         ModeOfInheritance modeOfInheritance, String panelId, VariantClassification classification,
                          Penetrance penetrance, double score, boolean fullyExplainPhenotypes, int groupOfVariants,
                          RoleInCancer roleInCancer, boolean actionable, String justification, String tier) {
         this.id = id;
@@ -133,11 +110,11 @@ public class ReportedEvent {
         return this;
     }
 
-    public ReportedModeOfInheritance getModeOfInheritance() {
+    public ModeOfInheritance getModeOfInheritance() {
         return modeOfInheritance;
     }
 
-    public ReportedEvent setModeOfInheritance(ReportedModeOfInheritance modeOfInheritance) {
+    public ReportedEvent setModeOfInheritance(ModeOfInheritance modeOfInheritance) {
         this.modeOfInheritance = modeOfInheritance;
         return this;
     }

@@ -214,6 +214,7 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
         variantsFromDB.addAll(dbAdaptor.get(query, queryOptions).getResult());
 
         assertEquals(variantsFromDB.size(), variantsFromSearch.size());
+        assertEquals(variantsFromDB.size(), variantStorageEngine.getVariantSearchManager().count(DB_NAME, query));
 
         Iterator<Variant> variantsFromSearchIterator = variantsFromSearch.iterator();
         Iterator<Variant> variantsFromDBIterator = variantsFromDB.iterator();

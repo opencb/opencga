@@ -593,6 +593,11 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                 query.append(STUDY.key(), studyStr);
             }
 
+            // Remove "genotype" from query, as it could be mixed with que VariantQueryParam "genotype"
+            if (StringUtils.isNotEmpty(genotypesStr)) {
+                query.remove(GENOTYPE.key());
+            }
+
             Collection<String> sampleNames;
             if (all) {
                 sampleNames = variantSampleFilter.getSamplesInAllVariants(query, genotypes);

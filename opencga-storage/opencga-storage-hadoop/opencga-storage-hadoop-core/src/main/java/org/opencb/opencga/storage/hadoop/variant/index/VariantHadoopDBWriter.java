@@ -26,9 +26,10 @@ import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.StudyEntryToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchIndexUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created on 30/05/17.
@@ -39,6 +40,19 @@ public class VariantHadoopDBWriter extends AbstractHBaseDataWriter<Variant, Put>
 
     private final StudyEntryToHBaseConverter converter;
     private final GenomeHelper helper;
+    private int skippedRefBlock = 0;
+    private int skippedAll = 0;
+    private int skippedRefVariants = 0;
+    private int loadedVariants = 0;
+    private int loadedVariantsAll = 0;
+    private final Logger logger = LoggerFactory.getLogger(VariantHadoopDBWriter.class);
+
+    private final LinkedHashMap<String, String> LOADED_VARIANTS_SET = new LinkedHashMap<String, String>(10000) {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, String> eldest) {
+            return size() > 10000;
+        }
+    };
 
     public VariantHadoopDBWriter(GenomeHelper helper, String tableName,
                                  ProjectMetadata pm, StudyConfiguration sc, HBaseManager hBaseManager) {
@@ -52,12 +66,48 @@ public class VariantHadoopDBWriter extends AbstractHBaseDataWriter<Variant, Put>
         List<Put> puts = new ArrayList<>(list.size());
         for (Variant variant : list) {
             if (HadoopVariantStorageEngine.TARGET_VARIANT_TYPE_SET.contains(variant.getType())) {
-                Put put = converter.convert(variant);
-                HadoopVariantSearchIndexUtils.addUnknownSyncStatus(put, helper.getColumnFamily());
-                puts.add(put);
-            } //Discard ref_block and symbolic variants.
+                if (!alreadyLoaded(variant)) {
+                    Put put = converter.convert(variant);
+                    if (put != null) {
+                        HadoopVariantSearchIndexUtils.addUnknownSyncStatus(put, helper.getColumnFamily());
+                        puts.add(put);
+                        loadedVariants++;
+                    } else {
+                        skippedRefVariants++;
+                    }
+                }
+                loadedVariantsAll++;
+            } else { //Discard ref_block and symbolic variants.
+                if (!alreadyLoaded(variant)) {
+                    skippedRefBlock++;
+                }
+                skippedAll++;
+            }
         }
         return puts;
     }
 
+    private boolean alreadyLoaded(Variant v) {
+        return LOADED_VARIANTS_SET.put(v.toString(), "") != null;
+    }
+
+    public int getSkippedRefBlock() {
+        return skippedRefBlock;
+    }
+
+    public int getSkippedAll() {
+        return skippedAll;
+    }
+
+    public int getSkippedRefVariants() {
+        return skippedRefVariants;
+    }
+
+    public int getLoadedVariants() {
+        return loadedVariants;
+    }
+
+    public int getLoadedVariantsAll() {
+        return loadedVariantsAll;
+    }
 }
