@@ -264,7 +264,7 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
         }
     }
 
-    private static class PanelPOST {
+    public static class PanelPOST {
         public String id;
         public String name;
         public String description;
@@ -283,12 +283,12 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
 
         public Map<String, Object> attributes;
 
-        DiseasePanel toPanel() {
+        public DiseasePanel toPanel() {
             return new DiseasePanel(id, name, categories, phenotypes, tags, variants, genes, regions, stats, 1, 1, author, source,
                     new Status(), description, attributes);
         }
 
-        ObjectMap toObjectMap() throws JsonProcessingException {
+        public ObjectMap toObjectMap() throws JsonProcessingException {
             DiseasePanel panel = new DiseasePanel()
                     .setId(id)
                     .setName(name)
