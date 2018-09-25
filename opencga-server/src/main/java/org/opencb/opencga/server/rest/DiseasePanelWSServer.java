@@ -90,15 +90,15 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Disease panel  version") @QueryParam("version") Integer version,
             @ApiParam(value = "Fetch all disease panel versions", defaultValue = "false") @QueryParam(Constants.ALL_VERSIONS)
                     boolean allVersions,
-            @ApiParam(value = "Boolean indicating which disease panels are queried (installation or study disease panels)", defaultValue = "false")
-                @QueryParam("globalPanels") boolean globalPanels,
+            @ApiParam(value = "Boolean indicating which disease panels are queried (installation or study specific disease panels)",
+                    defaultValue = "false") @QueryParam("global") boolean global,
             @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false")
                 @QueryParam("silent") boolean silent) {
         try {
             query.remove("study");
-            query.remove("globalPanels");
+            query.remove("global");
 
-            if (globalPanels) {
+            if (global) {
                 studyStr = DiseasePanelManager.INSTALLATION_PANELS;
             }
 
@@ -135,8 +135,8 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Disease panel description") @QueryParam("description") String description,
             @ApiParam(value = "Disease panel author") @QueryParam("author") String author,
             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
-            @ApiParam(value = "Boolean indicating over which disease panels the query will be performed (installation or study disease panels)", defaultValue = "false")
-                @QueryParam("globalPanels") boolean globalPanels,
+            @ApiParam(value = "Boolean indicating which disease panels are queried (installation or study specific disease panels)",
+                    defaultValue = "false") @QueryParam("global") boolean global,
             @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,
             @ApiParam(value = "Release value (Current release from the moment the samples were first created)")
                 @QueryParam("release") String release,
@@ -144,11 +144,11 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
                     int snapshot) {
         try {
             query.remove("study");
-            query.remove("globalPanels");
+            query.remove("global");
 
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
 
-            if (globalPanels) {
+            if (global) {
                 studyStr = DiseasePanelManager.INSTALLATION_PANELS;
             }
 
