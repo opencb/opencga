@@ -114,7 +114,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
             @ApiParam(value = "Action to be performed if the array of interpretations is being updated.", defaultValue = "ADD")
-            @QueryParam("interpretationAction") ParamUtils.BasicUpdateAction interpretationAction,
+                @QueryParam("action") ParamUtils.BasicUpdateAction interpretationAction,
             @ApiParam(name = "params", value = "JSON containing clinical analysis information", required = true)
                     ClinicalInterpretationParameters params) {
         try {
@@ -148,7 +148,9 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
                              @PathParam(value = "clinicalAnalyses") String clinicalAnalysisStr,
                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                          @QueryParam("study") String studyStr,
-                         @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
+                         @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
+                                 + "exception whenever one of the entries looked for cannot be shown for whichever reason",
+                                 defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> analysisList = getIdList(clinicalAnalysisStr);
             List<QueryResult<ClinicalAnalysis>> analysisResult = clinicalManager.get(studyStr, analysisList, query, queryOptions, silent, sessionId);

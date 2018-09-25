@@ -82,7 +82,9 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @QueryParam("study") String studyStr,
             @ApiParam(value = "Family version") @QueryParam("version") Integer version,
             @ApiParam(value = "Fetch all family versions", defaultValue = "false") @QueryParam(Constants.ALL_VERSIONS) boolean allVersions,
-            @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
+            @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
+                    + "exception whenever one of the entries looked for cannot be shown for whichever reason", defaultValue = "false")
+                @QueryParam("silent") boolean silent) {
         try {
             query.remove("study");
             query.remove("families");
@@ -369,7 +371,9 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap,
             @ApiParam(value = "Annotation set name. If provided, only chosen annotation set will be shown") @QueryParam("name") String annotationsetName,
-            @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) throws WebServiceException {
+            @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
+                    + "exception whenever one of the entries looked for cannot be shown for whichever reason", defaultValue = "false")
+                @QueryParam("silent") boolean silent) throws WebServiceException {
         try {
             AbstractManager.MyResources<Family> resource = familyManager.getUids(familiesStr, studyStr, sessionId);
 
@@ -483,7 +487,9 @@ public class FamilyWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                             @QueryParam("study") String studyStr,
                             @ApiParam(value = "User or group id") @QueryParam("member") String member,
-                            @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
+                            @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
+                                    + "exception whenever one of the entries looked for cannot be shown for whichever reason",
+                                    defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(familyIdsStr);
             return createOkResponse(familyManager.getAcls(studyStr, idList, member, silent, sessionId));

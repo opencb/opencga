@@ -92,7 +92,8 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
                     boolean allVersions,
             @ApiParam(value = "Boolean indicating which disease panels are queried (installation or study specific disease panels)",
                     defaultValue = "false") @QueryParam("global") boolean global,
-            @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false")
+            @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
+                    + "exception whenever one of the entries looked for cannot be shown for whichever reason", defaultValue = "false")
                 @QueryParam("silent") boolean silent) {
         try {
             query.remove("study");
@@ -233,7 +234,8 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
                 String sampleIdsStr,
             @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
             @ApiParam(value = "User or group id") @QueryParam("member") String member,
-            @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false")
+            @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
+                    + "exception whenever one of the entries looked for cannot be shown for whichever reason", defaultValue = "false")
                 @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(sampleIdsStr);

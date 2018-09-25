@@ -158,7 +158,9 @@ public class StudyWSServer extends OpenCGAWSServer {
     })
     public Response info(@ApiParam(value = "Comma separated list of studies [[user@]project:]study where study and project can be either the id or alias up to a maximum of 100",
             required = true) @PathParam("studies") String studies,
-                         @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
+                         @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
+                                 + "exception whenever one of the entries looked for cannot be shown for whichever reason",
+                                 defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(studies);
             return createOkResponse(studyManager.get(idList, queryOptions, silent, sessionId));
@@ -169,11 +171,13 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studies}/summary")
-    @ApiOperation(value = "Fetch study information plus some basic stats", notes = "Fetch study information plus some basic stats such as"
-            + " the number of files, samples, cohorts...")
+    @ApiOperation(value = "Fetch study information plus some basic stats", hidden = true,
+            notes = "Fetch study information plus some basic stats such as the number of files, samples, cohorts...")
     public Response summary(@ApiParam(value = "Comma separated list of Studies [[user@]project:]study where study and project can be either the id or alias up to a maximum of 100", required = true)
                             @PathParam("studies") String studies,
-                            @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
+                            @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
+                                    + "exception whenever one of the entries looked for cannot be shown for whichever reason",
+                                    defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(studies);
             return createOkResponse(studyManager.getSummary(idList, queryOptions, silent, sessionId));
@@ -379,7 +383,9 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of studies [[user@]project:]study where study and project can be either the id or alias up to a maximum of 100", required = true)
             @PathParam("studies") String studiesStr,
             @ApiParam(value = "Group name. If provided, it will only fetch information for the provided group.") @QueryParam("name") String groupId,
-            @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
+            @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
+                    + "exception whenever one of the entries looked for cannot be shown for whichever reason",
+                    defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(studiesStr);
             return createOkResponse(catalogManager.getStudyManager().getGroup(idList, groupId, silent, sessionId));
@@ -393,8 +399,8 @@ public class StudyWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Add or remove a group")
     public Response updateGroupPOST(
             @ApiParam(value = "Study [[user@]project:]study") @PathParam("study") String studyStr,
-            @ApiParam(value = "Action to be performed: ADD or REMOVE a group", defaultValue = "ADD", required = true)
-            @QueryParam("action") ParamUtils.BasicUpdateAction action,
+            @ApiParam(value = "Action to be performed: ADD or REMOVE a group", defaultValue = "ADD")
+                @QueryParam("action") ParamUtils.BasicUpdateAction action,
             @ApiParam(value = "JSON containing the parameters", required = true) GroupCreateParams params) {
         try {
             if (action == null) {
@@ -418,7 +424,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response updateUsersFromGroupPOST(
             @ApiParam(value = "Study [[user@]project:]study") @PathParam("study") String studyStr,
             @ApiParam(value = "Group name") @PathParam("group") String groupId,
-            @ApiParam(value = "Action to be performed: ADD, SET or REMOVE users to/from a group", defaultValue = "ADD", required = true)
+            @ApiParam(value = "Action to be performed: ADD, SET or REMOVE users to/from a group", defaultValue = "ADD")
             @QueryParam("action") GroupParams.Action action,
             @ApiParam(value = "JSON containing the parameters", required = true) Users users) {
         try {
@@ -553,8 +559,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Action to be performed: ADD to add a new permission rule; REMOVE to remove all permissions assigned by an "
                     + "existing permission rule (even if it overlaps any manual permission); REVERT to remove all permissions assigned by"
                     + " an existing permission rule (keep manual overlaps); NONE to remove an existing permission rule without removing "
-                    + "any permissions that could have been assigned already by the permission rule.", required = true,
-                    defaultValue = "ADD")
+                    + "any permissions that could have been assigned already by the permission rule.", defaultValue = "ADD")
             @QueryParam("action") PermissionRuleAction action,
             @ApiParam(value = "JSON containing the permission rule to be created or removed.", required = true) PermissionRule params) {
         try {
@@ -599,7 +604,9 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of studies [[user@]project:]study where study and project can be either the id or alias up to a maximum of 100", required = true)
             @PathParam("studies") String studiesStr,
             @ApiParam(value = "User or group id") @QueryParam("member") String member,
-            @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) throws WebServiceException {
+            @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
+                    + "exception whenever one of the entries looked for cannot be shown for whichever reason",
+                    defaultValue = "false") @QueryParam("silent") boolean silent) throws WebServiceException {
 
         try {
             List<String> idList = getIdList(studiesStr);
@@ -725,8 +732,8 @@ public class StudyWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Add or remove a variableSet")
     public Response createOrRemoveVariableSets(
             @ApiParam(value = "Study [[user@]project:]study") @PathParam("study") String studyStr,
-            @ApiParam(value = "Action to be performed: ADD or REMOVE a variableSet", defaultValue = "ADD", required = true)
-            @QueryParam("action") ParamUtils.BasicUpdateAction action,
+            @ApiParam(value = "Action to be performed: ADD or REMOVE a variableSet", defaultValue = "ADD")
+                @QueryParam("action") ParamUtils.BasicUpdateAction action,
             @ApiParam(value = "JSON containing the VariableSet to be created or removed.", required = true) VariableSetParameters params) {
         try {
             if (action == null) {
@@ -769,8 +776,8 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response updateVariablesFromVariableSet(
             @ApiParam(value = "Study [[user@]project:]study") @PathParam("study") String studyStr,
             @ApiParam(value = "VariableSet id of the VariableSet to be updated") @PathParam("variableSet") String variableSetId,
-            @ApiParam(value = "Action to be performed: ADD or REMOVE a variable", defaultValue = "ADD", required = true)
-            @QueryParam("action") ParamUtils.BasicUpdateAction action,
+            @ApiParam(value = "Action to be performed: ADD or REMOVE a variable", defaultValue = "ADD")
+                @QueryParam("action") ParamUtils.BasicUpdateAction action,
             @ApiParam(value = "JSON containing the variable to be added or removed. For removing, only the variable id will be needed.",
                     required = true) Variable variable) {
         try {

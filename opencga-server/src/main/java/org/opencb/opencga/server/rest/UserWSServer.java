@@ -166,7 +166,8 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{user}/projects")
-    @ApiOperation(value = "Retrieve the projects of the user", notes = "Retrieve the list of projects and studies belonging to the user",
+    @ApiOperation(value = "Retrieve the projects of the user", notes = "Retrieve the list of projects and studies belonging to the user"
+            + " performing the query. This will not fetch shared projects. To get those, please use /projects/search web service.",
             response = Project[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Set which fields are included in the response, e.g.: name,alias...",
@@ -212,13 +213,13 @@ public class UserWSServer extends OpenCGAWSServer {
                     + "The aim of this is to provide a place to store this things for every user.")
     public Response updateConfiguration(
             @ApiParam(value = "User id", required = true) @PathParam("user") String userId,
-            @ApiParam(value = "Action to be performed: ADD or REMOVE a group", defaultValue = "ADD", required = true)
-            @QueryParam("action") ParamUtils.BasicUpdateAction action,
+            @ApiParam(value = "Action to be performed: ADD or REMOVE a group", defaultValue = "ADD")
+                @QueryParam("action") ParamUtils.BasicUpdateAction action,
             @ApiParam(name = "params", value = "JSON containing anything useful for the application such as user or default preferences. " +
                     "When removing, only the id will be necessary.", required = true) CustomConfig params) {
         try {
             if (action == null) {
-                throw new CatalogException("Missing mandatory action parameter");
+                action = ParamUtils.BasicUpdateAction.ADD;
             }
             if (action == ParamUtils.BasicUpdateAction.ADD) {
                 return createOkResponse(catalogManager.getUserManager().setConfig(userId, params.id, params.configuration, sessionId));
@@ -256,13 +257,13 @@ public class UserWSServer extends OpenCGAWSServer {
                     + "storing as many different filters as the user might want in order not to type the same filters.")
     public Response updateFilters(
             @ApiParam(value = "User id", required = true) @PathParam("user") String userId,
-            @ApiParam(value = "Action to be performed: ADD or REMOVE a group", defaultValue = "ADD", required = true)
+            @ApiParam(value = "Action to be performed: ADD or REMOVE a group", defaultValue = "ADD")
             @QueryParam("action") ParamUtils.BasicUpdateAction action,
-            @ApiParam(name = "params", value = "Filter parameters. When removing, only the filter name will be necessary", required = true)
-                    User.Filter params) {
+            @ApiParam(name = "params", value = "Filter parameters. When removing, only the 'name' of the filter will be necessary",
+                    required = true) User.Filter params) {
         try {
             if (action == null) {
-                throw new CatalogException("Missing mandatory action parameter");
+                action = ParamUtils.BasicUpdateAction.ADD;
             }
             if (action == ParamUtils.BasicUpdateAction.ADD) {
                 return createOkResponse(catalogManager.getUserManager().addFilter(userId, params.getName(), params.getDescription(),
