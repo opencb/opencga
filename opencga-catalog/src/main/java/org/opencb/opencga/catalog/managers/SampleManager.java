@@ -70,6 +70,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     private UserManager userManager;
     private StudyManager studyManager;
 
+    private final String defaultFacet = "creationYear>>creationMonth;status;phenotypes;somatic";
+
     SampleManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                   DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                   Configuration configuration) {
@@ -1129,8 +1131,16 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         return queryResults;
     }
 
-    public FacetedQueryResult facet(String studyStr, Query query, QueryOptions queryOptions, String sessionId)
+    public FacetedQueryResult facet(String studyStr, Query query, QueryOptions queryOptions, boolean defaultStats, String sessionId)
             throws CatalogException, IOException {
+        ParamUtils.defaultObject(query, Query::new);
+        ParamUtils.defaultObject(queryOptions, QueryOptions::new);
+
+        if (defaultStats) {
+            String facet = queryOptions.getString(QueryOptions.FACET);
+            queryOptions.put(QueryOptions.FACET, StringUtils.isNotEmpty(facet) ? defaultFacet + ";" + facet : defaultFacet);
+        }
+
         CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);
 
         String userId = userManager.getUserId(sessionId);

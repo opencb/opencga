@@ -617,9 +617,6 @@ public class CohortWSServer extends OpenCGAWSServer {
         }
     }
 
-    private final String defaultFacet = "creationYear>>creationMonth;status";
-    private final String defaultFacetRange = "numSamples:0:10:1";
-
     @GET
     @Path("/stats")
     @ApiOperation(value = "Fetch catalog cohort stats", position = 15, response = QueryResponse.class)
@@ -643,12 +640,7 @@ public class CohortWSServer extends OpenCGAWSServer {
         try {
             query.remove("study");
 
-            if (defaultStats) {
-                queryOptions.put(QueryOptions.FACET, StringUtils.isNotEmpty(facet) ? defaultFacet + ";" + facet : defaultFacet);
-                queryOptions.put(QueryOptions.FACET_RANGE, StringUtils.isNotEmpty(facet) ? defaultFacetRange + ";" + facet : defaultFacetRange);
-            }
-
-            FacetedQueryResult queryResult = catalogManager.getCohortManager().facet(studyStr, query, queryOptions, sessionId);
+            FacetedQueryResult queryResult = catalogManager.getCohortManager().facet(studyStr, query, queryOptions, defaultStats, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

@@ -679,8 +679,6 @@ public class SampleWSServer extends OpenCGAWSServer {
         }
     }
 
-    private final String defaultFacet = "creationYear>>creationMonth;status;phenotypes;somatic";
-
     @GET
     @Path("/stats")
     @ApiOperation(value = "Fetch catalog sample stats", position = 15, response = QueryResponse.class)
@@ -707,11 +705,8 @@ public class SampleWSServer extends OpenCGAWSServer {
         try {
             query.remove("study");
 
-            if (defaultStats) {
-                queryOptions.put(QueryOptions.FACET, StringUtils.isNotEmpty(facet) ? defaultFacet + ";" + facet : defaultFacet);
-            }
-
-            FacetedQueryResult queryResult = catalogManager.getSampleManager().facet(studyStr, query, queryOptions, sessionId);
+            FacetedQueryResult queryResult = catalogManager.getSampleManager().facet(studyStr, query, queryOptions, defaultStats,
+                    sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

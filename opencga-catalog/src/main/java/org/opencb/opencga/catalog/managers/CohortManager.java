@@ -68,6 +68,9 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     private UserManager userManager;
     private StudyManager studyManager;
 
+    private final String defaultFacet = "creationYear>>creationMonth;status";
+    private final String defaultFacetRange = "numSamples:0:10:1";
+
     CohortManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                   DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                   Configuration configuration) {
@@ -705,8 +708,19 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         }
     }
 
-    public FacetedQueryResult facet(String studyStr, Query query, QueryOptions queryOptions, String sessionId)
+    public FacetedQueryResult facet(String studyStr, Query query, QueryOptions queryOptions, boolean defaultStats, String sessionId)
             throws CatalogException, IOException {
+        ParamUtils.defaultObject(query, Query::new);
+        ParamUtils.defaultObject(queryOptions, QueryOptions::new);
+
+        if (defaultStats) {
+            String facet = queryOptions.getString(QueryOptions.FACET);
+            String facetRange = queryOptions.getString(QueryOptions.FACET_RANGE);
+            queryOptions.put(QueryOptions.FACET, StringUtils.isNotEmpty(facet) ? defaultFacet + ";" + facet : defaultFacet);
+            queryOptions.put(QueryOptions.FACET_RANGE, StringUtils.isNotEmpty(facetRange) ? defaultFacetRange + ";" + facetRange
+                    : defaultFacetRange);
+        }
+
         CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);
 
         String userId = userManager.getUserId(sessionId);

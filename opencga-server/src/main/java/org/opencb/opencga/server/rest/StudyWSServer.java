@@ -21,10 +21,7 @@ import io.swagger.annotations.*;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -38,6 +35,7 @@ import org.opencb.opencga.server.WebServiceException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.net.URI;
@@ -47,7 +45,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.catalog.utils.Constants.FLATTENED_ANNOTATIONS;
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 
@@ -722,6 +719,20 @@ public class StudyWSServer extends OpenCGAWSServer {
                 queryResult = catalogManager.getStudyManager().getVariableSet(studyStr, variableSetId, queryOptions, sessionId);
             }
             return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/stats")
+    @ApiOperation(value = "Fetch catalog study stats", position = 15, response = QueryResponse.class)
+    public Response getStats(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                @QueryParam("study") String studyStr) {
+        try {
+            Map<String, Object> facet = catalogManager.getStudyManager().facet(studyStr, sessionId);
+            return createOkResponse(facet);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
