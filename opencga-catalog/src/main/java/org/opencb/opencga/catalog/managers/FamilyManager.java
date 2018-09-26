@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.core.pedigree.Pedigree;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -668,6 +669,34 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         AnnotationUtils.fixQueryAnnotationSearch(study, userId, query, authorizationManager);
 
         return catalogSolrManager.facetedQuery(study, CatalogSolrManager.FAMILY_SOLR_COLLECTION, query, queryOptions, userId);
+    }
+
+    public static Pedigree getPedigreeFromFamily(Family family) {
+        List<Individual> members = family.getMembers();
+        Map<String, org.opencb.biodata.models.core.pedigree.Individual> individualMap = new HashMap<>();
+
+        // Parse all the individuals
+        for (Individual member : members) {
+            org.opencb.biodata.models.core.pedigree.Individual individual = new org.opencb.biodata.models.core.pedigree.Individual(
+                    member.getId(), member.getName(), null, null, member.getMultiples(),
+                    org.opencb.biodata.models.core.pedigree.Individual.Sex.getEnum(member.getSex().toString()), member.getLifeStatus(),
+                    org.opencb.biodata.models.core.pedigree.Individual.AffectionStatus.getEnum(member.getAffectationStatus().toString()),
+                    member.getPhenotypes(), member.getAttributes());
+            individualMap.put(individual.getId(), individual);
+        }
+
+        // Fill parent information
+        for (Individual member : members) {
+            if (member.getFather() != null && StringUtils.isNotEmpty(member.getFather().getId())) {
+                individualMap.get(member.getId()).setFather(individualMap.get(member.getFather().getId()));
+            }
+            if (member.getMother() != null && StringUtils.isNotEmpty(member.getMother().getId())) {
+                individualMap.get(member.getId()).setMother(individualMap.get(member.getMother().getId()));
+            }
+        }
+
+        List<org.opencb.biodata.models.core.pedigree.Individual> individuals = new ArrayList<>(individualMap.values());
+        return new Pedigree(family.getId(), individuals, family.getPhenotypes(), family.getAttributes());
     }
 
     /**
