@@ -51,6 +51,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
     private JobCommandOptions jobCommandOptions;
     private IndividualCommandOptions individualCommandOptions;
     private SampleCommandOptions sampleCommandOptions;
+    private ClinicalCommandOptions clinicalCommandOptions;
     private VariableCommandOptions variableCommandOptions;
     private CohortCommandOptions cohortCommandOptions;
     private FamilyCommandOptions familyCommandOptions;
@@ -195,6 +196,15 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         familySubCommands.addCommand("annotation-sets-search", familyCommandOptions.annotationSearchCommandOptions);
         familySubCommands.addCommand("annotation-sets-update", familyCommandOptions.annotationUpdateCommandOptions);
         familySubCommands.addCommand("annotation-sets-delete", familyCommandOptions.annotationDeleteCommandOptions);
+
+        clinicalCommandOptions = new ClinicalCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
+        jCommander.addCommand("clinical", clinicalCommandOptions);
+        JCommander clinicalSubcommands = jCommander.getCommands().get("clinical");
+        clinicalSubcommands.addCommand("info", clinicalCommandOptions.infoCommandOptions);
+        clinicalSubcommands.addCommand("search", clinicalCommandOptions.searchCommandOptions);
+        clinicalSubcommands.addCommand("group-by", clinicalCommandOptions.groupByCommandOptions);
+        clinicalSubcommands.addCommand("acl", clinicalCommandOptions.aclsCommandOptions);
+        clinicalSubcommands.addCommand("acl-update", clinicalCommandOptions.aclsUpdateCommandOptions);
 
         panelCommandOptions = new PanelCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand("panels", panelCommandOptions);
@@ -386,6 +396,10 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
 
     public FamilyCommandOptions getFamilyCommands() {
         return familyCommandOptions;
+    }
+
+    public ClinicalCommandOptions getClinicalCommandOptions() {
+        return clinicalCommandOptions;
     }
 
     public PanelCommandOptions getPanelCommands() {
