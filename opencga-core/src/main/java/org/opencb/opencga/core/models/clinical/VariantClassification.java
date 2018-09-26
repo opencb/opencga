@@ -70,7 +70,10 @@ public class VariantClassification {
         MODIFIER
     }
 
-    public static Set<String> LOF = new HashSet<>(Arrays.asList());
+    public static Set<String> LOF = new HashSet<>(Arrays.asList("transcript_ablation", "splice_acceptor_variant", "splice_donor_variant",
+            "stop_gained", "frameshift_variant", "stop_lost", "start_lost", "transcript_amplification", "inframe_insertion",
+            "inframe_deletion"));
+
     public static Set<String> PROTEIN_LENGTH_CHANGING = new HashSet<>(Arrays.asList("stop_gained", "stop_lost", "frameshift_variant",
             "inframe_insertion", "inframe_deletion", "splice_acceptor_variant", "splice_donor_variant"));
 
