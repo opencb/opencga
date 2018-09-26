@@ -16,9 +16,11 @@
 
 package org.opencb.opencga.catalog.db.mongodb.converters;
 
+import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.FileMongoDBAdaptor;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.VariableSet;
@@ -64,6 +66,8 @@ public class FileConverter extends AnnotableConverter<File> {
         document.put("job", new Document("uid", jobId));
 
         document.put("samples", convertSamples(file.getSamples()));
+
+        document.put(FileMongoDBAdaptor.REVERSE_NAME, StringUtils.reverse(file.getName()));
 
         return document;
     }

@@ -168,7 +168,9 @@ public class CohortWSServer extends OpenCGAWSServer {
             @PathParam("cohorts") String cohortsStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
             @QueryParam("study") String studyStr,
-            @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
+            @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
+                    + "exception whenever one of the entries looked for cannot be shown for whichever reason",
+                    defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             query.remove("study");
 
@@ -392,7 +394,9 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap,
             @ApiParam(value = "Annotation set name. If provided, only chosen annotation set will be shown") @QueryParam("name") String annotationsetName,
-            @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) throws WebServiceException {
+            @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
+                    + "exception whenever one of the entries looked for cannot be shown for whichever reason",
+                    defaultValue = "false") @QueryParam("silent") boolean silent) throws WebServiceException {
         try {
             AbstractManager.MyResources<Cohort> resource = cohortManager.getUids(cohortsStr, studyStr, sessionId);
 
@@ -560,7 +564,9 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
             @ApiParam(value = "User or group id") @QueryParam("member") String member,
-            @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
+            @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
+                    + "exception whenever one of the entries looked for cannot be shown for whichever reason",
+                    defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(cohortIdsStr);
             return createOkResponse(cohortManager.getAcls(studyStr, idList, member, silent, sessionId));
@@ -611,16 +617,12 @@ public class CohortWSServer extends OpenCGAWSServer {
         }
     }
 
-    private final String defaultFacet = "creationYear>>creationMonth;status";
-    private final String defaultFacetRange = "numSamples:0:10:1";
-
     @GET
-    @Path("/facet")
-    @ApiOperation(value = "Fetch catalog sample facets", position = 15, response = QueryResponse.class)
-    public Response getFacets(
+    @Path("/stats")
+    @ApiOperation(value = "Fetch catalog cohort stats", position = 15, response = QueryResponse.class)
+    public Response getStats(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                 @QueryParam("study") String studyStr,
-
             @ApiParam(value = "Type") @QueryParam("type") String type,
             @ApiParam(value = "Creation year") @QueryParam("creationYear") String creationYear,
             @ApiParam(value = "Creation month (JANUARY, FEBRUARY...)") @QueryParam("creationMonth") String creationMonth,
@@ -631,20 +633,19 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Release") @QueryParam("release") String release,
             @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
 
-            @ApiParam(value = "Calculate default stats", defaultValue = "false") @QueryParam("defaultStats") boolean defaultStats,
+            @ApiParam(value = "Calculate default stats", defaultValue = "false") @QueryParam("default") boolean defaultStats,
 
-            @ApiParam(value = "List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: studies>>biotype;type") @QueryParam("facet") String facet,
-            @ApiParam(value = "List of facet ranges separated by semicolons with the format {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1") @QueryParam("facetRange") String facetRange,
-            @ApiParam(value = "List of facet intersections separated by semicolons with the format {field_name}:{value1}:{value2}[:{value3}], e.g.: studies:1kG_phase3:EXAC:ESP6500") @QueryParam("facetIntersection") String facetIntersection) {
+            @ApiParam(value = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type") @QueryParam("field") String facet,
+            @ApiParam(value = "List of field ranges separated by semicolons with the format {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1") @QueryParam("fieldRange") String facetRange) {
         try {
             query.remove("study");
+            query.remove("field");
+            query.remove("fieldRange");
 
-            if (defaultStats) {
-                queryOptions.put(QueryOptions.FACET, StringUtils.isNotEmpty(facet) ? defaultFacet + ";" + facet : defaultFacet);
-                queryOptions.put(QueryOptions.FACET_RANGE, StringUtils.isNotEmpty(facet) ? defaultFacetRange + ";" + facet : defaultFacetRange);
-            }
+            queryOptions.put(QueryOptions.FACET, facet);
+            queryOptions.put(QueryOptions.FACET_RANGE, facetRange);
 
-            FacetedQueryResult queryResult = catalogManager.getCohortManager().facet(studyStr, query, queryOptions, sessionId);
+            FacetedQueryResult queryResult = catalogManager.getCohortManager().facet(studyStr, query, queryOptions, defaultStats, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

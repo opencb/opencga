@@ -142,7 +142,7 @@ public class AlignmentStorageManager extends StorageManager {
     }
 
     public AlignmentIterator<ReadAlignment> iterator(String studyId, String fileId, Query query, QueryOptions options,
-                                                           String sessionId) throws CatalogException, IOException, StorageEngineException {
+                                                     String sessionId) throws CatalogException, IOException, StorageEngineException {
         return iterator(studyId, fileId, query, options, sessionId, ReadAlignment.class);
     }
 
@@ -209,6 +209,21 @@ public class AlignmentStorageManager extends StorageManager {
         return alignmentStorageEngine.getDBAdaptor().coverage(fileInfo.getPhysicalFilePath(), region, windowSize);
     }
 
+    public QueryResult<RegionCoverage> getLowCoverageRegions(String studyIdStr, String fileIdStr, Region region, int minCoverage,
+                                                             String sessionId) throws Exception {
+        QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(studyIdStr, fileIdStr,
+                new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.URI.key(),
+                        FileDBAdaptor.QueryParams.BIOFORMAT.key(), FileDBAdaptor.QueryParams.FORMAT.key())), sessionId);
+        if (fileQueryResult.getNumResults() == 0) {
+            throw new CatalogException("File " + fileIdStr + " not found");
+        }
+
+        checkAlignmentBioformat(fileQueryResult.first());
+        checkAlignmentFormat(fileQueryResult.first());
+
+        return alignmentStorageEngine.getDBAdaptor()
+                .getLowCoverageRegions(Paths.get(fileQueryResult.first().getUri()), region, minCoverage);
+    }
 
     public QueryResult<Long> count(String studyIdStr, String fileIdStr, Query query, QueryOptions options, String sessionId)
             throws CatalogException, IOException, StorageEngineException {
@@ -230,6 +245,19 @@ public class AlignmentStorageManager extends StorageManager {
             }
         }
     }
+
+    private void checkAlignmentBioformat(File file) throws CatalogException {
+        if (!file.getBioformat().equals(File.Bioformat.ALIGNMENT)) {
+            throw new CatalogException("File " + file.getName() + " not supported. Expecting an alignment file.");
+        }
+    }
+
+    private void checkAlignmentFormat(File file) throws CatalogException {
+        if (!file.getFormat().equals(File.Format.BAM)) {
+            throw new CatalogException("File " + file.getName() + " not supported. Expecting a BAM file.");
+        }
+    }
+
 
     @Override
     public void testConnection() throws StorageEngineException {

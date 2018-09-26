@@ -856,6 +856,8 @@ public class FileUtils {
         switch (extension.toLowerCase()) {
             case "vcf":
                 return File.Format.VCF;
+            case "gvcf":
+                return File.Format.GVCF;
             case "bcf":
                 return File.Format.BCF;
             case "bam":

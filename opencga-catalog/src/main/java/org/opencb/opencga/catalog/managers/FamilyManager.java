@@ -21,7 +21,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.core.pedigree.Pedigree;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
+import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -64,6 +66,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
 import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
+import static org.opencb.opencga.core.models.ClinicalProperty.getPedigreeFromFamily;
 
 /**
  * Created by pfurio on 02/05/17.
@@ -73,6 +76,9 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     protected static Logger logger = LoggerFactory.getLogger(FamilyManager.class);
     private UserManager userManager;
     private StudyManager studyManager;
+
+    private final String defaultFacet = "creationYear>>creationMonth;status;phenotypes;expectedSize";
+    private final String defaultFacetRange = "numMembers:0:20:2";
 
     FamilyManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                   DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory, Configuration configuration) {
@@ -572,6 +578,46 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         return queryResult;
     }
 
+    public Map<String, List<String>> calculateFamilyGenotypes(String studyStr, String familyId, ClinicalProperty.ModeOfInheritance moi,
+                                                         String disease, boolean incompletePenetrance, String token)
+            throws CatalogException {
+        QueryResult<Family> familyQueryResult = get(studyStr, familyId, QueryOptions.empty(), token);
+
+        if (familyQueryResult.getNumResults() == 0) {
+            throw new CatalogException("Family " + familyId + " not found");
+        }
+
+        boolean notFound = true;
+        for (Phenotype phenotype : familyQueryResult.first().getPhenotypes()) {
+            if (phenotype.getId().equals(disease)) {
+                notFound = false;
+                break;
+            }
+        }
+        if (notFound) {
+            throw new CatalogException("Phenotype " + disease + " not found in any member of the family");
+        }
+
+        Phenotype phenotype = new Phenotype(disease, disease, "");
+
+        Pedigree pedigree = getPedigreeFromFamily(familyQueryResult.first());
+
+        switch (moi) {
+            case MONOALLELIC:
+                return ModeOfInheritance.dominant(pedigree, phenotype, incompletePenetrance);
+            case BIALLELIC:
+                return ModeOfInheritance.recessive(pedigree, phenotype, incompletePenetrance);
+            case XLINKED_BIALLELIC:
+                return ModeOfInheritance.xLinked(pedigree, phenotype, false);
+            case XLINKED_MONOALLELIC:
+                return ModeOfInheritance.xLinked(pedigree, phenotype, true);
+            case YLINKED:
+                return ModeOfInheritance.yLinked(pedigree, phenotype);
+            default:
+                throw new CatalogException("Unsupported or unknown mode of inheritance " + moi);
+        }
+    }
+
     // **************************   ACLs  ******************************** //
     public List<QueryResult<FamilyAclEntry>> getAcls(String studyStr, List<String> familyList, String member, boolean silent,
                                                      String sessionId) throws CatalogException {
@@ -656,8 +702,19 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
     }
 
-    public FacetedQueryResult facet(String studyStr, Query query, QueryOptions queryOptions, String sessionId)
+    public FacetedQueryResult facet(String studyStr, Query query, QueryOptions queryOptions, boolean defaultStats, String sessionId)
             throws CatalogException, IOException {
+        ParamUtils.defaultObject(query, Query::new);
+        ParamUtils.defaultObject(queryOptions, QueryOptions::new);
+
+        if (defaultStats) {
+            String facet = queryOptions.getString(QueryOptions.FACET);
+            String facetRange = queryOptions.getString(QueryOptions.FACET_RANGE);
+            queryOptions.put(QueryOptions.FACET, StringUtils.isNotEmpty(facet) ? defaultFacet + ";" + facet : defaultFacet);
+            queryOptions.put(QueryOptions.FACET_RANGE, StringUtils.isNotEmpty(facetRange) ? defaultFacetRange + ";" + facetRange
+                    : defaultFacetRange);
+        }
+
         CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);
 
         String userId = userManager.getUserId(sessionId);
@@ -668,6 +725,34 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         AnnotationUtils.fixQueryAnnotationSearch(study, userId, query, authorizationManager);
 
         return catalogSolrManager.facetedQuery(study, CatalogSolrManager.FAMILY_SOLR_COLLECTION, query, queryOptions, userId);
+    }
+
+    public static Pedigree getPedigreeFromFamily(Family family) {
+        List<Individual> members = family.getMembers();
+        Map<String, org.opencb.biodata.models.core.pedigree.Individual> individualMap = new HashMap<>();
+
+        // Parse all the individuals
+        for (Individual member : members) {
+            org.opencb.biodata.models.core.pedigree.Individual individual = new org.opencb.biodata.models.core.pedigree.Individual(
+                    member.getId(), member.getName(), null, null, member.getMultiples(),
+                    org.opencb.biodata.models.core.pedigree.Individual.Sex.getEnum(member.getSex().toString()), member.getLifeStatus(),
+                    org.opencb.biodata.models.core.pedigree.Individual.AffectionStatus.getEnum(member.getAffectationStatus().toString()),
+                    member.getPhenotypes(), member.getAttributes());
+            individualMap.put(individual.getId(), individual);
+        }
+
+        // Fill parent information
+        for (Individual member : members) {
+            if (member.getFather() != null && StringUtils.isNotEmpty(member.getFather().getId())) {
+                individualMap.get(member.getId()).setFather(individualMap.get(member.getFather().getId()));
+            }
+            if (member.getMother() != null && StringUtils.isNotEmpty(member.getMother().getId())) {
+                individualMap.get(member.getId()).setMother(individualMap.get(member.getMother().getId()));
+            }
+        }
+
+        List<org.opencb.biodata.models.core.pedigree.Individual> individuals = new ArrayList<>(individualMap.values());
+        return new Pedigree(family.getId(), individuals, family.getPhenotypes(), family.getAttributes());
     }
 
     /**

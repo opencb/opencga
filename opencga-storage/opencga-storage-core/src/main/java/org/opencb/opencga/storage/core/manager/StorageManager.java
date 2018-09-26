@@ -59,8 +59,7 @@ public abstract class StorageManager {
     }
 
     public StorageManager(CatalogManager catalogManager, StorageEngineFactory storageEngineFactory) {
-        this(catalogManager, null, storageEngineFactory.getStorageConfiguration(),
-                storageEngineFactory);
+        this(catalogManager, null, storageEngineFactory.getStorageConfiguration(), storageEngineFactory);
     }
 
     protected StorageManager(CatalogManager catalogManager, CacheManager cacheManager, StorageConfiguration storageConfiguration,

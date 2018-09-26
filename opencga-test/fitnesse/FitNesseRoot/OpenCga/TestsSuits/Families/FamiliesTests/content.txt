@@ -97,7 +97,7 @@
 | setHeader | Authorization : Bearer |
 | GET | /v1/families/$familyId/info | 403 | Content-Type: application/json | jsonbody.error != '' |
 
-!3 Create Family ACL For Ananomous
+!3 Create Family ACL For Anonymous
 !| Table: Rest Fixture | $baseURL |
 | setBody | {"permissions": "VIEW", "action":"SET", "family": "$familyId"} |
 | POST | /v1/families/acl/*/update | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].permissions[0] == 'VIEW' |
@@ -107,7 +107,7 @@
 | setHeader | Authorization : Bearer |
 | GET | /v1/families/$familyId/info | 200 | Content-Type: application/json | jsonbody.error === ''  && jsonbody.response[0].result[0].id == '$familyId' |
 
-!3 Delete Family ACL For Ananomous
+!3 Delete Family ACL For Anonymous
 !| Table: Rest Fixture | $baseURL |
 | setBody | { "action":"RESET", "family": "$familyId"} |
 | POST | /v1/families/acl/*/update | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result.length == '0.0' |

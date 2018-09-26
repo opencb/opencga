@@ -25,6 +25,7 @@
 {"collection": "file", "fields": {"id": 1, "studyUid": 1}, "options": {"unique": true, "background": true}}
 {"collection": "file", "fields": {"path": 1, "studyUid": 1}, "options": {"unique": true, "background": true}}
 {"collection": "file", "fields": {"name": 1, "studyUid": 1, "status.name": 1}, "options": {"background": true}}
+{"collection": "file", "fields": {"_reverse": 1, "studyUid": 1, "status.name": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"type": 1, "studyUid": 1, "status.name": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"format": 1, "studyUid": 1, "status.name": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"bioformat": 1, "studyUid": 1, "status.name": 1}, "options": {"background": true}}

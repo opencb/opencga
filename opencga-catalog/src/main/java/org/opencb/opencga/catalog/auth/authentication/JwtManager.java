@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.auth.authentication;
 
 import io.jsonwebtoken.*;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.Logger;
@@ -43,6 +44,9 @@ public class JwtManager {
     }
 
     String getSecretKey() {
+        if (StringUtils.isEmpty(secretKey)) {
+            secretKey = configuration.getAdmin().getSecretKey();
+        }
         return secretKey;
     }
 
@@ -72,7 +76,7 @@ public class JwtManager {
                     .setSubject(userId)
                     .setAudience("OpenCGA users")
                     .setIssuedAt(new Date(currentTime))
-                    .signWith(SignatureAlgorithm.forName(configuration.getAdmin().getAlgorithm()), this.secretKey.getBytes("UTF-8"));
+                    .signWith(SignatureAlgorithm.forName(configuration.getAdmin().getAlgorithm()), getSecretKey().getBytes("UTF-8"));
 
             // Set the expiration in number of seconds only if 'expiration' is greater than 0
             if (expiration > 0) {

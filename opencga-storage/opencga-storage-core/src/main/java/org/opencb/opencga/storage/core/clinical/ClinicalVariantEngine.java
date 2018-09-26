@@ -29,6 +29,7 @@ import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.models.clinical.Comment;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.clinical.ReportedVariant;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -149,4 +150,6 @@ public interface ClinicalVariantEngine {
 
     void addReportedVariantComment(long interpretationId, String variantId, Comment comment, String collection)
                                             throws IOException, ClinicalVariantException;
+
+    void setStorageConfiguration(StorageConfiguration storageConfiguration);
 }

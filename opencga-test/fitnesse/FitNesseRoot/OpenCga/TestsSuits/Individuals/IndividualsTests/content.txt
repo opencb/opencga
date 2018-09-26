@@ -105,7 +105,7 @@
 | setHeader | Authorization : Bearer |
 | GET | /v1/individuals/$individualId/info |403|Content-Type: application/json|jsonbody.error != ''|
 
-!3 Create Individual ACL For Ananomous
+!3 Create Individual ACL For Anonymous
 !|Table: Rest Fixture | $baseURL |
 |setBody|{"permissions": "VIEW", "action":"SET", "individual": "$individualId"}|
 |POST| /v1/individuals/acl/*/update |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions[0] == 'VIEW'|
@@ -115,7 +115,7 @@
 | setHeader | Authorization : Bearer |
 | GET | /v1/individuals/$individualId/info |200|Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].result[0].id == '$individualId'|
 
-!3 Delete Individual ACL For Ananomous
+!3 Delete Individual ACL For Anonymous
 !|Table: Rest Fixture | $baseURL |
 |setBody|{ "action":"RESET", "individual": "$individualId"}|
 |POST| /v1/individuals/acl/*/update |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0.0'|
@@ -171,7 +171,7 @@
 
 !3 Get Member ACL
 !| Table: Rest Fixture | $baseURL |
-| GET | /v1/individuals/$individualId/acl?member=$userA | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2.0' |
+| GET | /v1/individuals/$individualId/acl?member=$userA&study=$study | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2.0' |
 
 !3 Search Individual (ALL)
 !| Table: Rest Fixture | $baseURL |

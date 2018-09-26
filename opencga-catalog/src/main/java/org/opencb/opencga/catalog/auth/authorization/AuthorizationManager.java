@@ -368,6 +368,34 @@ public interface AuthorizationManager {
      */
     QueryResult<FamilyAclEntry> getFamilyAcl(long studyId, long familyId, String userId, String member) throws CatalogException;
 
+    /**
+     * Return all the ACLs defined for the clinical analysis.
+     *
+     *
+     * @param studyId study id.
+     * @param clinicalAnalysisId Clinical analysis id.
+     * @param userId user id asking for the ACLs.
+     * @return a list of ClinicalAnalysisAcls.
+     * @throws CatalogException when the user asking to retrieve all the ACLs defined in the clinical analysis does not have proper
+     * permissions.
+     */
+    QueryResult<ClinicalAnalysisAclEntry> getAllClinicalAnalysisAcls(long studyId, long clinicalAnalysisId, String userId)
+            throws CatalogException;
+
+    /**
+     * Return the ACL defined for the member.
+     *
+     *
+     * @param studyId study id.
+     * @param clinicalAnalysisId  Clinical analysis id.
+     * @param userId user asking for the ACL.
+     * @param member member whose permissions will be retrieved.
+     * @return the ClinicalAnalysisAcl for the member.
+     * @throws CatalogException if the user does not have proper permissions to see the member permissions.
+     */
+    QueryResult<ClinicalAnalysisAclEntry> getClinicalAnalysisAcl(long studyId, long clinicalAnalysisId, String userId, String member)
+            throws CatalogException;
+
 
     List<QueryResult<StudyAclEntry>> setStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions)
             throws CatalogException;

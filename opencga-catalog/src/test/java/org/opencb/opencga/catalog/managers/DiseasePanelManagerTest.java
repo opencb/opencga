@@ -5,6 +5,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
@@ -54,6 +55,13 @@ public class DiseasePanelManagerTest extends GenericTest {
                 null, null, "GRCh38", new QueryOptions(), sessionIdUser).first().getId();
         catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", Study.Type.TRIO, null, "Done", null, null, null, null,
                 null, null, null, null, sessionIdUser);
+    }
+
+    @Test
+    public void importFromPanelAppTest() throws CatalogException, IOException {
+        String token = catalogManager.getUserManager().login("admin", "admin");
+        panelManager.importPanelApp(token, false);
+        assertEquals(190, panelManager.count(DiseasePanelManager.INSTALLATION_PANELS, new Query(), token).getNumTotalResults());
     }
 
     @Test

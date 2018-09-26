@@ -12,6 +12,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.core.models.Variable;
 import org.opencb.opencga.core.models.VariableSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -131,6 +132,8 @@ public class CatalogSolrQueryParser {
         Map<String, String> filterList = new HashMap<>();
         SolrQuery solrQuery = new SolrQuery();
 
+        ObjectMap variableMap = generateVariableMap(variableSetList);
+
         //-------------------------------------
         // Facet processing
         //-------------------------------------
@@ -142,6 +145,7 @@ public class CatalogSolrQueryParser {
         //    - ranges, field_name:start:end:gap, e.g.: sift:0:1:0.5
         //    - intersections, field_name:value1^value2[^value3], e.g.: studies:1kG^ESP
         if (queryOptions.containsKey(QueryOptions.FACET) && StringUtils.isNotEmpty(queryOptions.getString(QueryOptions.FACET))) {
+            replaceAnnotationFormat(queryOptions, QueryOptions.FACET, variableMap);
             parseSolrFacets(queryOptions.get(QueryOptions.FACET).toString(), solrQuery);
         }
 
@@ -151,6 +155,7 @@ public class CatalogSolrQueryParser {
         // query parameter value: field:start:end:gap, e.g.: sift:0:1:0.5
         if (queryOptions.containsKey(QueryOptions.FACET_RANGE)
                 && StringUtils.isNotEmpty(queryOptions.getString(QueryOptions.FACET_RANGE))) {
+            replaceAnnotationFormat(queryOptions, QueryOptions.FACET_RANGE, variableMap);
             parseSolrFacetRanges(queryOptions.get(QueryOptions.FACET_RANGE).toString(), solrQuery);
         }
 
@@ -189,6 +194,149 @@ public class CatalogSolrQueryParser {
 
         return solrQuery;
 
+    }
+
+    private void replaceAnnotationFormat(QueryOptions queryOptions, String facetType, ObjectMap variableMap) {
+        // variableMap format: Map of full variable path -> Map
+        //                                                      type
+        //                                                      variableSetId
+        String facet = queryOptions.getString(facetType);
+        final String prefix = "annotation.";
+
+        // Look for annotation. in facet string
+        int index = facet.indexOf(prefix);
+        String copy = facet;
+        while (index != -1) {
+            int lastIndex = getMin(copy.indexOf(",", index), Integer.MAX_VALUE);
+            lastIndex = getMin(copy.indexOf(";", index), lastIndex);
+            lastIndex = getMin(copy.indexOf("<", index), lastIndex);
+            lastIndex = getMin(copy.indexOf(">", index), lastIndex);
+            lastIndex = getMin(copy.indexOf("=", index), lastIndex);
+
+            String annotation;
+            if (lastIndex == Integer.MAX_VALUE) {
+                // + 11 because we exclude annotation. prefix
+                annotation = copy.substring(index + 11);
+
+                // We replace the user input for the annotation key format stored in solr
+                String annotationReplacement = getInternalAnnotationKey(annotation, variableMap);
+                facet = facet.replace(prefix + annotation, annotationReplacement);
+
+                index = -1;
+            } else {
+                // + 11 because we exclude annotation. prefix
+                annotation = copy.substring(index + 11, lastIndex);
+
+                // We replace the user input for the annotation key format stored in solr
+                String annotationReplacement = getInternalAnnotationKey(annotation, variableMap);
+                facet = facet.replace(prefix + annotation, annotationReplacement);
+
+                copy = copy.substring(lastIndex);
+                index = copy.indexOf(prefix);
+            }
+        }
+
+        queryOptions.put(facetType, facet);
+    }
+
+    private String getInternalAnnotationKey(String annotation, ObjectMap variableMap) {
+        ObjectMap annotationMap = (ObjectMap) variableMap.get(annotation);
+        if (annotationMap == null || annotationMap.isEmpty()) {
+            logger.error("Cannot parse " + annotation + " string to internal annotation format");
+            return "";
+        }
+
+        try {
+            return "annotations" + getAnnotationType((QueryParam.Type) annotationMap.get("type"))
+                    + annotationMap.getString("variableSetId") + "." + annotation;
+        } catch (CatalogException e) {
+            logger.error("Cannot parse " + annotation + " string to internal annotation format");
+            return "";
+        }
+    }
+
+    private int getMin(int value, int currentValue) {
+        if (value == -1) {
+            return currentValue;
+        }
+        return value < currentValue ? value : currentValue;
+    }
+
+    private ObjectMap generateVariableMap(List<VariableSet> variableSetList) {
+        if (variableSetList == null || variableSetList.isEmpty()) {
+            return new ObjectMap();
+        }
+        // Full variable path -> Map
+        //                         type:
+        //                         variableSetId:
+        ObjectMap variableMap = new ObjectMap();
+        for (VariableSet variableSet : variableSetList) {
+            Queue<ObjectMap> queue = new LinkedList<>();
+            for (Variable variable : variableSet.getVariables()) {
+                // We add the current variable to the queue
+                ObjectMap auxiliarVariable = new ObjectMap()
+                        .append("variable", variable)
+                        .append("fullVariablePath", "")
+                        .append("isParentArray", false);
+                queue.add(auxiliarVariable);
+            }
+
+            while (!queue.isEmpty()) {
+                ObjectMap auxiliarVariable = queue.remove();
+                Variable variable = auxiliarVariable.get("variable", Variable.class);
+                boolean isParentArray = auxiliarVariable.getBoolean("isParentArray");
+                String fullVariablePath = auxiliarVariable.getString("fullVariablePath");
+                if (StringUtils.isEmpty(fullVariablePath)) {
+                    fullVariablePath = variable.getId();
+                } else {
+                    fullVariablePath = fullVariablePath + "." + variable.getId();
+                }
+
+                ObjectMap auxVariableMap = new ObjectMap("variableSetId", variableSet.getId());
+                switch (variable.getType()) {
+                    case BOOLEAN:
+                        auxVariableMap.put("type", isParentArray || variable.isMultiValue()
+                                ? QueryParam.Type.BOOLEAN_ARRAY
+                                : QueryParam.Type.BOOLEAN);
+                        variableMap.put(fullVariablePath, auxVariableMap);
+                        break;
+                    case CATEGORICAL:
+                    case TEXT:
+                        auxVariableMap.put("type", isParentArray || variable.isMultiValue()
+                                ? QueryParam.Type.TEXT_ARRAY
+                                : QueryParam.Type.TEXT);
+                        variableMap.put(fullVariablePath, auxVariableMap);
+                        break;
+                    case INTEGER:
+                        auxVariableMap.put("type", isParentArray || variable.isMultiValue()
+                                ? QueryParam.Type.INTEGER_ARRAY
+                                : QueryParam.Type.INTEGER);
+                        variableMap.put(fullVariablePath, auxVariableMap);
+                        break;
+                    case DOUBLE:
+                        auxVariableMap.put("type", isParentArray || variable.isMultiValue()
+                                ? QueryParam.Type.DECIMAL_ARRAY
+                                : QueryParam.Type.DECIMAL);
+                        variableMap.put(fullVariablePath, auxVariableMap);
+                        break;
+                    case OBJECT:
+                        if (variable.getVariableSet() != null && !variable.getVariableSet().isEmpty()) {
+                            for (Variable nestedVariable : variable.getVariableSet()) {
+                                ObjectMap nestedAuxiliarVariable = new ObjectMap()
+                                        .append("variable", nestedVariable)
+                                        .append("fullVariablePath", fullVariablePath)
+                                        .append("isParentArray", isParentArray || variable.isMultiValue());
+                                queue.add(nestedAuxiliarVariable);
+                            }
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+
+        return variableMap;
     }
 
     /**
@@ -348,7 +496,7 @@ public class CatalogSolrQueryParser {
                     solrQuery.addNumericRangeFacet(split[0], start, end, gap);
                 } catch (NumberFormatException e) {
                     logger.warn("Facet range '{}' malformed. Range format is 'name:start:end:gap' where start, end and gap values are "
-                                    + "numbers.", range);
+                            + "numbers.", range);
                 }
             }
         }

@@ -240,7 +240,7 @@ public class VariantReaderUtils {
     }
 
     public static boolean isVcf(String fileName) {
-        return hasFormat(fileName, "vcf");
+        return hasFormat(fileName, "vcf") || hasFormat(fileName, "gvcf");
     }
 
     public static boolean hasFormat(String fileName, String format) {

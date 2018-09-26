@@ -1,5 +1,7 @@
 package org.opencb.opencga.core.models.clinical;
 
+import org.opencb.biodata.models.alignment.RegionCoverage;
+
 public class ReportedLowCoverage {
     private String geneName;
     private String chromosome;
@@ -10,6 +12,18 @@ public class ReportedLowCoverage {
     private String type;
 
     public ReportedLowCoverage() {
+    }
+
+    public ReportedLowCoverage(RegionCoverage regionCoverage) {
+        this.chromosome = regionCoverage.getChromosome();
+        this.start = regionCoverage.getStart();
+        this.end = regionCoverage.getEnd();
+
+        float coverage = 0;
+        for (float value: regionCoverage.getValues()) {
+            coverage += value;
+        }
+        this.meanCoverage = coverage / regionCoverage.getValues().length;
     }
 
     @Override

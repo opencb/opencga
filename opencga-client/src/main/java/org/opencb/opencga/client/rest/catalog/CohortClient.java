@@ -65,11 +65,11 @@ public class CohortClient extends AnnotationClient<Cohort, CohortAclEntry> {
         return execute(COHORT_URL, "groupBy", params, GET, ObjectMap.class);
     }
 
-    public QueryResponse<FacetedQueryResult> facet(String study, Query query, QueryOptions queryOptions) throws IOException {
+    public QueryResponse<FacetedQueryResult> stats(String study, Query query, QueryOptions queryOptions) throws IOException {
         ObjectMap params = new ObjectMap(query);
         params.putAll(queryOptions);
         params.put("study", study);
-        return execute(COHORT_URL, "facet", params, GET, FacetedQueryResult.class);
+        return execute(COHORT_URL, "stats", params, GET, FacetedQueryResult.class);
     }
 
 }

@@ -78,8 +78,8 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
             case "group-by":
                 queryResponse = groupBy();
                 break;
-            case "facet":
-                queryResponse = facet();
+            case "stats":
+                queryResponse = stats();
                 break;
             case "samples":
                 queryResponse = getSamples();
@@ -325,10 +325,10 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getIndividualClient().updateAcl(commandOptions.memberId, queryParams, bodyParams);
     }
 
-    private QueryResponse facet() throws IOException {
-        logger.debug("Individual facets");
+    private QueryResponse stats() throws IOException {
+        logger.debug("Individual stats");
 
-        IndividualCommandOptions.FacetCommandOptions commandOptions = individualsCommandOptions.facetCommandOptions;
+        IndividualCommandOptions.StatsCommandOptions commandOptions = individualsCommandOptions.statsCommandOptions;
 
         Query query = new Query();
         query.putIfNotEmpty("creationYear", commandOptions.creationYear);
@@ -354,11 +354,11 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotEmpty(Constants.ANNOTATION, commandOptions.annotation);
 
         QueryOptions options = new QueryOptions();
-        options.put("defaultStats", commandOptions.defaultStats);
-        options.putIfNotNull("facet", commandOptions.facet);
-        options.putIfNotNull("facetRange", commandOptions.facetRange);
+        options.put("default", commandOptions.defaultStats);
+        options.putIfNotNull("field", commandOptions.field);
+        options.putIfNotNull("fieldRange", commandOptions.fieldRange);
 
-        return openCGAClient.getIndividualClient().facet(commandOptions.study, query, options);
+        return openCGAClient.getIndividualClient().stats(commandOptions.study, query, options);
     }
 
 }

@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.hadoop.variant.index.phoenix;
 
 import htsjdk.variant.vcf.VCFConstants;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -465,6 +466,8 @@ public class VariantSqlQueryParser {
      * {@link VariantQueryParam#TYPE}
      * {@link VariantQueryParam#STUDY}
      * {@link VariantQueryParam#FILE}
+     * {@link VariantQueryParam#FORMAT}
+     * {@link VariantQueryParam#INFO}
      * {@link VariantQueryParam#FILTER}
      * {@link VariantQueryParam#QUAL}
      * {@link VariantQueryParam#COHORT}
@@ -586,7 +589,7 @@ public class VariantSqlQueryParser {
 //            }
 //            filters.add(sb.toString());
         }
-
+        List<String> includeFiles = getIncludeFilesList(query);
         QueryOperation filtersOperation = null;
         List<String> filterValues = Collections.emptyList();
         if (isValidParam(query, FILTER)) {
@@ -594,7 +597,7 @@ public class VariantSqlQueryParser {
             filtersOperation = checkOperator(value);
             filterValues = splitValue(value, filtersOperation);
             if (!filterValues.isEmpty()) {
-                if (!isValidParam(query, FILE)) {
+                if (CollectionUtils.isNotEmpty(includeFiles)) {
                     throw VariantQueryException.malformedParam(FILTER, value, "Missing \"" + FILE.key() + "\" filter");
                 }
             }
@@ -607,7 +610,7 @@ public class VariantSqlQueryParser {
             qualOperation = checkOperator(value);
             qualValues = splitValue(value, qualOperation);
             if (!qualValues.isEmpty()) {
-                if (!isValidParam(query, FILE)) {
+                if (CollectionUtils.isNotEmpty(includeFiles)) {
                     throw VariantQueryException.malformedParam(QUAL, value, "Missing \"" + FILE.key() + "\" filter");
                 }
             }
@@ -621,14 +624,22 @@ public class VariantSqlQueryParser {
             addFormatFilter(query, filters, defaultStudyConfiguration);
         }
 
+        List<String> files = Collections.emptyList();
+        QueryOperation fileOperation = null;
         if (isValidParam(query, FILE)) {
             String value = query.getString(FILE.key());
-            QueryOperation operation = checkOperator(value);
-            List<String> values = splitValue(value, operation);
+            fileOperation = checkOperator(value);
+            files = splitValue(value, fileOperation);
+        } else {
+            if (!qualValues.isEmpty() || !filterValues.isEmpty()) {
+                files = includeFiles;
+                fileOperation = QueryOperation.OR;
+            }
+        }
 
-
+        if (!files.isEmpty()) {
             StringBuilder sb = new StringBuilder();
-            for (Iterator<String> iterator = values.iterator(); iterator.hasNext();) {
+            for (Iterator<String> iterator = files.iterator(); iterator.hasNext();) {
                 String file = iterator.next();
                 Pair<Integer, Integer> fileIdPair = studyConfigurationManager.getFileIdPair(file, false, defaultStudyConfiguration);
 
@@ -733,10 +744,10 @@ public class VariantSqlQueryParser {
                 }
                 sb.append(" ) ");
                 if (iterator.hasNext()) {
-                    if (operation == null) {
+                    if (fileOperation == null) {
                         // This should never happen!
                         throw new VariantQueryException("Unexpected error");
-                    } else if (operation.equals(QueryOperation.AND)) {
+                    } else if (fileOperation.equals(QueryOperation.AND)) {
                         sb.append(" AND ");
                     } else {
                         sb.append(" OR ");

@@ -568,7 +568,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         VariantSearchManager variantSearchManager = getVariantSearchManager();
         // first, create the collection it it does not exist
         variantSearchManager.create(dbName);
-        if (!configuration.getSearch().getActive() || !variantSearchManager.isAlive(dbName)) {
+        if (!configuration.getSearch().isActive() || !variantSearchManager.isAlive(dbName)) {
             throw new StorageEngineException("Solr is not alive!");
         }
 
@@ -631,7 +631,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
         try {
             variantSearchManager.create(collectionName);
-            if (configuration.getSearch().getActive() && variantSearchManager.isAlive(collectionName)) {
+            if (configuration.getSearch().isActive() && variantSearchManager.isAlive(collectionName)) {
                 // then, load variants
                 QueryOptions queryOptions = new QueryOptions();
                 Query query = new Query(VariantQueryParam.STUDY.key(), study)
@@ -878,6 +878,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         if (variantSearchManager.get() == null) {
             synchronized (variantSearchManager) {
                 if (variantSearchManager.get() == null) {
+                    // TODO One day we should use reflection here reading from storage-configuration.yml
                     variantSearchManager.set(new VariantSearchManager(getStudyConfigurationManager(), configuration));
                 }
             }
@@ -1181,6 +1182,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             }
             genotypeParam = SAMPLE;
 
+            if (defaultStudyConfiguration == null) {
+                throw VariantQueryException.missingStudyForSamples(query.getAsStringList(SAMPLE.key()),
+                        getStudyConfigurationManager().getStudyNames(null));
+            }
             List<String> loadedGenotypes = defaultStudyConfiguration.getAttributes().getAsStringList(LOADED_GENOTYPES.key());
             if (CollectionUtils.isEmpty(loadedGenotypes)) {
                 loadedGenotypes = Arrays.asList(
@@ -1406,7 +1411,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         } else {
             try {
                 StopWatch watch = StopWatch.createStarted();
-                long count = getVariantSearchManager().query(dbName, query, new QueryOptions(QueryOptions.LIMIT, 0)).getNumTotalResults();
+                long count = getVariantSearchManager().count(dbName, query);
                 int time = (int) watch.getTime(TimeUnit.MILLISECONDS);
                 return new QueryResult<>("count", time, 1, 1, "", "", Collections.singletonList(count));
             } catch (IOException | SolrException e) {
@@ -1423,7 +1428,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         try {
             if (doQuerySearchManager(query, new QueryOptions(QueryOptions.COUNT, true))) {
                 approxCount = false;
-                count = getVariantSearchManager().query(dbName, query, new QueryOptions(QueryOptions.LIMIT, 0)).getNumTotalResults();
+                count = getVariantSearchManager().count(dbName, query);
             } else {
                 sampling = options.getInt(APPROXIMATE_COUNT_SAMPLING_SIZE.key(),
                         getOptions().getInt(APPROXIMATE_COUNT_SAMPLING_SIZE.key(), APPROXIMATE_COUNT_SAMPLING_SIZE.defaultValue()));
@@ -1486,7 +1491,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     protected boolean searchActiveAndAlive() throws StorageEngineException {
-        return configuration.getSearch().getActive() && getVariantSearchManager() != null && getVariantSearchManager().isAlive(dbName);
+        return configuration.getSearch().isActive() && getVariantSearchManager() != null && getVariantSearchManager().isAlive(dbName);
     }
 
 

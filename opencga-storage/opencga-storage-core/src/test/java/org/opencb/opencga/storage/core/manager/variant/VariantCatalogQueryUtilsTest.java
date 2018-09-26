@@ -5,6 +5,8 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -13,13 +15,16 @@ import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
-import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.PROJECT;
+import static org.junit.Assert.assertFalse;
+import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
 /**
@@ -39,6 +44,7 @@ public class VariantCatalogQueryUtilsTest {
     private static String sessionId;
     private static VariantCatalogQueryUtils queryUtils;
     private static List<Sample> samples = new ArrayList<>();
+    private static List<Individual> individuals = new ArrayList<>();
     private static File file1;
     private static File file2;
     private static File file3;
@@ -57,27 +63,47 @@ public class VariantCatalogQueryUtilsTest {
         catalog.getStudyManager().create("p1", "s3", null, "s3", Study.Type.CONTROL_SET, null, null, null, null, null, null, null, null, null, null, sessionId);
         file1 = createFile("data/file1.vcf");
         file2 = createFile("data/file2.vcf");
-        createSample("sample1");
-        createSample("sample2");
+
+
+        Phenotype phenotype = new Phenotype("phenotype", "phenotype", "");
+        individuals.add(catalog.getIndividualManager().create("s1", new Individual("individual1", "individual1", IndividualProperty.Sex.MALE, null, null, 0, Collections.emptyList(), Collections.emptyMap()), null, sessionId).first());
+        individuals.add(catalog.getIndividualManager().create("s1", new Individual("individual2", "individual2", IndividualProperty.Sex.FEMALE, null, null, 0, Collections.emptyList(), Collections.emptyMap()), null, sessionId).first());
+        individuals.add(catalog.getIndividualManager().create("s1", new Individual("individual3", "individual3", IndividualProperty.Sex.MALE, null, null, 0, Collections.emptyList(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)).setPhenotypes(Collections.singletonList(phenotype)), null, sessionId).first());
+        individuals.add(catalog.getIndividualManager().create("s1", new Individual("individual4", "individual4", IndividualProperty.Sex.FEMALE, null, null, 0, Collections.emptyList(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)), null, sessionId).first());
+        catalog.getFamilyManager().create("s1", new Family("f1", "f1", Collections.singletonList(phenotype), individuals, null, 3, null, null), null, sessionId);
+
+
+        createSample("sample1", "individual1");
+        createSample("sample2", "individual2");
         catalog.getCohortManager().create("s1", new Cohort().setId("c1").setSamples(Collections.emptyList()), null, sessionId);
 
         catalog.getProjectManager().incrementRelease("p1", sessionId);
         file3 = createFile("data/file3.vcf");
         file4 = createFile("data/file4.vcf");
         file5 = createFile("data/file5.vcf", false);
-        createSample("sample3");
-        createSample("sample4");
+        createSample("sample3", "individual3");
+        createSample("sample4", "individual4");
         catalog.getCohortManager().create("s1", new Cohort().setId("c2").setSamples(Collections.emptyList()), null, sessionId);
         catalog.getCohortManager().create("s1", new Cohort().setId(StudyEntry.DEFAULT_COHORT).setSamples(samples), null, sessionId);
 
         catalog.getProjectManager().create("p2", "p2", "", null, "hsapiens", "Homo Sapiens", null, "GRCh38", null, sessionId);
         catalog.getStudyManager().create("p2", "p2s2", null, "s1", Study.Type.CONTROL_SET, null, null, null, null, null, null, null, null, null, null, sessionId);
 
+        catalog.getDiseasePanelManager().create("s1", new DiseasePanel("MyPanel", "MyPanel", 1).setGenes(
+                Arrays.asList(
+                        new DiseasePanel.GenePanel().setName("BRCA2"),
+                        new DiseasePanel.GenePanel().setName("CADM1"),
+                        new DiseasePanel.GenePanel().setName("CTBP2P1"),
+                        new DiseasePanel.GenePanel().setName("ADSL")
+                )
+        ), null, sessionId);
+
+
         queryUtils = new VariantCatalogQueryUtils(catalog);
     }
 
-    public static void createSample(String name) throws CatalogException {
-        samples.add(catalog.getSampleManager().create("s1", name, null, null, null, false, null, null, null, null, sessionId).first());
+    public static void createSample(String name, String individualName) throws CatalogException {
+        samples.add(catalog.getSampleManager().create("s1", name, null, null, null, false, new Individual(individualName, individualName, null, null, null, 0, Collections.emptyList(), Collections.emptyMap()), null, null, null, sessionId).first());
     }
 
     public static File createFile(String path) throws CatalogException {
@@ -216,6 +242,68 @@ public class VariantCatalogQueryUtilsTest {
         assertEquals("sample1:HOM_ALT,sample2:HET_REF", parseValue("s1", GENOTYPE, "sample1:HOM_ALT,sample2:HET_REF"));
 
 
+    }
+
+    @Test
+    public void queryByFamily() throws Exception {
+        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "f1"), sessionId);
+        assertEquals(Arrays.asList("sample1", "sample2", "sample3", "sample4"), query.getAsStringList(SAMPLE.key()));
+        assertFalse(VariantQueryUtils.isValidParam(query, GENOTYPE));
+
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "f1").append(MODE_OF_INHERITANCE.key(), "MONOALLELIC"), sessionId);
+        assertEquals("sample3:0/1,1/1;sample4:0/0;sample1:0/0;sample2:0/0", query.getString(GENOTYPE.key()));
+        assertFalse(VariantQueryUtils.isValidParam(query, SAMPLE));
+    }
+
+    @Test
+    public void queryByFamilyWithoutStudy() throws CatalogException {
+        VariantQueryException e = VariantQueryException.missingStudyFor("family", "f1", Collections.emptyList());
+        thrown.expectMessage(e.getMessage());
+        thrown.expect(e.getClass());
+        queryUtils.parseQuery(new Query(FAMILY.key(), "f1"), sessionId);
+    }
+
+    @Test
+    public void queryByFamilyNotFound() throws CatalogException {
+        CatalogException e = new CatalogException("Family asdf not found");
+        thrown.expectMessage(e.getMessage());
+        thrown.expect(e.getClass());
+        queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "asdf").append(FAMILY_PHENOTYPE.key(), "asdf"), sessionId);
+    }
+
+    @Test
+    public void queryByFamilyMissingModeOfInheritance() throws CatalogException {
+        VariantQueryException e = VariantQueryException.malformedParam(FAMILY_PHENOTYPE, "asdf", "Require parameter \"family\" and \"modeOfInheritance\" to use \"familyDisease\".");
+        thrown.expectMessage(e.getMessage());
+        thrown.expect(e.getClass());
+        queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "f1").append(FAMILY_PHENOTYPE.key(), "asdf"), sessionId);
+    }
+
+    @Test
+    public void queryByFamilyUnknownDisease() throws CatalogException {
+        VariantQueryException e = VariantQueryException.malformedParam(FAMILY_PHENOTYPE, "asdf", "Available phenotypes: [phenotype]");
+        thrown.expectMessage(e.getMessage());
+        thrown.expect(e.getClass());
+        queryUtils.parseQuery(new Query(STUDY.key(), "s1")
+                .append(FAMILY.key(), "f1")
+                .append(MODE_OF_INHERITANCE.key(), "monoallelic")
+                .append(FAMILY_PHENOTYPE.key(), "asdf"), sessionId);
+    }
+
+    @Test
+    public void queryByPanel() throws Exception {
+        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel"), sessionId);
+        assertEquals(Arrays.asList("BRCA2","CADM1","CTBP2P1","ADSL"), query.getAsList(GENE.key()));
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel").append(GENE.key(), "ASDF"), sessionId);
+        assertEquals(Arrays.asList("BRCA2","CADM1","CTBP2P1","ADSL", "ASDF"), query.getAsList(GENE.key()));
+    }
+
+    @Test
+    public void queryByPanelNotFound() throws Exception {
+        CatalogException e = new CatalogException("Panel MyPanel_wrong not found");
+        thrown.expectMessage(e.getMessage());
+        thrown.expect(e.getClass());
+        queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel_wrong"), sessionId);
     }
 
     @Test

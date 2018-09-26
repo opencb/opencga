@@ -1,16 +1,20 @@
 package org.opencb.opencga.server.rest.admin;
 
 import io.swagger.annotations.*;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.DiseasePanelManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Account;
 import org.opencb.opencga.core.models.Group;
 import org.opencb.opencga.core.models.User;
+import org.opencb.opencga.server.rest.DiseasePanelWSServer;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
 
 import javax.servlet.http.HttpServletRequest;
@@ -141,7 +145,7 @@ public class AdminWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/studies/syncSolr")
+    @Path("/catalog/indexStats")
     @ApiOperation(value = "Sync Catalog into the Solr")
     public Response syncSolr() {
         try {
@@ -152,7 +156,7 @@ public class AdminWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/install")
+    @Path("/catalog/install")
     @ApiOperation(value = "Install OpenCGA database", notes = "Creates and initialises the OpenCGA database <br>"
             + "<ul>"
             + "<il><b>secretKey</b>: Secret key needed to authenticate through OpenCGA (JWT)</il><br>"
@@ -164,6 +168,36 @@ public class AdminWSServer extends OpenCGAWSServer {
         try {
             catalogManager.installCatalogDB(installParams.secretKey, installParams.password);
             return createOkResponse(new QueryResult<>("install ok"));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+
+    @POST
+    @Path("/catalog/diseasePanel")
+    @ApiOperation(value = "Handle global disease panels")
+    public Response diseasePanels(
+            @ApiParam(value = "Import panels from PanelApp (GEL)", defaultValue = "false") @QueryParam("panelApp") boolean importPanels,
+            @ApiParam(value = "Flag indicating to overwrite installed panels in case of an ID conflict", defaultValue = "false")
+                @QueryParam("overwrite") boolean overwrite,
+            @ApiParam(value = "Comma separated list of global panel ids to delete")
+                @QueryParam("delete") String panelsToDelete,
+            @ApiParam(value = "Disease panel parameters to be installed") DiseasePanelWSServer.PanelPOST panelPost) {
+        try {
+            if (importPanels) {
+                catalogManager.getDiseasePanelManager().importPanelApp(sessionId, overwrite);
+            } else if (StringUtils.isEmpty(panelsToDelete)) {
+                catalogManager.getDiseasePanelManager().create(panelPost.toPanel(), overwrite, sessionId);
+            } else {
+                String[] panelIds = panelsToDelete.split(",");
+                for (String panelId : panelIds) {
+                    catalogManager.getDiseasePanelManager().delete(panelId, sessionId);
+                }
+            }
+
+            return createOkResponse(catalogManager.getDiseasePanelManager().count(DiseasePanelManager.INSTALLATION_PANELS,
+                    new Query(), sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -217,7 +251,7 @@ public class AdminWSServer extends OpenCGAWSServer {
 //    }
 
     @POST
-    @Path("/database/jwt")
+    @Path("/catalog/jwt")
     @ApiOperation(value = "Change JWT secret key")
     public Response jwt(@ApiParam(value = "JSON containing the parameters", required = true) JWTParams jwtParams) {
         ObjectMap params = new ObjectMap();

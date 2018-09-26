@@ -30,6 +30,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.FacetedQueryResult;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.core.exception.VersionException;
+import org.opencb.opencga.core.models.ClinicalProperty;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
@@ -246,6 +247,10 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "missingAlleles", value = MISSING_ALLELES_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "missingGenotypes", value = MISSING_GENOTYPES_DESCR, dataType = "string", paramType = "query"),
 
+            @ApiImplicitParam(name = "family", value = VariantCatalogQueryUtils.FAMILY_DESC, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "familyPhenotype", value = VariantCatalogQueryUtils.FAMILY_PHENOTYPE_DESC, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "modeOfInheritance", value = VariantCatalogQueryUtils.MODE_OF_INHERITANCE_DESC, dataType = "string", paramType = "query"),
+
             @ApiImplicitParam(name = "includeStudy", value = INCLUDE_STUDY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "includeFile", value = INCLUDE_FILE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "includeSample", value = INCLUDE_SAMPLE_DESCR, dataType = "string", paramType = "query"),
@@ -272,6 +277,8 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "functionalScore", value = ANNOT_FUNCTIONAL_SCORE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "clinicalSignificance", value = ANNOT_CLINICAL_SIGNIFICANCE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "customAnnotation", value = CUSTOM_ANNOTATION_DESCR, dataType = "string", paramType = "query"),
+
+            @ApiImplicitParam(name = "panel", value = VariantCatalogQueryUtils.PANEL_DESC, dataType = "string", paramType = "query"),
 
             // WARN: Only available in Solr
             @ApiImplicitParam(name = "trait", value = ANNOT_TRAIT_DESCR, dataType = "string", paramType = "query"),
@@ -540,6 +547,24 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     }
 
     @GET
+    @Path("/familyGenotypes")
+    @ApiOperation(value = "Calculate the possible genotypes for the members of a family", position = 15, response = Map.class)
+    public Response calculateGenotypes(
+            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Family id", required = true) @QueryParam("family") String family,
+            @ApiParam(value = "Mode of inheritance", required = true, defaultValue = "MONOALLELIC")
+                @QueryParam("modeOfInheritance") ClinicalProperty.ModeOfInheritance moi,
+            @ApiParam(value = "Complete penetrance", defaultValue = "false") @QueryParam("completePenetrance") boolean completePenetrance,
+            @ApiParam(value = "Disease id", required = true) @QueryParam("disease") String disease) {
+        try {
+            return createOkResponse(catalogManager.getFamilyManager().calculateFamilyGenotypes(studyStr, family, moi, disease,
+                    !completePenetrance, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
     @Path("/samples")
     @ApiOperation(value = "Get samples given a set of variants", position = 14, response = Sample.class)
     @ApiImplicitParams({
@@ -591,6 +616,11 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 
             if (StringUtils.isNotEmpty(studyStr)) {
                 query.append(STUDY.key(), studyStr);
+            }
+
+            // Remove "genotype" from query, as it could be mixed with que VariantQueryParam "genotype"
+            if (StringUtils.isNotEmpty(genotypesStr)) {
+                query.remove(GENOTYPE.key());
             }
 
             Collection<String> sampleNames;
@@ -645,15 +675,24 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 
 
     @GET
-    @Path("/stats")
+    @Path("/cohortStats")
     @ApiOperation(value = "Calculate variant stats [PENDING]", position = 2)
-    public Response stats() {
+    public Response cohortStats() {
         return createErrorResponse(new NotImplementedException("Pending"));
     }
 
     @GET
     @Path("/facet")
-    @ApiOperation(value = "Fetch variant facets", position = 15, response = QueryResponse.class)
+    @ApiOperation(value = DEPRECATED + "use endpoint /stats", position = 15, response = QueryResponse.class)
+    public Response getFacets(@ApiParam(value = "List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: studies>>biotype;type") @QueryParam("facet") String facet,
+                              @ApiParam(value = "List of facet ranges separated by semicolons with the format {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1") @QueryParam("facetRange") String facetRange,
+                              @ApiParam(value = "List of facet intersections separated by semicolons with the format {field_name}:{value1}:{value2}[:{value3}], e.g.: studies:1kG_phase3:EXAC:ESP6500") @QueryParam("facetIntersection") String facetIntersection) {
+        return getStats(facet, facetRange, facetIntersection);
+    }
+
+    @GET
+    @Path("/stats")
+    @ApiOperation(value = "Fetch variant stats", position = 15, response = QueryResponse.class)
 /*
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
@@ -768,9 +807,9 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 //            @ApiImplicitParam(name = "annot-functional-score", value = DEPRECATED + "Use 'functionalScore' instead", dataType = "string", paramType = "query"),
 //            @ApiImplicitParam(name = "traits", value = DEPRECATED + "Use 'trait' instead", dataType = "string", paramType = "query"),
     })
-    public Response getFacets(@ApiParam(value = "List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: studies>>biotype;type") @QueryParam("facet") String facet,
-                              @ApiParam(value = "List of facet ranges separated by semicolons with the format {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1") @QueryParam("facetRange") String facetRange,
-                              @ApiParam(value = "List of facet intersections separated by semicolons with the format {field_name}:{value1}:{value2}[:{value3}], e.g.: studies:1kG_phase3:EXAC:ESP6500") @QueryParam("facetIntersection") String facetIntersection) {
+    public Response getStats(@ApiParam(value = "List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: studies>>biotype;type") @QueryParam("facet") String facet,
+                             @ApiParam(value = "List of facet ranges separated by semicolons with the format {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1") @QueryParam("facetRange") String facetRange,
+                             @ApiParam(value = "List of facet intersections separated by semicolons with the format {field_name}:{value1}:{value2}[:{value3}], e.g.: studies:1kG_phase3:EXAC:ESP6500") @QueryParam("facetIntersection") String facetIntersection) {
         try {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);

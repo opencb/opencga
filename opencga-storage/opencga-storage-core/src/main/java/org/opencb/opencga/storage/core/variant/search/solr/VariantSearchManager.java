@@ -41,6 +41,7 @@ import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchModel;
@@ -351,6 +352,11 @@ public class VariantSearchManager {
         } catch (SolrServerException e) {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
         }
+    }
+
+    public long count(String collection, Query query) throws IOException {
+        QueryOptions options = new QueryOptions(VariantField.SUMMARY, true).append(QueryOptions.LIMIT, 0);
+        return nativeQuery(collection, query, options).getNumTotalResults();
     }
 
     /**

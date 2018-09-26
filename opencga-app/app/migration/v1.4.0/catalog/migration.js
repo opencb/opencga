@@ -222,6 +222,9 @@ migrateCollection("file", {"uuid": {$exists: false}}, {attributes: 0, stats: 0},
     setChanges["id"] = doc["path"].replace(/\//g, ":");
     setChanges["uuid"] = generateOpenCGAUUID("FILE", setChanges["_creationDate"]);
 
+    /* #906 */
+    setChanges["_reverse"] = doc["name"].split("").reverse().join("");
+
     /* Check bigwig format autodetection */
     if (doc.name.endsWith(".bw")) {
         setChanges["format"] = "BIGWIG";
@@ -511,6 +514,7 @@ db.file.createIndex({"uid": 1}, {"background": true});
 db.file.createIndex({"id": 1, "studyUid": 1}, {"unique": true, "background": true});
 db.file.createIndex({"path": 1, "studyUid": 1}, {"unique": true, "background": true});
 db.file.createIndex({"name": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.file.createIndex({"_reverse": 1, "studyUid": 1, "status.name": 1}, {"background": true});
 db.file.createIndex({"type": 1, "studyUid": 1, "status.name": 1}, {"background": true});
 db.file.createIndex({"format": 1, "studyUid": 1, "status.name": 1}, {"background": true});
 db.file.createIndex({"bioformat": 1, "studyUid": 1, "status.name": 1}, {"background": true});

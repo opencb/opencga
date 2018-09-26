@@ -88,18 +88,18 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
             logger.debug("sessionFile = " + cliSession);
             if (StringUtils.isNotEmpty(options.sessionId)) {
                 // Ignore session file. Overwrite with command line information (just sessionId)
-                cliSession = new CliSession(null, options.sessionId);
+                cliSession = new CliSession(clientConfiguration.getRest().getHost(), null, options.sessionId);
                 sessionId = options.sessionId;
                 userId = null;
 
                 openCGAClient = new OpenCGAClient(options.sessionId, clientConfiguration);
             } else if (cliSession != null) {
                 // 'logout' field is only null or empty while no logout is executed
-                if (StringUtils.isEmpty(cliSession.getLogout()) && StringUtils.isNotEmpty(cliSession.getToken())) {
+                if (StringUtils.isNotEmpty(cliSession.getToken())) {
                     // no timeout checks
                     if (skipDuration) {
                         openCGAClient = new OpenCGAClient(cliSession.getToken(), clientConfiguration);
-                        openCGAClient.setUserId(cliSession.getUserId());
+                        openCGAClient.setUserId(cliSession.getUser());
                         if (options.sessionId == null) {
                             options.sessionId = cliSession.getToken();
                         }
@@ -117,7 +117,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                             logger.debug("Session ok!!");
                             //                            this.sessionId = cliSession.getSessionId();
                             openCGAClient = new OpenCGAClient(cliSession.getToken(), clientConfiguration);
-                            openCGAClient.setUserId(cliSession.getUserId());
+                            openCGAClient.setUserId(cliSession.getUser());
 
                             // Update token
                             if (claimsMap.containsKey("exp")) {

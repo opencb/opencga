@@ -712,6 +712,10 @@ public class FileManagerTest extends AbstractManagerTest {
         result = catalogManager.getFileManager().get(studyFqn, query, null, sessionIdUser);
         assertEquals(1, result.getNumResults());
 
+        query = new Query(FileDBAdaptor.QueryParams.NAME.key(), "~txt.gz$");
+        result = catalogManager.getFileManager().get(studyFqn, query, null, sessionIdUser);
+        assertEquals(1, result.getNumResults());
+
         //Get all files in data
         query = new Query(FileDBAdaptor.QueryParams.PATH.key(), "~data/[^/]+/?")
                 .append(FileDBAdaptor.QueryParams.TYPE.key(),"FILE");

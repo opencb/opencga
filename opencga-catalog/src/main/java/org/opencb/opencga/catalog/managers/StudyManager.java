@@ -1266,6 +1266,17 @@ public class StudyManager extends AbstractManager {
         return false;
     }
 
+    public Map<String, Object> facet(String studyStr, String sessionId) throws CatalogException, IOException {
+        Map<String, Object> result = new HashMap<>();
+        result.put("sample", catalogManager.getSampleManager().facet(studyStr, new Query(), QueryOptions.empty(), true, sessionId));
+        result.put("file", catalogManager.getFileManager().facet(studyStr, new Query(), QueryOptions.empty(), true, sessionId));
+        result.put("individual", catalogManager.getIndividualManager().facet(studyStr, new Query(), QueryOptions.empty(), true, sessionId));
+        result.put("family", catalogManager.getFamilyManager().facet(studyStr, new Query(), QueryOptions.empty(), true, sessionId));
+        result.put("cohort", catalogManager.getCohortManager().facet(studyStr, new Query(), QueryOptions.empty(), true, sessionId));
+
+        return result;
+    }
+
     // **************************   Private methods  ******************************** //
 
     private Boolean indexCohort(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException, IOException {

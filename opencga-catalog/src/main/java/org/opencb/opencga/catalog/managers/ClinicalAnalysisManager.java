@@ -32,9 +32,11 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
+import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.ClinicalAnalysisAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.slf4j.Logger;
@@ -45,6 +47,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
 import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
 /**
@@ -448,17 +451,90 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
 
-    private long getClinicalId(boolean silent, String clinicalStrAux) throws CatalogException {
-        long clinicalId = Long.parseLong(clinicalStrAux);
-        try {
-            clinicalDBAdaptor.checkId(clinicalId);
-        } catch (CatalogException e) {
-            if (silent) {
-                return -1L;
-            } else {
-                throw e;
+    // **************************   ACLs  ******************************** //
+    public List<QueryResult<ClinicalAnalysisAclEntry>> getAcls(String studyStr, List<String> clinicalList, String member, boolean silent,
+                                                     String sessionId) throws CatalogException {
+        List<QueryResult<ClinicalAnalysisAclEntry>> clinicalAclList = new ArrayList<>(clinicalList.size());
+        for (String clinicalAnalysis : clinicalList) {
+            try {
+                MyResource<ClinicalAnalysis> resource = getUid(clinicalAnalysis, studyStr, sessionId);
+
+                QueryResult<ClinicalAnalysisAclEntry> allClinicalAcls;
+                if (StringUtils.isNotEmpty(member)) {
+                    allClinicalAcls = authorizationManager.getClinicalAnalysisAcl(resource.getStudy().getUid(),
+                            resource.getResource().getUid(), resource.getUser(), member);
+                } else {
+                    allClinicalAcls = authorizationManager.getAllClinicalAnalysisAcls(resource.getStudy().getUid(),
+                            resource.getResource().getUid(), resource.getUser());
+                }
+                allClinicalAcls.setId(clinicalAnalysis);
+                clinicalAclList.add(allClinicalAcls);
+            } catch (CatalogException e) {
+                if (silent) {
+                    clinicalAclList.add(new QueryResult<>(clinicalAnalysis, 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
+                } else {
+                    throw e;
+                }
             }
         }
-        return clinicalId;
+        return clinicalAclList;
     }
+
+    public List<QueryResult<ClinicalAnalysisAclEntry>> updateAcl(String studyStr, List<String> clinicalList, String memberIds,
+                                                       AclParams clinicalAclParams, String sessionId) throws CatalogException {
+        if (clinicalList == null || clinicalList.isEmpty()) {
+            throw new CatalogException("Update ACL: Missing 'clinicalAnalysis' parameter");
+        }
+
+        if (clinicalAclParams.getAction() == null) {
+            throw new CatalogException("Invalid action found. Please choose a valid action to be performed.");
+        }
+
+        List<String> permissions = Collections.emptyList();
+        if (StringUtils.isNotEmpty(clinicalAclParams.getPermissions())) {
+            permissions = Arrays.asList(clinicalAclParams.getPermissions().trim().replaceAll("\\s", "").split(","));
+            checkPermissions(permissions, ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions::valueOf);
+        }
+
+        MyResources<ClinicalAnalysis> resource = getUids(clinicalList, studyStr, sessionId);
+        authorizationManager.checkCanAssignOrSeePermissions(resource.getStudy().getUid(), resource.getUser());
+
+        // Validate that the members are actually valid members
+        List<String> members;
+        if (memberIds != null && !memberIds.isEmpty()) {
+            members = Arrays.asList(memberIds.split(","));
+        } else {
+            members = Collections.emptyList();
+        }
+        authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
+        checkMembers(resource.getStudy().getUid(), members);
+
+        switch (clinicalAclParams.getAction()) {
+            case SET:
+                // Todo: Remove this in 1.4
+                List<String> allClinicalPermissions = EnumSet.allOf(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.class)
+                        .stream()
+                        .map(String::valueOf)
+                        .collect(Collectors.toList());
+                return authorizationManager.setAcls(resource.getStudy().getUid(), resource.getResourceList().stream()
+                                .map(ClinicalAnalysis::getUid)
+                                .collect(Collectors.toList()), members, permissions,
+                        allClinicalPermissions, Entity.CLINICAL_ANALYSIS);
+            case ADD:
+                return authorizationManager.addAcls(resource.getStudy().getUid(), resource.getResourceList().stream()
+                        .map(ClinicalAnalysis::getUid)
+                        .collect(Collectors.toList()), members, permissions, Entity.CLINICAL_ANALYSIS);
+            case REMOVE:
+                return authorizationManager.removeAcls(resource.getResourceList().stream()
+                                .map(ClinicalAnalysis::getUid).collect(Collectors.toList()),
+                        members, permissions, Entity.CLINICAL_ANALYSIS);
+            case RESET:
+                return authorizationManager.removeAcls(resource.getResourceList().stream()
+                                .map(ClinicalAnalysis::getUid).collect(Collectors.toList()),
+                        members, null, Entity.CLINICAL_ANALYSIS);
+            default:
+                throw new CatalogException("Unexpected error occurred. No valid action found.");
+        }
+    }
+
 }
