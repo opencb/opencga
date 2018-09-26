@@ -704,6 +704,11 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "List of field ranges separated by semicolons with the format {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1") @QueryParam("fieldRange") String facetRange) {
         try {
             query.remove("study");
+            query.remove("field");
+            query.remove("fieldRange");
+
+            queryOptions.put(QueryOptions.FACET, facet);
+            queryOptions.put(QueryOptions.FACET_RANGE, facetRange);
 
             FacetedQueryResult queryResult = catalogManager.getSampleManager().facet(studyStr, query, queryOptions, defaultStats,
                     sessionId);
