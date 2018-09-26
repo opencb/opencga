@@ -17,6 +17,7 @@
 package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.commons.Analyst;
 import org.opencb.biodata.models.commons.OntologyTerm;
@@ -29,6 +30,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.clinical.Comment;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.clinical.ReportedLowCoverage;
@@ -114,7 +116,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
             @ApiParam(value = "Action to be performed if the array of interpretations is being updated.", defaultValue = "ADD")
-            @QueryParam("interpretationAction") ParamUtils.BasicUpdateAction interpretationAction,
+                @QueryParam("action") ParamUtils.BasicUpdateAction interpretationAction,
             @ApiParam(name = "params", value = "JSON containing clinical analysis information", required = true)
                     ClinicalInterpretationParameters params) {
         try {
@@ -148,7 +150,9 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
                              @PathParam(value = "clinicalAnalyses") String clinicalAnalysisStr,
                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                          @QueryParam("study") String studyStr,
-                         @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
+                         @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
+                                 + "exception whenever one of the entries looked for cannot be shown for whichever reason",
+                                 defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> analysisList = getIdList(clinicalAnalysisStr);
             List<QueryResult<ClinicalAnalysis>> analysisResult = clinicalManager.get(studyStr, analysisList, query, queryOptions, silent, sessionId);
@@ -228,6 +232,47 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 
             QueryResult result = clinicalManager.groupBy(studyStr, query, fields, queryOptions, sessionId);
             return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{clinicalAnalyses}/acl")
+    @ApiOperation(value = "Returns the acl of the clinical analyses. If member is provided, it will only return the acl for the member.",
+            position = 18)
+    public Response getAcls(
+            @ApiParam(value = "Comma separated list of clinical analysis IDs or names up to a maximum of 100", required = true)
+                @PathParam("clinicalAnalyses") String clinicalAnalysis,
+            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
+            @ApiParam(value = "User or group id") @QueryParam("member") String member,
+            @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
+                    + "exception whenever one of the entries looked for cannot be shown for whichever reason",
+                    defaultValue = "false") @QueryParam("silent") boolean silent) {
+        try {
+            List<String> idList = getIdList(clinicalAnalysis);
+            return createOkResponse(clinicalManager.getAcls(studyStr, idList, member, silent, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    public static class ClinicalAnalysisAcl extends AclParams {
+        public String clinicalAnalysis;
+    }
+
+    @POST
+    @Path("/acl/{members}/update")
+    @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
+    public Response updateAcl(
+            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
+            @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) ClinicalAnalysisAcl params) {
+        try {
+            params = ObjectUtils.defaultIfNull(params, new ClinicalAnalysisAcl());
+            AclParams clinicalAclParams = new AclParams(params.getPermissions(), params.getAction());
+            List<String> idList = getIdList(params.clinicalAnalysis);
+            return createOkResponse(clinicalManager.updateAcl(studyStr, idList, memberId, clinicalAclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

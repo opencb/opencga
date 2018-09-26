@@ -808,6 +808,26 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         return aclDBAdaptor.get(familyId, Arrays.asList(member), Entity.FAMILY);
     }
 
+    @Override
+    public QueryResult<ClinicalAnalysisAclEntry> getAllClinicalAnalysisAcls(long studyId, long clinicalAnalysisId, String userId)
+            throws CatalogException {
+        checkCanAssignOrSeePermissions(studyId, userId);
+        return aclDBAdaptor.get(clinicalAnalysisId, null, Entity.CLINICAL_ANALYSIS);
+    }
+
+    @Override
+    public QueryResult<ClinicalAnalysisAclEntry> getClinicalAnalysisAcl(long studyId, long clinicalAnalysisId, String userId, String member)
+            throws CatalogException {
+        try {
+            checkCanAssignOrSeePermissions(studyId, userId);
+        } catch (CatalogException e) {
+            // It will be OK if the userId asking for the ACLs wants to see its own permissions
+            checkAskingOwnPermissions(userId, member, studyId);
+        }
+
+        return aclDBAdaptor.get(clinicalAnalysisId, Arrays.asList(member), Entity.CLINICAL_ANALYSIS);
+    }
+
     private void checkAskingOwnPermissions(String userId, String member, long studyId) throws CatalogException {
         if (member.startsWith("@")) { //group
             // If the userId does not belong to the group...

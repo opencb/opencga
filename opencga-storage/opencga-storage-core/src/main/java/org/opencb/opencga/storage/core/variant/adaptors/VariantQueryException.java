@@ -61,12 +61,17 @@ public class VariantQueryException extends IllegalArgumentException {
         return this;
     }
 
-    public static VariantQueryException malformedParam(VariantQueryParam queryParam, String value) {
+    public static VariantQueryException malformedParam(QueryParam queryParam, String value) {
         return malformedParam(queryParam, value, "Expected: " + queryParam.description());
     }
 
-    public static VariantQueryException malformedParam(VariantQueryParam queryParam, String value, String message) {
+    public static VariantQueryException malformedParam(QueryParam queryParam, String value, String message) {
         return new VariantQueryException("Malformed \"" + queryParam.key() + "\" query : \"" + value + "\". "
+                +  message);
+    }
+
+    public static VariantQueryException missingParam(QueryParam queryParam, String message) {
+        return new VariantQueryException("Missing param \"" + queryParam.key() + "\" . "
                 +  message);
     }
 
@@ -129,6 +134,7 @@ public class VariantQueryException extends IllegalArgumentException {
         return new VariantQueryException("Unknown sample \"" + sample + "\". Please, specify the study belonging."
                 + (availableStudies == null || availableStudies.isEmpty() ? "" : " Available studies: " + availableStudies));
     }
+
     public static VariantQueryException missingStudyForSamples(Collection<String> samples, Collection<String> availableStudies) {
         if (samples.size() == 1) {
             return missingStudyForSample(samples.iterator().next(), availableStudies);
@@ -139,6 +145,21 @@ public class VariantQueryException extends IllegalArgumentException {
 
     public static VariantQueryException missingStudyForFile(String file, Collection<String> availableStudies) {
         return new VariantQueryException("Unknown file \"" + file + "\". Please, specify the study belonging."
+                + (availableStudies == null || availableStudies.isEmpty() ? "" : " Available studies: " + availableStudies));
+    }
+
+    public static VariantQueryException missingStudyFor(String resource, Collection<String> values, Collection<String> availableStudies) {
+        String valueStr;
+        if (values.size() == 1) {
+            valueStr = values.iterator().next();
+        } else {
+            valueStr = values.toString();
+        }
+        return missingStudyFor(resource, valueStr, availableStudies);
+    }
+
+    public static VariantQueryException missingStudyFor(String resource, String value, Collection<String> availableStudies) {
+        return new VariantQueryException("Unknown " + resource + " " + value + ". Please, specify the study belonging."
                 + (availableStudies == null || availableStudies.isEmpty() ? "" : " Available studies: " + availableStudies));
     }
 

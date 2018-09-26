@@ -81,7 +81,9 @@ public class ProjectWSServer extends OpenCGAWSServer {
     })
     public Response info(@ApiParam(value = "Comma separated list of project IDs or aliases up to a maximum of 100", required = true) @PathParam("projects")
                                  String projects,
-                         @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
+                         @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
+                                 + "exception whenever one of the entries looked for cannot be shown for whichever reason",
+                                 defaultValue = "false") @QueryParam("silent") boolean silent) {
 
         try {
             List<String> idList = getIdList(projects);
@@ -128,7 +130,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/{project}/increlease")
+    @Path("/{project}/incRelease")
     @ApiOperation(value = "Increment current release number in the project", response = Integer.class)
     public Response incrementRelease(
             @ApiParam(value = "Project id", required = true) @PathParam("project") String projectStr) {
@@ -154,7 +156,9 @@ public class ProjectWSServer extends OpenCGAWSServer {
     })
     public Response getAllStudies(@ApiParam(value = "Comma separated list of project ID or alias up to a maximum of 100", required = true)
                                   @PathParam("projects") String projects,
-                                  @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
+                                  @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
+                                          + "exception whenever one of the entries looked for cannot be shown for whichever reason",
+                                          defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(projects);
             return createOkResponse(catalogManager.getStudyManager().get(idList, new Query(), queryOptions, silent, sessionId));

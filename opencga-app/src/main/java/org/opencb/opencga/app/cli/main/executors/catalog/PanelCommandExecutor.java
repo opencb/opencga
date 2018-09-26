@@ -54,9 +54,9 @@ public class PanelCommandExecutor extends OpencgaCommandExecutor {
         String subCommandString = getParsedSubCommand(panelsCommandOptions.jCommander);
         QueryResponse queryResponse = null;
         switch (subCommandString) {
-            case "create":
-                queryResponse = create();
-                break;
+//            case "create":
+//                queryResponse = create();
+//                break;
             case "info":
                 queryResponse = info();
                 break;
@@ -79,18 +79,18 @@ public class PanelCommandExecutor extends OpencgaCommandExecutor {
     }
 
     /**********************************************  Administration Commands  ***********************************************/
-    private QueryResponse<DiseasePanel> create() throws CatalogException, IOException {
-        logger.debug("Creating a new panel");
-        String name = panelsCommandOptions.createCommandOptions.name;
-        String disease = panelsCommandOptions.createCommandOptions.disease;
-
-        ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(DiseasePanelDBAdaptor.QueryParams.DESCRIPTION.key(), panelsCommandOptions.createCommandOptions.description);
-        params.putIfNotEmpty(DiseasePanelDBAdaptor.QueryParams.GENES.key(), panelsCommandOptions.createCommandOptions.genes);
-        params.putIfNotEmpty(DiseasePanelDBAdaptor.QueryParams.REGIONS.key(), panelsCommandOptions.createCommandOptions.regions);
-        params.putIfNotEmpty(DiseasePanelDBAdaptor.QueryParams.VARIANTS.key(), panelsCommandOptions.createCommandOptions.variants);
-        return openCGAClient.getPanelClient().create(resolveStudy(panelsCommandOptions.createCommandOptions.studyId), name, disease, params);
-    }
+//    private QueryResponse<DiseasePanel> create() throws CatalogException, IOException {
+//        logger.debug("Creating a new panel");
+//        String name = panelsCommandOptions.createCommandOptions.name;
+//        String disease = panelsCommandOptions.createCommandOptions.disease;
+//
+//        ObjectMap params = new ObjectMap();
+//        params.putIfNotEmpty(DiseasePanelDBAdaptor.QueryParams.DESCRIPTION.key(), panelsCommandOptions.createCommandOptions.description);
+//        params.putIfNotEmpty(DiseasePanelDBAdaptor.QueryParams.GENES.key(), panelsCommandOptions.createCommandOptions.genes);
+//        params.putIfNotEmpty(DiseasePanelDBAdaptor.QueryParams.REGIONS.key(), panelsCommandOptions.createCommandOptions.regions);
+//        params.putIfNotEmpty(DiseasePanelDBAdaptor.QueryParams.VARIANTS.key(), panelsCommandOptions.createCommandOptions.variants);
+//        return openCGAClient.getPanelClient().create(resolveStudy(panelsCommandOptions.createCommandOptions.studyId), name, disease, params);
+//    }
 
     private QueryResponse<DiseasePanel> info() throws CatalogException, IOException  {
         logger.debug("Getting panel information");

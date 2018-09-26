@@ -93,6 +93,9 @@ public class FileManager extends AnnotationSetManager<File> {
             + File.FileStatus.MISSING;
     public static final String GET_NON_TRASHED_FILES = Status.READY + "," + File.FileStatus.STAGE + "," + File.FileStatus.MISSING;
 
+    private final String defaultFacet = "creationYear>>creationMonth;format;bioformat;format>>bioformat;status";
+    private final String defaultFacetRange = "size:0:214748364800:10737418240;numSamples:0:10:1";
+
     static {
         INCLUDE_STUDY_URI = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.URI.key());
         INCLUDE_FILE_URI_PATH = new QueryOptions(QueryOptions.INCLUDE,
@@ -2488,8 +2491,19 @@ public class FileManager extends AnnotationSetManager<File> {
         return filesToAnalyse;
     }
 
-    public FacetedQueryResult facet(String studyStr, Query query, QueryOptions queryOptions, String sessionId)
+    public FacetedQueryResult facet(String studyStr, Query query, QueryOptions queryOptions, boolean defaultStats, String sessionId)
             throws CatalogException, IOException {
+        ParamUtils.defaultObject(query, Query::new);
+        ParamUtils.defaultObject(queryOptions, QueryOptions::new);
+
+        if (defaultStats) {
+            String facet = queryOptions.getString(QueryOptions.FACET);
+            String facetRange = queryOptions.getString(QueryOptions.FACET_RANGE);
+            queryOptions.put(QueryOptions.FACET, StringUtils.isNotEmpty(facet) ? defaultFacet + ";" + facet : defaultFacet);
+            queryOptions.put(QueryOptions.FACET_RANGE, StringUtils.isNotEmpty(facetRange) ? defaultFacetRange + ";" + facetRange
+                    : defaultFacetRange);
+        }
+
         CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);
 
         String userId = userManager.getUserId(sessionId);

@@ -26,7 +26,6 @@ import org.opencb.biodata.models.core.Exon;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.core.Transcript;
-import org.opencb.biodata.models.core.pedigree.Individual;
 import org.opencb.biodata.models.core.pedigree.Pedigree;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
@@ -40,6 +39,7 @@ import org.opencb.opencga.analysis.exceptions.AnalysisException;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.ClinicalProperty.Penetrance;
@@ -56,6 +56,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.core.models.ClinicalProperty.ModeOfInheritance.*;
+import static org.opencb.opencga.core.models.ClinicalProperty.getPedigreeFromFamily;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 
 public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
@@ -142,7 +143,7 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
 
         // Check sample and proband exists
 
-        Pedigree pedigree = getPedigreeFromFamily(clinicalAnalysis.getFamily());
+        Pedigree pedigree = FamilyManager.getPedigreeFromFamily(clinicalAnalysis.getFamily());
         OntologyTerm disease = clinicalAnalysis.getDisease();
         Phenotype phenotype = new Phenotype(disease.getId(), disease.getName(), disease.getSource(), Phenotype.Status.UNKNOWN);
 
@@ -461,36 +462,6 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
                 }
             }
         }
-    }
-
-    private Pedigree getPedigreeFromFamily(Family family) {
-        List<Individual> individuals = parseMembersToBiodataIndividuals(family.getMembers());
-        return new Pedigree(family.getId(), individuals, family.getPhenotypes(), family.getAttributes());
-    }
-
-    private List<Individual> parseMembersToBiodataIndividuals(List<org.opencb.opencga.core.models.Individual> members) {
-        Map<String, Individual> individualMap = new HashMap();
-
-        // Parse all the individuals
-        for (org.opencb.opencga.core.models.Individual member : members) {
-            Individual individual = new Individual(member.getId(), member.getName(), null, null, member.getMultiples(),
-                    Individual.Sex.getEnum(member.getSex().toString()), member.getLifeStatus(),
-                    Individual.AffectionStatus.getEnum(member.getAffectationStatus().toString()), member.getPhenotypes(),
-                    member.getAttributes());
-            individualMap.put(individual.getId(), individual);
-        }
-
-        // Fill parent information
-        for (org.opencb.opencga.core.models.Individual member : members) {
-            if (member.getFather() != null && StringUtils.isNotEmpty(member.getFather().getId())) {
-                individualMap.get(member.getId()).setFather(individualMap.get(member.getFather().getId()));
-            }
-            if (member.getMother() != null && StringUtils.isNotEmpty(member.getMother().getId())) {
-                individualMap.get(member.getId()).setMother(individualMap.get(member.getMother().getId()));
-            }
-        }
-
-        return new ArrayList<>(individualMap.values());
     }
 
     private List<ReportedVariant> dominant() {

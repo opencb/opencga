@@ -30,6 +30,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.FacetedQueryResult;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.core.exception.VersionException;
+import org.opencb.opencga.core.models.ClinicalProperty;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
@@ -245,6 +246,10 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "mgf", value = STATS_MGF_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "missingAlleles", value = MISSING_ALLELES_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "missingGenotypes", value = MISSING_GENOTYPES_DESCR, dataType = "string", paramType = "query"),
+
+            @ApiImplicitParam(name = "family", value = VariantCatalogQueryUtils.FAMILY_DESC, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "familyDisease", value = VariantCatalogQueryUtils.FAMILY_DISEASE_DESC, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "modeOfInheritance", value = VariantCatalogQueryUtils.MODE_OF_INHERITANCE_DESC, dataType = "string", paramType = "query"),
 
             @ApiImplicitParam(name = "includeStudy", value = INCLUDE_STUDY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "includeFile", value = INCLUDE_FILE_DESCR, dataType = "string", paramType = "query"),
@@ -534,6 +539,24 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             QueryResult<ProjectMetadata.VariantAnnotationMetadata> result =
                     variantManager.getAnnotationMetadata(annotationId, project, sessionId);
             return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/familyGenotypes")
+    @ApiOperation(value = "Calculate the possible genotypes for the members of a family", position = 15, response = Map.class)
+    public Response calculateGenotypes(
+            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Family id", required = true) @QueryParam("family") String family,
+            @ApiParam(value = "Mode of inheritance", required = true, defaultValue = "MONOALLELIC")
+                @QueryParam("modeOfInheritance") ClinicalProperty.ModeOfInheritance moi,
+            @ApiParam(value = "Complete penetrance", defaultValue = "false") @QueryParam("completePenetrance") boolean completePenetrance,
+            @ApiParam(value = "Disease id", required = true) @QueryParam("disease") String disease) {
+        try {
+            return createOkResponse(catalogManager.getFamilyManager().calculateFamilyGenotypes(studyStr, family, moi, disease,
+                    !completePenetrance, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
