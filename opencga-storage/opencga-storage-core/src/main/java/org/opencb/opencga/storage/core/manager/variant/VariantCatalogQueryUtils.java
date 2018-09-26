@@ -66,9 +66,18 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
     public static final String PROJECT_DESC = "Project [user@]project where project can be either the ID or the alias";
     public static final QueryParam PROJECT = QueryParam.create("project", PROJECT_DESC, QueryParam.Type.TEXT_ARRAY);
 
-    public static final QueryParam FAMILY = QueryParam.create("family", "", QueryParam.Type.TEXT_ARRAY);
-    public static final QueryParam FAMILY_DISEASE = QueryParam.create("familyDisease", "", QueryParam.Type.TEXT_ARRAY);
-    public static final QueryParam MODE_OF_INHERITANCE = QueryParam.create("modeOfInheritance", "", QueryParam.Type.TEXT_ARRAY);
+    public static final String FAMILY_DESC = "Filter variants where any of the samples from the given family contains the variant "
+            + "(HET or HOM_ALT)";
+    public static final QueryParam FAMILY =
+            QueryParam.create("family", FAMILY_DESC, QueryParam.Type.TEXT);
+    public static final String FAMILY_DISEASE_DESC = "Specify the phenotype to use for the mode  of inheritance";
+    public static final QueryParam FAMILY_DISEASE =
+            QueryParam.create("familyDisease", FAMILY_DISEASE_DESC, QueryParam.Type.TEXT);
+    public static final String MODE_OF_INHERITANCE_DESC = "Filter by mode of inheritance from a given family. Accepted values: "
+            + "[ monoallelic, monoallelicIncompletePenetrance, biallelic, "
+            + "biallelicIncompletePenetrance, XlinkedBiallelic, XlinkedMonoallelic, Ylinked ]";
+    public static final QueryParam MODE_OF_INHERITANCE =
+            QueryParam.create("modeOfInheritance", MODE_OF_INHERITANCE_DESC, QueryParam.Type.TEXT);
 
     private final StudyFilterValidator studyFilterValidator;
     private final FileFilterValidator fileFilterValidator;
@@ -302,27 +311,27 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     case "MONOALLELIC":
                     case "monoallelic":
                     case "dominant":
-                        genotypes = ModeOfInheritance.dominant(pedigree, phenotype, true);
+                        genotypes = ModeOfInheritance.dominant(pedigree, phenotype, false);
                         break;
                     case "MONOALLELIC_INCOMPLETE_PENETRANCE":
                     case "monoallelicIncompletePenetrance":
-                        genotypes = ModeOfInheritance.dominant(pedigree, phenotype, false);
+                        genotypes = ModeOfInheritance.dominant(pedigree, phenotype, true);
                         break;
                     case "BIALLELIC":
                     case "biallelic":
                     case "recesive":
-                        genotypes = ModeOfInheritance.recessive(pedigree, phenotype, true);
+                        genotypes = ModeOfInheritance.recessive(pedigree, phenotype, false);
                         break;
                     case "BIALLELIC_INCOMPLETE_PENETRANCE":
                     case "biallelicIncompletePenetrance":
-                        genotypes = ModeOfInheritance.recessive(pedigree, phenotype, false);
-                        break;
-                    case "XLINKED_BIALLELIC":
-                    case "XlinkedBiallelic":
-                        genotypes = ModeOfInheritance.xLinked(pedigree, phenotype, true);
+                        genotypes = ModeOfInheritance.recessive(pedigree, phenotype, true);
                         break;
                     case "XLINKED_MONOALLELIC":
                     case "XlinkedMonoallelic":
+                        genotypes = ModeOfInheritance.xLinked(pedigree, phenotype, true);
+                        break;
+                    case "XLINKED_BIALLELIC":
+                    case "XlinkedBiallelic":
                         genotypes = ModeOfInheritance.xLinked(pedigree, phenotype, false);
                         break;
                     case "YLINKED":
