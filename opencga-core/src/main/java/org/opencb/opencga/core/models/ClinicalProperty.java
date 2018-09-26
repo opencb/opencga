@@ -1,11 +1,12 @@
 package org.opencb.opencga.core.models;
 
-import org.opencb.biodata.models.variant.avro.*;
-import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.core.models.clinical.ReportedEvent;
-import org.opencb.opencga.core.models.clinical.ReportedVariant;
+import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.core.pedigree.Pedigree;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class ClinicalProperty {
 
@@ -39,4 +40,39 @@ public class ClinicalProperty {
         TUMOR_SUPPRESSOR_GENE,
         BOTH
     }
+
+
+    public static Pedigree getPedigreeFromFamily(Family family) {
+        List<org.opencb.biodata.models.core.pedigree.Individual> individuals = parseMembersToBiodataIndividuals(family.getMembers());
+        return new Pedigree(family.getId(), individuals, family.getPhenotypes(), family.getAttributes());
+    }
+
+    private static List<org.opencb.biodata.models.core.pedigree.Individual> parseMembersToBiodataIndividuals(List<Individual> members) {
+        Map<String, org.opencb.biodata.models.core.pedigree.Individual> individualMap = new HashMap();
+
+        // Parse all the individuals
+        for (Individual member : members) {
+            org.opencb.biodata.models.core.pedigree.Individual individual =
+                    new org.opencb.biodata.models.core.pedigree.Individual(member.getId(), member.getName(), null, null,
+                            member.getMultiples(),
+                            org.opencb.biodata.models.core.pedigree.Individual.Sex.getEnum(member.getSex().toString()),
+                            member.getLifeStatus(),
+                            org.opencb.biodata.models.core.pedigree.Individual.AffectionStatus.getEnum(member.getAffectationStatus()
+                                    .toString()), member.getPhenotypes(), member.getAttributes());
+            individualMap.put(individual.getId(), individual);
+        }
+
+        // Fill parent information
+        for (Individual member : members) {
+            if (member.getFather() != null && StringUtils.isNotEmpty(member.getFather().getId())) {
+                individualMap.get(member.getId()).setFather(individualMap.get(member.getFather().getId()));
+            }
+            if (member.getMother() != null && StringUtils.isNotEmpty(member.getMother().getId())) {
+                individualMap.get(member.getId()).setMother(individualMap.get(member.getMother().getId()));
+            }
+        }
+
+        return new ArrayList<>(individualMap.values());
+    }
+
 }
