@@ -36,6 +36,18 @@ public final class ReportedVariantQueryParam implements QueryParam {
     private static final String ACCEPTS_ALL_NONE = "Accepts '" + ALL + "' and '" + NONE + "'.";
     private static final String ACCEPTS_AND_OR = "Accepts AND (" + AND + ") and OR (" + OR + ") operators.";
 
+    // ---------- Catalog
+
+    public static final String PROJECT_ID_DESCR = "List of project IDs";
+    public static final ReportedVariantQueryParam PROJECT_ID = new ReportedVariantQueryParam("projectId", TEXT_ARRAY, PROJECT_ID_DESCR);
+
+    public static final String ASSEMBLY_DESCR = "List of assemblies";
+    public static final ReportedVariantQueryParam ASSEMBLY = new ReportedVariantQueryParam("assembly", TEXT_ARRAY, ASSEMBLY_DESCR);
+
+    public static final String STUDY_ID_DESCR = "List of study IDs";
+    public static final ReportedVariantQueryParam STUDY_ID = new ReportedVariantQueryParam("studyId", TEXT_ARRAY,
+            STUDY_ID_DESCR);
+
     // ---------- Clinical Analysis (aka CA)
 
     public static final String CA_ID_DESCR = "List of clinical analysis IDs";
