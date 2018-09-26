@@ -30,6 +30,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.FacetedQueryResult;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.core.exception.VersionException;
+import org.opencb.opencga.core.models.ClinicalProperty;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
@@ -538,6 +539,24 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             QueryResult<ProjectMetadata.VariantAnnotationMetadata> result =
                     variantManager.getAnnotationMetadata(annotationId, project, sessionId);
             return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/familyGenotypes")
+    @ApiOperation(value = "Calculate the possible genotypes for the members of a family", position = 15, response = Map.class)
+    public Response calculateGenotypes(
+            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Family id", required = true) @QueryParam("family") String family,
+            @ApiParam(value = "Mode of inheritance", required = true, defaultValue = "MONOALLELIC")
+                @QueryParam("modeOfInheritance") ClinicalProperty.ModeOfInheritance moi,
+            @ApiParam(value = "Complete penetrance", defaultValue = "false") @QueryParam("completePenetrance") boolean completePenetrance,
+            @ApiParam(value = "Disease id", required = true) @QueryParam("disease") String disease) {
+        try {
+            return createOkResponse(catalogManager.getFamilyManager().calculateFamilyGenotypes(studyStr, family, moi, disease,
+                    !completePenetrance, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

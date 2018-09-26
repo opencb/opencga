@@ -109,6 +109,11 @@ public class OpenCGAClient {
         return (CohortClient) clients.get("COHORT");
     }
 
+    public ClinicalAnalysisClient getClinicalAnalysisClient() {
+        clients.putIfAbsent("CLINICAL_ANALYSIS", new ClinicalAnalysisClient(userId, sessionId, clientConfiguration));
+        return (ClinicalAnalysisClient) clients.get("CLINICAL_ANALYSIS");
+    }
+
     public DiseasePanelClient getPanelClient() {
         clients.putIfAbsent("PANEL", new DiseasePanelClient(userId, sessionId, clientConfiguration));
         return (DiseasePanelClient) clients.get("PANEL");

@@ -2,6 +2,8 @@ package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.core.Xref;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -23,6 +25,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.Entity;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.DiseasePanel;
@@ -35,6 +38,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.WebTarget;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -118,6 +125,7 @@ public class DiseasePanelManager extends ResourceManager<DiseasePanel> {
         panel.setVersion(1);
         panel.setAuthor(ParamUtils.defaultString(panel.getAuthor(), ""));
         panel.setCreationDate(TimeUtils.getTime());
+        panel.setModificationDate(TimeUtils.getTime());
         panel.setStatus(new Status());
         panel.setCategories(ParamUtils.defaultObject(panel.getCategories(), Collections.emptyList()));
         panel.setTags(ParamUtils.defaultObject(panel.getTags(), Collections.emptyList()));
@@ -129,14 +137,7 @@ public class DiseasePanelManager extends ResourceManager<DiseasePanel> {
         panel.setAttributes(ParamUtils.defaultObject(panel.getAttributes(), Collections.emptyMap()));
         panel.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.PANEL));
 
-        if (panel.getStats() == null || panel.getStats().isEmpty()) {
-            Map<String, Integer> stats = new HashMap<>();
-            stats.put("numberOfVariants", panel.getVariants().size());
-            stats.put("numberOfGenes", panel.getGenes().size());
-            stats.put("numberOfRegions", panel.getRegions().size());
-
-            panel.setStats(stats);
-        }
+        fillDefaultStats(panel);
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
@@ -161,6 +162,127 @@ public class DiseasePanelManager extends ResourceManager<DiseasePanel> {
 
         // Install the current diseasePanel
         return panelDBAdaptor.insert(study.getUid(), diseasePanel, options);
+    }
+
+    public void importPanelApp(String token, boolean overwrite) throws CatalogException {
+        // We check it is the admin of the installation
+        authorizationManager.checkIsAdmin(userManager.getUserId(token));
+
+        Client client = ClientBuilder.newClient();
+        int i = 1;
+        int max = Integer.MAX_VALUE;
+
+        while (true) {
+            if (i == max) {
+                // no more pages to fetch
+                return;
+            }
+
+            WebTarget resource = client.target("https://panelapp.genomicsengland.co.uk/api/v1/panels/?format=json&page=" + i);
+            String jsonString = resource.request().get().readEntity(String.class);
+
+            Map<String, Object> panels;
+            try {
+                panels = JacksonUtils.getDefaultObjectMapper().readValue(jsonString, Map.class);
+            } catch (IOException e) {
+                logger.error("{}", e.getMessage(), e);
+                return;
+            }
+
+            if (i == 1) {
+                // We set the maximum number of pages we will need to fetch
+                max = Double.valueOf(Math.ceil(Integer.parseInt(String.valueOf(panels.get("count"))) / 100.0)).intValue() + 1;
+            }
+
+            for (Map<String, Object> panel : (List<Map>) panels.get("results")) {
+
+                if (String.valueOf(panel.get("version")).startsWith("0")) {
+                    logger.info("Panel is not ready for interpretation: '{}', version: '{}'", panel.get("name"),
+                            panel.get("version"));
+                } else {
+                    logger.info("Processing {} {} ...", panel.get("name"), panel.get("id"));
+
+                    resource = client.target("https://panelapp.genomicsengland.co.uk/api/v1/panels/" + panel.get("id") + "?format=json");
+                    jsonString = resource.request().get().readEntity(String.class);
+
+                    Map<String, Object> panelInfo;
+                    try {
+                        panelInfo = JacksonUtils.getDefaultObjectMapper().readValue(jsonString, Map.class);
+                    } catch (IOException e) {
+                        logger.error("{}", e.getMessage(), e);
+                        continue;
+                    }
+
+                    List<DiseasePanel.PanelCategory> categories = new ArrayList<>(2);
+                    categories.add(new DiseasePanel.PanelCategory(String.valueOf(panelInfo.get("disease_group")), 1));
+                    categories.add(new DiseasePanel.PanelCategory(String.valueOf(panelInfo.get("disease_sub_group")), 2));
+
+                    List<Phenotype> phenotypes = new ArrayList<>();
+                    for (String relevantDisorder : (List<String>) panelInfo.get("relevant_disorders")) {
+                        if (StringUtils.isNotEmpty(relevantDisorder)) {
+                            phenotypes.add(new Phenotype("", relevantDisorder, ""));
+                        }
+                    }
+
+                    List<DiseasePanel.GenePanel> genes = new ArrayList<>();
+                    for (Map<String, Object> gene : (List<Map>) panelInfo.get("genes")) {
+                        String ensemblGeneId = "";
+                        List<Xref> xrefs = new ArrayList<>();
+                        List<String> publications = new ArrayList<>();
+
+                        Map<String, Object> geneData = (Map) gene.get("gene_data");
+
+                        // read the first Ensembl gene ID if exists
+                        Map<String, Object> ensemblGenes = (Map) geneData.get("ensembl_genes");
+                        if (ensemblGenes.containsKey("GRch37")) {
+                            ensemblGeneId = String.valueOf(((Map) ((Map) ensemblGenes.get("GRch37")).get("82")).get("ensembl_id"));
+                        } else if (ensemblGenes.containsKey("GRch38")) {
+                            ensemblGeneId = String.valueOf(((Map) ((Map) ensemblGenes.get("GRch38")).get("90")).get("ensembl_id"));
+                        }
+
+                        // read OMIM ID
+                        if (geneData.containsKey("omim_gene") && geneData.get("omim_gene") != null) {
+                            for (String omim : (List<String>) geneData.get("omim_gene")) {
+                                xrefs.add(new Xref(omim, "OMIM", "OMIM"));
+                            }
+                        }
+                        xrefs.add(new Xref(String.valueOf(geneData.get("gene_name")), "GeneName", "GeneName"));
+
+                        // read publications
+                        if (gene.containsKey("publications")) {
+                            publications = (List<String>) gene.get("publications");
+                        }
+
+                        // add gene panel
+                        genes.add(new DiseasePanel.GenePanel(ensemblGeneId, String.valueOf(geneData.get("hgnc_symbol")), xrefs,
+                                String.valueOf(gene.get("mode_of_inheritance")), null, String.valueOf(gene.get("confidence_level")),
+                                (List<String>) gene.get("evidence"), publications));
+                    }
+
+                    Map<String, Object> attributes = new HashMap<>();
+                    attributes.put("PanelAppInfo", panel);
+
+                    DiseasePanel diseasePanel = new DiseasePanel()
+                            .setId(String.valueOf(panelInfo.get("id")))
+                            .setName(String.valueOf(panelInfo.get("name")))
+                            .setCategories(categories)
+                            .setPhenotypes(phenotypes)
+                            .setGenes(genes)
+                            .setSource(new DiseasePanel.SourcePanel()
+                                    .setId(String.valueOf(panelInfo.get("id")))
+                                    .setName(String.valueOf(panelInfo.get("name")))
+                                    .setVersion(String.valueOf(panelInfo.get("version")))
+                                    .setProject("PanelApp (GEL)")
+                            )
+                            .setDescription(panelInfo.get("disease_sub_group") + " (" + panelInfo.get("disease_group") + ")")
+                            .setAttributes(attributes);
+
+                    create(diseasePanel, overwrite, token);
+                }
+            }
+
+            i++;
+        }
     }
 
     @Override
@@ -522,7 +644,10 @@ public class DiseasePanelManager extends ResourceManager<DiseasePanel> {
         panel.setVersion(1);
         panel.setAuthor(ParamUtils.defaultString(panel.getAuthor(), ""));
         panel.setCreationDate(TimeUtils.getTime());
+        panel.setModificationDate(TimeUtils.getTime());
         panel.setStatus(new Status());
+        panel.setCategories(ParamUtils.defaultObject(panel.getCategories(), Collections.emptyList()));
+        panel.setTags(ParamUtils.defaultObject(panel.getTags(), Collections.emptyList()));
         panel.setDescription(ParamUtils.defaultString(panel.getDescription(), ""));
         panel.setPhenotypes(ParamUtils.defaultObject(panel.getPhenotypes(), Collections.emptyList()));
         panel.setVariants(ParamUtils.defaultObject(panel.getVariants(), Collections.emptyList()));
@@ -531,7 +656,20 @@ public class DiseasePanelManager extends ResourceManager<DiseasePanel> {
         panel.setAttributes(ParamUtils.defaultObject(panel.getAttributes(), Collections.emptyMap()));
         panel.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.PANEL));
 
+        fillDefaultStats(panel);
+
         panelDBAdaptor.insert(panel, overwrite);
+    }
+
+    void fillDefaultStats(DiseasePanel panel) {
+        if (panel.getStats() == null || panel.getStats().isEmpty()) {
+            Map<String, Integer> stats = new HashMap<>();
+            stats.put("numberOfVariants", panel.getVariants().size());
+            stats.put("numberOfGenes", panel.getGenes().size());
+            stats.put("numberOfRegions", panel.getRegions().size());
+
+            panel.setStats(stats);
+        }
     }
 
     public void delete(String panelId, String token) throws CatalogException {

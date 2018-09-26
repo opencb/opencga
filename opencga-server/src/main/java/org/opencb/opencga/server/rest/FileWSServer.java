@@ -133,7 +133,9 @@ public class FileWSServer extends OpenCGAWSServer {
                          @PathParam(value = "files") String fileStr,
                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                          @QueryParam("study") String studyStr,
-                         @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
+                         @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
+                                 + "exception whenever one of the entries looked for cannot be shown for whichever reason",
+                                 defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             query.remove("study");
             query.remove("files");
@@ -1134,7 +1136,9 @@ public class FileWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias up to a maximum of 100")
                             @QueryParam("study") String studyStr,
                             @ApiParam(value = "User or group id") @QueryParam("member") String member,
-                            @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
+                            @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
+                                    + "exception whenever one of the entries looked for cannot be shown for whichever reason",
+                                    defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(fileIdStr);
             return createOkResponse(fileManager.getAcls(studyStr, idList, member, silent, sessionId));
@@ -1243,9 +1247,6 @@ public class FileWSServer extends OpenCGAWSServer {
         }
     }
 
-    private final String defaultFacet = "creationYear>>creationMonth;format;bioformat;format>>bioformat;status";
-    private final String defaultFacetRange = "size:0:214748364800:10737418240;numSamples:0:10:1";
-
     @GET
     @Path("/stats")
     @ApiOperation(value = "Fetch catalog file stats", position = 15, response = QueryResponse.class)
@@ -1276,13 +1277,13 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "List of field ranges separated by semicolons with the format {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1") @QueryParam("fieldRange") String facetRange) {
         try {
             query.remove("study");
+            query.remove("field");
+            query.remove("fieldRange");
 
-            if (defaultStats) {
-                queryOptions.put(QueryOptions.FACET, StringUtils.isNotEmpty(facet) ? defaultFacet + ";" + facet : defaultFacet);
-                queryOptions.put(QueryOptions.FACET_RANGE, StringUtils.isNotEmpty(facet) ? defaultFacetRange + ";" + facet : defaultFacetRange);
-            }
+            queryOptions.put(QueryOptions.FACET, facet);
+            queryOptions.put(QueryOptions.FACET_RANGE, facetRange);
 
-            FacetedQueryResult queryResult = catalogManager.getFileManager().facet(studyStr, query, queryOptions, sessionId);
+            FacetedQueryResult queryResult = catalogManager.getFileManager().facet(studyStr, query, queryOptions, defaultStats, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

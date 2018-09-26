@@ -82,7 +82,9 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @QueryParam("study") String studyStr,
             @ApiParam(value = "Family version") @QueryParam("version") Integer version,
             @ApiParam(value = "Fetch all family versions", defaultValue = "false") @QueryParam(Constants.ALL_VERSIONS) boolean allVersions,
-            @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
+            @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
+                    + "exception whenever one of the entries looked for cannot be shown for whichever reason", defaultValue = "false")
+                @QueryParam("silent") boolean silent) {
         try {
             query.remove("study");
             query.remove("families");
@@ -369,7 +371,9 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap,
             @ApiParam(value = "Annotation set name. If provided, only chosen annotation set will be shown") @QueryParam("name") String annotationsetName,
-            @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) throws WebServiceException {
+            @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
+                    + "exception whenever one of the entries looked for cannot be shown for whichever reason", defaultValue = "false")
+                @QueryParam("silent") boolean silent) throws WebServiceException {
         try {
             AbstractManager.MyResources<Family> resource = familyManager.getUids(familiesStr, studyStr, sessionId);
 
@@ -483,7 +487,9 @@ public class FamilyWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                             @QueryParam("study") String studyStr,
                             @ApiParam(value = "User or group id") @QueryParam("member") String member,
-                            @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
+                            @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
+                                    + "exception whenever one of the entries looked for cannot be shown for whichever reason",
+                                    defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(familyIdsStr);
             return createOkResponse(familyManager.getAcls(studyStr, idList, member, silent, sessionId));
@@ -514,9 +520,6 @@ public class FamilyWSServer extends OpenCGAWSServer {
         }
     }
 
-    private final String defaultFacet = "creationYear>>creationMonth;status;phenotypes;expectedSize";
-    private final String defaultFacetRange = "numMembers:0:20:2";
-
     @GET
     @Path("/stats")
     @ApiOperation(value = "Fetch catalog family stats", position = 15, response = QueryResponse.class)
@@ -541,13 +544,13 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "List of field ranges separated by semicolons with the format {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1") @QueryParam("fieldRange") String facetRange) {
         try {
             query.remove("study");
+            query.remove("field");
+            query.remove("fieldRange");
 
-            if (defaultStats) {
-                queryOptions.put(QueryOptions.FACET, StringUtils.isNotEmpty(facet) ? defaultFacet + ";" + facet : defaultFacet);
-                queryOptions.put(QueryOptions.FACET_RANGE, StringUtils.isNotEmpty(facet) ? defaultFacetRange + ";" + facet : defaultFacetRange);
-            }
+            queryOptions.put(QueryOptions.FACET, facet);
+            queryOptions.put(QueryOptions.FACET_RANGE, facetRange);
 
-            FacetedQueryResult queryResult = catalogManager.getFamilyManager().facet(studyStr, query, queryOptions, sessionId);
+            FacetedQueryResult queryResult = catalogManager.getFamilyManager().facet(studyStr, query, queryOptions, defaultStats, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

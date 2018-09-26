@@ -447,6 +447,10 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         @ParametersDelegate
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
+        @Parameter(names = {"--import-from-panelApp"}, description = "Flag indicating that panels should be imported from PanelApp (GEL)",
+                arity = 0)
+        public boolean panelAppImport;
+
         @Parameter(names = {"--import"}, description = "File or folder containing panels in JSON format to be imported in OpenCGA",
                 arity = 1)
         public String panelImport;

@@ -1,11 +1,12 @@
 package org.opencb.opencga.core.models;
 
-import org.opencb.biodata.models.variant.avro.*;
-import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.core.models.clinical.ReportedEvent;
-import org.opencb.opencga.core.models.clinical.ReportedVariant;
+import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.core.pedigree.Pedigree;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class ClinicalProperty {
 
@@ -40,85 +41,38 @@ public class ClinicalProperty {
         BOTH
     }
 
-    public static Set<String> LOF = new HashSet<>(Arrays.asList());
-    public static Set<String> PROTEIN_LENGTH_CHANGING = new HashSet<>(Arrays.asList("stop_gained", "stop_lost", "frameshift_variant",
-            "inframe_insertion", "inframe_deletion", "splice_acceptor_variant", "splice_donor_variant"));
 
-    public static List<String> getAcmgClassification(ReportedVariant reportedVariant) {
-        Set<String> acmg = new HashSet<>();
+    public static Pedigree getPedigreeFromFamily(Family family) {
+        List<org.opencb.biodata.models.core.pedigree.Individual> individuals = parseMembersToBiodataIndividuals(family.getMembers());
+        return new Pedigree(family.getId(), individuals, family.getPhenotypes(), family.getAttributes());
+    }
 
-        // TODO: PM1
-        //   Manual: PS3, PS4, PM3
-        //   ?? PM6, PP1 (Cosegregation),
+    private static List<org.opencb.biodata.models.core.pedigree.Individual> parseMembersToBiodataIndividuals(List<Individual> members) {
+        Map<String, org.opencb.biodata.models.core.pedigree.Individual> individualMap = new HashMap();
 
-        for (ConsequenceType consequenceType: reportedVariant.getAnnotation().getConsequenceTypes()) {
-            for (SequenceOntologyTerm so: consequenceType.getSequenceOntologyTerms()) {
-                // PVS1
-                if (LOF.contains(so.getName())) {
-                    acmg.add("PVS1");
-                }
+        // Parse all the individuals
+        for (Individual member : members) {
+            org.opencb.biodata.models.core.pedigree.Individual individual =
+                    new org.opencb.biodata.models.core.pedigree.Individual(member.getId(), member.getName(), null, null,
+                            member.getMultiples(),
+                            org.opencb.biodata.models.core.pedigree.Individual.Sex.getEnum(member.getSex().toString()),
+                            member.getLifeStatus(),
+                            org.opencb.biodata.models.core.pedigree.Individual.AffectionStatus.getEnum(member.getAffectationStatus()
+                                    .toString()), member.getPhenotypes(), member.getAttributes());
+            individualMap.put(individual.getId(), individual);
+        }
 
-                // PS1
-                if ("synonymous_variant".equals(so.getName())) {
-                    for (EvidenceEntry evidenceEntry : reportedVariant.getAnnotation().getTraitAssociation()) {
-                        if ("clinvar".equals(evidenceEntry.getSource().getName())
-                                && (evidenceEntry.getVariantClassification().getClinicalSignificance() == ClinicalSignificance.pathogenic
-                                || evidenceEntry.getVariantClassification().getClinicalSignificance() == ClinicalSignificance.likely_pathogenic)) {
-                            acmg.add("PS1");
-                        } else {
-                            acmg.add("BP7");
-                        }
-                    }
-                }
-
-                // PM4
-                if (PROTEIN_LENGTH_CHANGING.contains(so.getName()) && "protein_coding".equals(consequenceType.getBiotype())) {
-                    acmg.add("PM4");
-                }
-
-                // PM5 | PP2
-//                if ("missense_variant".equals(so.getName())) {
-//                    acmg.add("PM5");
-//                }
+        // Fill parent information
+        for (Individual member : members) {
+            if (member.getFather() != null && StringUtils.isNotEmpty(member.getFather().getId())) {
+                individualMap.get(member.getId()).setFather(individualMap.get(member.getFather().getId()));
+            }
+            if (member.getMother() != null && StringUtils.isNotEmpty(member.getMother().getId())) {
+                individualMap.get(member.getId()).setMother(individualMap.get(member.getMother().getId()));
             }
         }
 
-        for (ReportedEvent reportedEvent : reportedVariant.getReportedEvents()) {
-            if (reportedEvent.getModeOfInheritance() == ModeOfInheritance.DE_NOVO) {
-                acmg.add("PS2");
-            }
-        }
-
-        if (ListUtils.isEmpty(reportedVariant.getAnnotation().getPopulationFrequencies())) {
-            acmg.add("PM2");
-        } else {
-            boolean hasPopFreq = false;
-            for (PopulationFrequency populationFrequency: reportedVariant.getAnnotation().getPopulationFrequencies()) {
-                // TODO: check it!
-                if (populationFrequency.getAltAlleleFreq() != 0) {
-                    hasPopFreq = true;
-                    break;
-                }
-            }
-            if (!hasPopFreq) {
-                acmg.add("PM2");
-            }
-        }
-
-        for (EvidenceEntry evidenceEntry : reportedVariant.getAnnotation().getTraitAssociation()) {
-            if ("clinvar".equals(evidenceEntry.getSource().getName())
-                    && (evidenceEntry.getVariantClassification().getClinicalSignificance() == ClinicalSignificance.benign
-                    || evidenceEntry.getVariantClassification().getClinicalSignificance() == ClinicalSignificance.likely_benign)) {
-                acmg.add("BP6");
-            } else if ("clinvar".equals(evidenceEntry.getSource().getName())
-                    && (evidenceEntry.getVariantClassification().getClinicalSignificance() == ClinicalSignificance.pathogenic
-                    || evidenceEntry.getVariantClassification().getClinicalSignificance() == ClinicalSignificance.likely_pathogenic)) {
-                acmg.add("PP5");
-            }
-
-        }
-
-        return new ArrayList<>(acmg);
+        return new ArrayList<>(individualMap.values());
     }
 
 }
