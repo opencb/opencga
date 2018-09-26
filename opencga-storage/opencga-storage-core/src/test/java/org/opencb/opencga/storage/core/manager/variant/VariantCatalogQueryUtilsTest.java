@@ -15,12 +15,15 @@ import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
@@ -85,6 +88,16 @@ public class VariantCatalogQueryUtilsTest {
 
         catalog.getProjectManager().create("p2", "p2", "", null, "hsapiens", "Homo Sapiens", null, "GRCh38", null, sessionId);
         catalog.getStudyManager().create("p2", "p2s2", null, "s1", Study.Type.CONTROL_SET, null, null, null, null, null, null, null, null, null, null, sessionId);
+
+        catalog.getDiseasePanelManager().create("s1", new DiseasePanel("MyPanel", "MyPanel", 1).setGenes(
+                Arrays.asList(
+                        new DiseasePanel.GenePanel().setName("BRCA2"),
+                        new DiseasePanel.GenePanel().setName("CADM1"),
+                        new DiseasePanel.GenePanel().setName("CTBP2P1"),
+                        new DiseasePanel.GenePanel().setName("ADSL")
+                )
+        ), null, sessionId);
+
 
         queryUtils = new VariantCatalogQueryUtils(catalog);
     }
@@ -233,17 +246,13 @@ public class VariantCatalogQueryUtilsTest {
 
     @Test
     public void queryByFamily() throws Exception {
-
         Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "f1"), sessionId);
-        System.out.println(query.toJson());
+        assertEquals(Arrays.asList("sample1", "sample2", "sample3", "sample4"), query.getAsStringList(SAMPLE.key()));
+        assertFalse(VariantQueryUtils.isValidParam(query, GENOTYPE));
+
         query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "f1").append(MODE_OF_INHERITANCE.key(), "MONOALLELIC"), sessionId);
-        System.out.println(query.toJson());
-
-        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "f1"), sessionId);
-        System.out.println(query.toJson());
-        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "f1"), sessionId);
-        System.out.println(query.toJson());
-
+        assertEquals("sample3:0/1,1/1;sample4:0/0;sample1:0/0;sample2:0/0", query.getString(GENOTYPE.key()));
+        assertFalse(VariantQueryUtils.isValidParam(query, SAMPLE));
     }
 
     @Test
@@ -279,6 +288,22 @@ public class VariantCatalogQueryUtilsTest {
                 .append(FAMILY.key(), "f1")
                 .append(MODE_OF_INHERITANCE.key(), "monoallelic")
                 .append(FAMILY_DISEASE.key(), "asdf"), sessionId);
+    }
+
+    @Test
+    public void queryByPanel() throws Exception {
+        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel"), sessionId);
+        assertEquals(Arrays.asList("BRCA2","CADM1","CTBP2P1","ADSL"), query.getAsList(GENE.key()));
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel").append(GENE.key(), "ASDF"), sessionId);
+        assertEquals(Arrays.asList("BRCA2","CADM1","CTBP2P1","ADSL", "ASDF"), query.getAsList(GENE.key()));
+    }
+
+    @Test
+    public void queryByPanelNotFound() throws Exception {
+        CatalogException e = new CatalogException("Panel MyPanel_wrong not found");
+        thrown.expectMessage(e.getMessage());
+        thrown.expect(e.getClass());
+        queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel_wrong"), sessionId);
     }
 
     @Test

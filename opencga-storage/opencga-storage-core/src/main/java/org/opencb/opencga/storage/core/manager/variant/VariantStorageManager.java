@@ -618,6 +618,9 @@ public class VariantStorageManager extends StorageManager {
             query.put(VariantCatalogQueryUtils.MODE_OF_INHERITANCE.key(),
                     queryOptions.get(VariantCatalogQueryUtils.MODE_OF_INHERITANCE.key()));
         }
+        if (queryOptions.containsKey(VariantCatalogQueryUtils.PANEL.key())) {
+            query.put(VariantCatalogQueryUtils.PANEL.key(), queryOptions.get(VariantCatalogQueryUtils.PANEL.key()));
+        }
 
         return query;
     }

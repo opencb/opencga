@@ -48,6 +48,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.GENE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.GENOTYPE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.SAMPLE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
@@ -78,6 +79,9 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             + "biallelicIncompletePenetrance, XlinkedBiallelic, XlinkedMonoallelic, Ylinked ]";
     public static final QueryParam MODE_OF_INHERITANCE =
             QueryParam.create("modeOfInheritance", MODE_OF_INHERITANCE_DESC, QueryParam.Type.TEXT);
+    public static final String PANEL_DESC = "Filter by genes from the given disease panel";
+    public static final QueryParam PANEL =
+            QueryParam.create("panel", PANEL_DESC, QueryParam.Type.TEXT);
 
     private final StudyFilterValidator studyFilterValidator;
     private final FileFilterValidator fileFilterValidator;
@@ -415,6 +419,25 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             throw VariantQueryException.malformedParam(FAMILY_DISEASE, query.getString(FAMILY_DISEASE.key()),
                     "Require parameter \"" + FAMILY.key() + "\" and \"" + MODE_OF_INHERITANCE.key() + "\" to use \""
                             + FAMILY_DISEASE.toString() + "\".");
+        }
+
+        if (isValidParam(query, PANEL)) {
+            String panelId = query.getString(PANEL.key());
+            if (StringUtils.isEmpty(defaultStudyStr)) {
+                throw VariantQueryException.missingStudyFor("panel", panelId, null);
+            }
+            DiseasePanel panel = catalogManager.getDiseasePanelManager().get(defaultStudyStr, panelId, null, sessionId).first();
+
+            List<String> geneNames = new ArrayList<>(panel.getGenes().size());
+            for (DiseasePanel.GenePanel genePanel : panel.getGenes()) {
+                geneNames.add(genePanel.getName());
+            }
+
+            if (isValidParam(query, GENE)) {
+                geneNames.addAll(query.getAsStringList(GENE.key()));
+            }
+            query.put(GENE.key(), geneNames);
+
         }
 
         return query;

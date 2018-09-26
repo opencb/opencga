@@ -470,6 +470,10 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--moi", "--mode-of-inheritance"}, description = MODE_OF_INHERITANCE_DESC, arity = 1)
         public String modeOfInheritance;
+
+        @Parameter(names = {"--panel"}, description = PANEL_DESC, arity = 1)
+        public String panel;
+
     }
 
     @Parameters(commandNames = {"stats"}, commandDescription = "Create and load stats into a database.")
