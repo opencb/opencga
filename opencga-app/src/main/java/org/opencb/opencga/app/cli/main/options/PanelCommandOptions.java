@@ -29,7 +29,7 @@ import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 @Parameters(commandNames = {"panels"}, commandDescription = "Panels commands")
 public class PanelCommandOptions {
 
-    public CreateCommandOptions createCommandOptions;
+//    public CreateCommandOptions createCommandOptions;
     public InfoCommandOptions infoCommandOptions;
     public SearchCommandOptions searchCommandOptions;
 
@@ -50,7 +50,7 @@ public class PanelCommandOptions {
         this.commonNumericOptions = numericOptions;
         this.jCommander = jCommander;
 
-        this.createCommandOptions = new CreateCommandOptions();
+//        this.createCommandOptions = new CreateCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
 
@@ -68,34 +68,34 @@ public class PanelCommandOptions {
         public String id;
     }
 
-    @Parameters(commandNames = {"create"}, commandDescription = "Create a panel")
-    public class CreateCommandOptions {
-
-        @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"-s","--study-id"}, description = "Study id", required = true, arity = 1)
-        public String studyId;
-
-        @Parameter(names = {"--name"}, description = "Panel name", required = true, arity = 1)
-        public String name;
-
-        @Parameter(names = {"--disease"}, description = "Disease", required = true, arity = 1)
-        public String disease;
-
-        @Parameter(names = {"--description"}, description = "Panel description", required = false, arity = 1)
-        public String description;
-
-        @Parameter(names = {"--genes"}, description = "Genes", required = false, arity = 1)
-        public String genes;
-
-        @Parameter(names = {"--regions"}, description = "Regions", required = false, arity = 1)
-        public String regions;
-
-        @Parameter(names = {"--variants"}, description = "Variants", required = false, arity = 1)
-        public String variants;
-
-    }
+//    @Parameters(commandNames = {"create"}, commandDescription = "Create a panel")
+//    public class CreateCommandOptions {
+//
+//        @ParametersDelegate
+//        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+//
+//        @Parameter(names = {"-s","--study-id"}, description = "Study id", required = true, arity = 1)
+//        public String studyId;
+//
+//        @Parameter(names = {"--name"}, description = "Panel name", required = true, arity = 1)
+//        public String name;
+//
+//        @Parameter(names = {"--disease"}, description = "Disease", required = true, arity = 1)
+//        public String disease;
+//
+//        @Parameter(names = {"--description"}, description = "Panel description", required = false, arity = 1)
+//        public String description;
+//
+//        @Parameter(names = {"--genes"}, description = "Genes", required = false, arity = 1)
+//        public String genes;
+//
+//        @Parameter(names = {"--regions"}, description = "Regions", required = false, arity = 1)
+//        public String regions;
+//
+//        @Parameter(names = {"--variants"}, description = "Variants", required = false, arity = 1)
+//        public String variants;
+//
+//    }
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get panel information")
     public class InfoCommandOptions extends BasePanelsCommand {
