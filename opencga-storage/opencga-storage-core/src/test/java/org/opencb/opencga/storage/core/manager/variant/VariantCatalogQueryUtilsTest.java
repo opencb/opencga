@@ -268,26 +268,26 @@ public class VariantCatalogQueryUtilsTest {
         CatalogException e = new CatalogException("Family asdf not found");
         thrown.expectMessage(e.getMessage());
         thrown.expect(e.getClass());
-        queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "asdf").append(FAMILY_DISEASE.key(), "asdf"), sessionId);
+        queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "asdf").append(FAMILY_PHENOTYPE.key(), "asdf"), sessionId);
     }
 
     @Test
     public void queryByFamilyMissingModeOfInheritance() throws CatalogException {
-        VariantQueryException e = VariantQueryException.malformedParam(FAMILY_DISEASE, "asdf", "Require parameter \"family\" and \"modeOfInheritance\" to use \"familyDisease\".");
+        VariantQueryException e = VariantQueryException.malformedParam(FAMILY_PHENOTYPE, "asdf", "Require parameter \"family\" and \"modeOfInheritance\" to use \"familyDisease\".");
         thrown.expectMessage(e.getMessage());
         thrown.expect(e.getClass());
-        queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "f1").append(FAMILY_DISEASE.key(), "asdf"), sessionId);
+        queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "f1").append(FAMILY_PHENOTYPE.key(), "asdf"), sessionId);
     }
 
     @Test
     public void queryByFamilyUnknownDisease() throws CatalogException {
-        VariantQueryException e = VariantQueryException.malformedParam(FAMILY_DISEASE, "asdf", "Available phenotypes: [phenotype]");
+        VariantQueryException e = VariantQueryException.malformedParam(FAMILY_PHENOTYPE, "asdf", "Available phenotypes: [phenotype]");
         thrown.expectMessage(e.getMessage());
         thrown.expect(e.getClass());
         queryUtils.parseQuery(new Query(STUDY.key(), "s1")
                 .append(FAMILY.key(), "f1")
                 .append(MODE_OF_INHERITANCE.key(), "monoallelic")
-                .append(FAMILY_DISEASE.key(), "asdf"), sessionId);
+                .append(FAMILY_PHENOTYPE.key(), "asdf"), sessionId);
     }
 
     @Test

@@ -248,7 +248,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "missingGenotypes", value = MISSING_GENOTYPES_DESCR, dataType = "string", paramType = "query"),
 
             @ApiImplicitParam(name = "family", value = VariantCatalogQueryUtils.FAMILY_DESC, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "familyDisease", value = VariantCatalogQueryUtils.FAMILY_DISEASE_DESC, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "familyPhenotype", value = VariantCatalogQueryUtils.FAMILY_PHENOTYPE_DESC, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "modeOfInheritance", value = VariantCatalogQueryUtils.MODE_OF_INHERITANCE_DESC, dataType = "string", paramType = "query"),
 
             @ApiImplicitParam(name = "includeStudy", value = INCLUDE_STUDY_DESCR, dataType = "string", paramType = "query"),
