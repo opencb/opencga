@@ -24,32 +24,37 @@
 setMethod("studyClient", "OpencgaR", function(OpencgaR, study, action, params=NULL, ...) {
     category <- "studies"
     switch(action,
-           acl=fetchOpenCGA(object=OpencgaR, category=category, categoryId=study, 
-                            action="acl", params=params, httpMethod="GET", ...),
-           delete=fetchOpenCGA(object=OpencgaR, category=category, categoryId=study, 
-                               action="delete", params=params, httpMethod="GET", ...),
-           files=fetchOpenCGA(object=OpencgaR, category=category, categoryId=study, 
-                              action="files", params=params, httpMethod="GET", ...),
-           groups=fetchOpenCGA(object=OpencgaR, category=category, categoryId=study, 
-                               action="groups", params=params, httpMethod="GET", ...),
            search=fetchOpenCGA(object=OpencgaR, category=category,  
                                action="search", params=params, httpMethod="GET", ...),
+           acl=fetchOpenCGA(object=OpencgaR, category=category, categoryId=study, 
+                            action="acl", params=params, httpMethod="GET", ...),
+           groups=fetchOpenCGA(object=OpencgaR, category=category, categoryId=study, 
+                               action="groups", params=params, httpMethod="GET", ...),
            info=fetchOpenCGA(object=OpencgaR, category=category, categoryId=study, 
                              action="info", params=params, httpMethod="GET", ...),
-           jobs=fetchOpenCGA(object=OpencgaR, category=category, categoryId=study, 
-                             action="jobs", params=params, httpMethod="GET", ...),
-           resyncFiles=fetchOpenCGA(object=OpencgaR, category=category, categoryId=study, 
-                                    action="resyncFiles", params=params, httpMethod="GET", ...),
-           samples=fetchOpenCGA(object=OpencgaR, category=category, categoryId=study, 
-                                action="samples", params=params, httpMethod="GET", ...),
-           scanFiles=fetchOpenCGA(object=OpencgaR, category=category, categoryId=study, 
-                                  action="scanFiles", params=params, httpMethod="GET", ...),
            summary=fetchOpenCGA(object=OpencgaR, category=category, categoryId=study, 
                                 action="summary", params=params, httpMethod="GET", ...),
-           create=fetchOpenCGA(object=OpencgaR, category=category, action="create", 
-                               params=params, httpMethod="POST", as.queryParam="projectId", ...),
+           permissionRules=fetchOpenCGA(object=OpencgaR, category=category, categoryId=study, 
+                                        action="permissionRules", params=params, httpMethod="GET", ...),
+           variableSets=fetchOpenCGA(object=OpencgaR, category=category, categoryId=study, 
+                                     action="variableSets", params=params, httpMethod="GET", ...),
            update=fetchOpenCGA(object=OpencgaR, category=category, categoryId=study, 
-                               action="update", params=params, httpMethod="POST", ...)
+                               action="update", params=params, httpMethod="POST", ...),
+           create=fetchOpenCGA(object=OpencgaR, category=category, action="create", 
+                               params=params, httpMethod="POST", as.queryParam="project", ...)
+           # delete=fetchOpenCGA(object=OpencgaR, category=category, categoryId=study, 
+           #                     action="delete", params=params, httpMethod="GET", ...),
+           # files=fetchOpenCGA(object=OpencgaR, category=category, categoryId=study, 
+           #                    action="files", params=params, httpMethod="GET", ...),
+           # jobs=fetchOpenCGA(object=OpencgaR, category=category, categoryId=study, 
+           #                   action="jobs", params=params, httpMethod="GET", ...),
+           # resyncFiles=fetchOpenCGA(object=OpencgaR, category=category, categoryId=study, 
+           #                          action="resyncFiles", params=params, httpMethod="GET", ...),
+           # samples=fetchOpenCGA(object=OpencgaR, category=category, categoryId=study, 
+           #                      action="samples", params=params, httpMethod="GET", ...),
+           # scanFiles=fetchOpenCGA(object=OpencgaR, category=category, categoryId=study, 
+           #                        action="scanFiles", params=params, httpMethod="GET", ...)
+           
     )
 })
 
@@ -58,21 +63,22 @@ setMethod("studyGroupClient", "OpencgaR", function(OpencgaR, study, group=NULL,
                                                    action, params=NULL, ...) {
     category <- "studies"
     switch(action,
-           delete=fetchOpenCGA(object=OpencgaR, category=category, categoryId=study,
-                               subcategory="groups", subcategoryId=group, 
-                               action=action, params=params, httpMethod="GET", ...),
+           # delete=fetchOpenCGA(object=OpencgaR, category=category, categoryId=study,
+           #                     subcategory="groups", subcategoryId=group, 
+           #                     action=action, params=params, httpMethod="GET", ...),
            create=fetchOpenCGA(object=OpencgaR, category=category, categoryId=study, 
-                               subcategory="groups", action=action, 
-                               params=params, httpMethod="POST", ...),
+                               subcategory="groups", action=action, params=params, 
+                               as.queryParam="action", httpMethod="POST", ...),
            update={
                if (is.null(group)) {
                    fetchOpenCGA(object=OpencgaR, category=category, categoryId=study, 
-                                subcategory="groups/members", action=action, 
+                                subcategory="groups", action=action, 
                                 params=params, httpMethod="POST", ...)
                }else{
                    fetchOpenCGA(object=OpencgaR, category=category, categoryId=study, 
                                 subcategory="groups", subcategoryId=group, 
-                                action=action, params=params, httpMethod="POST", ...)
+                                action="/users/update", params=params, as.queryParam="action",
+                                httpMethod="POST", ...)
                }}
     )
 })
@@ -88,40 +94,59 @@ setMethod("studyAclClient", "OpencgaR", function(OpencgaR, study, memberId, acti
 })
 
 #' @export
-setMethod("studyVariablesetClient", "OpencgaR", function(OpencgaR, variableSet, action, params=NULL, ...) {
+setMethod("studyVariablesetClient", "OpencgaR", function(OpencgaR, study, variableSet=NULL, action, params=NULL, ...) {
     category <- "studies"
     switch(action,
-           search=fetchOpenCGA(object=OpencgaR, category=category, 
-                               action=action, params=params, httpMethod="GET", ...),
-           delete=fetchOpenCGA(object=OpencgaR, category=category, 
-                               categoryId=variableSet, action=action, 
-                               params=params, httpMethod="GET", ...),
-           info=fetchOpenCGA(object=OpencgaR, category=category, 
-                             categoryId=variableSet, action=action, 
-                             params=params, httpMethod="GET", ...),
-           summary=fetchOpenCGA(object=OpencgaR, category=category, 
-                                categoryId=variableSet, action=action, 
-                                params=params, httpMethod="GET", ...),
-           create=fetchOpenCGA(object=OpencgaR, category=category, 
-                               action=action, params=params, httpMethod="POST", ...),
-           update=fetchOpenCGA(object=OpencgaR, category=category, 
-                               categoryId=variableSet, action=action, 
-                               params=params, httpMethod="POST", ...)
+           # search=fetchOpenCGA(object=OpencgaR, category=category, 
+           #                     action=action, params=params, httpMethod="GET", ...),
+           # delete=fetchOpenCGA(object=OpencgaR, category=category, 
+           #                     categoryId=variableSet, action=action, 
+           #                     params=params, httpMethod="GET", ...),
+           # info=fetchOpenCGA(object=OpencgaR, category=category, 
+           #                   categoryId=variableSet, action=action, 
+           #                   params=params, httpMethod="GET", ...),
+           # summary=fetchOpenCGA(object=OpencgaR, category=category, 
+           #                      categoryId=variableSet, action=action, 
+           #                      params=params, httpMethod="GET", ...),
+           # create=fetchOpenCGA(object=OpencgaR, category=category, 
+           #                     action=action, params=params, httpMethod="POST", ...),
+           update={
+               if (is.null(variableSet)) {
+                   fetchOpenCGA(object=OpencgaR, category=category, categoryId=study, 
+                                subcategory="variableSets", action=action, 
+                                params=params, as.queryParam="action", httpMethod="POST", ...)
+               }else{
+                   fetchOpenCGA(object=OpencgaR, category=category, categoryId=study, 
+                                subcategory="variableSets", subcategoryId=variableSet, 
+                                action="/variables/update", params=params, as.queryParam="action",
+                                httpMethod="POST", ...)
+               }}
     )
 })
 
 #' @export
-setMethod("studyVariablesetFieldClient", "OpencgaR", function(OpencgaR, variableSet, action, params=NULL, ...) {
+setMethod("studyPermissionRulesClient", "OpencgaR", function(OpencgaR, study, action, params=NULL, ...) {
     category <- "studies"
     switch(action,
-           delete=fetchOpenCGA(object=OpencgaR, category=category, 
-                               categoryId=variableSet, subcategory="field", 
-                               action=action, params=params, httpMethod="GET", ...),
-           rename=fetchOpenCGA(object=OpencgaR, category=category, 
-                               categoryId=variableSet, subcategory="field", 
-                               action=action, params=params, httpMethod="GET", ...),
-           add=fetchOpenCGA(object=OpencgaR, category=category, 
-                            categoryId=variableSet, action=action, 
-                            params=params, httpMethod="POST", ...)
+           update=fetchOpenCGA(object=OpencgaR, category=category, categoryId=study,
+                               subcategory="permissionRules", action=action, 
+                               params=params, as.queryParam=c("action", "entity"),
+                               httpMethod="POST", ...)
     )
 })
+
+
+#' setMethod("studyVariablesetFieldClient", "OpencgaR", function(OpencgaR, variableSet, action, params=NULL, ...) {
+#'     category <- "studies"
+#'     switch(action,
+#'            delete=fetchOpenCGA(object=OpencgaR, category=category, 
+#'                                categoryId=variableSet, subcategory="field", 
+#'                                action=action, params=params, httpMethod="GET", ...),
+#'            rename=fetchOpenCGA(object=OpencgaR, category=category, 
+#'                                categoryId=variableSet, subcategory="field", 
+#'                                action=action, params=params, httpMethod="GET", ...),
+#'            add=fetchOpenCGA(object=OpencgaR, category=category, 
+#'                             categoryId=variableSet, action=action, 
+#'                             params=params, httpMethod="POST", ...)
+#'     )
+#' })

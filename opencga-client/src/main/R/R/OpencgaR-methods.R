@@ -39,9 +39,9 @@ initOpencgaR <- function(host=NULL, version="v1", user=NULL, opencgaConfig=NULL)
     if (is.null(opencgaConfig)){
         # Check values provided
         if (!is.null(host) & !is.null(user)){
-            ocga <- new("OpencgaR", host=host, version=version, user=user, sessionId="", expirationTime="")
+            ocga <- new("OpencgaR", host=host, version=version, user=user, sessionFile="")
         }else if(!is.null(host)){
-            ocga <- new("OpencgaR", host=host, version=version, user="", sessionId="", expirationTime="")
+            ocga <- new("OpencgaR", host=host, version=version, user="", sessionFile="")
         }else{
             cat("No connection parameters given. Using HGVA setup.")
             ocga <- new("OpencgaR")
@@ -67,6 +67,8 @@ setMethod("show", signature = "OpencgaR", definition = function(object){
     cat("An object of class ", class(object), "\n", sep = "")
     cat(paste("| Host:", object@host))
     cat(paste("\n| Version:", object@version))
+    cat(paste("\n| Token:", object@sessionId))
+    cat(paste("\n| Expiration time:", object@expirationTime))
 })
 
 
@@ -155,7 +157,8 @@ readConfFile <- function(conf){
 #' #@param ... Any other arguments
 #'
 #' @return an Opencga class object
-#' @examples
+#' 
+#' #@examples
 #' \dontrun{
 #' con <- initOpencgaR(host = "http://localhost:8080/opencga/", version = "v1", user = "user")
 #' con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
@@ -237,17 +240,57 @@ opencgaLogin <- function(opencga, userid=NULL, passwd=NULL, interactive=FALSE,
 
     res <- httr::content(query)
     sessionId <- res$response[[1]]$result[[1]]$sessionId
+    
     opencga@user <- userid
-    opencga@sessionId <- sessionId
+    #opencga@sessionId <- sessionId
     opencga@showToken <- showToken
     opencga@autoRenew <- autoRenew
     
     # get expiration time
     loginInfo <- unlist(strsplit(x=sessionId, split="\\."))[2]
     loginInfojson <- jsonlite::fromJSON(rawToChar(base64enc::base64decode(what=loginInfo)))
-    expirationTime <- as.POSIXct(loginInfojson$exp, origin="1970-01-01")
-    opencga@expirationTime <- as.character(expirationTime)
+    loginTime <- as.character(as.POSIXct(loginInfojson$iat, origin="1970-01-01"), format="%Y%m%d%H%M%S")
+    expirationTime <- as.character(as.POSIXct(loginInfojson$exp, origin="1970-01-01"), format="%Y%m%d%H%M%S")
     
+    # Create session JSON
+    sessionDf <- data.frame(host=opencga@host, version=opencga@version, 
+                            user=opencga@user, token=sessionId,
+                            login=loginTime, expirationTime=expirationTime)
+    sessionJson <- jsonlite::toJSON(sessionDf)
+    
+    # Get system to define session directory
+    if(.Platform$OS.type == "unix") {
+        sessionDir <- file.path(Sys.getenv("HOME"), ".opencga", "R", fsep = .Platform$file.sep)
+    } else {
+        sessionDir <- normalizePath(file.path(Sys.getenv("HOMEDRIVE"),
+                                    Sys.getenv("HOMEPATH")), "opencga", "R", 
+                                    winslash = .Platform$file.sep)
+    }
+    
+    # Create/update session file
+    dir.create(path = sessionDir, showWarnings = FALSE)
+    sessionFile <- file.path(sessionDir, "rsession.json", fsep = .Platform$file.sep)
+    opencga@sessionFile <- sessionFile
+    if(file.exists(sessionFile)){
+        sessionTable <- jsonlite::fromJSON(sessionFile)
+        sessionTableMatch <- which(sessionTable$host==opencga@host & 
+                                   sessionTable$version == opencga@version & 
+                                   sessionTable$user == opencga@user)
+        if (length(sessionTableMatch) == 0){
+            sessionTable <- rbind(sessionTable, sessionDf)
+            write(x = jsonlite::toJSON(sessionTable), file = sessionFile)
+        }else if (length(sessionTableMatch) == 1){
+            sessionTable[sessionTableMatch, "login"] <- loginTime
+            sessionTable[sessionTableMatch, "token"] <- sessionId
+            sessionTable[sessionTableMatch, "expirationTime"] <- expirationTime
+            write(x = jsonlite::toJSON(sessionTable), file = sessionFile)
+        }else{
+            stop(paste("There is more than one connection to this host in your rsession file. Please, remove any duplicated entries in", 
+                       sessionFile))
+        }
+    }else{
+        write(x = sessionJson, file = sessionFile)
+    }
     return(opencga)
 }
 

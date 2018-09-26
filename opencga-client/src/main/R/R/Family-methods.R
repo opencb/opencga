@@ -19,39 +19,46 @@
 setMethod("familyClient", "OpencgaR", function(OpencgaR, family, action, params=NULL, ...) {
     category <- "families"
     switch(action,
-           annotationsets=fetchOpenCGA(object=OpencgaR, category=category, 
-                                       categoryId=family, action="annotationsets", 
-                                       params=params, httpMethod="GET", ...),
-           search=fetchOpenCGA(object=OpencgaR, category=category, action="search", 
+           search=fetchOpenCGA(object=OpencgaR, category=category, action=action, 
+                               params=params, httpMethod="GET", ...),
+           stats=fetchOpenCGA(object=OpencgaR, category=category, action=action, 
                                params=params, httpMethod="GET", ...),
            acl=fetchOpenCGA(object=OpencgaR, category=category, categoryId=family, 
-                            action="acl", params=params, httpMethod="GET", ...),
+                            action=action, params=params, httpMethod="GET", ...),
            info=fetchOpenCGA(object=OpencgaR, category=category, categoryId=family, 
-                             action="info", params=params, httpMethod="GET", ...),
+                             action=action, params=params, httpMethod="GET", ...),
            create=fetchOpenCGA(object=OpencgaR, category=category,  
-                               action="create", params=params, httpMethod="POST", ...),
+                               action=action, params=params, httpMethod="POST", ...),
            update=fetchOpenCGA(object=OpencgaR, category=category, categoryId=family, 
-                               action="update", params=params, httpMethod="POST", ...)
+                               action=action, params=params, 
+                               as.queryParam=c("incVersion", "updateIndividualVersion", "annotationSetsAction", "include", "exclude"), 
+                               httpMethod="POST", ...)
+           # annotationsets=fetchOpenCGA(object=OpencgaR, category=category, 
+           #                             categoryId=family, action="annotationsets", 
+           #                             params=params, httpMethod="GET", ...)
     )
 })
 
 #' @export
-setMethod("familyAnnotationsetClient", "OpencgaR", function(OpencgaR, family, annotationsetName, 
+setMethod("familyAnnotationsetClient", "OpencgaR", function(OpencgaR, family, annotationSet, 
                                                          action, params=NULL, ...) {
     category <- "families"
     switch(action,
-           search=fetchOpenCGA(object=OpencgaR, category=category, categoryId=family, 
-                               subcategory="annotationsets", action="search", 
-                               params=params, httpMethod="GET", ...),
-           delete=fetchOpenCGA(object=OpencgaR, category=category, categoryId=family, 
-                               subcategory="annotationsets", subcategoryId=annotationsetName, 
-                               action="delete", params=params, httpMethod="GET", ...),
-           create=fetchOpenCGA(object=OpencgaR, category=category, categoryId=family, 
-                               subcategory="annotationsets", action="create", 
-                               params=params, httpMethod="POST", as.queryParam="variableSet", ...),
            update=fetchOpenCGA(object=OpencgaR, category=category, categoryId=family, 
-                               subcategory="annotationsets", subcategoryId=annotationsetName, 
-                               action="update", params=params, httpMethod="POST", ...)
+                               subcategory="annotationSets", subcategoryId=annotationSet, 
+                               action="annotations/update", params=params, 
+                               as.queryParam=c("incVersion", "updateSampleVersion"), 
+                               httpMethod="POST", ...)
+           # search=fetchOpenCGA(object=OpencgaR, category=category, categoryId=family, 
+           #                     subcategory="annotationsets", action="search", 
+           #                     params=params, httpMethod="GET", ...),
+           # delete=fetchOpenCGA(object=OpencgaR, category=category, categoryId=family, 
+           #                     subcategory="annotationsets", subcategoryId=annotationsetName, 
+           #                     action="delete", params=params, httpMethod="GET", ...),
+           # create=fetchOpenCGA(object=OpencgaR, category=category, categoryId=family, 
+           #                     subcategory="annotationsets", action="create", 
+           #                     params=params, httpMethod="POST", as.queryParam="variableSet", ...)
+           
     )
 })
 
@@ -60,7 +67,7 @@ setMethod("familyAclClient", "OpencgaR", function(OpencgaR, memberIds, action, p
     category <- "families"
     switch(action,
            update=fetchOpenCGA(object=OpencgaR, category=category, subcategory="acl", 
-                               subcategoryId=memberIds, action="update", params=params, 
+                               subcategoryId=memberIds, action=action, params=params, 
                                httpMethod="POST", ...)
     )
 })

@@ -17,20 +17,20 @@
 setMethod("jobClient", "OpencgaR", function(OpencgaR, jobId, action, params=NULL, ...) {
     category <- "jobs"
     switch(action,
-           groupBy=fetchOpenCGA(object=OpencgaR, category=category,  
-                                action="groupBy", params=params, httpMethod="GET", ...),
            search=fetchOpenCGA(object=OpencgaR, category=category, 
-                               action="search", params=params, httpMethod="GET", ...),
+                               action=action, params=params, httpMethod="GET", ...),
            acl=fetchOpenCGA(object=OpencgaR, category=category, categoryId=jobId, 
-                            action="acl", params=params, httpMethod="GET", ...),
-           delete=fetchOpenCGA(object=OpencgaR, category=category, categoryId=jobId, 
-                               action="delete", params=params, httpMethod="GET", ...),
+                            action=action, params=params, httpMethod="GET", ...),
            info=fetchOpenCGA(object=OpencgaR, category=category, categoryId=jobId, 
-                             action="info", params=params, httpMethod="GET", ...),
+                             action=action, params=params, httpMethod="GET", ...),
            visit=fetchOpenCGA(object=OpencgaR, category=category, categoryId=jobId, 
-                              action="visit", params=params, httpMethod="GET", ...),
+                              action=action, params=params, httpMethod="GET", ...),
            create=fetchOpenCGA(object=OpencgaR, category=category, 
-                               action="create", params=params, httpMethod="POST", ...)
+                               action=action, params=params, httpMethod="POST", ...)
+           # groupBy=fetchOpenCGA(object=OpencgaR, category=category,  
+           #                      action="groupBy", params=params, httpMethod="GET", ...),
+           # delete=fetchOpenCGA(object=OpencgaR, category=category, categoryId=jobId, 
+           #                     action="delete", params=params, httpMethod="GET", ...)
     )
 })
 
@@ -40,7 +40,7 @@ setMethod("jobAclClient", "OpencgaR", function(OpencgaR, jobId, memberId, action
     switch(action,
            update=fetchOpenCGA(object=OpencgaR, category=category, categoryId=jobId, 
                                subcategory="acl", subcategoryId=memberId, 
-                               action="update", params=params, httpMethod="POST", ...)
+                               action=action, params=params, httpMethod="POST", ...)
     )
 })
 
