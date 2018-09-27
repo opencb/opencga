@@ -465,11 +465,15 @@ public class VariantCommandOptions {
         @Parameter(names = {"--family"}, description = FAMILY_DESC, arity = 1)
         public String family;
 
-        @Parameter(names = {"--family-disease"}, description = FAMILY_DISEASE_DESC, arity = 1)
-        public String familyDisease;
+        @Parameter(names = {"--family-phenotype"}, description = FAMILY_PHENOTYPE_DESC, arity = 1)
+        public String familyPhenotype;
 
         @Parameter(names = {"--moi", "--mode-of-inheritance"}, description = MODE_OF_INHERITANCE_DESC, arity = 1)
         public String modeOfInheritance;
+
+        @Parameter(names = {"--panel"}, description = PANEL_DESC, arity = 1)
+        public String panel;
+
     }
 
     @Parameters(commandNames = {"stats"}, commandDescription = "Create and load stats into a database.")

@@ -13,13 +13,17 @@
 #' \url{http://bioinfo.hpc.cam.ac.uk/opencga/webservices/}
 #' @export
 
+
 fetchOpenCGA <- function(object=object, category=NULL, categoryId=NULL, 
                          subcategory=NULL, subcategoryId=NULL, action=NULL, 
-                         params=NULL, httpMethod="GET", 
+                         params=NULL, httpMethod="GET", skip=0,
                          num_threads=NULL, as.queryParam=NULL, batch_size=2000){
+    
+    # Need to disable scientific notation to avoid errors in the URL
+    options(scipen=999)
+    
     # Get connection info
     host <- object@host
-    token <- object@sessionId
     version <- object@version
     
     # real_batch_size <- real_batch_size
@@ -65,10 +69,10 @@ fetchOpenCGA <- function(object=object, category=NULL, categoryId=NULL,
     
     # Extract limit from params
     if(is.null(params)){
-       limit <- 200000 
+       limit <- 400000 
     }else{
         if(is.null(params$limit)){
-            limit <- 200000
+            limit <- 400000
         }else{
             limit <- params$limit
         }
@@ -97,23 +101,38 @@ fetchOpenCGA <- function(object=object, category=NULL, categoryId=NULL,
         }
         params$limit <- real_batch_size
         
-        # check expiration time before 
+        # check expiration time
+        sessionTable <- jsonlite::fromJSON(object@sessionFile)
+        sessionTableMatch <- which(sessionTable$host==object@host & 
+                                       sessionTable$version == object@version & 
+                                       sessionTable$user == object@user)
+        if (length(sessionTableMatch) == 0){
+            stop("You are not logged into openCGA. Please, log in before launching a query.")
+        }else if (length(sessionTableMatch) == 1){
+            token <- sessionTable[sessionTableMatch, "token"]
+            expirationTime <- sessionTable[sessionTableMatch, "expirationTime"]
+        }else{
+            stop(paste("There is more than one connection to this host in your rsession file. Please, remove any duplicated entries in", 
+                       sessionFile))
+        }
         timeNow <- Sys.time()
-        timeLeft <- as.numeric(difftime(as.POSIXct(object@expirationTime), timeNow, 
-                                        units="mins"))
+        timeLeft <- as.numeric(difftime(as.POSIXct(expirationTime, format="%Y%m%d%H%M%S"), timeNow, units="mins"))
         if (timeLeft > 0 & timeLeft <= 5){
             print("INFO: Your session will expire in less than 5 minutes.")
-            urlNewToken <- paste0(host, version, "users/", object@user, "/", "login", "?sid=", object@sessionId)
-            resp <- httr::POST(urlNewToken, add_headers(c("Content-Type"="application/json",
+            urlNewToken <- paste0(host, version, "users/", object@user, "/", "login", "?sid=", token)
+            resp <- httr::POST(urlNewToken, httr::add_headers(c("Content-Type"="application/json",
                                                           "Accept"="application/json",
                                                           "Authorisation"="Bearer")), body="{}")
             content <- httr::content(resp, as="text", encoding = "utf-8")
-            if (length(fromJSON(content)$response$result[[1]]$token > 0)){
-                object@sessionId <- fromJSON(content)$response$result[[1]]$token
-                loginInfo <- unlist(strsplit(x=object@sessionId, split="\\."))[2]
+            if (length(jsonlite::fromJSON(content)$response$result[[1]]$token) > 0){
+                token <- jsonlite::fromJSON(content)$response$result[[1]]$token
+                loginInfo <- unlist(strsplit(x=token, split="\\."))[2]
                 loginInfojson <- jsonlite::fromJSON(rawToChar(base64enc::base64decode(what=loginInfo)))
                 expirationTime <- as.POSIXct(loginInfojson$exp, origin="1970-01-01")
-                object@expirationTime <- as.character(expirationTime)
+                expirationTime <- as.character(expirationTime, format="%Y%m%d%H%M%S")
+                sessionTable[sessionTableMatch, "token"] <- token
+                sessionTable[sessionTableMatch, "expirationTime"] <- expirationTime
+                write(x = jsonlite::toJSON(sessionTable), file = object@sessionFile)
                 print("Your session has been renewed!")
             }else{
                 warning(paste0("WARNING: Your token could not be renewed, your session will expire in ", 
@@ -147,11 +166,28 @@ fetchOpenCGA <- function(object=object, category=NULL, categoryId=NULL,
     }
     
     if (count > 0){
-        container <- paste(container, collapse = ',')
-        container <- paste0("[", container, "]")
-        jsonDf <- jsonlite::fromJSON(txt=container)
-    
-        return(jsonDf)
+        tryCatch({
+            container <- paste(container, collapse = ',')
+            container <- paste0("[", container, "]")
+            jsonDf <- jsonlite::fromJSON(txt=container)
+            return(jsonDf)
+        }, error = function(e) {
+            print("Constructing data.frame by batches...")
+            containerDfTmp <- list()
+            countTmp <- 0
+            for (i in seq(from = 1, to = length(container), by = 10)){
+                iend <- i+2
+                if(iend > length(container)){
+                    iend <- length(container)
+                }
+                countTmp <- countTmp + 1
+                miniJson <- paste(container[i:iend], collapse = ',')
+                miniJson <- paste0("[", miniJson, "]")
+                containerDfTmp[[countTmp]] <- jsonlite::fromJSON(miniJson)
+            }
+            jsonDf <- jsonlite::rbind_pages(containerDfTmp)
+            return(jsonDf)
+        })
     }
 }
 
@@ -172,7 +208,7 @@ get_qparams <- function(params){
 callREST <- function(pathUrl, params, httpMethod, skip, token, as.queryParam, sid=FALSE){
     content <- list()
     session <- paste("Bearer", token)
-    skip=paste0("?skip=", skip)
+    skip=paste0("?skip=", as.character(skip))
     
     # Make GET call
     if (httpMethod == "GET"){

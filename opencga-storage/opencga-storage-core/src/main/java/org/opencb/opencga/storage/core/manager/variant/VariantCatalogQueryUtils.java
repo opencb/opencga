@@ -48,6 +48,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.GENE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.GENOTYPE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.SAMPLE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
@@ -70,14 +71,17 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             + "(HET or HOM_ALT)";
     public static final QueryParam FAMILY =
             QueryParam.create("family", FAMILY_DESC, QueryParam.Type.TEXT);
-    public static final String FAMILY_DISEASE_DESC = "Specify the phenotype to use for the mode  of inheritance";
-    public static final QueryParam FAMILY_DISEASE =
-            QueryParam.create("familyDisease", FAMILY_DISEASE_DESC, QueryParam.Type.TEXT);
+    public static final String FAMILY_PHENOTYPE_DESC = "Specify the phenotype to use for the mode  of inheritance";
+    public static final QueryParam FAMILY_PHENOTYPE =
+            QueryParam.create("familyPhenotype", FAMILY_PHENOTYPE_DESC, QueryParam.Type.TEXT);
     public static final String MODE_OF_INHERITANCE_DESC = "Filter by mode of inheritance from a given family. Accepted values: "
             + "[ monoallelic, monoallelicIncompletePenetrance, biallelic, "
             + "biallelicIncompletePenetrance, XlinkedBiallelic, XlinkedMonoallelic, Ylinked ]";
     public static final QueryParam MODE_OF_INHERITANCE =
             QueryParam.create("modeOfInheritance", MODE_OF_INHERITANCE_DESC, QueryParam.Type.TEXT);
+    public static final String PANEL_DESC = "Filter by genes from the given disease panel";
+    public static final QueryParam PANEL =
+            QueryParam.create("panel", PANEL_DESC, QueryParam.Type.TEXT);
 
     private final StudyFilterValidator studyFilterValidator;
     private final FileFilterValidator fileFilterValidator;
@@ -276,15 +280,15 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                             "Some individuals from this family have multiple indexed samples");
                 }
                 Phenotype phenotype;
-                if (isValidParam(query, FAMILY_DISEASE)) {
-                    String phenotypeId = query.getString(FAMILY_DISEASE.key());
+                if (isValidParam(query, FAMILY_PHENOTYPE)) {
+                    String phenotypeId = query.getString(FAMILY_PHENOTYPE.key());
                     phenotype = family.getPhenotypes()
                             .stream()
                             .filter(familyPhenotype -> familyPhenotype.getId().equals(phenotypeId))
                             .findFirst()
                             .orElse(null);
                     if (phenotype == null) {
-                        throw VariantQueryException.malformedParam(FAMILY_DISEASE, phenotypeId,
+                        throw VariantQueryException.malformedParam(FAMILY_PHENOTYPE, phenotypeId,
                                 "Available phenotypes: " + family.getPhenotypes()
                                         .stream()
                                         .map(Phenotype::getId)
@@ -293,7 +297,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 
                 } else {
                     if (family.getPhenotypes().size() > 1) {
-                        throw VariantQueryException.missingParam(FAMILY_DISEASE,
+                        throw VariantQueryException.missingParam(FAMILY_PHENOTYPE,
                                 "More than one phenotype found for the family \"" + familyId + "\". "
                                         + "Available phenotypes: " + family.getPhenotypes()
                                         .stream()
@@ -386,10 +390,10 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 query.put(GENOTYPE.key(), sb.toString());
 
             } else {
-                if (isValidParam(query, FAMILY_DISEASE)) {
-                    throw VariantQueryException.malformedParam(FAMILY_DISEASE, query.getString(FAMILY_DISEASE.key()),
+                if (isValidParam(query, FAMILY_PHENOTYPE)) {
+                    throw VariantQueryException.malformedParam(FAMILY_PHENOTYPE, query.getString(FAMILY_PHENOTYPE.key()),
                             "Require parameter \"" + FAMILY.key() + "\" and \"" + MODE_OF_INHERITANCE.key() + "\" to use \""
-                                    + FAMILY_DISEASE.key() + "\".");
+                                    + FAMILY_PHENOTYPE.key() + "\".");
                 }
 
                 List<String> sampleIds = new ArrayList<>();
@@ -411,10 +415,29 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         } else if (isValidParam(query, MODE_OF_INHERITANCE)) {
             throw VariantQueryException.malformedParam(MODE_OF_INHERITANCE, query.getString(MODE_OF_INHERITANCE.key()),
                     "Require parameter \"" + FAMILY.key() + "\" to use \"" + MODE_OF_INHERITANCE.toString() + "\".");
-        } else if (isValidParam(query, FAMILY_DISEASE)) {
-            throw VariantQueryException.malformedParam(FAMILY_DISEASE, query.getString(FAMILY_DISEASE.key()),
+        } else if (isValidParam(query, FAMILY_PHENOTYPE)) {
+            throw VariantQueryException.malformedParam(FAMILY_PHENOTYPE, query.getString(FAMILY_PHENOTYPE.key()),
                     "Require parameter \"" + FAMILY.key() + "\" and \"" + MODE_OF_INHERITANCE.key() + "\" to use \""
-                            + FAMILY_DISEASE.toString() + "\".");
+                            + FAMILY_PHENOTYPE.toString() + "\".");
+        }
+
+        if (isValidParam(query, PANEL)) {
+            String panelId = query.getString(PANEL.key());
+            if (StringUtils.isEmpty(defaultStudyStr)) {
+                throw VariantQueryException.missingStudyFor("panel", panelId, null);
+            }
+            DiseasePanel panel = catalogManager.getDiseasePanelManager().get(defaultStudyStr, panelId, null, sessionId).first();
+
+            List<String> geneNames = new ArrayList<>(panel.getGenes().size());
+            for (DiseasePanel.GenePanel genePanel : panel.getGenes()) {
+                geneNames.add(genePanel.getName());
+            }
+
+            if (isValidParam(query, GENE)) {
+                geneNames.addAll(query.getAsStringList(GENE.key()));
+            }
+            query.put(GENE.key(), geneNames);
+
         }
 
         return query;

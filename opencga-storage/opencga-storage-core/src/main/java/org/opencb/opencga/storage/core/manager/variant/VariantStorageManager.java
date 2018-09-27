@@ -611,12 +611,15 @@ public class VariantStorageManager extends StorageManager {
         if (queryOptions.containsKey(VariantCatalogQueryUtils.FAMILY.key())) {
             query.put(VariantCatalogQueryUtils.FAMILY.key(), queryOptions.get(VariantCatalogQueryUtils.FAMILY.key()));
         }
-        if (queryOptions.containsKey(VariantCatalogQueryUtils.FAMILY_DISEASE.key())) {
-            query.put(VariantCatalogQueryUtils.FAMILY_DISEASE.key(), queryOptions.get(VariantCatalogQueryUtils.FAMILY_DISEASE.key()));
+        if (queryOptions.containsKey(VariantCatalogQueryUtils.FAMILY_PHENOTYPE.key())) {
+            query.put(VariantCatalogQueryUtils.FAMILY_PHENOTYPE.key(), queryOptions.get(VariantCatalogQueryUtils.FAMILY_PHENOTYPE.key()));
         }
         if (queryOptions.containsKey(VariantCatalogQueryUtils.MODE_OF_INHERITANCE.key())) {
             query.put(VariantCatalogQueryUtils.MODE_OF_INHERITANCE.key(),
                     queryOptions.get(VariantCatalogQueryUtils.MODE_OF_INHERITANCE.key()));
+        }
+        if (queryOptions.containsKey(VariantCatalogQueryUtils.PANEL.key())) {
+            query.put(VariantCatalogQueryUtils.PANEL.key(), queryOptions.get(VariantCatalogQueryUtils.PANEL.key()));
         }
 
         return query;

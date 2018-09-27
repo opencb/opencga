@@ -19,24 +19,6 @@ opencgaLogin(opencga, userid = NULL, passwd = NULL, interactive = FALSE,
 
 \item{ocga}{an object of type OpencgaR generated using initOpencgaR}
 }
-\value{
-an Opencga class object
-}
 \description{
 A function to login Opencga web services
-}
-\examples{
-\dontrun{
-con <- initOpencgaR(host = "http://localhost:8080/opencga/", version = "v1", user = "user")
-con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
-
-# Configuration in list format
-conf <- list(version="v1", rest=list(host="http://localhost:8080/opencga/"))
-con <- initOpencgaR(opencgaConfig=conf)
-con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
-
-# Configuration in file format ("YAML" or "JSON")
-conf <- "/path/to/conf/client-configuration.yml"
-con <- initOpencgaR(opencgaConfig=conf)
-con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
 }
