@@ -105,7 +105,10 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study alias") @QueryParam("alias") String alias,
             @ApiParam(value = "Study full qualified name") @QueryParam("fqn") String fqn,
             @ApiParam(value = "Type of study: CASE_CONTROL, CASE_SET...") @QueryParam("type") String type,
-            @ApiParam(value = "Creation date") @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+                @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+                @QueryParam("modificationDate") String modificationDate,
             @ApiParam(value = "Status") @QueryParam("status") String status,
             @ApiParam(value = "Attributes") @QueryParam("attributes") String attributes,
             @ApiParam(value = "Numerical attributes") @QueryParam("nattributes") String nattributes,

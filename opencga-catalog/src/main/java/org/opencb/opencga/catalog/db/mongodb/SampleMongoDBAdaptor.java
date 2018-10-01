@@ -337,7 +337,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             // Update modificationDate param
             String time = TimeUtils.getTime();
             Date date = TimeUtils.toDate(time);
-            sampleParameters.put(MODIFICATION_DATE, time);
+            sampleParameters.put(QueryParams.MODIFICATION_DATE.key(), time);
             sampleParameters.put(PRIVATE_MODIFICATION_DATE, date);
         }
 
@@ -948,6 +948,9 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                         break;
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        break;
+                    case MODIFICATION_DATE:
+                        addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case STATUS_NAME:
                         // Convert the status to a positive status

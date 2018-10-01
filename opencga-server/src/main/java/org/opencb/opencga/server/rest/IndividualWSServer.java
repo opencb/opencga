@@ -164,7 +164,10 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     IndividualProperty.LifeStatus lifeStatus,
             @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")
                     IndividualProperty.AffectationStatus affectationStatus,
-            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+                @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+                @QueryParam("modificationDate") String modificationDate,
             @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: annotationSet[=|==|!|!=]{annotationSetName}")
             @QueryParam("annotationsetName") String annotationsetName,
             @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: variableSet[=|==|!|!=]{variableSetId}")

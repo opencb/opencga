@@ -39,6 +39,7 @@ public interface ProjectDBAdaptor extends DBAdaptor<Project> {
         UUID("uuid", TEXT, ""),
         NAME("name", TEXT_ARRAY, ""),
         CREATION_DATE("creationDate", DATE, ""),
+        MODIFICATION_DATE("modificationDate", DATE, ""),
         DESCRIPTION("description", TEXT_ARRAY, ""),
         ORGANIZATION("organization", TEXT_ARRAY, ""),
         ORGANISM("organism", TEXT_ARRAY, ""),

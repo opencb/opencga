@@ -1218,7 +1218,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             // Update modificationDate param
             String time = TimeUtils.getTime();
             Date date = TimeUtils.toDate(time);
-            studyParameters.put(MODIFICATION_DATE, time);
+            studyParameters.put(QueryParams.MODIFICATION_DATE.key(), time);
             studyParameters.put(PRIVATE_MODIFICATION_DATE, date);
 
             Document updates = new Document("$set", studyParameters);
@@ -1673,6 +1673,9 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                         break;
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
+                    case MODIFICATION_DATE:
+                        addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case ID:
                     case ALIAS:

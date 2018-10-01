@@ -117,6 +117,10 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("members") String members,
             @ApiParam(value = "Comma separated list of sample ids or names") @QueryParam("samples") String samples,
             @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
+            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+                @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+                @QueryParam("modificationDate") String modificationDate,
             @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: annotationSet[=|==|!|!=]{annotationSetName}")
             @QueryParam("annotationsetName") String annotationsetName,
             @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: variableSet[=|==|!|!=]{variableSetId}")

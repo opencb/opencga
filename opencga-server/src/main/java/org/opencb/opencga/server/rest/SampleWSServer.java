@@ -169,31 +169,35 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = Constants.FLATTENED_ANNOTATIONS, value = "Flatten the annotations?", defaultValue = "false",
                     dataType = "boolean", paramType = "query")
     })
-    public Response search(@ApiParam(value = "DEPRECATED: use study instead", hidden = true) @QueryParam("studyId") String studyIdStr,
-                           @ApiParam(value = "Study [[user@]project:]{study1,study2|*}  where studies and project can be either the id or"
-                                   + " alias.", required = false) @QueryParam("study") String studyStr,
-                           @ApiParam(value = "DEPRECATED: use /info instead", hidden = true) @QueryParam("id") String id,
-                           @ApiParam(value = "DEPRECATED: name") @QueryParam("name") String name,
-                           @ApiParam(value = "source") @QueryParam("source") String source,
-                           @ApiParam(value = "type") @QueryParam("type") String type,
-                           @ApiParam(value = "somatic") @QueryParam("somatic") Boolean somatic,
-                           @ApiParam(value = "Individual id or name", hidden = true) @QueryParam("individual.id") String individualId,
-                           @ApiParam(value = "Individual id or name") @QueryParam("individual") String individual,
-                           @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
-                           @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
-                           @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: annotationSet[=|==|!|!=]{annotationSetName}")
-                           @QueryParam("annotationsetName") String annotationsetName,
-                           @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: variableSet[=|==|!|!=]{variableSetId}")
-                           @QueryParam("variableSet") String variableSet,
-                           @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
-                           @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)", required = false) @DefaultValue("") @QueryParam("attributes") String attributes,
-                           @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)", required = false) @DefaultValue("")
-                           @QueryParam("nattributes") String nattributes,
-                           @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,
-                           @ApiParam(value = "Release value (Current release from the moment the samples were first created)")
-                           @QueryParam("release") String release,
-                           @ApiParam(value = "Snapshot value (Latest version of samples in the specified release)") @QueryParam("snapshot")
-                                   int snapshot) {
+    public Response search(
+            @ApiParam(value = "DEPRECATED: use study instead", hidden = true) @QueryParam("studyId") String studyIdStr,
+            @ApiParam(value = "Study [[user@]project:]{study1,study2|*}  where studies and project can be either the id or"
+                    + " alias.", required = false) @QueryParam("study") String studyStr,
+            @ApiParam(value = "DEPRECATED: use /info instead", hidden = true) @QueryParam("id") String id,
+            @ApiParam(value = "DEPRECATED: name") @QueryParam("name") String name,
+            @ApiParam(value = "source") @QueryParam("source") String source,
+            @ApiParam(value = "type") @QueryParam("type") String type,
+            @ApiParam(value = "somatic") @QueryParam("somatic") Boolean somatic,
+            @ApiParam(value = "Individual id or name", hidden = true) @QueryParam("individual.id") String individualId,
+            @ApiParam(value = "Individual id or name") @QueryParam("individual") String individual,
+            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+                @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+                @QueryParam("modificationDate") String modificationDate,
+            @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
+            @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: annotationSet[=|==|!|!=]{annotationSetName}")
+            @QueryParam("annotationsetName") String annotationsetName,
+            @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: variableSet[=|==|!|!=]{variableSetId}")
+            @QueryParam("variableSet") String variableSet,
+            @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
+            @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)", required = false) @DefaultValue("") @QueryParam("attributes") String attributes,
+            @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)", required = false) @DefaultValue("")
+            @QueryParam("nattributes") String nattributes,
+            @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,
+            @ApiParam(value = "Release value (Current release from the moment the samples were first created)")
+            @QueryParam("release") String release,
+            @ApiParam(value = "Snapshot value (Latest version of samples in the specified release)") @QueryParam("snapshot")
+                    int snapshot) {
         try {
             query.remove("study");
 
@@ -684,7 +688,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Fetch catalog sample stats", position = 15, response = QueryResponse.class)
     public Response getStats(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                @QueryParam("study") String studyStr,
+            @QueryParam("study") String studyStr,
             @ApiParam(value = "Source") @QueryParam("source") String source,
             @ApiParam(value = "Creation year") @QueryParam("creationYear") String creationYear,
             @ApiParam(value = "Creation month (JANUARY, FEBRUARY...)") @QueryParam("creationMonth") String creationMonth,
