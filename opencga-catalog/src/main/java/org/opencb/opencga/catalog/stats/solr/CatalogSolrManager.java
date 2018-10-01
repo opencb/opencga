@@ -197,7 +197,8 @@ public class CatalogSolrManager {
             CatalogSolrQueryParser catalogSolrQueryParser = new CatalogSolrQueryParser();
             SolrQuery solrQuery = catalogSolrQueryParser.parse(query, queryOptions, null);
             QueryResponse response = solrManager.getSolrClient().query(DATABASE_PREFIX + collection, solrQuery);
-            FacetedQueryResultItem item = SolrFacetUtil.toFacetedQueryResultItem(queryOptions, response);
+            FacetedQueryResultItem item = SolrFacetUtil.toFacetedQueryResultItem(queryOptions,
+                    catalogSolrQueryParser.getSolrToVisibleField(), response);
             return new FacetedQueryResult("", (int) stopWatch.getTime(), 1, 1, "Faceted data from Solr", "", item);
         } catch (SolrServerException e) {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
@@ -221,7 +222,10 @@ public class CatalogSolrManager {
             throws IOException, SolrException, CatalogException {
         StopWatch stopWatch = StopWatch.createStarted();
 
-        query.put(CatalogSolrQueryParser.QueryParams.STUDY.key(), study.getFqn());
+        Query queryCopy = query == null ? new Query() : new Query(query);
+        QueryOptions queryOptionsCopy = queryOptions == null ? new QueryOptions() : new QueryOptions(queryOptions);
+
+        queryCopy.put(CatalogSolrQueryParser.QueryParams.STUDY.key(), study.getFqn());
 
         if (!catalogManager.getAuthorizationManager().checkIsOwnerOrAdmin(study.getUid(), userId)) {
             // We need to add an acl query to perform the facet query
@@ -233,7 +237,7 @@ public class CatalogSolrManager {
             });
 
             final String suffixPermission;
-            if (query.containsKey(CatalogSolrQueryParser.QueryParams.ANNOTATIONS.key())) {
+            if (queryCopy.containsKey(CatalogSolrQueryParser.QueryParams.ANNOTATIONS.key())) {
                 suffixPermission = "__VIEW_ANNOTATIONS";
             } else {
                 suffixPermission = "__VIEW";
@@ -242,15 +246,16 @@ public class CatalogSolrManager {
             aclList.add(userId + suffixPermission);
             groups.forEach(group -> aclList.add("(*:* -" + userId + "__NONE AND " + group + suffixPermission + ")"));
 
-            query.put(CatalogSolrQueryParser.QueryParams.ACL.key(), "(" + StringUtils.join(aclList, " OR ") + ")");
+            queryCopy.put(CatalogSolrQueryParser.QueryParams.ACL.key(), "(" + StringUtils.join(aclList, " OR ") + ")");
         }
 
         try {
             CatalogSolrQueryParser catalogSolrQueryParser = new CatalogSolrQueryParser();
-            SolrQuery solrQuery = catalogSolrQueryParser.parse(query, queryOptions, study.getVariableSets());
+            SolrQuery solrQuery = catalogSolrQueryParser.parse(queryCopy, queryOptionsCopy, study.getVariableSets());
             logger.debug("Solr query: {}", solrQuery.toString());
             QueryResponse response = solrManager.getSolrClient().query(DATABASE_PREFIX + collection, solrQuery);
-            FacetedQueryResultItem item = SolrFacetUtil.toFacetedQueryResultItem(queryOptions, response);
+            FacetedQueryResultItem item = SolrFacetUtil.toFacetedQueryResultItem(queryOptionsCopy,
+                    catalogSolrQueryParser.getSolrToVisibleField(), response);
             return new FacetedQueryResult("", (int) stopWatch.getTime(), 1, 1, "Faceted data from Solr", "", item);
         } catch (SolrServerException e) {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);

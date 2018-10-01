@@ -1136,7 +1136,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         ParamUtils.defaultObject(query, Query::new);
         ParamUtils.defaultObject(queryOptions, QueryOptions::new);
 
-        if (defaultStats) {
+        if (defaultStats || StringUtils.isEmpty(queryOptions.getString(QueryOptions.FACET))) {
             String facet = queryOptions.getString(QueryOptions.FACET);
             queryOptions.put(QueryOptions.FACET, StringUtils.isNotEmpty(facet) ? defaultFacet + ";" + facet : defaultFacet);
         }

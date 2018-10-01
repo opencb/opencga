@@ -285,6 +285,7 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
         ALIAS("alias", TEXT, ""),
         FQN("fqn", TEXT, ""),
         CREATION_DATE("creationDate", DATE, ""),
+        MODIFICATION_DATE("modificationDate", DATE, ""),
         DESCRIPTION("description", TEXT, ""),
         CIPHER("cipher", TEXT, ""),
         STATUS_NAME("status.name", TEXT, ""),

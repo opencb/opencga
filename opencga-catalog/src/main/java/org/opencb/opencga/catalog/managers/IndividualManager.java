@@ -928,7 +928,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         ParamUtils.defaultObject(query, Query::new);
         ParamUtils.defaultObject(queryOptions, QueryOptions::new);
 
-        if (defaultStats) {
+        if (defaultStats || StringUtils.isEmpty(queryOptions.getString(QueryOptions.FACET))) {
             String facet = queryOptions.getString(QueryOptions.FACET);
             String facetRange = queryOptions.getString(QueryOptions.FACET_RANGE);
             queryOptions.put(QueryOptions.FACET, StringUtils.isNotEmpty(facet) ? defaultFacet + ";" + facet : defaultFacet);

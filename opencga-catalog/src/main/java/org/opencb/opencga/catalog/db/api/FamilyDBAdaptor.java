@@ -48,6 +48,7 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
         MEMBER_VERSION("members.version", INTEGER, ""),
         MEMBERS_PARENTAL_CONSANGUINITY("members.parentalConsanguinity", BOOLEAN, ""),
         CREATION_DATE("creationDate", DATE, ""),
+        MODIFICATION_DATE("modificationDate", DATE, ""),
         DESCRIPTION("description", TEXT, ""),
         EXPECTED_SIZE("expectedSize", INTEGER, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
