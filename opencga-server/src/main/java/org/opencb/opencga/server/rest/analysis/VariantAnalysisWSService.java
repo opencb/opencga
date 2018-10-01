@@ -504,28 +504,22 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     @Path("/annotation/query")
     @ApiOperation(value = "Query variant annotations from any saved versions", position = 15, response = VariantAnnotation[].class)
     @ApiImplicitParams({
+            @ApiImplicitParam(name = "id", value = ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "region", value = REGION_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.LIMIT, value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.SKIP, value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
-//            @ApiImplicitParam(name = QueryOptions.COUNT, value = "Total number of results", dataType = "boolean", paramType = "query")
-
-            @ApiImplicitParam(name = "region", value = REGION_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "id", value = ID_DESCR, dataType = "string", paramType = "query"),
-
+            @ApiImplicitParam(name = QueryOptions.SKIP, value = "Number of results to skip in the queries", dataType = "integer", paramType = "query")
     })
     public Response getAnnotation(@ApiParam(value = "Annotation identifier") @DefaultValue(VariantAnnotationManager.CURRENT) @QueryParam("annotationId") String annotationId) {
-        logger.info("limit {} , skip {}", count, limit, skip);
+        logger.debug("limit {} , skip {}", limit, skip);
         try {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             Query query = getVariantQuery(queryOptions);
-
-            logger.info("query " + query.toJson());
-            logger.info("queryOptions " + queryOptions.toJson());
+            logger.debug("query = {}, queryOptions = {}" + query.toJson(), queryOptions.toJson());
 
             QueryResult<VariantAnnotation> result = variantManager.getAnnotation(annotationId, query, queryOptions, sessionId);
-
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -639,27 +633,26 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         }
     }
 
-    @GET
-    @Path("/ibs")
-    @ApiOperation(value = "[PENDING]", position = 15, response = Job.class)
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "limit", value = "[TO BE IMPLEMENTED] Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
-    })
-    public Response ibs() {
-        try {
-            return createOkResponse("[PENDING]");
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//    @GET
+//    @Path("/ibs")
+//    @ApiOperation(value = "[PENDING]", position = 15, response = Job.class)
+//    @ApiImplicitParams({
+//            @ApiImplicitParam(name = "limit", value = "[TO BE IMPLEMENTED] Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
+//    })
+//    public Response ibs() {
+//        try {
+//            return createOkResponse("[PENDING]");
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 
     @POST
     @Path("/validate")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Validate a VCF file", response = QueryResponse.class)
     public Response validate(
-            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
-                    String studyStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project are the id") @QueryParam("study") String studyStr,
             @ApiParam(value = "VCF file id, name or path", required = true) @QueryParam("file") String file) {
         try {
             Map<String, String> params = new HashMap<>();
@@ -786,14 +779,6 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
-
-//            // DEPRECATED PARAMS
-//            @ApiImplicitParam(name = "studies", value = DEPRECATED + STUDY_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "files", value = DEPRECATED + FILE_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "samples", value = DEPRECATED + SAMPLE_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "returnedStudies", value = DEPRECATED + INCLUDE_STUDY_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "returnedSamples", value = DEPRECATED + INCLUDE_SAMPLE_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "returnedFiles", value = DEPRECATED + INCLUDE_FILE_DESCR, dataType = "string", paramType = "query"),
     })
     public Response metadata() {
         try {
@@ -805,7 +790,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         }
     }
 
-    public static Query getVariantQuery(QueryOptions queryOptions) {
+    private Query getVariantQuery(QueryOptions queryOptions) {
         Query query = VariantStorageManager.getVariantQuery(queryOptions);
         queryOptions.forEach((key, value) -> {
             org.opencb.commons.datastore.core.QueryParam newKey = DEPRECATED_VARIANT_QUERY_PARAM.get(key);
@@ -828,6 +813,4 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         return query;
     }
 }
-
-
 
