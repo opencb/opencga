@@ -730,14 +730,28 @@ public class StudyWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Fetch catalog study stats", position = 15, response = QueryResponse.class)
     public Response getStats(
             @ApiParam(value = "Comma separated list of studies [[user@]project:]study up to a maximum of 100", required = true)
-                @PathParam("studies") String studies) {
+                @PathParam("studies") String studies,
+            @ApiParam(value = "Calculate default stats", defaultValue = "true") @QueryParam("default") Boolean defaultStats,
+            @ApiParam(value = "List of file fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+                    + "studies>>biotype;type") @QueryParam("fileFields") String fileFields,
+            @ApiParam(value = "List of individual fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+                    + "studies>>biotype;type") @QueryParam("individualFields") String individualFields,
+            @ApiParam(value = "List of family fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+                    + "studies>>biotype;type") @QueryParam("familyFields") String familyFields,
+            @ApiParam(value = "List of sample fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+                    + "studies>>biotype;type") @QueryParam("sampleFields") String sampleFields,
+            @ApiParam(value = "List of cohort fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+                    + "studies>>biotype;type") @QueryParam("cohortFields") String cohortFields) {
         try {
+            if (defaultStats == null) {
+                defaultStats = true;
+            }
             List<String> idList = getIdList(studies);
             Map<String, Object> result = new HashMap<>();
             for (String study : idList) {
-                result.put(study, catalogManager.getStudyManager().facet(study, sessionId));
+                result.put(study, catalogManager.getStudyManager().facet(study, fileFields, sampleFields, individualFields, cohortFields,
+                        familyFields, defaultStats, sessionId));
             }
-
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
