@@ -427,7 +427,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             }
             end = System.currentTimeMillis();
         } else if ("proto".equals(format)) {
-            Pair<Long, Long> times = processProto(input, fileName, output, metadata, outputVariantsFile, outputMetaFile,
+            Pair<Long, Long> times = transformProto(input, fileName, output, metadata, outputVariantsFile, outputMetaFile,
                     includeSrc, parser, generateReferenceBlocks, batchSize, extension, compression, malformedHandler, failOnError);
             start = times.getKey();
             end = times.getValue();
@@ -456,7 +456,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         return factory;
     }
 
-    protected Pair<Long, Long> processProto(
+    protected Pair<Long, Long> transformProto(
             Path input, String fileName, Path output, VariantFileMetadata metadata, Path outputVariantsFile,
             Path outputMetaFile, boolean includeSrc, String parser, boolean generateReferenceBlocks,
             int batchSize, String extension, String compression, BiConsumer<String, RuntimeException> malformatedHandler,

@@ -19,7 +19,6 @@ package org.opencb.opencga.storage.hadoop.variant;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.conf.Configuration;
@@ -129,7 +128,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
             case "proto":
                 break;
             default:
-                throw new NotImplementedException(String.format("Output format %s not supported for Hadoop!", transVal));
+                throw new IllegalArgumentException("Output format " + transVal + " not supported for Hadoop!");
         }
         // non gVCF files are supported. Don't force all files to be gVCF
 //        if (!options.containsKey(VariantStorageEngine.Options.GVCF.key())) {
@@ -143,11 +142,11 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
     }
 
     @Override
-    protected Pair<Long, Long> processProto(Path input, String fileName, Path output,
-                                            VariantFileMetadata fileMetadata, Path outputVariantsFile,
-                                            Path outputMetaFile, boolean includeSrc, String parser, boolean generateReferenceBlocks,
-                                            int batchSize, String extension, String compression,
-                                            BiConsumer<String, RuntimeException> malformatedHandler, boolean failOnError)
+    protected Pair<Long, Long> transformProto(Path input, String fileName, Path output,
+                                              VariantFileMetadata fileMetadata, Path outputVariantsFile,
+                                              Path outputMetaFile, boolean includeSrc, String parser, boolean generateReferenceBlocks,
+                                              int batchSize, String extension, String compression,
+                                              BiConsumer<String, RuntimeException> malformatedHandler, boolean failOnError)
             throws StorageEngineException {
 
         //Writer
