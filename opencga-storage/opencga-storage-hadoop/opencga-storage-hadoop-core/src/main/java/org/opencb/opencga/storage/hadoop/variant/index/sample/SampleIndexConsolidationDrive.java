@@ -61,14 +61,12 @@ public class SampleIndexConsolidationDrive extends AbstractVariantsTableDriver {
     }
 
     @Override
-    protected Class<SampleIndexConsolidateMapper> getMapperClass() {
-        return SampleIndexConsolidateMapper.class;
+    protected Class<SampleIndexConsolidationMapper> getMapperClass() {
+        return SampleIndexConsolidationMapper.class;
     }
 
     @Override
     protected Job setupJob(Job job, String archiveTable, String variantTable) throws IOException {
-
-
         List<Scan> scans = new ArrayList<>();
 
         int caching = job.getConfiguration().getInt(HadoopVariantStorageEngine.MAPREDUCE_HBASE_SCAN_CACHING, 100);
@@ -127,7 +125,7 @@ public class SampleIndexConsolidationDrive extends AbstractVariantsTableDriver {
         return "consolidate_sample_index";
     }
 
-    public static class SampleIndexConsolidateMapper extends TableMapper<ImmutableBytesWritable, Mutation> {
+    public static class SampleIndexConsolidationMapper extends TableMapper<ImmutableBytesWritable, Mutation> {
 
         private byte[] family;
 

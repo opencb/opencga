@@ -129,9 +129,11 @@ public class SampleIndexConverter implements Converter<Result, Collection<Varian
         for (Cell cell : result.rawCells()) {
             if (cell.getQualifierArray()[cell.getQualifierOffset()] != META_PREFIX) {
                 for (String v : Bytes.toString(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength()).split(",")) {
-                    Variant e = new Variant(v);
-                    if (region == null || region.contains(e.getChromosome(), e.getStart())) {
-                        variants.add(e);
+                    if (!v.isEmpty()) { // Skip empty variants.
+                        Variant e = new Variant(v);
+                        if (region == null || region.contains(e.getChromosome(), e.getStart())) {
+                            variants.add(e);
+                        }
                     }
                 }
             }
