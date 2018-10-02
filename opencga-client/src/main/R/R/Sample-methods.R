@@ -33,7 +33,9 @@ setMethod("sampleClient", "OpencgaR", function(OpencgaR, sample, action, params=
                                action=action, params=params, httpMethod="POST",
                                as.queryParam="individual", ...),
            update=fetchOpenCGA(object=OpencgaR, category=category, categoryId=sample, 
-                               action=action, params=params, httpMethod="POST", ...)
+                               action=action, params=params, 
+                               as.queryParam=c("incVersion", "annotationSetsAction", "include", "exclude"), 
+                               httpMethod="POST", ...)
            # annotationsets=fetchOpenCGA(object=OpencgaR, category=category, categoryId=sample, 
            #                   action=action, params=params, httpMethod="GET", ...),
            # delete=fetchOpenCGA(object=OpencgaR, category=category, categoryId=sample, 

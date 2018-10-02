@@ -69,7 +69,7 @@ fetchOpenCGA <- function(object=object, category=NULL, categoryId=NULL,
     
     # Extract limit from params
     if(is.null(params)){
-       limit <- 400000 
+       limit <- 400000
     }else{
         if(is.null(params$limit)){
             limit <- 400000
@@ -176,7 +176,7 @@ fetchOpenCGA <- function(object=object, category=NULL, categoryId=NULL,
             containerDfTmp <- list()
             countTmp <- 0
             for (i in seq(from = 1, to = length(container), by = 10)){
-                iend <- i+2
+                iend <- i+9
                 if(iend > length(container)){
                     iend <- length(container)
                 }
