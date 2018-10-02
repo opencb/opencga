@@ -23,7 +23,10 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.response.*;
+import org.apache.solr.client.solrj.response.FacetField;
+import org.apache.solr.client.solrj.response.PivotField;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.opencb.biodata.formats.variant.io.VariantReader;
@@ -32,8 +35,8 @@ import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.result.FacetedQueryResult;
-import org.opencb.commons.datastore.core.result.FacetedQueryResultItem;
+import org.opencb.commons.datastore.core.result.FacetQueryResult;
+import org.opencb.commons.datastore.core.result.FacetQueryResultItem;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.core.SolrManager;
@@ -46,7 +49,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBItera
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchModel;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
-import org.opencb.opencga.storage.core.variant.search.VariantSearchUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -370,14 +372,14 @@ public class VariantSearchManager {
      * @throws IOException   IOException
      * @throws SolrException SolrException
      */
-    public FacetedQueryResult facetedQuery(String collection, Query query, QueryOptions queryOptions)
+    public FacetQueryResult facetedQuery(String collection, Query query, QueryOptions queryOptions)
             throws IOException, SolrException {
         StopWatch stopWatch = StopWatch.createStarted();
         try {
             SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
             QueryResponse response = solrManager.getSolrClient().query(collection, solrQuery);
-            FacetedQueryResultItem item = toFacetedQueryResultItem(queryOptions, response);
-            return new FacetedQueryResult("", (int) stopWatch.getTime(), 1, 1, "Faceted data from Solr", "", item);
+            FacetQueryResultItem item = toFacetQueryResultItem(queryOptions, response);
+            return new FacetQueryResult("Faceted data from Solr", (int) stopWatch.getTime(), 1, Collections.emptyList(), null, item, "");
         } catch (SolrServerException e) {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
         }
@@ -475,17 +477,14 @@ public class VariantSearchManager {
         }
     }
 
-    private FacetedQueryResultItem.Field processSolrPivot(String name, int index, Map<String, Set<String>> includes, PivotField pivot) {
+    private FacetQueryResultItem.FacetField processSolrPivot(String name, int index, Map<String, Set<String>> includes, PivotField pivot) {
         String countName;
-        FacetedQueryResultItem.Field field = null;
+        FacetQueryResultItem.FacetField field = null;
         if (pivot.getPivot() != null && CollectionUtils.isNotEmpty(pivot.getPivot())) {
-            field = new FacetedQueryResultItem.Field();
-            field.setName(name.split(",")[index]);
-
             long total = 0;
-            List<FacetedQueryResultItem.Count> counts = new ArrayList<>();
+            List<FacetQueryResultItem.Bucket> counts = new ArrayList<>();
             for (PivotField solrPivot : pivot.getPivot()) {
-                FacetedQueryResultItem.Field nestedField = processSolrPivot(name, index + 1, includes, solrPivot);
+                FacetQueryResultItem.FacetField nestedField = processSolrPivot(name, index + 1, includes, solrPivot);
 
                 countName = solrPivot.getValue().toString();
                 // Discard Ensembl genes and transcripts
@@ -493,15 +492,16 @@ public class VariantSearchManager {
                         || (!countName.startsWith("ENSG0") && !countName.startsWith("ENST0"))) {
                     // and then check if this has to be include
                     if (toInclude(includes, field.getName(), solrPivot.getValue().toString())) {
-                        FacetedQueryResultItem.Count count = new FacetedQueryResultItem.Count(updateValueIfSoAcc(field.getName(),
-                                countName), solrPivot.getCount(), nestedField);
+                        FacetQueryResultItem.Bucket count = new FacetQueryResultItem.Bucket(
+                                updateValueIfSoAcc(field.getName(), countName), solrPivot.getCount(),
+                                Collections.singletonList(nestedField));
                         counts.add(count);
                     }
                     total += solrPivot.getCount();
                 }
             }
-            field.setTotal(total);
-            field.setCounts(counts);
+
+            field = new FacetQueryResultItem.FacetField(name.split(",")[index], total, counts);
         }
 
         return field;
@@ -558,38 +558,32 @@ public class VariantSearchManager {
         return value;
     }
 
-    private FacetedQueryResultItem toFacetedQueryResultItem(QueryOptions queryOptions, QueryResponse response) {
+    private FacetQueryResultItem toFacetQueryResultItem(QueryOptions queryOptions, QueryResponse response) {
         Map<String, Set<String>> includes = getIncludeMap(queryOptions);
         String countName;
 
         // process Solr facet fields
-        List<FacetedQueryResultItem.Field> fields = new ArrayList<>();
+        List<FacetQueryResultItem.FacetField> fields = new ArrayList<>();
         if (response.getFacetFields() != null) {
             for (FacetField solrField : response.getFacetFields()) {
-                FacetedQueryResultItem.Field field = new FacetedQueryResultItem.Field();
-                field.setName(solrField.getName());
-
                 long total = 0;
-                List<FacetedQueryResultItem.Count> counts = new ArrayList<>();
+                List<FacetQueryResultItem.Bucket> counts = new ArrayList<>();
                 for (FacetField.Count solrCount : solrField.getValues()) {
                     countName = solrCount.getName();
                     // discard Ensembl genes and trascripts
-                    if (!("genes").equals(field.getName())
+                    if (!("genes").equals(solrField.getName())
                             || (!countName.startsWith("ENSG0") && !countName.startsWith("ENST0"))) {
-                        // and then check if this has to be include
-                        if (toInclude(includes, field.getName(), solrCount.getName())) {
-                            FacetedQueryResultItem.Count count = new FacetedQueryResultItem.Count(updateValueIfSoAcc(field.getName(),
-                                    countName), solrCount.getCount(), null);
+                        // and then check if this has to be included
+                        if (toInclude(includes, solrField.getName(), solrCount.getName())) {
+                            FacetQueryResultItem.Bucket count = new FacetQueryResultItem.Bucket(
+                                    updateValueIfSoAcc(solrField.getName(), countName), solrCount.getCount(), null);
                             counts.add(count);
                         }
                         total += solrCount.getCount();
                     }
                 }
-                // initialize field
-                field.setTotal(total);
-                field.setCounts(counts);
 
-                fields.add(field);
+                fields.add(new FacetQueryResultItem.FacetField(solrField.getName(), total, counts));
             }
         }
 
@@ -598,111 +592,34 @@ public class VariantSearchManager {
             NamedList<List<PivotField>> facetPivot = response.getFacetPivot();
             for (int i = 0; i < facetPivot.size(); i++) {
                 List<PivotField> solrPivots = facetPivot.getVal(i);
-                if (solrPivots != null && CollectionUtils.isNotEmpty(solrPivots)) {
-                    // init field
-                    FacetedQueryResultItem.Field field = new FacetedQueryResultItem.Field();
-                    field.setName(facetPivot.getName(i).split(",")[0]);
+                if (CollectionUtils.isNotEmpty(solrPivots)) {
+                    String name = facetPivot.getName(i).split(",")[0];
 
                     long total = 0;
-                    List<FacetedQueryResultItem.Count> counts = new ArrayList<>();
+                    List<FacetQueryResultItem.Bucket> counts = new ArrayList<>();
                     for (PivotField solrPivot : solrPivots) {
-                        FacetedQueryResultItem.Field nestedField = processSolrPivot(facetPivot.getName(i), 1, includes, solrPivot);
+                        FacetQueryResultItem.FacetField nestedField = processSolrPivot(facetPivot.getName(i), 1, includes, solrPivot);
 
                         countName = solrPivot.getValue().toString();
                         // discard Ensembl genes and trascripts
-                        if (!("genes").equals(field.getName())
-                                || (!countName.startsWith("ENSG0") && !countName.startsWith("ENST0"))) {
+                        if (!("genes").equals(name) || (!countName.startsWith("ENSG0") && !countName.startsWith("ENST0"))) {
                             // and then check if this has to be include
-                            if (toInclude(includes, field.getName(), solrPivot.getValue().toString())) {
-                                FacetedQueryResultItem.Count count = new FacetedQueryResultItem.Count(updateValueIfSoAcc(field.getName(),
-                                        solrPivot.getValue().toString()), solrPivot.getCount(), nestedField);
+                            if (toInclude(includes, name, solrPivot.getValue().toString())) {
+                                FacetQueryResultItem.Bucket count = new FacetQueryResultItem.Bucket(
+                                        updateValueIfSoAcc(name, solrPivot.getValue().toString()), solrPivot.getCount(),
+                                        Collections.singletonList(nestedField));
                                 counts.add(count);
                             }
                             total += solrPivot.getCount();
                         }
                     }
-                    // update field
-                    field.setTotal(total);
-                    field.setCounts(counts);
 
-                    fields.add(field);
+                    fields.add(new FacetQueryResultItem.FacetField(name, total, counts));
                 }
             }
         }
 
-        // process Solr facet range
-        List<FacetedQueryResultItem.Range> ranges = new ArrayList<>();
-        if (response.getFacetRanges() != null) {
-            for (RangeFacet solrRange : response.getFacetRanges()) {
-                List<Long> counts = new ArrayList<>();
-                long total = 0;
-                for (Object objCount : solrRange.getCounts()) {
-                    long count = ((RangeFacet.Count) objCount).getCount();
-                    total += count;
-                    counts.add(count);
-                }
-                ranges.add(new FacetedQueryResultItem.Range(solrRange.getName(),
-                        (Number) solrRange.getStart(), (Number) solrRange.getEnd(),
-                        (Number) solrRange.getGap(), total, counts));
-            }
-        }
-
-        // process Solr facet intersections
-        List<FacetedQueryResultItem.Intersection> intersections = new ArrayList<>();
-        Map<String, List<List<String>>> intersectionMap = getInputIntersections(queryOptions);
-        if (intersectionMap.size() > 0) {
-            if (response.getFacetQuery() != null && response.getFacetQuery().size() > 0) {
-                for (String key : intersectionMap.keySet()) {
-                    List<List<String>> intersectionLists = intersectionMap.get(key);
-                    for (List<String> list : intersectionLists) {
-                        FacetedQueryResultItem.Intersection intersection = new FacetedQueryResultItem.Intersection();
-                        intersection.setName(key);
-                        intersection.setSize(list.size());
-                        if (list.size() == 2) {
-                            Map<String, Long> counts = new LinkedHashMap<>();
-                            String name = list.get(0);
-                            counts.put(name, (long) response.getFacetQuery().get(name));
-                            name = list.get(1);
-                            counts.put(name, (long) response.getFacetQuery().get(name));
-                            name = list.get(0) + VariantSearchUtils.FIELD_SEPARATOR + list.get(1);
-                            counts.put(name, (long) response.getFacetQuery().get(name));
-                            intersection.setCounts(counts);
-
-                            // add to the list
-                            intersections.add(intersection);
-                        } else if (list.size() == 3) {
-                            Map<String, Long> map = new LinkedHashMap<>();
-                            Map<String, Long> counts = new LinkedHashMap<>();
-                            String name = list.get(0);
-                            counts.put(name, (long) response.getFacetQuery().get(name));
-                            name = list.get(1);
-                            counts.put(name, (long) response.getFacetQuery().get(name));
-                            name = list.get(2);
-                            counts.put(name, (long) response.getFacetQuery().get(name));
-                            name = list.get(0) + VariantSearchUtils.FIELD_SEPARATOR + list.get(1);
-                            counts.put(name, (long) response.getFacetQuery().get(name));
-                            name = list.get(0) + VariantSearchUtils.FIELD_SEPARATOR + list.get(2);
-                            counts.put(name, (long) response.getFacetQuery().get(name));
-                            name = list.get(1) + VariantSearchUtils.FIELD_SEPARATOR + list.get(2);
-                            counts.put(name, (long) response.getFacetQuery().get(name));
-                            name = list.get(0) + VariantSearchUtils.FIELD_SEPARATOR + list.get(1)
-                                    + VariantSearchUtils.FIELD_SEPARATOR + list.get(2);
-                            counts.put(name, (long) response.getFacetQuery().get(name));
-                            intersection.setCounts(counts);
-
-                            // add to the list
-                            intersections.add(intersection);
-                        } else {
-                            logger.warn("Facet intersection '" + intersection + "' malformed. The expected intersection format"
-                                    + " is 'name:value1:value2[:value3]', value3 is optional");
-                        }
-                    }
-                }
-            } else {
-                logger.warn("Something wrong happened (intersection input and output mismatch).");
-            }
-        }
-        return new FacetedQueryResultItem(fields, ranges, intersections);
+        return new FacetQueryResultItem(fields);
     }
 
     private Map<String, List<List<String>>> getInputIntersections(QueryOptions queryOptions) {

@@ -27,7 +27,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.FacetedQueryResult;
+import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.ClinicalProperty;
@@ -757,7 +757,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 
             Query query = getVariantQuery(queryOptions);
 
-            FacetedQueryResult queryResult = variantManager.facet(query, queryOptions, sessionId);
+            FacetQueryResult queryResult = variantManager.facet(query, queryOptions, sessionId);
 
             return createOkResponse(queryResult);
         } catch (Exception e) {
