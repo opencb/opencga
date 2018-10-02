@@ -5,10 +5,10 @@ import httpretty
 
 
 class OpenCGAMock(object):
-    def __init__(self, enable_login=True):
+    def __init__(self, enable_login=True, server=None):
         httpretty.enable()
-        self.server = "http://mock-opencga/opencga"
-        self.base = "http://mock-opencga/opencga/webservices/rest/(.+)/"
+        self.server = server or "http://mock-opencga/opencga"
+        self.base = "{server}/opencga/webservices/rest/(.+)/".format(server=self.server)
         self.response_base = {"apiVersion": "v1", "warning": "", "error": "",
                               "queryOptions": {"metadata": True, "limit": 2000}, "response": []}
         httpretty.register_uri(httpretty.HEAD, self.server, status=302)
