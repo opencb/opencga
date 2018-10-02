@@ -17,16 +17,21 @@
 package org.opencb.opencga.storage.hadoop.variant.transform;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.solr.common.StringUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.tools.variant.converters.proto.VariantToVcfSliceConverter;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.run.ParallelTaskRunner.Task;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.ARCHIVE_FIELDS;
 
 /**
  * Created on 06/06/17.
@@ -43,13 +48,23 @@ public class VariantToVcfSliceConverterTask implements Task<ImmutablePair<Long, 
     }
 
     public VariantToVcfSliceConverterTask(ProgressLogger progressLogger) {
-        this(progressLogger, null, null);
+        this(progressLogger, null);
     }
 
-    public VariantToVcfSliceConverterTask(ProgressLogger progressLogger, Set<String> attributeFields, Set<String> formatFields) {
+    public VariantToVcfSliceConverterTask(ProgressLogger progressLogger, String fields) {
         this.progressLogger = progressLogger;
         this.converterNonRef = new VariantToVcfSliceConverter();
-        this.converterRef = new VariantToVcfSliceConverter(attributeFields, formatFields);
+
+        if (StringUtils.isEmpty(fields) || fields.equals(VariantQueryUtils.ALL)) {
+            this.converterRef = new VariantToVcfSliceConverter();
+        } else if (fields.equals(VariantQueryUtils.NONE)) {
+            this.converterRef = null;
+        } else {
+            HashSet<String> attributeFields = new HashSet<>();
+            HashSet<String> formatFields = new HashSet<>();
+            parseArchiveFields(attributeFields, formatFields, fields);
+            this.converterRef = new VariantToVcfSliceConverter(attributeFields, formatFields);
+        }
     }
 
     @Override
@@ -65,7 +80,7 @@ public class VariantToVcfSliceConverterTask implements Task<ImmutablePair<Long, 
                     nonRef.add(variant);
                 }
             }
-            if (!ref.isEmpty()) {
+            if (converterRef != null && !ref.isEmpty()) {
                 slices.add(converterRef.convert(ref, pair.getLeft().intValue()));
             }
             if (!nonRef.isEmpty()) {
@@ -109,6 +124,50 @@ public class VariantToVcfSliceConverterTask implements Task<ImmutablePair<Long, 
             }
         }
         return true;
+    }
+
+    private static void parseArchiveFields(Set<String> attributeFields, Set<String> formatFields, String fields) {
+        // Always store GT in archive table!
+        formatFields.add("GT");
+
+        Set<String> currentFieldsSet = null;
+        for (String field : fields.split(",")) {
+            if (field.contains(":")) {
+                String[] split = field.split(":");
+                if (split[0].equalsIgnoreCase("INFO") || split[0].equalsIgnoreCase("ATTRIBUTES")) {
+                    currentFieldsSet = attributeFields;
+                } else if (split[0].equalsIgnoreCase("FORMAT")) {
+                    currentFieldsSet = formatFields;
+                } else {
+                    throw new IllegalArgumentException("Malformed param '" + ARCHIVE_FIELDS + "', Unknown group " + split[0]);
+                }
+                currentFieldsSet.add(split[1]);
+            } else if (field.equalsIgnoreCase(StudyEntry.FILTER)) {
+                attributeFields.add(StudyEntry.FILTER);
+                // Unset current fields set
+                if (currentFieldsSet != attributeFields) {
+                    currentFieldsSet = null;
+                }
+            } else if (field.equalsIgnoreCase(StudyEntry.QUAL)) {
+                attributeFields.add(StudyEntry.QUAL);
+                // Unset current fields set
+                if (currentFieldsSet != attributeFields) {
+                    currentFieldsSet = null;
+                }
+            } else if (field.equals("GT")) {
+                formatFields.add("GT");
+                // Unset current fields set
+                if (currentFieldsSet != formatFields) {
+                    currentFieldsSet = null;
+                }
+            } else {
+                if (currentFieldsSet == null) {
+                    throw new IllegalArgumentException("Malformed param '" + ARCHIVE_FIELDS + "', unknown field currentFieldsSet");
+                } else {
+                    currentFieldsSet.add(field);
+                }
+            }
+        }
     }
 
 }
