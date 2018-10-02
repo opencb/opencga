@@ -55,8 +55,8 @@ public class FillGapsTask {
         this.helper = helper;
         studyConverter = new StudyEntryToHBaseConverter(this.helper.getColumnFamily(), studyConfiguration,
                 true,
-                Collections.emptySet(), // Do not skip any genotype
-                null); // Do not update release
+                null, // Do not update release
+                true); // Do not skip any genotype
         variantMerger = new VariantMerger(false).configure(studyConfiguration.getVariantHeader());
     }
 

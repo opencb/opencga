@@ -171,6 +171,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     public static final String VARIANT_TABLE_PRESPLIT_SIZE = "opencga.variant.table.presplit.size";
     // Do not create phoenix indexes. Testing purposes only
     public static final String VARIANT_TABLE_INDEXES_SKIP = "opencga.variant.table.indexes.skip";
+    public static final String VARIANT_TABLE_LOAD_REFERENCE = "opencga.variant.table.load.reference";
 
     // Archive table configuration
     public static final String ARCHIVE_TABLE_COMPRESSION = "opencga.archive.table.compression";

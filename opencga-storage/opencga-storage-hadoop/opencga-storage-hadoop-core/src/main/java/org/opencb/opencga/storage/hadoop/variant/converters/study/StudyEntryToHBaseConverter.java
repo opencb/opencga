@@ -58,11 +58,19 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
 
     public StudyEntryToHBaseConverter(byte[] columnFamily, StudyConfiguration studyConfiguration, boolean addSecondaryAlternates,
                                       Integer release) {
-        this(columnFamily, studyConfiguration, addSecondaryAlternates, new HashSet<>(Arrays.asList("0/0", "0|0")), release);
+        this(columnFamily, studyConfiguration, addSecondaryAlternates, release, false);
     }
 
-    public StudyEntryToHBaseConverter(byte[] columnFamily, StudyConfiguration studyConfiguration,
-                                      boolean addSecondaryAlternates, Set<String> defaultGenotypes, Integer release) {
+    public StudyEntryToHBaseConverter(byte[] columnFamily, StudyConfiguration studyConfiguration, boolean addSecondaryAlternates,
+                                      Integer release, boolean includeReferenceVariantsData) {
+        this(columnFamily, studyConfiguration, addSecondaryAlternates,
+                release, includeReferenceVariantsData
+                        ? Collections.emptySet()
+                        : new HashSet<>(Arrays.asList("0/0", "0|0")));
+    }
+
+    private StudyEntryToHBaseConverter(byte[] columnFamily, StudyConfiguration studyConfiguration,
+                                       boolean addSecondaryAlternates, Integer release, Set<String> defaultGenotypes) {
         super(columnFamily);
         this.studyConfiguration = studyConfiguration;
         studyColumn = VariantPhoenixHelper.getStudyColumn(studyConfiguration.getStudyId());

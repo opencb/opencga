@@ -408,12 +408,13 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
 
     private VariantHadoopDBWriter newVariantHadoopDBWriter() throws StorageEngineException {
         StudyConfiguration studyConfiguration = getStudyConfiguration();
+        boolean includeReferenceVariantsData = getOptions().getBoolean(VARIANT_TABLE_LOAD_REFERENCE, false);
         return new VariantHadoopDBWriter(
                 dbAdaptor.getGenomeHelper(),
                 dbAdaptor.getCredentials().getTable(),
                 getStudyConfigurationManager().getProjectMetadata().first(),
                 studyConfiguration,
-                dbAdaptor.getHBaseManager());
+                dbAdaptor.getHBaseManager(), includeReferenceVariantsData);
     }
 
     protected static class GroupedVariantsTask implements Task<ImmutablePair<Long, List<Variant>>, VcfSlice> {
