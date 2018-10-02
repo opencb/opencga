@@ -597,7 +597,7 @@ public class VariantSqlQueryParser {
             filtersOperation = checkOperator(value);
             filterValues = splitValue(value, filtersOperation);
             if (!filterValues.isEmpty()) {
-                if (CollectionUtils.isNotEmpty(includeFiles)) {
+                if (CollectionUtils.isEmpty(includeFiles)) {
                     throw VariantQueryException.malformedParam(FILTER, value, "Missing \"" + FILE.key() + "\" filter");
                 }
             }
@@ -610,7 +610,7 @@ public class VariantSqlQueryParser {
             qualOperation = checkOperator(value);
             qualValues = splitValue(value, qualOperation);
             if (!qualValues.isEmpty()) {
-                if (CollectionUtils.isNotEmpty(includeFiles)) {
+                if (CollectionUtils.isEmpty(includeFiles)) {
                     throw VariantQueryException.malformedParam(QUAL, value, "Missing \"" + FILE.key() + "\" filter");
                 }
             }
