@@ -72,7 +72,7 @@ public class FillMissingHBaseWriterDriver extends AbstractVariantsTableDriver {
         if (mapsLimit == 0) {
             mapsLimit = 40;
         }
-        getConf().setInt(JOB_RUNNING_MAP_LIMIT, mapsLimit);
+        job.getConfiguration().setInt(JOB_RUNNING_MAP_LIMIT, mapsLimit);
         logger.info("Set job running map limit to " + mapsLimit + ". ServersSize: " + serversSize + ", mappersFactor: " + factor);
 
         // input

@@ -487,8 +487,10 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated Format values. For existing Formats see files/formats", required = false) @DefaultValue("") @QueryParam("format") String formats,
             @ApiParam(value = "Status", required = false) @DefaultValue("") @QueryParam("status") String status,
             @ApiParam(value = "Directory under which we want to look for files or folders", required = false) @DefaultValue("") @QueryParam("directory") String directory,
-            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
-            @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss)", required = false) @DefaultValue("") @QueryParam("modificationDate") String modificationDate,
+            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+                @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+                @QueryParam("modificationDate") String modificationDate,
             @ApiParam(value = "Description", required = false) @DefaultValue("") @QueryParam("description") String description,
             @ApiParam(value = "Tags") @QueryParam("tags") String tags,
             @ApiParam(value = "Size", required = false) @DefaultValue("") @QueryParam("size") String size,

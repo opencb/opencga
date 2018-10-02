@@ -33,6 +33,8 @@ public class CatalogSolrQueryParser {
 
     public static final Pattern OPERATION_PATTERN = Pattern.compile("^(<=?|>=?|!==?|!?=?~|==?=?)([^=<>~!]+.*)$");
 
+    private Map<String, String> solrToVisibleField = new HashMap<>();
+
     enum QueryParams {
 
         // Common
@@ -196,6 +198,10 @@ public class CatalogSolrQueryParser {
 
     }
 
+    public Map<String, String> getSolrToVisibleField() {
+        return solrToVisibleField;
+    }
+
     private void replaceAnnotationFormat(QueryOptions queryOptions, String facetType, ObjectMap variableMap) {
         // variableMap format: Map of full variable path -> Map
         //                                                      type
@@ -222,6 +228,9 @@ public class CatalogSolrQueryParser {
                 String annotationReplacement = getInternalAnnotationKey(annotation, variableMap);
                 facet = facet.replace(prefix + annotation, annotationReplacement);
 
+                // We add the field we have replaced to the map
+                solrToVisibleField.put(annotationReplacement, annotation);
+
                 index = -1;
             } else {
                 // + 11 because we exclude annotation. prefix
@@ -230,6 +239,9 @@ public class CatalogSolrQueryParser {
                 // We replace the user input for the annotation key format stored in solr
                 String annotationReplacement = getInternalAnnotationKey(annotation, variableMap);
                 facet = facet.replace(prefix + annotation, annotationReplacement);
+
+                // We add the field we have replaced to the map
+                solrToVisibleField.put(annotationReplacement, annotation);
 
                 copy = copy.substring(lastIndex);
                 index = copy.indexOf(prefix);

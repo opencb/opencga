@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
 import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.*;
 import org.junit.rules.ExternalResource;
@@ -26,6 +27,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
@@ -36,9 +38,9 @@ import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
-import org.opencb.opencga.storage.core.metadata.local.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.local.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -159,6 +161,47 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
         checkLoadedFilesS1S2(studyConfiguration, dbAdaptor);
 
+    }
+
+    @Test
+    public void testTwoFilesBasicAggregateLimitArchiveRefFields() throws Exception {
+        ObjectMap params = new ObjectMap(this.notCollapseDeletions);
+        params.put(HadoopVariantStorageEngine.ARCHIVE_FIELDS, "QUAL,FORMAT:DP,INFO:DP");
+        params.put(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, true);
+        params.put(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
+        params.put(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro");
+
+        StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
+        VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
+        loadFile("s1.genome.vcf", studyConfiguration, params);
+        checkArchiveTableTimeStamp(dbAdaptor);
+
+        studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+        loadFile("s2.genome.vcf", studyConfiguration, params);
+
+        printVariants(studyConfiguration, dbAdaptor, newOutputUri());
+        checkArchiveTableTimeStamp(dbAdaptor);
+
+        getVariantStorageEngine().fillGaps(studyConfiguration.getStudyName(), Arrays.asList("s1", "s2"), new ObjectMap("local", true));
+        studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+        printVariants(studyConfiguration, dbAdaptor, newOutputUri());
+
+        checkLoadedFilesS1S2(studyConfiguration, dbAdaptor);
+
+        dbAdaptor.getHBaseManager().act(dbAdaptor.getArchiveTableName(1), table -> {
+            for (Result r : table.getScanner(new Scan())) {
+                for (Map.Entry<byte[], byte[]> entry : r.getFamilyMap(dbAdaptor.getGenomeHelper().getColumnFamily()).entrySet()) {
+                    if (Bytes.toString(entry.getKey()).endsWith(ArchiveTableHelper.REF_COLUMN_SUFIX)) {
+                        VcfSliceProtos.VcfSlice vcfSlice = VcfSliceProtos.VcfSlice.parseFrom(entry.getValue());
+                        List<String> formats = vcfSlice.getFields().getFormatsList();
+                        assertThat(formats, anyOf(
+                                equalTo(Arrays.asList("GT:DP", "GT")),
+                                equalTo(Arrays.asList("GT:DP")),
+                                equalTo(Arrays.asList("GT"))));
+                    }
+                }
+            }
+        });
     }
 
     @Test

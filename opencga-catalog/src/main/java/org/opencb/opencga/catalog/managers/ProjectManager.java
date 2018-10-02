@@ -412,6 +412,25 @@ public class ProjectManager extends AbstractManager {
                 new ObjectMap(ProjectDBAdaptor.QueryParams.ID.key(), newProjectId), null, null);
     }
 
+    public Map<String, Object> facet(String projectStr, String fileFields, String sampleFields, String individualFields,
+                                     String cohortFields, String familyFields, boolean defaultStats, String sessionId)
+            throws CatalogException, IOException {
+
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        Project project = resolveId(projectStr, userId);
+        Query query = new Query(StudyDBAdaptor.QueryParams.PROJECT_UID.key(), project.getUid());
+        QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get(query, new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(StudyDBAdaptor.QueryParams.FQN.key(), StudyDBAdaptor.QueryParams.ID.key())), sessionId);
+
+        Map<String, Object> result = new HashMap<>();
+        for (Study study : studyQueryResult.getResult()) {
+            result.put(study.getId(), catalogManager.getStudyManager().facet(study.getFqn(), fileFields, sampleFields, individualFields,
+                    cohortFields, familyFields, defaultStats, sessionId));
+        }
+
+        return result;
+    }
+
     public QueryResult<Integer> incrementRelease(String projectStr, String sessionId) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
 

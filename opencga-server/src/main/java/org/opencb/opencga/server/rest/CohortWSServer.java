@@ -201,6 +201,10 @@ public class CohortWSServer extends OpenCGAWSServer {
             @QueryParam("study") String studyStr,
             @ApiParam(value = "DEPRECATED: Name of the cohort") @QueryParam("name") String name,
             @ApiParam(value = "Cohort type") @QueryParam("type") Study.Type type,
+            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+                @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+                @QueryParam("modificationDate") String modificationDate,
             @ApiParam(value = "Status") @QueryParam("status") String status,
             @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
             @ApiParam(value = "Sample list") @QueryParam("samples") String samplesStr,

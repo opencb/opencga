@@ -41,6 +41,7 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         UUID("uuid", TEXT, ""),
         DESCRIPTION("description", TEXT, ""),
         CREATION_DATE("creationDate", DATE, ""),
+        MODIFICATION_DATE("modificationDate", DATE, ""),
         TYPE("type", TEXT, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"

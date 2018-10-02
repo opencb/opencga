@@ -404,7 +404,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             // Update modificationDate param
             String time = TimeUtils.getTime();
             Date date = TimeUtils.toDate(time);
-            familyParameters.put(MODIFICATION_DATE, time);
+            familyParameters.put(QueryParams.MODIFICATION_DATE.key(), time);
             familyParameters.put(PRIVATE_MODIFICATION_DATE, date);
         }
 
@@ -820,6 +820,9 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                         break;
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        break;
+                    case MODIFICATION_DATE:
+                        addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case STATUS_NAME:
                         // Convert the status to a positive status

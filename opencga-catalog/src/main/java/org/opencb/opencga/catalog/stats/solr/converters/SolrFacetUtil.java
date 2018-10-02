@@ -22,7 +22,8 @@ public class SolrFacetUtil {
 
     protected static Logger logger = LoggerFactory.getLogger(CatalogSolrQueryParser.class);
 
-    public static FacetedQueryResultItem toFacetedQueryResultItem(QueryOptions queryOptions, QueryResponse response) {
+    public static FacetedQueryResultItem toFacetedQueryResultItem(QueryOptions queryOptions, Map<String, String> solrToTitleField,
+                                                                  QueryResponse response) {
 
         String countName;
 
@@ -31,7 +32,7 @@ public class SolrFacetUtil {
         if (response.getFacetFields() != null) {
             for (FacetField solrField : response.getFacetFields()) {
                 FacetedQueryResultItem.Field field = new FacetedQueryResultItem.Field();
-                field.setName(solrField.getName());
+                field.setName(solrToTitleField.getOrDefault(solrField.getName(), solrField.getName()));
 
                 long total = 0;
                 List<FacetedQueryResultItem.Count> counts = new ArrayList<>();
@@ -58,12 +59,13 @@ public class SolrFacetUtil {
                 if (solrPivots != null && CollectionUtils.isNotEmpty(solrPivots)) {
                     // init field
                     FacetedQueryResultItem.Field field = new FacetedQueryResultItem.Field();
-                    field.setName(facetPivot.getName(i).split(",")[0]);
+                    String pivotKey = facetPivot.getName(i).split(",")[0];
+                    field.setName(solrToTitleField.getOrDefault(pivotKey, pivotKey));
 
                     long total = 0;
                     List<FacetedQueryResultItem.Count> counts = new ArrayList<>();
                     for (PivotField solrPivot : solrPivots) {
-                        FacetedQueryResultItem.Field nestedField = processSolrPivot(facetPivot.getName(i), 1, solrPivot);
+                        FacetedQueryResultItem.Field nestedField = processSolrPivot(facetPivot.getName(i), 1, solrPivot, solrToTitleField);
 
                         FacetedQueryResultItem.Count count = new FacetedQueryResultItem.Count(solrPivot.getValue().toString(),
                                 solrPivot.getCount(), nestedField);
@@ -154,17 +156,19 @@ public class SolrFacetUtil {
     }
 
 
-    private static FacetedQueryResultItem.Field processSolrPivot(String name, int index, PivotField pivot) {
+    private static FacetedQueryResultItem.Field processSolrPivot(String name, int index, PivotField pivot,
+                                                                 Map<String, String> solrToTitleField) {
         String countName;
         FacetedQueryResultItem.Field field = null;
         if (pivot.getPivot() != null && CollectionUtils.isNotEmpty(pivot.getPivot())) {
             field = new FacetedQueryResultItem.Field();
-            field.setName(name.split(",")[index]);
+            String pivotKey = name.split(",")[index];
+            field.setName(solrToTitleField.getOrDefault(pivotKey, pivotKey));
 
             long total = 0;
             List<FacetedQueryResultItem.Count> counts = new ArrayList<>();
             for (PivotField solrPivot : pivot.getPivot()) {
-                FacetedQueryResultItem.Field nestedField = processSolrPivot(name, index + 1, solrPivot);
+                FacetedQueryResultItem.Field nestedField = processSolrPivot(name, index + 1, solrPivot, solrToTitleField);
 
                 countName = solrPivot.getValue().toString();
 

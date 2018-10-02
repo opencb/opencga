@@ -48,6 +48,7 @@ public interface DiseasePanelDBAdaptor extends DBAdaptor<DiseasePanel> {
         SNAPSHOT("snapshot", INTEGER, ""), // Last version of sample at release = snapshot
         VERSION("version", INTEGER, ""), // Version of the sample
         CREATION_DATE("creationDate", DATE, ""),
+        MODIFICATION_DATE("modificationDate", DATE, ""),
 
         SOURCE("source", TEXT_ARRAY, ""),
 

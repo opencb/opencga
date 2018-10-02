@@ -39,10 +39,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.net.URI;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
@@ -105,7 +102,10 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study alias") @QueryParam("alias") String alias,
             @ApiParam(value = "Study full qualified name") @QueryParam("fqn") String fqn,
             @ApiParam(value = "Type of study: CASE_CONTROL, CASE_SET...") @QueryParam("type") String type,
-            @ApiParam(value = "Creation date") @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+                @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+                @QueryParam("modificationDate") String modificationDate,
             @ApiParam(value = "Status") @QueryParam("status") String status,
             @ApiParam(value = "Attributes") @QueryParam("attributes") String attributes,
             @ApiParam(value = "Numerical attributes") @QueryParam("nattributes") String nattributes,
@@ -153,8 +153,9 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "exclude", value = "Set which fields are excluded in the response, e.g.: name,alias...",
                     dataType = "string", paramType = "query")
     })
-    public Response info(@ApiParam(value = "Comma separated list of studies [[user@]project:]study where study and project can be either the id or alias up to a maximum of 100",
-            required = true) @PathParam("studies") String studies,
+    public Response info(
+            @ApiParam(value = "Comma separated list of studies [[user@]project:]study where study and project can be either the id or alias up to a maximum of 100",
+                required = true) @PathParam("studies") String studies,
                          @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
                                  + "exception whenever one of the entries looked for cannot be shown for whichever reason",
                                  defaultValue = "false") @QueryParam("silent") boolean silent) {
@@ -725,14 +726,33 @@ public class StudyWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/stats")
+    @Path("/{studies}/stats")
     @ApiOperation(value = "Fetch catalog study stats", position = 15, response = QueryResponse.class)
     public Response getStats(
-            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                @QueryParam("study") String studyStr) {
+            @ApiParam(value = "Comma separated list of studies [[user@]project:]study up to a maximum of 100", required = true)
+                @PathParam("studies") String studies,
+            @ApiParam(value = "Calculate default stats", defaultValue = "true") @QueryParam("default") Boolean defaultStats,
+            @ApiParam(value = "List of file fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+                    + "studies>>biotype;type") @QueryParam("fileFields") String fileFields,
+            @ApiParam(value = "List of individual fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+                    + "studies>>biotype;type") @QueryParam("individualFields") String individualFields,
+            @ApiParam(value = "List of family fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+                    + "studies>>biotype;type") @QueryParam("familyFields") String familyFields,
+            @ApiParam(value = "List of sample fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+                    + "studies>>biotype;type") @QueryParam("sampleFields") String sampleFields,
+            @ApiParam(value = "List of cohort fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+                    + "studies>>biotype;type") @QueryParam("cohortFields") String cohortFields) {
         try {
-            Map<String, Object> facet = catalogManager.getStudyManager().facet(studyStr, sessionId);
-            return createOkResponse(facet);
+            if (defaultStats == null) {
+                defaultStats = true;
+            }
+            List<String> idList = getIdList(studies);
+            Map<String, Object> result = new HashMap<>();
+            for (String study : idList) {
+                result.put(study, catalogManager.getStudyManager().facet(study, fileFields, sampleFields, individualFields, cohortFields,
+                        familyFields, defaultStats, sessionId));
+            }
+            return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
