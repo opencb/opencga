@@ -20,7 +20,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.commons.datastore.core.result.FacetedQueryResult;
+import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.FileTree;
@@ -102,10 +102,10 @@ public class FileClient extends CatalogClient<File, FileAclEntry> {
         return execute(FILES_URL, "groupBy", params, GET, File.class);
     }
 
-    public QueryResponse<FacetedQueryResult> stats(String study, Query query, QueryOptions queryOptions) throws IOException {
+    public QueryResponse<FacetQueryResult> stats(String study, Query query, QueryOptions queryOptions) throws IOException {
         ObjectMap params = new ObjectMap(query);
         params.putAll(queryOptions);
         params.put("study", study);
-        return execute(FILES_URL, "stats", params, GET, FacetedQueryResult.class);
+        return execute(FILES_URL, "stats", params, GET, FacetQueryResult.class);
     }
 }

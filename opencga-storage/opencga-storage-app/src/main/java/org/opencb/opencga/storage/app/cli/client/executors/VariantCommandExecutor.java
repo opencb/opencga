@@ -36,7 +36,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.FacetedQueryResult;
+import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -769,21 +769,11 @@ public class VariantCommandExecutor extends CommandExecutor {
                     // TODO: move this to the function mentioned in the previous TODO
                     queryOptions.put(QueryOptions.FACET, searchOptions.facet);
                     queryOptions.put(QueryOptions.FACET_RANGE, searchOptions.facetRange);
-                    FacetedQueryResult facetedQueryResult = variantSearchManager.facetedQuery(dbName, query, queryOptions);
-                    if (facetedQueryResult.getResult().getFields() != null
-                            && CollectionUtils.isNotEmpty(facetedQueryResult.getResult().getFields())) {
-                        System.out.println("Faceted fields (" + facetedQueryResult.getResult().getFields().size() + "):");
-                        facetedQueryResult.getResult().getFields().forEach(f -> System.out.println(f.toString()));
-                    }
-                    if (facetedQueryResult.getResult().getRanges() != null
-                            && CollectionUtils.isNotEmpty(facetedQueryResult.getResult().getRanges())) {
-                        System.out.println("Faceted ranges (" + facetedQueryResult.getResult().getRanges().size() + "):");
-                        facetedQueryResult.getResult().getRanges().forEach(f -> System.out.println(f.toString()));
-                    }
-                    if (facetedQueryResult.getResult().getIntersections() != null
-                            && CollectionUtils.isNotEmpty(facetedQueryResult.getResult().getIntersections())) {
-                        System.out.println("Faceted intersections (" + facetedQueryResult.getResult().getIntersections().size() + "):");
-                        facetedQueryResult.getResult().getIntersections().forEach(f -> System.out.println(f.toString()));
+                    FacetQueryResult facetedQueryResult = variantSearchManager.facetedQuery(dbName, query, queryOptions);
+                    if (facetedQueryResult.getResult().getFacetFields() != null
+                            && CollectionUtils.isNotEmpty(facetedQueryResult.getResult().getFacetFields())) {
+                        System.out.println("Faceted fields (" + facetedQueryResult.getResult().getFacetFields().size() + "):");
+                        facetedQueryResult.getResult().getFacetFields().forEach(f -> System.out.println(f.toString()));
                     }
                 } else {
                     queryOptions.put(QueryOptions.LIMIT, Integer.MAX_VALUE);

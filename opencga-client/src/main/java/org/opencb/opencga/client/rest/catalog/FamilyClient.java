@@ -20,7 +20,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.commons.datastore.core.result.FacetedQueryResult;
+import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.models.Family;
 import org.opencb.opencga.core.models.acls.permissions.FamilyAclEntry;
@@ -54,11 +54,11 @@ public class FamilyClient extends AnnotationClient<Family, FamilyAclEntry> {
         return execute(FAMILY_URL, "groupBy", params, GET, ObjectMap.class);
     }
 
-    public QueryResponse<FacetedQueryResult> stats(String study, Query query, QueryOptions queryOptions) throws IOException {
+    public QueryResponse<FacetQueryResult> stats(String study, Query query, QueryOptions queryOptions) throws IOException {
         ObjectMap params = new ObjectMap(query);
         params.putAll(queryOptions);
         params.put("study", study);
-        return execute(FAMILY_URL, "stats", params, GET, FacetedQueryResult.class);
+        return execute(FAMILY_URL, "stats", params, GET, FacetQueryResult.class);
     }
 
 }

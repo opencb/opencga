@@ -21,21 +21,19 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrException;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.result.FacetedQueryResult;
-import org.opencb.commons.datastore.core.result.FacetedQueryResultItem;
+import org.opencb.commons.datastore.core.result.FacetQueryResult;
+import org.opencb.commons.datastore.solr.SolrCollection;
+import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.stats.solr.converters.SolrFacetUtil;
-import org.opencb.opencga.core.SolrManager;
 import org.opencb.opencga.core.config.SearchConfiguration;
 import org.opencb.opencga.core.models.Study;
 import org.slf4j.Logger;
@@ -190,16 +188,14 @@ public class CatalogSolrManager {
      * @throws SolrException SolrException
      */
     @Deprecated
-    public FacetedQueryResult facetedQuery(String collection, Query query, QueryOptions queryOptions)
+    public FacetQueryResult facetedQuery(String collection, Query query, QueryOptions queryOptions)
             throws IOException, SolrException {
-        StopWatch stopWatch = StopWatch.createStarted();
+        CatalogSolrQueryParser catalogSolrQueryParser = new CatalogSolrQueryParser();
+        SolrQuery solrQuery = catalogSolrQueryParser.parse(query, queryOptions, null);
+
+        SolrCollection solrCollection = solrManager.getCollection(DATABASE_PREFIX + collection);
         try {
-            CatalogSolrQueryParser catalogSolrQueryParser = new CatalogSolrQueryParser();
-            SolrQuery solrQuery = catalogSolrQueryParser.parse(query, queryOptions, null);
-            QueryResponse response = solrManager.getSolrClient().query(DATABASE_PREFIX + collection, solrQuery);
-            FacetedQueryResultItem item = SolrFacetUtil.toFacetedQueryResultItem(queryOptions,
-                    catalogSolrQueryParser.getSolrToVisibleField(), response);
-            return new FacetedQueryResult("", (int) stopWatch.getTime(), 1, 1, "Faceted data from Solr", "", item);
+            return solrCollection.facet(solrQuery, catalogSolrQueryParser.getAliasMap());
         } catch (SolrServerException e) {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
         }
@@ -218,7 +214,7 @@ public class CatalogSolrManager {
      * @throws SolrException SolrException
      * @throws CatalogException CatalogException
      */
-    public FacetedQueryResult facetedQuery(Study study, String collection, Query query, QueryOptions queryOptions, String userId)
+    public FacetQueryResult facetedQuery(Study study, String collection, Query query, QueryOptions queryOptions, String userId)
             throws IOException, SolrException, CatalogException {
         StopWatch stopWatch = StopWatch.createStarted();
 
@@ -249,14 +245,12 @@ public class CatalogSolrManager {
             queryCopy.put(CatalogSolrQueryParser.QueryParams.ACL.key(), "(" + StringUtils.join(aclList, " OR ") + ")");
         }
 
+        CatalogSolrQueryParser catalogSolrQueryParser = new CatalogSolrQueryParser();
+        SolrQuery solrQuery = catalogSolrQueryParser.parse(queryCopy, queryOptionsCopy, study.getVariableSets());
+
+        SolrCollection solrCollection = solrManager.getCollection(DATABASE_PREFIX + collection);
         try {
-            CatalogSolrQueryParser catalogSolrQueryParser = new CatalogSolrQueryParser();
-            SolrQuery solrQuery = catalogSolrQueryParser.parse(queryCopy, queryOptionsCopy, study.getVariableSets());
-            logger.debug("Solr query: {}", solrQuery.toString());
-            QueryResponse response = solrManager.getSolrClient().query(DATABASE_PREFIX + collection, solrQuery);
-            FacetedQueryResultItem item = SolrFacetUtil.toFacetedQueryResultItem(queryOptionsCopy,
-                    catalogSolrQueryParser.getSolrToVisibleField(), response);
-            return new FacetedQueryResult("", (int) stopWatch.getTime(), 1, 1, "Faceted data from Solr", "", item);
+            return solrCollection.facet(solrQuery, catalogSolrQueryParser.getAliasMap());
         } catch (SolrServerException e) {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
         }

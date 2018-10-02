@@ -31,7 +31,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.FacetedQueryResult;
+import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -634,12 +634,12 @@ public class VariantStorageManager extends StorageManager {
     //   Facet methods      //
     // ---------------------//
 
-    public FacetedQueryResult facet(Query query, QueryOptions queryOptions, String sessionId)
+    public FacetQueryResult facet(Query query, QueryOptions queryOptions, String sessionId)
             throws CatalogException, StorageEngineException, IOException {
         return secure(query, queryOptions, sessionId, dbAdaptor -> {
             addDefaultLimit(queryOptions);
             logger.debug("getFacets {}, {}", query, queryOptions);
-            FacetedQueryResult result = dbAdaptor.facet(query, queryOptions);
+            FacetQueryResult result = dbAdaptor.facet(query, queryOptions);
             logger.debug("getFacets in {}ms", result.getDbTime());
             return result;
         });
