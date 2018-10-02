@@ -42,7 +42,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.FacetedQueryResult;
+import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngine;
@@ -1472,7 +1472,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @param options        Query modifiers, accepted values are: facet fields and facet ranges
      * @return               A FacetedQueryResult with the result of the query
      */
-    public FacetedQueryResult facet(Query query, QueryOptions options) {
+    public FacetQueryResult facet(Query query, QueryOptions options) {
         if (query == null) {
             query = new Query();
         }
@@ -1480,7 +1480,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             options = new QueryOptions();
         }
 
-        FacetedQueryResult facetedQueryResult;
+        FacetQueryResult facetedQueryResult;
         try {
             facetedQueryResult = getVariantSearchManager().facetedQuery(dbName, query, options);
         } catch (IOException | SolrException | StorageEngineException e) {

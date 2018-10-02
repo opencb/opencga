@@ -19,7 +19,7 @@ import org.apache.commons.lang.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.FacetedQueryResult;
+import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
@@ -117,7 +117,7 @@ public class ClinicalInterpretationManager extends StorageManager {
         return clinicalVariantEngine.interpretationQuery(query, options, "");
     }
 
-    public FacetedQueryResult facet(Query query, QueryOptions queryOptions, String token)
+    public FacetQueryResult facet(Query query, QueryOptions queryOptions, String token)
             throws IOException, ClinicalVariantException, CatalogException {
         // Check permissions
         query = checkQueryPermissions(query, token);

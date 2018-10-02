@@ -25,7 +25,7 @@ import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.biodata.models.commons.Software;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.commons.datastore.core.result.FacetedQueryResult;
+import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
@@ -1285,7 +1285,7 @@ public class FileWSServer extends OpenCGAWSServer {
             queryOptions.put(QueryOptions.FACET, facet);
             queryOptions.put(QueryOptions.FACET_RANGE, facetRange);
 
-            FacetedQueryResult queryResult = catalogManager.getFileManager().facet(studyStr, query, queryOptions, defaultStats, sessionId);
+            FacetQueryResult queryResult = catalogManager.getFileManager().facet(studyStr, query, queryOptions, defaultStats, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
