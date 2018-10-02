@@ -41,7 +41,7 @@
         <java.version>1.8</java.version>
         <java-common-libs.version>3.7.1</java-common-libs.version>
         <biodata.version>1.4.2-SNAPSHOT</biodata.version>
-        <cellbase.version>4.5.4</cellbase.version>
+        <cellbase.version>4.6.1</cellbase.version>
         <hpg-bigdata.version>1.0.0-beta4</hpg-bigdata.version>
         <jackson.version>2.6.6</jackson.version>
         <jersey.version>2.23</jersey.version>
@@ -261,6 +261,11 @@
             <dependency>
                 <groupId>org.opencb.commons</groupId>
                 <artifactId>commons-datastore-mongodb</artifactId>
+                <version>${java-common-libs.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.commons</groupId>
+                <artifactId>commons-datastore-solr</artifactId>
                 <version>${java-common-libs.version}</version>
             </dependency>
             <dependency>

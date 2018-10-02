@@ -468,7 +468,7 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
             // Update modificationDate param
             String time = TimeUtils.getTime();
             Date date = TimeUtils.toDate(time);
-            panelParameters.put(MODIFICATION_DATE, time);
+            panelParameters.put(QueryParams.MODIFICATION_DATE.key(), time);
             panelParameters.put(PRIVATE_MODIFICATION_DATE, date);
         }
 
@@ -732,6 +732,9 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
                         break;
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        break;
+                    case MODIFICATION_DATE:
+                        addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case GENES:
                         addAutoOrQuery(QueryParams.GENES_ID.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);

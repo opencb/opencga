@@ -47,6 +47,10 @@
         </dependency>
         <dependency>
             <groupId>org.opencb.commons</groupId>
+            <artifactId>commons-datastore-solr</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.commons</groupId>
             <artifactId>commons-lib</artifactId>
             <exclusions>
                 <exclusion>

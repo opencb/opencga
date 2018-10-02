@@ -585,6 +585,28 @@ db.diseasePanel.createIndex({"id": 1, "studyUid": 1, "version": 1}, {"unique": t
 db.diseasePanel.createIndex({"_lastOfVersion": 1, "studyUid": 1}, {"background": true});
 db.diseasePanel.createIndex({"studyUid": 1}, {"background": true});
 
+// #912
+db.job.createIndex({"_creationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.job.createIndex({"_modificationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+
+db.file.createIndex({"_creationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.file.createIndex({"_modificationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+
+db.sample.createIndex({"_creationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.sample.createIndex({"_modificationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+
+db.individual.createIndex({"_creationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.individual.createIndex({"_modificationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+
+db.cohort.createIndex({"_creationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.cohort.createIndex({"_modificationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+
+db.family.createIndex({"_creationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.family.createIndex({"_modificationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+
+db.diseasePanel.createIndex({"_creationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.diseasePanel.createIndex({"_modificationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+
 // Ticket #745 - Add permission rules
 function addPermissionRules(doc, changes) {
     changes["_permissionRulesApplied"] = [];

@@ -24,7 +24,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.Error;
-import org.opencb.commons.datastore.core.result.FacetedQueryResult;
+import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
@@ -923,12 +923,12 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         return queryResults;
     }
 
-    public FacetedQueryResult facet(String studyStr, Query query, QueryOptions queryOptions, boolean defaultStats, String sessionId)
+    public FacetQueryResult facet(String studyStr, Query query, QueryOptions queryOptions, boolean defaultStats, String sessionId)
             throws CatalogException, IOException {
         ParamUtils.defaultObject(query, Query::new);
         ParamUtils.defaultObject(queryOptions, QueryOptions::new);
 
-        if (defaultStats) {
+        if (defaultStats || StringUtils.isEmpty(queryOptions.getString(QueryOptions.FACET))) {
             String facet = queryOptions.getString(QueryOptions.FACET);
             String facetRange = queryOptions.getString(QueryOptions.FACET_RANGE);
             queryOptions.put(QueryOptions.FACET, StringUtils.isNotEmpty(facet) ? defaultFacet + ";" + facet : defaultFacet);

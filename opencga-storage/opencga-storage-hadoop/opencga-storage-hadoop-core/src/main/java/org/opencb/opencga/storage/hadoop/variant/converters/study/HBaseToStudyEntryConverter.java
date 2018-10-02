@@ -411,7 +411,10 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         if (qual != null) {
             attributes.put(StudyEntry.QUAL, qual);
         }
-        attributes.put(StudyEntry.FILTER, (String) (fileColumn.getElement(FILE_FILTER_IDX)));
+        String filter = (String) (fileColumn.getElement(FILE_FILTER_IDX));
+        if (filter != null) {
+            attributes.put(StudyEntry.FILTER, filter);
+        }
         String alternate = (String) (fileColumn.getElement(FILE_SEC_ALTS_IDX));
         String fileName = studyConfiguration.getFileIds().inverse().get(Integer.parseInt(fileId));
 

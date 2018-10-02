@@ -135,7 +135,10 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Disease panel tags") @QueryParam("tags") String tags,
             @ApiParam(value = "Disease panel description") @QueryParam("description") String description,
             @ApiParam(value = "Disease panel author") @QueryParam("author") String author,
-            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+                @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+                @QueryParam("modificationDate") String modificationDate,
             @ApiParam(value = "Boolean indicating which disease panels are queried (installation or study specific disease panels)",
                     defaultValue = "false") @QueryParam("global") boolean global,
             @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,

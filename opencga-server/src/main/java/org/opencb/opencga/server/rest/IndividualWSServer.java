@@ -24,7 +24,7 @@ import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.biodata.models.pedigree.Multiples;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.commons.datastore.core.result.FacetedQueryResult;
+import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
@@ -164,7 +164,10 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     IndividualProperty.LifeStatus lifeStatus,
             @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")
                     IndividualProperty.AffectationStatus affectationStatus,
-            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+                @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+                @QueryParam("modificationDate") String modificationDate,
             @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: annotationSet[=|==|!|!=]{annotationSetName}")
             @QueryParam("annotationsetName") String annotationsetName,
             @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: variableSet[=|==|!|!=]{variableSetId}")
@@ -702,7 +705,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             queryOptions.put(QueryOptions.FACET, facet);
             queryOptions.put(QueryOptions.FACET_RANGE, facetRange);
 
-            FacetedQueryResult queryResult = catalogManager.getIndividualManager().facet(studyStr, query, queryOptions, defaultStats, sessionId);
+            FacetQueryResult queryResult = catalogManager.getIndividualManager().facet(studyStr, query, queryOptions, defaultStats, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

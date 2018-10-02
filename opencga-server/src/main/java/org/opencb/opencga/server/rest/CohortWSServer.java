@@ -20,7 +20,7 @@ import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.commons.datastore.core.result.FacetedQueryResult;
+import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -201,6 +201,10 @@ public class CohortWSServer extends OpenCGAWSServer {
             @QueryParam("study") String studyStr,
             @ApiParam(value = "DEPRECATED: Name of the cohort") @QueryParam("name") String name,
             @ApiParam(value = "Cohort type") @QueryParam("type") Study.Type type,
+            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+                @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+                @QueryParam("modificationDate") String modificationDate,
             @ApiParam(value = "Status") @QueryParam("status") String status,
             @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
             @ApiParam(value = "Sample list") @QueryParam("samples") String samplesStr,
@@ -645,7 +649,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             queryOptions.put(QueryOptions.FACET, facet);
             queryOptions.put(QueryOptions.FACET_RANGE, facetRange);
 
-            FacetedQueryResult queryResult = catalogManager.getCohortManager().facet(studyStr, query, queryOptions, defaultStats, sessionId);
+            FacetQueryResult queryResult = catalogManager.getCohortManager().facet(studyStr, query, queryOptions, defaultStats, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

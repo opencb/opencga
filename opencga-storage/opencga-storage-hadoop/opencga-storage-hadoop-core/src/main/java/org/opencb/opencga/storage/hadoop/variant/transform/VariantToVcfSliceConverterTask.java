@@ -26,6 +26,7 @@ import org.opencb.commons.run.ParallelTaskRunner.Task;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created on 06/06/17.
@@ -33,7 +34,8 @@ import java.util.List;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class VariantToVcfSliceConverterTask implements Task<ImmutablePair<Long, List<Variant>>, VcfSliceProtos.VcfSlice> {
-    private final VariantToVcfSliceConverter converter;
+    private final VariantToVcfSliceConverter converterNonRef;
+    private final VariantToVcfSliceConverter converterRef;
     private final ProgressLogger progressLogger;
 
     public VariantToVcfSliceConverterTask() {
@@ -41,8 +43,13 @@ public class VariantToVcfSliceConverterTask implements Task<ImmutablePair<Long, 
     }
 
     public VariantToVcfSliceConverterTask(ProgressLogger progressLogger) {
+        this(progressLogger, null, null);
+    }
+
+    public VariantToVcfSliceConverterTask(ProgressLogger progressLogger, Set<String> attributeFields, Set<String> formatFields) {
         this.progressLogger = progressLogger;
-        this.converter = new VariantToVcfSliceConverter();
+        this.converterNonRef = new VariantToVcfSliceConverter();
+        this.converterRef = new VariantToVcfSliceConverter(attributeFields, formatFields);
     }
 
     @Override
@@ -59,10 +66,10 @@ public class VariantToVcfSliceConverterTask implements Task<ImmutablePair<Long, 
                 }
             }
             if (!ref.isEmpty()) {
-                slices.add(converter.convert(ref, pair.getLeft().intValue()));
+                slices.add(converterRef.convert(ref, pair.getLeft().intValue()));
             }
             if (!nonRef.isEmpty()) {
-                slices.add(converter.convert(nonRef, pair.getLeft().intValue()));
+                slices.add(converterNonRef.convert(nonRef, pair.getLeft().intValue()));
             }
             if (progressLogger != null) {
                 progressLogger.increment(pair.getRight().size());

@@ -21,6 +21,7 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -33,6 +34,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -113,7 +115,10 @@ public class ProjectWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Project organization") @QueryParam("organization") String organization,
             @ApiParam(value = "Project description") @QueryParam("description") String description,
             @ApiParam(value = "Study id or alias") @QueryParam("study") String study,
-            @ApiParam(value = "Creation date") @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+                @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+                @QueryParam("modificationDate") String modificationDate,
             @ApiParam(value = "Status") @QueryParam("status") String status,
             @ApiParam(value = "Attributes") @QueryParam("attributes") String attributes) {
         try {
@@ -124,6 +129,39 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
             QueryResult<Project> queryResult = catalogManager.getProjectManager().get(query, queryOptions, sessionId);
             return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{projects}/stats")
+    @ApiOperation(value = "Fetch catalog project stats", position = 15, response = QueryResponse.class)
+    public Response getStats(
+            @ApiParam(value = "Comma separated list of projects [user@]project up to a maximum of 100", required = true)
+                @PathParam("projects") String projects,
+            @ApiParam(value = "Calculate default stats", defaultValue = "true") @QueryParam("default") Boolean defaultStats,
+            @ApiParam(value = "List of file fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+                    + "studies>>biotype;type") @QueryParam("fileFields") String fileFields,
+            @ApiParam(value = "List of individual fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+                    + "studies>>biotype;type") @QueryParam("individualFields") String individualFields,
+            @ApiParam(value = "List of family fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+                    + "studies>>biotype;type") @QueryParam("familyFields") String familyFields,
+            @ApiParam(value = "List of sample fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+                    + "studies>>biotype;type") @QueryParam("sampleFields") String sampleFields,
+            @ApiParam(value = "List of cohort fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+                    + "studies>>biotype;type") @QueryParam("cohortFields") String cohortFields) {
+        try {
+            if (defaultStats == null) {
+                defaultStats = true;
+            }
+            List<String> idList = getIdList(projects);
+            Map<String, Object> result = new HashMap<>();
+            for (String project : idList) {
+                result.put(project, catalogManager.getProjectManager().facet(project, fileFields, sampleFields, individualFields,
+                        cohortFields, familyFields, defaultStats, sessionId));
+            }
+            return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
