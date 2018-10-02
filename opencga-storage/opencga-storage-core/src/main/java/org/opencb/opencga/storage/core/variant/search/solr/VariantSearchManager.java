@@ -65,14 +65,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class VariantSearchManager {
 
-    public static final String CONF_SET = "OpenCGAConfSet-1.4.x";
-
-    public static final String SEARCH_ENGINE_ID = "solr";
-    public static final String USE_SEARCH_INDEX = "useSearchIndex";
-    public static final int DEFAULT_INSERT_BATCH_SIZE = 10000;
-
     private SolrManager solrManager;
-
     private SolrQueryParser solrQueryParser;
     private StorageConfiguration storageConfiguration;
     private VariantSearchToVariantConverter variantSearchToVariantConverter;
@@ -80,29 +73,10 @@ public class VariantSearchManager {
 
     private Logger logger;
 
-    public enum UseSearchIndex {
-        YES, NO, AUTO;
-
-        public static UseSearchIndex from(Map<String, Object> options) {
-            return options == null || !options.containsKey(USE_SEARCH_INDEX)
-                    ? AUTO
-                    : UseSearchIndex.valueOf(options.get(USE_SEARCH_INDEX).toString().toUpperCase());
-        }
-    }
-
-    public enum SyncStatus {
-        SYNCHRONIZED("Y"), NOT_SYNCHRONIZED("N"), UNKNOWN("?");
-        private final String c;
-
-        SyncStatus(String c) {
-            this.c = c;
-        }
-
-        public String key() {
-            return c;
-        }
-    }
-
+    public static final String CONF_SET = "OpenCGAConfSet-1.4.x";
+    public static final String SEARCH_ENGINE_ID = "solr";
+    public static final String USE_SEARCH_INDEX = "useSearchIndex";
+    public static final int DEFAULT_INSERT_BATCH_SIZE = 10000;
 
     @Deprecated
     public VariantSearchManager(String host, String collection) {
@@ -260,8 +234,6 @@ public class VariantSearchManager {
                 variantList.clear();
             }
         }
-
-
         logger.debug("Variant Search delete done: {} variants removed", count);
         return count;
     }
@@ -357,7 +329,8 @@ public class VariantSearchManager {
     }
 
     public long count(String collection, Query query) throws IOException {
-        QueryOptions options = new QueryOptions(VariantField.SUMMARY, true).append(QueryOptions.LIMIT, 0);
+        QueryOptions options = new QueryOptions(VariantField.SUMMARY, true)
+                .append(QueryOptions.LIMIT, 0);
         return nativeQuery(collection, query, options).getNumTotalResults();
     }
 
@@ -464,10 +437,9 @@ public class VariantSearchManager {
     }
 
     private void delete(String collection, List<String> variants) throws IOException, SolrException {
-        if (variants != null && CollectionUtils.isNotEmpty(variants)) {
-            UpdateResponse updateResponse;
+        if (CollectionUtils.isNotEmpty(variants)) {
             try {
-                updateResponse = solrManager.getSolrClient().deleteById(collection, variants);
+                UpdateResponse updateResponse = solrManager.getSolrClient().deleteById(collection, variants);
                 if (updateResponse.getStatus() == 0) {
                     solrManager.getSolrClient().commit(collection);
                 }
@@ -500,7 +472,6 @@ public class VariantSearchManager {
                     total += solrPivot.getCount();
                 }
             }
-
             field = new FacetQueryResultItem.FacetField(name.split(",")[index], total, counts);
         }
 
@@ -622,6 +593,7 @@ public class VariantSearchManager {
         return new FacetQueryResultItem(fields);
     }
 
+    @Deprecated
     private Map<String, List<List<String>>> getInputIntersections(QueryOptions queryOptions) {
         Map<String, List<List<String>>> inputIntersections = new HashMap<>();
         if (queryOptions.containsKey(QueryOptions.FACET)

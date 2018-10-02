@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes;
 
 import java.io.IOException;
@@ -37,10 +38,10 @@ public abstract class VariantSearchLoadListener {
                     && variant.getAnnotation().getAdditionalAttributes().get(GROUP_NAME.key()) != null) {
                 AdditionalAttribute additionalAttribute = variant.getAnnotation().getAdditionalAttributes().get(GROUP_NAME.key());
                 String sync = additionalAttribute.getAttribute().get(AdditionalAttributes.INDEX_SYNCHRONIZATION.key());
-                if (VariantSearchManager.SyncStatus.SYNCHRONIZED.key().equals(sync)) {
+                if (VariantStorageEngine.SyncStatus.SYNCHRONIZED.key().equals(sync)) {
                     // Discard variant!
                     iterator.remove();
-                } else if (VariantSearchManager.SyncStatus.UNKNOWN.key().equals(sync)) {
+                } else if (VariantStorageEngine.SyncStatus.UNKNOWN.key().equals(sync)) {
                     String indexedStudiesStr = additionalAttribute.getAttribute().get(AdditionalAttributes.INDEX_STUDIES.key());
                     if (StringUtils.isNotEmpty(indexedStudiesStr)) {
                         String[] indexedStudies = indexedStudiesStr.split(",");

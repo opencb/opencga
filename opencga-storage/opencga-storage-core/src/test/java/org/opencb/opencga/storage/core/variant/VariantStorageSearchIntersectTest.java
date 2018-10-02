@@ -38,7 +38,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager.UseSearchIndex;
 import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 
@@ -207,14 +206,14 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
 
     @Test
     public void testSkipLimit_extraFields() throws Exception {
-        skipLimit(new Query(), new QueryOptions(USE_SEARCH_INDEX, UseSearchIndex.YES), 100, false);
+        skipLimit(new Query(), new QueryOptions(USE_SEARCH_INDEX, VariantStorageEngine.UseSearchIndex.YES), 100, false);
     }
 
     @Test
     public void testSkipLimit_extraQueries() throws Exception {
         Query query = new Query(SAMPLE.key(), "NA19660")
                 .append(ANNOT_CONSERVATION.key(), "gerp>1");
-        QueryOptions options = new QueryOptions(USE_SEARCH_INDEX, UseSearchIndex.YES);
+        QueryOptions options = new QueryOptions(USE_SEARCH_INDEX, VariantStorageEngine.UseSearchIndex.YES);
         skipLimit(query, options, 250, true);
     }
 
@@ -255,7 +254,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
         Query query = new Query(SAMPLE.key(), "NA19660")
                 .append(ANNOT_CONSERVATION.key(), "gerp>0.2")
                 .append(ID.key(), variantIds);
-        QueryOptions options = new QueryOptions(USE_SEARCH_INDEX, UseSearchIndex.YES);
+        QueryOptions options = new QueryOptions(USE_SEARCH_INDEX, VariantStorageEngine.UseSearchIndex.YES);
         skipLimit(query, options, 50, true);
     }
 
@@ -304,7 +303,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
     @Test
     public void testUseSearchIndex() throws StorageEngineException {
         assertFalse(variantStorageEngine.doIntersectWithSearch(new Query(), new QueryOptions()));
-        assertTrue(variantStorageEngine.doIntersectWithSearch(new Query(), new QueryOptions(USE_SEARCH_INDEX, UseSearchIndex.YES)));
+        assertTrue(variantStorageEngine.doIntersectWithSearch(new Query(), new QueryOptions(USE_SEARCH_INDEX, VariantStorageEngine.UseSearchIndex.YES)));
         assertTrue(variantStorageEngine.doIntersectWithSearch(new Query(ANNOT_TRAIT.key(), "myTrait"), new QueryOptions()));
     }
 
@@ -313,7 +312,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
         VariantQueryException exception = VariantQueryException.unsupportedVariantQueryFilter(VariantQueryParam.ANNOT_TRAIT, variantStorageEngine.getStorageEngineId());
         thrown.expect(exception.getClass());
         thrown.expectMessage(exception.getMessage());
-        variantStorageEngine.doIntersectWithSearch(new Query(ANNOT_TRAIT.key(), "myTrait"), new QueryOptions(USE_SEARCH_INDEX, UseSearchIndex.NO));
+        variantStorageEngine.doIntersectWithSearch(new Query(ANNOT_TRAIT.key(), "myTrait"), new QueryOptions(USE_SEARCH_INDEX, VariantStorageEngine.UseSearchIndex.NO));
     }
 
     @Test
@@ -322,7 +321,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
         thrown.expect(exception.getClass());
         thrown.expectMessage(exception.getMessage());
         variantStorageEngine.getConfiguration().getSearch().setActive(false);
-        variantStorageEngine.doIntersectWithSearch(new Query(ANNOT_TRAIT.key(), "myTrait"), new QueryOptions(USE_SEARCH_INDEX, UseSearchIndex.YES));
+        variantStorageEngine.doIntersectWithSearch(new Query(ANNOT_TRAIT.key(), "myTrait"), new QueryOptions(USE_SEARCH_INDEX, VariantStorageEngine.UseSearchIndex.YES));
     }
 
     @Test

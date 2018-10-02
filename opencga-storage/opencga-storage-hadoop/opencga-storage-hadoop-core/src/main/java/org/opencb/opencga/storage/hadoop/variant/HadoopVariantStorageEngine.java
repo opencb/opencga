@@ -60,7 +60,6 @@ import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadListener;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.utils.DeleteHBaseColumnDriver;
@@ -830,7 +829,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         boolean doIntersectWithSearch = super.doIntersectWithSearch(query, options);
         if (doIntersectWithSearch) {
             if (!isValidParam(query, VariantQueryParam.ANNOT_TRAIT)
-                    && VariantSearchManager.UseSearchIndex.from(options).equals(VariantSearchManager.UseSearchIndex.AUTO)
+                    && VariantStorageEngine.UseSearchIndex.from(options).equals(VariantStorageEngine.UseSearchIndex.AUTO)
                     && doHBaseSampleIndexIntersect(query, options)) {
                 return false;
             }

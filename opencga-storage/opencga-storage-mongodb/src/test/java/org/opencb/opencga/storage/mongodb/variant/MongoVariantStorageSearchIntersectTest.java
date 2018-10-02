@@ -21,6 +21,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageSearchIntersectTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
@@ -52,7 +53,7 @@ public class MongoVariantStorageSearchIntersectTest extends VariantStorageSearch
         MongoDBVariantStorageEngine engine = getVariantStorageEngine();
 
         // SPECIAL CASE FOR MONGO
-        assertTrue(engine.doQuerySearchManager(new Query(REGION.key(), "3:44-55"), new QueryOptions(VariantField.SUMMARY, true).append(VariantSearchManager.USE_SEARCH_INDEX, VariantSearchManager.UseSearchIndex.YES)));
+        assertTrue(engine.doQuerySearchManager(new Query(REGION.key(), "3:44-55"), new QueryOptions(VariantField.SUMMARY, true).append(VariantSearchManager.USE_SEARCH_INDEX, VariantStorageEngine.UseSearchIndex.YES)));
         assertFalse(engine.doQuerySearchManager(new Query(REGION.key(), "3:44-55"), new QueryOptions(VariantField.SUMMARY, true)));
         assertFalse(engine.doQuerySearchManager(new Query(REGION.key(), "3:44-55").append(STUDY.key(), 3), new QueryOptions(VariantField.SUMMARY, true)));
         assertFalse(engine.doQuerySearchManager(new Query(REGION.key(), "3:44-55").append(STUDY.key(), 3).append(INCLUDE_STUDY.key(), 3), new QueryOptions(VariantField.SUMMARY, true)));

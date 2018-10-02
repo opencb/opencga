@@ -68,7 +68,6 @@ import org.opencb.opencga.storage.core.variant.search.VariantSearchModel;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadListener;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager.UseSearchIndex;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchSolrIterator;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
@@ -97,10 +96,12 @@ import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchM
  */
 public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdaptor> implements VariantIterable {
 
-    public static final String REMOVE_OPERATION_NAME = BatchFileOperation.Type.REMOVE.name().toLowerCase();
     private final AtomicReference<VariantSearchManager> variantSearchManager = new AtomicReference<>();
-    private Logger logger = LoggerFactory.getLogger(VariantStorageEngine.class);
     private CellBaseUtils cellBaseUtils;
+
+    public static final String REMOVE_OPERATION_NAME = BatchFileOperation.Type.REMOVE.name().toLowerCase();
+
+    private Logger logger = LoggerFactory.getLogger(VariantStorageEngine.class);
 
     public enum MergeMode {
         BASIC,
@@ -109,6 +110,29 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         public static MergeMode from(ObjectMap options) {
             String mergeModeStr = options.getString(Options.MERGE_MODE.key(), Options.MERGE_MODE.defaultValue().toString());
             return MergeMode.valueOf(mergeModeStr.toUpperCase());
+        }
+    }
+
+    public enum UseSearchIndex {
+        YES, NO, AUTO;
+
+        public static UseSearchIndex from(Map<String, Object> options) {
+            return options == null || !options.containsKey(VariantSearchManager.USE_SEARCH_INDEX)
+                    ? AUTO
+                    : UseSearchIndex.valueOf(options.get(VariantSearchManager.USE_SEARCH_INDEX).toString().toUpperCase());
+        }
+    }
+
+    public enum SyncStatus {
+        SYNCHRONIZED("Y"), NOT_SYNCHRONIZED("N"), UNKNOWN("?");
+        private final String c;
+
+        SyncStatus(String c) {
+            this.c = c;
+        }
+
+        public String key() {
+            return c;
         }
     }
 
@@ -1542,3 +1566,4 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
     }
 }
+

@@ -33,12 +33,12 @@ import org.opencb.biodata.models.variant.avro.EvidenceEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.tools.Converter;
 import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.converters.VariantTraitAssociationToEvidenceEntryConverter;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantAnnotationMixin;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
@@ -183,7 +183,7 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
         // Arrays.equals(PBoolean.TRUE_BYTES, result.getFamilyMap(columnFamily).get(VariantColumn.INDEX_NOT_SYNC.bytes()))
         boolean unknown = unknownCell != null && unknownCell.getTimestamp() > ts;
         // Arrays.equals(PBoolean.TRUE_BYTES, result.getFamilyMap(columnFamily).get(VariantColumn.INDEX_UNKNOWN.bytes()))
-        VariantSearchManager.SyncStatus syncStatus = HadoopVariantSearchIndexUtils.getSyncStatus(notSync, unknown, studies);
+        VariantStorageEngine.SyncStatus syncStatus = HadoopVariantSearchIndexUtils.getSyncStatus(notSync, unknown, studies);
 
         return post(variantAnnotation, releases, syncStatus, studies, annotationId);
     }
@@ -211,7 +211,7 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
 
         List<Integer> releases = new ArrayList<>();
         List<Integer> studies;
-        VariantSearchManager.SyncStatus syncStatus;
+        VariantStorageEngine.SyncStatus syncStatus;
         try {
             ResultSetMetaData metaData = resultSet.getMetaData();
             boolean hasIndex = false;
@@ -277,7 +277,7 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
         return Integer.valueOf(columnName.substring(VariantPhoenixHelper.RELEASE_PREFIX.length()));
     }
 
-    private VariantAnnotation post(VariantAnnotation variantAnnotation, List<Integer> releases, VariantSearchManager.SyncStatus syncStatus,
+    private VariantAnnotation post(VariantAnnotation variantAnnotation, List<Integer> releases, VariantStorageEngine.SyncStatus syncStatus,
                                    List<Integer> studies, String annotationId) {
         boolean hasRelease = releases != null && !releases.isEmpty();
         boolean hasIndex = syncStatus != null || studies != null;
