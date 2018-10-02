@@ -264,6 +264,11 @@
                 <version>${java-common-libs.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.opencb.commons</groupId>
+                <artifactId>commons-datastore-solr</artifactId>
+                <version>${java-common-libs.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.opencb.hpg-bigdata</groupId>
                 <artifactId>hpg-bigdata-core</artifactId>
                 <version>${hpg-bigdata.version}</version>
