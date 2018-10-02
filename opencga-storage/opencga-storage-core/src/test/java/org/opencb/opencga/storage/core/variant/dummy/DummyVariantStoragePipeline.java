@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 
@@ -66,8 +67,9 @@ public class DummyVariantStoragePipeline extends VariantStoragePipeline {
     public URI load(URI input) throws IOException, StorageEngineException {
         logger.info("Loading file " + input);
         List<Integer> fileIds = Collections.singletonList(getFileId());
-        if (getOptions().getBoolean(VARIANTS_LOAD_FAIL)) {
+        if (getOptions().getBoolean(VARIANTS_LOAD_FAIL) || getOptions().getString(VARIANTS_LOAD_FAIL).equals(Paths.get(input).getFileName().toString())) {
             getStudyConfigurationManager().atomicSetStatus(getStudyId(), BatchFileOperation.Status.ERROR, "load", fileIds);
+            throw new StorageEngineException("Error loading file " + input);
         } else {
             getStudyConfigurationManager().atomicSetStatus(getStudyId(), BatchFileOperation.Status.DONE, "load", fileIds);
         }
