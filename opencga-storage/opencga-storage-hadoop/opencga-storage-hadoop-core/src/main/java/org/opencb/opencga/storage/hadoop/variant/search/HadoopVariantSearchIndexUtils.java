@@ -2,7 +2,7 @@ package org.opencb.opencga.storage.hadoop.variant.search;
 
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.phoenix.schema.types.PBoolean;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 
 import java.util.List;
@@ -44,18 +44,18 @@ public class HadoopVariantSearchIndexUtils {
         return put;
     }
 
-    public static VariantSearchManager.SyncStatus getSyncStatus(boolean noSync, boolean unknown, List<Integer> studies) {
-        final VariantSearchManager.SyncStatus syncStatus;
+    public static VariantStorageEngine.SyncStatus getSyncStatus(boolean noSync, boolean unknown, List<Integer> studies) {
+        final VariantStorageEngine.SyncStatus syncStatus;
         if (noSync) {
-            syncStatus = VariantSearchManager.SyncStatus.NOT_SYNCHRONIZED;
+            syncStatus = VariantStorageEngine.SyncStatus.NOT_SYNCHRONIZED;
         } else {
             if (unknown) {
-                syncStatus = VariantSearchManager.SyncStatus.UNKNOWN;
+                syncStatus = VariantStorageEngine.SyncStatus.UNKNOWN;
             } else {
                 if (studies == null || studies.isEmpty()) {
-                    syncStatus = VariantSearchManager.SyncStatus.NOT_SYNCHRONIZED;
+                    syncStatus = VariantStorageEngine.SyncStatus.NOT_SYNCHRONIZED;
                 } else {
-                    syncStatus = VariantSearchManager.SyncStatus.SYNCHRONIZED;
+                    syncStatus = VariantStorageEngine.SyncStatus.SYNCHRONIZED;
                 }
             }
         }

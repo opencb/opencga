@@ -16,11 +16,9 @@
 
 package org.opencb.opencga.storage.hadoop.variant;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.hadoop.conf.Configuration;
 import org.opencb.biodata.formats.variant.io.VariantReader;
-import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantType;
@@ -36,7 +34,6 @@ import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.transform.DiscardDuplicatedVariantsResolver;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
@@ -271,31 +268,8 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         }
 
         // Task
-        final Set<String> attributeFields;
-        final Set<String> formatFields;
         String archiveFields = options.getString(ARCHIVE_FIELDS);
-        if (StringUtils.isNotEmpty(archiveFields)) {
-            if (archiveFields.equals(VariantQueryUtils.ALL)) {
-                attributeFields = null;
-                formatFields = null;
-            } else if (archiveFields.equals(VariantQueryUtils.NONE)) {
-                // FIXME
-                attributeFields = Collections.emptySet();
-                formatFields = Collections.emptySet();
-            } else {
-                // Fields : INFO:DP,QUAL,FILTER,FORMAT:GT,DP
-                String fields = archiveFields;
-                attributeFields = new HashSet<>();
-                formatFields = new HashSet<>();
-
-                parseArchiveFields(attributeFields, formatFields, fields);
-            }
-        } else {
-            attributeFields = null;
-            formatFields = null;
-        }
-        GroupedVariantsTask task = new GroupedVariantsTask(archiveWriter, hadoopDBWriter, sampleIndexDBLoader, null,
-                attributeFields, formatFields);
+        GroupedVariantsTask task = new GroupedVariantsTask(archiveWriter, hadoopDBWriter, sampleIndexDBLoader, null, archiveFields);
 
 
         ParallelTaskRunner<ImmutablePair<Long, List<Variant>>, VcfSlice> ptr =
@@ -312,50 +286,6 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         if (sampleIndexDBLoader != null) {
             // Update list of loaded genotypes
             updateLoadedGenotypes(sampleIndexDBLoader.getLoadedGenotypes());
-        }
-    }
-
-    private static void parseArchiveFields(Set<String> attributeFields, Set<String> formatFields, String fields) {
-        // Always store GT in archive table!
-        formatFields.add("GT");
-
-        Set<String> currentFieldsSet = null;
-        for (String field : fields.split(",")) {
-            if (field.contains(":")) {
-                String[] split = field.split(":");
-                if (split[0].equalsIgnoreCase("INFO") || split[0].equalsIgnoreCase("ATTRIBUTES")) {
-                    currentFieldsSet = attributeFields;
-                } else if (split[0].equalsIgnoreCase("FORMAT")) {
-                    currentFieldsSet = formatFields;
-                } else {
-                    throw new IllegalArgumentException("Malformed param '" + ARCHIVE_FIELDS + "', Unknown group " + split[0]);
-                }
-                currentFieldsSet.add(split[1]);
-            } else if (field.equalsIgnoreCase(StudyEntry.FILTER)) {
-                attributeFields.add(StudyEntry.FILTER);
-                // Unset current fields set
-                if (currentFieldsSet != attributeFields) {
-                    currentFieldsSet = null;
-                }
-            } else if (field.equalsIgnoreCase(StudyEntry.QUAL)) {
-                attributeFields.add(StudyEntry.QUAL);
-                // Unset current fields set
-                if (currentFieldsSet != attributeFields) {
-                    currentFieldsSet = null;
-                }
-            } else if (field.equals("GT")) {
-                formatFields.add("GT");
-                // Unset current fields set
-                if (currentFieldsSet != formatFields) {
-                    currentFieldsSet = null;
-                }
-            } else {
-                if (currentFieldsSet == null) {
-                    throw new IllegalArgumentException("Malformed param '" + ARCHIVE_FIELDS + "', unknown field currentFieldsSet");
-                } else {
-                    currentFieldsSet.add(field);
-                }
-            }
         }
     }
 
@@ -408,12 +338,13 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
 
     private VariantHadoopDBWriter newVariantHadoopDBWriter() throws StorageEngineException {
         StudyConfiguration studyConfiguration = getStudyConfiguration();
+        boolean includeReferenceVariantsData = getOptions().getBoolean(VARIANT_TABLE_LOAD_REFERENCE, false);
         return new VariantHadoopDBWriter(
                 dbAdaptor.getGenomeHelper(),
                 dbAdaptor.getCredentials().getTable(),
                 getStudyConfigurationManager().getProjectMetadata().first(),
                 studyConfiguration,
-                dbAdaptor.getHBaseManager());
+                dbAdaptor.getHBaseManager(), includeReferenceVariantsData);
     }
 
     protected static class GroupedVariantsTask implements Task<ImmutablePair<Long, List<Variant>>, VcfSlice> {
@@ -424,13 +355,12 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
 
         GroupedVariantsTask(VariantHBaseArchiveDataWriter archiveWriter, VariantHadoopDBWriter hadoopDBWriter,
                             SampleIndexDBLoader sampleIndexDBLoader, ProgressLogger progressLogger) {
-            this(archiveWriter, hadoopDBWriter, sampleIndexDBLoader, progressLogger, null, null);
+            this(archiveWriter, hadoopDBWriter, sampleIndexDBLoader, progressLogger, null);
         }
 
         GroupedVariantsTask(VariantHBaseArchiveDataWriter archiveWriter, VariantHadoopDBWriter hadoopDBWriter,
-                            SampleIndexDBLoader sampleIndexDBLoader, ProgressLogger progressLogger,
-                            Set<String> attributeFields, Set<String> formatFields) {
-            this.converterTask = new VariantToVcfSliceConverterTask(progressLogger, attributeFields, formatFields);
+                            SampleIndexDBLoader sampleIndexDBLoader, ProgressLogger progressLogger, String fields) {
+            this.converterTask = new VariantToVcfSliceConverterTask(progressLogger, fields);
             this.archiveWriter = Objects.requireNonNull(archiveWriter);
             this.hadoopDBWriter = Objects.requireNonNull(hadoopDBWriter);
             this.sampleIndexDBLoader = sampleIndexDBLoader;

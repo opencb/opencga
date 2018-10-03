@@ -71,7 +71,7 @@ setGeneric("individualClient", function(OpencgaR, individual, action,
                                         params=NULL, ...)
     standardGeneric("individualClient"))
 
-setGeneric("individualAnnotationsetClient", function(OpencgaR, individual, annotationsetName, 
+setGeneric("individualAnnotationsetClient", function(OpencgaR, individual, annotationSet, 
                                                   action, params=NULL, ...)
     standardGeneric("individualAnnotationsetClient"))
 
@@ -103,27 +103,49 @@ setGeneric("cohortAclClient", function(OpencgaR, memberIds, action, params=NULL,
     standardGeneric("cohortAclClient"))
 
 ################################################################################
-## ClinicalClient
-setGeneric("clinicalClient", function(OpencgaR, clinicalAnalysis, action, 
+## ClinicalAnalysisClient
+setGeneric("clinicalAnalysisClient", function(OpencgaR, clinicalAnalysis, action, 
                                       params=NULL, ...)
-    standardGeneric("clinicalClient"))
+    standardGeneric("clinicalAnalysisClient"))
+
+setGeneric("clinicalAnalysisInterpretationClient", function(OpencgaR, clinicalAnalysis, 
+                                                             action, params=NULL, ...)
+    standardGeneric("clinicalAnalysisInterpretationClient"))
 
 ################################################################################
-# ## VariablesetClient
-# setGeneric("variablesetClient", function(OpencgaR, variableSet, action, 
-#                                          params=NULL)
-#     standardGeneric("variablesetClient"))
-# 
-# setGeneric("variablesetFieldClient", function(OpencgaR, variableSet, action, 
-#                                               params=NULL)
-#     standardGeneric("variablesetFieldClient"))
-# 
+## DiseasePanelClient
+setGeneric("diseasePanelClient", function(OpencgaR, diseasePanel, action, 
+                                          params=NULL, ...)
+    standardGeneric("diseasePanelClient"))
+
+setGeneric("diseasePanelAclClient", function(OpencgaR, members, action, params=NULL, ...)
+    standardGeneric("diseasePanelAclClient"))
+
 ################################################################################
-## MetaClient
-setGeneric("metaClient", function(OpencgaR, action, params=NULL, ...)
-    standardGeneric("metaClient"))
+## AnalysisAlignmentClient
+setGeneric("analysisAlignmentClient", function(OpencgaR, action, params=NULL, ...) 
+    standardGeneric("analysisAlignmentClient"))
 
 ################################################################################
 ## AnalysisVariantClient
 setGeneric("analysisVariantClient", function(OpencgaR, action, params=NULL, ...) 
     standardGeneric("analysisVariantClient"))
+
+setGeneric("analysisVariantAnnotationClient", function(OpencgaR, action, params=NULL, ...) 
+    standardGeneric("analysisVariantAnnotationClient"))
+
+################################################################################
+## AnalysisClinicalInterpretationClient
+setGeneric("analysisClinicalInterpretationClient", function(OpencgaR, action, params=NULL, ...) 
+    standardGeneric("analysisClinicalInterpretationClient"))
+
+################################################################################
+## AnalysisToolClient
+setGeneric("analysisToolClient", function(OpencgaR, action, params=NULL, ...) 
+    standardGeneric("analysisToolClient"))
+
+################################################################################
+## MetaClient
+setGeneric("metaClient", function(OpencgaR, action, params=NULL, ...)
+    standardGeneric("metaClient"))
+

@@ -29,7 +29,10 @@ import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchIndex
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created on 30/05/17.
@@ -56,9 +59,15 @@ public class VariantHadoopDBWriter extends AbstractHBaseDataWriter<Variant, Put>
 
     public VariantHadoopDBWriter(GenomeHelper helper, String tableName,
                                  ProjectMetadata pm, StudyConfiguration sc, HBaseManager hBaseManager) {
+        this(helper, tableName, pm, sc, hBaseManager, false);
+    }
+
+    public VariantHadoopDBWriter(GenomeHelper helper, String tableName,
+                                 ProjectMetadata pm, StudyConfiguration sc, HBaseManager hBaseManager,
+                                 boolean includeReferenceVariantsData) {
         super(hBaseManager, tableName);
         this.helper = helper;
-        converter = new StudyEntryToHBaseConverter(helper.getColumnFamily(), sc, true, pm.getRelease());
+        converter = new StudyEntryToHBaseConverter(helper.getColumnFamily(), sc, true, pm.getRelease(), includeReferenceVariantsData);
     }
 
     @Override

@@ -37,6 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -53,7 +54,7 @@ public class CatalogStudyConfigurationFactory {
     public static final QueryOptions INDEXED_FILES_QUERY_OPTIONS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             FileDBAdaptor.QueryParams.NAME.key(),
             FileDBAdaptor.QueryParams.PATH.key(),
-            INDEX.key(),
+            FileDBAdaptor.QueryParams.INDEX.key(),
             FileDBAdaptor.QueryParams.STUDY_UID.key()));
     public static final Query INDEXED_FILES_QUERY = new Query()
             .append(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY)
@@ -249,6 +250,8 @@ public class CatalogStudyConfigurationFactory {
             }
         }
 
+        Set<String> loadingFilesRegardingCatalog = new HashSet<>();
+
         // Update ongoing files
         try (DBIterator<File> iterator = catalogManager.getFileManager()
                 .iterator(studyConfiguration.getStudyName(), RUNNING_INDEX_FILES_QUERY, INDEXED_FILES_QUERY_OPTIONS, sessionId)) {
@@ -268,8 +271,7 @@ public class CatalogStudyConfigurationFactory {
                 }
 
                 // If last LOAD operation is ERROR or there is no LOAD operation
-                if (loadOperation != null && loadOperation.getStatus().lastEntry().getValue().equals(BatchFileOperation.Status.ERROR)
-                        || loadOperation == null) {
+                if (loadOperation == null || loadOperation.currentStatus().equals(BatchFileOperation.Status.ERROR)) {
                     final FileIndex index;
                     index = file.getIndex() == null ? new FileIndex() : file.getIndex();
                     String prevStatus = index.getStatus().getName();
@@ -284,10 +286,43 @@ public class CatalogStudyConfigurationFactory {
                     catalogManager.getFileManager().updateFileIndexStatus(file, newStatus,
                             "Error loading. Reset status to " + newStatus,
                             sessionId);
+                } else {
+                    loadingFilesRegardingCatalog.add(file.getName());
                 }
-
             }
         }
+
+        // Update running LOAD operations, regarding storage
+        Set<String> loadingFilesRegardingStorage = new HashSet<>();
+        for (int i = studyConfiguration.getBatches().size() - 1; i >= 0; i--) {
+            BatchFileOperation op = studyConfiguration.getBatches().get(i);
+            if (op.getType().equals(BatchFileOperation.Type.LOAD)
+                    && op.currentStatus() != null
+                    && op.currentStatus().equals(BatchFileOperation.Status.RUNNING)) {
+                for (Integer fileId : op.getFileIds()) {
+                    String fileName = studyConfiguration.getFileIds().inverse().get(fileId);
+                    if (!loadingFilesRegardingCatalog.contains(fileName)) {
+                        loadingFilesRegardingStorage.add(fileName);
+                    }
+                }
+            }
+        }
+
+        try (DBIterator<File> iterator = catalogManager.getFileManager()
+                .iterator(studyConfiguration.getStudyName(), new Query(NAME.key(), loadingFilesRegardingStorage),
+                        INDEXED_FILES_QUERY_OPTIONS, sessionId)) {
+            while (iterator.hasNext()) {
+                File file = iterator.next();
+                String newStatus;
+                if (hasTransformedFile(file.getIndex())) {
+                    newStatus = FileIndex.IndexStatus.LOADING;
+                } else {
+                    newStatus = FileIndex.IndexStatus.INDEXING;
+                }
+                catalogManager.getFileManager().updateFileIndexStatus(file, newStatus, "File is being loaded regarding Storage", sessionId);
+            }
+        }
+
     }
 
     public boolean hasTransformedFile(FileIndex index) {

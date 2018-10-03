@@ -22,10 +22,10 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -194,7 +194,7 @@ public class VariantSearchUtils {
     public static String inferSpecificSearchIndexSamplesCollection(
             Query query, QueryOptions options, StudyConfigurationManager studyConfigurationManager, String dbName)
             throws StorageEngineException {
-        if (!VariantSearchManager.UseSearchIndex.from(options).equals(VariantSearchManager.UseSearchIndex.NO)) { // YES or AUTO
+        if (!VariantStorageEngine.UseSearchIndex.from(options).equals(VariantStorageEngine.UseSearchIndex.NO)) { // YES or AUTO
             if (isValidParam(query, VariantQueryParam.STUDY)) {
                 if (VariantQueryUtils.splitValue(query.getString(VariantQueryParam.STUDY.key())).getValue().size() > 1) {
                     // Multi study query

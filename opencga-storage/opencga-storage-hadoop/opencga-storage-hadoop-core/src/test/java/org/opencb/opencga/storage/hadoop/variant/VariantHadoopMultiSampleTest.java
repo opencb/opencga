@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.hadoop.variant;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -43,7 +44,9 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.metadata.local.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantVcfDataWriter;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
@@ -82,7 +85,6 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
     // Variants that are wrong in the platinum files that should not be included
     private static final HashSet<String> PLATINUM_SKIP_VARIANTS = new HashSet<>();
-    private Map<String, Object> notCollapseDeletions = new ObjectMap(HadoopVariantStorageEngine.MERGE_COLLAPSE_DELETIONS, false);
 
     @Before
     public void setUp() throws Exception {
@@ -123,11 +125,11 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
         StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
         VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
-        loadFile("s1.genome.vcf", studyConfiguration, notCollapseDeletions);
+        loadFile("s1.genome.vcf", studyConfiguration, new ObjectMap());
         checkArchiveTableTimeStamp(dbAdaptor);
 
         studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
-        loadFile("s2.genome.vcf", studyConfiguration, notCollapseDeletions);
+        loadFile("s2.genome.vcf", studyConfiguration, new ObjectMap());
 
         checkArchiveTableTimeStamp(dbAdaptor);
         printVariants(studyConfiguration, dbAdaptor, newOutputUri());
@@ -139,7 +141,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
     @Test
     public void testTwoFilesBasicFillMissing() throws Exception {
-        ObjectMap params = new ObjectMap(this.notCollapseDeletions);
+        ObjectMap params = new ObjectMap();
         params.put(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, true);
         params.put(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
         params.put(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro");
@@ -165,7 +167,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
     @Test
     public void testTwoFilesBasicAggregateLimitArchiveRefFields() throws Exception {
-        ObjectMap params = new ObjectMap(this.notCollapseDeletions);
+        ObjectMap params = new ObjectMap();
         params.put(HadoopVariantStorageEngine.ARCHIVE_FIELDS, "QUAL,FORMAT:DP,INFO:DP");
         params.put(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, true);
         params.put(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
@@ -204,16 +206,49 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         });
     }
 
+
+    @Test
+    public void testTwoFilesBasicAggregateNoneArchiveRefFields() throws Exception {
+        ObjectMap params = new ObjectMap();
+        params.put(HadoopVariantStorageEngine.ARCHIVE_FIELDS, VariantQueryUtils.NONE);
+        params.put(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, true);
+        params.put(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
+        params.put(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro");
+
+        StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
+        VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
+        loadFile("s1.genome.vcf", studyConfiguration, params);
+        checkArchiveTableTimeStamp(dbAdaptor);
+
+        studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+        loadFile("s2.genome.vcf", studyConfiguration, params);
+
+        printVariants(studyConfiguration, dbAdaptor, newOutputUri());
+        checkArchiveTableTimeStamp(dbAdaptor);
+
+        getVariantStorageEngine().fillGaps(studyConfiguration.getStudyName(), Arrays.asList("s1", "s2"), new ObjectMap("local", true));
+        studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+        printVariants(studyConfiguration, dbAdaptor, newOutputUri());
+
+        dbAdaptor.getHBaseManager().act(dbAdaptor.getArchiveTableName(1), table -> {
+            for (Result r : table.getScanner(new Scan())) {
+                for (Map.Entry<byte[], byte[]> entry : r.getFamilyMap(dbAdaptor.getGenomeHelper().getColumnFamily()).entrySet()) {
+                    assertFalse(Bytes.toString(entry.getKey()).endsWith(ArchiveTableHelper.REF_COLUMN_SUFIX));
+                }
+            }
+        });
+    }
+
     @Test
     public void testTwoFiles_reverse() throws Exception {
 
         StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
         VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
-        loadFile("s2.genome.vcf", studyConfiguration, notCollapseDeletions);
+        loadFile("s2.genome.vcf", studyConfiguration, new ObjectMap());
         checkArchiveTableTimeStamp(dbAdaptor);
 
         studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
-        loadFile("s1.genome.vcf", studyConfiguration, notCollapseDeletions);
+        loadFile("s1.genome.vcf", studyConfiguration, new ObjectMap());
 
         checkArchiveTableTimeStamp(dbAdaptor);
         printVariants(studyConfiguration, dbAdaptor, newOutputUri());
@@ -232,7 +267,6 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         options.put(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, true);
         options.put(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "proto");
         options.put(VariantStorageEngine.Options.STUDY.key(), studyConfiguration.getStudyName());
-        options.putAll(notCollapseDeletions);
 
         List<URI> inputFiles = Arrays.asList(getResourceUri("s1.genome.vcf"), getResourceUri("s2.genome.vcf"));
         List<StoragePipelineResult> index = variantStorageManager.index(inputFiles, outputUri, true, true, true);
@@ -390,7 +424,6 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
 //        ObjectMap otherParams = new ObjectMap(VariantMergerTableMapperFail.SLICE_TO_FAIL, "00000_1_000000000011"); // FIXME
         ObjectMap otherParams = new ObjectMap();
-        otherParams.putAll(notCollapseDeletions);
         try {
             loadFile("s1.genome.vcf", studyConfiguration, otherParams);
             fail();
@@ -406,7 +439,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 //        otherParams.put(VariantMergerTableMapperFail.SLICE_TO_FAIL, "_"); // FIXME
         loadFile("s1.genome.vcf.variants.proto.gz", studyConfiguration, otherParams, false, false, true);
         checkArchiveTableTimeStamp(dbAdaptor);
-        loadFile("s2.genome.vcf", studyConfiguration, notCollapseDeletions);
+        loadFile("s2.genome.vcf", studyConfiguration, new ObjectMap());
         checkArchiveTableTimeStamp(dbAdaptor);
 
 //        printVariants(studyConfiguration, dbAdaptor, newOutputUri());
@@ -575,6 +608,32 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 //        assertTrue(variants.containsKey("1:13000:T:G"));
 //        assertEquals("0/0", variants.get("1:13000:T:G").getStudy(studyName).getSampleData("s1", "GT"));
 //        assertEquals("0/1", variants.get("1:13000:T:G").getStudy(studyName).getSampleData("s2", "GT"));
+    }
+
+    @Test
+    public void testMultiSampleFile() throws Exception {
+
+        StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
+        VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
+        loadFile("s1_s2.genome.vcf", studyConfiguration, new ObjectMap(HadoopVariantStorageEngine.VARIANT_TABLE_LOAD_REFERENCE, true));
+        checkArchiveTableTimeStamp(dbAdaptor);
+
+
+        printVariants(studyConfiguration, dbAdaptor, newOutputUri());
+
+        int numHomRef = 0;
+        for (Variant variant : dbAdaptor) {
+            StudyEntry study = variant.getStudies().get(0);
+            for (String s : study.getSamplesName()) {
+                String gt = study.getSampleData(s, "GT");
+                assertNotEquals(GenotypeClass.UNKNOWN_GENOTYPE, gt);
+                if (GenotypeClass.HOM_REF.test(gt)) {
+                    numHomRef++;
+                    assertTrue(StringUtils.isNumeric(study.getSampleData(s, "DP")));
+                }
+            }
+        }
+        assertNotEquals(0, numHomRef);
     }
 
     @Test

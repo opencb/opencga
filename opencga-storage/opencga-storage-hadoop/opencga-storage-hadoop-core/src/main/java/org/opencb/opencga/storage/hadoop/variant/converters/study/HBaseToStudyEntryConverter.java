@@ -667,6 +667,8 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             // Create one variant for each alternate with the samples data
             List<Variant> variants = new ArrayList<>(alternateFileIdMap.size());
 
+            Map<String, List<String>> samplesWithUnknownGenotype = new HashMap<>();
+            Integer gtIndex = studyEntry.getFormatPositions().get("GT");
             for (Map.Entry<String, List<String>> entry : alternateFileIdMap.entrySet()) {
                 String secondaryAlternates = entry.getKey();
                 List<String> fileIds = entry.getValue();
@@ -686,7 +688,19 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                     se.getFiles().add(studyEntry.getFile(fileId));
                     for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(studyConfiguration.getFileIds().get(fileId))) {
                         String sample = studyConfiguration.getSampleIds().inverse().get(sampleId);
-                        se.addSampleData(sample, studyEntry.getSampleData(sample));
+                        List<String> sampleData = studyEntry.getSampleData(sample);
+                        if (gtIndex == null || !sampleData.get(0).equals(UNKNOWN_GENOTYPE)) {
+                            se.addSampleData(sample, sampleData);
+                        } else {
+                            // Add dummy data for this sample
+                            ArrayList<String> dummySampleData = new ArrayList<>();
+                            dummySampleData.add("0/0");
+                            for (int i = 1; i < studyEntry.getFormat().size(); i++) {
+                                dummySampleData.add("");
+                            }
+                            se.addSampleData(sample, dummySampleData);
+                            samplesWithUnknownGenotype.put(sample, sampleData);
+                        }
                     }
                 }
                 sampleVariant.addStudyEntry(se);
@@ -699,7 +713,12 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             // Update samplesData information
             StudyEntry newSe = newVariant.getStudies().get(0);
             for (String sample : newSe.getSamplesName()) {
-                studyEntry.addSampleData(sample, newSe.getSampleData(sample));
+                List<String> unknownGenotypeData = samplesWithUnknownGenotype.get(sample);
+                if (unknownGenotypeData != null) {
+                    studyEntry.addSampleData(sample, unknownGenotypeData);
+                } else {
+                    studyEntry.addSampleData(sample, newSe.getSampleData(sample));
+                }
             }
             for (FileEntry fileEntry : newSe.getFiles()) {
                 studyEntry.getFile(fileEntry.getFileId()).setAttributes(fileEntry.getAttributes());

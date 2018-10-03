@@ -21,15 +21,13 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrException;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
-import org.opencb.commons.datastore.core.result.FacetQueryResultItem;
-import org.opencb.commons.datastore.solr.SolrFacetToFacetQueryResultItemConverter;
+import org.opencb.commons.datastore.solr.SolrCollection;
 import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.db.api.DBIterator;
@@ -42,7 +40,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by wasim on 27/06/18.
@@ -189,15 +190,12 @@ public class CatalogSolrManager {
     @Deprecated
     public FacetQueryResult facetedQuery(String collection, Query query, QueryOptions queryOptions)
             throws IOException, SolrException {
-        StopWatch stopWatch = StopWatch.createStarted();
-        try {
-            CatalogSolrQueryParser catalogSolrQueryParser = new CatalogSolrQueryParser();
-            SolrQuery solrQuery = catalogSolrQueryParser.parse(query, queryOptions, null);
-            QueryResponse response = solrManager.getSolrClient().query(DATABASE_PREFIX + collection, solrQuery);
+        CatalogSolrQueryParser catalogSolrQueryParser = new CatalogSolrQueryParser();
+        SolrQuery solrQuery = catalogSolrQueryParser.parse(query, queryOptions, null);
 
-            FacetQueryResultItem item = SolrFacetToFacetQueryResultItemConverter.convert(response,
-                    catalogSolrQueryParser.getSolrToVisibleField());
-            return new FacetQueryResult("Faceted data from Solr", (int) stopWatch.getTime(), 1, Collections.emptyList(), null, item, "");
+        SolrCollection solrCollection = solrManager.getCollection(DATABASE_PREFIX + collection);
+        try {
+            return solrCollection.facet(solrQuery, catalogSolrQueryParser.getAliasMap());
         } catch (SolrServerException e) {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
         }
@@ -247,15 +245,12 @@ public class CatalogSolrManager {
             queryCopy.put(CatalogSolrQueryParser.QueryParams.ACL.key(), "(" + StringUtils.join(aclList, " OR ") + ")");
         }
 
-        try {
-            CatalogSolrQueryParser catalogSolrQueryParser = new CatalogSolrQueryParser();
-            SolrQuery solrQuery = catalogSolrQueryParser.parse(queryCopy, queryOptionsCopy, study.getVariableSets());
-            logger.debug("Solr query: {}", solrQuery.toString());
-            QueryResponse response = solrManager.getSolrClient().query(DATABASE_PREFIX + collection, solrQuery);
+        CatalogSolrQueryParser catalogSolrQueryParser = new CatalogSolrQueryParser();
+        SolrQuery solrQuery = catalogSolrQueryParser.parse(queryCopy, queryOptionsCopy, study.getVariableSets());
 
-            FacetQueryResultItem item = SolrFacetToFacetQueryResultItemConverter.convert(response,
-                    catalogSolrQueryParser.getSolrToVisibleField());
-            return new FacetQueryResult("Faceted data from Solr", (int) stopWatch.getTime(), 1, Collections.emptyList(), null, item, "");
+        SolrCollection solrCollection = solrManager.getCollection(DATABASE_PREFIX + collection);
+        try {
+            return solrCollection.facet(solrQuery, catalogSolrQueryParser.getAliasMap());
         } catch (SolrServerException e) {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
         }

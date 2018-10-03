@@ -327,15 +327,13 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false)
                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
 
-        DummyVariantStoragePipeline storageETL = mockVariantStorageETL();
         List<File> files = Arrays.asList(getFile(0), getFile(1));
-        StorageEngineException loadException = StorageEngineException.unableToExecute("load", 0, "");
-        Mockito.doThrow(loadException).when(storageETL)
-                .load(ArgumentMatchers.argThat(argument -> argument.toString().contains(files.get(1).getName())));
+        queryOptions.put(DummyVariantStoragePipeline.VARIANTS_LOAD_FAIL, files.get(1).getName() + ".variants.avro.gz");
         List<String> fileIds = files.stream().map(File::getId).collect(Collectors.toList());
         try {
             String outdir = opencga.createTmpOutdir(studyId, "_INDEX_", sessionId);
-            List<StoragePipelineResult> etlResults = variantManager.index(studyId, fileIds, outdir, queryOptions, sessionId);
+            variantManager.index(studyId, fileIds, outdir, queryOptions, sessionId);
+            fail();
         } catch (StoragePipelineException exception) {
             assertEquals(files.size(), exception.getResults().size());
 
@@ -348,10 +346,8 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
             assertNull(exception.getResults().get(0).getLoadError());
 
             assertTrue(exception.getResults().get(1).isLoadExecuted());
-            assertSame(loadException, exception.getResults().get(1).getLoadError());
         }
-
-        mockVariantStorageETL();
+        queryOptions.put(DummyVariantStoragePipeline.VARIANTS_LOAD_FAIL, false);
         indexFiles(files, singletonList(files.get(1)), queryOptions, outputId);
     }
 
@@ -360,14 +356,11 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false)
                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
 
-        DummyVariantStoragePipeline storageETL = mockVariantStorageETL();
         List<File> files = Arrays.asList(getFile(0), getFile(1));
-        StorageEngineException loadException = StorageEngineException.unableToExecute("load", 0, "");
-        Mockito.doThrow(loadException).when(storageETL)
-                .load(ArgumentMatchers.argThat(argument -> argument.toString().contains(files.get(1).getName())));
-
+        queryOptions.put(DummyVariantStoragePipeline.VARIANTS_LOAD_FAIL, files.get(1).getName() + ".variants.avro.gz");
         try {
             indexFiles(files, queryOptions, outputId);
+            fail();
         } catch (StoragePipelineException exception) {
             assertEquals(files.size(), exception.getResults().size());
 
@@ -380,10 +373,8 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
             assertNull(exception.getResults().get(0).getLoadError());
 
             assertTrue(exception.getResults().get(1).isLoadExecuted());
-            assertSame(loadException, exception.getResults().get(1).getLoadError());
         }
-
-        mockVariantStorageETL();
+        queryOptions.put(DummyVariantStoragePipeline.VARIANTS_LOAD_FAIL, false);
         // File 0 already loaded.
         // Expecting to load only file 1
         loadFiles(files, singletonList(files.get(1)), queryOptions, outputId);

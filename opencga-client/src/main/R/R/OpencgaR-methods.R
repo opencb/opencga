@@ -263,12 +263,12 @@ opencgaLogin <- function(opencga, userid=NULL, passwd=NULL, interactive=FALSE,
         sessionDir <- file.path(Sys.getenv("HOME"), ".opencga", "R", fsep = .Platform$file.sep)
     } else {
         sessionDir <- normalizePath(file.path(Sys.getenv("HOMEDRIVE"),
-                                    Sys.getenv("HOMEPATH")), "opencga", "R", 
-                                    winslash = .Platform$file.sep)
+                                    Sys.getenv("HOMEPATH"), "opencga", "R", 
+                                    winslash = .Platform$file.sep))
     }
     
     # Create/update session file
-    dir.create(path = sessionDir, showWarnings = FALSE)
+    dir.create(path=sessionDir, showWarnings=FALSE, recursive=TRUE)
     sessionFile <- file.path(sessionDir, "rsession.json", fsep = .Platform$file.sep)
     opencga@sessionFile <- sessionFile
     if(file.exists(sessionFile)){
