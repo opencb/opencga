@@ -513,7 +513,7 @@ public class VariantSearchManager {
             FacetQueryResultItem.FacetField facet = queue.remove();
             for (FacetQueryResultItem.Bucket bucket: facet.getBuckets()) {
                 if (bucket.getValue().startsWith("ENSG0")) {
-                    bucket.setValue(ensemblGeneIdToGeneName.get(bucket.getValue()));
+                    bucket.setValue(ensemblGeneIdToGeneName.getOrDefault(bucket.getValue(), bucket.getValue()));
                 }
                 if (ListUtils.isNotEmpty(bucket.getFacetFields())) {
                     for (FacetQueryResultItem.FacetField facetField: bucket.getFacetFields()) {
