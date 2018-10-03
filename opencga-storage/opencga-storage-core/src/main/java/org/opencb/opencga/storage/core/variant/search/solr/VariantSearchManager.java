@@ -25,16 +25,21 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrException;
 import org.opencb.biodata.formats.variant.io.VariantReader;
+import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
+import org.opencb.commons.datastore.core.result.FacetQueryResultItem;
 import org.opencb.commons.datastore.solr.SolrCollection;
 import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.FileUtils;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -51,8 +56,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by imedina on 09/11/16.
@@ -61,6 +65,7 @@ import java.util.List;
 public class VariantSearchManager {
 
     private SolrManager solrManager;
+    private CellBaseClient cellBaseClient;
     private SolrQueryParser solrQueryParser;
     private StorageConfiguration storageConfiguration;
     private VariantSearchToVariantConverter variantSearchToVariantConverter;
@@ -82,6 +87,7 @@ public class VariantSearchManager {
         this.storageConfiguration = storageConfiguration;
 
         this.solrQueryParser = new SolrQueryParser(studyConfigurationManager);
+        this.cellBaseClient = new CellBaseClient(storageConfiguration.getCellbase().toClientConfiguration());
         this.variantSearchToVariantConverter = new VariantSearchToVariantConverter();
 
         this.solrManager = new SolrManager(storageConfiguration.getSearch().getHost(), storageConfiguration.getSearch().getMode(),
@@ -365,16 +371,28 @@ public class VariantSearchManager {
         } catch (SolrServerException e) {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
         }
+
         if (replaceGenes) {
-            // TODO: Replace Ensmbl gene ID by gene name
+            List<String> ensemblGeneIds = getEnsemblGeneIds(facetResult.getResult());
+            QueryResponse<Gene> geneQueryResponse = cellBaseClient.getGeneClient().get(ensemblGeneIds, QueryOptions.empty());
+            Map<String, String> ensemblGeneIdToGeneName = new HashMap<>();
+            for (Gene gene: geneQueryResponse.allResults()) {
+                ensemblGeneIdToGeneName.put(gene.getId(), gene.getName());
+            }
+            replaceEnsemblGeneIds(facetResult.getResult(), ensemblGeneIdToGeneName);
         }
 
         return facetResult;
     }
 
-    /**-------------------------------------
+    public void close() throws IOException {
+        solrManager.close();
+    }
+
+    /*-------------------------------------
      *  P R I V A T E    M E T H O D S
      -------------------------------------*/
+
     /**
      * Insert a list of variants into Solr.
      *
@@ -463,9 +481,52 @@ public class VariantSearchManager {
         }
     }
 
-    public void close() throws IOException {
-        solrManager.close();
+    private List<String> getEnsemblGeneIds(FacetQueryResultItem result) {
+        Set<String> ensemblGeneIds = new HashSet<>();
+        Queue<FacetQueryResultItem.FacetField> queue = new LinkedList<>();
+        for (FacetQueryResultItem.FacetField facetField: result.getFacetFields()) {
+            queue.add(facetField);
+        }
+        while (queue.size() > 0) {
+            FacetQueryResultItem.FacetField facet = queue.remove();
+            for (FacetQueryResultItem.Bucket bucket: facet.getBuckets()) {
+                if (bucket.getValue().startsWith("ENSG0")) {
+                    ensemblGeneIds.add(bucket.getValue());
+                }
+                if (ListUtils.isNotEmpty(bucket.getFacetFields())) {
+                    for (FacetQueryResultItem.FacetField facetField: bucket.getFacetFields()) {
+                        queue.add(facetField);
+                    }
+                }
+
+            }
+        }
+        return new ArrayList<>(ensemblGeneIds);
     }
+
+    private void replaceEnsemblGeneIds(FacetQueryResultItem result, Map<String, String> ensemblGeneIdToGeneName) {
+        Queue<FacetQueryResultItem.FacetField> queue = new LinkedList<>();
+        for (FacetQueryResultItem.FacetField facetField: result.getFacetFields()) {
+            queue.add(facetField);
+        }
+        while (queue.size() > 0) {
+            FacetQueryResultItem.FacetField facet = queue.remove();
+            for (FacetQueryResultItem.Bucket bucket: facet.getBuckets()) {
+                if (bucket.getValue().startsWith("ENSG0")) {
+                    bucket.setValue(ensemblGeneIdToGeneName.get(bucket.getValue()));
+                }
+                if (ListUtils.isNotEmpty(bucket.getFacetFields())) {
+                    for (FacetQueryResultItem.FacetField facetField: bucket.getFacetFields()) {
+                        queue.add(facetField);
+                    }
+                }
+            }
+        }
+    }
+
+    /*--------------------------------------
+     *  toString and GETTERS and SETTERS
+     -------------------------------------*/
 
     @Override
     public String toString() {
@@ -532,5 +593,4 @@ public class VariantSearchManager {
         this.insertBatchSize = insertBatchSize;
         return this;
     }
-
 }
