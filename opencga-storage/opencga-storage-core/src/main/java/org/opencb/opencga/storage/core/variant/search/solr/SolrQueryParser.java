@@ -21,9 +21,11 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.common.SolrException;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
@@ -103,20 +105,36 @@ public class SolrQueryParser {
         //-------------------------------------
         // QueryOptions processing
         //-------------------------------------
-        // TODO: Use VariantField
-        String[] includes = null;
-        if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
-            includes = solrIncludeFields(queryOptions.getAsStringList(QueryOptions.INCLUDE));
-        } else {
-            if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
-                includes = getSolrIncludeFromExclude(queryOptions.getAsStringList(QueryOptions.EXCLUDE));
-            } else {
-                includes = getSolrIncludeFromExclude(Collections.emptyList());
+        boolean facetQuery = false;
+
+        // Facet management, (including facet ranges, nested facets and aggregation functions)
+        if (queryOptions.containsKey(QueryOptions.FACET) && StringUtils.isNotEmpty(queryOptions.getString(QueryOptions.FACET))) {
+            try {
+                FacetQueryParser facetQueryParser = new FacetQueryParser();
+                String jsonFacet = facetQueryParser.parse(queryOptions.getString(QueryOptions.FACET));
+                solrQuery.set("json.facet", jsonFacet);
+                facetQuery = true;
+            } catch (Exception e) {
+                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Solr parse exception: " + e.getMessage(), e);
             }
         }
-        includes = ArrayUtils.removeAllOccurences(includes, "release");
-        includes = includeFieldsWithMandatory(includes);
-        solrQuery.setFields(includes);
+
+        if (!facetQuery) {
+            // TODO: Use VariantField
+            String[] includes;
+            if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
+                includes = solrIncludeFields(queryOptions.getAsStringList(QueryOptions.INCLUDE));
+            } else {
+                if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
+                    includes = getSolrIncludeFromExclude(queryOptions.getAsStringList(QueryOptions.EXCLUDE));
+                } else {
+                    includes = getSolrIncludeFromExclude(Collections.emptyList());
+                }
+            }
+            includes = ArrayUtils.removeAllOccurences(includes, "release");
+            includes = includeFieldsWithMandatory(includes);
+            solrQuery.setFields(includes);
+        }
 
         if (queryOptions.containsKey(QueryOptions.LIMIT)) {
             solrQuery.setRows(queryOptions.getInt(QueryOptions.LIMIT));
@@ -127,30 +145,6 @@ public class SolrQueryParser {
         if (queryOptions.containsKey(QueryOptions.SORT)) {
             solrQuery.addSort(queryOptions.getString(QueryOptions.SORT), getSortOrder(queryOptions));
         }
-
-        // facet fields (query parameter: facet)
-        // multiple faceted fields are separated by ";", they can be:
-        //    - non-nested faceted fields, e.g.: biotype
-        //    - nested faceted fields (i.e., Solr pivots) are separated by ">>", e.g.: studies>>type
-        //    - ranges, field_name:start:end:gap, e.g.: sift:0:1:0.5
-        //    - intersections, field_name:value1^value2[^value3], e.g.: studies:1kG^ESP
-        if (queryOptions.containsKey(QueryOptions.FACET) && StringUtils.isNotEmpty(queryOptions.getString(QueryOptions.FACET))) {
-            parseSolrFacets(queryOptions.get(QueryOptions.FACET).toString(), solrQuery);
-        }
-
-        // facet ranges,
-        // query parameter name: facetRange
-        // multiple facet ranges are separated by ";"
-        // query parameter value: field:start:end:gap, e.g.: sift:0:1:0.5
-        if (queryOptions.containsKey(QueryOptions.FACET_RANGE)
-                && StringUtils.isNotEmpty(queryOptions.getString(QueryOptions.FACET_RANGE))) {
-            parseSolrFacetRanges(queryOptions.get(QueryOptions.FACET_RANGE).toString(), solrQuery);
-        }
-
-        // facet intersections,
-        //if (queryOptions.containsKey(QueryOptions.FACET_INTERSECTION)) {
-        //    parseSolrFacetIntersections(queryOptions.get(QueryOptions.FACET_INTERSECTION).toString(), solrQuery);
-        //}
 
         //-------------------------------------
         // Query processing
@@ -375,16 +369,14 @@ public class SolrQueryParser {
             throw VariantQueryException.unsupportedVariantQueryFilter(VariantQueryParam.INFO, "Solr", "");
         }
 
-
-        // Add Solr fields from the variant includes, i.e.: include-sample, include-format,...
-        List<String> solrFieldsToInclude = getSolrFieldsFromVariantIncludes(query, queryOptions);
-        if (ListUtils.isNotEmpty(solrFieldsToInclude)) {
-            for (String solrField : solrFieldsToInclude) {
-                solrQuery.addField(solrField);
+        if (!facetQuery) {
+            // Add Solr fields from the variant includes, i.e.: include-sample, include-format,...
+            List<String> solrFieldsToInclude = getSolrFieldsFromVariantIncludes(query, queryOptions);
+            if (ListUtils.isNotEmpty(solrFieldsToInclude)) {
+                for (String solrField : solrFieldsToInclude) {
+                    solrQuery.addField(solrField);
+                }
             }
-//        } else {
-//            solrQuery.addField("fileInfo_*");
-//            solrQuery.addField("sampleFormat_*");
         }
 
         // For debugging
@@ -395,15 +387,15 @@ public class SolrQueryParser {
             solrQuery.addFilterQuery(filter);
             sb.append(filter).append("\n");
         });
-        logger.debug("\n\n-----------------------------------------------------\n"
-                + query.toJson()
-                + "\n\n"
-                + queryOptions.toJson()
-                + "\n\n"
-                + sb.toString()
-                + "\n\n"
-                + solrQuery.getFields()
-                + "\n-----------------------------------------------------\n\n");
+//        logger.debug("\n\n-----------------------------------------------------\n"
+//                + query.toJson()
+//                + "\n\n"
+//                + queryOptions.toJson()
+//                + "\n\n"
+//                + sb.toString()
+//                + "\n\n"
+//                + solrQuery.getFields()
+//                + "\n-----------------------------------------------------\n\n");
 
         return solrQuery;
     }

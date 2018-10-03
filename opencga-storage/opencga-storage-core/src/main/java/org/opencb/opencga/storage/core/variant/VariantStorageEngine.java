@@ -50,6 +50,7 @@ import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
+import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.*;
 import org.opencb.opencga.storage.core.metadata.local.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
@@ -1507,7 +1508,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         FacetQueryResult facetedQueryResult;
         try {
             facetedQueryResult = getVariantSearchManager().facetedQuery(dbName, query, options);
-        } catch (IOException | SolrException | StorageEngineException e) {
+        } catch (IOException | SolrException | StorageEngineException | VariantSearchException e) {
             throw Throwables.propagate(e);
         }
 
