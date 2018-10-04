@@ -712,7 +712,6 @@ public class SampleWSServer extends OpenCGAWSServer {
             query.remove("fieldRange");
 
             queryOptions.put(QueryOptions.FACET, facet);
-            queryOptions.put(QueryOptions.FACET_RANGE, facetRange);
 
             FacetQueryResult queryResult = catalogManager.getSampleManager().facet(studyStr, query, queryOptions, defaultStats,
                     sessionId);

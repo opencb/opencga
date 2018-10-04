@@ -930,10 +930,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
         if (defaultStats || StringUtils.isEmpty(queryOptions.getString(QueryOptions.FACET))) {
             String facet = queryOptions.getString(QueryOptions.FACET);
-            String facetRange = queryOptions.getString(QueryOptions.FACET_RANGE);
             queryOptions.put(QueryOptions.FACET, StringUtils.isNotEmpty(facet) ? defaultFacet + ";" + facet : defaultFacet);
-            queryOptions.put(QueryOptions.FACET_RANGE, StringUtils.isNotEmpty(facetRange) ? defaultFacetRange + ";" + facetRange
-                    : defaultFacetRange);
         }
 
         CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);

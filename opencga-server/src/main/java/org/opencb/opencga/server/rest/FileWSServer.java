@@ -1283,7 +1283,6 @@ public class FileWSServer extends OpenCGAWSServer {
             query.remove("fieldRange");
 
             queryOptions.put(QueryOptions.FACET, facet);
-            queryOptions.put(QueryOptions.FACET_RANGE, facetRange);
 
             FacetQueryResult queryResult = catalogManager.getFileManager().facet(studyStr, query, queryOptions, defaultStats, sessionId);
             return createOkResponse(queryResult);

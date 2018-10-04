@@ -703,7 +703,6 @@ public class IndividualWSServer extends OpenCGAWSServer {
             query.remove("fieldRange");
 
             queryOptions.put(QueryOptions.FACET, facet);
-            queryOptions.put(QueryOptions.FACET_RANGE, facetRange);
 
             FacetQueryResult queryResult = catalogManager.getIndividualManager().facet(studyStr, query, queryOptions, defaultStats, sessionId);
             return createOkResponse(queryResult);
