@@ -76,8 +76,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     private UserManager userManager;
     private StudyManager studyManager;
 
-    private final String defaultFacet = "creationYear>>creationMonth;status;phenotypes;expectedSize";
-    private final String defaultFacetRange = "numMembers:0:20:2";
+    private final String defaultFacet = "creationYear>>creationMonth;status;phenotypes;expectedSize;numMembers[0..20]:2";
 
     FamilyManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                   DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory, Configuration configuration) {
@@ -708,10 +707,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         if (defaultStats || StringUtils.isEmpty(queryOptions.getString(QueryOptions.FACET))) {
             String facet = queryOptions.getString(QueryOptions.FACET);
-            String facetRange = queryOptions.getString(QueryOptions.FACET_RANGE);
             queryOptions.put(QueryOptions.FACET, StringUtils.isNotEmpty(facet) ? defaultFacet + ";" + facet : defaultFacet);
-            queryOptions.put(QueryOptions.FACET_RANGE, StringUtils.isNotEmpty(facetRange) ? defaultFacetRange + ";" + facetRange
-                    : defaultFacetRange);
         }
 
         CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);

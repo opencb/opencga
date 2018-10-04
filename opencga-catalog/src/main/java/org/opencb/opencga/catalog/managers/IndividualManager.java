@@ -70,8 +70,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     private StudyManager studyManager;
 
     private final String defaultFacet = "creationYear>>creationMonth;status;multiplesType;ethnicity;population;lifeStatus;"
-            + "affectationStatus;phenotypes;sex";
-    private final String defaultFacetRange = "numSamples:0:10:1";
+            + "affectationStatus;phenotypes;sex;numSamples[0..10]:1";
 
     private static final Map<IndividualProperty.KaryotypicSex, IndividualProperty.Sex> KARYOTYPIC_SEX_SEX_MAP;
 
@@ -930,10 +929,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
         if (defaultStats || StringUtils.isEmpty(queryOptions.getString(QueryOptions.FACET))) {
             String facet = queryOptions.getString(QueryOptions.FACET);
-            String facetRange = queryOptions.getString(QueryOptions.FACET_RANGE);
             queryOptions.put(QueryOptions.FACET, StringUtils.isNotEmpty(facet) ? defaultFacet + ";" + facet : defaultFacet);
-            queryOptions.put(QueryOptions.FACET_RANGE, StringUtils.isNotEmpty(facetRange) ? defaultFacetRange + ";" + facetRange
-                    : defaultFacetRange);
         }
 
         CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);

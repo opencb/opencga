@@ -846,12 +846,8 @@ public class FileCommandOptions {
         public String annotation;
 
         @Parameter(names = {"--field"}, description = "List of fields separated by semicolons, e.g.: studies;type. For nested "
-                + "fields use >>, e.g.: studies>>biotype;type.", arity = 1)
+                + "fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1.", arity = 1)
         public String field;
-
-        @Parameter(names = {"--field-range"}, description = "List of ranges separated by semicolons with the format"
-                + " {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1.", arity = 1)
-        public String fieldRange;
     }
 
 }

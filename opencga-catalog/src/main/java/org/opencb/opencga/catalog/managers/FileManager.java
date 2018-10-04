@@ -93,8 +93,8 @@ public class FileManager extends AnnotationSetManager<File> {
             + File.FileStatus.MISSING;
     public static final String GET_NON_TRASHED_FILES = Status.READY + "," + File.FileStatus.STAGE + "," + File.FileStatus.MISSING;
 
-    private final String defaultFacet = "creationYear>>creationMonth;format;bioformat;format>>bioformat;status";
-    private final String defaultFacetRange = "size:0:214748364800:10737418240;numSamples:0:10:1";
+    private final String defaultFacet = "creationYear>>creationMonth;format;bioformat;format>>bioformat;status;"
+            + "size[0..214748364800]:10737418240;numSamples[0..10]:1";
 
     static {
         INCLUDE_STUDY_URI = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.URI.key());
@@ -2498,10 +2498,7 @@ public class FileManager extends AnnotationSetManager<File> {
 
         if (defaultStats || StringUtils.isEmpty(queryOptions.getString(QueryOptions.FACET))) {
             String facet = queryOptions.getString(QueryOptions.FACET);
-            String facetRange = queryOptions.getString(QueryOptions.FACET_RANGE);
             queryOptions.put(QueryOptions.FACET, StringUtils.isNotEmpty(facet) ? defaultFacet + ";" + facet : defaultFacet);
-            queryOptions.put(QueryOptions.FACET_RANGE, StringUtils.isNotEmpty(facetRange) ? defaultFacetRange + ";" + facetRange
-                    : defaultFacetRange);
         }
 
         CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);

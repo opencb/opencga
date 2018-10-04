@@ -68,8 +68,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     private UserManager userManager;
     private StudyManager studyManager;
 
-    private final String defaultFacet = "creationYear>>creationMonth;status";
-    private final String defaultFacetRange = "numSamples:0:10:1";
+    private final String defaultFacet = "creationYear>>creationMonth;status;numSamples[0..10]:1";
 
     CohortManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                   DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
@@ -715,10 +714,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
         if (defaultStats || StringUtils.isEmpty(queryOptions.getString(QueryOptions.FACET))) {
             String facet = queryOptions.getString(QueryOptions.FACET);
-            String facetRange = queryOptions.getString(QueryOptions.FACET_RANGE);
             queryOptions.put(QueryOptions.FACET, StringUtils.isNotEmpty(facet) ? defaultFacet + ";" + facet : defaultFacet);
-            queryOptions.put(QueryOptions.FACET_RANGE, StringUtils.isNotEmpty(facetRange) ? defaultFacetRange + ";" + facetRange
-                    : defaultFacetRange);
         }
 
         CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);
