@@ -155,7 +155,7 @@ public class DiseasePanelManagerTest extends GenericTest {
                 ));
         DiseasePanel panelUpdated = panelManager.update(studyFqn, diseasePanelQueryResult.getId(), params, null, sessionIdUser).first();
 
-        assertEquals("author", panelUpdated.getAuthor());
+        assertEquals("author", panelUpdated.getSource().getAuthor());
         assertEquals(1, panelUpdated.getRegions().size());
         assertEquals("chr1:1-1000", panelUpdated.getRegions().get(0).getLocation());
         assertEquals(1, panelUpdated.getGenes().size());
