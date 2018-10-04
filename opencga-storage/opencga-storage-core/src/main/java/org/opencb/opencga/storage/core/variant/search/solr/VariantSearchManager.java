@@ -410,11 +410,8 @@ public class VariantSearchManager {
      */
     public FacetQueryResult facetedQuery(String collection, Query query, QueryOptions queryOptions)
             throws VariantSearchException, IOException {
-        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
-        SolrCollection solrCollection = solrManager.getCollection(collection);
-
         // As "genes" contains, for each gene: gene names, Ensembl gene ID and all its Ensembl transcript IDs,
-        // we do not have to repeat counts for all of them, usually, only for gene names
+        // we do not have to repeat counts for all of them, by default, only for gene names
         boolean replaceGenes = false;
         if (queryOptions.containsKey(QueryOptions.FACET) && StringUtils.isNotEmpty(queryOptions.getString(QueryOptions.FACET))) {
             String facetQuery = queryOptions.getString(QueryOptions.FACET);
@@ -424,10 +421,13 @@ public class VariantSearchManager {
             }
             if (!facetQuery.contains("genes[") && facetQuery.contains("genes")) {
                 // Force to query genes by prefix ENSG
-                queryOptions.put(QueryOptions.FACET, facetQuery.replace("genes", "genes[\"ENSG0\"]"));
+                queryOptions.put(QueryOptions.FACET, facetQuery.replace("genes", "genes[ENSG0*]"));
                 replaceGenes = true;
             }
         }
+
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        SolrCollection solrCollection = solrManager.getCollection(collection);
 
         FacetQueryResult facetResult;
         try {
