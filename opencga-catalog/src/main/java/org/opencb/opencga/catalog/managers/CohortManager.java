@@ -68,8 +68,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     private UserManager userManager;
     private StudyManager studyManager;
 
-    private final String defaultFacet = "creationYear>>creationMonth;status";
-    private final String defaultFacetRange = "numSamples:0:10:1";
+    private final String defaultFacet = "creationYear>>creationMonth;status;numSamples[0..10]:1";
 
     CohortManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                   DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,

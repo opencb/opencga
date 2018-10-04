@@ -76,8 +76,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     private UserManager userManager;
     private StudyManager studyManager;
 
-    private final String defaultFacet = "creationYear>>creationMonth;status;phenotypes;expectedSize";
-    private final String defaultFacetRange = "numMembers:0:20:2";
+    private final String defaultFacet = "creationYear>>creationMonth;status;phenotypes;expectedSize;numMembers[0..20]:2";
 
     FamilyManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                   DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory, Configuration configuration) {

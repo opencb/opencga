@@ -695,12 +695,10 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
             @ApiParam(value = "Calculate default stats", defaultValue = "false") @QueryParam("default") boolean defaultStats,
 
-            @ApiParam(value = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type") @QueryParam("field") String facet,
-            @ApiParam(value = "List of field ranges separated by semicolons with the format {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1") @QueryParam("fieldRange") String facetRange) {
+            @ApiParam(value = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1") @QueryParam("field") String facet) {
         try {
             query.remove("study");
             query.remove("field");
-            query.remove("fieldRange");
 
             queryOptions.put(QueryOptions.FACET, facet);
 

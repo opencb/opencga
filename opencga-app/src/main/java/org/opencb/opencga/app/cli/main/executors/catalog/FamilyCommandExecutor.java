@@ -192,7 +192,6 @@ public class FamilyCommandExecutor extends OpencgaCommandExecutor {
         QueryOptions options = new QueryOptions();
         options.put("default", commandOptions.defaultStats);
         options.putIfNotNull("field", commandOptions.field);
-        options.putIfNotNull("fieldRange", commandOptions.fieldRange);
 
         return openCGAClient.getFamilyClient().stats(commandOptions.study, query, options);
     }

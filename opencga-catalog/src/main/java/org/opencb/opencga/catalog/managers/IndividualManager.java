@@ -70,8 +70,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     private StudyManager studyManager;
 
     private final String defaultFacet = "creationYear>>creationMonth;status;multiplesType;ethnicity;population;lifeStatus;"
-            + "affectationStatus;phenotypes;sex";
-    private final String defaultFacetRange = "numSamples:0:10:1";
+            + "affectationStatus;phenotypes;sex;numSamples[0..10]:1";
 
     private static final Map<IndividualProperty.KaryotypicSex, IndividualProperty.Sex> KARYOTYPIC_SEX_SEX_MAP;
 

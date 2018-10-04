@@ -3,7 +3,6 @@ package org.opencb.opencga.catalog.stats.solr;
 import org.apache.commons.collections.map.LinkedMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -35,7 +34,7 @@ public class CatalogSolrQueryParser {
 
     public static final Pattern OPERATION_PATTERN = Pattern.compile("^(<=?|>=?|!==?|!?=?~|==?=?)([^=<>~!]+.*)$");
 
-    private Map<String, String> solrAliasMap = new HashMap<>();
+    private Map<String, String> aliasMap = new HashMap<>();
 
     enum QueryParams {
 
@@ -129,10 +128,10 @@ public class CatalogSolrQueryParser {
      * @param query        Query
      * @param queryOptions Query Options
      * @param variableSetList List of variable sets available for the study whose query is going to be parsed.
+     * @throws CatalogException CatalogException
      * @return SolrQuery
-     * @throws SolrException SolrException
      */
-    public SolrQuery parse(Query query, QueryOptions queryOptions, List<VariableSet> variableSetList) throws SolrException {
+    public SolrQuery parse(Query query, QueryOptions queryOptions, List<VariableSet> variableSetList) throws CatalogException {
 
         Map<String, String> filterList = new HashMap<>();
         SolrQuery solrQuery = new SolrQuery();
@@ -149,7 +148,7 @@ public class CatalogSolrQueryParser {
             try {
                 facetQuery = facetQueryParser.parse(queryOptions.getString(QueryOptions.FACET));
             } catch (Exception e) {
-                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Solr parse exception: " + e.getMessage(), e);
+                throw new CatalogException("Solr parse exception: " + e.getMessage(), e);
             }
             if (StringUtils.isNotEmpty(facetQuery)) {
                 solrQuery.set("json.facet", facetQuery);
@@ -194,7 +193,7 @@ public class CatalogSolrQueryParser {
     }
 
     public Map<String, String> getAliasMap() {
-        return solrAliasMap;
+        return aliasMap;
     }
 
     private void replaceAnnotationFormat(QueryOptions queryOptions, String facetType, ObjectMap variableMap) {
@@ -224,7 +223,7 @@ public class CatalogSolrQueryParser {
                 facet = facet.replace(prefix + annotation, annotationReplacement);
 
                 // We add the field we have replaced to the map
-                solrAliasMap.put(annotationReplacement, annotation);
+                aliasMap.put(annotationReplacement, "annotation." + annotation);
 
                 index = -1;
             } else {
@@ -236,7 +235,7 @@ public class CatalogSolrQueryParser {
                 facet = facet.replace(prefix + annotation, annotationReplacement);
 
                 // We add the field we have replaced to the map
-                solrAliasMap.put(annotationReplacement, annotation);
+                aliasMap.put(annotationReplacement, "annotation." + annotation);
 
                 copy = copy.substring(lastIndex);
                 index = copy.indexOf(prefix);
