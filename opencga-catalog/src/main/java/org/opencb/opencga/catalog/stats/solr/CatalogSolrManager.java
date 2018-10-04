@@ -22,7 +22,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.UpdateResponse;
-import org.apache.solr.common.SolrException;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -31,7 +30,6 @@ import org.opencb.commons.datastore.solr.SolrCollection;
 import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.config.SearchConfiguration;
@@ -71,7 +69,7 @@ public class CatalogSolrManager {
 
     private Logger logger;
 
-    public CatalogSolrManager(CatalogManager catalogManager) throws SolrException, CatalogDBException {
+    public CatalogSolrManager(CatalogManager catalogManager) {
         this.catalogManager = catalogManager;
         SearchConfiguration searchConfiguration = catalogManager.getConfiguration().getCatalog().getSearch();
         this.solrManager = new SolrManager(searchConfiguration.getHost(), searchConfiguration.getMode(), searchConfiguration.getTimeout());
@@ -89,19 +87,19 @@ public class CatalogSolrManager {
         return solrManager.isAlive(collection);
     }
 
-    public void create(String dbName, String configSet) throws SolrException {
+    public void create(String dbName, String configSet) {
         solrManager.create(dbName, configSet);
     }
 
-    public void createCore(String coreName, String configSet) throws SolrException {
+    public void createCore(String coreName, String configSet) {
         solrManager.createCore(coreName, configSet);
     }
 
-    public void createCollection(String collectionName, String configSet) throws SolrException {
+    public void createCollection(String collectionName, String configSet) {
         solrManager.createCollection(collectionName, configSet);
     }
 
-    public boolean exists(String dbName) throws SolrException {
+    public boolean exists(String dbName) {
         return solrManager.exists(dbName);
     }
 
@@ -109,7 +107,7 @@ public class CatalogSolrManager {
         return solrManager.existsCore(coreName);
     }
 
-    public boolean existsCollection(String collectionName) throws SolrException {
+    public boolean existsCollection(String collectionName) {
         return solrManager.existsCollection(collectionName);
     }
 
@@ -121,7 +119,7 @@ public class CatalogSolrManager {
         }
     }
 
-    private void createCatalogSolrCollections() throws SolrException {
+    private void createCatalogSolrCollections() {
         for (String key : CONFIGS_COLLECTION.keySet()) {
             if (!existsCollection(key)) {
                 createCollection(key, CONFIGS_COLLECTION.get(key));
@@ -129,7 +127,7 @@ public class CatalogSolrManager {
         }
     }
 
-    private void createCatalogSolrCores() throws SolrException {
+    private void createCatalogSolrCores() {
         for (String key : CONFIGS_COLLECTION.keySet()) {
             if (!existsCore(key)) {
                 createCore(key, CONFIGS_COLLECTION.get(key));
@@ -138,7 +136,7 @@ public class CatalogSolrManager {
     }
 
     public <T> void insertCatalogCollection(DBIterator<T> iterator, ComplexTypeConverter converter,
-                                            String collectionName) throws CatalogException, IOException, SolrException {
+                                            String collectionName) throws IOException, CatalogException {
 
         int count = 0;
         List<T> records = new ArrayList<>(insertBatchSize);
@@ -158,7 +156,7 @@ public class CatalogSolrManager {
     }
 
     public <T, M> void insertCatalogCollection(List<T> records, ComplexTypeConverter converter,
-                                               String collectionName) throws IOException, SolrException {
+                                               String collectionName) throws IOException, CatalogException {
         List<M> solrModels = new ArrayList<>();
 
         for (T record : records) {
@@ -172,7 +170,7 @@ public class CatalogSolrManager {
                 solrManager.getSolrClient().commit(DATABASE_PREFIX + collectionName);
             }
         } catch (SolrServerException e) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
+            throw new CatalogException(e.getMessage(), e);
         }
     }
 
@@ -185,11 +183,11 @@ public class CatalogSolrManager {
      * @param queryOptions Query options (contains the facet and facetRange options)
      * @return List of Variant objects
      * @throws IOException   IOException
-     * @throws SolrException SolrException
+     * @throws CatalogException CatalogException
      */
     @Deprecated
     public FacetQueryResult facetedQuery(String collection, Query query, QueryOptions queryOptions)
-            throws IOException, SolrException {
+            throws IOException, CatalogException {
         CatalogSolrQueryParser catalogSolrQueryParser = new CatalogSolrQueryParser();
         SolrQuery solrQuery = catalogSolrQueryParser.parse(query, queryOptions, null);
 
@@ -197,7 +195,7 @@ public class CatalogSolrManager {
         try {
             return solrCollection.facet(solrQuery, catalogSolrQueryParser.getAliasMap());
         } catch (SolrServerException e) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
+            throw new CatalogException(e.getMessage(), e);
         }
     }
 
@@ -211,11 +209,10 @@ public class CatalogSolrManager {
      * @param userId       User performing the facet query.
      * @return Facet results
      * @throws IOException   IOException
-     * @throws SolrException SolrException
      * @throws CatalogException CatalogException
      */
     public FacetQueryResult facetedQuery(Study study, String collection, Query query, QueryOptions queryOptions, String userId)
-            throws IOException, SolrException, CatalogException {
+            throws IOException, CatalogException {
         StopWatch stopWatch = StopWatch.createStarted();
 
         Query queryCopy = query == null ? new Query() : new Query(query);
@@ -252,7 +249,7 @@ public class CatalogSolrManager {
         try {
             return solrCollection.facet(solrQuery, catalogSolrQueryParser.getAliasMap());
         } catch (SolrServerException e) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
+            throw new CatalogException(e.getMessage(), e);
         }
     }
 
