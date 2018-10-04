@@ -117,6 +117,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                 projectStr = projectId;
                 query.remove(StudyDBAdaptor.QueryParams.PROJECT_ID.key());
             }
+            query.remove("project");
 
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
 
