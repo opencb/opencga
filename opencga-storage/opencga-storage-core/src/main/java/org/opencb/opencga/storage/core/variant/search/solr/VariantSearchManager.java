@@ -251,7 +251,7 @@ public class VariantSearchManager {
      * @throws SolrException SolrException
      */
     public VariantQueryResult<Variant> query(String collection, Query query, QueryOptions queryOptions)
-            throws IOException, SolrException {
+            throws IOException {
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         SolrCollection solrCollection = solrManager.getCollection(collection);
         QueryResult<Variant> queryResult;
