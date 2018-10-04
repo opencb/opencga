@@ -38,7 +38,7 @@ import java.util.List;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.clinical.ReportedVariantQueryParam.*;
 
-@Path("/{version}/analysis/clinical")
+@Path("/{apiVersion}/analysis/clinical")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Analysis - Clinical Interpretation", position = 4, description = "Methods for working with Clinical Analysis")
 public class ClinicalAnalysisWSService extends AnalysisWSService {
