@@ -343,8 +343,6 @@ public class OpenCGAWSServer {
                     queryOptions.put(entry.getKey(), lazy);
                     break;
                 case QueryOptions.FACET:
-                case QueryOptions.FACET_RANGE:
-                case QueryOptions.FACET_INTERSECTION:
                     queryOptions.put(entry.getKey(), value);
                     break;
                 default:
@@ -474,13 +472,7 @@ public class OpenCGAWSServer {
         logResponse(response.getStatusInfo(), queryResponse);
         return response;
     }
-
-//    protected Response createErrorResponse(String o) {
-//        QueryResult<ObjectMap> result = new QueryResult();
-//        result.setErrorMsg(o.toString());
-//        return createOkResponse(result);
-//    }
-
+    
     protected Response createErrorResponse(String method, String errorMessage) {
         try {
             return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(new ObjectMap("error", errorMessage)),
