@@ -105,32 +105,60 @@ public class VariantSearchManager {
         return solrManager.isAlive(collection);
     }
 
-    public void create(String coreName) throws SolrException {
-        solrManager.create(coreName, CONF_SET);
+    public void create(String dbName) throws VariantSearchException {
+        try {
+            solrManager.create(dbName, CONF_SET);
+        } catch (SolrException e) {
+            throw new VariantSearchException("Error creating Solr collection '" + dbName + "'", e);
+        }
     }
 
-    public void create(String dbName, String configSet) throws SolrException {
-        solrManager.create(dbName, configSet);
+    public void create(String dbName, String configSet) throws VariantSearchException {
+        try {
+            solrManager.create(dbName, configSet);
+        } catch (SolrException e) {
+            throw new VariantSearchException("Error creating Solr collection '" + dbName + "'", e);
+        }
     }
 
-    public void createCore(String coreName, String configSet) throws SolrException {
-        solrManager.createCore(coreName, configSet);
+    public void createCore(String coreName, String configSet) throws VariantSearchException {
+        try {
+            solrManager.createCore(coreName, configSet);
+        } catch (SolrException e) {
+            throw new VariantSearchException("Error creating Solr core '" + coreName + "'", e);
+        }
     }
 
-    public void createCollection(String collectionName, String configSet) throws SolrException {
-        solrManager.createCollection(collectionName, configSet);
+    public void createCollection(String collectionName, String configSet) throws VariantSearchException {
+        try {
+            solrManager.createCollection(collectionName, configSet);
+        } catch (SolrException e) {
+            throw new VariantSearchException("Error creating Solr collection '" + collectionName + "'", e);
+        }
     }
 
-    public boolean exists(String dbName) throws SolrException {
-        return solrManager.exists(dbName);
+    public boolean exists(String dbName) throws VariantSearchException {
+        try {
+            return solrManager.exists(dbName);
+        } catch (SolrException e) {
+            throw new VariantSearchException("Error asking if Solr collection '" + dbName + "' exists", e);
+        }
     }
 
-    public boolean existsCore(String coreName) {
-        return solrManager.existsCore(coreName);
+    public boolean existsCore(String coreName) throws VariantSearchException {
+        try {
+            return solrManager.existsCore(coreName);
+        } catch (SolrException e) {
+            throw new VariantSearchException("Error asking if Solr core '" + coreName + "' exists", e);
+        }
     }
 
-    public boolean existsCollection(String collectionName) throws SolrException {
-        return solrManager.existsCollection(collectionName);
+    public boolean existsCollection(String collectionName) throws VariantSearchException {
+        try {
+            return solrManager.existsCollection(collectionName);
+        } catch (SolrException e) {
+            throw new VariantSearchException("Error asking if Solr collection '" + collectionName + "' exists", e);
+        }
     }
 
     /**
@@ -138,11 +166,10 @@ public class VariantSearchManager {
      *
      * @param collection Collection name
      * @param path       Path to the file to load
+     * @throws VariantSearchException VariantSearchException
      * @throws IOException            IOException
-     * @throws SolrException          SolrException
-     * @throws StorageEngineException StorageEngineException
      */
-    public void load(String collection, Path path) throws IOException, SolrException, StorageEngineException {
+    public void load(String collection, Path path) throws VariantSearchException, IOException {
         // TODO: can we use VariantReaderUtils as implemented in the function load00 below ?
         // TODO: VarriantReaderUtils supports JSON, AVRO and VCF file formats.
 
@@ -151,11 +178,19 @@ public class VariantSearchManager {
 
         File file = path.toFile();
         if (file.getName().endsWith("json") || file.getName().endsWith("json.gz")) {
-            loadJson(collection, path);
+            try {
+                loadJson(collection, path);
+            } catch (SolrServerException e) {
+                throw new VariantSearchException("Error loading variants from JSON file.", e);
+            }
         } else if (file.getName().endsWith("avro") || file.getName().endsWith("avro.gz")) {
-            loadAvro(collection, path);
+            try {
+                loadAvro(collection, path);
+            } catch (StorageEngineException | SolrServerException e) {
+                throw new VariantSearchException("Error loading variants from AVRO file.", e);
+            }
         } else {
-            throw new IOException("File format " + path + " not supported. Please, use Avro or JSON file formats.");
+            throw new VariantSearchException("File format " + path + " not supported. Please, use Avro or JSON file formats.");
         }
     }
 
@@ -167,14 +202,13 @@ public class VariantSearchManager {
      * @param progressLogger    Progress logger
      * @param loadListener      Load listener
      * @return VariantSearchLoadResult
-     * @throws IOException            IOException
-     * @throws SolrException SolrException
+     * @throws VariantSearchException VariantSearchException
+     * @throws IOException IOException
      */
     public VariantSearchLoadResult load(String collection, VariantDBIterator variantDBIterator, ProgressLogger progressLogger,
-                                        VariantSearchLoadListener loadListener)
-            throws IOException, SolrException {
+                                        VariantSearchLoadListener loadListener) throws VariantSearchException, IOException {
         if (variantDBIterator == null) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "VariantDBIterator parameter is null");
+            throw new VariantSearchException("Missing variant DB iterator when loading Solr variant collection");
         }
 
         int count = 0;
@@ -188,7 +222,11 @@ public class VariantSearchManager {
             if (count % insertBatchSize == 0) {
                 loadListener.preLoad(variantList);
                 numLoadedVariants += variantList.size();
-                insert(collection, variantList);
+                try {
+                    insert(collection, variantList);
+                } catch (SolrServerException e) {
+                    throw new VariantSearchException("Error inserting variant.", e);
+                }
                 loadListener.postLoad(variantList);
                 variantList.clear();
             }
@@ -198,7 +236,11 @@ public class VariantSearchManager {
         if (CollectionUtils.isNotEmpty(variantList)) {
             loadListener.preLoad(variantList);
             numLoadedVariants += variantList.size();
-            insert(collection, variantList);
+            try {
+                insert(collection, variantList);
+            } catch (SolrServerException e) {
+                throw new VariantSearchException("Error inserting variant.", e);
+            }
             loadListener.postLoad(variantList);
         }
         loadListener.close();
@@ -214,13 +256,13 @@ public class VariantSearchManager {
      * @param variantDBIterator Iterator to retrieve the variants to remove
      * @param progressLogger    Progress logger
      * @return VariantSearchLoadResult
-     * @throws IOException            IOException
-     * @throws SolrException SolrException
+     * @throws VariantSearchException VariantSearchException
+     * @throws IOException IOException
      */
     public int delete(String collection, VariantDBIterator variantDBIterator, ProgressLogger progressLogger)
-            throws IOException, SolrException {
+            throws VariantSearchException, IOException {
         if (variantDBIterator == null) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "VariantDBIterator parameter is null");
+            throw new VariantSearchException("Missing variant DB iterator when deleting variants");
         }
 
         int count = 0;
@@ -231,7 +273,11 @@ public class VariantSearchManager {
             variantList.add(variant.toString());
             count++;
             if (count % insertBatchSize == 0 || !variantDBIterator.hasNext()) {
-                delete(collection, variantList);
+                try {
+                    delete(collection, variantList);
+                } catch (SolrServerException e) {
+                    throw new VariantSearchException("Error deleting variants.", e);
+                }
                 variantList.clear();
             }
         }
@@ -247,18 +293,18 @@ public class VariantSearchManager {
      * @param query        Query
      * @param queryOptions Query options
      * @return List of Variant objects
+     * @throws VariantSearchException VariantSearchException
      * @throws IOException   IOException
-     * @throws SolrException SolrException
      */
     public VariantQueryResult<Variant> query(String collection, Query query, QueryOptions queryOptions)
-            throws IOException {
+            throws VariantSearchException, IOException {
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         SolrCollection solrCollection = solrManager.getCollection(collection);
         QueryResult<Variant> queryResult;
         try {
             queryResult = solrCollection.query(solrQuery, VariantSearchModel.class, variantSearchToVariantConverter);
         } catch (SolrServerException e) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
+            throw new VariantSearchException("Error executing variant query", e);
         }
 
         return new VariantQueryResult<>("", queryResult.getDbTime(), queryResult.getNumResults(),
@@ -273,31 +319,42 @@ public class VariantSearchManager {
      * @param query        Query
      * @param queryOptions Query options
      * @return List of VariantSearchModel objects
+     * @throws VariantSearchException VariantSearchException
      * @throws IOException   IOException
-     * @throws SolrException SolrException
      */
     public VariantQueryResult<VariantSearchModel> nativeQuery(String collection, Query query, QueryOptions queryOptions)
-            throws IOException, SolrException {
+            throws VariantSearchException, IOException {
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         SolrCollection solrCollection = solrManager.getCollection(collection);
         QueryResult<VariantSearchModel> queryResult;
         try {
             queryResult = solrCollection.query(solrQuery, VariantSearchModel.class);
         } catch (SolrServerException e) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
+            throw new VariantSearchException("Error executing variant query (nativeQuery)", e);
         }
 
         return new VariantQueryResult<>("", queryResult.getDbTime(), queryResult.getNumResults(),
                 queryResult.getNumTotalResults(), "", "", queryResult.getResult(), null, SEARCH_ENGINE_ID);
     }
 
+    /**
+     * Return a Solr variant iterator to retrieve Variant objects from a Solr core/collection
+     * according a given query.
+     *
+     * @param collection   Collection name
+     * @param query        Query
+     * @param queryOptions Query options
+     * @return Solr VariantSearch iterator
+     * @throws VariantSearchException VariantSearchException
+     * @throws IOException   IOException
+     */
     public VariantSolrIterator iterator(String collection, Query query, QueryOptions queryOptions)
-            throws SolrException, IOException {
+            throws VariantSearchException, IOException {
         try {
             SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
             return new VariantSolrIterator(solrManager.getSolrClient(), collection, solrQuery);
         } catch (SolrServerException e) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
+            throw new VariantSearchException("Error getting variant iterator", e);
         }
     }
 
@@ -309,27 +366,34 @@ public class VariantSearchManager {
      * @param query        Query
      * @param queryOptions Query options
      * @return Solr VariantSearch iterator
-     * @throws IOException   IOException
-     * @throws SolrException SolrException
+     * @throws VariantSearchException VariantSearchException
      */
     public VariantSearchSolrIterator nativeIterator(String collection, Query query, QueryOptions queryOptions)
-            throws SolrException, IOException {
+            throws VariantSearchException {
         try {
             SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
             return new VariantSearchSolrIterator(solrManager.getSolrClient(), collection, solrQuery);
         } catch (SolrServerException e) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
+            throw new VariantSearchException("Error getting variant iterator (native)", e);
         }
     }
 
-    public long count(String collection, Query query) throws IOException {
+    /**
+     *
+     * @param collection Collection name
+     * @param query      Query
+     * @return Number of results
+     * @throws VariantSearchException VariantSearchException
+     * @throws IOException IOException
+     */
+    public long count(String collection, Query query) throws VariantSearchException, IOException {
         SolrQuery solrQuery = solrQueryParser.parse(query, QueryOptions.empty());
         SolrCollection solrCollection = solrManager.getCollection(collection);
 
         try {
             return solrCollection.count(solrQuery).getResult().get(0);
         } catch (SolrServerException e) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
+            throw new VariantSearchException("Error executing count for a given query", e);
         }
     }
 
@@ -341,11 +405,11 @@ public class VariantSearchManager {
      * @param query        Query
      * @param queryOptions Query options (contains the facet and facetRange options)
      * @return List of Variant objects
-     * @throws IOException IOException
      * @throws VariantSearchException VariantSearchException
+     * @throws IOException IOException
      */
     public FacetQueryResult facetedQuery(String collection, Query query, QueryOptions queryOptions)
-            throws IOException, VariantSearchException {
+            throws VariantSearchException, IOException {
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         SolrCollection solrCollection = solrManager.getCollection(collection);
 
@@ -400,19 +464,15 @@ public class VariantSearchManager {
      * @throws IOException   IOException
      * @throws SolrException SolrException
      */
-    private void insert(String collection, List<Variant> variants) throws IOException, SolrException {
+    private void insert(String collection, List<Variant> variants) throws IOException, SolrServerException {
         if (variants != null && CollectionUtils.isNotEmpty(variants)) {
             List<VariantSearchModel> variantSearchModels = variantSearchToVariantConverter.convertListToStorageType(variants);
 
             if (!variantSearchModels.isEmpty()) {
                 UpdateResponse updateResponse;
-                try {
-                    updateResponse = solrManager.getSolrClient().addBeans(collection, variantSearchModels);
-                    if (updateResponse.getStatus() == 0) {
-                        solrManager.getSolrClient().commit(collection);
-                    }
-                } catch (SolrServerException e) {
-                    throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
+                updateResponse = solrManager.getSolrClient().addBeans(collection, variantSearchModels);
+                if (updateResponse.getStatus() == 0) {
+                    solrManager.getSolrClient().commit(collection);
                 }
             }
         }
@@ -425,7 +485,7 @@ public class VariantSearchManager {
      * @throws IOException
      * @throws SolrException
      */
-    private void loadJson(String collection, Path path) throws IOException, SolrException {
+    private void loadJson(String collection, Path path) throws IOException, SolrServerException {
         // This opens json and json.gz files automatically
         try (BufferedReader bufferedReader = FileUtils.newBufferedReader(path)) {
             // TODO: get the buffer size from configuration file
@@ -452,7 +512,7 @@ public class VariantSearchManager {
         }
     }
 
-    private void loadAvro(String collection, Path path) throws IOException, SolrException, StorageEngineException {
+    private void loadAvro(String collection, Path path) throws StorageEngineException, IOException, SolrServerException {
         // reader
         VariantReader reader = VariantReaderUtils.getVariantReader(path);
 
@@ -468,15 +528,11 @@ public class VariantSearchManager {
         reader.close();
     }
 
-    private void delete(String collection, List<String> variants) throws IOException, SolrException {
+    private void delete(String collection, List<String> variants) throws IOException, SolrServerException {
         if (CollectionUtils.isNotEmpty(variants)) {
-            try {
-                UpdateResponse updateResponse = solrManager.getSolrClient().deleteById(collection, variants);
-                if (updateResponse.getStatus() == 0) {
-                    solrManager.getSolrClient().commit(collection);
-                }
-            } catch (SolrServerException e) {
-                throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
+            UpdateResponse updateResponse = solrManager.getSolrClient().deleteById(collection, variants);
+            if (updateResponse.getStatus() == 0) {
+                solrManager.getSolrClient().commit(collection);
             }
         }
     }

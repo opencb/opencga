@@ -18,7 +18,6 @@ package org.opencb.opencga.storage.core.manager.variant;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.apache.solr.common.SolrException;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
@@ -44,6 +43,7 @@ import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.manager.StorageManager;
 import org.opencb.opencga.storage.core.manager.models.StudyInfo;
 import org.opencb.opencga.storage.core.manager.variant.metadata.CatalogVariantMetadataFactory;
@@ -182,7 +182,7 @@ public class VariantStorageManager extends StorageManager {
     }
 
     public void searchIndexSamples(String study, List<String> samples, QueryOptions queryOptions, String sessionId)
-            throws StorageEngineException, IOException, SolrException,
+            throws StorageEngineException, IOException, VariantSearchException,
             IllegalAccessException, ClassNotFoundException, InstantiationException, CatalogException {
         DataStore dataStore = getDataStore(study, sessionId);
         VariantStorageEngine variantStorageEngine =
@@ -194,7 +194,7 @@ public class VariantStorageManager extends StorageManager {
 
     public void removeSearchIndexSamples(String study, List<String> samples, QueryOptions queryOptions, String sessionId)
             throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException,
-            StorageEngineException, SolrException {
+            StorageEngineException, VariantSearchException {
         DataStore dataStore = getDataStore(study, sessionId);
         VariantStorageEngine variantStorageEngine =
                 storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
@@ -204,13 +204,13 @@ public class VariantStorageManager extends StorageManager {
 
     }
 
-    public void searchIndex(String study, String sessionId) throws StorageEngineException, IOException, SolrException,
+    public void searchIndex(String study, String sessionId) throws StorageEngineException, IOException, VariantSearchException,
             IllegalAccessException, ClassNotFoundException, InstantiationException, CatalogException {
         searchIndex(new Query(STUDY.key(), study), new QueryOptions(), false, sessionId);
     }
 
     public void searchIndex(Query query, QueryOptions queryOptions, boolean overwrite, String sessionId) throws StorageEngineException,
-            IOException, SolrException, IllegalAccessException, InstantiationException, ClassNotFoundException, CatalogException {
+            IOException, VariantSearchException, IllegalAccessException, InstantiationException, ClassNotFoundException, CatalogException {
 //        String userId = catalogManager.getUserManager().getUserId(sessionId);
 //        long studyId = catalogManager.getStudyManager().getId(userId, study);
         String study = catalogUtils.getAnyStudy(query, sessionId);
