@@ -740,6 +740,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         try {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
+            queryOptions.put(QueryOptions.FACET, fields);
             Query query = getVariantQuery(queryOptions);
 
             FacetQueryResult queryResult = variantManager.facet(query, queryOptions, sessionId);
