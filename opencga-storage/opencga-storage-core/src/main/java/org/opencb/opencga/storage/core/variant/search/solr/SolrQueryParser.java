@@ -114,6 +114,7 @@ public class SolrQueryParser {
 
                 solrQuery.setRows(0);
                 solrQuery.setStart(0);
+                solrQuery.setFields();
             } catch (Exception e) {
                 throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Solr parse exception: " + e.getMessage(), e);
             }

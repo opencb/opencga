@@ -674,27 +674,19 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         return createErrorResponse(new NotImplementedException("Pending"));
     }
 
+    @Deprecated
     @GET
     @Path("/facet")
     @ApiOperation(value = "This method has been renamed, use endpoint /stats instead" + DEPRECATED, position = 15, response = QueryResponse.class)
     public Response getFacets(@ApiParam(value = "List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: studies>>biotype;type") @QueryParam("facet") String facet,
                               @ApiParam(value = "List of facet ranges separated by semicolons with the format {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1") @QueryParam("facetRange") String facetRange) {
-        return getStats(facet, facetRange);
+        return getStats(facet);
     }
 
     @GET
     @Path("/stats")
     @ApiOperation(value = "Fetch variant stats", position = 15, response = QueryResponse.class)
     @ApiImplicitParams({
-//            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = QueryOptions.LIMIT, value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
-//            @ApiImplicitParam(name = QueryOptions.SKIP, value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
-//            @ApiImplicitParam(name = QueryOptions.COUNT, value = "Total number of results", dataType = "boolean", paramType = "query"),
-//            @ApiImplicitParam(name = QueryOptions.SKIP_COUNT, value = "Do not count total number of results", dataType = "boolean", paramType = "query"),
-//            @ApiImplicitParam(name = QueryOptions.SORT, value = "Sort the results", dataType = "boolean", paramType = "query"),
-//            @ApiImplicitParam(name = VariantField.SUMMARY, value = "Fetch summary data from Solr", dataType = "boolean", paramType = "query"),
-
             // Variant filters
             @ApiImplicitParam(name = "id", value = ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "region", value = REGION_DESCR, dataType = "string", paramType = "query"),
@@ -744,21 +736,13 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             // WARN: Only available in Solr
             @ApiImplicitParam(name = "trait", value = ANNOT_TRAIT_DESCR, dataType = "string", paramType = "query"),
     })
-    public Response getStats(@ApiParam(value = "List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: studies>>biotype;type") @QueryParam("facet") String facet,
-                             @ApiParam(value = "List of facet ranges separated by semicolons with the format {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1") @QueryParam("facetRange") String facetRange) {
+    public Response getStats(@ApiParam(value = "List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: chromosome>>type;percentile(gerp)") @QueryParam("fields") String fields) {
         try {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
-            queryOptions.put(QueryOptions.LIMIT, 0);
-            queryOptions.put(QueryOptions.SKIP, 0);
-            queryOptions.remove(QueryOptions.COUNT);
-            queryOptions.remove(QueryOptions.INCLUDE);
-            queryOptions.remove(QueryOptions.SORT);
-
             Query query = getVariantQuery(queryOptions);
 
             FacetQueryResult queryResult = variantManager.facet(query, queryOptions, sessionId);
-
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
