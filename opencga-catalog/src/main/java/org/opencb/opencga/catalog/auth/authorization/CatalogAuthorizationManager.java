@@ -919,6 +919,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         aclDBAdaptor.setToMembers(ids, members, permissions, allPermissions, entity);
         int dbTime = (int) (System.currentTimeMillis() - startTime);
 
+        // We store that those members have internal permissions
+        aclDBAdaptor.setMembersHaveInternalPermissionsDefined(studyId, members, permissions, entity.name());
+
         List<QueryResult<E>> aclResultList = getAcls(ids, members, entity);
 
         for (QueryResult<E> aclEntryQueryResult : aclResultList) {
@@ -948,6 +951,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         long startTime = System.currentTimeMillis();
         aclDBAdaptor.addToMembers(ids, members, permissions, entity);
         int dbTime = (int) (System.currentTimeMillis() - startTime);
+
+        // We store that those members have internal permissions
+        aclDBAdaptor.setMembersHaveInternalPermissionsDefined(studyId, members, permissions, entity.name());
 
         List<QueryResult<E>> aclResultList = getAcls(ids, members, entity);
 

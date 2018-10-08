@@ -58,6 +58,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     private Map<Entity, List<String>> fullPermissionsMap = new HashMap<>();
 
     private static final String ANONYMOUS = "*";
+    static final String MEMBER_WITH_INTERNAL_ACL = "_withInternalAcls";
 
     public AuthorizationMongoDBAdaptor(Configuration configuration) throws CatalogDBException {
         super(LoggerFactory.getLogger(AuthorizationMongoDBAdaptor.class));
@@ -591,6 +592,27 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
             collection.update(queryDocument, update, new QueryOptions(MongoDBCollection.MULTI, true));
         }
+    }
+
+    @Override
+    public void setMembersHaveInternalPermissionsDefined(long studyId, List<String> members, List<String> permissions, String entity) {
+        // We only store if a member has internal permissions defined if it hasn't been given VIEW permission
+        if (permissions.contains("VIEW")) {
+            return;
+        }
+
+        Document queryDocument = new Document()
+                .append("$isolated", 1)
+                .append(PRIVATE_UID, studyId);
+
+        Document addToSet = new Document();
+        for (String member : members) {
+            addToSet.append(MEMBER_WITH_INTERNAL_ACL + "." + member, entity);
+        }
+        Document update = new Document("$addToSet", addToSet);
+
+        MongoDBCollection collection = dbCollectionMap.get(Entity.STUDY);
+        collection.update(queryDocument, update, new QueryOptions());
     }
 
     @Override
