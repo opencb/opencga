@@ -498,11 +498,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             ObjectWriter writer = new ObjectMapper().writer();
 
             for (StudyEntry studyEntry : variant.getStudies()) {
-                String studyId = studyEntry.getStudyId();
-                if (studyId.contains(":")) {
-                    String[] split = studyId.split(":");
-                    studyId = split[split.length - 1];
-                }
+                String studyId = studyIdToSearchModel(studyEntry.getStudyId());
                 variantSearchModel.getStudies().add(studyId);
 
                 // We store the cohort stats with the format stats_STUDY_COHORT = value, e.g. stats_1kg_phase3_ALL=0.02
@@ -867,6 +863,10 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
         variantSearchModel.setXrefs(new ArrayList<>(xrefs));
         return variantSearchModel;
+    }
+
+    public static String studyIdToSearchModel(String studyId) {
+        return studyId.substring(studyId.lastIndexOf(':') + 1);
     }
 
     public List<VariantSearchModel> convertListToStorageType(List<Variant> variants) {

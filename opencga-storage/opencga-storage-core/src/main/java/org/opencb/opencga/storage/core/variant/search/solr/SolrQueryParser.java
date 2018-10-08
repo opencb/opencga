@@ -114,6 +114,7 @@ public class SolrQueryParser {
 
                 solrQuery.setRows(0);
                 solrQuery.setStart(0);
+                solrQuery.setFields();
             } catch (Exception e) {
                 throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Solr parse exception: " + e.getMessage(), e);
             }
@@ -235,8 +236,7 @@ public class SolrQueryParser {
             if (map != null && map.size() > 1) {
                 map.forEach((name, id) -> {
                     if (studyIds.contains(id)) {
-                        String[] s = name.split(":");
-                        studyNames.add(s[s.length - 1]);
+                        studyNames.add(VariantSearchToVariantConverter.studyIdToSearchModel(name));
                     }
                 });
 
@@ -1186,6 +1186,9 @@ public class SolrQueryParser {
             // Empty (not-null) study list means NONE studies!
             return solrFields;
         }
+        if (incStudies != null) {
+            incStudies.replaceAll(VariantSearchToVariantConverter::studyIdToSearchModel);
+        }
 
         // --include-file management
         List<String> incFiles = VariantQueryUtils.getIncludeFilesList(query, incFields);
@@ -1312,9 +1315,7 @@ public class SolrQueryParser {
         if (StringUtils.isNotEmpty(query.getString(VariantQueryParam.STUDY.key()))) {
             studies = query.getString(VariantQueryParam.STUDY.key()).split("[,;]");
             for (int i = 0; i < studies.length; i++) {
-                if (studies[i].contains(":")) {
-                    studies[i] = studies[i].split(":")[1];
-                }
+                studies[i] = VariantSearchToVariantConverter.studyIdToSearchModel(studies[i]);
             }
         }
         return studies;
