@@ -24,6 +24,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.opencb.biodata.models.clinical.interpretation.DiseasePanel.*;
 import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
@@ -91,10 +92,10 @@ public class VariantCatalogQueryUtilsTest {
 
         catalog.getDiseasePanelManager().create("s1", new DiseasePanel("MyPanel", "MyPanel", 1).setGenes(
                 Arrays.asList(
-                        new DiseasePanel.GenePanel().setName("BRCA2"),
-                        new DiseasePanel.GenePanel().setName("CADM1"),
-                        new DiseasePanel.GenePanel().setName("CTBP2P1"),
-                        new DiseasePanel.GenePanel().setName("ADSL")
+                        new GenePanel().setName("BRCA2"),
+                        new GenePanel().setName("CADM1"),
+                        new GenePanel().setName("CTBP2P1"),
+                        new GenePanel().setName("ADSL")
                 )
         ), null, sessionId);
 

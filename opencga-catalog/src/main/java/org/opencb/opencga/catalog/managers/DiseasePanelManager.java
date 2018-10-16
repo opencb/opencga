@@ -46,6 +46,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static org.opencb.biodata.models.clinical.interpretation.DiseasePanel.*;
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
 
 public class DiseasePanelManager extends ResourceManager<DiseasePanel> {
@@ -213,9 +214,9 @@ public class DiseasePanelManager extends ResourceManager<DiseasePanel> {
                         continue;
                     }
 
-                    List<DiseasePanel.PanelCategory> categories = new ArrayList<>(2);
-                    categories.add(new DiseasePanel.PanelCategory(String.valueOf(panelInfo.get("disease_group")), 1));
-                    categories.add(new DiseasePanel.PanelCategory(String.valueOf(panelInfo.get("disease_sub_group")), 2));
+                    List<PanelCategory> categories = new ArrayList<>(2);
+                    categories.add(new PanelCategory(String.valueOf(panelInfo.get("disease_group")), 1));
+                    categories.add(new PanelCategory(String.valueOf(panelInfo.get("disease_sub_group")), 2));
 
                     List<Phenotype> phenotypes = new ArrayList<>();
                     for (String relevantDisorder : (List<String>) panelInfo.get("relevant_disorders")) {
@@ -224,7 +225,7 @@ public class DiseasePanelManager extends ResourceManager<DiseasePanel> {
                         }
                     }
 
-                    List<DiseasePanel.GenePanel> genes = new ArrayList<>();
+                    List<GenePanel> genes = new ArrayList<>();
                     for (Map<String, Object> gene : (List<Map>) panelInfo.get("genes")) {
                         String ensemblGeneId = "";
                         List<Xref> xrefs = new ArrayList<>();
@@ -254,7 +255,7 @@ public class DiseasePanelManager extends ResourceManager<DiseasePanel> {
                         }
 
                         // add gene panel
-                        genes.add(new DiseasePanel.GenePanel(ensemblGeneId, String.valueOf(geneData.get("hgnc_symbol")), xrefs,
+                        genes.add(new GenePanel(ensemblGeneId, String.valueOf(geneData.get("hgnc_symbol")), xrefs,
                                 String.valueOf(gene.get("mode_of_inheritance")), null, String.valueOf(gene.get("confidence_level")),
                                 (List<String>) gene.get("evidence"), publications));
                     }
@@ -268,7 +269,7 @@ public class DiseasePanelManager extends ResourceManager<DiseasePanel> {
                             .setCategories(categories)
                             .setPhenotypes(phenotypes)
                             .setGenes(genes)
-                            .setSource(new DiseasePanel.SourcePanel()
+                            .setSource(new SourcePanel()
                                     .setId(String.valueOf(panelInfo.get("id")))
                                     .setName(String.valueOf(panelInfo.get("name")))
                                     .setVersion(String.valueOf(panelInfo.get("version")))
