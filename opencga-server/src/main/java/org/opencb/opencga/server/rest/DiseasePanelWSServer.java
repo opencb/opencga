@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import static org.opencb.biodata.models.clinical.interpretation.DiseasePanel.*;
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 @Path("/{apiVersion}/diseasePanels")
@@ -275,14 +276,14 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
         public String description;
         @Deprecated
         public String author;
-        public DiseasePanel.SourcePanel source;
+        public SourcePanel source;
 
-        public List<DiseasePanel.PanelCategory> categories;
+        public List<PanelCategory> categories;
         public List<String> tags;
         public List<Phenotype> phenotypes;
-        public List<DiseasePanel.VariantPanel> variants;
-        public List<DiseasePanel.GenePanel> genes;
-        public List<DiseasePanel.RegionPanel> regions;
+        public List<VariantPanel> variants;
+        public List<GenePanel> genes;
+        public List<RegionPanel> regions;
 
         public Map<String, Integer> stats;
 

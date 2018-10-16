@@ -18,6 +18,8 @@ package org.opencb.opencga.analysis.clinical;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.alignment.RegionCoverage;
+import org.opencb.biodata.models.clinical.interpretation.*;
+import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.commons.Analyst;
 import org.opencb.biodata.models.commons.OntologyTerm;
 import org.opencb.biodata.models.commons.Phenotype;
@@ -26,7 +28,6 @@ import org.opencb.biodata.models.core.Exon;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.core.Transcript;
-import org.opencb.biodata.models.core.pedigree.Pedigree;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
@@ -41,9 +42,10 @@ import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.*;
-import org.opencb.opencga.core.models.ClinicalProperty.Penetrance;
-import org.opencb.opencga.core.models.clinical.*;
+import org.opencb.opencga.core.models.ClinicalAnalysis;
+import org.opencb.opencga.core.models.DiseasePanel;
+import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.User;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -55,8 +57,9 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.core.models.ClinicalProperty.ModeOfInheritance.*;
-import static org.opencb.opencga.core.models.ClinicalProperty.getPedigreeFromFamily;
+import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.ModeOfInheritance.*;
+import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.Penetrance;
+import static org.opencb.biodata.models.clinical.interpretation.DiseasePanel.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 
 public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
@@ -174,7 +177,7 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
         for (DiseasePanel diseasePanel: diseasePanels) {
             Map<String, List<String>> genePenetranceMap = new HashMap<>();
 
-            for (DiseasePanel.GenePanel genePanel : diseasePanel.getGenes()) {
+            for (GenePanel genePanel : diseasePanel.getGenes()) {
                 String key;
                 if (StringUtils.isEmpty(genePanel.getModeOfInheritance())) {
                     key = "all";
@@ -195,7 +198,7 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
             }
 
             if (bamFileId != null) {
-                for (DiseasePanel.GenePanel genePanel : diseasePanel.getGenes()) {
+                for (GenePanel genePanel : diseasePanel.getGenes()) {
                     String geneName = genePanel.getId();
                     if (!lowCoverageByGeneDone.contains(geneName)) {
                         reportedLowCoverages.addAll(getReportedLowCoverages(geneName, bamFileId, maxCoverage));
@@ -296,13 +299,16 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
         QueryResult<User> userQueryResult = catalogManager.getUserManager().get(userId, new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(UserDBAdaptor.QueryParams.EMAIL.key(), UserDBAdaptor.QueryParams.ORGANIZATION.key())), token);
 
+        List<org.opencb.biodata.models.clinical.interpretation.DiseasePanel> biodataDiseasePanels =
+                diseasePanels.stream().map(DiseasePanel::getDiseasePanel).collect(Collectors.toList());
+
         // Create Interpretation
         Interpretation interpretation = new Interpretation()
                 .setId("JT-PF-007")
                 .setAnalyst(new Analyst(userId, userQueryResult.first().getEmail(), userQueryResult.first().getOrganization()))
                 .setClinicalAnalysisId(clinicalAnalysisId)
                 .setCreationDate(TimeUtils.getTime())
-                .setPanels(diseasePanels)
+                .setPanels(biodataDiseasePanels)
                 .setFilters(null) //TODO
                 .setSoftware(new Software().setName("Tiering"))
                 .setReportedVariants(new ArrayList<>(reportedVariantMap.values()))
@@ -321,7 +327,7 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
         probandGenotype.put(clinicalAnalysis.getProband().getId(),
                 Arrays.asList(ModeOfInheritance.toGenotypeString(ModeOfInheritance.GENOTYPE_0_1)));
         putGenotypes(probandGenotype, query);
-        for (DiseasePanel.GenePanel gene : diseasePanel.getGenes()) {
+        for (GenePanel gene : diseasePanel.getGenes()) {
             query.put(VariantQueryParam.ANNOT_XREF.key(), gene);
 
             variantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), token);

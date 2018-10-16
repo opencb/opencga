@@ -16,6 +16,9 @@
 package org.opencb.opencga.storage.core.manager.clinical;
 
 import org.apache.commons.lang.StringUtils;
+import org.opencb.biodata.models.clinical.interpretation.Comment;
+import org.opencb.biodata.models.clinical.interpretation.Interpretation;
+import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -29,9 +32,6 @@ import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.Group;
 import org.opencb.opencga.core.models.Study;
-import org.opencb.opencga.core.models.clinical.Comment;
-import org.opencb.opencga.core.models.clinical.Interpretation;
-import org.opencb.opencga.core.models.clinical.ReportedVariant;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.clinical.ClinicalVariantEngine;
 import org.opencb.opencga.storage.core.clinical.ClinicalVariantException;

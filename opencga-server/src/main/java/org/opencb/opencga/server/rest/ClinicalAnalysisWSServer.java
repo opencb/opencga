@@ -19,6 +19,8 @@ package org.opencb.opencga.server.rest;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.clinical.interpretation.*;
+import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.commons.Analyst;
 import org.opencb.biodata.models.commons.OntologyTerm;
 import org.opencb.biodata.models.commons.Software;
@@ -31,10 +33,6 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
-import org.opencb.opencga.core.models.clinical.Comment;
-import org.opencb.opencga.core.models.clinical.Interpretation;
-import org.opencb.opencga.core.models.clinical.ReportedLowCoverage;
-import org.opencb.opencga.core.models.clinical.ReportedVariant;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -304,6 +302,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
         public List<ReportedLowCoverage> reportedLowCoverages;
         public List<Comment> comments;
         public Map<String, Object> attributes;
+
         public Interpretation toClinicalInterpretation() {
             return new Interpretation(id, description, clinicalAnalysisId, panels, software, analyst, dependencies, filters, creationDate, reportedVariants, reportedLowCoverages, comments, attributes);
         }

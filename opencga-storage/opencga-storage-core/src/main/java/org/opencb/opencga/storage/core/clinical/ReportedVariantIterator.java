@@ -16,7 +16,8 @@
 
 package org.opencb.opencga.storage.core.clinical;
 
-import org.opencb.opencga.core.models.clinical.ReportedVariant;
+
+import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
 
 import java.util.Iterator;
 
