@@ -170,27 +170,27 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
                 CatalogSolrManager.SAMPLE_SOLR_COLLECTION);
         FacetQueryResult facet = catalogSolrManager.facetedQuery(CatalogSolrManager.SAMPLE_SOLR_COLLECTION,
                 new Query(), new QueryOptions(QueryOptions.FACET, SampleDBAdaptor.QueryParams.RELEASE.key()));
-        assertEquals(3, facet.getResult().getFacetFields().get(0).getBuckets().get(0).getCount());
+        assertEquals(3, facet.getResults().get(0).getBuckets().get(0).getCount());
 
         facet = catalogSolrManager.facetedQuery(study, CatalogSolrManager.SAMPLE_SOLR_COLLECTION,
                 new Query(), new QueryOptions(QueryOptions.FACET, SampleDBAdaptor.QueryParams.RELEASE.key()), "user1");
-        assertEquals(2, facet.getResult().getFacetFields().get(0).getBuckets().get(0).getCount());
+        assertEquals(2, facet.getResults().get(0).getBuckets().get(0).getCount());
 
         facet = catalogSolrManager.facetedQuery(study, CatalogSolrManager.SAMPLE_SOLR_COLLECTION,
                 new Query(), new QueryOptions(QueryOptions.FACET, SampleDBAdaptor.QueryParams.RELEASE.key()), "user2");
-        assertEquals(1, facet.getResult().getFacetFields().get(0).getBuckets().get(0).getCount());
+        assertEquals(1, facet.getResults().get(0).getBuckets().get(0).getCount());
 
         facet = catalogSolrManager.facetedQuery(study, CatalogSolrManager.SAMPLE_SOLR_COLLECTION,
                 new Query(), new QueryOptions(QueryOptions.FACET, SampleDBAdaptor.QueryParams.RELEASE.key()), "user3");
-        assertEquals(1, facet.getResult().getFacetFields().get(0).getBuckets().get(0).getCount());
+        assertEquals(1, facet.getResults().get(0).getBuckets().get(0).getCount());
 
         facet = catalogSolrManager.facetedQuery(study, CatalogSolrManager.SAMPLE_SOLR_COLLECTION,
                 new Query(), new QueryOptions(QueryOptions.FACET, SampleDBAdaptor.QueryParams.RELEASE.key()), "admin1");
-        assertEquals(3, facet.getResult().getFacetFields().get(0).getBuckets().get(0).getCount());
+        assertEquals(3, facet.getResults().get(0).getBuckets().get(0).getCount());
 
         facet = catalogSolrManager.facetedQuery(study, CatalogSolrManager.SAMPLE_SOLR_COLLECTION,
                 new Query(), new QueryOptions(QueryOptions.FACET, SampleDBAdaptor.QueryParams.RELEASE.key()), "owner");
-        assertEquals(3, facet.getResult().getFacetFields().get(0).getBuckets().get(0).getCount());
+        assertEquals(3, facet.getResults().get(0).getBuckets().get(0).getCount());
     }
 
     @Test
@@ -257,27 +257,27 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
                 CatalogSolrManager.COHORT_SOLR_COLLECTION);
         FacetQueryResult facet = catalogSolrManager.facetedQuery(CatalogSolrManager.COHORT_SOLR_COLLECTION,
                 new Query(), new QueryOptions(QueryOptions.FACET, CohortDBAdaptor.QueryParams.RELEASE.key()));
-        assertEquals(3, facet.getResult().getFacetFields().get(0).getBuckets().get(0).getCount());
+        assertEquals(3, facet.getResults().get(0).getBuckets().get(0).getCount());
 
         facet = catalogSolrManager.facetedQuery(study, CatalogSolrManager.COHORT_SOLR_COLLECTION,
                 new Query(), new QueryOptions(QueryOptions.FACET, CohortDBAdaptor.QueryParams.RELEASE.key()), "user1");
-        assertEquals(2, facet.getResult().getFacetFields().get(0).getBuckets().get(0).getCount());
+        assertEquals(2, facet.getResults().get(0).getBuckets().get(0).getCount());
 
         facet = catalogSolrManager.facetedQuery(study, CatalogSolrManager.COHORT_SOLR_COLLECTION,
                 new Query(), new QueryOptions(QueryOptions.FACET, CohortDBAdaptor.QueryParams.RELEASE.key()), "user2");
-        assertEquals(1, facet.getResult().getFacetFields().get(0).getBuckets().get(0).getCount());
+        assertEquals(1, facet.getResults().get(0).getBuckets().get(0).getCount());
 
         facet = catalogSolrManager.facetedQuery(study, CatalogSolrManager.COHORT_SOLR_COLLECTION,
                 new Query(), new QueryOptions(QueryOptions.FACET, CohortDBAdaptor.QueryParams.RELEASE.key()), "user3");
-        assertEquals(1, facet.getResult().getFacetFields().get(0).getBuckets().get(0).getCount());
+        assertEquals(1, facet.getResults().get(0).getBuckets().get(0).getCount());
 
         facet = catalogSolrManager.facetedQuery(study, CatalogSolrManager.COHORT_SOLR_COLLECTION,
                 new Query(), new QueryOptions(QueryOptions.FACET, CohortDBAdaptor.QueryParams.RELEASE.key()), "admin1");
-        assertEquals(3, facet.getResult().getFacetFields().get(0).getBuckets().get(0).getCount());
+        assertEquals(3, facet.getResults().get(0).getBuckets().get(0).getCount());
 
         facet = catalogSolrManager.facetedQuery(study, CatalogSolrManager.COHORT_SOLR_COLLECTION,
                 new Query(), new QueryOptions(QueryOptions.FACET, CohortDBAdaptor.QueryParams.RELEASE.key()), "owner");
-        assertEquals(3, facet.getResult().getFacetFields().get(0).getBuckets().get(0).getCount());
+        assertEquals(3, facet.getResults().get(0).getBuckets().get(0).getCount());
     }
 
 
