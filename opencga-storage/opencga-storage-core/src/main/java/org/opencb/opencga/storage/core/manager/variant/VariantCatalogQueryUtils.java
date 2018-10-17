@@ -426,8 +426,8 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             }
             Panel panel = catalogManager.getPanelManager().get(defaultStudyStr, panelId, null, sessionId).first();
 
-            List<String> geneNames = new ArrayList<>(panel.getGenes().size());
-            for (org.opencb.biodata.models.clinical.interpretation.DiseasePanel.GenePanel genePanel : panel.getGenes()) {
+            List<String> geneNames = new ArrayList<>(panel.getDiseasePanel().getGenes().size());
+            for (org.opencb.biodata.models.clinical.interpretation.DiseasePanel.GenePanel genePanel : panel.getDiseasePanel().getGenes()) {
                 geneNames.add(genePanel.getName());
             }
 

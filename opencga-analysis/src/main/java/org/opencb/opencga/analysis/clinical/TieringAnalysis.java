@@ -177,7 +177,7 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
         for (Panel diseasePanel: diseasePanels) {
             Map<String, List<String>> genePenetranceMap = new HashMap<>();
 
-            for (GenePanel genePanel : diseasePanel.getGenes()) {
+            for (GenePanel genePanel : diseasePanel.getDiseasePanel().getGenes()) {
                 String key;
                 if (StringUtils.isEmpty(genePanel.getModeOfInheritance())) {
                     key = "all";
@@ -198,7 +198,7 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
             }
 
             if (bamFileId != null) {
-                for (GenePanel genePanel : diseasePanel.getGenes()) {
+                for (GenePanel genePanel : diseasePanel.getDiseasePanel().getGenes()) {
                     String geneName = genePanel.getId();
                     if (!lowCoverageByGeneDone.contains(geneName)) {
                         reportedLowCoverages.addAll(getReportedLowCoverages(geneName, bamFileId, maxCoverage));
@@ -327,7 +327,7 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
         probandGenotype.put(clinicalAnalysis.getProband().getId(),
                 Arrays.asList(ModeOfInheritance.toGenotypeString(ModeOfInheritance.GENOTYPE_0_1)));
         putGenotypes(probandGenotype, query);
-        for (GenePanel gene : diseasePanel.getGenes()) {
+        for (GenePanel gene : diseasePanel.getDiseasePanel().getGenes()) {
             query.put(VariantQueryParam.ANNOT_XREF.key(), gene);
 
             variantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), token);
@@ -427,7 +427,7 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
                             .setGenomicFeature(new GenomicFeature(ct.getEnsemblGeneId(), ct.getEnsemblTranscriptId(), ct.getGeneName(),
                                     null, null))
                             .setModeOfInheritance(moi)
-                            .setPanelId(diseasePanel.getId())
+                            .setPanelId(diseasePanel.getDiseasePanel().getId())
                             .setPenetrance(penetrance);
 
                     // TODO: add additional reported event fields
@@ -459,7 +459,7 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
                             .setGenomicFeature(new GenomicFeature(ct.getEnsemblGeneId(), ct.getEnsemblTranscriptId(), ct.getGeneName(),
                                     null, null))
                             .setModeOfInheritance(moi)
-                            .setPanelId(diseasePanel.getId());
+                            .setPanelId(diseasePanel.getDiseasePanel().getId());
 
                     // TODO: add additional reported event fields
 

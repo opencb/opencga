@@ -41,12 +41,12 @@ public class PanelWSServer extends OpenCGAWSServer {
     @POST
     @Path("/create")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Create a panel", response = Panel[].class)
+    @ApiOperation(value = "Create a panel")
     public Response createPanel(
             @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
             @ApiParam(value = "When filled in with an installation panel ID, it will import the installation panel to"
                     + " the selected study to be used")
-                @QueryParam("importPanelId") String panelId,
+            @QueryParam("importPanelId") String panelId,
             @ApiParam(name = "params", value = "Panel parameters") PanelPOST params) {
         try {
             if (StringUtils.isNotEmpty(panelId)) {
@@ -62,12 +62,12 @@ public class PanelWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{panel}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update a panel", response = Panel[].class)
+    @ApiOperation(value = "Update a panel")
     public Response updatePanel(
             @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
             @ApiParam(value = "Panel id") @PathParam("panel") String panelId,
             @ApiParam(value = "Create a new version of panel", defaultValue = "false")
-                @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
+            @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(name = "params", value = "Panel parameters") PanelPOST panelParams) {
         try {
             return createOkResponse(panelManager.update(studyStr, panelId, panelParams.toObjectMap(), queryOptions, sessionId));
@@ -78,7 +78,7 @@ public class PanelWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{panels}/info")
-    @ApiOperation(value = "Panel info", response = Panel[].class)
+    @ApiOperation(value = "Panel info")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
                     example = "name,attributes", dataType = "string", paramType = "query"),
@@ -95,7 +95,7 @@ public class PanelWSServer extends OpenCGAWSServer {
                     defaultValue = "false") @QueryParam("global") boolean global,
             @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
                     + "exception whenever one of the entries looked for cannot be shown for whichever reason", defaultValue = "false")
-                @QueryParam("silent") boolean silent) {
+            @QueryParam("silent") boolean silent) {
         try {
             query.remove("study");
             query.remove("global");
@@ -115,7 +115,7 @@ public class PanelWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/search")
-    @ApiOperation(value = "Panel search", response = Panel[].class)
+    @ApiOperation(value = "Panel search")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
                     example = "name,attributes", dataType = "string", paramType = "query"),
@@ -137,14 +137,14 @@ public class PanelWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Panel description") @QueryParam("description") String description,
             @ApiParam(value = "Panel author") @QueryParam("author") String author,
             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
-                @QueryParam("creationDate") String creationDate,
+            @QueryParam("creationDate") String creationDate,
             @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
-                @QueryParam("modificationDate") String modificationDate,
+            @QueryParam("modificationDate") String modificationDate,
             @ApiParam(value = "Boolean indicating which panels are queried (installation or study specific panels)",
                     defaultValue = "false") @QueryParam("global") boolean global,
             @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,
             @ApiParam(value = "Release value (Current release from the moment the samples were first created)")
-                @QueryParam("release") String release,
+            @QueryParam("release") String release,
             @ApiParam(value = "Snapshot value (Latest version of samples in the specified release)") @QueryParam("snapshot")
                     int snapshot) {
         try {
@@ -235,12 +235,12 @@ public class PanelWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Returns the acl of the panels. If member is provided, it will only return the acl for the member.", position = 18)
     public Response getAcls(
             @ApiParam(value = "Comma separated list of panel ids up to a maximum of 100", required = true) @PathParam("panels")
-                String sampleIdsStr,
+                    String sampleIdsStr,
             @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
             @ApiParam(value = "User or group id") @QueryParam("member") String member,
             @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
                     + "exception whenever one of the entries looked for cannot be shown for whichever reason", defaultValue = "false")
-                @QueryParam("silent") boolean silent) {
+            @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(sampleIdsStr);
             return createOkResponse(panelManager.getAcls(studyStr, idList, member,silent, sessionId));
@@ -295,20 +295,21 @@ public class PanelWSServer extends OpenCGAWSServer {
         }
 
         public ObjectMap toObjectMap() throws JsonProcessingException {
-            Panel panel = new Panel()
-                    .setId(id)
-                    .setName(name)
-                    .setAuthor(author)
-                    .setSource(source)
-                    .setDescription(description)
-                    .setCategories(categories)
-                    .setTags(tags)
-                    .setPhenotypes(phenotypes)
-                    .setVariants(variants)
-                    .setGenes(genes)
-                    .setRegions(regions)
-                    .setStats(stats)
-                    .setAttributes(attributes);
+            Panel panel = new Panel();
+            panel.getDiseasePanel().setId(id);
+            panel.getDiseasePanel().setId(id);
+            panel.getDiseasePanel().setName(name);
+            panel.setAuthor(author);
+            panel.getDiseasePanel().setSource(source);
+            panel.getDiseasePanel().setDescription(description);
+            panel.getDiseasePanel().setCategories(categories);
+            panel.getDiseasePanel().setTags(tags);
+            panel.getDiseasePanel().setPhenotypes(phenotypes);
+            panel.getDiseasePanel().setVariants(variants);
+            panel.getDiseasePanel().setGenes(genes);
+            panel.getDiseasePanel().setRegions(regions);
+            panel.getDiseasePanel().setStats(stats);
+            panel.getDiseasePanel().setAttributes(attributes);
 
             return new ObjectMap(getUpdateObjectMapper().writeValueAsString(panel));
         }

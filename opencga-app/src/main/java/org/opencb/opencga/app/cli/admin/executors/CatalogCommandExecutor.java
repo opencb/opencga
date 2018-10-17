@@ -270,9 +270,9 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
                             try {
                                 catalogManager.getPanelManager().create(panel,
                                         catalogCommandOptions.panelCatalogCommandOptions.overwrite, token);
-                                logger.info("Panel {} imported", panel.getId());
+                                logger.info("Panel {} imported", panel.getDiseasePanel().getId());
                             } catch (CatalogException e) {
-                                logger.error("Could not import {} - {}", panel.getId(), e.getMessage());
+                                logger.error("Could not import {} - {}", panel.getDiseasePanel().getId(), e.getMessage());
                             }
                         });
             }
@@ -282,9 +282,9 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
             try {
                 catalogManager.getPanelManager().create(panel, catalogCommandOptions.panelCatalogCommandOptions.overwrite,
                         token);
-                logger.info("Panel {} imported", panel.getId());
+                logger.info("Panel {} imported", panel.getDiseasePanel().getId());
             } catch (CatalogException e) {
-                logger.error("Could not import {} - {}", panel.getId(), e.getMessage());
+                logger.error("Could not import {} - {}", panel.getDiseasePanel().getId(), e.getMessage());
             }
         }
     }

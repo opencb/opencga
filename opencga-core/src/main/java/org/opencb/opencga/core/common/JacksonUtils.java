@@ -26,6 +26,7 @@ public class JacksonUtils {
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         objectMapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
         objectMapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
+        objectMapper.addMixIn(Panel.class, PanelUnwrapMixin.class);
         return objectMapper;
     }
 
@@ -53,7 +54,7 @@ public class JacksonUtils {
         objectMapper.addMixIn(Individual.class, PrivateUidMixin.class);
         objectMapper.addMixIn(Family.class, PrivateUidMixin.class);
         objectMapper.addMixIn(File.class, PrivateUidMixin.class);
-        objectMapper.addMixIn(Panel.class, PrivateUidMixin.class);
+        objectMapper.addMixIn(Panel.class, PanelMixin.class);
         objectMapper.addMixIn(Project.class, PrivateUidMixin.class);
         objectMapper.addMixIn(Study.class, PrivateUidMixin.class);
         objectMapper.addMixIn(Sample.class, PrivateUidMixin.class);

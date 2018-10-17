@@ -153,7 +153,7 @@ public class ClinicalInterpretationAnalysis extends OpenCgaAnalysis<Interpretati
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
         // Step 1 - we first try to fetch diagnostic variants
-        variants = diseasePanel.getVariants();
+        variants = diseasePanel.getDiseasePanel().getVariants();
         Query variantQuery = new Query();
         variantQuery.put(VariantQueryParam.ID.key(), StringUtils.join(variants, ","));
         variantQuery.put(VariantQueryParam.SAMPLE.key(), StringUtils.join(samples, ","));
@@ -185,8 +185,8 @@ public class ClinicalInterpretationAnalysis extends OpenCgaAnalysis<Interpretati
     }
 
     private List<String> getGeneIdsFromPanel(Panel diseasePanel) throws CatalogException {
-        List<String> geneIds = new ArrayList<>(diseasePanel.getGenes().size());
-        for (GenePanel gene : diseasePanel.getGenes()) {
+        List<String> geneIds = new ArrayList<>(diseasePanel.getDiseasePanel().getGenes().size());
+        for (GenePanel gene : diseasePanel.getDiseasePanel().getGenes()) {
             geneIds.add(gene.getId());
         }
         return geneIds;

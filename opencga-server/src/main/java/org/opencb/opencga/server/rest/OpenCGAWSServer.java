@@ -64,6 +64,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 import static org.opencb.opencga.core.common.JacksonUtils.getExternalOpencgaObjectMapper;
 
 @ApplicationPath("/")

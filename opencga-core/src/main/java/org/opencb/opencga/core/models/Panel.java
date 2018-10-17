@@ -16,10 +16,12 @@
 
 package org.opencb.opencga.core.models;
 
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.io.IOException;
@@ -45,6 +47,7 @@ public class Panel extends PrivateStudyUid {
     private Status status;
 
     public Panel() {
+        this.diseasePanel = new DiseasePanel();
     }
 
     public Panel(String id, String name, int version) {
@@ -75,7 +78,7 @@ public class Panel extends PrivateStudyUid {
      * @throws IOException Propagate Jackson IOException.
      */
     public static Panel load(InputStream diseasePanelInputStream) throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectMapper objectMapper = JacksonUtils.getDefaultObjectMapper();
         return objectMapper.readValue(diseasePanelInputStream, Panel.class);
     }
 
@@ -114,57 +117,12 @@ public class Panel extends PrivateStudyUid {
         return this;
     }
 
-    public Panel setId(String id) {
-        diseasePanel.setId(id);
-        return this;
-    }
-
-    public Panel setName(String name) {
-        diseasePanel.setName(name);
-        return this;
-    }
-
     public String getUuid() {
         return uuid;
     }
 
     public Panel setUuid(String uuid) {
         this.uuid = uuid;
-        return this;
-    }
-
-    public Panel setCategories(List<PanelCategory> categories) {
-        diseasePanel.setCategories(categories);
-        return this;
-    }
-
-    public Panel setPhenotypes(List<Phenotype> phenotypes) {
-        diseasePanel.setPhenotypes(phenotypes);
-        return this;
-    }
-
-    public Panel setTags(List<String> tags) {
-        diseasePanel.setTags(tags);
-        return this;
-    }
-
-    public Panel setVariants(List<VariantPanel> variants) {
-        diseasePanel.setVariants(variants);
-        return this;
-    }
-
-    public Panel setGenes(List<GenePanel> genes) {
-        diseasePanel.setGenes(genes);
-        return this;
-    }
-
-    public Panel setRegions(List<RegionPanel> regions) {
-        diseasePanel.setRegions(regions);
-        return this;
-    }
-
-    public Panel setStats(Map<String, Integer> stats) {
-        diseasePanel.setStats(stats);
         return this;
     }
 
@@ -197,11 +155,6 @@ public class Panel extends PrivateStudyUid {
         return this;
     }
 
-    public Panel setSource(SourcePanel source) {
-        diseasePanel.setSource(source);
-        return this;
-    }
-
     public Status getStatus() {
         return status;
     }
@@ -209,82 +162,6 @@ public class Panel extends PrivateStudyUid {
     public Panel setStatus(Status status) {
         this.status = status;
         return this;
-    }
-
-    public Panel setCreationDate(String creationDate) {
-        diseasePanel.setCreationDate(creationDate);
-        return this;
-    }
-
-    public Panel setModificationDate(String modificationDate) {
-        diseasePanel.setModificationDate(modificationDate);
-        return this;
-    }
-
-    public Panel setDescription(String description) {
-        diseasePanel.setDescription(description);
-        return this;
-    }
-
-    public Panel setAttributes(Map<String, Object> attributes) {
-        diseasePanel.setAttributes(attributes);
-        return this;
-    }
-
-    public String getId() {
-        return diseasePanel.getId();
-    }
-
-    public String getName() {
-        return diseasePanel.getName();
-    }
-
-    public List<PanelCategory> getCategories() {
-        return diseasePanel.getCategories();
-    }
-
-    public List<Phenotype> getPhenotypes() {
-        return diseasePanel.getPhenotypes();
-    }
-
-    public List<String> getTags() {
-        return diseasePanel.getTags();
-    }
-
-    public List<VariantPanel> getVariants() {
-        return diseasePanel.getVariants();
-    }
-
-    public List<GenePanel> getGenes() {
-        return diseasePanel.getGenes();
-    }
-
-    public List<RegionPanel> getRegions() {
-        return diseasePanel.getRegions();
-    }
-
-    public Map<String, Integer> getStats() {
-        return diseasePanel.getStats();
-    }
-
-    public SourcePanel getSource() {
-        return diseasePanel.getSource();
-    }
-
-    public String getCreationDate() {
-        return diseasePanel.getCreationDate();
-    }
-
-    public String getModificationDate() {
-        return diseasePanel.getModificationDate();
-    }
-
-    public String getDescription() {
-        return diseasePanel.getDescription();
-    }
-
-    public Map<String, Object> getAttributes() {
-        return diseasePanel.getAttributes();
     }
 
 }

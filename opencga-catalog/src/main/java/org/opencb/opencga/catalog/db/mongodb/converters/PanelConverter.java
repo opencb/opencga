@@ -16,9 +16,14 @@
 
 package org.opencb.opencga.catalog.db.mongodb.converters;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.bson.Document;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.Panel;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
 
 /**
  * Created by pfurio on 01/06/16.
@@ -31,10 +36,26 @@ public class PanelConverter extends GenericDocumentComplexConverter<Panel> {
 
     @Override
     public Document convertToStorageType(Panel object) {
-        Document document = super.convertToStorageType(object);
-        document.put("uid", object.getUid());
-        document.put("studyUid", object.getStudyUid());
-        return document;
+        try {
+            String json = JacksonUtils.getDefaultObjectMapper().writeValueAsString(object);
+            Document document = Document.parse(json);
+            replaceDots(document);
+            document.put("uid", object.getUid());
+            document.put("studyUid", object.getStudyUid());
+            return document;
+        } catch (JsonProcessingException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
+    @Override
+    public Panel convertToDataModelType(Document document) {
+        try {
+            restoreDots(document);
+            String json = JacksonUtils.getDefaultObjectMapper().writeValueAsString(document);
+            return JacksonUtils.getDefaultObjectMapper().readValue(json, Panel.class);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
 }
