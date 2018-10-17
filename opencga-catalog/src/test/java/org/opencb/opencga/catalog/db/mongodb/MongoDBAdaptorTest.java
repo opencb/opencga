@@ -59,7 +59,7 @@ public class MongoDBAdaptorTest extends GenericTest {
     JobDBAdaptor catalogJobDBAdaptor;
     StudyDBAdaptor catalogStudyDBAdaptor;
     IndividualDBAdaptor catalogIndividualDBAdaptor;
-    DiseasePanelDBAdaptor catalogPanelDBAdaptor;
+    PanelDBAdaptor catalogPanelDBAdaptor;
 
     private Configuration configuration;
 

@@ -26,7 +26,7 @@ import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 /**
  * Created by sgallego on 6/15/16.
  */
-@Parameters(commandNames = {"panels"}, commandDescription = "Panels commands")
+@Parameters(commandNames = {"panels"}, commandDescription = "Panel commands")
 public class PanelCommandOptions {
 
 //    public CreateCommandOptions createCommandOptions;

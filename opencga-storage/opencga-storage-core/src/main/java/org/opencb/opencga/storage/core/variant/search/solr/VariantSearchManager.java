@@ -34,7 +34,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
-import org.opencb.commons.datastore.core.result.FacetQueryResultItem;
 import org.opencb.commons.datastore.solr.SolrCollection;
 import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.commons.utils.CollectionUtils;
@@ -437,13 +436,13 @@ public class VariantSearchManager {
         }
 
         if (replaceGenes) {
-            List<String> ensemblGeneIds = getEnsemblGeneIds(facetResult.getResult());
+            List<String> ensemblGeneIds = getEnsemblGeneIds(facetResult.getResults());
             QueryResponse<Gene> geneQueryResponse = cellBaseClient.getGeneClient().get(ensemblGeneIds, QueryOptions.empty());
             Map<String, String> ensemblGeneIdToGeneName = new HashMap<>();
             for (Gene gene: geneQueryResponse.allResults()) {
                 ensemblGeneIdToGeneName.put(gene.getId(), gene.getName());
             }
-            replaceEnsemblGeneIds(facetResult.getResult(), ensemblGeneIdToGeneName);
+            replaceEnsemblGeneIds(facetResult.getResults(), ensemblGeneIdToGeneName);
         }
 
         return facetResult;
@@ -537,20 +536,20 @@ public class VariantSearchManager {
         }
     }
 
-    private List<String> getEnsemblGeneIds(FacetQueryResultItem result) {
+    private List<String> getEnsemblGeneIds(List<FacetQueryResult.Field> results) {
         Set<String> ensemblGeneIds = new HashSet<>();
-        Queue<FacetQueryResultItem.FacetField> queue = new LinkedList<>();
-        for (FacetQueryResultItem.FacetField facetField: result.getFacetFields()) {
+        Queue<FacetQueryResult.Field> queue = new LinkedList<>();
+        for (FacetQueryResult.Field facetField: results) {
             queue.add(facetField);
         }
         while (queue.size() > 0) {
-            FacetQueryResultItem.FacetField facet = queue.remove();
-            for (FacetQueryResultItem.Bucket bucket: facet.getBuckets()) {
+            FacetQueryResult.Field facet = queue.remove();
+            for (FacetQueryResult.Bucket bucket: facet.getBuckets()) {
                 if (bucket.getValue().startsWith("ENSG0")) {
                     ensemblGeneIds.add(bucket.getValue());
                 }
-                if (ListUtils.isNotEmpty(bucket.getFacetFields())) {
-                    for (FacetQueryResultItem.FacetField facetField: bucket.getFacetFields()) {
+                if (ListUtils.isNotEmpty(bucket.getFields())) {
+                    for (FacetQueryResult.Field facetField: bucket.getFields()) {
                         queue.add(facetField);
                     }
                 }
@@ -560,19 +559,19 @@ public class VariantSearchManager {
         return new ArrayList<>(ensemblGeneIds);
     }
 
-    private void replaceEnsemblGeneIds(FacetQueryResultItem result, Map<String, String> ensemblGeneIdToGeneName) {
-        Queue<FacetQueryResultItem.FacetField> queue = new LinkedList<>();
-        for (FacetQueryResultItem.FacetField facetField: result.getFacetFields()) {
+    private void replaceEnsemblGeneIds(List<FacetQueryResult.Field> results, Map<String, String> ensemblGeneIdToGeneName) {
+        Queue<FacetQueryResult.Field> queue = new LinkedList<>();
+        for (FacetQueryResult.Field facetField: results) {
             queue.add(facetField);
         }
         while (queue.size() > 0) {
-            FacetQueryResultItem.FacetField facet = queue.remove();
-            for (FacetQueryResultItem.Bucket bucket: facet.getBuckets()) {
+            FacetQueryResult.Field facet = queue.remove();
+            for (FacetQueryResult.Bucket bucket: facet.getBuckets()) {
                 if (bucket.getValue().startsWith("ENSG0")) {
                     bucket.setValue(ensemblGeneIdToGeneName.getOrDefault(bucket.getValue(), bucket.getValue()));
                 }
-                if (ListUtils.isNotEmpty(bucket.getFacetFields())) {
-                    for (FacetQueryResultItem.FacetField facetField: bucket.getFacetFields()) {
+                if (ListUtils.isNotEmpty(bucket.getFields())) {
+                    for (FacetQueryResult.Field facetField: bucket.getFields()) {
                         queue.add(facetField);
                     }
                 }

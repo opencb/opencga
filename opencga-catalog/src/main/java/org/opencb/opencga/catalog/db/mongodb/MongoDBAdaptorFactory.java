@@ -56,7 +56,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
             "individual",
             "cohort",
             "dataset",
-            "diseasepanel",
+            "panel",
             "family",
             "clinical",
             "metadata",
@@ -72,7 +72,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     public static final String COHORT_COLLECTION = "cohort";
     public static final String FAMILY_COLLECTION = "family";
     public static final String DATASET_COLLECTION = "dataset";
-    public static final String PANEL_COLLECTION = "diseasepanel";
+    public static final String PANEL_COLLECTION = "panel";
     public static final String CLINICAL_ANALYSIS_COLLECTION = "clinical";
     public static final String METADATA_COLLECTION = "metadata";
     public static final String AUDIT_COLLECTION = "audit";
@@ -107,7 +107,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     private CohortMongoDBAdaptor cohortDBAdaptor;
     private FamilyMongoDBAdaptor familyDBAdaptor;
     private DatasetMongoDBAdaptor datasetDBAdaptor;
-    private DiseasePanelMongoDBAdaptor panelDBAdaptor;
+    private PanelMongoDBAdaptor panelDBAdaptor;
     private ClinicalAnalysisMongoDBAdaptor clinicalDBAdaptor;
     private AuditMongoDBAdaptor auditDBAdaptor;
     private MetaMongoDBAdaptor metaDBAdaptor;
@@ -297,7 +297,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     }
 
     @Override
-    public DiseasePanelMongoDBAdaptor getCatalogPanelDBAdaptor() {
+    public PanelMongoDBAdaptor getCatalogPanelDBAdaptor() {
         return panelDBAdaptor;
     }
 
@@ -365,7 +365,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         userDBAdaptor = new UserMongoDBAdaptor(userCollection, this);
         cohortDBAdaptor = new CohortMongoDBAdaptor(cohortCollection, this);
         datasetDBAdaptor = new DatasetMongoDBAdaptor(datasetCollection, this);
-        panelDBAdaptor = new DiseasePanelMongoDBAdaptor(panelCollection, this);
+        panelDBAdaptor = new PanelMongoDBAdaptor(panelCollection, this);
         familyDBAdaptor = new FamilyMongoDBAdaptor(familyCollection, this);
         clinicalDBAdaptor = new ClinicalAnalysisMongoDBAdaptor(clinicalCollection, this);
         metaDBAdaptor = new MetaMongoDBAdaptor(metaCollection, this);

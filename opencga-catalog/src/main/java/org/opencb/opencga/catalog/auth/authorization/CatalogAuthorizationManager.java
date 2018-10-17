@@ -66,7 +66,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     private final IndividualDBAdaptor individualDBAdaptor;
     private final CohortDBAdaptor cohortDBAdaptor;
     private final DatasetDBAdaptor datasetDBAdaptor;
-    private final DiseasePanelDBAdaptor panelDBAdaptor;
+    private final PanelDBAdaptor panelDBAdaptor;
     private final FamilyDBAdaptor familyDBAdaptor;
     private final ClinicalAnalysisDBAdaptor clinicalAnalysisDBAdaptor;
     private final AuditManager auditManager;
@@ -499,11 +499,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void checkDiseasePanelPermission(long studyId, long panelId, String userId,
-                                            DiseasePanelAclEntry.DiseasePanelPermissions permission) throws CatalogException {
+    public void checkPanelPermission(long studyId, long panelId, String userId, PanelAclEntry.PanelPermissions permission)
+            throws CatalogException {
         Query query = new Query()
-                .append(DiseasePanelDBAdaptor.QueryParams.UID.key(), panelId)
-                .append(DiseasePanelDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
+                .append(PanelDBAdaptor.QueryParams.UID.key(), panelId)
+                .append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
         StudyAclEntry.StudyPermissions studyPermission;
         switch (permission) {
             case VIEW:
@@ -744,13 +744,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public QueryResult<DiseasePanelAclEntry> getAllPanelAcls(long studyId, long panelId, String userId) throws CatalogException {
+    public QueryResult<PanelAclEntry> getAllPanelAcls(long studyId, long panelId, String userId) throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
         return aclDBAdaptor.get(panelId, null, Entity.PANEL);
     }
 
     @Override
-    public QueryResult<DiseasePanelAclEntry> getPanelAcl(long studyId, long panelId, String userId, String member) throws CatalogException {
+    public QueryResult<PanelAclEntry> getPanelAcl(long studyId, long panelId, String userId, String member) throws CatalogException {
         try {
             checkCanAssignOrSeePermissions(studyId, userId);
         } catch (CatalogException e) {

@@ -65,7 +65,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         catalogSubCommands.addCommand("export", catalogCommandOptions.exportCatalogCommandOptions);
         catalogSubCommands.addCommand("import", catalogCommandOptions.importCatalogCommandOptions);
         catalogSubCommands.addCommand("daemon", catalogCommandOptions.daemonCatalogCommandOptions);
-        catalogSubCommands.addCommand("disease-panel", catalogCommandOptions.diseasePanelCatalogCommandOptions);
+        catalogSubCommands.addCommand("panel", catalogCommandOptions.panelCatalogCommandOptions);
 
         usersCommandOptions = new UsersCommandOptions();
         jCommander.addCommand("users", usersCommandOptions);
@@ -168,7 +168,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public ExportCatalogCommandOptions exportCatalogCommandOptions;
         public ImportCatalogCommandOptions importCatalogCommandOptions;
         public DaemonCatalogCommandOptions daemonCatalogCommandOptions;
-        public DiseasePanelCatalogCommandOptions diseasePanelCatalogCommandOptions;
+        public PanelCatalogCommandOptions panelCatalogCommandOptions;
 
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
@@ -183,7 +183,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
             this.exportCatalogCommandOptions = new ExportCatalogCommandOptions();
             this.importCatalogCommandOptions = new ImportCatalogCommandOptions();
             this.daemonCatalogCommandOptions = new DaemonCatalogCommandOptions();
-            this.diseasePanelCatalogCommandOptions = new DiseasePanelCatalogCommandOptions();
+            this.panelCatalogCommandOptions = new PanelCatalogCommandOptions();
         }
     }
 
@@ -441,8 +441,8 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public boolean stop;
     }
 
-    @Parameters(commandNames = {"disease-panel"}, commandDescription = "Handle global disease panels")
-    public class DiseasePanelCatalogCommandOptions extends CatalogDatabaseCommandOptions {
+    @Parameters(commandNames = {"panel"}, commandDescription = "Handle global panels")
+    public class PanelCatalogCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;

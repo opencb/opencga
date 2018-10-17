@@ -23,7 +23,7 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.DiseasePanel;
+import org.opencb.opencga.core.models.Panel;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -31,7 +31,7 @@ import java.util.Map;
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
 
-public interface DiseasePanelDBAdaptor extends DBAdaptor<DiseasePanel> {
+public interface PanelDBAdaptor extends DBAdaptor<Panel> {
 
     enum QueryParams implements QueryParam {
         ID("id", TEXT, ""),
@@ -188,11 +188,11 @@ public interface DiseasePanelDBAdaptor extends DBAdaptor<DiseasePanel> {
      * @param overwrite Flag to overwrite in case of an ID conflict.
      * @throws CatalogDBException In case of an ID conflict when overwrite is false.
      */
-    void insert(DiseasePanel panel, boolean overwrite) throws CatalogDBException;
+    void insert(Panel panel, boolean overwrite) throws CatalogDBException;
 
-    QueryResult<DiseasePanel> insert(long studyId, DiseasePanel panel, QueryOptions options) throws CatalogDBException;
+    QueryResult<Panel> insert(long studyId, Panel panel, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<DiseasePanel> get(long panelId, QueryOptions options) throws CatalogDBException;
+    QueryResult<Panel> get(long panelId, QueryOptions options) throws CatalogDBException;
 
     long getStudyId(long panelId) throws CatalogDBException;
 

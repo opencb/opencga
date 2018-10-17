@@ -20,9 +20,6 @@ db.cohort.createIndex({"_creationDate": 1, "studyUid": 1, "status.name": 1}, {"b
 db.cohort.createIndex({"_modificationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
 db.family.createIndex({"_creationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
 db.family.createIndex({"_modificationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
-db.diseasePanel.createIndex({"_creationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
-db.diseasePanel.createIndex({"_modificationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
-
 
 // # Acls
 function haveInternalPermissions(studyId, aclList, userMap) {
@@ -113,3 +110,14 @@ migrateCollection("sample", {"_acl" : { $exists: true, $ne: [] }}, {_acl: 1, stu
     haveInternalPermissions(doc.studyUid, doc._acl, studyUserMap);
 });
 updateStudyPermissions(studyUserMap, "SAMPLE");
+
+db.diseasepanel.copyTo("panel");
+db.diseasepanel.drop();
+
+db.panel.createIndex({"uuid": 1, "version": 1}, {"unique": true, "background": true});
+db.panel.createIndex({"uid": 1, "version": 1}, {"unique": true, "background": true});
+db.panel.createIndex({"id": 1, "studyUid": 1, "version": 1}, {"unique": true, "background": true});
+db.panel.createIndex({"_lastOfVersion": 1, "studyUid": 1}, {"background": true});
+db.panel.createIndex({"studyUid": 1}, {"background": true});
+db.panel.createIndex({"_creationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.panel.createIndex({"_modificationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
