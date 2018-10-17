@@ -424,7 +424,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             if (StringUtils.isEmpty(defaultStudyStr)) {
                 throw VariantQueryException.missingStudyFor("panel", panelId, null);
             }
-            DiseasePanel panel = catalogManager.getDiseasePanelManager().get(defaultStudyStr, panelId, null, sessionId).first();
+            Panel panel = catalogManager.getPanelManager().get(defaultStudyStr, panelId, null, sessionId).first();
 
             List<String> geneNames = new ArrayList<>(panel.getGenes().size());
             for (org.opencb.biodata.models.clinical.interpretation.DiseasePanel.GenePanel genePanel : panel.getGenes()) {

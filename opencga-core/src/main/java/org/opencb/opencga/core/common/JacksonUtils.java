@@ -34,7 +34,7 @@ public class JacksonUtils {
         objectMapper.addMixIn(Individual.class, IndividualMixin.class);
         objectMapper.addMixIn(Family.class, FamilyMixin.class);
         objectMapper.addMixIn(File.class, FileMixin.class);
-        objectMapper.addMixIn(DiseasePanel.class, PanelMixin.class);
+        objectMapper.addMixIn(Panel.class, PanelMixin.class);
         objectMapper.addMixIn(Project.class, PrivateUidMixin.class);
         objectMapper.addMixIn(Study.class, PrivateUidMixin.class);
         objectMapper.addMixIn(Sample.class, PrivateUidMixin.class);
@@ -53,7 +53,7 @@ public class JacksonUtils {
         objectMapper.addMixIn(Individual.class, PrivateUidMixin.class);
         objectMapper.addMixIn(Family.class, PrivateUidMixin.class);
         objectMapper.addMixIn(File.class, PrivateUidMixin.class);
-        objectMapper.addMixIn(DiseasePanel.class, PrivateUidMixin.class);
+        objectMapper.addMixIn(Panel.class, PrivateUidMixin.class);
         objectMapper.addMixIn(Project.class, PrivateUidMixin.class);
         objectMapper.addMixIn(Study.class, PrivateUidMixin.class);
         objectMapper.addMixIn(Sample.class, PrivateUidMixin.class);

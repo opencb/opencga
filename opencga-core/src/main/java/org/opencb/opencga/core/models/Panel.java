@@ -18,6 +18,7 @@ package org.opencb.opencga.core.models;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.opencga.core.common.TimeUtils;
 
@@ -28,9 +29,9 @@ import java.util.Map;
 
 import static org.opencb.biodata.models.clinical.interpretation.DiseasePanel.*;
 
-public class DiseasePanel extends PrivateStudyUid {
+public class Panel extends PrivateStudyUid {
 
-    private org.opencb.biodata.models.clinical.interpretation.DiseasePanel diseasePanel;
+    private DiseasePanel diseasePanel;
 
     private String uuid;
     private int release;
@@ -43,19 +44,19 @@ public class DiseasePanel extends PrivateStudyUid {
     private String author;
     private Status status;
 
-    public DiseasePanel() {
+    public Panel() {
     }
 
-    public DiseasePanel(String id, String name, int version) {
-        this.diseasePanel = new org.opencb.biodata.models.clinical.interpretation.DiseasePanel(id, name);
+    public Panel(String id, String name, int version) {
+        this.diseasePanel = new DiseasePanel(id, name);
         this.version = version;
     }
 
-    public DiseasePanel(String id, String name, List<PanelCategory> categories, List<Phenotype> phenotypes, List<String> tags,
-                        List<VariantPanel> variants, List<GenePanel> genes, List<RegionPanel> regions, Map<String, Integer> stats,
-                        int release, int version, String author, SourcePanel source, Status status, String description,
-                        Map<String, Object> attributes) {
-        this.diseasePanel = new org.opencb.biodata.models.clinical.interpretation.DiseasePanel(id, name, categories, phenotypes, tags,
+    public Panel(String id, String name, List<PanelCategory> categories, List<Phenotype> phenotypes, List<String> tags,
+                 List<VariantPanel> variants, List<GenePanel> genes, List<RegionPanel> regions,
+                 Map<String, Integer> stats, int release, int version, String author, SourcePanel source, Status status,
+                 String description, Map<String, Object> attributes) {
+        this.diseasePanel = new DiseasePanel(id, name, categories, phenotypes, tags,
                 variants, genes, regions, stats, source, TimeUtils.getTime(), TimeUtils.getTime(), description, attributes);
         this.release = release;
         this.version = version;
@@ -73,9 +74,9 @@ public class DiseasePanel extends PrivateStudyUid {
      * @return A DiseasePanel object.
      * @throws IOException Propagate Jackson IOException.
      */
-    public static DiseasePanel load(InputStream diseasePanelInputStream) throws IOException {
+    public static Panel load(InputStream diseasePanelInputStream) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper();
-        return objectMapper.readValue(diseasePanelInputStream, DiseasePanel.class);
+        return objectMapper.readValue(diseasePanelInputStream, Panel.class);
     }
 
     @Override
@@ -104,21 +105,21 @@ public class DiseasePanel extends PrivateStudyUid {
         return sb.toString();
     }
 
-    public org.opencb.biodata.models.clinical.interpretation.DiseasePanel getDiseasePanel() {
+    public DiseasePanel getDiseasePanel() {
         return diseasePanel;
     }
 
-    public DiseasePanel setDiseasePanel(org.opencb.biodata.models.clinical.interpretation.DiseasePanel diseasePanel) {
+    public Panel setDiseasePanel(DiseasePanel diseasePanel) {
         this.diseasePanel = diseasePanel;
         return this;
     }
 
-    public DiseasePanel setId(String id) {
+    public Panel setId(String id) {
         diseasePanel.setId(id);
         return this;
     }
 
-    public DiseasePanel setName(String name) {
+    public Panel setName(String name) {
         diseasePanel.setName(name);
         return this;
     }
@@ -127,42 +128,42 @@ public class DiseasePanel extends PrivateStudyUid {
         return uuid;
     }
 
-    public DiseasePanel setUuid(String uuid) {
+    public Panel setUuid(String uuid) {
         this.uuid = uuid;
         return this;
     }
 
-    public DiseasePanel setCategories(List<PanelCategory> categories) {
+    public Panel setCategories(List<PanelCategory> categories) {
         diseasePanel.setCategories(categories);
         return this;
     }
 
-    public DiseasePanel setPhenotypes(List<Phenotype> phenotypes) {
+    public Panel setPhenotypes(List<Phenotype> phenotypes) {
         diseasePanel.setPhenotypes(phenotypes);
         return this;
     }
 
-    public DiseasePanel setTags(List<String> tags) {
+    public Panel setTags(List<String> tags) {
         diseasePanel.setTags(tags);
         return this;
     }
 
-    public DiseasePanel setVariants(List<VariantPanel> variants) {
+    public Panel setVariants(List<VariantPanel> variants) {
         diseasePanel.setVariants(variants);
         return this;
     }
 
-    public DiseasePanel setGenes(List<GenePanel> genes) {
+    public Panel setGenes(List<GenePanel> genes) {
         diseasePanel.setGenes(genes);
         return this;
     }
 
-    public DiseasePanel setRegions(List<RegionPanel> regions) {
+    public Panel setRegions(List<RegionPanel> regions) {
         diseasePanel.setRegions(regions);
         return this;
     }
 
-    public DiseasePanel setStats(Map<String, Integer> stats) {
+    public Panel setStats(Map<String, Integer> stats) {
         diseasePanel.setStats(stats);
         return this;
     }
@@ -171,7 +172,7 @@ public class DiseasePanel extends PrivateStudyUid {
         return release;
     }
 
-    public DiseasePanel setRelease(int release) {
+    public Panel setRelease(int release) {
         this.release = release;
         return this;
     }
@@ -180,7 +181,7 @@ public class DiseasePanel extends PrivateStudyUid {
         return version;
     }
 
-    public DiseasePanel setVersion(int version) {
+    public Panel setVersion(int version) {
         this.version = version;
         return this;
     }
@@ -191,12 +192,12 @@ public class DiseasePanel extends PrivateStudyUid {
     }
 
     @Deprecated
-    public DiseasePanel setAuthor(String author) {
+    public Panel setAuthor(String author) {
         this.author = author;
         return this;
     }
 
-    public DiseasePanel setSource(SourcePanel source) {
+    public Panel setSource(SourcePanel source) {
         diseasePanel.setSource(source);
         return this;
     }
@@ -205,27 +206,27 @@ public class DiseasePanel extends PrivateStudyUid {
         return status;
     }
 
-    public DiseasePanel setStatus(Status status) {
+    public Panel setStatus(Status status) {
         this.status = status;
         return this;
     }
 
-    public DiseasePanel setCreationDate(String creationDate) {
+    public Panel setCreationDate(String creationDate) {
         diseasePanel.setCreationDate(creationDate);
         return this;
     }
 
-    public DiseasePanel setModificationDate(String modificationDate) {
+    public Panel setModificationDate(String modificationDate) {
         diseasePanel.setModificationDate(modificationDate);
         return this;
     }
 
-    public DiseasePanel setDescription(String description) {
+    public Panel setDescription(String description) {
         diseasePanel.setDescription(description);
         return this;
     }
 
-    public DiseasePanel setAttributes(Map<String, Object> attributes) {
+    public Panel setAttributes(Map<String, Object> attributes) {
         diseasePanel.setAttributes(attributes);
         return this;
     }

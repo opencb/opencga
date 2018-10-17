@@ -90,7 +90,7 @@ public class VariantCatalogQueryUtilsTest {
         catalog.getProjectManager().create("p2", "p2", "", null, "hsapiens", "Homo Sapiens", null, "GRCh38", null, sessionId);
         catalog.getStudyManager().create("p2", "p2s2", null, "s1", Study.Type.CONTROL_SET, null, null, null, null, null, null, null, null, null, null, sessionId);
 
-        catalog.getDiseasePanelManager().create("s1", new DiseasePanel("MyPanel", "MyPanel", 1).setGenes(
+        catalog.getPanelManager().create("s1", new Panel("MyPanel", "MyPanel", 1).setGenes(
                 Arrays.asList(
                         new GenePanel().setName("BRCA2"),
                         new GenePanel().setName("CADM1"),

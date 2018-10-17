@@ -579,11 +579,11 @@ db.family.createIndex({"customAnnotationSets.id": 1, "customAnnotationSets.value
 db.family.createIndex({"_lastOfVersion": 1, "studyUid": 1}, {"background": true});
 db.family.createIndex({"studyUid": 1}, {"background": true});
 
-db.diseasePanel.createIndex({"uuid": 1, "version": 1}, {"unique": true, "background": true});
-db.diseasePanel.createIndex({"uid": 1, "version": 1}, {"unique": true, "background": true});
-db.diseasePanel.createIndex({"id": 1, "studyUid": 1, "version": 1}, {"unique": true, "background": true});
-db.diseasePanel.createIndex({"_lastOfVersion": 1, "studyUid": 1}, {"background": true});
-db.diseasePanel.createIndex({"studyUid": 1}, {"background": true});
+db.panel.createIndex({"uuid": 1, "version": 1}, {"unique": true, "background": true});
+db.panel.createIndex({"uid": 1, "version": 1}, {"unique": true, "background": true});
+db.panel.createIndex({"id": 1, "studyUid": 1, "version": 1}, {"unique": true, "background": true});
+db.panel.createIndex({"_lastOfVersion": 1, "studyUid": 1}, {"background": true});
+db.panel.createIndex({"studyUid": 1}, {"background": true});
 
 // #912
 db.job.createIndex({"_creationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
@@ -604,8 +604,8 @@ db.cohort.createIndex({"_modificationDate": 1, "studyUid": 1, "status.name": 1},
 db.family.createIndex({"_creationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
 db.family.createIndex({"_modificationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
 
-db.diseasePanel.createIndex({"_creationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
-db.diseasePanel.createIndex({"_modificationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.panel.createIndex({"_creationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.panel.createIndex({"_modificationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
 
 // Ticket #745 - Add permission rules
 function addPermissionRules(doc, changes) {

@@ -43,7 +43,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
-import org.opencb.opencga.core.models.DiseasePanel;
+import org.opencb.opencga.core.models.Panel;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.User;
 import org.opencb.opencga.core.results.VariantQueryResult;
@@ -124,16 +124,16 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
                     + clinicalAnalysisId);
         }
 
-        List<DiseasePanel> diseasePanels = new ArrayList<>();
+        List<Panel> diseasePanels = new ArrayList<>();
         if (diseasePanelIds != null && !diseasePanelIds.isEmpty()) {
-            List<QueryResult<DiseasePanel>> queryResults = catalogManager.getDiseasePanelManager()
+            List<QueryResult<Panel>> queryResults = catalogManager.getPanelManager()
                     .get(studyStr, diseasePanelIds, new Query(), QueryOptions.empty(), token);
 
             if (queryResults.size() != diseasePanelIds.size()) {
                 throw new AnalysisException("The number of disease panels retrieved doesn't match the number of disease panels queried");
             }
 
-            for (QueryResult<DiseasePanel> queryResult : queryResults) {
+            for (QueryResult<Panel> queryResult : queryResults) {
                 if (queryResult.getNumResults() != 1) {
                     throw new AnalysisException("The number of disease panels retrieved doesn't match the number of disease panels " +
                             "queried");
@@ -174,7 +174,7 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
 
         String bamFileId = fileQueryResult.getNumResults() == 1 ? fileQueryResult.first().getUuid() : null;
 
-        for (DiseasePanel diseasePanel: diseasePanels) {
+        for (Panel diseasePanel: diseasePanels) {
             Map<String, List<String>> genePenetranceMap = new HashMap<>();
 
             for (GenePanel genePanel : diseasePanel.getGenes()) {
@@ -300,7 +300,7 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
                 Arrays.asList(UserDBAdaptor.QueryParams.EMAIL.key(), UserDBAdaptor.QueryParams.ORGANIZATION.key())), token);
 
         List<org.opencb.biodata.models.clinical.interpretation.DiseasePanel> biodataDiseasePanels =
-                diseasePanels.stream().map(DiseasePanel::getDiseasePanel).collect(Collectors.toList());
+                diseasePanels.stream().map(Panel::getDiseasePanel).collect(Collectors.toList());
 
         // Create Interpretation
         Interpretation interpretation = new Interpretation()
@@ -318,7 +318,7 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
         return new AnalysisResult<>(interpretation);
     }
 
-    void processCompoundHeterozygous(ClinicalAnalysis clinicalAnalysis, Pedigree pedigree, Phenotype phenotype, Query query, Map<String, ReportedVariant> reportedVariantMap, DiseasePanel diseasePanel) throws Exception {
+    void processCompoundHeterozygous(ClinicalAnalysis clinicalAnalysis, Pedigree pedigree, Phenotype phenotype, Query query, Map<String, ReportedVariant> reportedVariantMap, Panel diseasePanel) throws Exception {
         VariantQueryResult<Variant> variantQueryResult;
         Map<String, List<String>> probandGenotype;
 
@@ -340,7 +340,7 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
         }
     }
 
-    void processDeNovo(ClinicalAnalysis clinicalAnalysis, Pedigree pedigree, Phenotype phenotype, Query query, Map<String, ReportedVariant> reportedVariantMap, DiseasePanel diseasePanel) throws CatalogException, StorageEngineException, IOException {
+    void processDeNovo(ClinicalAnalysis clinicalAnalysis, Pedigree pedigree, Phenotype phenotype, Query query, Map<String, ReportedVariant> reportedVariantMap, Panel diseasePanel) throws CatalogException, StorageEngineException, IOException {
         VariantQueryResult<Variant> variantQueryResult;
         Map<String, List<String>> probandGenotype = new HashMap<>();
         probandGenotype.put(clinicalAnalysis.getProband().getId(),
@@ -357,7 +357,7 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
     }
 
     void queryAndGenerateReport(Phenotype phenotype, Query query, Map<String, ReportedVariant> reportedVariantMap,
-                                DiseasePanel diseasePanel, ClinicalProperty.ModeOfInheritance moi, Penetrance penetrance,
+                                Panel diseasePanel, ClinicalProperty.ModeOfInheritance moi, Penetrance penetrance,
                                 Map<String, List<String>> genotypes) throws CatalogException, StorageEngineException, IOException {
         VariantQueryResult<Variant> variantQueryResult;
         putGenotypes(genotypes, query);
@@ -406,7 +406,7 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
                         .collect(Collectors.toList()), AND));
     }
 
-    private void generateReportedVariants(VariantQueryResult<Variant> variantQueryResult, Phenotype phenotype, DiseasePanel diseasePanel,
+    private void generateReportedVariants(VariantQueryResult<Variant> variantQueryResult, Phenotype phenotype, Panel diseasePanel,
                                           ClinicalProperty.ModeOfInheritance moi, Penetrance penetrance,
                                           Map<String, ReportedVariant> reportedVariantMap) {
         for (Variant variant: variantQueryResult.getResult()) {
@@ -439,7 +439,7 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
         }
     }
 
-    private void generateReportedVariants(List<Variant> variantList, Phenotype phenotype, DiseasePanel diseasePanel,
+    private void generateReportedVariants(List<Variant> variantList, Phenotype phenotype, Panel diseasePanel,
                                           ClinicalProperty.ModeOfInheritance moi, Map<String, ReportedVariant> reportedVariantMap) {
         for (Variant variant : variantList) {
             if (!reportedVariantMap.containsKey(variant.getId())) {

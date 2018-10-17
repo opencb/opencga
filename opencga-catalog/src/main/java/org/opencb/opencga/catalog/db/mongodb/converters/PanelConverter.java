@@ -18,19 +18,19 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import org.bson.Document;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
-import org.opencb.opencga.core.models.DiseasePanel;
+import org.opencb.opencga.core.models.Panel;
 
 /**
  * Created by pfurio on 01/06/16.
  */
-public class DiseasePanelConverter extends GenericDocumentComplexConverter<DiseasePanel> {
+public class PanelConverter extends GenericDocumentComplexConverter<Panel> {
 
-    public DiseasePanelConverter() {
-        super(DiseasePanel.class);
+    public PanelConverter() {
+        super(Panel.class);
     }
 
     @Override
-    public Document convertToStorageType(DiseasePanel object) {
+    public Document convertToStorageType(Panel object) {
         Document document = super.convertToStorageType(object);
         document.put("uid", object.getUid());
         document.put("studyUid", object.getStudyUid());

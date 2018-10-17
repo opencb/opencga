@@ -17,21 +17,14 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import org.junit.Test;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.core.models.DiseasePanel;
-
-import java.util.Arrays;
-import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
-import static org.opencb.biodata.models.clinical.interpretation.DiseasePanel.*;
 
 /**
  * Created by pfurio on 01/06/16.
  */
-public class DiseasePanelMongoDBAdaptorTest extends MongoDBAdaptorTest {
+public class PanelMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void createPanel() throws CatalogDBException {
