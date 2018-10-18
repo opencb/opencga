@@ -182,6 +182,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     public static final String ARCHIVE_FILE_BATCH_SIZE = "opencga.archive.file_batch_size";
     public static final int DEFAULT_ARCHIVE_FILE_BATCH_SIZE = 1000;
     public static final String ARCHIVE_FIELDS = "opencga.archive.fields";
+    public static final String ARCHIVE_NON_REF_FILTER = "opencga.archive.non-ref.filter";
 
     // Sample index table configuration
     public static final String SAMPLE_INDEX_TABLE_COMPRESSION = "opencga.sample-index.table.compression";

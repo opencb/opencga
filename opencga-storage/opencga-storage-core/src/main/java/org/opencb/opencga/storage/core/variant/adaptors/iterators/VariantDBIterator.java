@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 /**
  * Created by jacobo on 9/01/15.
@@ -71,14 +72,22 @@ public abstract class VariantDBIterator implements Iterator<Variant>, AutoClosea
      */
     public abstract int getCount();
 
-    public QueryResult<Variant> toQueryResult() {
-        List<Variant> result = new ArrayList<>();
-        this.forEachRemaining(result::add);
+    @Override
+    public void forEachRemaining(Consumer<? super Variant> action) {
+        Objects.requireNonNull(action);
+        while (hasNext()) {
+            action.accept(next());
+        }
         try {
             close();
         } catch (Exception e) {
             throw VariantQueryException.internalException(e);
         }
+    }
+
+    public QueryResult<Variant> toQueryResult() {
+        List<Variant> result = new ArrayList<>();
+        this.forEachRemaining(result::add);
 
         int numResults = result.size();
         int numTotalResults = -1; // Unknown numTotalResults

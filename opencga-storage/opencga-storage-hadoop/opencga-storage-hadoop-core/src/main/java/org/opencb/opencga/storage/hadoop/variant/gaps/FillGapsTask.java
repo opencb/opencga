@@ -333,10 +333,11 @@ public class FillGapsTask {
                 if (resetPosition == null) {
                     resetPosition = Math.max(iterator.previousIndex() - 1, firstIndex);
                 }
-                if (skipReferenceVariants && hasAllReferenceGenotype(vcfSlice, vcfRecord)) {
-                    // Skip this variant
-                    continue;
-                }
+
+//                if (skipReferenceVariants && hasAllReferenceGenotype(vcfSlice, vcfRecord)) {
+//                    // Skip this variant
+//                    continue;
+//                }
 
                 // If the same variant is present for this file in the VcfSlice, the variant is already loaded
                 if (isVariantAlreadyLoaded(variant, vcfSlice, vcfRecord, chromosome, start, end, reference, alternate)) {
