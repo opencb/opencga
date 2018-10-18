@@ -27,7 +27,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.commons.utils.CollectionUtils;
-import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
@@ -129,6 +128,7 @@ public class SolrQueryParser {
                 if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
                     includes = getSolrIncludeFromExclude(queryOptions.getAsStringList(QueryOptions.EXCLUDE));
                 } else {
+                    // We want all possible fields
                     includes = getSolrIncludeFromExclude(Collections.emptyList());
                 }
             }
@@ -136,12 +136,10 @@ public class SolrQueryParser {
             includes = includeFieldsWithMandatory(includes);
             solrQuery.setFields(includes);
 
-            // Add Solr fields from the variant includes, i.e.: include-sample, include-format,...
+            // Add Solr fields from the variant includes, i.e.: includeSample, includeFormat,...
             List<String> solrFieldsToInclude = getSolrFieldsFromVariantIncludes(query, queryOptions);
-            if (ListUtils.isNotEmpty(solrFieldsToInclude)) {
-                for (String solrField : solrFieldsToInclude) {
-                    solrQuery.addField(solrField);
-                }
+            for (String solrField : solrFieldsToInclude) {
+                solrQuery.addField(solrField);
             }
 
             if (queryOptions.containsKey(QueryOptions.LIMIT)) {
@@ -1278,11 +1276,11 @@ public class SolrQueryParser {
                 } else {
                     // Include genotype for the specified studies and samples
                     for (String incStudy: incStudies) {
+                        solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + incStudy
+                                + VariantSearchUtils.FIELD_SEPARATOR + "sampleName");
                         for (String incSample: incSamples) {
                             solrFields.add("gt" + VariantSearchUtils.FIELD_SEPARATOR + incStudy + VariantSearchUtils.FIELD_SEPARATOR
                                     + incSample);
-                            solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + incStudy
-                                    + VariantSearchUtils.FIELD_SEPARATOR + "sampleName");
                         }
                     }
                 }
@@ -1297,6 +1295,8 @@ public class SolrQueryParser {
                 } else {
                     // Include sample format for the specified studies and samples
                     for (String incStudy: incStudies) {
+                        solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + incStudy
+                                + VariantSearchUtils.FIELD_SEPARATOR + "sampleName");
                         for (String incSample: incSamples) {
                             solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + incStudy
                                     + VariantSearchUtils.FIELD_SEPARATOR + incSample);
