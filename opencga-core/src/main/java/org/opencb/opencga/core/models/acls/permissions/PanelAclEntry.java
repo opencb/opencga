@@ -26,37 +26,37 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 01/06/16.
  */
-public class DiseasePanelAclEntry extends AbstractAclEntry<DiseasePanelAclEntry.DiseasePanelPermissions> {
+public class PanelAclEntry extends AbstractAclEntry<PanelAclEntry.PanelPermissions> {
 
-    public enum DiseasePanelPermissions {
+    public enum PanelPermissions {
         VIEW,
         UPDATE,
         DELETE
     }
 
-    public DiseasePanelAclEntry() {
+    public PanelAclEntry() {
         this("", Collections.emptyList());
     }
 
-    public DiseasePanelAclEntry(String member, EnumSet<DiseasePanelPermissions> permissions) {
+    public PanelAclEntry(String member, EnumSet<PanelPermissions> permissions) {
         super(member, permissions);
     }
 
-    public DiseasePanelAclEntry(String member, ObjectMap permissions) {
-        super(member, EnumSet.noneOf(DiseasePanelPermissions.class));
+    public PanelAclEntry(String member, ObjectMap permissions) {
+        super(member, EnumSet.noneOf(PanelPermissions.class));
 
-        EnumSet<DiseasePanelPermissions> aux = EnumSet.allOf(DiseasePanelPermissions.class);
-        for (DiseasePanelPermissions permission : aux) {
+        EnumSet<PanelPermissions> aux = EnumSet.allOf(PanelPermissions.class);
+        for (PanelPermissions permission : aux) {
             if (permissions.containsKey(permission.name()) && permissions.getBoolean(permission.name())) {
                 this.permissions.add(permission);
             }
         }
     }
 
-    public DiseasePanelAclEntry(String member, List<String> permissions) {
-        super(member, EnumSet.noneOf(DiseasePanelPermissions.class));
+    public PanelAclEntry(String member, List<String> permissions) {
+        super(member, EnumSet.noneOf(PanelPermissions.class));
         if (permissions.size() > 0) {
-            this.permissions.addAll(permissions.stream().map(DiseasePanelPermissions::valueOf).collect(Collectors.toList()));
+            this.permissions.addAll(permissions.stream().map(PanelPermissions::valueOf).collect(Collectors.toList()));
         }
     }
 

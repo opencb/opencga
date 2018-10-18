@@ -16,8 +16,8 @@
 
 package org.opencb.opencga.core.models;
 
+import org.opencb.biodata.models.clinical.interpretation.Interpretation;
 import org.opencb.biodata.models.commons.OntologyTerm;
-import org.opencb.opencga.core.models.clinical.Interpretation;
 
 import java.util.List;
 import java.util.Map;

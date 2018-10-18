@@ -18,8 +18,8 @@ package org.opencb.opencga.storage.core.manager.variant;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.commons.Phenotype;
-import org.opencb.biodata.models.core.pedigree.Pedigree;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.commons.datastore.core.Query;
@@ -48,9 +48,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.GENE;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.GENOTYPE;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.SAMPLE;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 
 /**
@@ -426,10 +424,10 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             if (StringUtils.isEmpty(defaultStudyStr)) {
                 throw VariantQueryException.missingStudyFor("panel", panelId, null);
             }
-            DiseasePanel panel = catalogManager.getDiseasePanelManager().get(defaultStudyStr, panelId, null, sessionId).first();
+            Panel panel = catalogManager.getPanelManager().get(defaultStudyStr, panelId, null, sessionId).first();
 
-            List<String> geneNames = new ArrayList<>(panel.getGenes().size());
-            for (DiseasePanel.GenePanel genePanel : panel.getGenes()) {
+            List<String> geneNames = new ArrayList<>(panel.getDiseasePanel().getGenes().size());
+            for (org.opencb.biodata.models.clinical.interpretation.DiseasePanel.GenePanel genePanel : panel.getDiseasePanel().getGenes()) {
                 geneNames.add(genePanel.getName());
             }
 

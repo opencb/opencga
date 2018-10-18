@@ -20,33 +20,33 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
-import org.opencb.opencga.core.models.DiseasePanel;
-import org.opencb.opencga.core.models.acls.permissions.DiseasePanelAclEntry;
+import org.opencb.opencga.core.models.Panel;
+import org.opencb.opencga.core.models.acls.permissions.PanelAclEntry;
 
 import java.io.IOException;
 
 /**
  * Created by pfurio on 10/06/16.
  */
-public class DiseasePanelClient extends CatalogClient<DiseasePanel, DiseasePanelAclEntry> {
-    private static final String PANEL_URL = "diseasePanels";
+public class PanelClient extends CatalogClient<Panel, PanelAclEntry> {
+    private static final String PANEL_URL = "panels";
 
-    public DiseasePanelClient(String userId, String sessionId, ClientConfiguration configuration) {
+    public PanelClient(String userId, String sessionId, ClientConfiguration configuration) {
         super(userId, sessionId, configuration);
 
         this.category = PANEL_URL;
-        this.clazz = DiseasePanel.class;
-        this.aclClass = DiseasePanelAclEntry.class;
+        this.clazz = Panel.class;
+        this.aclClass = PanelAclEntry.class;
     }
 
-    public QueryResponse<DiseasePanel> create(String studyId, ObjectMap bodyParams) throws IOException, ClientException {
+    public QueryResponse<Panel> create(String studyId, ObjectMap bodyParams) throws IOException, ClientException {
         if (bodyParams == null || bodyParams.size() == 0) {
             throw new ClientException("Missing body parameters");
         }
 
         ObjectMap params = new ObjectMap("body", bodyParams);
         params.append("study", studyId);
-        return execute(PANEL_URL, "create", params, POST, DiseasePanel.class);
+        return execute(PANEL_URL, "create", params, POST, Panel.class);
     }
 
     public QueryResponse<ObjectMap> groupBy(String studyId, String fields, ObjectMap params) throws IOException {

@@ -31,7 +31,7 @@ Collate:
     'AnalysisVariant-methods.R'
     'ClinicalAnalysis-methods.R'
     'Cohort-methods.R'
-    'DiseasePanel-methods.R'
+    'Panel-methods.R'
     'Family-methods.R'
     'File-methods.R'
     'Individual-methods.R'

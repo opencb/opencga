@@ -27,7 +27,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.monitor.MonitorService;
 import org.opencb.opencga.catalog.utils.CatalogDemo;
-import org.opencb.opencga.core.models.DiseasePanel;
+import org.opencb.opencga.core.models.Panel;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
 import javax.ws.rs.client.Client;
@@ -85,8 +85,8 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
             case "daemon":
                 daemons();
                 break;
-            case "disease-panel":
-                diseasePanels();
+            case "panel":
+                panels();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -230,18 +230,18 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         }
     }
 
-    private void diseasePanels() throws CatalogException, IOException {
-        validateConfiguration(catalogCommandOptions.diseasePanelCatalogCommandOptions, catalogCommandOptions.commonOptions);
+    private void panels() throws CatalogException, IOException {
+        validateConfiguration(catalogCommandOptions.panelCatalogCommandOptions, catalogCommandOptions.commonOptions);
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             String token = catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
 
-            if (catalogCommandOptions.diseasePanelCatalogCommandOptions.panelAppImport) {
-                catalogManager.getDiseasePanelManager().importPanelApp(token,
-                        catalogCommandOptions.diseasePanelCatalogCommandOptions.overwrite);
-            } else if (StringUtils.isNotEmpty(catalogCommandOptions.diseasePanelCatalogCommandOptions.panelImport)) {
+            if (catalogCommandOptions.panelCatalogCommandOptions.panelAppImport) {
+                catalogManager.getPanelManager().importPanelApp(token,
+                        catalogCommandOptions.panelCatalogCommandOptions.overwrite);
+            } else if (StringUtils.isNotEmpty(catalogCommandOptions.panelCatalogCommandOptions.panelImport)) {
                 importPanels(catalogManager, token);
-            } else if (StringUtils.isNotEmpty(catalogCommandOptions.diseasePanelCatalogCommandOptions.delete)) {
+            } else if (StringUtils.isNotEmpty(catalogCommandOptions.panelCatalogCommandOptions.delete)) {
                 deletePanels(catalogManager, token);
             } else {
                 logger.error("Expected --import or --delete parameter. Nothing to do.");
@@ -251,7 +251,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
     }
 
     private void importPanels(CatalogManager catalogManager, String token) throws IOException {
-        Path path = Paths.get(catalogCommandOptions.diseasePanelCatalogCommandOptions.panelImport);
+        Path path = Paths.get(catalogCommandOptions.panelCatalogCommandOptions.panelImport);
 
         if (path.toFile().isDirectory()) {
             // Load all the json files from the directory
@@ -260,40 +260,40 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
                         .filter(Files::isRegularFile)
                         .forEach(filePath -> {
                             // Import the panel file
-                            DiseasePanel panel;
+                            Panel panel;
                             try {
-                                panel = DiseasePanel.load(FileUtils.openInputStream(filePath.toFile()));
+                                panel = Panel.load(FileUtils.openInputStream(filePath.toFile()));
                             } catch (IOException e) {
                                 logger.error("Could not load file {}. {}", filePath.toString(), e.getMessage());
                                 return;
                             }
                             try {
-                                catalogManager.getDiseasePanelManager().create(panel,
-                                        catalogCommandOptions.diseasePanelCatalogCommandOptions.overwrite, token);
-                                logger.info("Disease panel {} imported", panel.getId());
+                                catalogManager.getPanelManager().create(panel,
+                                        catalogCommandOptions.panelCatalogCommandOptions.overwrite, token);
+                                logger.info("Panel {} imported", panel.getDiseasePanel().getId());
                             } catch (CatalogException e) {
-                                logger.error("Could not import {} - {}", panel.getId(), e.getMessage());
+                                logger.error("Could not import {} - {}", panel.getDiseasePanel().getId(), e.getMessage());
                             }
                         });
             }
         } else {
             // Import the panel file
-            DiseasePanel panel = DiseasePanel.load(FileUtils.openInputStream(path.toFile()));
+            Panel panel = Panel.load(FileUtils.openInputStream(path.toFile()));
             try {
-                catalogManager.getDiseasePanelManager().create(panel, catalogCommandOptions.diseasePanelCatalogCommandOptions.overwrite,
+                catalogManager.getPanelManager().create(panel, catalogCommandOptions.panelCatalogCommandOptions.overwrite,
                         token);
-                logger.info("Disease panel {} imported", panel.getId());
+                logger.info("Panel {} imported", panel.getDiseasePanel().getId());
             } catch (CatalogException e) {
-                logger.error("Could not import {} - {}", panel.getId(), e.getMessage());
+                logger.error("Could not import {} - {}", panel.getDiseasePanel().getId(), e.getMessage());
             }
         }
     }
 
     private void deletePanels(CatalogManager catalogManager, String token) {
-        String[] panelIds = catalogCommandOptions.diseasePanelCatalogCommandOptions.delete.split(",");
+        String[] panelIds = catalogCommandOptions.panelCatalogCommandOptions.delete.split(",");
         for (String panelId : panelIds) {
             try {
-                catalogManager.getDiseasePanelManager().delete(panelId, token);
+                catalogManager.getPanelManager().delete(panelId, token);
                 logger.info("Panel {} deleted", panelId);
             } catch (CatalogException e) {
                 logger.error("Could not delete panel {} - {}", panelId, e.getMessage());

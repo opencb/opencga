@@ -17,18 +17,18 @@
 package org.opencb.opencga.analysis.clinical;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.clinical.interpretation.Interpretation;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisResult;
 import org.opencb.opencga.analysis.OpenCgaAnalysis;
-import org.opencb.opencga.catalog.db.api.DiseasePanelDBAdaptor;
+import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
-import org.opencb.opencga.core.models.DiseasePanel;
-import org.opencb.opencga.core.models.clinical.Interpretation;
+import org.opencb.opencga.core.models.Panel;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
@@ -36,6 +36,9 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.opencb.biodata.models.clinical.interpretation.DiseasePanel.GenePanel;
+import static org.opencb.biodata.models.clinical.interpretation.DiseasePanel.VariantPanel;
 
 public class ClinicalInterpretationAnalysis extends OpenCgaAnalysis<Interpretation> {
 
@@ -122,7 +125,7 @@ public class ClinicalInterpretationAnalysis extends OpenCgaAnalysis<Interpretati
         final String userId = catalogManager.getUserManager().getUserId(sessionId);
 
         List<String> samples = new ArrayList<>();
-        List<DiseasePanel.VariantPanel> variants;
+        List<VariantPanel> variants;
 
         if (StringUtils.isNotEmpty(clinicalAnalysisId)) {
             ClinicalAnalysis clinicalAnalysis = getClinicalAnalysis();
@@ -140,17 +143,17 @@ public class ClinicalInterpretationAnalysis extends OpenCgaAnalysis<Interpretati
 
         // fetch disease panel
         Query panelQuery = new Query();
-        panelQuery.put(DiseasePanelDBAdaptor.QueryParams.ID.key(), panelId);
-        panelQuery.put(DiseasePanelDBAdaptor.QueryParams.VERSION.key(), panelVersion);
-        QueryResult<DiseasePanel> panelResult = catalogManager.getDiseasePanelManager().get(studyStr, panelQuery, QueryOptions.empty(), sessionId);
-        DiseasePanel diseasePanel = panelResult.first();
+        panelQuery.put(PanelDBAdaptor.QueryParams.ID.key(), panelId);
+        panelQuery.put(PanelDBAdaptor.QueryParams.VERSION.key(), panelVersion);
+        QueryResult<Panel> panelResult = catalogManager.getPanelManager().get(studyStr, panelQuery, QueryOptions.empty(), sessionId);
+        Panel diseasePanel = panelResult.first();
 
         // we create the variant strage manager
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
         // Step 1 - we first try to fetch diagnostic variants
-        variants = diseasePanel.getVariants();
+        variants = diseasePanel.getDiseasePanel().getVariants();
         Query variantQuery = new Query();
         variantQuery.put(VariantQueryParam.ID.key(), StringUtils.join(variants, ","));
         variantQuery.put(VariantQueryParam.SAMPLE.key(), StringUtils.join(samples, ","));
@@ -181,9 +184,9 @@ public class ClinicalInterpretationAnalysis extends OpenCgaAnalysis<Interpretati
         return null;
     }
 
-    private List<String> getGeneIdsFromPanel(DiseasePanel diseasePanel) throws CatalogException {
-        List<String> geneIds = new ArrayList<>(diseasePanel.getGenes().size());
-        for (DiseasePanel.GenePanel gene : diseasePanel.getGenes()) {
+    private List<String> getGeneIdsFromPanel(Panel diseasePanel) throws CatalogException {
+        List<String> geneIds = new ArrayList<>(diseasePanel.getDiseasePanel().getGenes().size());
+        for (GenePanel gene : diseasePanel.getDiseasePanel().getGenes()) {
             geneIds.add(gene.getId());
         }
         return geneIds;

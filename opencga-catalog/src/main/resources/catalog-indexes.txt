@@ -102,10 +102,10 @@
 {"collection": "family", "fields": {"_lastOfVersion": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "family", "fields": {"studyUid": 1}, "options": {"background": true}}
 
-{"collection": "diseasePanel", "fields": {"uuid": 1, "version": 1}, "options": {"unique": true, "background": true}}
-{"collection": "diseasePanel", "fields": {"uid": 1, "version": 1}, "options": {"unique": true, "background": true}}
-{"collection": "diseasePanel", "fields": {"id": 1, "studyUid": 1, "version": 1}, "options": {"unique": true, "background": true}}
-{"collection": "diseasePanel", "fields": {"_creationDate": 1, "studyUid": 1, "status.name": 1}, "options": {"background": true}}
-{"collection": "diseasePanel", "fields": {"_modificationDate": 1, "studyUid": 1, "status.name": 1}, "options": {"background": true}}
-{"collection": "diseasePanel", "fields": {"_lastOfVersion": 1, "studyUid": 1}, "options": {"background": true}}
-{"collection": "diseasePanel", "fields": {"studyUid": 1}, "options": {"background": true}}
+{"collection": "panel", "fields": {"uuid": 1, "version": 1}, "options": {"unique": true, "background": true}}
+{"collection": "panel", "fields": {"uid": 1, "version": 1}, "options": {"unique": true, "background": true}}
+{"collection": "panel", "fields": {"id": 1, "studyUid": 1, "version": 1}, "options": {"unique": true, "background": true}}
+{"collection": "panel", "fields": {"_creationDate": 1, "studyUid": 1, "status.name": 1}, "options": {"background": true}}
+{"collection": "panel", "fields": {"_modificationDate": 1, "studyUid": 1, "status.name": 1}, "options": {"background": true}}
+{"collection": "panel", "fields": {"_lastOfVersion": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "panel", "fields": {"studyUid": 1}, "options": {"background": true}}

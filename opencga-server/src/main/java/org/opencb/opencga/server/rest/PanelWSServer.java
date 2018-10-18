@@ -8,10 +8,10 @@ import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.managers.DiseasePanelManager;
+import org.opencb.opencga.catalog.managers.PanelManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.DiseasePanel;
+import org.opencb.opencga.core.models.Panel;
 import org.opencb.opencga.core.models.Status;
 import org.opencb.opencga.core.models.acls.AclParams;
 
@@ -22,31 +22,32 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import static org.opencb.biodata.models.clinical.interpretation.DiseasePanel.*;
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
-@Path("/{apiVersion}/diseasePanels")
+@Path("/{apiVersion}/panels")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = "Disease Panels", position = 4, description = "Methods for working with 'diseasePanels' endpoint")
-public class DiseasePanelWSServer extends OpenCGAWSServer {
+@Api(value = "Panels", position = 4, description = "Methods for working with 'panels' endpoint")
+public class PanelWSServer extends OpenCGAWSServer {
 
-    private DiseasePanelManager panelManager;
+    private PanelManager panelManager;
 
-    public DiseasePanelWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
+    public PanelWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
-        panelManager = catalogManager.getDiseasePanelManager();
+        panelManager = catalogManager.getPanelManager();
     }
 
     @POST
     @Path("/create")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Create a disease panel", response = DiseasePanel[].class)
+    @ApiOperation(value = "Create a panel")
     public Response createPanel(
             @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
-            @ApiParam(value = "When filled in with an installation disease panel ID, it will import the installation disease panel to"
+            @ApiParam(value = "When filled in with an installation panel ID, it will import the installation panel to"
                     + " the selected study to be used")
-                @QueryParam("importPanelId") String panelId,
-            @ApiParam(name = "params", value = "Disease panel parameters") PanelPOST params) {
+            @QueryParam("importPanelId") String panelId,
+            @ApiParam(name = "params", value = "Panel parameters") PanelPOST params) {
         try {
             if (StringUtils.isNotEmpty(panelId)) {
                 return createOkResponse(panelManager.importInstallationPanel(studyStr, panelId, queryOptions, sessionId));
@@ -59,15 +60,15 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/{diseasePanel}/update")
+    @Path("/{panel}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update a disease panel", response = DiseasePanel[].class)
+    @ApiOperation(value = "Update a panel")
     public Response updatePanel(
             @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
-            @ApiParam(value = "Disease panel id") @PathParam("diseasePanel") String panelId,
-            @ApiParam(value = "Create a new version of disease panel", defaultValue = "false")
-                @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
-            @ApiParam(name = "params", value = "Disease panel parameters") PanelPOST panelParams) {
+            @ApiParam(value = "Panel id") @PathParam("panel") String panelId,
+            @ApiParam(value = "Create a new version of panel", defaultValue = "false")
+            @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
+            @ApiParam(name = "params", value = "Panel parameters") PanelPOST panelParams) {
         try {
             return createOkResponse(panelManager.update(studyStr, panelId, panelParams.toObjectMap(), queryOptions, sessionId));
         } catch (Exception e) {
@@ -76,8 +77,8 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{diseasePanels}/info")
-    @ApiOperation(value = "Disease panel info", response = DiseasePanel[].class)
+    @Path("/{panels}/info")
+    @ApiOperation(value = "Panel info")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
                     example = "name,attributes", dataType = "string", paramType = "query"),
@@ -85,26 +86,26 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
                     example = "id,status", dataType = "string", paramType = "query")
     })
     public Response info(
-            @ApiParam(value = "Comma separated list of disease panel ids up to a maximum of 100") @PathParam(value = "diseasePanels") String panelStr,
+            @ApiParam(value = "Comma separated list of panel ids up to a maximum of 100") @PathParam(value = "panels") String panelStr,
             @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
-            @ApiParam(value = "Disease panel  version") @QueryParam("version") Integer version,
-            @ApiParam(value = "Fetch all disease panel versions", defaultValue = "false") @QueryParam(Constants.ALL_VERSIONS)
+            @ApiParam(value = "Panel  version") @QueryParam("version") Integer version,
+            @ApiParam(value = "Fetch all panel versions", defaultValue = "false") @QueryParam(Constants.ALL_VERSIONS)
                     boolean allVersions,
-            @ApiParam(value = "Boolean indicating which disease panels are queried (installation or study specific disease panels)",
+            @ApiParam(value = "Boolean indicating which panels are queried (installation or study specific panels)",
                     defaultValue = "false") @QueryParam("global") boolean global,
             @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
                     + "exception whenever one of the entries looked for cannot be shown for whichever reason", defaultValue = "false")
-                @QueryParam("silent") boolean silent) {
+            @QueryParam("silent") boolean silent) {
         try {
             query.remove("study");
             query.remove("global");
 
             if (global) {
-                studyStr = DiseasePanelManager.INSTALLATION_PANELS;
+                studyStr = PanelManager.INSTALLATION_PANELS;
             }
 
             List<String> idList = getIdList(panelStr);
-            List<QueryResult<DiseasePanel>> panelQueryResult = panelManager.get(studyStr, idList, query, queryOptions, silent, sessionId);
+            List<QueryResult<Panel>> panelQueryResult = panelManager.get(studyStr, idList, query, queryOptions, silent, sessionId);
             return createOkResponse(panelQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -114,7 +115,7 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/search")
-    @ApiOperation(value = "Disease panel search", response = DiseasePanel[].class)
+    @ApiOperation(value = "Panel search")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
                     example = "name,attributes", dataType = "string", paramType = "query"),
@@ -126,24 +127,24 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
     })
     public Response search(
             @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
-            @ApiParam(value = "Disease panel name") @QueryParam("name") String name,
-            @ApiParam(value = "Disease panel phenotypes") @QueryParam("phenotypes") String phenotypes,
-            @ApiParam(value = "Disease panel variants") @QueryParam("variants") String variants,
-            @ApiParam(value = "Disease panel genes") @QueryParam("genes") String genes,
-            @ApiParam(value = "Disease panel regions") @QueryParam("regions") String regions,
-            @ApiParam(value = "Disease panel categories") @QueryParam("categories") String categories,
-            @ApiParam(value = "Disease panel tags") @QueryParam("tags") String tags,
-            @ApiParam(value = "Disease panel description") @QueryParam("description") String description,
-            @ApiParam(value = "Disease panel author") @QueryParam("author") String author,
+            @ApiParam(value = "Panel name") @QueryParam("name") String name,
+            @ApiParam(value = "Panel phenotypes") @QueryParam("phenotypes") String phenotypes,
+            @ApiParam(value = "Panel variants") @QueryParam("variants") String variants,
+            @ApiParam(value = "Panel genes") @QueryParam("genes") String genes,
+            @ApiParam(value = "Panel regions") @QueryParam("regions") String regions,
+            @ApiParam(value = "Panel categories") @QueryParam("categories") String categories,
+            @ApiParam(value = "Panel tags") @QueryParam("tags") String tags,
+            @ApiParam(value = "Panel description") @QueryParam("description") String description,
+            @ApiParam(value = "Panel author") @QueryParam("author") String author,
             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
-                @QueryParam("creationDate") String creationDate,
+            @QueryParam("creationDate") String creationDate,
             @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
-                @QueryParam("modificationDate") String modificationDate,
-            @ApiParam(value = "Boolean indicating which disease panels are queried (installation or study specific disease panels)",
+            @QueryParam("modificationDate") String modificationDate,
+            @ApiParam(value = "Boolean indicating which panels are queried (installation or study specific panels)",
                     defaultValue = "false") @QueryParam("global") boolean global,
             @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,
             @ApiParam(value = "Release value (Current release from the moment the samples were first created)")
-                @QueryParam("release") String release,
+            @QueryParam("release") String release,
             @ApiParam(value = "Snapshot value (Latest version of samples in the specified release)") @QueryParam("snapshot")
                     int snapshot) {
         try {
@@ -153,10 +154,10 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
 
             if (global) {
-                studyStr = DiseasePanelManager.INSTALLATION_PANELS;
+                studyStr = PanelManager.INSTALLATION_PANELS;
             }
 
-            QueryResult<DiseasePanel> queryResult;
+            QueryResult<Panel> queryResult;
             if (count) {
                 queryResult = panelManager.count(studyStr, query, sessionId);
             } else {
@@ -170,19 +171,19 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
 
     @DELETE
     @Path("/delete")
-    @ApiOperation(value = "Delete existing disease panels")
+    @ApiOperation(value = "Delete existing panels")
     public Response delete(
             @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
-            @ApiParam(value = "Disease panel id") @QueryParam("id") String id,
-            @ApiParam(value = "Disease panel name") @QueryParam("name") String name,
-            @ApiParam(value = "Disease panel phenotypes") @QueryParam("phenotypes") String phenotypes,
-            @ApiParam(value = "Disease panel variants") @QueryParam("variants") String variants,
-            @ApiParam(value = "Disease panel genes") @QueryParam("genes") String genes,
-            @ApiParam(value = "Disease panel regions") @QueryParam("regions") String regions,
-            @ApiParam(value = "Disease panel categories") @QueryParam("categories") String categories,
-            @ApiParam(value = "Disease panel tags") @QueryParam("tags") String tags,
-            @ApiParam(value = "Disease panel description") @QueryParam("description") String description,
-            @ApiParam(value = "Disease panel author") @QueryParam("author") String author,
+            @ApiParam(value = "Panel id") @QueryParam("id") String id,
+            @ApiParam(value = "Panel name") @QueryParam("name") String name,
+            @ApiParam(value = "Panel phenotypes") @QueryParam("phenotypes") String phenotypes,
+            @ApiParam(value = "Panel variants") @QueryParam("variants") String variants,
+            @ApiParam(value = "Panel genes") @QueryParam("genes") String genes,
+            @ApiParam(value = "Panel regions") @QueryParam("regions") String regions,
+            @ApiParam(value = "Panel categories") @QueryParam("categories") String categories,
+            @ApiParam(value = "Panel tags") @QueryParam("tags") String tags,
+            @ApiParam(value = "Panel description") @QueryParam("description") String description,
+            @ApiParam(value = "Panel author") @QueryParam("author") String author,
             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
             @ApiParam(value = "Release") @QueryParam("release") String release) {
         try {
@@ -195,7 +196,7 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/groupBy")
-    @ApiOperation(value = "Group disease panels by several fields", position = 10, hidden = true,
+    @ApiOperation(value = "Group panels by several fields", position = 10, hidden = true,
             notes = "Only group by categorical variables. Grouping by continuous variables might cause unexpected behaviour")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "count", value = "Count the number of elements matching the group", dataType = "boolean",
@@ -206,15 +207,15 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
     public Response groupBy(
             @ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @QueryParam("fields") String fields,
             @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
-            @ApiParam(value = "Disease panel name") @QueryParam("name") String name,
-            @ApiParam(value = "Disease panel phenotypes") @QueryParam("phenotypes") String phenotypes,
-            @ApiParam(value = "Disease panel categories") @QueryParam("categories") String categories,
-            @ApiParam(value = "Disease panel tags") @QueryParam("tags") String tags,
-            @ApiParam(value = "Disease panel variants") @QueryParam("variants") String variants,
-            @ApiParam(value = "Disease panel genes") @QueryParam("genes") String genes,
-            @ApiParam(value = "Disease panel regions") @QueryParam("regions") String regions,
-            @ApiParam(value = "Disease panel description") @QueryParam("description") String description,
-            @ApiParam(value = "Disease panel author") @QueryParam("author") String author,
+            @ApiParam(value = "Panel name") @QueryParam("name") String name,
+            @ApiParam(value = "Panel phenotypes") @QueryParam("phenotypes") String phenotypes,
+            @ApiParam(value = "Panel categories") @QueryParam("categories") String categories,
+            @ApiParam(value = "Panel tags") @QueryParam("tags") String tags,
+            @ApiParam(value = "Panel variants") @QueryParam("variants") String variants,
+            @ApiParam(value = "Panel genes") @QueryParam("genes") String genes,
+            @ApiParam(value = "Panel regions") @QueryParam("regions") String regions,
+            @ApiParam(value = "Panel description") @QueryParam("description") String description,
+            @ApiParam(value = "Panel author") @QueryParam("author") String author,
             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
             @ApiParam(value = "Release value (Current release from the moment the families were first created)") @QueryParam("release") String release,
             @ApiParam(value = "Snapshot value (Latest version of families in the specified release)") @QueryParam("snapshot") int snapshot) {
@@ -230,16 +231,16 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{diseasePanels}/acl")
-    @ApiOperation(value = "Returns the acl of the disease panels. If member is provided, it will only return the acl for the member.", position = 18)
+    @Path("/{panels}/acl")
+    @ApiOperation(value = "Returns the acl of the panels. If member is provided, it will only return the acl for the member.", position = 18)
     public Response getAcls(
-            @ApiParam(value = "Comma separated list of disease panel ids up to a maximum of 100", required = true) @PathParam("diseasePanels")
-                String sampleIdsStr,
+            @ApiParam(value = "Comma separated list of panel ids up to a maximum of 100", required = true) @PathParam("panels")
+                    String sampleIdsStr,
             @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
             @ApiParam(value = "User or group id") @QueryParam("member") String member,
             @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
                     + "exception whenever one of the entries looked for cannot be shown for whichever reason", defaultValue = "false")
-                @QueryParam("silent") boolean silent) {
+            @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(sampleIdsStr);
             return createOkResponse(panelManager.getAcls(studyStr, idList, member,silent, sessionId));
@@ -275,39 +276,40 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
         public String description;
         @Deprecated
         public String author;
-        public DiseasePanel.SourcePanel source;
+        public SourcePanel source;
 
-        public List<DiseasePanel.PanelCategory> categories;
+        public List<PanelCategory> categories;
         public List<String> tags;
         public List<Phenotype> phenotypes;
-        public List<DiseasePanel.VariantPanel> variants;
-        public List<DiseasePanel.GenePanel> genes;
-        public List<DiseasePanel.RegionPanel> regions;
+        public List<VariantPanel> variants;
+        public List<GenePanel> genes;
+        public List<RegionPanel> regions;
 
         public Map<String, Integer> stats;
 
         public Map<String, Object> attributes;
 
-        public DiseasePanel toPanel() {
-            return new DiseasePanel(id, name, categories, phenotypes, tags, variants, genes, regions, stats, 1, 1, author, source,
+        public Panel toPanel() {
+            return new Panel(id, name, categories, phenotypes, tags, variants, genes, regions, stats, 1, 1, author, source,
                     new Status(), description, attributes);
         }
 
         public ObjectMap toObjectMap() throws JsonProcessingException {
-            DiseasePanel panel = new DiseasePanel()
-                    .setId(id)
-                    .setName(name)
-                    .setAuthor(author)
-                    .setSource(source)
-                    .setDescription(description)
-                    .setCategories(categories)
-                    .setTags(tags)
-                    .setPhenotypes(phenotypes)
-                    .setVariants(variants)
-                    .setGenes(genes)
-                    .setRegions(regions)
-                    .setStats(stats)
-                    .setAttributes(attributes);
+            Panel panel = new Panel();
+            panel.getDiseasePanel().setId(id);
+            panel.getDiseasePanel().setId(id);
+            panel.getDiseasePanel().setName(name);
+            panel.setAuthor(author);
+            panel.getDiseasePanel().setSource(source);
+            panel.getDiseasePanel().setDescription(description);
+            panel.getDiseasePanel().setCategories(categories);
+            panel.getDiseasePanel().setTags(tags);
+            panel.getDiseasePanel().setPhenotypes(phenotypes);
+            panel.getDiseasePanel().setVariants(variants);
+            panel.getDiseasePanel().setGenes(genes);
+            panel.getDiseasePanel().setRegions(regions);
+            panel.getDiseasePanel().setStats(stats);
+            panel.getDiseasePanel().setAttributes(attributes);
 
             return new ObjectMap(getUpdateObjectMapper().writeValueAsString(panel));
         }

@@ -59,7 +59,7 @@ public class Study extends PrivateFields {
     private List<Dataset> datasets;
     private List<Cohort> cohorts;
 
-    private List<DiseasePanel> panels;
+    private List<Panel> panels;
 
     private List<VariableSet> variableSets;
 
@@ -89,7 +89,7 @@ public class Study extends PrivateFields {
     public Study(String id, String name, String alias, Type type, String creationDate, String description, Status status,
                  String lastModified, long size, String cipher, List<Group> groups, List<Experiment> experiments, List<File> files,
                  List<Job> jobs, List<Individual> individuals, List<Sample> samples, List<Dataset> datasets, List<Cohort> cohorts,
-                 List<DiseasePanel> panels, List<VariableSet> variableSets, Map<Entity, List<PermissionRule>> permissionRules,
+                 List<Panel> panels, List<VariableSet> variableSets, Map<Entity, List<PermissionRule>> permissionRules,
                  URI uri, Map<File.Bioformat, DataStore> dataStores, int release, Map<String, Object> stats,
                  Map<String, Object> attributes) {
         this.id = id;
@@ -376,11 +376,11 @@ public class Study extends PrivateFields {
         return this;
     }
 
-    public List<DiseasePanel> getPanels() {
+    public List<Panel> getPanels() {
         return panels;
     }
 
-    public Study setPanels(List<DiseasePanel> panels) {
+    public Study setPanels(List<Panel> panels) {
         this.panels = panels;
         return this;
     }

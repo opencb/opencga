@@ -133,7 +133,7 @@ public interface AuthorizationManager {
     void checkCohortPermission(long studyId, long cohortId, String userId, CohortAclEntry.CohortPermissions permission)
             throws CatalogException;
 
-    void checkDiseasePanelPermission(long studyId, long panelId, String userId, DiseasePanelAclEntry.DiseasePanelPermissions permission)
+    void checkPanelPermission(long studyId, long panelId, String userId, PanelAclEntry.PanelPermissions permission)
             throws CatalogException;
 
     void checkFamilyPermission(long studyId, long familyId, String userId, FamilyAclEntry.FamilyPermissions permission)
@@ -299,7 +299,7 @@ public interface AuthorizationManager {
      * @return a list of DiseasePanelAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the panel does not have proper permissions.
      */
-    QueryResult<DiseasePanelAclEntry> getAllPanelAcls(long studyId, long panelId, String userId) throws CatalogException;
+    QueryResult<PanelAclEntry> getAllPanelAcls(long studyId, long panelId, String userId) throws CatalogException;
 
     /**
      * Return the ACL defined for the member.
@@ -312,7 +312,7 @@ public interface AuthorizationManager {
      * @return the DiseasePanelAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    QueryResult<DiseasePanelAclEntry> getPanelAcl(long studyId, long panelId, String userId, String member) throws CatalogException;
+    QueryResult<PanelAclEntry> getPanelAcl(long studyId, long panelId, String userId, String member) throws CatalogException;
 
     //------------------------- End of panel ACL ----------------------
 

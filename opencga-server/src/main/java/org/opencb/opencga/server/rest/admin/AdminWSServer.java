@@ -8,13 +8,12 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.DiseasePanelManager;
-import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.catalog.managers.PanelManager;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Account;
 import org.opencb.opencga.core.models.Group;
 import org.opencb.opencga.core.models.User;
-import org.opencb.opencga.server.rest.DiseasePanelWSServer;
+import org.opencb.opencga.server.rest.PanelWSServer;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
 
 import javax.servlet.http.HttpServletRequest;
@@ -175,28 +174,28 @@ public class AdminWSServer extends OpenCGAWSServer {
 
 
     @POST
-    @Path("/catalog/diseasePanel")
-    @ApiOperation(value = "Handle global disease panels")
+    @Path("/catalog/panel")
+    @ApiOperation(value = "Handle global panels")
     public Response diseasePanels(
             @ApiParam(value = "Import panels from PanelApp (GEL)", defaultValue = "false") @QueryParam("panelApp") boolean importPanels,
             @ApiParam(value = "Flag indicating to overwrite installed panels in case of an ID conflict", defaultValue = "false")
                 @QueryParam("overwrite") boolean overwrite,
             @ApiParam(value = "Comma separated list of global panel ids to delete")
                 @QueryParam("delete") String panelsToDelete,
-            @ApiParam(value = "Disease panel parameters to be installed") DiseasePanelWSServer.PanelPOST panelPost) {
+            @ApiParam(value = "Panel parameters to be installed") PanelWSServer.PanelPOST panelPost) {
         try {
             if (importPanels) {
-                catalogManager.getDiseasePanelManager().importPanelApp(sessionId, overwrite);
+                catalogManager.getPanelManager().importPanelApp(sessionId, overwrite);
             } else if (StringUtils.isEmpty(panelsToDelete)) {
-                catalogManager.getDiseasePanelManager().create(panelPost.toPanel(), overwrite, sessionId);
+                catalogManager.getPanelManager().create(panelPost.toPanel(), overwrite, sessionId);
             } else {
                 String[] panelIds = panelsToDelete.split(",");
                 for (String panelId : panelIds) {
-                    catalogManager.getDiseasePanelManager().delete(panelId, sessionId);
+                    catalogManager.getPanelManager().delete(panelId, sessionId);
                 }
             }
 
-            return createOkResponse(catalogManager.getDiseasePanelManager().count(DiseasePanelManager.INSTALLATION_PANELS,
+            return createOkResponse(catalogManager.getPanelManager().count(PanelManager.INSTALLATION_PANELS,
                     new Query(), sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);

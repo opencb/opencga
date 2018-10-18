@@ -113,13 +113,13 @@ setGeneric("clinicalAnalysisInterpretationClient", function(OpencgaR, clinicalAn
     standardGeneric("clinicalAnalysisInterpretationClient"))
 
 ################################################################################
-## DiseasePanelClient
-setGeneric("diseasePanelClient", function(OpencgaR, diseasePanel, action, 
+## PanelClient
+setGeneric("panelClient", function(OpencgaR, panel, action,
                                           params=NULL, ...)
-    standardGeneric("diseasePanelClient"))
+    standardGeneric("panelClient"))
 
-setGeneric("diseasePanelAclClient", function(OpencgaR, members, action, params=NULL, ...)
-    standardGeneric("diseasePanelAclClient"))
+setGeneric("panelAclClient", function(OpencgaR, members, action, params=NULL, ...)
+    standardGeneric("panelAclClient"))
 
 ################################################################################
 ## AnalysisAlignmentClient
