@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.hadoop.variant.converters.study;
 
 import com.google.common.collect.LinkedListMultimap;
 import org.apache.hadoop.hbase.client.Put;
+import org.apache.solr.common.StringUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
@@ -158,6 +159,9 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
                 if (gtIdx == null || !defaultGenotypes.contains(sampleData.get(gtIdx))) {
                     if (formatReMap != null) {
                         sampleData = remapSampleData(studyEntry, formatReMap, sampleData);
+                    } else {
+                        // Trim all leading null values
+                        sampleData = trimLeadingNullValues(sampleData, 1);
                     }
                     addVarcharArray(put, column, sampleData);
                     // Write file attributes if at least one sample is written.
@@ -233,7 +237,9 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
 
     private int[] buildFormatRemap(StudyEntry studyEntry) {
         int[] formatReMap;
-        if (!fixedFormatSet.equals(studyEntry.getFormat())) {
+        if (fixedFormat.equals(studyEntry.getFormat())) {
+            formatReMap = null;
+        } else {
             formatReMap = new int[fixedFormat.size()];
             for (int i = 0; i < fixedFormat.size(); i++) {
                 String format = fixedFormat.get(i);
@@ -247,8 +253,6 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
                 }
                 formatReMap[i] = idx;
             }
-        } else {
-            formatReMap = null;
         }
         return formatReMap;
     }
@@ -259,7 +263,7 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
         for (int i : formatReMap) {
             switch (i) {
                 case UNKNOWN_FIELD:
-                    remappedSampleData.add("");
+                    remappedSampleData.add(null);
                     break;
                 case FILTER_FIELD:
                     remappedSampleData.add(studyEntry.getFiles().get(0).getAttributes().get(StudyEntry.FILTER));
@@ -268,7 +272,7 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
                     if (sampleData.size() > i) {
                         remappedSampleData.add(sampleData.get(i));
                     } else {
-                        remappedSampleData.add("");
+                        remappedSampleData.add(null);
                     }
                     break;
             }
@@ -286,9 +290,9 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
         return remappedSampleData;
     }
 
-    private List<String> trimLeadingNullValues(List<String> values, int minSize) {
+    static List<String> trimLeadingNullValues(List<String> values, int minSize) {
         int i = values.size() - 1;
-        while (i >= minSize && values.get(i) == null) {
+        while (i >= minSize && StringUtils.isEmpty(values.get(i))) {
             i--;
         }
         if (i != values.size() - 1) {
