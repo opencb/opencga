@@ -133,7 +133,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         catalogManager.getProjectManager().importReleases(commandOptions.owner, commandOptions.directory, token);
     }
 
-    private void install() throws CatalogException {
+    private void install() throws CatalogException, URISyntaxException {
         validateConfiguration(catalogCommandOptions.installCatalogCommandOptions, catalogCommandOptions.commonOptions);
 
         this.configuration.getAdmin().setSecretKey(this.catalogCommandOptions.installCatalogCommandOptions.secretKey);
@@ -145,8 +145,16 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         }
 
         CatalogManager catalogManager = new CatalogManager(configuration);
-        logger.info("\nInstalling database {} in {}\n", catalogManager.getCatalogDatabase(), configuration.getCatalog().getDatabase()
-                .getHosts());
+        if (catalogManager.existsCatalogDB()) {
+            if (catalogCommandOptions.installCatalogCommandOptions.force) {
+                catalogManager.deleteCatalogDB(false);
+            } else {
+                throw new CatalogException("A database called " + catalogManager.getCatalogDatabase() + " already exists");
+            }
+        }
+
+        logger.info("\nInstalling database {} in {}\n", catalogManager.getCatalogDatabase(),
+                configuration.getCatalog().getDatabase().getHosts());
 
         catalogManager.installCatalogDB(this.catalogCommandOptions.installCatalogCommandOptions.secretKey,
                 configuration.getAdmin().getPassword());
