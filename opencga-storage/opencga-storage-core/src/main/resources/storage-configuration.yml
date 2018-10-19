@@ -172,7 +172,6 @@ storageEngines:
       opencga.sample-index.table.presplit.size: 15
       opencga.sample-index.table.compression: "snappy"
       opencga.storage.hadoop.variant.hbase.namespace: "${OPENCGA.STORAGE.HADOOP.VARIANT.HBASE.NAMESPACE}"
-      opencga.storage.hadoop.variant.archive.table.prefix: "${OPENCGA.STORAGE.HADOOP.VARIANT.ARCHIVE.TABLE.PREFIX}"
       intersect.active : true          # Allow intersect queries with the SearchEngine (Solr)
       intersect.always : false         # Force intersect queries
       intersect.params.threshold : 3   # Minimum number of QueryParams in the query to intersect
