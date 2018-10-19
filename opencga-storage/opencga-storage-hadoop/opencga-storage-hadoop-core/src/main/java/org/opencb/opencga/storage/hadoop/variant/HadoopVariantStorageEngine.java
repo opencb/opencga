@@ -186,6 +186,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     // Sample index table configuration
     public static final String SAMPLE_INDEX_TABLE_COMPRESSION = "opencga.sample-index.table.compression";
+    public static final String SAMPLE_INDEX_TABLE_PRESPLIT_SIZE = "opencga.sample-index.table.presplit.size";
+    public static final int DEFAULT_SAMPLE_INDEX_TABLE_PRESPLIT_SIZE = 15;
 
     public static final String EXTERNAL_MR_EXECUTOR = "opencga.external.mr.executor";
     public static final String STATS_LOCAL = "stats.local";
