@@ -248,6 +248,12 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
         assertEquals("0/1", variantMulti.getStudies().get(0).getSampleData("s1", "GT"));
         assertEquals("2/2", variantMulti.getStudies().get(0).getSampleData("s2", "GT"));
 
+        Variant variantNonMulti = dbAdaptor.get(new Query(VariantQueryParam.ID.key(), "1:10054:A:G"), null).first();
+        assertEquals(new HashSet<>(Arrays.asList("C", "T")),
+                variantNonMulti.getStudies().get(0).getSecondaryAlternates().stream().map(AlternateCoordinate::getAlternate).collect(Collectors.toSet()));
+        assertEquals("2/3", variantNonMulti.getStudies().get(0).getSampleData("s1", "GT"));
+        assertEquals("0/1", variantNonMulti.getStudies().get(0).getSampleData("s2", "GT"));
+
     }
 
     @Test

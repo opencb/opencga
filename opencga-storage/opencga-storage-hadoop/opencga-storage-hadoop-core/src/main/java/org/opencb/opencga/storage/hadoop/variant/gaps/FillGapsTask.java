@@ -125,6 +125,23 @@ public class FillGapsTask {
                     .stream()
                     .filter(pair -> pair.getRight().getType() != VariantProto.VariantType.NO_VARIATION)
                     .collect(Collectors.toList());
+            if (realVariants.size() > 1) {
+                // Check if all the variants are different versions of the same multi-allelic variant
+                Set<String> calls = new HashSet<>();
+                for (Pair<VcfSliceProtos.VcfSlice, VcfSliceProtos.VcfRecord> pair : realVariants) {
+                    String call = pair.getValue().getCall();
+                    if (call.isEmpty()) {
+                        calls.add(null);
+                    } else {
+                        calls.add(call.substring(0, call.lastIndexOf(':')));
+                    }
+                }
+                // All the variants are from the same call. Select any.
+                if (calls.size() == 1 && !calls.contains(null)) {
+                    realVariants = Collections.singletonList(realVariants.stream()
+                            .min(Comparator.comparing(pair -> pair.getValue().getCall())).get());
+                }
+            }
             // If there is only one real variant, use it
             if (realVariants.size() == 1) {
                 vcfRecord = realVariants.get(0).getRight();
