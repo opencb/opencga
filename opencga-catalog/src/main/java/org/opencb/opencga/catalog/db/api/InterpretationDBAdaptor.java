@@ -18,6 +18,7 @@ public interface InterpretationDBAdaptor extends DBAdaptor<Interpretation> {
         ID("id", TEXT, ""),
         UID("uid", INTEGER, ""),
         UUID("uuid", TEXT, ""),
+        CLINICAL_ANALYSIS("clinicalAnalysisId", TEXT, ""),
         DESCRIPTION("description", TEXT, ""),
         STATUS("status", TEXT, ""),
         VERSION("version", INTEGER, ""),
@@ -69,6 +70,43 @@ public interface InterpretationDBAdaptor extends DBAdaptor<Interpretation> {
         }
 
         public static QueryParams getParam(String key) {
+            return map.get(key);
+        }
+    }
+
+    enum UpdateParams {
+        ID(QueryParams.ID.key()),
+        DESCRIPTION(QueryParams.DESCRIPTION.key()),
+        STATUS(QueryParams.STATUS.key()),
+        PANELS("panels"),
+        SOFTWARE("software"),
+        ANALYST("analyst"),
+        DEPENDENCIES("dependencies"),
+        FILTERS("filters"),
+        REPORTED_VARIANTS("reportedVariants"),
+        REPORTED_LOW_COVERAGE("reportedLowCoverages"),
+        COMMENTS("comments"),
+        ATTRIBUTES(QueryParams.ATTRIBUTES.key());
+
+        private static Map<String, UpdateParams> map;
+        static {
+            map = new LinkedMap();
+            for (UpdateParams params : UpdateParams.values()) {
+                map.put(params.key(), params);
+            }
+        }
+
+        private final String key;
+
+        UpdateParams(String key) {
+            this.key = key;
+        }
+
+        public String key() {
+            return key;
+        }
+
+        public static UpdateParams getParam(String key) {
             return map.get(key);
         }
     }

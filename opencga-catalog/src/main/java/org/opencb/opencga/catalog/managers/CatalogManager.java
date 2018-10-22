@@ -64,6 +64,7 @@ public class CatalogManager implements AutoCloseable {
     private CohortManager cohortManager;
     private FamilyManager familyManager;
     private ClinicalAnalysisManager clinicalAnalysisManager;
+    private InterpretationManager interpretationManager;
     private PanelManager panelManager;
 
     private CatalogAuditManager auditManager;
@@ -115,6 +116,8 @@ public class CatalogManager implements AutoCloseable {
         panelManager = new PanelManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManagerFactory,
                 configuration);
         clinicalAnalysisManager = new ClinicalAnalysisManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
+                catalogIOManagerFactory, configuration);
+        interpretationManager = new InterpretationManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, configuration);
     }
 
@@ -291,6 +294,10 @@ public class CatalogManager implements AutoCloseable {
 
     public ClinicalAnalysisManager getClinicalAnalysisManager() {
         return clinicalAnalysisManager;
+    }
+
+    public InterpretationManager getInterpretationManager() {
+        return interpretationManager;
     }
 
     public PanelManager getPanelManager() {

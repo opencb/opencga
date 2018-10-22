@@ -55,7 +55,7 @@ import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper
  */
 public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
-    protected static Logger logger = LoggerFactory.getLogger(CohortManager.class);
+    protected static Logger logger = LoggerFactory.getLogger(ClinicalAnalysisManager.class);
 
     ClinicalAnalysisManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                                    DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,

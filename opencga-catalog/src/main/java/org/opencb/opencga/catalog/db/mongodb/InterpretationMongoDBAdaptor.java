@@ -224,7 +224,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
             throws CatalogDBException {
         UpdateDocument document = new UpdateDocument();
 
-        if (parameters.containsKey(QueryParams.ID.key())) {
+        if (parameters.containsKey(UpdateParams.ID.key())) {
             // That can only be done to one individual...
             Query tmpQuery = new Query(query);
 
@@ -248,11 +248,19 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                         + parameters.get(QueryParams.ID.key()) + "'} already exists.");
             }
 
-            document.getSet().put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
+            document.getSet().put(UpdateParams.ID.key(), parameters.get(UpdateParams.ID.key()));
         }
 
-        String[] acceptedParams = {QueryParams.DESCRIPTION.key(), QueryParams.STATUS.key()};
+        String[] acceptedParams = {UpdateParams.DESCRIPTION.key(), UpdateParams.STATUS.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
+
+        final String[] acceptedMapParams = {UpdateParams.ATTRIBUTES.key(), UpdateParams.FILTERS.key()};
+        filterMapParams(parameters, document.getSet(), acceptedMapParams);
+
+        String[] objectAcceptedParams = {UpdateParams.PANELS.key(), UpdateParams.SOFTWARE.key(), UpdateParams.ANALYST.key(),
+                UpdateParams.DEPENDENCIES.key(), UpdateParams.REPORTED_VARIANTS.key(), UpdateParams.REPORTED_LOW_COVERAGE.key(),
+                UpdateParams.COMMENTS.key()};
+        filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
 
         if (!document.toFinalUpdateDocument().isEmpty()) {
             // Update modificationDate param
@@ -451,6 +459,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                     // Other parameter that can be queried.
                     case ID:
                     case UUID:
+                    case CLINICAL_ANALYSIS:
                     case DESCRIPTION:
                     case STATUS:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
