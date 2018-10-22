@@ -43,6 +43,7 @@ import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
+import org.opencb.opencga.core.models.Interpretation;
 import org.opencb.opencga.core.models.Status;
 import org.opencb.opencga.core.models.acls.permissions.ClinicalAnalysisAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
@@ -125,59 +126,96 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     public QueryResult<ClinicalAnalysis> update(long id, ObjectMap parameters, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
+        Query query = new Query(QueryParams.UID.key(), id);
+        UpdateDocument updateDocument = parseAndValidateUpdateParams(parameters, query, options);
+
+        Document updateOperation = updateDocument.toFinalUpdateDocument();
+
+        if (!updateOperation.isEmpty()) {
+            Bson bsonQuery = Filters.eq(PRIVATE_UID, id);
+
+            logger.debug("Update clinical analysis. Query: {}, Update: {}", bsonQuery.toBsonDocument(Document.class,
+                    MongoClient.getDefaultCodecRegistry()), updateDocument);
+            QueryResult<UpdateResult> update = clinicalCollection.update(bsonQuery, updateOperation, null);
+
+            if (update.getResult().isEmpty() || update.getResult().get(0).getMatchedCount() == 0) {
+                throw CatalogDBException.uidNotFound("Clinical Analysis", id);
+            }
+        }
+
+        return endQuery("Modify clinical analysis", startTime, get(id, options));
+    }
+
+    private UpdateDocument parseAndValidateUpdateParams(ObjectMap parameters, Query query, QueryOptions queryOptions)
+            throws CatalogDBException {
         UpdateDocument document = new UpdateDocument();
 
-        String[] acceptedParams = {QueryParams.DESCRIPTION.key()};
-        filterStringParams(parameters, document.getSet(), acceptedParams);
-
         if (parameters.containsKey(QueryParams.ID.key())) {
-            // Check that the new sample name is still unique
-            long studyId = getStudyId(id);
+            // That can only be done to one individual...
+            Query tmpQuery = new Query(query);
 
-            QueryResult<Long> count = clinicalCollection.count(
-                    new Document(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()))
-                            .append(PRIVATE_STUDY_ID, studyId));
+            QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult = get(tmpQuery, new QueryOptions());
+            if (clinicalAnalysisQueryResult.getNumResults() == 0) {
+                throw new CatalogDBException("Update clinical analysis: No clinical analysis found to be updated");
+            }
+            if (clinicalAnalysisQueryResult.getNumResults() > 1) {
+                throw new CatalogDBException("Update clinical analysis: Cannot set the same id parameter for different clinical analyses");
+            }
+
+            // Check that the new clinical analysis id will be unique
+            long studyId = getStudyId(clinicalAnalysisQueryResult.first().getUid());
+
+            tmpQuery = new Query()
+                    .append(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()))
+                    .append(QueryParams.STUDY_UID.key(), studyId);
+            QueryResult<Long> count = count(tmpQuery);
             if (count.getResult().get(0) > 0) {
-                throw new CatalogDBException("Clinical analysis { name: '" + parameters.get(QueryParams.ID.key())
-                        + "'} already exists.");
+                throw new CatalogDBException("Cannot set id for clinical analysis. A clinical analysis with { id: '"
+                        + parameters.get(QueryParams.ID.key()) + "'} already exists.");
             }
 
             document.getSet().put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
         }
+
+        String[] acceptedParams = {QueryParams.DESCRIPTION.key()};
+        filterStringParams(parameters, document.getSet(), acceptedParams);
 
         String[] acceptedObjectParams = {QueryParams.FAMILY.key(), QueryParams.PROBAND.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         clinicalConverter.validateFamilyToUpdate(document.getSet());
         clinicalConverter.validateSubjectsToUpdate(document.getSet());
 
-        Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
-        String operation = (String) actionMap.getOrDefault(QueryParams.INTERPRETATIONS.key(), "ADD");
-        acceptedObjectParams = new String[]{QueryParams.INTERPRETATIONS.key()};
-        switch (operation) {
-            case "SET":
-                filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
-                clinicalConverter.validateInterpretationToUpdate(document.getSet());
-                break;
-            case "REMOVE":
-                List<ObjectMap> interpretations = (List<ObjectMap>) parameters.get(QueryParams.INTERPRETATIONS.key());
-                if (interpretations != null) {
-                    List<String> interpretationIds = new ArrayList<>(interpretations.size());
-                    for (ObjectMap interpretation : interpretations) {
-                        String interpretationId = interpretation.getString("id");
-                        if (StringUtils.isNotEmpty(interpretationId)) {
-                            interpretationIds.add(interpretationId);
-                        }
+        if (parameters.containsKey(QueryParams.INTERPRETATIONS.key())) {
+            List<Object> objectInterpretationList = parameters.getAsList(QueryParams.INTERPRETATIONS.key());
+            List<Interpretation> interpretationList = new ArrayList<>();
+            for (Object interpretation : objectInterpretationList) {
+                if (interpretation instanceof Interpretation) {
+                    if (!dbAdaptorFactory.getInterpretationDBAdaptor().exists(((Interpretation) interpretation).getUid())) {
+                        throw CatalogDBException.uidNotFound("Interpretation", ((Interpretation) interpretation).getUid());
                     }
-                    if (interpretationIds.size() > 0) {
-                        document.getPullAll().put(QueryParams.INTERPRETATIONS.key(), new Document("id", interpretationIds));
-                    }
+                    interpretationList.add((Interpretation) interpretation);
                 }
-                break;
-            case "ADD":
-            default:
-                filterObjectParams(parameters, document.getAddToSet(), acceptedObjectParams);
-                clinicalConverter.validateInterpretationToUpdate(document.getAddToSet());
-                break;
+            }
+
+            if (!interpretationList.isEmpty()) {
+                Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
+                String operation = (String) actionMap.getOrDefault(QueryParams.INTERPRETATIONS.key(), "ADD");
+                switch (operation) {
+                    case "SET":
+                        document.getSet().put(QueryParams.INTERPRETATIONS.key(),
+                                clinicalConverter.convertInterpretations(interpretationList));
+                        break;
+                    case "REMOVE":
+                        document.getPullAll().put(QueryParams.INTERPRETATIONS.key(),
+                                clinicalConverter.convertInterpretations(interpretationList));
+                        break;
+                    case "ADD":
+                    default:
+                        document.getAddToSet().put(QueryParams.INTERPRETATIONS.key(),
+                                clinicalConverter.convertInterpretations(interpretationList));
+                        break;
+                }
+            }
         }
 
         if (!document.toFinalUpdateDocument().isEmpty()) {
@@ -188,61 +226,12 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
         }
 
-        Document updateOperation = document.toFinalUpdateDocument();
-
-        if (!updateOperation.isEmpty()) {
-            clinicalConverter.validateDocumentToUpdate(updateOperation);
-
-            Bson query = Filters.eq(PRIVATE_UID, id);
-            QueryResult<UpdateResult> update = clinicalCollection.update(query, updateOperation, null);
-
-            if (update.getResult().isEmpty() || update.getResult().get(0).getMatchedCount() == 0) {
-                throw CatalogDBException.uidNotFound("Clinical Analysis", id);
-            }
-        }
-
-        return endQuery("Modify clinical analysis", startTime, get(id, options));
+        return document;
     }
 
     @Override
     public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         return null;
-    }
-
-    @Override
-    public QueryResult<Long> setInterpretations(long clinicalAnalysisId, List<ClinicalAnalysis.ClinicalInterpretation> interpretationList) {
-        return null;
-    }
-
-    @Override
-    public QueryResult<Long> addInterpretation(long clinicalAnalysisId, ClinicalAnalysis.ClinicalInterpretation interpretation)
-            throws CatalogDBException {
-        long startTime = startQuery();
-
-        Document clinicalInterpretation = getMongoDBDocument(interpretation, "ClinicalInterpretation");
-        clinicalConverter.validateInterpretation(clinicalInterpretation);
-
-        Document match = new Document()
-                .append(PRIVATE_UID, clinicalAnalysisId)
-                .append(QueryParams.INTERPRETATIONS_ID.key(), new Document("$ne", interpretation.getId()));
-        Document update = new Document("$push", new Document(QueryParams.INTERPRETATIONS.key(), clinicalInterpretation));
-
-        QueryResult<UpdateResult> updateResult = clinicalCollection.update(match, update, QueryOptions.empty());
-
-        return endQuery("addInterpretation", startTime, Arrays.asList(updateResult.first().getModifiedCount()));
-    }
-
-    @Override
-    public QueryResult<Long> removeInterpretation(long clinicalAnalysisId, String interpretationId) throws CatalogDBException {
-        long startTime = startQuery();
-
-        Document match = new Document()
-                .append(PRIVATE_UID, clinicalAnalysisId)
-                .append(QueryParams.INTERPRETATIONS_ID.key(), interpretationId);
-        Document update = new Document("$pull", new Document(QueryParams.INTERPRETATIONS.key(), new Document("id", interpretationId)));
-        QueryResult<UpdateResult> updateResult = clinicalCollection.update(match, update, QueryOptions.empty());
-
-        return endQuery("removeInterpretation", startTime, Arrays.asList(updateResult.first().getModifiedCount()));
     }
 
     @Override
@@ -470,7 +459,12 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
     @Override
     public void forEach(Query query, Consumer<? super Object> action, QueryOptions options) throws CatalogDBException {
-
+        Objects.requireNonNull(action);
+        try (DBIterator<ClinicalAnalysis> catalogDBIterator = iterator(query, options)) {
+            while (catalogDBIterator.hasNext()) {
+                action.accept(catalogDBIterator.next());
+            }
+        }
     }
 
     @Override

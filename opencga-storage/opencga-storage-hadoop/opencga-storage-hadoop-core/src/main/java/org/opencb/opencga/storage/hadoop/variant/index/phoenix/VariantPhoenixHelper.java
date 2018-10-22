@@ -564,6 +564,44 @@ public class VariantPhoenixHelper {
         }
     }
 
+    public static Integer extractSampleId(String columnKey, boolean failOnMissing) {
+        if (columnKey.endsWith(SAMPLE_DATA_SUFIX)) {
+            return extractId(columnKey, failOnMissing, "sample");
+        } else if (failOnMissing) {
+            throw new IllegalArgumentException("Not a sample column: " + columnKey);
+        } else {
+            return null;
+        }
+    }
+
+    public static Integer extractFileId(String columnKey, boolean failOnMissing) {
+        if (columnKey.endsWith(FILE_SUFIX)) {
+            return extractId(columnKey, failOnMissing, "file");
+        } else if (failOnMissing) {
+            throw new IllegalArgumentException("Not a file column: " + columnKey);
+        } else {
+            return null;
+        }
+    }
+
+    private static Integer extractId(String columnKey, boolean failOnMissing, String idType) {
+        int startIndex = columnKey.indexOf(COLUMN_KEY_SEPARATOR);
+        int endIndex = columnKey.lastIndexOf(COLUMN_KEY_SEPARATOR);
+        if (startIndex != endIndex && startIndex > 0) {
+            String id = columnKey.substring(startIndex + 1, endIndex);
+            if (StringUtils.isNotBlank(columnKey)
+                    && Character.isDigit(columnKey.charAt(0))
+                    && StringUtils.isNumeric(id)) {
+                return Integer.parseInt(id);
+            }
+        }
+        if (failOnMissing) {
+            throw new IllegalStateException("Integer expected for " + idType + " ID from " + columnKey);
+        } else {
+            return null;
+        }
+    }
+
     public static Column getMafColumn(int studyId, int cohortId) {
         return Column.build(STATS_PREFIX + studyId + "_" + cohortId + MAF_SUFIX, PFloat.INSTANCE);
     }

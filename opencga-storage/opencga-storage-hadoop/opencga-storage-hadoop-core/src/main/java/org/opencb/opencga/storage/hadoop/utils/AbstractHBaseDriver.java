@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.utils;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -78,12 +79,14 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
     }
 
     @Override
-    public int run(String[] args) throws Exception {
+    public final int run(String[] args) throws Exception {
 
         Configuration conf = getConf();
         HBaseConfiguration.addHbaseResources(conf);
         getConf().setClassLoader(AbstractHBaseDriver.class.getClassLoader());
-        configFromArgs(args);
+        if (configFromArgs(args)) {
+            return 1;
+        }
 
         // Other user defined validations
         parseAndValidateParameters();
@@ -109,15 +112,19 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         return succeed ? 0 : 1;
     }
 
-    private void configFromArgs(String[] args) {
+    private boolean configFromArgs(String[] args) {
         int fixedSizeArgs = getFixedSizeArgs();
 
-        System.out.println(Arrays.toString(args));
-        if (args.length < fixedSizeArgs || (args.length - fixedSizeArgs) % 2 != 0) {
+        LOGGER.info(Arrays.toString(args));
+        boolean help = ArrayUtils.contains(args, "-h") || ArrayUtils.contains(args, "--help");
+        if (args.length < fixedSizeArgs || (args.length - fixedSizeArgs) % 2 != 0 || help) {
             System.err.println(getUsage());
-            System.err.println("Found " + Arrays.toString(args));
             ToolRunner.printGenericCommandUsage(System.err);
-            throw new IllegalArgumentException("Wrong number of arguments!");
+            if (!help) {
+//                System.err.println("Found " + Arrays.toString(args));
+                throw new IllegalArgumentException("Wrong number of arguments!");
+            }
+            return true;
         }
 
         // Get first other args to avoid overwrite the fixed position args.
@@ -126,6 +133,7 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         }
 
         parseFixedParams(args);
+        return false;
     }
 
     protected void parseFixedParams(String[] args) {

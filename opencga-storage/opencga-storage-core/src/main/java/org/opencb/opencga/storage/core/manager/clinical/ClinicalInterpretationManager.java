@@ -17,7 +17,6 @@ package org.opencb.opencga.storage.core.manager.clinical;
 
 import org.apache.commons.lang.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.Comment;
-import org.opencb.biodata.models.clinical.interpretation.Interpretation;
 import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -31,6 +30,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.Group;
+import org.opencb.opencga.core.models.Interpretation;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.clinical.ClinicalVariantEngine;
@@ -93,9 +93,9 @@ public class ClinicalInterpretationManager extends StorageManager {
         while (clinicalAnalysisDBIterator.hasNext()) {
             ClinicalAnalysis clinicalAnalysis = clinicalAnalysisDBIterator.next();
             for (Interpretation interpretation : clinicalAnalysis.getInterpretations()) {
-                interpretation.getAttributes().put("OPENCGA_CLINICAL_ANALYSIS", clinicalAnalysis);
+                interpretation.getInterpretation().getAttributes().put("OPENCGA_CLINICAL_ANALYSIS", clinicalAnalysis);
 
-                this.clinicalVariantEngine.insert(interpretation, database);
+                this.clinicalVariantEngine.insert(interpretation.getInterpretation(), database);
             }
         }
         return null;
@@ -109,13 +109,13 @@ public class ClinicalInterpretationManager extends StorageManager {
         return clinicalVariantEngine.query(query, options, "");
     }
 
-    public QueryResult<Interpretation> interpretationQuery(Query query, QueryOptions options, String token)
-            throws IOException, ClinicalVariantException, CatalogException {
-        // Check permissions
-        query = checkQueryPermissions(query, token);
-
-        return clinicalVariantEngine.interpretationQuery(query, options, "");
-    }
+//    public QueryResult<Interpretation> interpretationQuery(Query query, QueryOptions options, String token)
+//            throws IOException, ClinicalVariantException, CatalogException {
+//        // Check permissions
+//        query = checkQueryPermissions(query, token);
+//
+//        return clinicalVariantEngine.interpretationQuery(query, options, "");
+//    }
 
     public FacetQueryResult facet(Query query, QueryOptions queryOptions, String token)
             throws IOException, ClinicalVariantException, CatalogException {

@@ -25,7 +25,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 
-import java.util.List;
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
@@ -134,13 +133,6 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
     QueryResult<ClinicalAnalysis> get(long clinicalAnalysisId, QueryOptions options) throws CatalogDBException;
 
     long getStudyId(long clinicalAnalysisId) throws CatalogDBException;
-
-    QueryResult<Long> setInterpretations(long clinicalAnalysisId, List<ClinicalAnalysis.ClinicalInterpretation> interpretationList);
-
-    QueryResult<Long> addInterpretation(long clinicalAnalysisId, ClinicalAnalysis.ClinicalInterpretation interpretation)
-            throws CatalogDBException;
-
-    QueryResult<Long> removeInterpretation(long clinicalAnalysisId, String interpretationId) throws CatalogDBException;
 
     /**
      * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to

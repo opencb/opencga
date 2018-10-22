@@ -2,6 +2,8 @@ package org.opencb.opencga.storage.hadoop.variant.gaps;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.ContentSummary;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
@@ -13,6 +15,7 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileAsBinaryOutputFormat;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
@@ -26,6 +29,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import static org.opencb.opencga.core.common.IOUtils.humanReadableByteCount;
 import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromVariantTask.buildQuery;
 import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromVariantTask.buildQueryOptions;
 
@@ -44,6 +48,8 @@ public class FillGapsDriver extends AbstractVariantsTableDriver {
     public static final String FILL_MISSING_WRITE_MAPPERS_LIMIT_FACTOR = "fill_missing.write.mappers.limit.factor";
     private Collection<Integer> samples;
     private final Logger logger = LoggerFactory.getLogger(FillGapsDriver.class);
+    private String input;
+    private String outputPath;
 
     public FillGapsDriver() {
     }
@@ -56,6 +62,8 @@ public class FillGapsDriver extends AbstractVariantsTableDriver {
     protected void parseAndValidateParameters() throws IOException {
         super.parseAndValidateParameters();
         samples = FillGapsFromArchiveMapper.getSamples(getConf());
+        input = getConf().get(FILL_GAPS_INPUT, FILL_GAPS_INPUT_DEFAULT);
+        outputPath = getConf().get(FILL_MISSING_INTERMEDIATE_FILE);
     }
 
     @Override
@@ -65,7 +73,6 @@ public class FillGapsDriver extends AbstractVariantsTableDriver {
 
     @Override
     protected Job setupJob(Job job, String archiveTableName, String variantTableName) throws IOException {
-        String input = getConf().get(FILL_GAPS_INPUT, FILL_GAPS_INPUT_DEFAULT);
         if (input.equalsIgnoreCase("archive")) {
             // scan
             List<Scan> scans;
@@ -96,7 +103,6 @@ public class FillGapsDriver extends AbstractVariantsTableDriver {
                 job.setOutputFormatClass(SequenceFileAsBinaryOutputFormat.class);
                 job.setMapOutputKeyClass(BytesWritable.class);
                 job.setMapOutputValueClass(BytesWritable.class);
-                String outputPath = getConf().get(FILL_MISSING_INTERMEDIATE_FILE);
                 logger.info("Using intermediate file : " + outputPath);
                 FileOutputFormat.setOutputPath(job, new Path(outputPath));
                 FileOutputFormat.setCompressOutput(job, true);
@@ -133,6 +139,20 @@ public class FillGapsDriver extends AbstractVariantsTableDriver {
         FillGapsFromArchiveMapper.setSamples(job, samples);
 
         return job;
+    }
+
+    @Override
+    protected void postExecution(boolean succeed) throws IOException, StorageEngineException {
+        super.postExecution(succeed);
+        if (succeed) {
+            if (input.equalsIgnoreCase("archive") && StringUtils.isNotEmpty(outputPath)) {
+                FileSystem fs = FileSystem.get(getConf());
+                ContentSummary contentSummary = fs.getContentSummary(new Path(outputPath));
+                logger.info("Generated file " + outputPath);
+                logger.info(" - Size (HDFS)         : " + humanReadableByteCount(contentSummary.getLength(), false));
+                logger.info(" - SpaceConsumed (raw) : " + humanReadableByteCount(contentSummary.getSpaceConsumed(), false));
+            }
+        }
     }
 
     @Override

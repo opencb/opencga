@@ -164,7 +164,9 @@ public class SampleIndexConverter implements Converter<Result, Collection<Varian
             variants = new ArrayList<>(split.length);
 
             for (String v : split) {
-                variants.add(new Variant(v));
+                if (!v.isEmpty()) { // Skip empty variants.
+                    variants.add(new Variant(v));
+                }
             }
         } else {
             variants = Collections.emptyList();

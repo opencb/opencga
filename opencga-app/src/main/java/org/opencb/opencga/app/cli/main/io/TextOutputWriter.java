@@ -19,6 +19,7 @@ package org.opencb.opencga.app.cli.main.io;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
 
@@ -26,6 +27,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import static org.opencb.opencga.core.common.IOUtils.*;
 
 /**
  * Created by pfurio on 28/11/16.
@@ -496,19 +499,4 @@ public class TextOutputWriter extends AbstractOutputWriter {
         }
     }
 
-    /**
-     * Get Bytes numbers in a human readable string
-     * See http://stackoverflow.com/a/3758880
-     *
-     * @param bytes     Quantity of bytes
-     * @param si        Use International System (power of 10) or Binary Units (power of 2)
-     * @return
-     */
-    public static String humanReadableByteCount(long bytes, boolean si) {
-        int unit = si ? 1000 : 1024;
-        if (bytes < unit) return bytes + " B";
-        int exp = (int) (Math.log(bytes) / Math.log(unit));
-        String pre = (si ? "kMGTPE" : "KMGTPE").charAt(exp-1) + (si ? "" : "i");
-        return String.format("%.1f %sB", bytes / Math.pow(unit, exp), pre);
-    }
 }
