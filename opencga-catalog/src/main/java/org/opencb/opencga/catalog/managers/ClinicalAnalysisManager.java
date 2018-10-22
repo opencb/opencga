@@ -173,28 +173,6 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         return queryResult;
     }
 
-    private void validateInterpretations(List<ClinicalAnalysis.ClinicalInterpretation> interpretations, String studyStr, String sessionId)
-            throws CatalogException {
-        if (interpretations == null) {
-            return;
-        }
-
-        for (ClinicalAnalysis.ClinicalInterpretation interpretation : interpretations) {
-            ParamUtils.checkObj(interpretation.getId(), "interpretation id");
-            ParamUtils.checkObj(interpretation.getName(), "interpretation name");
-            ParamUtils.checkObj(interpretation.getFile(), "interpretation file");
-            QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(studyStr, interpretation.getFile().getName(),
-                    QueryOptions.empty(), sessionId);
-            if (fileQueryResult.getNumResults() == 0) {
-                throw new CatalogException("Interpretation file not found");
-            }
-            if (fileQueryResult.first().getType() != File.Type.FILE) {
-                throw new CatalogException("Interpretation file should point to a file. Detected " + fileQueryResult.first().getType());
-            }
-            interpretation.setFile(fileQueryResult.first());
-        }
-    }
-
     private void validateSubjects(ClinicalAnalysis clinicalAnalysis, Study study, String sessionId) throws CatalogException {
         Individual subject = clinicalAnalysis.getProband();
 

@@ -33,7 +33,8 @@ public class UUIDUtils {
         FAMILY(7),
         JOB(8),
         CLINICAL(9),
-        PANEL(10);
+        PANEL(10),
+        INTERPRETATION(11);
 
         private final int mask;
 

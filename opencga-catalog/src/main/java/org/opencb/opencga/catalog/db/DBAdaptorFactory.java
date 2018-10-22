@@ -101,5 +101,7 @@ public interface DBAdaptorFactory {
 
     ClinicalAnalysisDBAdaptor getClinicalAnalysisDBAdaptor();
 
+    InterpretationDBAdaptor getInterpretationDBAdaptor();
+
     Map<String, MongoDBCollection> getMongoDBCollectionMap();
 }
