@@ -19,9 +19,11 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 import org.bson.Document;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
+import org.opencb.opencga.core.models.Interpretation;
 import org.opencb.opencga.core.models.Sample;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -62,6 +64,8 @@ public class ClinicalAnalysisConverter extends GenericDocumentComplexConverter<C
                     .append("samples", sampleList)
             );
         }
+
+        document.put("interpretations", convertInterpretations(object.getInterpretations()));
 
         validateDocumentToUpdate(document);
 
@@ -110,18 +114,26 @@ public class ClinicalAnalysisConverter extends GenericDocumentComplexConverter<C
     public void validateInterpretationToUpdate(Document document) {
         List<Document> interpretationList = (List) document.get("interpretations");
         if (interpretationList != null) {
+            List<Document> newInterpretationList = new ArrayList<>();
             for (int i = 0; i < interpretationList.size(); i++) {
-                validateInterpretation(interpretationList.get(i));
+                newInterpretationList.add(new Document("uid", interpretationList.get(i).get("uid")));
             }
+
+            document.put("interpretations", newInterpretationList);
         }
     }
 
-    public void validateInterpretation(Document interpretation) {
-        if (interpretation != null) {
-            Document file = (Document) interpretation.get("file");
-            long fileId = file != null ? getLongValue(file, "uid") : -1L;
-            fileId = fileId <= 0 ? -1L : fileId;
-            interpretation.put("file", fileId > 0 ? new Document("uid", fileId) : new Document());
+    public List<Document> convertInterpretations(List<Interpretation> interpretationList) {
+        if (interpretationList == null || interpretationList.isEmpty()) {
+            return Collections.emptyList();
         }
+        List<Document> interpretations = new ArrayList(interpretationList.size());
+        for (Interpretation interpretation : interpretationList) {
+            long interpretationId = interpretation != null ? (interpretation.getUid() == 0 ? -1L : interpretation.getUid()) : -1L;
+            if (interpretationId > 0) {
+                interpretations.add(new Document("uid", interpretationId));
+            }
+        }
+        return interpretations;
     }
 }

@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.core.models;
 
-import org.opencb.biodata.models.clinical.interpretation.Interpretation;
 import org.opencb.biodata.models.commons.OntologyTerm;
 
 import java.util.List;
@@ -261,59 +260,4 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
-    @Deprecated
-    public static class ClinicalInterpretation {
-
-        private String id;
-        private String name;
-        private File file;
-
-        public ClinicalInterpretation() {
-        }
-
-        public ClinicalInterpretation(String id, String name, File file) {
-            this.id = id;
-            this.name = name;
-            this.file = file;
-        }
-
-
-        @Override
-        public String toString() {
-            final StringBuilder sb = new StringBuilder("Interpretation{");
-            sb.append("id='").append(id).append('\'');
-            sb.append(", name='").append(name).append('\'');
-            sb.append(", file=").append(file);
-            sb.append('}');
-            return sb.toString();
-        }
-
-
-        public String getId() {
-            return id;
-        }
-
-        public ClinicalInterpretation setId(String id) {
-            this.id = id;
-            return this;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public ClinicalInterpretation setName(String name) {
-            this.name = name;
-            return this;
-        }
-
-        public File getFile() {
-            return file;
-        }
-
-        public ClinicalInterpretation setFile(File file) {
-            this.file = file;
-            return this;
-        }
-    }
 }
