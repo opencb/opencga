@@ -53,6 +53,7 @@ import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.biodata.models.variant.VariantBuilder.REF_ONLY_ALT;
 import static org.opencb.opencga.storage.core.metadata.StudyConfigurationManager.RO_CACHED_OPTIONS;
 import static org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass.UNKNOWN_GENOTYPE;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED;
@@ -322,7 +323,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         for (Pair<String, PhoenixArray> pair : filesMap) {
             String fileId = pair.getKey();
             PhoenixArray fileColumn = pair.getValue();
-            addFileEntry(studyConfiguration, studyEntry, fileId, fileColumn, alternateFileMap);
+            addFileEntry(studyConfiguration, variant, studyEntry, fileId, fileColumn, alternateFileMap);
         }
 
         addSecondaryAlternates(variant, studyEntry, studyConfiguration, alternateFileMap);
@@ -404,16 +405,20 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         }
     }
 
-    private void addFileEntry(StudyConfiguration studyConfiguration, StudyEntry studyEntry, String fileIdStr,
+    private void addFileEntry(StudyConfiguration studyConfiguration, Variant variant, StudyEntry studyEntry, String fileIdStr,
                               PhoenixArray fileColumn, Map<String, List<String>> alternateFileMap) {
         int fileId = Integer.parseInt(fileIdStr);
-        String alternate = (String) (fileColumn.getElement(FILE_SEC_ALTS_IDX));
+        String alternate = normalizeNonRefAlternateCoordinate(variant, (String) (fileColumn.getElement(FILE_SEC_ALTS_IDX)));
         String fileName = studyConfiguration.getFileIds().inverse().get(fileId);
 
         // Add all combinations of secondary alternates, even the combination of "none secondary alternates", i.e. empty string
         alternateFileMap.computeIfAbsent(alternate, (key) -> new ArrayList<>()).add(fileName);
         String call = (String) (fileColumn.getElement(FILE_CALL_IDX));
         if (!selectVariantElements.getFiles().get(studyConfiguration.getStudyId()).contains(fileId)) {
+            // TODO: Should we return the original CALL?
+//            if (call != null && !call.isEmpty()) {
+//                studyEntry.getFiles().add(new FileEntry(fileName, call, Collections.emptyMap()));
+//            }
             return;
         }
 
@@ -766,6 +771,27 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 alternate,
                 type
         );
+    }
+
+    public static String normalizeNonRefAlternateCoordinate(Variant variant, String s) {
+        if (s != null && s.contains(REF_ONLY_ALT)) {
+            StringBuilder sb = new StringBuilder();
+            String reference = variant.getReference();
+            for (String s1 : s.split(",")) {
+                if (sb.length() > 0) {
+                    sb.append(',');
+                }
+                if (s1.contains(REF_ONLY_ALT)) {
+                    StudyEntryToHBaseConverter.buildSecondaryAlternate(variant.getChromosome(), variant.getStart(), variant.getEnd(),
+                            reference, REF_ONLY_ALT, VariantType.NO_VARIATION, sb);
+                } else {
+                    sb.append(s1);
+                }
+            }
+            return sb.toString();
+        } else {
+            return s;
+        }
     }
 
     protected Integer getStudyId(String[] split) {
