@@ -404,8 +404,19 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         }
     }
 
-    private void addFileEntry(StudyConfiguration studyConfiguration, StudyEntry studyEntry, String fileId, PhoenixArray fileColumn,
-                              Map<String, List<String>> alternateFileMap) {
+    private void addFileEntry(StudyConfiguration studyConfiguration, StudyEntry studyEntry, String fileIdStr,
+                              PhoenixArray fileColumn, Map<String, List<String>> alternateFileMap) {
+        int fileId = Integer.parseInt(fileIdStr);
+        String alternate = (String) (fileColumn.getElement(FILE_SEC_ALTS_IDX));
+        String fileName = studyConfiguration.getFileIds().inverse().get(fileId);
+
+        // Add all combinations of secondary alternates, even the combination of "none secondary alternates", i.e. empty string
+        alternateFileMap.computeIfAbsent(alternate, (key) -> new ArrayList<>()).add(fileName);
+        String call = (String) (fileColumn.getElement(FILE_CALL_IDX));
+        if (!selectVariantElements.getFiles().get(studyConfiguration.getStudyId()).contains(fileId)) {
+            return;
+        }
+
         HashMap<String, String> attributes = new HashMap<>(fileColumn.getDimensions() - 1);
         String qual = (String) (fileColumn.getElement(FILE_QUAL_IDX));
         if (qual != null) {
@@ -415,11 +426,6 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         if (filter != null) {
             attributes.put(StudyEntry.FILTER, filter);
         }
-        String alternate = (String) (fileColumn.getElement(FILE_SEC_ALTS_IDX));
-        String fileName = studyConfiguration.getFileIds().inverse().get(Integer.parseInt(fileId));
-
-        // Add all combinations of secondary alternates, even the combination of "none secondary alternates", i.e. empty string
-        alternateFileMap.computeIfAbsent(alternate, (key) -> new ArrayList<>()).add(fileName);
 
         List<String> fixedAttributes = HBaseToVariantConverter.getFixedAttributes(studyConfiguration);
         int i = FILE_INFO_START_IDX;
@@ -434,7 +440,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             i++;
         }
         // fileColumn.getElement(FILE_VARIANT_OVERLAPPING_STATUS_IDX);
-        studyEntry.getFiles().add(new FileEntry(fileName, (String) (fileColumn.getElement(FILE_CALL_IDX)), attributes));
+        studyEntry.getFiles().add(new FileEntry(fileName, call, attributes));
     }
 
     private void fillEmptySamplesData(StudyEntry studyEntry, StudyConfiguration studyConfiguration, int fillMissingColumnValue) {
@@ -685,7 +691,10 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 se.setFormat(studyEntry.getFormat());
 
                 for (String fileId : fileIds) {
-                    se.getFiles().add(studyEntry.getFile(fileId));
+                    FileEntry fileEntry = studyEntry.getFile(fileId);
+                    if (fileEntry != null) {
+                        se.getFiles().add(fileEntry);
+                    }
                     for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(studyConfiguration.getFileIds().get(fileId))) {
                         String sample = studyConfiguration.getSampleIds().inverse().get(sampleId);
                         List<String> sampleData = studyEntry.getSampleData(sample);

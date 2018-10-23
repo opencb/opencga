@@ -246,6 +246,18 @@ public class VariantSqlQueryParser {
                         buildSampleColumnKey(studyId, sampleId, sb);
                         sb.append('"');
                     }
+                    // Check if any of the files from the included samples is not being returned.
+                    // If don't, add it to the return list.
+                    Set<Integer> fileIds = StudyConfigurationManager.getFileIdsFromSampleIds(
+                            selectVariantElements.getStudyConfigurations().get(studyId), sampleIds);
+                    List<Integer> includeFiles = selectVariantElements.getFiles().get(studyId);
+                    for (Integer fileId : fileIds) {
+                        if (!includeFiles.contains(fileId)) {
+                            sb.append(",\"");
+                            buildFileColumnKey(studyId, fileId, sb);
+                            sb.append('"');
+                        }
+                    }
                 });
             }
             if (returnedFields.contains(VariantField.ANNOTATION)) {
