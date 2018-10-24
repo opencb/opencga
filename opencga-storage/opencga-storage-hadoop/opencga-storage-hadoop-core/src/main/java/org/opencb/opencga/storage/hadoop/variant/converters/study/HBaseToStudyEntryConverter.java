@@ -316,7 +316,6 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             Integer sampleId = pair.getKey();
             List<String> sampleData = pair.getValue();
             addMainSampleDataColumn(studyConfiguration, studyEntry, formatsMap, sampleId, sampleData);
-
         }
 
         Map<String, List<String>> alternateFileMap = new HashMap<>();
@@ -325,7 +324,6 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             PhoenixArray fileColumn = pair.getValue();
             addFileEntry(studyConfiguration, variant, studyEntry, fileId, fileColumn, alternateFileMap);
         }
-
         addSecondaryAlternates(variant, studyEntry, studyConfiguration, alternateFileMap);
 
         fillEmptySamplesData(studyEntry, studyConfiguration, fillMissingColumnValue);
@@ -353,8 +351,8 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         } else {
             returnedSamplesPosition = getReturnedSamplesPosition(studyConfiguration);
         }
+        studyEntry.setSamplesData(new ArrayList<>(returnedSamplesPosition.size()));
         studyEntry.setSortedSamplesPosition(returnedSamplesPosition);
-//        studyEntry.setSamplesData(new ArrayList<>(samplesPosition.size()));
         return studyEntry;
     }
 
@@ -694,6 +692,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 StudyEntry se = new StudyEntry("0");
                 se.setSecondaryAlternates(getAlternateCoordinates(secondaryAlternates));
                 se.setFormat(studyEntry.getFormat());
+                se.setSamplesData(new ArrayList<>(fileIds.size()));
 
                 for (String fileId : fileIds) {
                     FileEntry fileEntry = studyEntry.getFile(fileId);

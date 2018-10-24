@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.variant.io.db;
 
+import com.google.common.base.Throwables;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
@@ -111,6 +112,16 @@ public class VariantDBReader implements VariantReader {
         this.timeConverting = newTimeConverting;
 
         return variants;
+    }
+
+    @Override
+    public boolean close() {
+        try {
+            iterator.close();
+        } catch (Exception e) {
+            throw Throwables.propagate(e);
+        }
+        return true;
     }
 
     public long getTimeConverting(TimeUnit timeUnit) {
