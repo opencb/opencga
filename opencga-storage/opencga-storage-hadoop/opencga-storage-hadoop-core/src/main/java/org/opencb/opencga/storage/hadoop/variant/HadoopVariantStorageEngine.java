@@ -582,7 +582,10 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         }
 
         if (mergeMode.equals(MergeMode.ADVANCED)) {
-            throw new IllegalStateException("Unable to load with MergeMode " + MergeMode.ADVANCED);
+//            throw new IllegalStateException("Unable to load with MergeMode " + MergeMode.ADVANCED);
+            // Force to use MergeMode=BASIC for Hadoop
+            options.put(MERGE_MODE.key(), MergeMode.BASIC.name());
+            mergeMode = MergeMode.BASIC;
         }
         HadoopVariantStoragePipeline storageETL = new HadoopLocalLoadVariantStoragePipeline(configuration, dbAdaptor,
                 hadoopConfiguration, getVariantReaderUtils(hadoopConfiguration), options);
