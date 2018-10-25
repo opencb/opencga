@@ -166,11 +166,11 @@ storageEngines:
       hadoop.load.archive.batch.size: 3
       hadoop.load.variant.batch.size: 500
       opencga.archive.table.presplit.size: 500
-      opencga.archive.table.compression: "snappy"
+      opencga.archive.table.compression: "gz"           # Allowed values: none, snappy, gz
       opencga.variant.table.presplit.size: 500
-      opencga.variant.table.compression: "snappy"
+      opencga.variant.table.compression: "snappy"       # Allowed values: none, snappy, gz
       opencga.sample-index.table.presplit.size: 15
-      opencga.sample-index.table.compression: "snappy"
+      opencga.sample-index.table.compression: "snappy"  # Allowed values: none, snappy, gz
       opencga.storage.hadoop.variant.hbase.namespace: "${OPENCGA.STORAGE.HADOOP.VARIANT.HBASE.NAMESPACE}"
       intersect.active : true          # Allow intersect queries with the SearchEngine (Solr)
       intersect.always : false         # Force intersect queries
