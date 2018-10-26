@@ -39,7 +39,7 @@ public class CohortCommandOptions {
     public UpdateCommandOptions updateCommandOptions;
     public DeleteCommandOptions deleteCommandOptions;
     public GroupByCommandOptions groupByCommandOptions;
-    public FacetCommandOptions facetCommandOptions;
+    public StatsCommandOptions statsCommandOptions;
 
     public AclCommandOptions.AclsCommandOptions aclsCommandOptions;
     public AclCommandOptions.AclsUpdateCommandOptions aclsUpdateCommandOptions;
@@ -72,7 +72,7 @@ public class CohortCommandOptions {
         this.updateCommandOptions = new UpdateCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
         this.groupByCommandOptions = new GroupByCommandOptions();
-        this.facetCommandOptions = new FacetCommandOptions();
+        this.statsCommandOptions = new StatsCommandOptions();
 
         this.annotationCommandOptions = new AnnotationCommandOptions(commonCommandOptions);
         this.annotationCreateCommandOptions = this.annotationCommandOptions.getCreateCommandOptions();
@@ -227,13 +227,13 @@ public class CohortCommandOptions {
         public String nattributes;
     }
 
-    @Parameters(commandNames = {"facet"}, commandDescription = "Facets in cohorts")
-    public class FacetCommandOptions extends StudyOption {
+    @Parameters(commandNames = {"stats"}, commandDescription = "Cohort stats")
+    public class StatsCommandOptions extends StudyOption {
 
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--default-stats"}, description = "Flag to calculate default stats", arity = 0)
+        @Parameter(names = {"--default"}, description = "Flag to calculate default stats", arity = 0)
         public boolean defaultStats;
 
         @Parameter(names = {"--creation-year"}, description = "Creation year.", arity = 1)
@@ -263,13 +263,9 @@ public class CohortCommandOptions {
         @Parameter(names = {"--annotation"}, description = "Annotation. See documentation to see the options.", arity = 1)
         public String annotation;
 
-        @Parameter(names = {"--facet"}, description = "List of facet fields separated by semicolons, e.g.: studies;type. For nested "
-                + "faceted fields use >>, e.g.: studies>>biotype;type.", arity = 1)
-        public String facet;
-
-        @Parameter(names = {"--facet-range"}, description = "List of facet ranges separated by semicolons with the format"
-                + " {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1.", arity = 1)
-        public String facetRange;
+        @Parameter(names = {"--field"}, description = "List of fields separated by semicolons, e.g.: studies;type. For nested "
+                + "fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1.", arity = 1)
+        public String field;
     }
 
 }

@@ -43,6 +43,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
+import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.FamilyAclEntry;
@@ -157,7 +158,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
         // Get the document query needed to check the permissions as well
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries((Document) queryResult.first(), user,
-                studyPermission.name(), studyPermission.getFamilyPermission().name());
+                studyPermission.name(), studyPermission.getFamilyPermission().name(), Entity.FAMILY.name());
         Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
         logger.debug("Family count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         return familyCollection.count(bson);
@@ -404,7 +405,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             // Update modificationDate param
             String time = TimeUtils.getTime();
             Date date = TimeUtils.toDate(time);
-            familyParameters.put(MODIFICATION_DATE, time);
+            familyParameters.put(QueryParams.MODIFICATION_DATE.key(), time);
             familyParameters.put(PRIVATE_MODIFICATION_DATE, date);
         }
 
@@ -619,7 +620,8 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         if (studyDocument != null && user != null) {
             // Get the document query needed to check the permissions as well
             queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
-                    StudyAclEntry.StudyPermissions.VIEW_FAMILIES.name(), FamilyAclEntry.FamilyPermissions.VIEW.name());
+                    StudyAclEntry.StudyPermissions.VIEW_FAMILIES.name(), FamilyAclEntry.FamilyPermissions.VIEW.name(),
+                    Entity.FAMILY.name());
         }
 
         filterOutDeleted(query);
@@ -666,10 +668,11 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         if (containsAnnotationQuery(query)) {
             queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
                     StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.name(),
-                    FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name());
+                    FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name(), Entity.FAMILY.name());
         } else {
             queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
-                    StudyAclEntry.StudyPermissions.VIEW_FAMILIES.name(), FamilyAclEntry.FamilyPermissions.VIEW.name());
+                    StudyAclEntry.StudyPermissions.VIEW_FAMILIES.name(), FamilyAclEntry.FamilyPermissions.VIEW.name(),
+                    Entity.FAMILY.name());
         }
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
@@ -684,10 +687,11 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         if (containsAnnotationQuery(query)) {
             queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
                     StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.name(),
-                    FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name());
+                    FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name(), Entity.FAMILY.name());
         } else {
             queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
-                    StudyAclEntry.StudyPermissions.VIEW_FAMILIES.name(), FamilyAclEntry.FamilyPermissions.VIEW.name());
+                    StudyAclEntry.StudyPermissions.VIEW_FAMILIES.name(), FamilyAclEntry.FamilyPermissions.VIEW.name(),
+                    Entity.FAMILY.name());
         }
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
@@ -821,6 +825,15 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
+                    case MODIFICATION_DATE:
+                        addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
+                    case STATUS_NAME:
+                        // Convert the status to a positive status
+                        query.put(queryParam.key(),
+                                Status.getPositiveStatus(Family.FamilyStatus.STATUS_LIST, query.getString(queryParam.key())));
+                        addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
                     case MEMBER_UID:
                     case UUID:
                     case ID:
@@ -832,7 +845,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                     case PHENOTYPES_ID:
                     case PHENOTYPES_NAME:
                     case PHENOTYPES_SOURCE:
-                    case STATUS_NAME:
                     case STATUS_MSG:
                     case STATUS_DATE:
 //                    case ANNOTATION_SETS:

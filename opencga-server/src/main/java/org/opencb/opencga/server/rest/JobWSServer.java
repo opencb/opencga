@@ -164,7 +164,9 @@ public class JobWSServer extends OpenCGAWSServer {
     })
     public Response info(@ApiParam(value = "Comma separated list of job ids or names up to a maximum of 100", required = true)
                          @PathParam("jobIds") String jobIds,
-                         @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
+                         @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
+                                 + "exception whenever one of the entries looked for cannot be shown for whichever reason",
+                                 defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(jobIds);
             return createOkResponse(catalogManager.getJobManager().get(idList, queryOptions, silent, sessionId));
@@ -183,19 +185,24 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "count", value = "Total number of results", defaultValue = "false", dataType = "boolean", paramType = "query")
     })
-    public Response search(@ApiParam(value = "DEPRECATED: studyId", hidden = true) @QueryParam("studyId") String studyId,
-                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                           @QueryParam("study") String studyStr,
-                           @ApiParam(value = "name", required = false) @DefaultValue("") @QueryParam("name") String name,
-                           @ApiParam(value = "tool name", required = false) @DefaultValue("") @QueryParam("toolName") String tool,
-                           @ApiParam(value = "status", required = false) @DefaultValue("") @QueryParam("status") String status,
-                           @ApiParam(value = "ownerId", required = false) @DefaultValue("") @QueryParam("ownerId") String ownerId,
-                           @ApiParam(value = "date", required = false) @DefaultValue("") @QueryParam("date") String date,
-                           @ApiParam(value = "Comma separated list of input file ids", required = false) @DefaultValue("") @QueryParam("inputFiles") String inputFiles,
-                           @ApiParam(value = "Comma separated list of output file ids", required = false) @DefaultValue("")
-                           @QueryParam("outputFiles") String outputFiles,
-                           @ApiParam(value = "Release value") @QueryParam("release") String release,
-                           @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
+    public Response search(
+            @ApiParam(value = "DEPRECATED: studyId", hidden = true) @QueryParam("studyId") String studyId,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+            @QueryParam("study") String studyStr,
+            @ApiParam(value = "name", required = false) @DefaultValue("") @QueryParam("name") String name,
+            @ApiParam(value = "tool name", required = false) @DefaultValue("") @QueryParam("toolName") String tool,
+            @ApiParam(value = "status", required = false) @DefaultValue("") @QueryParam("status") String status,
+            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+                @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+                @QueryParam("modificationDate") String modificationDate,
+            @ApiParam(value = "ownerId", required = false) @DefaultValue("") @QueryParam("ownerId") String ownerId,
+            @ApiParam(value = "date", required = false) @DefaultValue("") @QueryParam("date") String date,
+            @ApiParam(value = "Comma separated list of input file ids", required = false) @DefaultValue("") @QueryParam("inputFiles") String inputFiles,
+            @ApiParam(value = "Comma separated list of output file ids", required = false) @DefaultValue("")
+            @QueryParam("outputFiles") String outputFiles,
+            @ApiParam(value = "Release value") @QueryParam("release") String release,
+            @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
         try {
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
             query.remove("study");
@@ -264,7 +271,7 @@ public class JobWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/groupBy")
-    @ApiOperation(value = "Group jobs by several fields", position = 10,
+    @ApiOperation(value = "Group jobs by several fields", position = 10, hidden = true,
             notes = "Only group by categorical variables. Grouping by continuous variables might cause unexpected behaviour")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "count", value = "Count the number of elements matching the group", dataType = "boolean",
@@ -303,7 +310,9 @@ public class JobWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Return the acl of the job. If member is provided, it will only return the acl for the member.", position = 18)
     public Response getAcls(@ApiParam(value = "Comma separated list of job ids up to a maximum of 100", required = true) @PathParam("jobIds") String jobIdsStr,
                             @ApiParam(value = "User or group id") @QueryParam("member") String member,
-                            @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
+                            @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
+                                    + "exception whenever one of the entries looked for cannot be shown for whichever reason",
+                                    defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(jobIdsStr);
             return createOkResponse(jobManager.getAcls(null, idList, member, silent, sessionId));

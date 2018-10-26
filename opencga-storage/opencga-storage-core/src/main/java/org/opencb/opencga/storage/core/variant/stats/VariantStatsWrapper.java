@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.variant.stats;
 
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.StructuralVariation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 
@@ -28,6 +29,9 @@ public class VariantStatsWrapper {
     private String chromosome;
     private int start;
     private int end;
+    private String reference;
+    private String alternate;
+
     private StructuralVariation sv;
     private Map<String, VariantStats> cohortStats;
 
@@ -39,12 +43,14 @@ public class VariantStatsWrapper {
         this.sv = null;
     }
 
-    public VariantStatsWrapper(String chromosome, int start, int end, Map<String, VariantStats> cohortStats, StructuralVariation sv) {
-        this.chromosome = chromosome;
-        this.start = start;
-        this.end = end;
+    public VariantStatsWrapper(Variant variant, Map<String, VariantStats> cohortStats) {
+        this.chromosome = variant.getChromosome();
+        this.start = variant.getStart();
+        this.end = variant.getEnd();
+        this.reference = variant.getReference();
+        this.alternate = variant.getAlternate();
+        this.sv = variant.getSv();
         this.cohortStats = cohortStats;
-        this.sv = sv;
     }
 
     public String getChromosome() {
@@ -69,6 +75,24 @@ public class VariantStatsWrapper {
 
     public VariantStatsWrapper setEnd(int end) {
         this.end = end;
+        return this;
+    }
+
+    public String getReference() {
+        return reference;
+    }
+
+    public VariantStatsWrapper setReference(String reference) {
+        this.reference = reference;
+        return this;
+    }
+
+    public String getAlternate() {
+        return alternate;
+    }
+
+    public VariantStatsWrapper setAlternate(String alternate) {
+        this.alternate = alternate;
         return this;
     }
 

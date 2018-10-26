@@ -81,7 +81,7 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
         Runtime.getRuntime().addShutdownHook(hook);
         // Up to this point, catalog has not been modified
         try {
-            final List<Long> studyIds;
+            final List<String> studyIds;
             final String studyStr;
             final String alias;
             final DataStore dataStore;
@@ -107,7 +107,7 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
                 }
                 dataStore = info.getDataStores().get(File.Bioformat.VARIANT);
                 organism = info.getOrganism();
-                studyIds = studyInfos.stream().map(StudyInfo::getStudyUid).collect(Collectors.toList());
+                studyIds = studyInfos.stream().map(StudyInfo::getStudyFQN).collect(Collectors.toList());
                 Project project = catalogManager.getProjectManager().get(info.getProjectId(), null, sessionId).first();
                 currentRelease = project.getCurrentRelease();
                 for (int i = 1; i < studyInfos.size(); i++) {

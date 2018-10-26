@@ -22,7 +22,7 @@
 
     <groupId>org.opencb.opencga</groupId>
     <artifactId>opencga</artifactId>
-    <version>1.4.0-rc-dev</version>
+    <version>1.4.0-rc2-dev</version>
     <packaging>pom</packaging>
     <name>OpenCGA</name>
     
@@ -37,11 +37,11 @@
     </modules>
 
     <properties>
-        <opencga.version>1.4.0-rc-dev</opencga.version>
+        <opencga.version>1.4.0-rc2-dev</opencga.version>
         <java.version>1.8</java.version>
-        <java-common-libs.version>3.7.1-SNAPSHOT</java-common-libs.version>
-        <biodata.version>1.4.1-SNAPSHOT</biodata.version>
-        <cellbase.version>4.5.4</cellbase.version>
+        <java-common-libs.version>3.7.1</java-common-libs.version>
+        <biodata.version>1.4.2-SNAPSHOT</biodata.version>
+        <cellbase.version>4.6.1</cellbase.version>
         <hpg-bigdata.version>1.0.0-beta4</hpg-bigdata.version>
         <jackson.version>2.6.6</jackson.version>
         <jersey.version>2.23</jersey.version>
@@ -214,6 +214,10 @@
                         <groupId>org.apache.avro</groupId>
                         <artifactId>avro-ipc</artifactId>
                     </exclusion>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-simple</artifactId>
+                    </exclusion>
                 </exclusions>
             </dependency>
             <dependency>
@@ -261,6 +265,11 @@
             <dependency>
                 <groupId>org.opencb.commons</groupId>
                 <artifactId>commons-datastore-mongodb</artifactId>
+                <version>${java-common-libs.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.commons</groupId>
+                <artifactId>commons-datastore-solr</artifactId>
                 <version>${java-common-libs.version}</version>
             </dependency>
             <dependency>
@@ -634,13 +643,16 @@
                 <!-- Storage -->
                 <OPENCGA.STORAGE.DEFAULT_ENGINE>mongodb</OPENCGA.STORAGE.DEFAULT_ENGINE>
                 <OPENCGA.STORAGE.CACHE.HOST>localhost:6379</OPENCGA.STORAGE.CACHE.HOST>
-                <OPENCGA.STORAGE.SEARCH.HOST>http://localhost:8983/solr/</OPENCGA.STORAGE.SEARCH.HOST>
-                <OPENCGA.STORAGE.SEARCH.TIMEOUT>30000</OPENCGA.STORAGE.SEARCH.TIMEOUT>
 
                 <!-- Storage Variants general -->
                 <OPENCGA.STORAGE.VARIANT.DB.HOSTS>localhost:27017</OPENCGA.STORAGE.VARIANT.DB.HOSTS>
                 <OPENCGA.STORAGE.VARIANT.DB.USER></OPENCGA.STORAGE.VARIANT.DB.USER>
                 <OPENCGA.STORAGE.VARIANT.DB.PASSWORD></OPENCGA.STORAGE.VARIANT.DB.PASSWORD>
+                <OPENCGA.STORAGE.SEARCH.HOST>http://localhost:8983/solr/</OPENCGA.STORAGE.SEARCH.HOST>
+                <OPENCGA.STORAGE.SEARCH.TIMEOUT>30000</OPENCGA.STORAGE.SEARCH.TIMEOUT>
+                <OPENCGA.STORAGE.CLINICAL.HOST>http://localhost:8983/solr/</OPENCGA.STORAGE.CLINICAL.HOST>
+                <OPENCGA.STORAGE.CLINICAL.MANAGER>""</OPENCGA.STORAGE.CLINICAL.MANAGER>
+                <OPENCGA.STORAGE.CLINICAL.TIMEOUT>30000</OPENCGA.STORAGE.CLINICAL.TIMEOUT>
 
                 <!-- Storage Alignments general -->
                 <OPENCGA.STORAGE.ALIGNMENT.DB.HOSTS>localhost:27017</OPENCGA.STORAGE.ALIGNMENT.DB.HOSTS>
@@ -657,7 +669,6 @@
                 <OPENCGA.STORAGE.HADOOP.VARIANT.DB.USER></OPENCGA.STORAGE.HADOOP.VARIANT.DB.USER>
                 <OPENCGA.STORAGE.HADOOP.VARIANT.DB.PASSWORD></OPENCGA.STORAGE.HADOOP.VARIANT.DB.PASSWORD>
                 <OPENCGA.STORAGE.HADOOP.VARIANT.HBASE.NAMESPACE></OPENCGA.STORAGE.HADOOP.VARIANT.HBASE.NAMESPACE>
-                <OPENCGA.STORAGE.HADOOP.VARIANT.ARCHIVE.TABLE.PREFIX>${OPENCGA.DB.PREFIX}_study</OPENCGA.STORAGE.HADOOP.VARIANT.ARCHIVE.TABLE.PREFIX>
 
                 <!-- Email server -->
                 <OPENCGA.MAIL.HOST></OPENCGA.MAIL.HOST>

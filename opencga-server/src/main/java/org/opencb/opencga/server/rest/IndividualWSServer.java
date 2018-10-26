@@ -16,14 +16,15 @@
 
 package org.opencb.opencga.server.rest;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.pedigree.IndividualProperty;
+import org.opencb.biodata.models.pedigree.Multiples;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.commons.datastore.core.result.FacetedQueryResult;
+import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
@@ -33,10 +34,12 @@ import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.AnnotationSet;
+import org.opencb.opencga.core.models.Individual;
+import org.opencb.opencga.core.models.Location;
+import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.server.WebServiceException;
-import org.opencb.opencga.server.rest.json.mixin.IndividualMixin;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -45,6 +48,8 @@ import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 /**
  * Created by jacobo on 22/06/15.
@@ -104,7 +109,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                    @ApiParam(value = "Individual version") @QueryParam("version") Integer version,
                                    @ApiParam(value = "Fetch all individual versions", defaultValue = "false")
                                    @QueryParam(Constants.ALL_VERSIONS) boolean allVersions,
-                                   @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
+                                   @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
+                                           + "exception whenever one of the entries looked for cannot be shown for whichever reason",
+                                           defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             query.remove("study");
             query.remove("individuals");
@@ -152,12 +159,15 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     String populationDescription,
             @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
             @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex")
-                    Individual.KaryotypicSex karyotypicSex,
+                    IndividualProperty.KaryotypicSex karyotypicSex,
             @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus")
-                    Individual.LifeStatus lifeStatus,
+                    IndividualProperty.LifeStatus lifeStatus,
             @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")
-                    Individual.AffectationStatus affectationStatus,
-            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
+                    IndividualProperty.AffectationStatus affectationStatus,
+            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+                @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+                @QueryParam("modificationDate") String modificationDate,
             @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: annotationSet[=|==|!|!=]{annotationSetName}")
             @QueryParam("annotationsetName") String annotationsetName,
             @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: variableSet[=|==|!|!=]{variableSetId}")
@@ -262,7 +272,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap,
             @ApiParam(value = "Annotation set name. If provided, only chosen annotation set will be shown") @QueryParam("name") String annotationsetName,
-            @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) throws WebServiceException {
+            @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
+                    + "exception whenever one of the entries looked for cannot be shown for whichever reason", defaultValue = "false")
+                @QueryParam("silent") boolean silent) throws WebServiceException {
         try {
             AbstractManager.MyResources<Individual> resource = individualManager.getUids(individualsStr, studyStr, sessionId);
 
@@ -337,7 +349,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                         @ApiParam(value = "annotationsetName", required = true) @PathParam("annotationsetName")
                                                 String annotationsetName,
                                         @ApiParam(value = "[NOT IMPLEMENTED] Comma separated list of annotation names to be deleted",
-                                                required = false) @QueryParam("annotations") String annotations, @QueryParam("silent") boolean silent) {
+                                                required = false) @QueryParam("annotations") String annotations) {
         try {
             QueryResult<AnnotationSet> queryResult;
             if (annotations != null) {
@@ -476,11 +488,11 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     String populationDescription,
             @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
             @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex")
-                    Individual.KaryotypicSex karyotypicSex,
+                    IndividualProperty.KaryotypicSex karyotypicSex,
             @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus")
-                    Individual.LifeStatus lifeStatus,
+                    IndividualProperty.LifeStatus lifeStatus,
             @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")
-                    Individual.AffectationStatus affectationStatus,
+                    IndividualProperty.AffectationStatus affectationStatus,
             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
             @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)", required = false) @QueryParam("annotation") String annotation,
             @ApiParam(value = "Release value (Current release from the moment the individuals were first created)")
@@ -495,7 +507,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/groupBy")
-    @ApiOperation(value = "Group individuals by several fields", position = 10,
+    @ApiOperation(value = "Group individuals by several fields", position = 10, hidden = true,
             notes = "Only group by categorical variables. Grouping by continuous variables might cause unexpected behaviour")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "count", value = "Count the number of elements matching the group", dataType = "boolean",
@@ -511,7 +523,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @QueryParam("study") String studyStr,
             @ApiParam(value = "name", required = false) @QueryParam("name") String names,
             @ApiParam(value = "Comma separated list of sample ids or names") @QueryParam("samples") String samples,
-            @ApiParam(value = "sex", required = false) @QueryParam("sex") Individual.Sex sex,
+            @ApiParam(value = "sex", required = false) @QueryParam("sex") IndividualProperty.Sex sex,
             @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
             @ApiParam(value = "Population name", required = false) @QueryParam("population.name") String populationName,
             @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation")
@@ -519,10 +531,10 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Population description", required = false) @QueryParam("population.description")
                     String populationDescription,
             @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex")
-                    Individual.KaryotypicSex karyotypicSex,
-            @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus") Individual.LifeStatus lifeStatus,
+                    IndividualProperty.KaryotypicSex karyotypicSex,
+            @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus") IndividualProperty.LifeStatus lifeStatus,
             @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")
-                    Individual.AffectationStatus affectationStatus,
+                    IndividualProperty.AffectationStatus affectationStatus,
             @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: annotationSet[=|==|!|!=]{annotationSetName}")
             @QueryParam("annotationsetName") String annotationsetName,
             @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: variableSet[=|==|!|!=]{variableSetId}")
@@ -554,7 +566,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                             @QueryParam("study") String studyStr,
                             @ApiParam(value = "User or group id") @QueryParam("member") String member,
-                            @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
+                            @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
+                                    + "exception whenever one of the entries looked for cannot be shown for whichever reason",
+                                    defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(individualIdsStr);
             return createOkResponse(individualManager.getAcls(studyStr, idList, member, silent, sessionId));
@@ -651,16 +665,12 @@ public class IndividualWSServer extends OpenCGAWSServer {
         }
     }
 
-    private final String defaultFacet = "creationYear>>creationMonth;status;multiplesType;ethnicity;population;lifeStatus;affectationStatus;phenotypes;sex";
-    private final String defaultFacetRange = "numSamples:0:10:1";
-
     @GET
-    @Path("/facet")
-    @ApiOperation(value = "Fetch catalog sample facets", position = 15, response = QueryResponse.class)
-    public Response getFacets(
+    @Path("/stats")
+    @ApiOperation(value = "Fetch catalog individual stats", position = 15, response = QueryResponse.class)
+    public Response getStats(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-            @QueryParam("study") String studyStr,
-
+                @QueryParam("study") String studyStr,
             @ApiParam(value = "Has father") @QueryParam("hasFather") Boolean hasFather,
             @ApiParam(value = "Has mother") @QueryParam("hasMother") Boolean hasMother,
             @ApiParam(value = "Number of multiples") @QueryParam("numMultiples") String numMultiples,
@@ -683,20 +693,16 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Version") @QueryParam("version") String version,
             @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
 
-            @ApiParam(value = "Calculate default stats", defaultValue = "false") @QueryParam("defaultStats") boolean defaultStats,
+            @ApiParam(value = "Calculate default stats", defaultValue = "false") @QueryParam("default") boolean defaultStats,
 
-            @ApiParam(value = "List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: studies>>biotype;type") @QueryParam("facet") String facet,
-            @ApiParam(value = "List of facet ranges separated by semicolons with the format {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1") @QueryParam("facetRange") String facetRange,
-            @ApiParam(value = "List of facet intersections separated by semicolons with the format {field_name}:{value1}:{value2}[:{value3}], e.g.: studies:1kG_phase3:EXAC:ESP6500") @QueryParam("facetIntersection") String facetIntersection) {
+            @ApiParam(value = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1") @QueryParam("field") String facet) {
         try {
             query.remove("study");
+            query.remove("field");
 
-            if (defaultStats) {
-                queryOptions.put(QueryOptions.FACET, StringUtils.isNotEmpty(facet) ? defaultFacet + ";" + facet : defaultFacet);
-                queryOptions.put(QueryOptions.FACET_RANGE, StringUtils.isNotEmpty(facet) ? defaultFacetRange + ";" + facet : defaultFacetRange);
-            }
+            queryOptions.put(QueryOptions.FACET, facet);
 
-            FacetedQueryResult queryResult = catalogManager.getIndividualManager().facet(studyStr, query, queryOptions, sessionId);
+            FacetQueryResult queryResult = catalogManager.getIndividualManager().facet(studyStr, query, queryOptions, defaultStats, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -713,14 +719,14 @@ public class IndividualWSServer extends OpenCGAWSServer {
         public Multiples multiples;
         public Location location;
 
-        public Individual.Sex sex;
+        public IndividualProperty.Sex sex;
         public String ethnicity;
         public Boolean parentalConsanguinity;
         public Individual.Population population;
         public String dateOfBirth;
-        public Individual.KaryotypicSex karyotypicSex;
-        public Individual.LifeStatus lifeStatus;
-        public Individual.AffectationStatus affectationStatus;
+        public IndividualProperty.KaryotypicSex karyotypicSex;
+        public IndividualProperty.LifeStatus lifeStatus;
+        public IndividualProperty.AffectationStatus affectationStatus;
         public List<AnnotationSet> annotationSets;
         public List<Phenotype> phenotypes;
         public Map<String, Object> attributes;
@@ -771,10 +777,6 @@ public class IndividualWSServer extends OpenCGAWSServer {
         public List<String> samples;
 
         public ObjectMap toIndividualObjectMap() throws JsonProcessingException {
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.addMixIn(Individual.class, IndividualMixin.class);
-            mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-
             Individual individual = new Individual()
                     .setId(id)
                     .setName(name)
@@ -794,7 +796,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     .setAttributes(attributes);
             individual.setAnnotationSets(annotationSets);
 
-            ObjectMap params = new ObjectMap(mapper.writeValueAsString(individual));
+            ObjectMap params = new ObjectMap(getUpdateObjectMapper().writeValueAsString(individual));
             if (parentalConsanguinity == null) {
                 params.remove("parentalConsanguinity");
             }

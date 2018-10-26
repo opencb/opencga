@@ -1266,6 +1266,29 @@ public class StudyManager extends AbstractManager {
         return false;
     }
 
+    public Map<String, Object> facet(String studyStr, String fileFields, String sampleFields, String individualFields, String cohortFields,
+                                     String familyFields, boolean defaultStats, String sessionId) throws CatalogException, IOException {
+        Map<String, Object> result = new HashMap<>();
+        result.put("sample", catalogManager.getSampleManager().facet(studyStr, new Query(), setFacetFields(sampleFields), defaultStats,
+                sessionId));
+        result.put("file", catalogManager.getFileManager().facet(studyStr, new Query(), setFacetFields(fileFields), defaultStats,
+                sessionId));
+        result.put("individual", catalogManager.getIndividualManager().facet(studyStr, new Query(), setFacetFields(individualFields),
+                defaultStats, sessionId));
+        result.put("family", catalogManager.getFamilyManager().facet(studyStr, new Query(), setFacetFields(familyFields), defaultStats,
+                sessionId));
+        result.put("cohort", catalogManager.getCohortManager().facet(studyStr, new Query(), setFacetFields(cohortFields), defaultStats,
+                sessionId));
+
+        return result;
+    }
+
+    private QueryOptions setFacetFields(String fields) {
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.putIfNotEmpty(QueryOptions.FACET, fields);
+        return queryOptions;
+    }
+
     // **************************   Private methods  ******************************** //
 
     private Boolean indexCohort(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException, IOException {

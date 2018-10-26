@@ -42,13 +42,23 @@ cache:
 
 ## Solr Search Configuration
 search:
-  host: ${OPENCGA.STORAGE.SEARCH.HOST}
+  host: ${OPENCGA.STORAGE.SEARCH.HOST}    # URL containing host and port, e.g. http://localhost:8983/solr/
   mode: "cloud"
   user: ""
   password: ""
   timeout: ${OPENCGA.STORAGE.SEARCH.TIMEOUT}
   insertBatchSize: 10000
   rows: 10000     # This variable is deprecated in favor of 'insertBatchSize' and will be removed in version 2.0
+
+## Clinical database for indexing the pathogenic variants reported.
+clinical:
+  host: ${OPENCGA.STORAGE.CLINICAL.HOST}    # URL containing host and port, e.g. http://localhost:8983/solr/
+  mode: "cloud"
+  user: ""
+  password: ""
+  manager: ${OPENCGA.STORAGE.CLINICAL.MANAGER}
+  timeout: ${OPENCGA.STORAGE.CLINICAL.TIMEOUT}
+  insertBatchSize: 1000
 
 benchmark:
   storageEngine: "mongodb"
@@ -156,11 +166,12 @@ storageEngines:
       hadoop.load.archive.batch.size: 3
       hadoop.load.variant.batch.size: 500
       opencga.archive.table.presplit.size: 500
+      opencga.archive.table.compression: "gz"           # Allowed values: none, snappy, gz
       opencga.variant.table.presplit.size: 500
-      opencga.archive.table.compression: "snappy"
-      opencga.variant.table.compression: "snappy"
+      opencga.variant.table.compression: "snappy"       # Allowed values: none, snappy, gz
+      opencga.sample-index.table.presplit.size: 15
+      opencga.sample-index.table.compression: "snappy"  # Allowed values: none, snappy, gz
       opencga.storage.hadoop.variant.hbase.namespace: "${OPENCGA.STORAGE.HADOOP.VARIANT.HBASE.NAMESPACE}"
-      opencga.storage.hadoop.variant.archive.table.prefix: "${OPENCGA.STORAGE.HADOOP.VARIANT.ARCHIVE.TABLE.PREFIX}"
       intersect.active : true          # Allow intersect queries with the SearchEngine (Solr)
       intersect.always : false         # Force intersect queries
       intersect.params.threshold : 3   # Minimum number of QueryParams in the query to intersect

@@ -132,13 +132,7 @@ public class VariantStatisticsCalculator {
                 for (Map.Entry<String, Set<String>> cohort : samples.entrySet()) {
                     if (overwrite || study.getStats(cohort.getKey()) == null) {
 
-                        VariantStats variantStats = new VariantStats(variant);
-                        Map<String, String> attributes = study.getAttributes();
-                        attributes = attributes == null
-                                ? Collections.emptyMap()
-                                : attributes;
-
-                        VariantStatsCalculator.calculate(study, cohort.getValue(), attributes, null, variantStats);
+                        VariantStats variantStats = VariantStatsCalculator.calculate(variant, study, cohort.getValue());
                         study.setStats(cohort.getKey(), variantStats);
 
                     }
@@ -154,9 +148,7 @@ public class VariantStatisticsCalculator {
 //                        , allVariantStats.calculate(file.getSamplesData(), file.getAttributes(), null));
 //
 //            }
-            variantStatsWrappers.add(
-                    new VariantStatsWrapper(variant.getChromosome(), variant.getStart(), variant.getEnd(), study.getStats(),
-                            variant.getSv()));
+            variantStatsWrappers.add(new VariantStatsWrapper(variant, study.getStats()));
         }
         return variantStatsWrappers;
     }

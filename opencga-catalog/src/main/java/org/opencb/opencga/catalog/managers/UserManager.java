@@ -55,7 +55,6 @@ public class UserManager extends AbstractManager {
 
     private String INTERNAL_AUTHORIZATION = "internal";
     private Map<String, AuthenticationManager> authenticationManagerMap;
-    private final String ADMIN_TOKEN;
 
     protected static final String EMAIL_PATTERN = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@"
             + "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
@@ -104,9 +103,6 @@ public class UserManager extends AbstractManager {
                 configuration.getAuthentication().setAuthenticationOrigins(linkedList);
             }
         }
-
-        ADMIN_TOKEN = authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createNonExpiringToken("admin");
-
     }
 
     static void checkEmail(String email) throws CatalogException {
@@ -396,7 +392,8 @@ public class UserManager extends AbstractManager {
                 if (authOrigin == null) {
                     throw new CatalogException("Unexpected error occurred. Count not detect authorization origin.");
                 }
-                importFromExternalAuthOrigin(authOrigin, Account.GUEST, new ObjectMap("users", userId), ADMIN_TOKEN);
+                importFromExternalAuthOrigin(authOrigin, Account.GUEST, new ObjectMap("users", userId),
+                        authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createNonExpiringToken("admin"));
                 user = userDBAdaptor.get(userId, new QueryOptions(), null);
             }
 

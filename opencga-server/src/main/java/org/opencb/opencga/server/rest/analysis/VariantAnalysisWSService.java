@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
@@ -27,7 +28,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.FacetedQueryResult;
+import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Job;
@@ -49,6 +50,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
+import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 import static org.opencb.opencga.storage.core.manager.CatalogUtils.parseSampleAnnotationQuery;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
@@ -62,7 +64,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 @Api(value = "Analysis - Variant", position = 4, description = "Methods for working with 'files' endpoint")
 public class VariantAnalysisWSService extends AnalysisWSService {
 
-    private static final String DEPRECATED = "(DEPRECATED) ";
+    private static final String DEPRECATED = " [DEPRECATED] ";
     private static final Map<String, org.opencb.commons.datastore.core.QueryParam> DEPRECATED_VARIANT_QUERY_PARAM;
 
     static {
@@ -118,7 +120,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     @GET
     @Path("/index")
     @ApiOperation(value = "Index variant files", position = 14, response = QueryResponse.class)
-    public Response index(@ApiParam(value = "(DEPRECATED) Comma separated list of file ids (files or directories)", hidden = true)
+    public Response index(@Deprecated @ApiParam(value = "(DEPRECATED) Comma separated list of file ids (files or directories)", hidden = true)
                               @QueryParam (value = "fileId") String fileIdStrOld,
                           @ApiParam(value = "Comma separated list of file ids (files or directories)", required = true)
                           @QueryParam(value = "file") String fileIdStr,
@@ -245,6 +247,10 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "missingAlleles", value = MISSING_ALLELES_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "missingGenotypes", value = MISSING_GENOTYPES_DESCR, dataType = "string", paramType = "query"),
 
+            @ApiImplicitParam(name = "family", value = VariantCatalogQueryUtils.FAMILY_DESC, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "familyPhenotype", value = VariantCatalogQueryUtils.FAMILY_PHENOTYPE_DESC, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "modeOfInheritance", value = VariantCatalogQueryUtils.MODE_OF_INHERITANCE_DESC, dataType = "string", paramType = "query"),
+
             @ApiImplicitParam(name = "includeStudy", value = INCLUDE_STUDY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "includeFile", value = INCLUDE_FILE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "includeSample", value = INCLUDE_SAMPLE_DESCR, dataType = "string", paramType = "query"),
@@ -271,6 +277,8 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "functionalScore", value = ANNOT_FUNCTIONAL_SCORE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "clinicalSignificance", value = ANNOT_CLINICAL_SIGNIFICANCE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "customAnnotation", value = CUSTOM_ANNOTATION_DESCR, dataType = "string", paramType = "query"),
+
+            @ApiImplicitParam(name = "panel", value = VariantCatalogQueryUtils.PANEL_DESC, dataType = "string", paramType = "query"),
 
             // WARN: Only available in Solr
             @ApiImplicitParam(name = "trait", value = ANNOT_TRAIT_DESCR, dataType = "string", paramType = "query"),
@@ -467,7 +475,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             List<QueryResult> queryResults = new LinkedList<>();
             QueryResult queryResult;
             // Get all query options
-            QueryOptions postParams = new QueryOptions(jsonObjectMapper.writeValueAsString(params));
+            QueryOptions postParams = new QueryOptions(getUpdateObjectMapper().writeValueAsString(params));
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             Query query = getVariantQuery(postParams);
 
@@ -496,28 +504,22 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     @Path("/annotation/query")
     @ApiOperation(value = "Query variant annotations from any saved versions", position = 15, response = VariantAnnotation[].class)
     @ApiImplicitParams({
+            @ApiImplicitParam(name = "id", value = ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "region", value = REGION_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.LIMIT, value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.SKIP, value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
-//            @ApiImplicitParam(name = QueryOptions.COUNT, value = "Total number of results", dataType = "boolean", paramType = "query")
-
-            @ApiImplicitParam(name = "region", value = REGION_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "id", value = ID_DESCR, dataType = "string", paramType = "query"),
-
+            @ApiImplicitParam(name = QueryOptions.SKIP, value = "Number of results to skip in the queries", dataType = "integer", paramType = "query")
     })
     public Response getAnnotation(@ApiParam(value = "Annotation identifier") @DefaultValue(VariantAnnotationManager.CURRENT) @QueryParam("annotationId") String annotationId) {
-        logger.info("limit {} , skip {}", count, limit, skip);
+        logger.debug("limit {} , skip {}", limit, skip);
         try {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             Query query = getVariantQuery(queryOptions);
-
-            logger.info("query " + query.toJson());
-            logger.info("queryOptions " + queryOptions.toJson());
+            logger.debug("query = {}, queryOptions = {}" + query.toJson(), queryOptions.toJson());
 
             QueryResult<VariantAnnotation> result = variantManager.getAnnotation(annotationId, query, queryOptions, sessionId);
-
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -533,6 +535,24 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             QueryResult<ProjectMetadata.VariantAnnotationMetadata> result =
                     variantManager.getAnnotationMetadata(annotationId, project, sessionId);
             return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/familyGenotypes")
+    @ApiOperation(value = "Calculate the possible genotypes for the members of a family", position = 15, response = Map.class)
+    public Response calculateGenotypes(
+            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Family id", required = true) @QueryParam("family") String family,
+            @ApiParam(value = "Mode of inheritance", required = true, defaultValue = "MONOALLELIC")
+                @QueryParam("modeOfInheritance") ClinicalProperty.ModeOfInheritance moi,
+            @ApiParam(value = "Complete penetrance", defaultValue = "false") @QueryParam("completePenetrance") boolean completePenetrance,
+            @ApiParam(value = "Disease id", required = true) @QueryParam("disease") String disease) {
+        try {
+            return createOkResponse(catalogManager.getFamilyManager().calculateFamilyGenotypes(studyStr, family, moi, disease,
+                    !completePenetrance, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -592,6 +612,11 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                 query.append(STUDY.key(), studyStr);
             }
 
+            // Remove "genotype" from query, as it could be mixed with que VariantQueryParam "genotype"
+            if (StringUtils.isNotEmpty(genotypesStr)) {
+                query.remove(GENOTYPE.key());
+            }
+
             Collection<String> sampleNames;
             if (all) {
                 sampleNames = variantSampleFilter.getSamplesInAllVariants(query, genotypes);
@@ -608,27 +633,26 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         }
     }
 
-    @GET
-    @Path("/ibs")
-    @ApiOperation(value = "[PENDING]", position = 15, response = Job.class)
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "limit", value = "[TO BE IMPLEMENTED] Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
-    })
-    public Response ibs() {
-        try {
-            return createOkResponse("[PENDING]");
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//    @GET
+//    @Path("/ibs")
+//    @ApiOperation(value = "[PENDING]", position = 15, response = Job.class)
+//    @ApiImplicitParams({
+//            @ApiImplicitParam(name = "limit", value = "[TO BE IMPLEMENTED] Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
+//    })
+//    public Response ibs() {
+//        try {
+//            return createOkResponse("[PENDING]");
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 
     @POST
     @Path("/validate")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Validate a VCF file", response = QueryResponse.class)
     public Response validate(
-            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
-                    String studyStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project are the id") @QueryParam("study") String studyStr,
             @ApiParam(value = "VCF file id, name or path", required = true) @QueryParam("file") String file) {
         try {
             Map<String, String> params = new HashMap<>();
@@ -644,34 +668,25 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 
 
     @GET
-    @Path("/stats")
+    @Path("/cohortStats")
     @ApiOperation(value = "Calculate variant stats [PENDING]", position = 2)
-    public Response stats() {
+    public Response cohortStats() {
         return createErrorResponse(new NotImplementedException("Pending"));
     }
 
+    @Deprecated
     @GET
     @Path("/facet")
-    @ApiOperation(value = "Fetch variant facets", position = 15, response = QueryResponse.class)
-/*
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.LIMIT, value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.SKIP, value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.COUNT, value = "Total number of results", dataType = "boolean", paramType = "query")
-    })
-    */
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.LIMIT, value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.SKIP, value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.COUNT, value = "Total number of results", dataType = "boolean", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.SKIP_COUNT, value = "Do not count total number of results", dataType = "boolean", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.SORT, value = "Sort the results", dataType = "boolean", paramType = "query"),
-            @ApiImplicitParam(name = VariantField.SUMMARY, value = "Fetch summary data from Solr", dataType = "boolean", paramType = "query"),
+    @ApiOperation(value = "This method has been renamed, use endpoint /stats instead" + DEPRECATED, position = 15, response = QueryResponse.class)
+    public Response getFacets(@ApiParam(value = "List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: studies>>biotype;type") @QueryParam("facet") String facet,
+                              @ApiParam(value = "List of facet ranges separated by semicolons with the format {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1") @QueryParam("facetRange") String facetRange) {
+        return getStats(facet);
+    }
 
+    @GET
+    @Path("/stats")
+    @ApiOperation(value = "Fetch variant stats", position = 15, response = QueryResponse.class)
+    @ApiImplicitParams({
             // Variant filters
             @ApiImplicitParam(name = "id", value = ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "region", value = REGION_DESCR, dataType = "string", paramType = "query"),
@@ -697,12 +712,6 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "missingAlleles", value = MISSING_ALLELES_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "missingGenotypes", value = MISSING_GENOTYPES_DESCR, dataType = "string", paramType = "query"),
 
-//            @ApiImplicitParam(name = "includeStudy", value = INCLUDE_STUDY_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "includeFiles", value = INCLUDE_FILE_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "includeSample", value = INCLUDE_SAMPLE_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "includeFormat", value = INCLUDE_FORMAT_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "includeGenotype", value = INCLUDE_GENOTYPE_DESCR, dataType = "string", paramType = "query"),
-
             // Annotation filters
             @ApiImplicitParam(name = "annotationExists", value = ANNOT_EXISTS_DESCR, dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = "gene", value = GENE_DESCR, dataType = "string", paramType = "query"),
@@ -726,63 +735,15 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 
             // WARN: Only available in Solr
             @ApiImplicitParam(name = "trait", value = ANNOT_TRAIT_DESCR, dataType = "string", paramType = "query"),
-
-//            // DEPRECATED PARAMS
-//            @ApiImplicitParam(name = "chromosome", value = DEPRECATED + "Use 'region' instead", dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "polyphen", value = DEPRECATED + "Use 'proteinSubstitution' instead. e.g. polyphen>0.1", dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "sift", value = DEPRECATED + "Use 'proteinSubstitution' instead. e.g. sift>0.1", dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "geneTraitName", value = DEPRECATED + "Use 'trait' instead", dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "hpo", value = DEPRECATED + "Use 'geneTraitId' or 'trait' instead", dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "clinvar", value = DEPRECATED + "Use 'xref' instead", dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "cosmic", value = DEPRECATED + "Use 'xref' instead", dataType = "string", paramType = "query"),
-//
-//            // RENAMED PARAMS
-//            @ApiImplicitParam(name = "ids", value = DEPRECATED + "Use 'id' instead", dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "studies", value = DEPRECATED + "Use 'study' instead", dataType = "string", paramType = "query"),
-////            @ApiImplicitParam(name = "files", value = DEPRECATED + "Use 'file' instead", dataType = "string", paramType = "query"),
-////            @ApiImplicitParam(name = "samples", value = DEPRECATED + "Use 'sample' instead", dataType = "string", paramType = "query"),
-////            @ApiImplicitParam(name = "samplesMetadata", value = DEPRECATED + "Use 'sampleMetadata' instead", dataType = "boolean", paramType = "query"),
-////            @ApiImplicitParam(name = "cohorts", value = DEPRECATED + "Use 'cohort' instead", dataType = "string", paramType = "query"),
-////            @ApiImplicitParam(name = "returnedStudies", value = DEPRECATED + "Use 'includeStudy' instead", dataType = "string", paramType = "query"),
-////            @ApiImplicitParam(name = "returnedSamples", value = DEPRECATED + "Use 'includeSample' instead", dataType = "string", paramType = "query"),
-////            @ApiImplicitParam(name = "returnedFiles", value = DEPRECATED + "Use 'includeFile' instead", dataType = "string", paramType = "query"),
-////            @ApiImplicitParam(name = "include-format", value = DEPRECATED + "Use 'includeFormat' instead", dataType = "string", paramType = "query"),
-////            @ApiImplicitParam(name = "include-genotype", value = DEPRECATED + "Use 'includeGenotype' instead", dataType = "string", paramType = "query"),
-//
-//            @ApiImplicitParam(name = "annot-ct", value = DEPRECATED + "Use 'ct' instead", dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "annot-xref", value = DEPRECATED + "Use 'xref' instead", dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "annot-biotype", value = DEPRECATED + "Use 'biotype' instead", dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "protein_substitution", value = DEPRECATED + "Use 'proteinSubstitution' instead", dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "alternate_frequency", value = DEPRECATED + "Use 'populationFrequencyAlt' instead", dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "reference_frequency", value = DEPRECATED + "Use 'populationFrequencyRef' instead", dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "annot-population-maf", value = DEPRECATED + "Use 'populationFrequencyMaf' instead", dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "annot-transcription-flags", value = DEPRECATED + "Use 'transcriptionFlags' instead", dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "annot-gene-trait-id", value = DEPRECATED + "Use 'geneTraitId' instead", dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "annot-gene-trait-name", value = DEPRECATED + "Use 'geneTraitName' instead", dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "annot-hpo", value = DEPRECATED + "Use 'hpo' instead", dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "annot-go", value = DEPRECATED + "Use 'go' instead", dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "annot-expression", value = DEPRECATED + "Use 'expression' instead", dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "annot-protein-keywords", value = DEPRECATED + "Use 'proteinKeyword' instead", dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "annot-drug", value = DEPRECATED + "Use 'drug' instead", dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "annot-functional-score", value = DEPRECATED + "Use 'functionalScore' instead", dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "traits", value = DEPRECATED + "Use 'trait' instead", dataType = "string", paramType = "query"),
     })
-    public Response getFacets(@ApiParam(value = "List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: studies>>biotype;type") @QueryParam("facet") String facet,
-                              @ApiParam(value = "List of facet ranges separated by semicolons with the format {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1") @QueryParam("facetRange") String facetRange,
-                              @ApiParam(value = "List of facet intersections separated by semicolons with the format {field_name}:{value1}:{value2}[:{value3}], e.g.: studies:1kG_phase3:EXAC:ESP6500") @QueryParam("facetIntersection") String facetIntersection) {
+    public Response getStats(@ApiParam(value = "List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: chromosome>>type;percentile(gerp)") @QueryParam("fields") String fields) {
         try {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
-            queryOptions.put(QueryOptions.LIMIT, 0);
-            queryOptions.put(QueryOptions.SKIP, 0);
-            queryOptions.remove(QueryOptions.COUNT);
-            queryOptions.remove(QueryOptions.INCLUDE);
-            queryOptions.remove(QueryOptions.SORT);
-
+            queryOptions.put(QueryOptions.FACET, fields);
             Query query = getVariantQuery(queryOptions);
 
-            FacetedQueryResult queryResult = variantManager.facet(query, queryOptions, sessionId);
-
+            FacetQueryResult queryResult = variantManager.facet(query, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -803,14 +764,6 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
-
-//            // DEPRECATED PARAMS
-//            @ApiImplicitParam(name = "studies", value = DEPRECATED + STUDY_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "files", value = DEPRECATED + FILE_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "samples", value = DEPRECATED + SAMPLE_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "returnedStudies", value = DEPRECATED + INCLUDE_STUDY_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "returnedSamples", value = DEPRECATED + INCLUDE_SAMPLE_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "returnedFiles", value = DEPRECATED + INCLUDE_FILE_DESCR, dataType = "string", paramType = "query"),
     })
     public Response metadata() {
         try {
@@ -822,7 +775,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         }
     }
 
-    public static Query getVariantQuery(QueryOptions queryOptions) {
+    private Query getVariantQuery(QueryOptions queryOptions) {
         Query query = VariantStorageManager.getVariantQuery(queryOptions);
         queryOptions.forEach((key, value) -> {
             org.opencb.commons.datastore.core.QueryParam newKey = DEPRECATED_VARIANT_QUERY_PARAM.get(key);
@@ -845,6 +798,4 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         return query;
     }
 }
-
-
 

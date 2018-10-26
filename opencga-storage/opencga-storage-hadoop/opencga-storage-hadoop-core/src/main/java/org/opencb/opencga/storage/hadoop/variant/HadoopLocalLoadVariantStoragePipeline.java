@@ -21,6 +21,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
+import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.tools.variant.VariantDeduplicationTask;
 import org.opencb.biodata.tools.variant.converters.proto.VcfSliceToVariantListConverter;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -33,6 +35,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
+import org.opencb.opencga.storage.core.variant.transform.DiscardDuplicatedVariantsResolver;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHBaseArchiveDataWriter;
@@ -56,7 +59,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
 
 import static org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.STORAGE_ENGINE_ID;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.*;
 
 /**
  * Created on 06/06/17.
@@ -245,7 +248,9 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                 .setReadQueuePutTimeout(1000).build();
 
         // Reader
-        VariantSliceReader sliceReader = new VariantSliceReader(helper.getChunkSize(), variantReader, studyId, fileId, progressLogger);
+        VariantDeduplicationTask dedupTask = new VariantDeduplicationTask(new DiscardDuplicatedVariantsResolver(fileId));
+        VariantSliceReader sliceReader = new VariantSliceReader(
+                helper.getChunkSize(), variantReader.then(dedupTask), studyId, fileId, progressLogger);
 
         // Archive Writer
         VariantHBaseArchiveDataWriter archiveWriter = new VariantHBaseArchiveDataWriter(helper, table, dbAdaptor.getHBaseManager());
@@ -263,7 +268,10 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         }
 
         // Task
-        GroupedVariantsTask task = new GroupedVariantsTask(archiveWriter, hadoopDBWriter, sampleIndexDBLoader, null);
+        String archiveFields = options.getString(ARCHIVE_FIELDS);
+        String nonRefFilter = options.getString(ARCHIVE_NON_REF_FILTER);
+        GroupedVariantsTask task = new GroupedVariantsTask(archiveWriter, hadoopDBWriter, sampleIndexDBLoader,
+                null, archiveFields, nonRefFilter);
 
 
         ParallelTaskRunner<ImmutablePair<Long, List<Variant>>, VcfSlice> ptr =
@@ -274,10 +282,46 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
             throw new StorageEngineException("Error loading file " + input, e);
         }
 
+        logLoadResults(variantReader.getVariantFileMetadata(), dedupTask.getDiscardedVariants(), hadoopDBWriter.getSkippedRefBlock(),
+                hadoopDBWriter.getLoadedVariants(), hadoopDBWriter.getSkippedRefVariants());
+
         if (sampleIndexDBLoader != null) {
             // Update list of loaded genotypes
             updateLoadedGenotypes(sampleIndexDBLoader.getLoadedGenotypes());
         }
+    }
+
+    private void logLoadResults(VariantFileMetadata variantFileMetadata, int duplicatedVariants, int skipped, int loadedVariants,
+                                int skippedRefVariants) {
+        // TODO: Check if the expectedCount matches with the count from HBase?
+        // @see this.checkLoadedVariants
+        logger.info("============================================================");
+        int expectedCount = 0;
+        for (VariantType variantType : TARGET_VARIANT_TYPE_SET) {
+            expectedCount += variantFileMetadata.getStats().getVariantTypeCounts().getOrDefault(variantType.toString(), 0);
+        }
+        expectedCount -= duplicatedVariants;
+        expectedCount -= skippedRefVariants;
+        if (expectedCount == loadedVariants) {
+            logger.info("Number of loaded variants: " + loadedVariants);
+        } else {
+            logger.warn("Wrong number of loaded variants. Expected: " + expectedCount + " but loaded " + loadedVariants);
+        }
+        if (duplicatedVariants > 0) {
+            logger.warn("Found duplicated variants while loading the file. Discarded variants: " + duplicatedVariants);
+        }
+        if (skipped > 0) {
+            logger.info("There were " + skipped + " skipped variants");
+            for (VariantType type : VariantType.values()) {
+                if (!TARGET_VARIANT_TYPE_SET.contains(type)) {
+                    Integer countByType = variantFileMetadata.getStats().getVariantTypeCounts().get(type.toString());
+                    if (countByType != null && countByType > 0) {
+                        logger.info("  * Of which " + countByType + " are " + type.toString() + " variants.");
+                    }
+                }
+            }
+        }
+        logger.info("============================================================");
     }
 
     private void updateLoadedGenotypes(HashSet<String> loadedGenotypes) throws StorageEngineException {
@@ -296,12 +340,13 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
 
     private VariantHadoopDBWriter newVariantHadoopDBWriter() throws StorageEngineException {
         StudyConfiguration studyConfiguration = getStudyConfiguration();
+        boolean includeReferenceVariantsData = getOptions().getBoolean(VARIANT_TABLE_LOAD_REFERENCE, false);
         return new VariantHadoopDBWriter(
                 dbAdaptor.getGenomeHelper(),
                 dbAdaptor.getCredentials().getTable(),
                 getStudyConfigurationManager().getProjectMetadata().first(),
                 studyConfiguration,
-                dbAdaptor.getHBaseManager());
+                dbAdaptor.getHBaseManager(), includeReferenceVariantsData);
     }
 
     protected static class GroupedVariantsTask implements Task<ImmutablePair<Long, List<Variant>>, VcfSlice> {
@@ -312,7 +357,12 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
 
         GroupedVariantsTask(VariantHBaseArchiveDataWriter archiveWriter, VariantHadoopDBWriter hadoopDBWriter,
                             SampleIndexDBLoader sampleIndexDBLoader, ProgressLogger progressLogger) {
-            this.converterTask = new VariantToVcfSliceConverterTask(progressLogger);
+            this(archiveWriter, hadoopDBWriter, sampleIndexDBLoader, progressLogger, null, null);
+        }
+
+        GroupedVariantsTask(VariantHBaseArchiveDataWriter archiveWriter, VariantHadoopDBWriter hadoopDBWriter,
+                            SampleIndexDBLoader sampleIndexDBLoader, ProgressLogger progressLogger, String fields, String nonRefFilter) {
+            this.converterTask = new VariantToVcfSliceConverterTask(progressLogger, fields, nonRefFilter);
             this.archiveWriter = Objects.requireNonNull(archiveWriter);
             this.hadoopDBWriter = Objects.requireNonNull(hadoopDBWriter);
             this.sampleIndexDBLoader = sampleIndexDBLoader;
@@ -337,10 +387,11 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         @Override
         public List<VcfSlice> apply(List<ImmutablePair<Long, List<Variant>>> batch) {
             for (ImmutablePair<Long, List<Variant>> pair : batch) {
-                hadoopDBWriter.write(pair.getRight());
+                List<Variant> variants = pair.getRight();
+                hadoopDBWriter.write(variants);
 
                 if (sampleIndexDBLoader != null) {
-                    sampleIndexDBLoader.write(pair.getRight());
+                    sampleIndexDBLoader.write(variants);
                 }
             }
             List<VcfSlice> slices = converterTask.apply(batch);

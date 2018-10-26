@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.core.models;
 
-import org.opencb.opencga.core.models.clinical.Interpretation;
+import org.opencb.biodata.models.commons.OntologyTerm;
 
 import java.util.List;
 import java.util.Map;
@@ -38,7 +38,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     private File germline;
     private File somatic;
 
-    private List<Individual> subjects;
+    private Individual proband;
     private Family family;
     private List<Interpretation> interpretations;
 
@@ -63,16 +63,16 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     public ClinicalAnalysis() {
     }
 
-    public ClinicalAnalysis(String id, String description, Type type, OntologyTerm disease, File germline, File somatic,
-                            List<Individual> subjects, Family family, List<Interpretation> interpretations, String creationDate,
-                            Status status, int release, Map<String, Object> attributes) {
+    public ClinicalAnalysis(String id, String description, Type type, OntologyTerm disease, File germline, File somatic, Individual proband,
+                            Family family, List<Interpretation> interpretations, String creationDate, Status status, int release,
+                            Map<String, Object> attributes) {
         this.id = id;
         this.description = description;
         this.type = type;
         this.disease = disease;
         this.germline = germline;
         this.somatic = somatic;
-        this.subjects = subjects;
+        this.proband = proband;
         this.family = family;
         this.interpretations = interpretations;
         this.creationDate = creationDate;
@@ -92,7 +92,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         sb.append(", disease=").append(disease);
         sb.append(", germline=").append(germline);
         sb.append(", somatic=").append(somatic);
-        sb.append(", subjects=").append(subjects);
+        sb.append(", proband=").append(proband);
         sb.append(", family=").append(family);
         sb.append(", interpretations=").append(interpretations);
         sb.append(", creationDate='").append(creationDate).append('\'');
@@ -188,12 +188,12 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
-    public List<Individual> getSubjects() {
-        return subjects;
+    public Individual getProband() {
+        return proband;
     }
 
-    public ClinicalAnalysis setSubjects(List<Individual> subjects) {
-        this.subjects = subjects;
+    public ClinicalAnalysis setProband(Individual proband) {
+        this.proband = proband;
         return this;
     }
 
@@ -260,59 +260,4 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
-    @Deprecated
-    public static class ClinicalInterpretation {
-
-        private String id;
-        private String name;
-        private File file;
-
-        public ClinicalInterpretation() {
-        }
-
-        public ClinicalInterpretation(String id, String name, File file) {
-            this.id = id;
-            this.name = name;
-            this.file = file;
-        }
-
-
-        @Override
-        public String toString() {
-            final StringBuilder sb = new StringBuilder("Interpretation{");
-            sb.append("id='").append(id).append('\'');
-            sb.append(", name='").append(name).append('\'');
-            sb.append(", file=").append(file);
-            sb.append('}');
-            return sb.toString();
-        }
-
-
-        public String getId() {
-            return id;
-        }
-
-        public ClinicalInterpretation setId(String id) {
-            this.id = id;
-            return this;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public ClinicalInterpretation setName(String name) {
-            this.name = name;
-            return this;
-        }
-
-        public File getFile() {
-            return file;
-        }
-
-        public ClinicalInterpretation setFile(File file) {
-            this.file = file;
-            return this;
-        }
-    }
 }

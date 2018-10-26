@@ -25,7 +25,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 
-import java.util.List;
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
@@ -41,6 +40,7 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         UUID("uuid", TEXT, ""),
         DESCRIPTION("description", TEXT, ""),
         CREATION_DATE("creationDate", DATE, ""),
+        MODIFICATION_DATE("modificationDate", DATE, ""),
         TYPE("type", TEXT, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
@@ -57,9 +57,9 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         SOMATIC_UID("somatic.uid", INTEGER, ""),
         GERMLINE("germline", TEXT_ARRAY, ""),
         GERMLINE_UID("germline.uid", INTEGER, ""),
-        SUBJECTS("subjects", TEXT_ARRAY, ""),
-        SUBJECT_UID("subjects.uid", INTEGER, ""),
-        SAMPLE_UID("subjects.samples.uid", INTEGER, ""),
+        PROBAND("proband", TEXT_ARRAY, ""),
+        PROBAND_UID("proband.uid", INTEGER, ""),
+        SAMPLE_UID("proband.samples.uid", INTEGER, ""),
         INTERPRETATIONS("interpretations", TEXT_ARRAY, ""),
         INTERPRETATIONS_ID("interpretations.id", TEXT_ARRAY, ""),
 
@@ -133,13 +133,6 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
     QueryResult<ClinicalAnalysis> get(long clinicalAnalysisId, QueryOptions options) throws CatalogDBException;
 
     long getStudyId(long clinicalAnalysisId) throws CatalogDBException;
-
-    QueryResult<Long> setInterpretations(long clinicalAnalysisId, List<ClinicalAnalysis.ClinicalInterpretation> interpretationList);
-
-    QueryResult<Long> addInterpretation(long clinicalAnalysisId, ClinicalAnalysis.ClinicalInterpretation interpretation)
-            throws CatalogDBException;
-
-    QueryResult<Long> removeInterpretation(long clinicalAnalysisId, String interpretationId) throws CatalogDBException;
 
     /**
      * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to

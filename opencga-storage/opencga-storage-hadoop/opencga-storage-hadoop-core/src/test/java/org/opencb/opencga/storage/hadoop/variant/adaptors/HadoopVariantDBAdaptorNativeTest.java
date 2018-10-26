@@ -41,6 +41,11 @@ public class HadoopVariantDBAdaptorNativeTest extends HadoopVariantDBAdaptorTest
     }
 
     @Override
+    public Long count(Query query) {
+        return (long) query(query, null).getResult().size();
+    }
+
+    @Override
     public VariantDBIterator iterator(Query query, QueryOptions options) {
         VariantQueryUtils.convertGenesToRegionsQuery(query, cellBaseUtils);
 //        checkCanExecuteNativeQuery(query);

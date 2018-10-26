@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.core.models;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -72,6 +74,8 @@ public class FileIndex {
         public static final String TRANSFORMED = "TRANSFORMED";
         public static final String LOADING = "LOADING";
         public static final String INDEXING = "INDEXING";
+
+        public static final List<String> STATUS_LIST = Arrays.asList(READY, DELETED, NONE, TRANSFORMED, TRANSFORMING, LOADING, INDEXING);
 
         public IndexStatus(String status, String message) {
             if (isValid(status)) {

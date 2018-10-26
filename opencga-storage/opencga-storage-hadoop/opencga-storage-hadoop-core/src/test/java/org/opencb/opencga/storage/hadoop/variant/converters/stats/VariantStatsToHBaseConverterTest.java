@@ -23,7 +23,6 @@ import org.apache.hadoop.hbase.client.Put;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.feature.Genotype;
-import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
@@ -65,14 +64,16 @@ public class VariantStatsToHBaseConverterTest {
         VariantStatsWrapper statsWrapper = new VariantStatsWrapper();
         statsWrapper.setChromosome("1");
         statsWrapper.setStart(100);
+        statsWrapper.setReference("A");
+        statsWrapper.setAlternate("C");
         HashMap<String, VariantStats> map = new HashMap<>();
-        VariantStats expected = new VariantStats("A", "C", VariantType.SNV);
+        VariantStats expected = new VariantStats();
         expected.setAltAlleleCount(1);
         expected.setAltAlleleFreq(0.1F);
         expected.setRefAlleleCount(2);
         expected.setRefAlleleFreq(0.2F);
-        expected.setMissingAlleles(3);
-        expected.setMissingGenotypes(6);
+        expected.setMissingAlleleCount(3);
+        expected.setMissingGenotypeCount(6);
         expected.setMaf(0.4F);
         expected.setMafAllele("A");
         expected.setMgf(0.5F);
@@ -95,8 +96,6 @@ public class VariantStatsToHBaseConverterTest {
         }
 
         assertNotNull(convert);
-        convert.setRefAllele("A");
-        convert.setAltAllele("C");
         assertEquals(expected, convert);
 
     }

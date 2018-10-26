@@ -73,7 +73,13 @@ public class VariantPhoenixHelper {
     public static final String HOM_REF = "0/0";
     public static final byte[] HOM_REF_BYTES = Bytes.toBytes(HOM_REF);
     private static final String STUDY_POP_FREQ_SEPARATOR = "_";
-    public static final List<Column> PRIMARY_KEY = Collections.unmodifiableList(Arrays.asList(CHROMOSOME, POSITION, REFERENCE, ALTERNATE));
+    public static final List<Column> PRIMARY_KEY = Collections.unmodifiableList(Arrays.asList(
+            CHROMOSOME,
+            POSITION,
+            REFERENCE,
+            ALTERNATE
+    ));
+
     public static final String FILL_MISSING_SUFIX = "_FM";
     public static final byte[] FILL_MISSING_SUFIX_BYTES = Bytes.toBytes(FILL_MISSING_SUFIX);
 
@@ -88,6 +94,11 @@ public class VariantPhoenixHelper {
         POSITION("POSITION", PUnsignedInt.INSTANCE),
         REFERENCE("REFERENCE", PVarchar.INSTANCE),
         ALTERNATE("ALTERNATE", PVarchar.INSTANCE),
+
+        CI_START_L("CI_START_L", PUnsignedInt.INSTANCE),
+        CI_START_R("CI_START_R", PUnsignedInt.INSTANCE),
+        CI_END_L("CI_END_L", PUnsignedInt.INSTANCE),
+        CI_END_R("CI_END_R", PUnsignedInt.INSTANCE),
 
         TYPE("TYPE", PVarchar.INSTANCE),
 
@@ -548,6 +559,44 @@ public class VariantPhoenixHelper {
         }
         if (failOnMissing) {
             throw new IllegalStateException("Integer expected for study ID from " + columnKey);
+        } else {
+            return null;
+        }
+    }
+
+    public static Integer extractSampleId(String columnKey, boolean failOnMissing) {
+        if (columnKey.endsWith(SAMPLE_DATA_SUFIX)) {
+            return extractId(columnKey, failOnMissing, "sample");
+        } else if (failOnMissing) {
+            throw new IllegalArgumentException("Not a sample column: " + columnKey);
+        } else {
+            return null;
+        }
+    }
+
+    public static Integer extractFileId(String columnKey, boolean failOnMissing) {
+        if (columnKey.endsWith(FILE_SUFIX)) {
+            return extractId(columnKey, failOnMissing, "file");
+        } else if (failOnMissing) {
+            throw new IllegalArgumentException("Not a file column: " + columnKey);
+        } else {
+            return null;
+        }
+    }
+
+    private static Integer extractId(String columnKey, boolean failOnMissing, String idType) {
+        int startIndex = columnKey.indexOf(COLUMN_KEY_SEPARATOR);
+        int endIndex = columnKey.lastIndexOf(COLUMN_KEY_SEPARATOR);
+        if (startIndex != endIndex && startIndex > 0) {
+            String id = columnKey.substring(startIndex + 1, endIndex);
+            if (StringUtils.isNotBlank(columnKey)
+                    && Character.isDigit(columnKey.charAt(0))
+                    && StringUtils.isNumeric(id)) {
+                return Integer.parseInt(id);
+            }
+        }
+        if (failOnMissing) {
+            throw new IllegalStateException("Integer expected for " + idType + " ID from " + columnKey);
         } else {
             return null;
         }

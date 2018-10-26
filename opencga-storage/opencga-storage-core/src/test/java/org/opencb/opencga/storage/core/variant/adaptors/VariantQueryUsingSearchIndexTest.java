@@ -7,6 +7,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
@@ -40,7 +41,7 @@ public abstract class VariantQueryUsingSearchIndexTest extends VariantDBAdaptorT
             if (options == null) {
                 options = new QueryOptions();
             }
-            options.put(VariantSearchManager.USE_SEARCH_INDEX, VariantSearchManager.UseSearchIndex.YES);
+            options.put(VariantSearchManager.USE_SEARCH_INDEX, VariantStorageEngine.UseSearchIndex.YES);
             return variantStorageEngine.get(query, options);
         } catch (Exception e) {
             throw Throwables.propagate(e);
@@ -53,7 +54,7 @@ public abstract class VariantQueryUsingSearchIndexTest extends VariantDBAdaptorT
             if (options == null) {
                 options = new QueryOptions();
             }
-            options.put(VariantSearchManager.USE_SEARCH_INDEX, VariantSearchManager.UseSearchIndex.YES);
+            options.put(VariantSearchManager.USE_SEARCH_INDEX, VariantStorageEngine.UseSearchIndex.YES);
             return variantStorageEngine.iterator(query, options);
         } catch (Exception e) {
             throw Throwables.propagate(e);

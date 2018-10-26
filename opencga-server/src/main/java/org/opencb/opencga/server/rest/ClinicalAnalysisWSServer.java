@@ -17,17 +17,24 @@
 package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.clinical.interpretation.Comment;
+import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
+import org.opencb.biodata.models.clinical.interpretation.ReportedLowCoverage;
+import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
+import org.opencb.biodata.models.commons.Analyst;
+import org.opencb.biodata.models.commons.OntologyTerm;
+import org.opencb.biodata.models.commons.Software;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
-import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.*;
-import org.opencb.opencga.core.models.clinical.*;
+import org.opencb.opencga.core.models.acls.AclParams;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -35,6 +42,8 @@ import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 /**
  * Created by pfurio on 05/06/17.
@@ -80,7 +89,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
             @ApiParam(name = "params", value = "JSON containing clinical analysis information", required = true)
                     ClinicalAnalysisParameters params) {
         try {
-            ObjectMap parameters = new ObjectMap(jsonObjectMapper.writeValueAsString(params.toClinicalAnalysis()));
+            ObjectMap parameters = new ObjectMap(getUpdateObjectMapper().writeValueAsString(params.toClinicalAnalysis()));
 
             if (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key())) {
                 Map<String, Object> actionMap = new HashMap<>();
@@ -107,7 +116,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
             @ApiParam(value = "Action to be performed if the array of interpretations is being updated.", defaultValue = "ADD")
-            @QueryParam("interpretationAction") ParamUtils.BasicUpdateAction interpretationAction,
+                @QueryParam("action") ParamUtils.BasicUpdateAction interpretationAction,
             @ApiParam(name = "params", value = "JSON containing clinical analysis information", required = true)
                     ClinicalInterpretationParameters params) {
         try {
@@ -120,7 +129,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
             queryOptions.put(Constants.ACTIONS, actionMap);
 
             ObjectMap parameters = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key(),
-                    Arrays.asList(jsonObjectMapper.writeValueAsString(params.toClinicalInterpretation())));
+                    Arrays.asList(getUpdateObjectMapper().writeValueAsString(params.toClinicalInterpretation())));
 
             return createOkResponse(clinicalManager.update(studyStr, clinicalAnalysisStr, parameters, queryOptions, sessionId));
         } catch (Exception e) {
@@ -141,7 +150,9 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
                              @PathParam(value = "clinicalAnalyses") String clinicalAnalysisStr,
                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                          @QueryParam("study") String studyStr,
-                         @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
+                         @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
+                                 + "exception whenever one of the entries looked for cannot be shown for whichever reason",
+                                 defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> analysisList = getIdList(clinicalAnalysisStr);
             List<QueryResult<ClinicalAnalysis>> analysisResult = clinicalManager.get(studyStr, analysisList, query, queryOptions, silent, sessionId);
@@ -166,7 +177,10 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
             @QueryParam("study") String studyStr,
             @ApiParam(value = "Clinical analysis type") @QueryParam("type") ClinicalAnalysis.Type type,
             @ApiParam(value = "Clinical analysis status") @QueryParam("status") String status,
-            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+                @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+                @QueryParam("modificationDate") String modificationDate,
             @ApiParam(value = "Description") @QueryParam("description") String description,
             @ApiParam(value = "Germline") @QueryParam("germline") String germline,
             @ApiParam(value = "Somatic") @QueryParam("somatic") String somatic,
@@ -193,7 +207,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/groupBy")
-    @ApiOperation(value = "Group clinical analysis by several fields", position = 10,
+    @ApiOperation(value = "Group clinical analysis by several fields", position = 10, hidden = true,
             notes = "Only group by categorical variables. Grouping by continuous variables might cause unexpected behaviour")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "count", value = "Count the number of elements matching the group", dataType = "boolean",
@@ -226,36 +240,74 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
         }
     }
 
-    private static class SampleParams {
-        public String name;
+    @GET
+    @Path("/{clinicalAnalyses}/acl")
+    @ApiOperation(value = "Returns the acl of the clinical analyses. If member is provided, it will only return the acl for the member.",
+            position = 18)
+    public Response getAcls(
+            @ApiParam(value = "Comma separated list of clinical analysis IDs or names up to a maximum of 100", required = true)
+                @PathParam("clinicalAnalyses") String clinicalAnalysis,
+            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
+            @ApiParam(value = "User or group id") @QueryParam("member") String member,
+            @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
+                    + "exception whenever one of the entries looked for cannot be shown for whichever reason",
+                    defaultValue = "false") @QueryParam("silent") boolean silent) {
+        try {
+            List<String> idList = getIdList(clinicalAnalysis);
+            return createOkResponse(clinicalManager.getAcls(studyStr, idList, member, silent, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
     }
 
-    private static class SubjectParams {
-        public String name;
+    public static class ClinicalAnalysisAcl extends AclParams {
+        public String clinicalAnalysis;
+    }
+
+    @POST
+    @Path("/acl/{members}/update")
+    @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
+    public Response updateAcl(
+            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
+            @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) ClinicalAnalysisAcl params) {
+        try {
+            params = ObjectUtils.defaultIfNull(params, new ClinicalAnalysisAcl());
+            AclParams clinicalAclParams = new AclParams(params.getPermissions(), params.getAction());
+            List<String> idList = getIdList(params.clinicalAnalysis);
+            return createOkResponse(clinicalManager.updateAcl(studyStr, idList, memberId, clinicalAclParams, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    private static class SampleParams {
+        public String id;
+    }
+
+    private static class SubjectParam {
+        public String id;
         public List<SampleParams> samples;
     }
 
     private static class ClinicalInterpretationParameters {
         public String id;
-        @Deprecated
-        public String name;
         public String description;
-
-        public DiseasePanel panel;
+        public String clinicalAnalysisId;
+        public List<DiseasePanel> panels;
         public Software software;
         public Analyst analyst;
-        public List<Version> versions;
+        public List<Software> dependencies;
         public Map<String, Object> filters;
         public String creationDate;
-
+        public List<ReportedVariant> reportedVariants;
+        public List<ReportedLowCoverage> reportedLowCoverages;
         public List<Comment> comments;
         public Map<String, Object> attributes;
 
-        public List<ReportedVariant> reportedVariants;
-
         public Interpretation toClinicalInterpretation() {
-            return new Interpretation(id, name, description, panel, software, analyst, versions, filters, creationDate, comments,
-                    attributes, reportedVariants);
+            return new Interpretation(id, description, clinicalAnalysisId, panels, software, analyst, dependencies, filters, creationDate,
+                    reportedVariants, reportedLowCoverages, comments, attributes);
         }
     }
 
@@ -271,7 +323,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
         public String germline;
         public String somatic;
 
-        public List<SubjectParams> subjects;
+        public SubjectParam subject;
         public String family;
         public List<ClinicalInterpretationParameters> interpretations;
 
@@ -279,18 +331,14 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 
         public ClinicalAnalysis toClinicalAnalysis() {
 
-            List<Individual> individuals = null;
-            if (subjects != null && !subjects.isEmpty()) {
-                individuals = new ArrayList<>();
-                for (SubjectParams subject : subjects) {
-                    Individual individual = new Individual().setName(subject.name);
-                    if (subject.samples != null) {
-                        List<Sample> sampleList = subject.samples.stream()
-                                .map(sample -> new Sample().setId(sample.name))
-                                .collect(Collectors.toList());
-                        individual.setSamples(sampleList);
-                    }
-                    individuals.add(individual);
+            Individual individual = null;
+            if (subject != null) {
+                individual = new Individual().setId(subject.id);
+                if (subject.samples != null) {
+                    List<Sample> sampleList = subject.samples.stream()
+                            .map(sample -> new Sample().setId(sample.id))
+                            .collect(Collectors.toList());
+                    individual.setSamples(sampleList);
                 }
             }
 
@@ -299,7 +347,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 
             Family f = null;
             if (StringUtils.isNotEmpty(family)) {
-                f = new Family().setName(family);
+                f = new Family().setId(family);
             }
 
             List<Interpretation> interpretationList =
@@ -308,7 +356,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
                             .map(ClinicalInterpretationParameters::toClinicalInterpretation).collect(Collectors.toList())
                             : new ArrayList<>();
             String clinicalId = StringUtils.isEmpty(id) ? name : id;
-            return new ClinicalAnalysis(clinicalId, description, type, disease, germlineFile, somaticFile, individuals, f,
+            return new ClinicalAnalysis(clinicalId, description, type, disease, germlineFile, somaticFile, individual, f,
                     interpretationList, null, null, 1, attributes).setName(name);
         }
     }

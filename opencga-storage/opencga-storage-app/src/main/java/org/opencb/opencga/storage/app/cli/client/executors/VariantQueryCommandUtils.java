@@ -158,7 +158,7 @@ public class VariantQueryCommandUtils {
                         ? ""
                         : " Available studies: [ " + String.join(", ", allStudyNames) + " ]";
                 throw new VariantQueryException("Only one study is allowed when returning " + of + ", " +
-                        "please use '--output-study' to select the returned study. " + availableStudies);
+                        "please use '--include-study' to select the returned study. " + availableStudies);
             }
         }
 

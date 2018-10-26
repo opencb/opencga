@@ -2,6 +2,7 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import org.apache.commons.collections.map.HashedMap;
 import org.junit.Test;
+import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.opencga.catalog.stats.solr.SampleSolrModel;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogSampleToSolrSampleConverter;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -27,7 +28,7 @@ public class CatalogSampleToSolrSampleConverterTest {
 
         Study study = new Study().setFqn("user@project:study").setAttributes(new HashMap<>());
         Individual individual = new Individual();
-        individual.setUuid("uuid").setEthnicity("spanish").setKaryotypicSex(Individual.KaryotypicSex.XX).
+        individual.setUuid("uuid").setEthnicity("spanish").setKaryotypicSex(IndividualProperty.KaryotypicSex.XX).
                 setPopulation(new Individual.Population("valencian", "", ""));
 
         Sample sample = new Sample();

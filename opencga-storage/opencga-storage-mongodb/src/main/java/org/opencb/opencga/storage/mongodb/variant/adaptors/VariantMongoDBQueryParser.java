@@ -177,13 +177,18 @@ public class VariantMongoDBQueryParser {
             }
 
             /* ANNOTATION PARAMS */
-            parseAnnotationQueryParams(query, builder);
+            QueryBuilder annotationQuery = new QueryBuilder();
+            parseAnnotationQueryParams(query, annotationQuery);
+            builder.and(annotationQuery.get());
 
             /* STUDIES */
-            final StudyConfiguration defaultStudyConfiguration = parseStudyQueryParams(query, builder);
+            QueryBuilder studyQuery = new QueryBuilder();
+            final StudyConfiguration defaultStudyConfiguration = parseStudyQueryParams(query, studyQuery);
 
             /* STATS PARAMS */
-            parseStatsQueryParams(query, builder, defaultStudyConfiguration);
+            parseStatsQueryParams(query, studyQuery, defaultStudyConfiguration);
+            builder.and(studyQuery.get());
+
         }
 
         logger.debug("----------------------");
@@ -508,12 +513,18 @@ public class VariantMongoDBQueryParser {
                                 + '.' + DocumentToStudyVariantEntryConverter.FILEID_FIELD,
                         fileNames, builder, QueryOperation.AND, filesOperation,
                         f -> studyConfigurationManager.getFileIdPair(f, false, defaultStudyConfiguration).getValue());
+            } else if (isValidParam(query, INCLUDE_FILE)) {
+                List<String> files = getIncludeFilesList(query);
+                fileIds = new ArrayList<>(files.size());
+                for (String file : files) {
+                    fileIds.add(studyConfigurationManager.getFileIdPair(file, false, defaultStudyConfiguration).getValue());
+                }
             }
 
             if (isValidParam(query, FILTER) || isValidParam(query, QUAL) || isValidParam(query, INFO)) {
-                String values = query.getString(FILTER.key());
-                QueryOperation filterOperation = checkOperator(values);
-                List<String> filterValues = splitValue(values, filterOperation);
+                String filterValue = query.getString(FILTER.key());
+                QueryOperation filterOperation = checkOperator(filterValue);
+                List<String> filterValues = splitValue(filterValue, filterOperation);
                 Pair<QueryOperation, Map<String, String>> infoParamPair = parseInfo(query);
                 QueryOperation infoOperator = infoParamPair.getKey();
                 Map<String, String> infoMap = infoParamPair.getValue();

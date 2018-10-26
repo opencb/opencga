@@ -17,14 +17,12 @@
 package org.opencb.opencga.core.models;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.commons.Software;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.acls.AclParams;
 
 import java.net.URI;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Created by jacobo on 11/09/14.
@@ -143,6 +141,9 @@ public class File extends Annotable {
         public static final String PENDING_DELETE = "PENDING_DELETE";
         public static final String DELETING = "DELETING"; // This status is set exactly before deleting the file from disk.
         public static final String REMOVED = "REMOVED";
+
+        public static final List<String> STATUS_LIST = Arrays.asList(READY, DELETED, TRASHED, STAGE, MISSING, PENDING_DELETE, DELETING,
+                REMOVED);
 
         public FileStatus(String status, String message) {
             if (isValid(status)) {

@@ -45,6 +45,7 @@ import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.run.ParallelTaskRunner;
+import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -67,6 +68,7 @@ import java.util.stream.Collectors;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 /**
  * Created on 23/05/17.
@@ -176,10 +178,12 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
                         // Up to 3 alternates. The first alternate must match. Swap second and third alternate (1/2 -> 1/3)
                         String newGT = expectedSamplesData.get(i).get(0).replace('2', 'X').replace('3', '2').replace('X', '3');
                         expectedSamplesData.get(i).set(0, newGT);
-                        if (expectedSamplesData.get(i).get(4).equals("1,2,3")) {
+                        if (expectedSamplesData.get(i).get(4).equals("1,2,3,0")) {
                             expectedSamplesData.get(i).set(4, "1,2,0,3");
                         } else if (expectedSamplesData.get(i).get(4).equals("1,2,0,3")) {
-                            expectedSamplesData.get(i).set(4, "1,2,3");
+                            expectedSamplesData.get(i).set(4, "1,2,3,0");
+                        } else {
+                            fail("Unexpected expected sample data " + expectedSamplesData.get(i).get(4));
                         }
                     }
                     assertEquals(expectedSamplesData, actualSamplesData);
@@ -208,6 +212,13 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(sc, new QueryOptions());
         ArchiveTableHelper.createArchiveTableIfNeeded(dbAdaptor.getGenomeHelper(), archiveTableName);
         VariantTableHelper.createVariantTableIfNeeded(dbAdaptor.getGenomeHelper(), dbAdaptor.getVariantTable());
+        dbAdaptor.getStudyConfigurationManager().lockAndUpdateProject(projectMetadata -> {
+            if (projectMetadata == null) {
+                return new ProjectMetadata("hsapiens", "grch37", 1);
+            } else {
+                return projectMetadata;
+            }
+        });
 
         // Create empty VariantFileMetadata
         VariantFileMetadata fileMetadata = new VariantFileMetadata(String.valueOf(fileId), String.valueOf(fileId));

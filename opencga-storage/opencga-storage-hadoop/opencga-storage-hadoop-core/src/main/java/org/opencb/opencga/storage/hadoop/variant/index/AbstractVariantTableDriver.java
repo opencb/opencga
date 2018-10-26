@@ -316,7 +316,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
         int nsplits = genomeHelper.getConf().getInt(HadoopVariantStorageEngine.VARIANT_TABLE_PRESPLIT_SIZE, 100);
         List<byte[]> splitList = GenomeHelper.generateBootPreSplitsHuman(
                 nsplits,
-                (chr, pos) -> VariantPhoenixKeyFactory.generateVariantRowKey(chr, pos, "", ""));
+                VariantPhoenixKeyFactory::generateVariantRowKey);
         boolean newTable = HBaseManager.createTableIfNeeded(con, tableName, genomeHelper.getColumnFamily(),
                 splitList, Compression.getCompressionAlgorithmByName(
                         genomeHelper.getConf().get(

@@ -56,7 +56,7 @@ public final class CatalogDemo {
                 throw new CatalogException("A database called " + catalogManager.getCatalogDatabase() + " already exists");
             }
         }
-        catalogManager.installCatalogDB();
+        catalogManager.installCatalogDB(configuration.getAdmin().getSecretKey(), configuration.getAdmin().getPassword());
         try {
             populateDatabase(catalogManager);
         } catch (IOException e) {

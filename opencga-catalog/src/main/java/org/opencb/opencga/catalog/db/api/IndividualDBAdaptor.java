@@ -65,6 +65,7 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         PARENTAL_CONSANGUINITY("parentalConsanguinity", BOOLEAN, ""),
         DATE_OF_BIRTH("dateOfBirth", TEXT, ""),
         CREATION_DATE("creationDate", DATE, ""),
+        MODIFICATION_DATE("modificationDate", DATE, ""),
         RELEASE("release", INTEGER, ""), //  Release where the individual was created
         SNAPSHOT("snapshot", INTEGER, ""), // Last version of individual at release = snapshot
         VERSION("version", INTEGER, ""), // Version of the individual

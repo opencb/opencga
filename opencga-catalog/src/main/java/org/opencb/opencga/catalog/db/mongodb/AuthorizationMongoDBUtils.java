@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import org.bson.Document;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -9,6 +10,8 @@ import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBAdaptor.MEMBER_WITH_INTERNAL_ACL;
 
 /**
  * Created by pfurio on 31/07/17.
@@ -141,8 +144,8 @@ public class AuthorizationMongoDBUtils {
         return entry;
     }
 
-    public static Document getQueryForAuthorisedEntries(Document study, String user, String studyPermission, String entryPermission)
-            throws CatalogAuthorizationException {
+    public static Document getQueryForAuthorisedEntries(Document study, String user, String studyPermission, String entryPermission,
+                                                        String entity) throws CatalogAuthorizationException {
         // 0. If the user is the admin or corresponds with the owner, we don't have to check anything else
         if (study.getString(PRIVATE_OWNER_ID).equals(user)) {
             return new Document();
@@ -179,6 +182,11 @@ public class AuthorizationMongoDBUtils {
             // 2. We check if the study contains the studies expected for the user
             hasStudyPermissions = checkAnonymousHasPermission(study, studyPermission);
         }
+
+        if (hasStudyPermissions && !hasInternalPermissions(study, user, groups, entity)) {
+            return new Document();
+        }
+
         Document queryDocument = getAuthorisedEntries(user, groups, entryPermission, isAnonymousPresent);
         if (hasStudyPermissions) {
             // The user has permissions defined globally, so we also have to check the entries where the user/groups/members/* have no
@@ -206,6 +214,35 @@ public class AuthorizationMongoDBUtils {
                 }
             }
         }
+        return false;
+    }
+
+    public static boolean hasInternalPermissions(Document study, String user, List<String> groups, String entity) {
+        Object object = study.get(MEMBER_WITH_INTERNAL_ACL);
+        if (object == null) {
+            // Permissions defined at the study level are always valid for all users
+            return false;
+        }
+
+        List<String> members = new ArrayList<>();
+        members.add(user);
+        if (ListUtils.isNotEmpty(groups)) {
+            members.addAll(groups);
+        }
+
+        for (String member : members) {
+            Object entityObject = ((Document) object).get(member);
+            if (entityObject == null) {
+                // Permissions defined at the study level are always valid for user
+                continue;
+            }
+
+            if (((List<String>) entityObject).contains(entity)) {
+                return true;
+            }
+        }
+
+        // Neither the user or the groups have that internal permission
         return false;
     }
 

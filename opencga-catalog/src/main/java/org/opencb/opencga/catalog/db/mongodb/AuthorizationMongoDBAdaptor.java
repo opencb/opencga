@@ -58,6 +58,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     private Map<Entity, List<String>> fullPermissionsMap = new HashMap<>();
 
     private static final String ANONYMOUS = "*";
+    static final String MEMBER_WITH_INTERNAL_ACL = "_withInternalAcls";
 
     public AuthorizationMongoDBAdaptor(Configuration configuration) throws CatalogDBException {
         super(LoggerFactory.getLogger(AuthorizationMongoDBAdaptor.class));
@@ -121,7 +122,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         this.dbCollectionMap.put(Entity.INDIVIDUAL, dbAdaptorFactory.getCatalogIndividualDBAdaptor().getCollection());
         this.dbCollectionMap.put(Entity.JOB, dbAdaptorFactory.getCatalogJobDBAdaptor().getJobCollection());
         this.dbCollectionMap.put(Entity.SAMPLE, dbAdaptorFactory.getCatalogSampleDBAdaptor().getCollection());
-        this.dbCollectionMap.put(Entity.PANEL, dbAdaptorFactory.getCatalogPanelDBAdaptor().getDiseasePanelCollection());
+        this.dbCollectionMap.put(Entity.PANEL, dbAdaptorFactory.getCatalogPanelDBAdaptor().getPanelCollection());
         this.dbCollectionMap.put(Entity.FAMILY, dbAdaptorFactory.getCatalogFamilyDBAdaptor().getCollection());
         this.dbCollectionMap.put(Entity.CLINICAL_ANALYSIS, dbAdaptorFactory.getClinicalAnalysisDBAdaptor().getClinicalCollection());
     }
@@ -148,8 +149,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         this.fullPermissionsMap.put(Entity.SAMPLE, Arrays.stream(SampleAclEntry.SamplePermissions.values())
                 .map(SampleAclEntry.SamplePermissions::toString)
                 .collect(Collectors.toList()));
-        this.fullPermissionsMap.put(Entity.PANEL, Arrays.stream(DiseasePanelAclEntry.DiseasePanelPermissions.values())
-                .map(DiseasePanelAclEntry.DiseasePanelPermissions::toString)
+        this.fullPermissionsMap.put(Entity.PANEL, Arrays.stream(PanelAclEntry.PanelPermissions.values())
+                .map(PanelAclEntry.PanelPermissions::toString)
                 .collect(Collectors.toList()));
         this.fullPermissionsMap.put(Entity.FAMILY, Arrays.stream(FamilyAclEntry.FamilyPermissions.values())
                 .map(FamilyAclEntry.FamilyPermissions::toString)
@@ -367,7 +368,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             case PANEL:
                 retList = new ArrayList<>(myMap.size());
                 for (Map.Entry<String, List<String>> stringListEntry : myMap.entrySet()) {
-                    retList.add((E) new DiseasePanelAclEntry(stringListEntry.getKey(), stringListEntry.getValue()));
+                    retList.add((E) new PanelAclEntry(stringListEntry.getKey(), stringListEntry.getValue()));
                 }
                 break;
             case FAMILY:
@@ -591,6 +592,27 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
             collection.update(queryDocument, update, new QueryOptions(MongoDBCollection.MULTI, true));
         }
+    }
+
+    @Override
+    public void setMembersHaveInternalPermissionsDefined(long studyId, List<String> members, List<String> permissions, String entity) {
+        // We only store if a member has internal permissions defined if it hasn't been given VIEW permission
+        if (permissions.contains("VIEW")) {
+            return;
+        }
+
+        Document queryDocument = new Document()
+                .append("$isolated", 1)
+                .append(PRIVATE_UID, studyId);
+
+        Document addToSet = new Document();
+        for (String member : members) {
+            addToSet.append(MEMBER_WITH_INTERNAL_ACL + "." + member, entity);
+        }
+        Document update = new Document("$addToSet", addToSet);
+
+        MongoDBCollection collection = dbCollectionMap.get(Entity.STUDY);
+        collection.update(queryDocument, update, new QueryOptions());
     }
 
     @Override

@@ -16,6 +16,12 @@
 
 package org.opencb.opencga.core.models;
 
+import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.pedigree.IndividualProperty.AffectationStatus;
+import org.opencb.biodata.models.pedigree.IndividualProperty.KaryotypicSex;
+import org.opencb.biodata.models.pedigree.IndividualProperty.LifeStatus;
+import org.opencb.biodata.models.pedigree.IndividualProperty.Sex;
+import org.opencb.biodata.models.pedigree.Multiples;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.acls.AclParams;
 
@@ -56,22 +62,6 @@ public class Individual extends Annotable {
 //    private List<AnnotationSet> annotationSets;
 
     private Map<String, Object> attributes;
-
-    public enum Sex {
-        MALE, FEMALE, UNKNOWN, UNDETERMINED
-    }
-
-    public enum LifeStatus {
-        ALIVE, ABORTED, DECEASED, UNBORN, STILLBORN, MISCARRIAGE, UNKNOWN
-    }
-
-    public enum AffectationStatus {
-        CONTROL, AFFECTED, UNAFFECTED, UNKNOWN
-    }
-
-    public enum KaryotypicSex {
-        UNKNOWN, XX, XY, XO, XXY, XXX, XXYY, XXXY, XXXX, XYY, OTHER
-    }
 
     public Individual() {
     }

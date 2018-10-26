@@ -65,7 +65,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         catalogSubCommands.addCommand("export", catalogCommandOptions.exportCatalogCommandOptions);
         catalogSubCommands.addCommand("import", catalogCommandOptions.importCatalogCommandOptions);
         catalogSubCommands.addCommand("daemon", catalogCommandOptions.daemonCatalogCommandOptions);
-        catalogSubCommands.addCommand("disease-panel", catalogCommandOptions.diseasePanelCatalogCommandOptions);
+        catalogSubCommands.addCommand("panel", catalogCommandOptions.panelCatalogCommandOptions);
 
         usersCommandOptions = new UsersCommandOptions();
         jCommander.addCommand("users", usersCommandOptions);
@@ -168,7 +168,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public ExportCatalogCommandOptions exportCatalogCommandOptions;
         public ImportCatalogCommandOptions importCatalogCommandOptions;
         public DaemonCatalogCommandOptions daemonCatalogCommandOptions;
-        public DiseasePanelCatalogCommandOptions diseasePanelCatalogCommandOptions;
+        public PanelCatalogCommandOptions panelCatalogCommandOptions;
 
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
@@ -183,7 +183,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
             this.exportCatalogCommandOptions = new ExportCatalogCommandOptions();
             this.importCatalogCommandOptions = new ImportCatalogCommandOptions();
             this.daemonCatalogCommandOptions = new DaemonCatalogCommandOptions();
-            this.diseasePanelCatalogCommandOptions = new DiseasePanelCatalogCommandOptions();
+            this.panelCatalogCommandOptions = new PanelCatalogCommandOptions();
         }
     }
 
@@ -322,21 +322,12 @@ public class AdminCliOptionsParser extends CliOptionsParser {
 
         @ParametersDelegate
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
-        @Parameter(
-                names = {"--secret-key"},
-                description = "Secret key needed to authenticate through OpenCGA (JWT).",
-                required = true
-        )
 
+        @Parameter(names = {"--secret-key"}, description = "Secret key needed to authenticate through OpenCGA (JWT).", required = true)
         public String secretKey;
 
-//        @Parameter(
-//                names = {"--algorithm"},
-//                description = "Algorithm to encrypt JWT session token (HS256)",
-//                required = true
-//        )
-//
-//        public String algorithm;
+        @Parameter(names = {"--force"}, description = "If this parameters is set, it will override the database installation.")
+        public boolean force;
 
         public InstallCatalogCommandOptions() {
             super();
@@ -441,11 +432,15 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public boolean stop;
     }
 
-    @Parameters(commandNames = {"disease-panel"}, commandDescription = "Handle global disease panels")
-    public class DiseasePanelCatalogCommandOptions extends CatalogDatabaseCommandOptions {
+    @Parameters(commandNames = {"panel"}, commandDescription = "Handle global panels")
+    public class PanelCatalogCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+
+        @Parameter(names = {"--import-from-panelApp"}, description = "Flag indicating that panels should be imported from PanelApp (GEL)",
+                arity = 0)
+        public boolean panelAppImport;
 
         @Parameter(names = {"--import"}, description = "File or folder containing panels in JSON format to be imported in OpenCGA",
                 arity = 1)

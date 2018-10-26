@@ -8,10 +8,12 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.core.models.Variable;
 import org.opencb.opencga.core.models.VariableSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +33,8 @@ public class CatalogSolrQueryParser {
     protected static Logger logger = LoggerFactory.getLogger(CatalogSolrQueryParser.class);
 
     public static final Pattern OPERATION_PATTERN = Pattern.compile("^(<=?|>=?|!==?|!?=?~|==?=?)([^=<>~!]+.*)$");
+
+    private Map<String, String> aliasMap = new HashMap<>();
 
     enum QueryParams {
 
@@ -124,34 +128,31 @@ public class CatalogSolrQueryParser {
      * @param query        Query
      * @param queryOptions Query Options
      * @param variableSetList List of variable sets available for the study whose query is going to be parsed.
+     * @throws CatalogException CatalogException
      * @return SolrQuery
      */
-    public SolrQuery parse(Query query, QueryOptions queryOptions, List<VariableSet> variableSetList) {
+    public SolrQuery parse(Query query, QueryOptions queryOptions, List<VariableSet> variableSetList) throws CatalogException {
 
         Map<String, String> filterList = new HashMap<>();
         SolrQuery solrQuery = new SolrQuery();
 
+        ObjectMap variableMap = generateVariableMap(variableSetList);
+
         //-------------------------------------
         // Facet processing
         //-------------------------------------
-
-        // facet fields (query parameter: facet)
-        // multiple faceted fields are separated by ";", they can be:
-        //    - non-nested faceted fields, e.g.: biotype
-        //    - nested faceted fields (i.e., Solr pivots) are separated by ">>", e.g.: studies>>type
-        //    - ranges, field_name:start:end:gap, e.g.: sift:0:1:0.5
-        //    - intersections, field_name:value1^value2[^value3], e.g.: studies:1kG^ESP
         if (queryOptions.containsKey(QueryOptions.FACET) && StringUtils.isNotEmpty(queryOptions.getString(QueryOptions.FACET))) {
-            parseSolrFacets(queryOptions.get(QueryOptions.FACET).toString(), solrQuery);
-        }
-
-        // facet ranges,
-        // query parameter name: facetRange
-        // multiple facet ranges are separated by ";"
-        // query parameter value: field:start:end:gap, e.g.: sift:0:1:0.5
-        if (queryOptions.containsKey(QueryOptions.FACET_RANGE)
-                && StringUtils.isNotEmpty(queryOptions.getString(QueryOptions.FACET_RANGE))) {
-            parseSolrFacetRanges(queryOptions.get(QueryOptions.FACET_RANGE).toString(), solrQuery);
+            replaceAnnotationFormat(queryOptions, QueryOptions.FACET, variableMap);
+            FacetQueryParser facetQueryParser = new FacetQueryParser();
+            String facetQuery;
+            try {
+                facetQuery = facetQueryParser.parse(queryOptions.getString(QueryOptions.FACET));
+            } catch (Exception e) {
+                throw new CatalogException("Solr parse exception: " + e.getMessage(), e);
+            }
+            if (StringUtils.isNotEmpty(facetQuery)) {
+                solrQuery.set("json.facet", facetQuery);
+            }
         }
 
         query.entrySet().forEach(entry -> {
@@ -191,208 +192,157 @@ public class CatalogSolrQueryParser {
 
     }
 
-    /**
-     * Parse facets.
-     * Multiple facets are separated by semicolons (;)
-     * E.g.:  chromosome[1,2,3,4,5];studies[1kg,exac]>>type[snv,indel];sift:0:1:0.2;gerp:-1:3:0.5;studies:1kG_phase3^EXAC^ESP6500
-     *
-     * @param strFields String containing the facet definitions
-     * @param solrQuery Solr query
-     */
-    public void parseSolrFacets(String strFields, SolrQuery solrQuery) {
-        if (StringUtils.isNotEmpty(strFields) && solrQuery != null) {
-            String[] fields = strFields.split("[;]");
-            for (String field : fields) {
-                if (field.contains("^")) {
-                    // intersections
-                    parseSolrFacetIntersections(field, solrQuery);
-                } else if (field.contains(":")) {
-                    // ranges
-                    parseSolrFacetRanges(field, solrQuery);
-                } else {
-                    // fields (simple or nested)
-                    parseSolrFacetFields(field, solrQuery);
-                }
-            }
-        }
+    public Map<String, String> getAliasMap() {
+        return aliasMap;
     }
 
-    /**
-     * Parse Solr facet fields.
-     * This format is: field_name[field_values_1,field_values_2...]:skip:limit
-     *
-     * @param field     String containing the facet field
-     * @param solrQuery Solr query
-     */
-    private void parseSolrFacetFields(String field, SolrQuery solrQuery) {
-        String[] splits = field.split(">>");
-        if (splits.length == 1) {
-            // Solr field
-            //solrQuery.addFacetField(field);
-            parseFacetField(field, solrQuery, false);
-        } else {
-            // Solr pivots (nested fields)
-            StringBuilder sb = new StringBuilder();
-            for (String split : splits) {
-                String name = parseFacetField(split, solrQuery, true);
-                if (sb.length() > 0) {
-                    sb.append(",");
-                }
-                sb.append(name);
-            }
-            solrQuery.addFacetPivotField(sb.toString());
-        }
-    }
+    private void replaceAnnotationFormat(QueryOptions queryOptions, String facetType, ObjectMap variableMap) {
+        // variableMap format: Map of full variable path -> Map
+        //                                                      type
+        //                                                      variableSetId
+        String facet = queryOptions.getString(facetType);
+        final String prefix = "annotation.";
 
-    /**
-     * Parse field string.
-     * The expected format is: field_name[field_value_1,field_value_2,...]:skip:limit.
-     *
-     * @param field The string to parse
-     * @retrun The field name
-     */
-    private String parseFacetField(String field, SolrQuery solrQuery, boolean pivot) {
-        String name = "";
-        String[] splits1 = field.split("[\\[\\]]");
-        if (splits1.length == 1) {
-            String[] splits2 = field.split(":");
-            if (splits2.length >= 1) {
-                name = splits2[0];
-                if (!pivot) {
-                    solrQuery.addFacetField(name);
-                }
-            }
-            if (splits2.length >= 2 && StringUtils.isNotEmpty(splits2[1])) {
-                solrQuery.set("f." + name + ".facet.offset", splits2[1]);
-            }
-            if (splits2.length >= 3 && StringUtils.isNotEmpty(splits2[2])) {
-                solrQuery.set("f." + name + ".facet.limit", splits2[2]);
-            }
-        } else {
-            // first, field name
-            name = splits1[0];
-            if (!pivot) {
-                solrQuery.addFacetField(name);
-            }
+        // Look for annotation. in facet string
+        int index = facet.indexOf(prefix);
+        String copy = facet;
+        while (index != -1) {
+            int lastIndex = getMin(copy.indexOf(",", index), Integer.MAX_VALUE);
+            lastIndex = getMin(copy.indexOf(";", index), lastIndex);
+            lastIndex = getMin(copy.indexOf("<", index), lastIndex);
+            lastIndex = getMin(copy.indexOf(">", index), lastIndex);
+            lastIndex = getMin(copy.indexOf("=", index), lastIndex);
 
-            // second, includes
-            // nothing to do, if includes, the other ones will be removed later
+            String annotation;
+            if (lastIndex == Integer.MAX_VALUE) {
+                // + 11 because we exclude annotation. prefix
+                annotation = copy.substring(index + 11);
 
-            // third, skip and limit
-            if (splits1.length >= 3) {
-                String[] splits2 = splits1[2].split(":");
-                if (splits2.length >= 2 && StringUtils.isNotEmpty(splits2[1])) {
-                    solrQuery.set("f." + name + ".facet.offset", splits2[1]);
-                }
-                if (splits2.length >= 3 && StringUtils.isNotEmpty(splits2[2])) {
-                    solrQuery.set("f." + name + ".facet.limit", splits2[2]);
-                }
-            }
-        }
-        return name;
-    }
+                // We replace the user input for the annotation key format stored in solr
+                String annotationReplacement = getInternalAnnotationKey(annotation, variableMap);
+                facet = facet.replace(prefix + annotation, annotationReplacement);
 
-    /**
-     * Parse Solr facet range.
-     * This format is: field_name:start:end:gap, e.g.: sift:0:1:0.2
-     *
-     * @param range     String containing the facet range definition
-     * @param solrQuery Solr query
-     */
-    public void parseSolrFacetRanges(String range, SolrQuery solrQuery) {
-        String[] fields = range.split(";");
-        for (String field : fields) {
-            String[] split = field.split(":");
-            if (split.length != 4) {
-                logger.warn("Facet range '" + range + "' malformed. The expected range format is 'name:start:end:gap'");
+                // We add the field we have replaced to the map
+                aliasMap.put(annotationReplacement, "annotation." + annotation);
+
+                index = -1;
             } else {
-                try {
-                    Number start, end, gap;
-                    QueryParams param = QueryParams.getParam(split[0]);
-                    if (param != null) {
-                        switch (param.type()) {
-                            case LONG:
-                                start = Long.parseLong(split[1]);
-                                end = Long.parseLong(split[2]);
-                                gap = Long.parseLong(split[3]);
-                                break;
-                            case INTEGER:
-                            case INTEGER_ARRAY:
-                                start = Integer.parseInt(split[1]);
-                                end = Integer.parseInt(split[2]);
-                                gap = Integer.parseInt(split[3]);
-                                break;
-                            case DECIMAL:
-                            case DECIMAL_ARRAY:
-                                start = Double.parseDouble(split[1]);
-                                end = Double.parseDouble(split[2]);
-                                gap = Double.parseDouble(split[3]);
-                                break;
-                            default:
-                                logger.warn("Facet range '{}' malformed. Unexpected type {} to perform a facet range.", range,
-                                        param.type());
-                                return;
-                        }
-                    } else {
-                        if (("start").equals(split[0])) {
-                            start = Integer.parseInt(split[1]);
-                            end = Integer.parseInt(split[2]);
-                            gap = Integer.parseInt(split[3]);
-                        } else {
-                            start = Double.parseDouble(split[1]);
-                            end = Double.parseDouble(split[2]);
-                            gap = Double.parseDouble(split[3]);
-                        }
-                    }
-                    // Solr ranges
-                    solrQuery.addNumericRangeFacet(split[0], start, end, gap);
-                } catch (NumberFormatException e) {
-                    logger.warn("Facet range '{}' malformed. Range format is 'name:start:end:gap' where start, end and gap values are "
-                                    + "numbers.", range);
-                }
+                // + 11 because we exclude annotation. prefix
+                annotation = copy.substring(index + 11, lastIndex);
+
+                // We replace the user input for the annotation key format stored in solr
+                String annotationReplacement = getInternalAnnotationKey(annotation, variableMap);
+                facet = facet.replace(prefix + annotation, annotationReplacement);
+
+                // We add the field we have replaced to the map
+                aliasMap.put(annotationReplacement, "annotation." + annotation);
+
+                copy = copy.substring(lastIndex);
+                index = copy.indexOf(prefix);
             }
+        }
+
+        queryOptions.put(facetType, facet);
+    }
+
+    private String getInternalAnnotationKey(String annotation, ObjectMap variableMap) {
+        ObjectMap annotationMap = (ObjectMap) variableMap.get(annotation);
+        if (annotationMap == null || annotationMap.isEmpty()) {
+            logger.error("Cannot parse " + annotation + " string to internal annotation format");
+            return "";
+        }
+
+        try {
+            return "annotations" + getAnnotationType((QueryParam.Type) annotationMap.get("type"))
+                    + annotationMap.getString("variableSetId") + "." + annotation;
+        } catch (CatalogException e) {
+            logger.error("Cannot parse " + annotation + " string to internal annotation format");
+            return "";
         }
     }
 
-    /**
-     * Parse Solr facet intersection.
-     *
-     * @param intersection String containing the facet intersection
-     * @param solrQuery    Solr query
-     */
-    public void parseSolrFacetIntersections(String intersection, SolrQuery solrQuery) {
-        boolean error = true;
-        String[] splitA = intersection.split(":");
-        if (splitA.length == 2) {
-            String[] splitB = splitA[1].split("\\^");
-            if (splitB.length == 2) {
-                error = false;
-                solrQuery.addFacetQuery("{!key=" + splitB[0] + "}" + splitA[0] + ":" + splitB[0]);
-                solrQuery.addFacetQuery("{!key=" + splitB[1] + "}" + splitA[0] + ":" + splitB[1]);
-                solrQuery.addFacetQuery("{!key=" + splitB[0] + "__" + splitB[1] + "}" + splitA[0] + ":" + splitB[0]
-                        + " AND " + splitA[0] + ":" + splitB[1]);
+    private int getMin(int value, int currentValue) {
+        if (value == -1) {
+            return currentValue;
+        }
+        return value < currentValue ? value : currentValue;
+    }
 
-            } else if (splitB.length == 3) {
-                error = false;
-                solrQuery.addFacetQuery("{!key=" + splitB[0] + "}" + splitA[0] + ":" + splitB[0]);
-                solrQuery.addFacetQuery("{!key=" + splitB[1] + "}" + splitA[0] + ":" + splitB[1]);
-                solrQuery.addFacetQuery("{!key=" + splitB[2] + "}" + splitA[0] + ":" + splitB[2]);
-                solrQuery.addFacetQuery("{!key=" + splitB[0] + "__" + splitB[1] + "}" + splitA[0] + ":" + splitB[0]
-                        + " AND " + splitA[0] + ":" + splitB[1]);
-                solrQuery.addFacetQuery("{!key=" + splitB[0] + "__" + splitB[2] + "}" + splitA[0] + ":" + splitB[0]
-                        + " AND " + splitA[0] + ":" + splitB[2]);
-                solrQuery.addFacetQuery("{!key=" + splitB[1] + "__" + splitB[2] + "}" + splitA[0] + ":" + splitB[1]
-                        + " AND " + splitA[0] + ":" + splitB[2]);
-                solrQuery.addFacetQuery("{!key=" + splitB[0] + "__" + splitB[1] + "__" + splitB[2] + "}" + splitA[0]
-                        + ":" + splitB[0] + " AND " + splitA[0]
-                        + ":" + splitB[1] + " AND " + splitA[0] + ":" + splitB[2]);
+    private ObjectMap generateVariableMap(List<VariableSet> variableSetList) {
+        if (variableSetList == null || variableSetList.isEmpty()) {
+            return new ObjectMap();
+        }
+        // Full variable path -> Map
+        //                         type:
+        //                         variableSetId:
+        ObjectMap variableMap = new ObjectMap();
+        for (VariableSet variableSet : variableSetList) {
+            Queue<ObjectMap> queue = new LinkedList<>();
+            for (Variable variable : variableSet.getVariables()) {
+                // We add the current variable to the queue
+                ObjectMap auxiliarVariable = new ObjectMap()
+                        .append("variable", variable)
+                        .append("fullVariablePath", "")
+                        .append("isParentArray", false);
+                queue.add(auxiliarVariable);
+            }
+
+            while (!queue.isEmpty()) {
+                ObjectMap auxiliarVariable = queue.remove();
+                Variable variable = auxiliarVariable.get("variable", Variable.class);
+                boolean isParentArray = auxiliarVariable.getBoolean("isParentArray");
+                String fullVariablePath = auxiliarVariable.getString("fullVariablePath");
+                if (StringUtils.isEmpty(fullVariablePath)) {
+                    fullVariablePath = variable.getId();
+                } else {
+                    fullVariablePath = fullVariablePath + "." + variable.getId();
+                }
+
+                ObjectMap auxVariableMap = new ObjectMap("variableSetId", variableSet.getId());
+                switch (variable.getType()) {
+                    case BOOLEAN:
+                        auxVariableMap.put("type", isParentArray || variable.isMultiValue()
+                                ? QueryParam.Type.BOOLEAN_ARRAY
+                                : QueryParam.Type.BOOLEAN);
+                        variableMap.put(fullVariablePath, auxVariableMap);
+                        break;
+                    case CATEGORICAL:
+                    case TEXT:
+                        auxVariableMap.put("type", isParentArray || variable.isMultiValue()
+                                ? QueryParam.Type.TEXT_ARRAY
+                                : QueryParam.Type.TEXT);
+                        variableMap.put(fullVariablePath, auxVariableMap);
+                        break;
+                    case INTEGER:
+                        auxVariableMap.put("type", isParentArray || variable.isMultiValue()
+                                ? QueryParam.Type.INTEGER_ARRAY
+                                : QueryParam.Type.INTEGER);
+                        variableMap.put(fullVariablePath, auxVariableMap);
+                        break;
+                    case DOUBLE:
+                        auxVariableMap.put("type", isParentArray || variable.isMultiValue()
+                                ? QueryParam.Type.DECIMAL_ARRAY
+                                : QueryParam.Type.DECIMAL);
+                        variableMap.put(fullVariablePath, auxVariableMap);
+                        break;
+                    case OBJECT:
+                        if (variable.getVariableSet() != null && !variable.getVariableSet().isEmpty()) {
+                            for (Variable nestedVariable : variable.getVariableSet()) {
+                                ObjectMap nestedAuxiliarVariable = new ObjectMap()
+                                        .append("variable", nestedVariable)
+                                        .append("fullVariablePath", fullVariablePath)
+                                        .append("isParentArray", isParentArray || variable.isMultiValue());
+                                queue.add(nestedAuxiliarVariable);
+                            }
+                        }
+                        break;
+                    default:
+                        break;
+                }
             }
         }
 
-        if (error) {
-            logger.warn("Facet intersection '" + intersection + "' malformed. The expected intersection format"
-                    + " is 'name:value1^value2[^value3]', value3 is optional");
-        }
+        return variableMap;
     }
 
     private Map<String, String> parseAnnotationQueryField(String annotations, ObjectMap variableTypeMap, List<VariableSet> variableSetList)

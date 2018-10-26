@@ -27,6 +27,7 @@ import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.manager.variant.metadata.CatalogStudyConfigurationFactory;
+import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.dummy.DummyProjectMetadataAdaptor;
@@ -205,5 +206,19 @@ public class CatalogStudyConfigurationFactoryTest {
         studyConfigurationFactory.updateCatalogFromStudyConfiguration(sc, sessionId);
 
         assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(studyId, nonIndexedFile.getName(), null, sessionId).first().getIndex().getStatus().getName());
+
+
+        nonIndexedFile = files.stream().filter(file -> !indexedFiles.contains(((int) file.getUid()))).findFirst().orElse(null);
+        assertNotNull(nonIndexedFile);
+        sc.getBatches()
+                .add(new BatchFileOperation("LOAD", Collections.singletonList(((int) nonIndexedFile.getUid())), 1L, BatchFileOperation.Type.LOAD)
+                        .addStatus(BatchFileOperation.Status.RUNNING));
+        sc.getFileIds().put(nonIndexedFile.getName(), ((int) nonIndexedFile.getUid()));
+
+        scm.updateStudyConfiguration(sc, null);
+        studyConfigurationFactory.updateCatalogFromStudyConfiguration(sc, sessionId);
+
+        assertEquals(FileIndex.IndexStatus.INDEXING, catalogManager.getFileManager().get(studyId, nonIndexedFile.getName(), null, sessionId).first().getIndex().getStatus().getName());
+
     }
 }

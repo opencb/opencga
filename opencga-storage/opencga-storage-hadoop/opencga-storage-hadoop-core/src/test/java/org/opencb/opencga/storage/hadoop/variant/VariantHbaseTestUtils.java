@@ -161,7 +161,7 @@ public class VariantHbaseTestUtils {
                     os.println("--------------------");
                     continue;
                 }
-                os.println("Variant = " + variant);
+                os.println("Variant = " + variant + "  " + Bytes.toStringBinary(result.getRow()));
                 for (Map.Entry<byte[], byte[]> entry : result.getFamilyMap(family).entrySet()) {
                     String key = Bytes.toString(entry.getKey());
                     PhoenixHelper.Column column = VariantPhoenixHelper.VariantColumn.getColumn(key);
@@ -401,6 +401,10 @@ public class VariantHbaseTestUtils {
     private static void printSamplesIndexTable(VariantHadoopDBAdaptor dbAdaptor, Path outDir) throws IOException {
         for (Integer studyId : dbAdaptor.getStudyConfigurationManager().getStudies(null).values()) {
             String sampleGtTableName = dbAdaptor.getTableNameGenerator().getSampleIndexTableName(studyId);
+            if (!dbAdaptor.getHBaseManager().tableExists(sampleGtTableName)) {
+                // Skip table
+                return;
+            }
             Path fileName = outDir.resolve(sampleGtTableName + ".txt");
             try (
                     FileOutputStream fos = new FileOutputStream(fileName.toFile()); PrintStream out = new PrintStream(fos)

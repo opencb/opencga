@@ -34,6 +34,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
+
 /**
  * Created by imedina on 16/06/16.
  */
@@ -93,7 +95,7 @@ public class AdminWebService {
 //        queryResponse.setResponse(coll);
 
         try {
-            ObjectMapper jsonObjectMapper = new ObjectMapper();
+            ObjectMapper jsonObjectMapper = getDefaultObjectMapper();
             return buildResponse(Response.ok(jsonObjectMapper.writer().writeValueAsString(queryResponse), MediaType.APPLICATION_JSON_TYPE));
         } catch (JsonProcessingException e) {
             e.printStackTrace();

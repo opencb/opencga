@@ -549,6 +549,23 @@ public class SolrQueryParserTest {
         fail();
     }
 
+    @Test
+    public void parseSample() {
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(QueryOptions.EXCLUDE, VariantField.STUDIES_FILES);
+
+        Query query = new Query();
+        query.put(STUDY.key(), studyName);
+
+        query.put(GENOTYPE.key(), "NA12877:1/0,NA12878:1/1");
+
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        display(query, queryOptions, solrQuery);
+
+        String fl = ",sampleFormat__platinum__NA12877,sampleFormat__platinum__NA12878";
+        assert((flBase + fl + "&q=*:*&fq=((gt__" + studyName + "__NA12878:\"1/1\")+OR+(gt__" + studyName + "__NA12877:\"1/0\"))").equals(solrQuery.toString()));
+    }
+
     private void display(Query query, QueryOptions queryOptions, SolrQuery solrQuery) {
         System.out.println("Query        : " + query.toJson());
         System.out.println("Query options: " + queryOptions.toJson());

@@ -16,11 +16,8 @@
 
 package org.opencb.opencga.catalog.managers;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
 import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
@@ -37,6 +34,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
+
+import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
 /**
  * Created on 05/05/16
@@ -64,7 +63,6 @@ public class CatalogManagerExternalResource extends ExternalResource {
         } while (opencgaHome.toFile().exists());
         Files.createDirectories(opencgaHome);
         configuration = Configuration.load(getClass().getResource("/configuration-test.yml").openStream());
-        configuration.getAdmin().setSecretKey("dummy");
         configuration.getAdmin().setAlgorithm("HS256");
         configuration.setDataDir(opencgaHome.resolve("sessions").toUri().toString());
         configuration.setTempJobsDir(opencgaHome.resolve("jobs").toUri().toString());
@@ -78,7 +76,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
             deleteFolderTree(opencgaHome.toFile());
             Files.createDirectory(opencgaHome);
         }
-        catalogManager.installCatalogDB();
+        catalogManager.installCatalogDB("dummy", "admin");
     }
 
     @Override
@@ -104,9 +102,9 @@ public class CatalogManagerExternalResource extends ExternalResource {
     }
 
     public ObjectMapper generateNewObjectMapper() {
-        ObjectMapper jsonObjectMapper = new ObjectMapper();
-        jsonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        jsonObjectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
+        ObjectMapper jsonObjectMapper = getDefaultObjectMapper();
+//        jsonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+//        jsonObjectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         return jsonObjectMapper;
     }
 

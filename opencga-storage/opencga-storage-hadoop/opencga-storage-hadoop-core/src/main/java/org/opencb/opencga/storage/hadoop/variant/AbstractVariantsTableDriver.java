@@ -250,7 +250,11 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
     }
 
     protected int getStudyId() {
-        return getConf().getInt(HadoopVariantStorageEngine.STUDY_ID, -1);
+        int studyId = getConf().getInt(HadoopVariantStorageEngine.STUDY_ID, -1);
+        if (studyId < 0) {
+            studyId = getConf().getInt("--" + HadoopVariantStorageEngine.STUDY_ID, -1);
+        }
+        return studyId;
     }
 
     protected String getVariantsTable() {
@@ -301,7 +305,20 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
 
     @Override
     protected final String getUsage() {
-        return "Usage: " + getClass().getSimpleName() + " [generic options] <variants-table> [<key> <value>]*";
+        Map<String, String> otherParams = getParams();
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<String, String> entry : otherParams.entrySet()) {
+            if (entry.getValue().endsWith("*")) {
+                sb.append(entry.getKey()).append(' ').append(entry.getValue(), 0, entry.getValue().length() - 1).append(' ');
+            } else {
+                sb.append('[').append(entry.getKey()).append(' ').append(entry.getValue()).append("] ");
+            }
+        }
+        return "Usage: " + getClass().getSimpleName() + " [generic options] <variants-table> " + sb + "[<key> <value>]*";
+    }
+
+    protected Map<String, String> getParams() {
+        return Collections.emptyMap();
     }
 
     public int privateMain(String[] args) throws Exception {

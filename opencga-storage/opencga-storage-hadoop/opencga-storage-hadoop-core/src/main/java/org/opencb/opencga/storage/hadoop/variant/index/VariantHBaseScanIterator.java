@@ -21,18 +21,20 @@ import org.apache.hadoop.hbase.client.ResultScanner;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Created on 23/11/15.
@@ -44,18 +46,19 @@ public class VariantHBaseScanIterator extends VariantDBIterator {
     private final Logger logger = LoggerFactory.getLogger(VariantHBaseScanIterator.class);
     private final Iterator<ResultScanner> resultScanners;
     private ResultScanner currentResultScanner;
-    private final GenomeHelper genomeHelper;
     private Iterator<Result> resultIterator;
+    private Iterator<Future<Variant>> buffer = Collections.emptyIterator();
     private final HBaseToVariantConverter<Result> converter;
     private long limit = Long.MAX_VALUE;
     private int count = 0;
+    private ExecutorService threadPool;
+    private AtomicLong timeConverting = new AtomicLong();
 
     public VariantHBaseScanIterator(Iterator<ResultScanner> resultScanners, GenomeHelper genomeHelper, StudyConfigurationManager scm,
                                     QueryOptions options, String unknownGenotype, List<String> formats,
                                     VariantQueryUtils.SelectVariantElements selectElements)
             throws IOException {
         this.resultScanners = resultScanners;
-        this.genomeHelper = genomeHelper;
         resultIterator = Collections.emptyIterator();
         converter = HBaseToVariantConverter.fromResult(genomeHelper, scm)
                 .setMutableSamplesPosition(false)
@@ -65,6 +68,7 @@ public class VariantHBaseScanIterator extends VariantDBIterator {
                 .setSelectVariantElements(selectElements)
                 .setFormats(formats);
         setLimit(options.getLong(QueryOptions.LIMIT));
+        threadPool = Executors.newFixedThreadPool(4);
     }
 
     @Override
@@ -73,7 +77,7 @@ public class VariantHBaseScanIterator extends VariantDBIterator {
             // Limit reached
             return false;
         }
-        if (fetch(resultIterator::hasNext)) {
+        if (buffer.hasNext() || fetch(resultIterator::hasNext)) {
             return true;
         } else {
             nextResultSet();
@@ -99,9 +103,28 @@ public class VariantHBaseScanIterator extends VariantDBIterator {
         if (count >= limit || !hasNext()) {
             throw new NoSuchElementException("Limit reached");
         }
+        if (!buffer.hasNext()) {
+            int i = (int) Math.min(50, limit - count);
+            List<Future<Variant>> variants = new ArrayList<>(50);
+            while (hasNext() && i > 0) {
+                i--;
+                Result result = fetch(resultIterator::next);
+                variants.add(threadPool.submit(() -> {
+                    long start = System.nanoTime();
+                    Variant v = converter.convert(result);
+                    timeConverting.addAndGet(System.nanoTime() - start);
+                    return v;
+                }));
+            }
+            buffer = variants.iterator();
+        }
         count++;
-        Result next = fetch(resultIterator::next);
-        return convert(() -> converter.convert(next));
+        try {
+            Future<Variant> next = buffer.next();
+            return next.get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     @Override
@@ -109,9 +132,15 @@ public class VariantHBaseScanIterator extends VariantDBIterator {
         super.close();
         logger.debug("Close variant iterator. Fetch = {}ms, Convert = {}ms",
                 getTimeFetching() / 1000000.0, getTimeConverting() / 1000000.0);
+        threadPool.shutdownNow();
         if (currentResultScanner != null) {
             currentResultScanner.close();
         }
+    }
+
+    @Override
+    public long getTimeConverting() {
+        return super.timeConverting + timeConverting.get();
     }
 
     @Override

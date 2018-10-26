@@ -18,11 +18,15 @@ package org.opencb.opencga.client.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.core.models.Project;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Path;
 import java.util.Map;
 
 /**
@@ -46,6 +50,14 @@ public class ClientConfiguration {
 
     private VariantClientConfiguration variant;
 
+    private static Logger logger;
+
+    private static final String DEFAULT_CONFIGURATION_FORMAT = "yaml";
+
+    static {
+        logger = LoggerFactory.getLogger(ClientConfiguration.class);
+    }
+
     public ClientConfiguration() {
     }
 
@@ -54,8 +66,13 @@ public class ClientConfiguration {
         this.grpc = grpc;
     }
 
+    public static ClientConfiguration load(Path configurationPath) throws IOException {
+        InputStream inputStream = FileUtils.newInputStream(configurationPath);
+        return load(inputStream, DEFAULT_CONFIGURATION_FORMAT);
+    }
+
     public static ClientConfiguration load(InputStream configurationInputStream) throws IOException {
-        return load(configurationInputStream, "yaml");
+        return load(configurationInputStream, DEFAULT_CONFIGURATION_FORMAT);
     }
 
     public static ClientConfiguration load(InputStream configurationInputStream, String format) throws IOException {
@@ -73,13 +90,47 @@ public class ClientConfiguration {
                 clientConfiguration = objectMapper.readValue(configurationInputStream, ClientConfiguration.class);
                 break;
         }
-
+        overwriteEnvironmentVariables(clientConfiguration);
         return clientConfiguration;
     }
 
     public void serialize(OutputStream configurationOutputStream) throws IOException {
         ObjectMapper jsonMapper = new ObjectMapper(new YAMLFactory());
         jsonMapper.writerWithDefaultPrettyPrinter().writeValue(configurationOutputStream, this);
+    }
+
+    private static void overwriteEnvironmentVariables(ClientConfiguration configuration) {
+        Map<String, String> envVariables = System.getenv();
+        for (String variable : envVariables.keySet()) {
+            if (variable.startsWith("OPENCGA_")) {
+                logger.debug("Overwriting environment parameter '{}'", variable);
+                switch (variable) {
+                    case "OPENCGA_CLIENT_ORGANISM_TAXONOMY_CODE":
+                        configuration.getOrganism().setTaxonomyCode(Integer.parseInt(envVariables.get(variable)));
+                        break;
+                    case "OPENCGA_CLIENT_ORGANISM_SCIENTIFIC_NAME":
+                        configuration.getOrganism().setScientificName(envVariables.get(variable));
+                        break;
+                    case "OPENCGA_CLIENT_ORGANISM_COMMON_NAME":
+                        configuration.getOrganism().setCommonName(envVariables.get(variable));
+                        break;
+                    case "OPENCGA_CLIENT_ORGANISM_ASSEMBLY":
+                        configuration.getOrganism().setAssembly(envVariables.get(variable));
+                        break;
+                    case "OPENCGA_CLIENT_REST_HOST":
+                        configuration.getRest().setHost(envVariables.get(variable));
+                        break;
+                    case "OPENCGA_CLIENT_REST_TIMEOUT":
+                        configuration.getRest().setTimeout(Integer.valueOf(envVariables.get(variable)));
+                        break;
+                    case "OPENCGA_CLIENT_GRPC_HOST":
+                        configuration.getGrpc().setHost(envVariables.get(variable));
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
     }
 
     @Override

@@ -95,11 +95,13 @@ public interface DBAdaptorFactory {
 
     DatasetDBAdaptor getCatalogDatasetDBAdaptor();
 
-    DiseasePanelDBAdaptor getCatalogPanelDBAdaptor();
+    PanelDBAdaptor getCatalogPanelDBAdaptor();
 
     FamilyDBAdaptor getCatalogFamilyDBAdaptor();
 
     ClinicalAnalysisDBAdaptor getClinicalAnalysisDBAdaptor();
+
+    InterpretationDBAdaptor getInterpretationDBAdaptor();
 
     Map<String, MongoDBCollection> getMongoDBCollectionMap();
 }

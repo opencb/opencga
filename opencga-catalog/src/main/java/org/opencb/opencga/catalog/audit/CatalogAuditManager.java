@@ -17,7 +17,6 @@
 package org.opencb.opencga.catalog.audit;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -36,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 
 import static org.opencb.opencga.catalog.audit.AuditRecord.Resource;
+import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
 /**
  * Created on 18/08/15.
@@ -71,8 +71,7 @@ public class CatalogAuditManager implements AuditManager {
         if (object == null) {
             return null;
         }
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
+        ObjectMapper objectMapper = getDefaultObjectMapper();
         try {
             return new ObjectMap(objectMapper.writeValueAsString(object));
         } catch (JsonProcessingException e) {

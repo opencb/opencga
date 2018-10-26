@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.gaps;
 
+import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -54,8 +55,8 @@ public class FillGapsTask {
         this.helper = helper;
         studyConverter = new StudyEntryToHBaseConverter(this.helper.getColumnFamily(), studyConfiguration,
                 true,
-                Collections.emptySet(), // Do not skip any genotype
-                null); // Do not update release
+                null, // Do not update release
+                true); // Do not skip any genotype
         variantMerger = new VariantMerger(false).configure(studyConfiguration.getVariantHeader());
     }
 
@@ -124,6 +125,23 @@ public class FillGapsTask {
                     .stream()
                     .filter(pair -> pair.getRight().getType() != VariantProto.VariantType.NO_VARIATION)
                     .collect(Collectors.toList());
+            if (realVariants.size() > 1) {
+                // Check if all the variants are different versions of the same multi-allelic variant
+                Set<String> calls = new HashSet<>();
+                for (Pair<VcfSliceProtos.VcfSlice, VcfSliceProtos.VcfRecord> pair : realVariants) {
+                    String call = pair.getValue().getCall();
+                    if (call.isEmpty()) {
+                        calls.add(null);
+                    } else {
+                        calls.add(call.substring(0, call.lastIndexOf(':')));
+                    }
+                }
+                // All the variants are from the same call. Select any.
+                if (calls.size() == 1 && !calls.contains(null)) {
+                    realVariants = Collections.singletonList(realVariants.stream()
+                            .min(Comparator.comparing(pair -> pair.getValue().getCall())).get());
+                }
+            }
             // If there is only one real variant, use it
             if (realVariants.size() == 1) {
                 vcfRecord = realVariants.get(0).getRight();
@@ -134,7 +152,7 @@ public class FillGapsTask {
 ////                    throw new IllegalStateException(msg);
 //                    logger.warn(msg);
 //                }
-                return processMultipleOverlappings(variant, missingSamples, put, fileId);
+                return processMultipleOverlappings(variant, missingSamples, put, sampleIndexPuts, fileId);
             }
         } else {
             vcfRecord = overlappingRecords.get(0).getRight();
@@ -143,23 +161,51 @@ public class FillGapsTask {
         Variant archiveVariant = convertToVariant(vcfSlice, vcfRecord, fileId);
 
         if (archiveVariant.getType().equals(VariantType.NO_VARIATION)) {
-            overlappingStatus = processReferenceOverlap(missingSamples, put, archiveVariant);
+            overlappingStatus = processReferenceOverlap(missingSamples, put, variant, archiveVariant);
         } else {
             overlappingStatus = processVariantOverlap(variant, missingSamples, put, sampleIndexPuts, archiveVariant);
         }
         return overlappingStatus;
     }
 
-    protected VariantOverlappingStatus processReferenceOverlap(Set<Integer> missingSamples, Put put, Variant archiveVariant) {
+    protected VariantOverlappingStatus processReferenceOverlap(Set<Integer> missingSamples, Put put,
+                                                               Variant variant, Variant archiveVariant) {
         VariantOverlappingStatus overlappingStatus = REFERENCE;
 
         FileEntry fileEntry = archiveVariant.getStudies().get(0).getFiles().get(0);
         fileEntry.getAttributes().remove(VCFConstants.END_KEY);
         if (StringUtils.isEmpty(fileEntry.getCall())) {
-            fileEntry.setCall(archiveVariant.getStart() + ":" + archiveVariant.getReference() + ":.:0");
+            fileEntry.setCall(archiveVariant.getStart() + ":" + archiveVariant.getReference() + ":" + archiveVariant.getAlternate() + ":0");
         }
+        // SYMBOLIC reference overlap -- <*> , <NON_REF>
+        if (VariantType.NO_VARIATION.equals(archiveVariant.getType())
+                && !archiveVariant.getAlternate().isEmpty()
+                && !archiveVariant.getAlternate().equals(Allele.NO_CALL_STRING)) {
 
-        studyConverter.convert(archiveVariant, put, missingSamples, overlappingStatus);
+            // Create template variant
+            Variant mergedVariant = new Variant(
+                    variant.getChromosome(),
+                    variant.getStart(),
+                    variant.getEnd(),
+                    variant.getReference(),
+                    variant.getAlternate());
+
+            StudyEntry studyEntry = new StudyEntry();
+            studyEntry.setFormat(archiveVariant.getStudies().get(0).getFormat());
+            studyEntry.setSortedSamplesPosition(new LinkedHashMap<>());
+            studyEntry.setSamplesData(new ArrayList<>());
+            mergedVariant.addStudyEntry(studyEntry);
+            mergedVariant.setType(variant.getType());
+
+            // Merge NO_VARIATION into the template variant
+            mergedVariant = variantMerger.merge(mergedVariant, archiveVariant);
+
+            // Convert study information to PUT
+            studyConverter.convert(mergedVariant, put, missingSamples, overlappingStatus);
+
+        } else {
+            studyConverter.convert(archiveVariant, put, missingSamples, overlappingStatus);
+        }
         return overlappingStatus;
     }
 
@@ -193,10 +239,7 @@ public class FillGapsTask {
                     String gt = studyEntry.getSamplesData().get(samplePosition).get(gtIdx);
                     // Only genotypes without the main alternate (0/2, 2/3, ...) should be written as pending.
                     if (SampleIndexDBLoader.validGenotype(gt) && !hasMainAlternate(gt)) {
-                        Put sampleIndexPut = new Put(
-                                SampleIndexConverter.toRowKey(sampleId, variant.getChromosome(), variant.getStart()),
-                                put.getTimeStamp());
-                        sampleIndexPut.addColumn(helper.getColumnFamily(), SampleIndexConverter.toPendingColumn(variant, gt), null);
+                        Put sampleIndexPut = buildSampleIndexPut(variant, put, sampleId, gt);
                         sampleIndexPuts.add(sampleIndexPut);
                     }
                 }
@@ -238,13 +281,20 @@ public class FillGapsTask {
         return overlappingStatus;
     }
 
-    protected VariantOverlappingStatus processMultipleOverlappings(Variant variant, Set<Integer> missingSamples, Put put, Integer fileId) {
+    protected VariantOverlappingStatus processMultipleOverlappings(Variant variant, Set<Integer> missingSamples, Put put,
+                                                                   List<Put> sampleIndexPuts, Integer fileId) {
         VariantOverlappingStatus overlappingStatus = MULTI;
 
+        String gt = "2/2";
         LinkedHashMap<String, Integer> samplePosition = getSamplePosition(fileId);
         List<List<String>> samplesData = new ArrayList<>(samplePosition.size());
         for (int i = 0; i < samplePosition.size(); i++) {
-            samplesData.add(Collections.singletonList("2/2"));
+            samplesData.add(Collections.singletonList(gt));
+        }
+
+        for (Integer sampleId : missingSamples) {
+            Put sampleIndexPut = buildSampleIndexPut(variant, put, sampleId, gt);
+            sampleIndexPuts.add(sampleIndexPut);
         }
 
         VariantBuilder builder = Variant.newBuilder(
@@ -266,6 +316,14 @@ public class FillGapsTask {
         studyConverter.convert(builder.build(), put, missingSamples, overlappingStatus);
 
         return overlappingStatus;
+    }
+
+    private Put buildSampleIndexPut(Variant variant, Put put, Integer sampleId, String gt) {
+        Put sampleIndexPut = new Put(
+                SampleIndexConverter.toRowKey(sampleId, variant.getChromosome(), variant.getStart()),
+                put.getTimeStamp());
+        sampleIndexPut.addColumn(helper.getColumnFamily(), SampleIndexConverter.toPendingColumn(variant, gt), null);
+        return sampleIndexPut;
     }
 
     protected boolean hasMainAlternate(String gt) {
@@ -292,10 +350,11 @@ public class FillGapsTask {
                 if (resetPosition == null) {
                     resetPosition = Math.max(iterator.previousIndex() - 1, firstIndex);
                 }
-                if (skipReferenceVariants && hasAllReferenceGenotype(vcfSlice, vcfRecord)) {
-                    // Skip this variant
-                    continue;
-                }
+
+//                if (skipReferenceVariants && hasAllReferenceGenotype(vcfSlice, vcfRecord)) {
+//                    // Skip this variant
+//                    continue;
+//                }
 
                 // If the same variant is present for this file in the VcfSlice, the variant is already loaded
                 if (isVariantAlreadyLoaded(variant, vcfSlice, vcfRecord, chromosome, start, end, reference, alternate)) {

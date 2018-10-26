@@ -66,7 +66,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     private final IndividualDBAdaptor individualDBAdaptor;
     private final CohortDBAdaptor cohortDBAdaptor;
     private final DatasetDBAdaptor datasetDBAdaptor;
-    private final DiseasePanelDBAdaptor panelDBAdaptor;
+    private final PanelDBAdaptor panelDBAdaptor;
     private final FamilyDBAdaptor familyDBAdaptor;
     private final ClinicalAnalysisDBAdaptor clinicalAnalysisDBAdaptor;
     private final AuditManager auditManager;
@@ -499,11 +499,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void checkDiseasePanelPermission(long studyId, long panelId, String userId,
-                                            DiseasePanelAclEntry.DiseasePanelPermissions permission) throws CatalogException {
+    public void checkPanelPermission(long studyId, long panelId, String userId, PanelAclEntry.PanelPermissions permission)
+            throws CatalogException {
         Query query = new Query()
-                .append(DiseasePanelDBAdaptor.QueryParams.UID.key(), panelId)
-                .append(DiseasePanelDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
+                .append(PanelDBAdaptor.QueryParams.UID.key(), panelId)
+                .append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
         StudyAclEntry.StudyPermissions studyPermission;
         switch (permission) {
             case VIEW:
@@ -744,13 +744,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public QueryResult<DiseasePanelAclEntry> getAllPanelAcls(long studyId, long panelId, String userId) throws CatalogException {
+    public QueryResult<PanelAclEntry> getAllPanelAcls(long studyId, long panelId, String userId) throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
         return aclDBAdaptor.get(panelId, null, Entity.PANEL);
     }
 
     @Override
-    public QueryResult<DiseasePanelAclEntry> getPanelAcl(long studyId, long panelId, String userId, String member) throws CatalogException {
+    public QueryResult<PanelAclEntry> getPanelAcl(long studyId, long panelId, String userId, String member) throws CatalogException {
         try {
             checkCanAssignOrSeePermissions(studyId, userId);
         } catch (CatalogException e) {
@@ -806,6 +806,26 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         return aclDBAdaptor.get(familyId, Arrays.asList(member), Entity.FAMILY);
+    }
+
+    @Override
+    public QueryResult<ClinicalAnalysisAclEntry> getAllClinicalAnalysisAcls(long studyId, long clinicalAnalysisId, String userId)
+            throws CatalogException {
+        checkCanAssignOrSeePermissions(studyId, userId);
+        return aclDBAdaptor.get(clinicalAnalysisId, null, Entity.CLINICAL_ANALYSIS);
+    }
+
+    @Override
+    public QueryResult<ClinicalAnalysisAclEntry> getClinicalAnalysisAcl(long studyId, long clinicalAnalysisId, String userId, String member)
+            throws CatalogException {
+        try {
+            checkCanAssignOrSeePermissions(studyId, userId);
+        } catch (CatalogException e) {
+            // It will be OK if the userId asking for the ACLs wants to see its own permissions
+            checkAskingOwnPermissions(userId, member, studyId);
+        }
+
+        return aclDBAdaptor.get(clinicalAnalysisId, Arrays.asList(member), Entity.CLINICAL_ANALYSIS);
     }
 
     private void checkAskingOwnPermissions(String userId, String member, long studyId) throws CatalogException {
@@ -899,6 +919,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         aclDBAdaptor.setToMembers(ids, members, permissions, allPermissions, entity);
         int dbTime = (int) (System.currentTimeMillis() - startTime);
 
+        // We store that those members have internal permissions
+        aclDBAdaptor.setMembersHaveInternalPermissionsDefined(studyId, members, permissions, entity.name());
+
         List<QueryResult<E>> aclResultList = getAcls(ids, members, entity);
 
         for (QueryResult<E> aclEntryQueryResult : aclResultList) {
@@ -928,6 +951,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         long startTime = System.currentTimeMillis();
         aclDBAdaptor.addToMembers(ids, members, permissions, entity);
         int dbTime = (int) (System.currentTimeMillis() - startTime);
+
+        // We store that those members have internal permissions
+        aclDBAdaptor.setMembersHaveInternalPermissionsDefined(studyId, members, permissions, entity.name());
 
         List<QueryResult<E>> aclResultList = getAcls(ids, members, entity);
 

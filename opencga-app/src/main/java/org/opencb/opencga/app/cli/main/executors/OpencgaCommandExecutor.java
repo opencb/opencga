@@ -24,9 +24,13 @@ import org.opencb.opencga.app.cli.CliSession;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.io.*;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -84,18 +88,18 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
             logger.debug("sessionFile = " + cliSession);
             if (StringUtils.isNotEmpty(options.sessionId)) {
                 // Ignore session file. Overwrite with command line information (just sessionId)
-                cliSession = new CliSession(null, options.sessionId);
+                cliSession = new CliSession(clientConfiguration.getRest().getHost(), null, options.sessionId);
                 sessionId = options.sessionId;
                 userId = null;
 
                 openCGAClient = new OpenCGAClient(options.sessionId, clientConfiguration);
             } else if (cliSession != null) {
                 // 'logout' field is only null or empty while no logout is executed
-                if (StringUtils.isEmpty(cliSession.getLogout()) && StringUtils.isNotEmpty(cliSession.getToken())) {
+                if (StringUtils.isNotEmpty(cliSession.getToken())) {
                     // no timeout checks
                     if (skipDuration) {
                         openCGAClient = new OpenCGAClient(cliSession.getToken(), clientConfiguration);
-                        openCGAClient.setUserId(cliSession.getUserId());
+                        openCGAClient.setUserId(cliSession.getUser());
                         if (options.sessionId == null) {
                             options.sessionId = cliSession.getToken();
                         }
@@ -113,7 +117,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                             logger.debug("Session ok!!");
                             //                            this.sessionId = cliSession.getSessionId();
                             openCGAClient = new OpenCGAClient(cliSession.getToken(), clientConfiguration);
-                            openCGAClient.setUserId(cliSession.getUserId());
+                            openCGAClient.setUserId(cliSession.getUser());
 
                             // Update token
                             if (claimsMap.containsKey("exp")) {
@@ -166,6 +170,39 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
             }
         }
         return study;
+    }
+
+    protected String extractIdsFromListOrFile(String ids) throws CatalogException {
+        if (StringUtils.isEmpty(ids)) {
+            return null;
+        }
+
+        File file = new File(ids);
+        if (file.exists() && file.isFile()) {
+            // Read the file
+            try(BufferedReader br = new BufferedReader(new FileReader(ids))) {
+                StringBuilder sb = new StringBuilder();
+                String line = br.readLine();
+                boolean isNotFirstLine = false;
+
+                while (line != null) {
+                    if (StringUtils.isNotEmpty(line)) {
+                        if (isNotFirstLine) {
+                            sb.append(",");
+                        } else {
+                            isNotFirstLine = true;
+                        }
+                        sb.append(line);
+                    }
+                    line = br.readLine();
+                }
+                return sb.toString();
+            } catch (IOException e) {
+                throw new CatalogException("File could not be parsed. Does it contain a line per id?");
+            }
+        } else {
+            return ids;
+        }
     }
 
     public void createOutput(QueryResponse queryResponse) {

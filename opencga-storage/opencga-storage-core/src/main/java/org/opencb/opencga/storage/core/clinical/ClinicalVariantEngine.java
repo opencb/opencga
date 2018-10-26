@@ -18,20 +18,21 @@ package org.opencb.opencga.storage.core.clinical;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-import org.apache.commons.collections.map.LinkedMap;
+import org.opencb.biodata.models.clinical.interpretation.Comment;
+import org.opencb.biodata.models.clinical.interpretation.Interpretation;
+import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.FacetedQueryResult;
+import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.core.models.clinical.Comment;
-import org.opencb.opencga.core.models.clinical.Interpretation;
-import org.opencb.opencga.core.models.clinical.ReportedVariant;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -50,7 +51,7 @@ public interface ClinicalVariantEngine {
 
         private static Map<String, QueryParams> map;
         static {
-            map = new LinkedMap();
+            map = new LinkedHashMap<>();
             for (QueryParams params : QueryParams.values()) {
                 map.put(params.key(), params);
             }
@@ -137,7 +138,7 @@ public interface ClinicalVariantEngine {
     QueryResult<Interpretation> interpretationQuery(Query query, QueryOptions options, String collection)
                     throws IOException, ClinicalVariantException;
 
-    FacetedQueryResult facet(Query query, QueryOptions queryOptions, String collection)
+    FacetQueryResult facet(Query query, QueryOptions queryOptions, String collection)
             throws IOException, ClinicalVariantException;
 
     ReportedVariantIterator iterator(Query query, QueryOptions options, String collection)
@@ -149,4 +150,6 @@ public interface ClinicalVariantEngine {
 
     void addReportedVariantComment(long interpretationId, String variantId, Comment comment, String collection)
                                             throws IOException, ClinicalVariantException;
+
+    void setStorageConfiguration(StorageConfiguration storageConfiguration);
 }

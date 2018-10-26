@@ -42,6 +42,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
+import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
@@ -67,6 +68,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
     private final MongoDBCollection fileCollection;
     private FileConverter fileConverter;
+
+    public static final String REVERSE_NAME = "_reverse";
 
     /***
      * CatalogMongoFileDBAdaptor constructor.
@@ -440,6 +443,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         Document set = new Document("$set", new Document()
                 .append(QueryParams.ID.key(), fileId)
                 .append(QueryParams.NAME.key(), fileName)
+                .append(REVERSE_NAME, StringUtils.reverse(fileName))
                 .append(QueryParams.PATH.key(), filePath)
                 .append(QueryParams.URI.key(), fileUri));
         QueryResult<UpdateResult> update = fileCollection.update(query, set, null);
@@ -489,7 +493,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         StudyAclEntry.StudyPermissions studyPermission = (studyPermissions == null
                 ? StudyAclEntry.StudyPermissions.VIEW_FILES : studyPermissions);
 
-           // Get the study document
+        // Get the study document
         Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_UID.key()));
         QueryResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
@@ -498,7 +502,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
         // Get the document query needed to check the permissions as well
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries((Document) queryResult.first(), user,
-                studyPermission.name(), studyPermission.getFilePermission().name());
+                studyPermission.name(), studyPermission.getFilePermission().name(), Entity.FILE.name());
         Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
         logger.debug("File count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         return fileCollection.count(bson);
@@ -684,7 +688,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         if (studyDocument != null && user != null) {
             // Get the document query needed to check the permissions as well
             queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
-                    StudyAclEntry.StudyPermissions.VIEW_FILES.name(), FileAclEntry.FilePermissions.VIEW.name());
+                    StudyAclEntry.StudyPermissions.VIEW_FILES.name(), FileAclEntry.FilePermissions.VIEW.name(), Entity.FILE.name());
         }
 
         filterOutDeleted(query);
@@ -749,10 +753,10 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         if (containsAnnotationQuery(query)) {
             queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
                     StudyAclEntry.StudyPermissions.VIEW_FILE_ANNOTATIONS.name(),
-                    FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name());
+                    FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name(), Entity.FILE.name());
         } else {
             queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
-                    StudyAclEntry.StudyPermissions.VIEW_FILES.name(), FileAclEntry.FilePermissions.VIEW.name());
+                    StudyAclEntry.StudyPermissions.VIEW_FILES.name(), FileAclEntry.FilePermissions.VIEW.name(), Entity.FILE.name());
         }
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
@@ -767,10 +771,10 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         if (containsAnnotationQuery(query)) {
             queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
                     StudyAclEntry.StudyPermissions.VIEW_FILE_ANNOTATIONS.name(),
-                    FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name());
+                    FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name(), Entity.FILE.name());
         } else {
             queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
-                    StudyAclEntry.StudyPermissions.VIEW_FILES.name(), FileAclEntry.FilePermissions.VIEW.name());
+                    StudyAclEntry.StudyPermissions.VIEW_FILES.name(), FileAclEntry.FilePermissions.VIEW.name(), Entity.FILE.name());
         }
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
@@ -851,8 +855,32 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
+                    case STATUS_NAME:
+                        // Convert the status to a positive status
+                        query.put(queryParam.key(),
+                                Status.getPositiveStatus(File.FileStatus.STATUS_LIST, query.getString(queryParam.key())));
+                        addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
+                    case INDEX_STATUS_NAME:
+                        // Convert the status to a positive status
+                        query.put(queryParam.key(),
+                                Status.getPositiveStatus(FileIndex.IndexStatus.STATUS_LIST, query.getString(queryParam.key())));
+                        addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
                     // Other parameter that can be queried.
                     case NAME:
+                        String name = query.getString(queryParam.key());
+                        if (name.startsWith("~") && name.endsWith("$")) {
+                            // We remove ~ and $
+                            name = name.substring(1, name.length() - 1);
+                            // We store the name value reversed
+                            query.put(queryParam.key(), "~^" + StringUtils.reverse(name));
+                            // We look for the name field in the REVERSE db field
+                            addAutoOrQuery(REVERSE_NAME, queryParam.key(), query, queryParam.type(), andBsonList);
+                        } else {
+                            addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        }
+                        break;
                     case UUID:
                     case TYPE:
                     case FORMAT:
@@ -866,7 +894,6 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                     case RELEASE:
                     case TAGS:
                     case STATUS:
-                    case STATUS_NAME:
                     case STATUS_MSG:
                     case STATUS_DATE:
                     case RELATED_FILES:
@@ -881,7 +908,6 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                     case INDEX:
                     case INDEX_USER_ID:
                     case INDEX_CREATION_DATE:
-                    case INDEX_STATUS_NAME:
                     case INDEX_STATUS_MESSAGE:
                     case INDEX_JOB_ID:
                     case INDEX_TRANSFORMED_FILE:

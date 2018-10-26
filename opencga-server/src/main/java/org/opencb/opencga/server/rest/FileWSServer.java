@@ -16,17 +16,16 @@
 
 package org.opencb.opencga.server.rest;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
+import org.opencb.biodata.models.commons.Software;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.commons.datastore.core.result.FacetedQueryResult;
+import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
@@ -41,11 +40,13 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.AnnotationSet;
+import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.FileTree;
+import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
-import org.opencb.opencga.server.rest.json.mixin.FileMixin;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -65,6 +66,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 
+import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
 
 
@@ -131,7 +133,9 @@ public class FileWSServer extends OpenCGAWSServer {
                          @PathParam(value = "files") String fileStr,
                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                          @QueryParam("study") String studyStr,
-                         @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
+                         @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
+                                 + "exception whenever one of the entries looked for cannot be shown for whichever reason",
+                                 defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             query.remove("study");
             query.remove("files");
@@ -483,8 +487,10 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated Format values. For existing Formats see files/formats", required = false) @DefaultValue("") @QueryParam("format") String formats,
             @ApiParam(value = "Status", required = false) @DefaultValue("") @QueryParam("status") String status,
             @ApiParam(value = "Directory under which we want to look for files or folders", required = false) @DefaultValue("") @QueryParam("directory") String directory,
-            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
-            @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss)", required = false) @DefaultValue("") @QueryParam("modificationDate") String modificationDate,
+            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+                @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+                @QueryParam("modificationDate") String modificationDate,
             @ApiParam(value = "Description", required = false) @DefaultValue("") @QueryParam("description") String description,
             @ApiParam(value = "Tags") @QueryParam("tags") String tags,
             @ApiParam(value = "Size", required = false) @DefaultValue("") @QueryParam("size") String size,
@@ -1078,7 +1084,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/groupBy")
-    @ApiOperation(value = "Group files by several fields", position = 24, response = QueryResponse.class,
+    @ApiOperation(value = "Group files by several fields", position = 24, response = QueryResponse.class, hidden = true,
             notes = "Only group by categorical variables. Grouping by continuous variables might cause unexpected behaviour")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "count", value = "Count the number of elements matching the group", dataType = "boolean",
@@ -1132,7 +1138,9 @@ public class FileWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias up to a maximum of 100")
                             @QueryParam("study") String studyStr,
                             @ApiParam(value = "User or group id") @QueryParam("member") String member,
-                            @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
+                            @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
+                                    + "exception whenever one of the entries looked for cannot be shown for whichever reason",
+                                    defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(fileIdStr);
             return createOkResponse(fileManager.getAcls(studyStr, idList, member, silent, sessionId));
@@ -1241,13 +1249,10 @@ public class FileWSServer extends OpenCGAWSServer {
         }
     }
 
-    private final String defaultFacet = "creationYear>>creationMonth;format;bioformat;format>>bioformat;status";
-    private final String defaultFacetRange = "size:0:214748364800:10737418240;numSamples:0:10:1";
-
     @GET
-    @Path("/facet")
-    @ApiOperation(value = "Fetch catalog sample facets", position = 15, response = QueryResponse.class)
-    public Response getFacets(
+    @Path("/stats")
+    @ApiOperation(value = "Fetch catalog file stats", position = 15, response = QueryResponse.class)
+    public Response getStats(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                 @QueryParam("study") String studyStr,
             @ApiParam(value = "Name") @QueryParam("name") String name,
@@ -1268,20 +1273,16 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Number of related files") @QueryParam("numRelatedFiles") String numRelatedFiles,
             @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
 
-            @ApiParam(value = "Calculate default stats", defaultValue = "false") @QueryParam("defaultStats") boolean defaultStats,
+            @ApiParam(value = "Calculate default stats", defaultValue = "false") @QueryParam("default") boolean defaultStats,
 
-            @ApiParam(value = "List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: studies>>biotype;type") @QueryParam("facet") String facet,
-            @ApiParam(value = "List of facet ranges separated by semicolons with the format {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1") @QueryParam("facetRange") String facetRange,
-            @ApiParam(value = "List of facet intersections separated by semicolons with the format {field_name}:{value1}:{value2}[:{value3}], e.g.: studies:1kG_phase3:EXAC:ESP6500") @QueryParam("facetIntersection") String facetIntersection) {
+            @ApiParam(value = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1") @QueryParam("field") String facet) {
         try {
             query.remove("study");
+            query.remove("field");
 
-            if (defaultStats) {
-                queryOptions.put(QueryOptions.FACET, StringUtils.isNotEmpty(facet) ? defaultFacet + ";" + facet : defaultFacet);
-                queryOptions.put(QueryOptions.FACET_RANGE, StringUtils.isNotEmpty(facet) ? defaultFacetRange + ";" + facet : defaultFacetRange);
-            }
+            queryOptions.put(QueryOptions.FACET, facet);
 
-            FacetedQueryResult queryResult = catalogManager.getFileManager().facet(studyStr, query, queryOptions, sessionId);
+            FacetQueryResult queryResult = catalogManager.getFileManager().facet(studyStr, query, queryOptions, defaultStats, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -1315,10 +1316,6 @@ public class FileWSServer extends OpenCGAWSServer {
         public Map<String, Object> attributes;
 
         public ObjectMap toFileObjectMap() throws JsonProcessingException {
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.addMixIn(File.class, FileMixin.class);
-            mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-
             File file = new File()
                     .setName(name)
                     .setDescription(description)
@@ -1329,7 +1326,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     .setSoftware(software)
                     .setAttributes(attributes);
 
-            ObjectMap params = new ObjectMap(mapper.writeValueAsString(file));
+            ObjectMap params = new ObjectMap(getUpdateObjectMapper().writeValueAsString(file));
             params.putIfNotNull("samples", samples);
             params.putIfNotNull(FileDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSets);
 

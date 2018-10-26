@@ -71,12 +71,13 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
         externalResource.clearDB(variantStorageManager.getVariantTableName());
         externalResource.clearDB(variantStorageManager.getArchiveTableName(STUDY_ID));
 
-        URI inputUri = VariantStorageBaseTest.getResourceUri("sample1.genome.vcf");
+//        URI inputUri = VariantStorageBaseTest.getResourceUri("sample1.genome.vcf");
+        URI inputUri = VariantStorageBaseTest.getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz");
 //            URI inputUri = VariantStorageManagerTestUtils.getResourceUri("variant-test-file.vcf.gz");
 
         studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
         etlResult = VariantStorageBaseTest.runDefaultETL(inputUri, variantStorageManager, studyConfiguration,
-                new ObjectMap(Options.TRANSFORM_FORMAT.key(), "proto")
+                new ObjectMap(Options.TRANSFORM_FORMAT.key(), "avro")
                         .append(Options.ANNOTATE.key(), true)
                         .append(Options.CALCULATE_STATS.key(), false)
         );
@@ -127,9 +128,6 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
     @Test
     public void countVariants() {
         long totalCount = dbAdaptor.count(new Query()).first();
-        long partialCount1 = dbAdaptor.count(new Query(VariantQueryParam.REGION.key(), "1:1-15030")).first();
-        long partialCount2 = dbAdaptor.count(new Query(VariantQueryParam.REGION.key(), "1:15030-60000")).first();
-
 
         long count = TARGET_VARIANT_TYPE_SET.stream()
                 .map(type -> fileMetadata.getStats().getVariantTypeCount(type))
@@ -137,7 +135,6 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
                 .orElse(0).longValue();
 //        count  -= 1; // Deletion is in conflict with other variant: 1:10403:ACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAAC:A
         assertEquals(count, totalCount);
-        assertEquals(totalCount, partialCount1 + partialCount2);
     }
 
     @Test
@@ -162,9 +159,14 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
             }
         }
         System.out.println("genesCount = " + genesCount);
+        System.out.println("genes = " + genesCount.size());
 
+        int maxGeneQueries = 30;
         //Count for each gene
         for (Map.Entry<String, Long> entry : genesCount.entrySet()) {
+            if (maxGeneQueries-- == 0) {
+                break;
+            }
             System.out.println("Gene " + entry.getKey() + " in " + entry.getValue() + " variants");
             QueryResult<Long> queryResult = variantStorageEngine.count(new Query(VariantQueryParam.GENE.key(), entry.getKey()));
             System.out.println("queryResult.getDbTime() = " + queryResult.getDbTime());

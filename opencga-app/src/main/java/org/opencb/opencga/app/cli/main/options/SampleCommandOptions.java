@@ -39,7 +39,7 @@ public class SampleCommandOptions {
     public DeleteCommandOptions deleteCommandOptions;
     public GroupByCommandOptions groupByCommandOptions;
     public IndividualCommandOptions individualCommandOptions;
-    public FacetCommandOptions facetCommandOptions;
+    public StatsCommandOptions statsCommandOptions;
 
     public AclCommandOptions.AclsCommandOptions aclsCommandOptions;
     public SampleAclCommandOptions.AclsUpdateCommandOptions aclsUpdateCommandOptions;
@@ -71,7 +71,7 @@ public class SampleCommandOptions {
         this.deleteCommandOptions = new DeleteCommandOptions();
         this.groupByCommandOptions = new GroupByCommandOptions();
         this.individualCommandOptions = new IndividualCommandOptions();
-        this.facetCommandOptions = new FacetCommandOptions();
+        this.statsCommandOptions = new StatsCommandOptions();
 
         AnnotationCommandOptions annotationCommandOptions = new AnnotationCommandOptions(commonCommandOptions);
         this.annotationCreateCommandOptions = annotationCommandOptions.getCreateCommandOptions();
@@ -257,13 +257,16 @@ public class SampleCommandOptions {
 //            @Parameter(names = {"--sample"}, description = "Comma separated list of sample ids or names", arity = 1)
 //            public String sample;
 
-            @Parameter(names = {"--file"}, description = "Comma separated list of file ids, names or paths", arity = 1)
+            @Parameter(names = {"--file"}, description = "Comma separated list of file ids, names or paths or file containing the list of "
+                    + "ids (one per line)", arity = 1)
             public String file;
 
-            @Parameter(names = {"--individual"}, description = "Comma separated list of individual ids or names", arity = 1)
+            @Parameter(names = {"--individual"}, description = "Comma separated list of individual ids or file containing the list of ids "
+                    + "(one per line)", arity = 1)
             public String individual;
 
-            @Parameter(names = {"--cohort"}, description = "Comma separated list of cohort ids or names", arity = 1)
+            @Parameter(names = {"--cohort"}, description = "Comma separated list of cohort ids or file containing the list of ids "
+                    + "(one per line)", arity = 1)
             public String cohort;
 
             @Parameter(names = {"--propagate"}, description = "Flag parameter indicating whether to propagate the permissions to the " +
@@ -279,13 +282,13 @@ public class SampleCommandOptions {
         }
     }
 
-    @Parameters(commandNames = {"facet"}, commandDescription = "Facets in samples")
-    public class FacetCommandOptions extends StudyOption {
+    @Parameters(commandNames = {"stats"}, commandDescription = "Sample stats")
+    public class StatsCommandOptions extends StudyOption {
 
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--default-stats"}, description = "Flag to calculate default stats", arity = 0)
+        @Parameter(names = {"--default"}, description = "Flag to calculate default stats", arity = 0)
         public boolean defaultStats;
 
         @Parameter(names = {"--creation-year"}, description = "Creation year.", arity = 1)
@@ -324,13 +327,9 @@ public class SampleCommandOptions {
         @Parameter(names = {"--annotation"}, description = "Annotation. See documentation to see the options.", arity = 1)
         public String annotation;
 
-        @Parameter(names = {"--facet"}, description = "List of facet fields separated by semicolons, e.g.: studies;type. For nested "
-                + "faceted fields use >>, e.g.: studies>>biotype;type.", arity = 1)
-        public String facet;
-
-        @Parameter(names = {"--facet-range"}, description = "List of facet ranges separated by semicolons with the format"
-                + " {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1.", arity = 1)
-        public String facetRange;
+        @Parameter(names = {"--field"}, description = "List of fields separated by semicolons, e.g.: studies;type. For nested "
+                + "fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1.", arity = 1)
+        public String field;
     }
 
 }

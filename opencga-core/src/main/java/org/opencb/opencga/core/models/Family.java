@@ -16,8 +16,10 @@
 
 package org.opencb.opencga.core.models;
 
+import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.opencga.core.common.TimeUtils;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -75,6 +77,8 @@ public class Family extends Annotable {
     public static class FamilyStatus extends Status {
 
         public static final String INCOMPLETE = "INCOMPLETE";
+
+        public static final List<String> STATUS_LIST = Arrays.asList(READY, DELETED, INCOMPLETE);
 
         public FamilyStatus(String status, String message) {
             if (isValid(status)) {

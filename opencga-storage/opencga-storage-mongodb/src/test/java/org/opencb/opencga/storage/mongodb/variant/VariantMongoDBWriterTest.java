@@ -59,9 +59,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass.UNKNOWN_GENOTYPE;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.DEFAULT_GENOTYPE;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter.UNKNOWN_FIELD;
-import static org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass.UNKNOWN_GENOTYPE;
 
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
@@ -702,11 +702,11 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
 
         MongoDBVariantWriteResult result = stageVariants(sc, variants, 1);
         result = mergeVariants(sc, 1, result);
-        assertEqualsResult(new MongoDBVariantWriteResult(17, 0, 0, 0, 0, 0), result);
+        assertEqualsResult(new MongoDBVariantWriteResult(23, 0, 0, 0, 0, 0), result);
 
         result = stageVariants(sc, variants2, 2);
         result = mergeVariants(sc, 2, result);
-        assertEqualsResult(new MongoDBVariantWriteResult(0, 17, 0, 0, 0, 0), result);
+        assertEqualsResult(new MongoDBVariantWriteResult(0, 23, 0, 0, 0, 0), result);
 
     }
 
@@ -717,14 +717,14 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
 
         MongoDBVariantWriteResult result = stageVariants(sc, variants, 1);
         result = mergeVariants(sc, 1, result);
-        assertEqualsResult(new MongoDBVariantWriteResult(17, 0, 0, 0, 0, 0), result);
+        assertEqualsResult(new MongoDBVariantWriteResult(23, 0, 0, 0, 0, 0), result);
 
         // Despite there are overlapping variants between the two files, the number of overlapping variants MUST be 0.
         // Do not check overlaps with Structural Variants!
         List<Variant> variants2 = readVariants(sc, "/variant-test-sv_2.vcf", 2);
         result = stageVariants(sc, variants2, 2);
         result = mergeVariants(sc, 2, result);
-        assertEqualsResult(new MongoDBVariantWriteResult(7, 10, 7, 0, 0, 0), result);
+        assertEqualsResult(new MongoDBVariantWriteResult(8, 11, 12, 0, 0, 0), result);
 
     }
 

@@ -16,14 +16,13 @@
 
 package org.opencb.opencga.server.rest;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.avro.generic.GenericRecord;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -48,6 +47,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.opencb.opencga.core.common.JacksonUtils.getExternalOpencgaObjectMapper;
 
 /**
  * Created by jacobo on 22/06/15.
@@ -65,13 +65,11 @@ public class IndividualWSServerTest {
     private long in4;
 
     {
-        jsonObjectMapper = new ObjectMapper();
+        jsonObjectMapper = getExternalOpencgaObjectMapper();
         jsonObjectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
         jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
         jsonObjectMapper.addMixIn(Genotype.class, GenotypeJsonMixin.class);
         jsonObjectMapper.addMixIn(Alignment.AlignmentDifference.class, AlignmentDifferenceJsonMixin.class);
-        jsonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        jsonObjectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
     }
 
     @Rule
@@ -124,7 +122,7 @@ public class IndividualWSServerTest {
         QueryResponse<Individual> response = WSServerTestUtils.parseResult(json, Individual.class);
 
         Individual individual = response.getResponse().get(0).first();
-        assertEquals(Individual.Sex.FEMALE, individual.getSex());
+        assertEquals(IndividualProperty.Sex.FEMALE, individual.getSex());
         assertEquals("new_individual1", individual.getName());
         assertTrue(individual.getUid() > 0);
     }

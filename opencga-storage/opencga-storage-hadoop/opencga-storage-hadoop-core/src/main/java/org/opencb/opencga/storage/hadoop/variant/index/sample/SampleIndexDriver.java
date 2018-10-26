@@ -283,7 +283,14 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
             for (GtVariantsWritable value : values) {
                 String gt = value.getGt();
                 String variant = value.getVariants();
-                gtsMap.computeIfAbsent(gt, k -> new StringBuilder()).append(variant).append(',');
+                gtsMap.compute(gt, (k, sb) -> {
+                    if (sb == null) {
+                        sb = new StringBuilder(variant);
+                    } else {
+                        sb.append(',').append(variant);
+                    }
+                    return sb;
+                });
             }
 
             for (Map.Entry<String, StringBuilder> entry : gtsMap.entrySet()) {
@@ -308,7 +315,14 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
             for (GtVariantsWritable value : values) {
                 String gt = value.getGt();
                 String variant = value.getVariants();
-                gtsMap.computeIfAbsent(gt, k -> new StringBuilder()).append(variant).append(',');
+                gtsMap.compute(gt, (k, sb) -> {
+                    if (sb == null) {
+                        sb = new StringBuilder(variant);
+                    } else {
+                        sb.append(',').append(variant);
+                    }
+                    return sb;
+                });
             }
             Put put = new Put(key.get());
             put.setDurability(Durability.SKIP_WAL);

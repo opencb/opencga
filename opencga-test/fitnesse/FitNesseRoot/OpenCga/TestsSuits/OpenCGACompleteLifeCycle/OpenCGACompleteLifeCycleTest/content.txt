@@ -102,11 +102,15 @@
 
 !3 (Negative) Get Study with userB 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyAId/info?sid=$userBSessionId |403|  Content-Type: application/json |jsonbody.error != ''|
+|setHeaders|!-Content-Type : application/json
+Authorization : Bearer $userBSessionId-!|
+| GET | /v1/studies/$studyAId/info |403|  Content-Type: application/json |jsonbody.error != ''|
 
 !3 (Negative) Get Study B with Analyst 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyBId/info?sid=$analystSessionId |403|  Content-Type: application/json |jsonbody.error != ''|
+|setHeaders|!-Content-Type : application/json
+Authorization : Bearer $analystSessionId -!|
+| GET | /v1/studies/$studyBId/info |403|  Content-Type: application/json |jsonbody.error != ''|
 
 !3 Create Individual A1 With Admin
 !|Table: Rest Fixture | $baseURL |
@@ -162,7 +166,9 @@
 
 !3 (Negative) Get Sample A1 with User A
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/samples/$sA1Id/info?sid=$userASessionId&study=$studyAId |403|  Content-Type: application/json || 
+|setHeaders|!-Content-Type : application/json
+Authorization : Bearer $userASessionId -!|
+| GET | /v1/samples/$sA1Id/info?study=$studyAId |403|  Content-Type: application/json || 
 
 !3 Create ACL For User A for Sample A1
 !|Table: Rest Fixture | $baseURL |
@@ -212,6 +218,8 @@
 
 !3 (Negative) Get Cohort A1 with Analyst After Restriction
 !|Table: Rest Fixture | $baseURL |
+|setHeaders|!-Content-Type : application/json
+Authorization : Bearer -!|
 | GET | /v1/cohorts/$cA1Id/info?sid=$analystSessionId&study=$studyAId |403|  Content-Type: application/json ||
 
 !3 Remove Restricted ACL For Analyst for Cohort A1

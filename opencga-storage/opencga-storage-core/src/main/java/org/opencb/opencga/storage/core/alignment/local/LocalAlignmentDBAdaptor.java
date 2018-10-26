@@ -27,6 +27,7 @@ import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.tools.alignment.AlignmentOptions;
 import org.opencb.biodata.tools.alignment.BamManager;
+import org.opencb.biodata.tools.alignment.BamUtils;
 import org.opencb.biodata.tools.alignment.filters.AlignmentFilters;
 import org.opencb.biodata.tools.alignment.filters.SamRecordFilters;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
@@ -152,19 +153,31 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
         FileUtils.checkFile(path);
 
         StopWatch watch = StopWatch.createStarted();
-
         RegionCoverage regionCoverage;
         if (path.toFile().getName().endsWith(".bam")) {
             BamManager bamManager = new BamManager(path);
             regionCoverage = bamManager.coverage(region, windowSize);
             bamManager.close();
         } else {
-            BamManager bamManager = new BamManager();
-            regionCoverage = bamManager.coverage(region, windowSize, path);
+            regionCoverage = BamUtils.getCoverageFromBigWig(region, windowSize, path);
         }
-
         watch.stop();
         return new QueryResult<>(region.toString(), ((int) watch.getTime()), 1, 1, null, null, Collections.singletonList(regionCoverage));
+    }
+
+    @Override
+    public QueryResult<RegionCoverage> getLowCoverageRegions(Path path, Region region, int minCoverage) throws Exception {
+        FileUtils.checkFile(path);
+
+        StopWatch watch = StopWatch.createStarted();
+        List<RegionCoverage> regionCoverages = null;
+        if (path.toFile().getName().endsWith(".bam")) {
+            BamManager bamManager = new BamManager(path);
+            regionCoverages = bamManager.getUncoveredRegions(region, minCoverage);
+            bamManager.close();
+        }
+        watch.stop();
+        return new QueryResult<>(region.toString(), ((int) watch.getTime()), 1, 1, null, null, regionCoverages);
     }
 
     @Override

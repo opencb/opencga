@@ -15,7 +15,6 @@
  */
 package org.opencb.opencga.catalog.managers;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -26,7 +25,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.Error;
-import org.opencb.commons.datastore.core.result.FacetedQueryResult;
+import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.FileUtils;
@@ -70,6 +69,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
 import static org.opencb.opencga.catalog.utils.FileMetadataReader.VARIANT_FILE_STATS;
+import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -92,6 +92,9 @@ public class FileManager extends AnnotationSetManager<File> {
     public static final String GET_NON_DELETED_FILES = Status.READY + "," + File.FileStatus.TRASHED + "," + File.FileStatus.STAGE + ","
             + File.FileStatus.MISSING;
     public static final String GET_NON_TRASHED_FILES = Status.READY + "," + File.FileStatus.STAGE + "," + File.FileStatus.MISSING;
+
+    private final String defaultFacet = "creationYear>>creationMonth;format;bioformat;format>>bioformat;status;"
+            + "size[0..214748364800]:10737418240;numSamples[0..10]:1";
 
     static {
         INCLUDE_STUDY_URI = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.URI.key());
@@ -282,7 +285,7 @@ public class FileManager extends AnnotationSetManager<File> {
             // Update variant stats
             Path statsFile = Paths.get(json.getUri().getRawPath());
             try (InputStream is = FileUtils.newInputStream(statsFile)) {
-                VariantFileMetadata fileMetadata = new ObjectMapper().readValue(is, VariantFileMetadata.class);
+                VariantFileMetadata fileMetadata = getDefaultObjectMapper().readValue(is, VariantFileMetadata.class);
                 VariantSetStats stats = fileMetadata.getStats();
                 params = new ObjectMap(FileDBAdaptor.QueryParams.STATS.key(), new ObjectMap(VARIANT_FILE_STATS, stats));
                 update(studyStr, vcf.getPath(), params, new QueryOptions(), sessionId);
@@ -2488,8 +2491,16 @@ public class FileManager extends AnnotationSetManager<File> {
         return filesToAnalyse;
     }
 
-    public FacetedQueryResult facet(String studyStr, Query query, QueryOptions queryOptions, String sessionId)
+    public FacetQueryResult facet(String studyStr, Query query, QueryOptions queryOptions, boolean defaultStats, String sessionId)
             throws CatalogException, IOException {
+        ParamUtils.defaultObject(query, Query::new);
+        ParamUtils.defaultObject(queryOptions, QueryOptions::new);
+
+        if (defaultStats || StringUtils.isEmpty(queryOptions.getString(QueryOptions.FACET))) {
+            String facet = queryOptions.getString(QueryOptions.FACET);
+            queryOptions.put(QueryOptions.FACET, StringUtils.isNotEmpty(facet) ? defaultFacet + ";" + facet : defaultFacet);
+        }
+
         CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);
 
         String userId = userManager.getUserId(sessionId);

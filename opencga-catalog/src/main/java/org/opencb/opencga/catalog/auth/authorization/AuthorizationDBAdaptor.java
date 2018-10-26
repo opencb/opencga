@@ -77,6 +77,8 @@ public interface AuthorizationDBAdaptor {
 
     <E extends AbstractAclEntry> void setAcls(List<Long> resourceIds, List<E> acls, Entity entity) throws CatalogDBException;
 
+    void setMembersHaveInternalPermissionsDefined(long studyId, List<String> members, List<String> permissions, String entity);
+
     void applyPermissionRules(long studyId, PermissionRule permissionRule, Study.Entity entry) throws CatalogException;
 
     void removePermissionRuleAndRemovePermissions(Study study, String permissionRuleId, Study.Entity entry) throws CatalogException;

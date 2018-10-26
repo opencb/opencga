@@ -52,7 +52,7 @@ public class SampleIndexTableRecordReader extends TableRecordReader {
     private Scan scan;
     private List<Region> regions;
     private VariantDBIterator iterator;
-    private List<Result> results;
+    private final List<Result> results = new ArrayList<>();
     private ListIterator<Result> resultsIterator;
 
     private ImmutableBytesWritable currentKey = new ImmutableBytesWritable();
@@ -245,10 +245,14 @@ public class SampleIndexTableRecordReader extends TableRecordReader {
             }
             gets.add(get);
         }
-        if (gets.isEmpty()) {
-            results = Collections.emptyList();
-        } else {
-            results = Arrays.asList(table.get(gets));
+        results.clear();
+        if (!gets.isEmpty()) {
+            for (Result result : table.get(gets)) {
+                // Discard empty results
+                if (!result.isEmpty()) {
+                    results.add(result);
+                }
+            }
         }
         resultsIterator = results.listIterator();
     }

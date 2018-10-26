@@ -105,7 +105,7 @@ public class VariantTableHelper extends GenomeHelper {
         int nsplits = genomeHelper.getConf().getInt(HadoopVariantStorageEngine.VARIANT_TABLE_PRESPLIT_SIZE, 100);
         List<byte[]> splitList = generateBootPreSplitsHuman(
                 nsplits,
-                (chr, pos) -> VariantPhoenixKeyFactory.generateVariantRowKey(chr, pos, "", ""));
+                VariantPhoenixKeyFactory::generateVariantRowKey);
         boolean newTable = HBaseManager.createTableIfNeeded(con, tableName, genomeHelper.getColumnFamily(),
                 splitList, Compression.getCompressionAlgorithmByName(
                         genomeHelper.getConf().get(

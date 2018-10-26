@@ -16,7 +16,8 @@
 
 package org.opencb.opencga.app.cli;
 
-import java.time.LocalDateTime;
+import org.opencb.opencga.core.common.TimeUtils;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,49 +27,72 @@ import java.util.Map;
  */
 public class CliSession {
 
-    private String userId;
+    private String host;
+    private String version;
+    private String user;
     private String token;
     private String login;
-    private String logout;
+    private String expirationTime;
     private Map<String, List<String>> projectsAndStudies;
 
     public CliSession() {
     }
 
-    public CliSession(String userId, String token) {
-        this(userId, token, LocalDateTime.now().toString(), null, new HashMap<>());
+    public CliSession(String host, String user, String token) {
+        this(host, user, token, TimeUtils.getTime(), new HashMap<>());
     }
 
-    public CliSession(String userId, String token, Map<String, List<String>> projectsAndStudies) {
-        this(userId, token, LocalDateTime.now().toString(), null, projectsAndStudies);
+    public CliSession(String host, String user, String token, Map<String, List<String>> projectsAndStudies) {
+        this(host, user, token, TimeUtils.getTime(), projectsAndStudies);
     }
 
-    public CliSession(String userId, String token, String login, String logout, Map<String, List<String>> projectsAndStudies) {
-        this.userId = userId;
+    public CliSession(String host, String user, String token, String login, Map<String, List<String>> projectsAndStudies) {
+        this.host = host;
+        this.user = user;
         this.token = token;
         this.login = login;
-        this.logout = logout;
         this.projectsAndStudies = projectsAndStudies;
+        this.version = "v1";
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("CliSession{");
-        sb.append("userId='").append(userId).append('\'');
-        sb.append(", sessionId='").append(token).append('\'');
+        sb.append("host='").append(host).append('\'');
+        sb.append(", version='").append(version).append('\'');
+        sb.append(", user='").append(user).append('\'');
+        sb.append(", token='").append(token).append('\'');
         sb.append(", login='").append(login).append('\'');
-        sb.append(", logout='").append(logout).append('\'');
-        sb.append(", projects=").append(projectsAndStudies);
+        sb.append(", expirationTime='").append(expirationTime).append('\'');
+        sb.append(", projectsAndStudies=").append(projectsAndStudies);
         sb.append('}');
         return sb.toString();
     }
 
-    public String getUserId() {
-        return userId;
+    public String getHost() {
+        return host;
     }
 
-    public CliSession setUserId(String userId) {
-        this.userId = userId;
+    public CliSession setHost(String host) {
+        this.host = host;
+        return this;
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
+    public CliSession setVersion(String version) {
+        this.version = version;
+        return this;
+    }
+
+    public String getUser() {
+        return user;
+    }
+
+    public CliSession setUser(String user) {
+        this.user = user;
         return this;
     }
 
@@ -90,12 +114,12 @@ public class CliSession {
         return this;
     }
 
-    public String getLogout() {
-        return logout;
+    public String getExpirationTime() {
+        return expirationTime;
     }
 
-    public CliSession setLogout(String logout) {
-        this.logout = logout;
+    public CliSession setExpirationTime(String expirationTime) {
+        this.expirationTime = expirationTime;
         return this;
     }
 

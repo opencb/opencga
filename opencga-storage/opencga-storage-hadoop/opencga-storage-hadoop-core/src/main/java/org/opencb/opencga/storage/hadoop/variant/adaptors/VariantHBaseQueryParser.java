@@ -74,6 +74,7 @@ public class VariantHBaseQueryParser {
             INCLUDE_FILE,
             INCLUDE_STUDY,
             INCLUDE_SAMPLE,
+            INCLUDE_FORMAT,
             UNKNOWN_GENOTYPE));
 
     public VariantHBaseQueryParser(GenomeHelper genomeHelper, StudyConfigurationManager studyConfigurationManager) {
@@ -133,13 +134,6 @@ public class VariantHBaseQueryParser {
                 messages.add("Negated files not supported");
             }
             otherParams.remove(FILE);
-        }
-        if (otherParams.contains(SAMPLE)) {
-            String value = query.getString(SAMPLE.key());
-            if (splitValue(value).getValue().stream().anyMatch(VariantQueryUtils::isNegated)) {
-                messages.add("Negated samples not supported");
-            }
-            otherParams.remove(SAMPLE);
         }
         if (otherParams.contains(GENOTYPE)) {
             HashMap<Object, List<String>> map = new HashMap<>();
@@ -357,6 +351,11 @@ public class VariantHBaseQueryParser {
                 for (Integer sampleId : sampleIds) {
                     scan.addColumn(family, buildSampleColumnKey(studyId, sampleId));
                 }
+                Set<Integer> fileIds = StudyConfigurationManager.getFileIdsFromSampleIds(
+                        selectElements.getStudyConfigurations().get(studyId), sampleIds);
+                for (Integer fileId : fileIds) {
+                    scan.addColumn(family, buildFileColumnKey(studyId, fileId));
+                }
             });
 
             selectElements.getFiles().forEach((studyId, fileIds) -> {
@@ -447,48 +446,7 @@ public class VariantHBaseQueryParser {
         }
 
         if (isValidParam(query, SAMPLE)) {
-            String value = query.getString(SAMPLE.key());
-            VariantQueryUtils.QueryOperation operation = checkOperator(value);
-            List<String> values = splitValue(value, operation);
-            FilterList subFilters;
-            if (operation == QueryOperation.OR) {
-                subFilters = new FilterList(FilterList.Operator.MUST_PASS_ONE);
-                filters.addFilter(subFilters);
-            } else {
-                subFilters = filters;
-            }
-            for (String sample : values) {
-                if (defaultStudyConfiguration == null) {
-                    throw VariantQueryException.missingStudyForSample(sample, studyNames);
-                }
-                Integer sampleId = StudyConfigurationManager.getSampleIdFromStudy(sample, defaultStudyConfiguration, true);
-                if (sampleId == null) {
-                    throw VariantQueryException.missingStudyForSample(sample, studyNames);
-                }
-                byte[] column = buildSampleColumnKey(defaultStudyConfiguration.getStudyId(), sampleId);
-                if (isNegated(sample)) {
-                    subFilters.addFilter(missingColumnFilter(column));
-                } else {
-                    // Check on only if the column exists. Also check if the GT starts contains a 1 ( 1/? or ?/1 )
-                    filteredStudies.add(defaultStudyConfiguration.getStudyId());
-
-                    // 1/?
-                    SingleColumnValueFilter filter1 = new SingleColumnValueFilter(family, column, CompareFilter.CompareOp.EQUAL,
-                            new BinaryPrefixComparator(Bytes.toBytes("1")));
-                    filter1.setFilterIfMissing(true);
-                    filter1.setLatestVersionOnly(true);
-
-                    // ?/1
-                    SingleColumnValueFilter filter2 = new SingleColumnValueFilter(family, column, CompareFilter.CompareOp.EQUAL,
-                            new RegexStringComparator("^[\\.0-9][/\\|]1")
-                    );
-                    filter2.setFilterIfMissing(true);
-                    filter2.setLatestVersionOnly(true);
-
-                    subFilters.addFilter(new FilterList(FilterList.Operator.MUST_PASS_ONE, filter1, filter2));
-                }
-                scan.addColumn(family, column);
-            }
+            throw VariantQueryException.unsupportedVariantQueryFilter(SAMPLE, "hbase-native-query");
         }
 
         if (isValidParam(query, STUDY)) {

@@ -1,6 +1,6 @@
 !define TEST_SYSTEM {slim}
 !path target/appassembler/dependencies/*.jar
-!define OPENCGA_VERSION {opencga-1.4.0-rc-dev}
+!define OPENCGA_VERSION {opencga-1.4.0-rc2-dev}
 !define TEST_HOST {qa.opencb.org}
 !define VERSION {v1}
 
@@ -14,7 +14,8 @@
 
 !3 Generate Random Variables 
 !|Table: Rest Fixture | http://bioinfoint.hpc.cam.ac.uk/|
-|let|user|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5).concat("-",Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)).concat(".",Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5))||
+|let|user|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5).concat("-",Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)).concat("_",Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)).concat(".",Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5))||
+|let|inValidUserId|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5).concat("-",Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)).concat("__",Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)).concat(".",Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5))||
 |let|project|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 |let|study|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 |let|userA|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
@@ -32,9 +33,16 @@
 
 !3 Create User
 !|Table: Rest Fixture  | $baseURL |
-| setBody |  { "name": "$user", "userId": "$user","email": "test@test.com", "password" : "user_P@ssword",  "account": "full" }|
+| setBody |  { "name": "$user", "id": "$user","email": "test@test.com", "password" : "user_P@ssword",  "account": "full" }|
+| setHeaders|!- Content-Type:application/json 
+Authorization : Bearer $root-!|
+| POST | /v1/admin/users/create |200| Content-Type : application/json| jsonbody.error === '' && jsonbody.response[0].result[0].id == '$user'|
+
+!3 (Negative) Create User With In-Valid ID 
+!|Table: Rest Fixture  | $baseURL |
+| setBody |  { "name": "$inValidUserId", "id": "$inValidUserId","email": "test@test.com", "password" : "user_P@ssword",  "account": "full" }|
 | setHeader|Content-Type:application/json|
-| POST | /v1/admin/users/create?sid=$root |200| Content-Type : application/json| jsonbody.error === '' && jsonbody.response[0].result[0].id == '$user'|
+| POST | /v1/admin/users/create?sid=$root |500| Content-Type : application/json||
 
 !3 Login User 
 !|Table: Rest Fixture | $baseURL  |
@@ -43,66 +51,64 @@
 | POST | /v1/users/$user/login |200|  Content-Type: application/json ||
 |let|sessionId|js|response.jsonbody.response[0].result[0].sessionId||
 
+!|Table: Rest Fixture Config|
+|restfixture.default.headers|!-Content-Type : application/json
+Authorization : Bearer $sessionId -!|
+
 !3 Create Project 
 !|Table: Rest Fixture | $baseURL |
 | setBody |{  "name": "$project",  "alias": "$project","organism" : { "scientificName": "Homo sapiens", "assembly": "GRCh37"}}|
-| setHeader|Content-Type:application/json|
-| POST | /v1/projects/create?sid=$sessionId |200|  Content-Type: application/json ||
+| POST | /v1/projects/create |200|  Content-Type: application/json ||
 |let|projectId|js|response.jsonbody.response[0].result[0].id.toString()||
 
 !3 Create Study  
 !|Table: Rest Fixture | $baseURL |
 | setBody |{  "name": "$study", "alias": "$study", "type": "CASE_CONTROL"}|
-| setHeader|Content-Type:application/json|
-| POST | /v1/studies/create?sid=$sessionId&projectId=$projectId |200|  Content-Type: application/json ||
+| POST | /v1/studies/create?projectId=$projectId |200|  Content-Type: application/json ||
 |let|studyId|js|response.jsonbody.response[0].result[0].id||
 
 !3 Increment Project Release 
 !|Table: Rest Fixture | $baseURL |
-| setHeader|Content-Type:application/json|
-| POST | /v1/projects/$projectId/increlease?sid=$sessionId |200|  Content-Type: application/json ||
+| POST | /v1/projects/$projectId/increlease |200|  Content-Type: application/json ||
 
 !3 Create Global Variable Set  
 !|Table: Rest Fixture  | $baseURL |
 | setBody |  {"id" : "VS1","unique": false, "confidential" : "false",  "name": "$gvsName",  "description": "string",  "variables": [{ "id" : "var_int", "name": "V1", "type" : "INTEGER", "required" : true,"multiValue": false }, {"id" : "var_double", "name": "V2", "type" : "DOUBLE", "defaultValue" : "20.5" , "required" : false,"multiValue": false }]}|
-| setHeader|Content-Type:application/json|
-| POST | /v1/variableset/create?sid=$sessionId&study=$study |200| Content-Type : application/json||
+| POST | /v1/variableset/create?study=$study |200| Content-Type : application/json||
 |let|gVariableSetId|js|response.jsonbody.response[0].result[0].id||
 
 !3 Create Global Nested Variable Set 2
 !|Table: Rest Fixture  | $baseURL |
 | setBody |  { "id" : "VS2", "unique": false, "confidential" : "false",  "name": "$gvsName2",  "description": "string",  "variables": [{"id" : "outer_var", "name": "V11", "type" : "OBJECT", "required" : true,"multiValue": true , "variableSet" : [{"id" : "inner_first_var","name": "V1", "type" : "DOUBLE", "defaultValue" : "20.5" , "required" : false,"multiValue": false }, {"id" : "inner_second_var","name": "V2", "type" : "INTEGER", "defaultValue" : "20" , "required" : false,"multiValue": false }] }]}|
-| setHeader|Content-Type:application/json|
-| POST | /v1/variableset/create?sid=$sessionId&study=$study |200| Content-Type : application/json||
+| POST | /v1/variableset/create?study=$study |200| Content-Type : application/json||
 |let|gVariableSetId2|js|response.jsonbody.response[0].result[0].id||
 
 !3 Create Global Variable Set Without Ids
 !|Table: Rest Fixture  | $baseURL |
 | setBody |  { "unique": false, "confidential" : "false",  "name": "VSNameTest",  "description": "string",  "variables": [{"name": "outer_var", "type" : "OBJECT", "required" : true,"multiValue": true , "variableSet" : [{"name": "inner_first_var_name_test", "type" : "DOUBLE", "defaultValue" : "20.5" , "required" : false,"multiValue": false }, {"name": "inner_second_var_name_test", "type" : "INTEGER", "defaultValue" : "20" , "required" : false,"multiValue": false }] }]}|
-| setHeader|Content-Type:application/json|
-| POST | /v1/variableset/create?sid=$sessionId&study=$study |200| Content-Type : application/json||
+| POST | /v1/variableset/create?study=$study |200| Content-Type : application/json||
 |let|dummyVSId|js|response.jsonbody.response[0].result[0].id||
 
 #userA has Full Permissions
 !3 Create userA  
 !|Table: Rest Fixture  | $baseURL |
-| setBody |  { "name": "$userA", "userId": "$userA","email": "test@test.com", "password" : "p@ssword" , "account": "full" }|
-| setHeader|Content-Type:application/json|
+| setBody |  { "name": "$userA", "id": "$userA","email": "test@test.com", "password" : "p@ssword" , "account": "full" }|
+| setHeaders|!- Content-Type:application/json 
+Authorization : Bearer -!|
 | POST | /v1/admin/users/create?sid=$root|200| Content-Type : application/json| jsonbody.error === '' |
 
 #userB has Empty(no) Permissions
 !3 Create userB  
 !|Table: Rest Fixture  | $baseURL |
-| setBody |  { "name": "$userB", "userId": "$userB","email": "test@test.com", "password" : "p@ssword" ,  "account": "full" }|
-| setHeader|Content-Type:application/json|
+| setBody |  { "name": "$userB", "id": "$userB","email": "test@test.com", "password" : "p@ssword" ,  "account": "full" }|
+| setHeaders|!- Content-Type:application/json 
+Authorization : Bearer -!|
 | POST | /v1/admin/users/create?sid=$root |200| Content-Type : application/json| jsonbody.error === '' |
 
 !3 Add User A to Admin group
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"users" : "$userA", "action" : "ADD" }|
-| setHeader|Content-Type:application/json|
-| POST |/v1/studies/$study/groups/admins/update?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result[0].userIds.length == '1'|
-
+| POST |/v1/studies/$study/groups/admins/update|200|  Content-Type: application/json |jsonbody.response[0].result[0].userIds.length == '1'|
 
 !define userProjectStudy {$user@$project:$study}
 
@@ -113,7 +119,8 @@
 !3 Login userB 
 !|Table: Rest Fixture | $baseURL  |
 | setBody | {"password" : "p@ssword"}|
-| setHeader|Content-Type:application/json|
+| setHeaders|!- Content-Type:application/json 
+Authorization : Bearer -!|
 | POST | /v1/users/$userB/login |200|  Content-Type: application/json ||
 |let|userBSessionId|js|response.jsonbody.response[0].result[0].sessionId||
 

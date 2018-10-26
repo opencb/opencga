@@ -18,6 +18,54 @@ var Entity = Object.freeze({"PROJECT": 1, "STUDY": 2, "FILE": 3, "SAMPLE": 4, "C
     "CLINICAL": 9, "PANEL": 10});
 
 
+function haveInternalPermissions(studyId, aclList, userMap) {
+    var allUsers = [];
+    var usersWithView = [];
+
+    if (!(studyId.valueOf().toString() in userMap)) {
+        userMap[studyId.valueOf().toString()] = [];
+    }
+    var userList = userMap[studyId.valueOf().toString()];
+
+    for (var i in aclList) {
+        var split = aclList[i].split("__");
+        if (allUsers.indexOf(split[0]) === -1) {
+            allUsers.push(split[0]);
+        }
+        if (split[1] === "VIEW") {
+            usersWithView.push(split[0]);
+        }
+    }
+
+    for (var i in usersWithView) {
+        var index = allUsers.indexOf(usersWithView[i]);
+        if (index > -1) {
+            allUsers.splice(index, 1);
+        }
+    }
+
+    for (var i in allUsers) {
+        var index = userList.indexOf(allUsers[i]);
+        if (index === -1) {
+            userList.push(allUsers[i]);
+        }
+    }
+}
+
+function updateStudyPermissions(studyUserMap, entity) {
+    for (var key in studyUserMap) {
+        var userList = studyUserMap[key];
+        if (userList.length > 0) {
+            for (var i in userList) {
+                var myObject = {};
+                myObject["_withInternalAcls." + userList[i]] = entity;
+                db.study.update({"uid": NumberLong(key)}, {"$addToSet": myObject});
+                db.study.update({"id": NumberLong(key)}, {"$addToSet": myObject});
+            }
+        }
+    }
+}
+
 // Converts an ArrayBuffer directly to base64, without any intermediate 'convert to string then use window.btoa' step
 // Extracted from https://gist.github.com/jonleighton/958841
 function base64ArrayBuffer(arrayBuffer) {
@@ -142,6 +190,7 @@ migrateCollection("clinical", {"uuid": {$exists: false}}, {attributes: 0, annota
 });
 
 print("\nMigrating cohort");
+var studyUserMap = {};
 migrateCollection("cohort", {"uuid": {$exists: false}}, {attributes: 0, annotationSets: 0}, function(bulk, doc) {
     var setChanges = {};
     var unsetChanges = {};
@@ -169,10 +218,15 @@ migrateCollection("cohort", {"uuid": {$exists: false}}, {attributes: 0, annotati
     }
     /* end uid and uuid migration: #819 */
 
+    haveInternalPermissions(doc._studyId, doc._acl, studyUserMap);
+
     bulk.find({"_id": doc._id}).updateOne({"$set": setChanges, "$unset": unsetChanges});
 });
+updateStudyPermissions(studyUserMap, "COHORT");
+
 
 print("\nMigrating family");
+var studyUserMap = {};
 migrateCollection("family", {"uuid": {$exists: false}}, {attributes: 0, annotationSets: 0}, function(bulk, doc) {
     var setChanges = {
         "expectedSize": -1 // #823
@@ -203,10 +257,15 @@ migrateCollection("family", {"uuid": {$exists: false}}, {attributes: 0, annotati
     }
     /* end uid and uuid migration: #819 */
 
+    haveInternalPermissions(doc._studyId, doc._acl, studyUserMap);
+
     bulk.find({"_id": doc._id}).updateOne({"$set": setChanges, "$unset": unsetChanges});
 });
+updateStudyPermissions(studyUserMap, "FAMILY");
+
 
 print("\nMigrating file");
+var studyUserMap = {};
 migrateCollection("file", {"uuid": {$exists: false}}, {attributes: 0, stats: 0}, function(bulk, doc) {
     var setChanges = {
         "customAnnotationSets": [], // #823
@@ -221,6 +280,15 @@ migrateCollection("file", {"uuid": {$exists: false}}, {attributes: 0, stats: 0},
     setChanges["studyUid"] = doc["_studyId"];
     setChanges["id"] = doc["path"].replace(/\//g, ":");
     setChanges["uuid"] = generateOpenCGAUUID("FILE", setChanges["_creationDate"]);
+
+    /* #906 */
+    setChanges["_reverse"] = doc["name"].split("").reverse().join("");
+
+    /* Check bigwig format autodetection */
+    if (doc.name.endsWith(".bw")) {
+        setChanges["format"] = "BIGWIG";
+        setChanges["bioformat"] = "COVERAGE";
+    }
 
     unsetChanges["acl"] = "";
     unsetChanges["_studyId"] = "";
@@ -252,10 +320,15 @@ migrateCollection("file", {"uuid": {$exists: false}}, {attributes: 0, stats: 0},
     }
     /* end uid and uuid migration: #819 */
 
+    haveInternalPermissions(doc._studyId, doc._acl, studyUserMap);
+
     bulk.find({"_id": doc._id}).updateOne({"$set": setChanges, "$unset": unsetChanges});
 });
+updateStudyPermissions(studyUserMap, "FILE");
+
 
 print("\nMigrating individual");
+var studyUserMap = {};
 migrateCollection("individual", {"uuid": {$exists: false}}, {attributes: 0, annotationSets: 0}, function(bulk, doc) {
     var setChanges = {
         location: {  // #823
@@ -308,10 +381,15 @@ migrateCollection("individual", {"uuid": {$exists: false}}, {attributes: 0, anno
     }
     /* end uid and uuid migration: #819 */
 
+    haveInternalPermissions(doc._studyId, doc._acl, studyUserMap);
+
     bulk.find({"_id": doc._id}).updateOne({"$set": setChanges, "$unset": unsetChanges});
 });
+updateStudyPermissions(studyUserMap, "INDIVIDUAL");
+
 
 print("\nMigrating job");
+var studyUserMap = {};
 migrateCollection("job", {"uuid": {$exists: false}}, {attributes: 0}, function(bulk, doc) {
     var setChanges = {};
     var unsetChanges = {};
@@ -373,10 +451,15 @@ migrateCollection("job", {"uuid": {$exists: false}}, {attributes: 0}, function(b
     }
     /* end uid and uuid migration: #819 */
 
+    haveInternalPermissions(doc._studyId, doc._acl, studyUserMap);
+
     bulk.find({"_id": doc._id}).updateOne({"$set": setChanges, "$unset": unsetChanges});
 });
+updateStudyPermissions(studyUserMap, "JOB");
+
 
 print("\nMigrating sample");
+var studyUserMap = {};
 migrateCollection("sample", {"uuid": {$exists: false}}, {attributes: 0, annotationSets: 0}, function(bulk, doc) {
     var setChanges = {};
     var unsetChanges = {};
@@ -395,8 +478,12 @@ migrateCollection("sample", {"uuid": {$exists: false}}, {attributes: 0, annotati
     unsetChanges["_studyId"] = "";
     /* end uid and uuid migration: #819 */
 
+    haveInternalPermissions(doc._studyId, doc._acl, studyUserMap);
+
     bulk.find({"_id": doc._id}).updateOne({"$set": setChanges, "$unset": unsetChanges});
 });
+updateStudyPermissions(studyUserMap, "SAMPLE");
+
 
 // Global variable populated by the migrateCollection("user"... and used in migrateCollection("study"...
 var projectUidFqnMap = {};
@@ -505,6 +592,7 @@ db.file.createIndex({"uid": 1}, {"background": true});
 db.file.createIndex({"id": 1, "studyUid": 1}, {"unique": true, "background": true});
 db.file.createIndex({"path": 1, "studyUid": 1}, {"unique": true, "background": true});
 db.file.createIndex({"name": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.file.createIndex({"_reverse": 1, "studyUid": 1, "status.name": 1}, {"background": true});
 db.file.createIndex({"type": 1, "studyUid": 1, "status.name": 1}, {"background": true});
 db.file.createIndex({"format": 1, "studyUid": 1, "status.name": 1}, {"background": true});
 db.file.createIndex({"bioformat": 1, "studyUid": 1, "status.name": 1}, {"background": true});
@@ -569,11 +657,33 @@ db.family.createIndex({"customAnnotationSets.id": 1, "customAnnotationSets.value
 db.family.createIndex({"_lastOfVersion": 1, "studyUid": 1}, {"background": true});
 db.family.createIndex({"studyUid": 1}, {"background": true});
 
-db.diseasePanel.createIndex({"uuid": 1, "version": 1}, {"unique": true, "background": true});
-db.diseasePanel.createIndex({"uid": 1, "version": 1}, {"unique": true, "background": true});
-db.diseasePanel.createIndex({"id": 1, "studyUid": 1, "version": 1}, {"unique": true, "background": true});
-db.diseasePanel.createIndex({"_lastOfVersion": 1, "studyUid": 1}, {"background": true});
-db.diseasePanel.createIndex({"studyUid": 1}, {"background": true});
+db.panel.createIndex({"uuid": 1, "version": 1}, {"unique": true, "background": true});
+db.panel.createIndex({"uid": 1, "version": 1}, {"unique": true, "background": true});
+db.panel.createIndex({"id": 1, "studyUid": 1, "version": 1}, {"unique": true, "background": true});
+db.panel.createIndex({"_lastOfVersion": 1, "studyUid": 1}, {"background": true});
+db.panel.createIndex({"studyUid": 1}, {"background": true});
+
+// #912
+db.job.createIndex({"_creationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.job.createIndex({"_modificationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+
+db.file.createIndex({"_creationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.file.createIndex({"_modificationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+
+db.sample.createIndex({"_creationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.sample.createIndex({"_modificationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+
+db.individual.createIndex({"_creationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.individual.createIndex({"_modificationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+
+db.cohort.createIndex({"_creationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.cohort.createIndex({"_modificationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+
+db.family.createIndex({"_creationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.family.createIndex({"_modificationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+
+db.panel.createIndex({"_creationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.panel.createIndex({"_modificationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
 
 // Ticket #745 - Add permission rules
 function addPermissionRules(doc, changes) {

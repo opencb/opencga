@@ -14,7 +14,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 
 setup(
     name='pyCGA',
-    version='1.3.0',
+    version='1.3.1',
     description='A REST client for OpenCGA web services',
     long_description=long_description,
     long_description_content_type='text/x-rst',

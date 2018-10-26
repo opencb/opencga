@@ -123,9 +123,9 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
         DELETE_DATASETS(DatasetAclEntry.DatasetPermissions.DELETE.name(), DATASET),
 
         // DISEASE PANELS
-        VIEW_PANELS(DiseasePanelAclEntry.DiseasePanelPermissions.VIEW.name(), DISEASE_PANEL),
-        WRITE_PANELS(DiseasePanelAclEntry.DiseasePanelPermissions.UPDATE.name(), DISEASE_PANEL),
-        DELETE_PANELS(DiseasePanelAclEntry.DiseasePanelPermissions.DELETE.name(), DISEASE_PANEL),
+        VIEW_PANELS(PanelAclEntry.PanelPermissions.VIEW.name(), DISEASE_PANEL),
+        WRITE_PANELS(PanelAclEntry.PanelPermissions.UPDATE.name(), DISEASE_PANEL),
+        DELETE_PANELS(PanelAclEntry.PanelPermissions.DELETE.name(), DISEASE_PANEL),
 
         // CLINICAL ANALYSIS
         VIEW_CLINICAL_ANALYSIS(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.VIEW.name(), CLINICAL_ANALYSIS),
@@ -193,9 +193,9 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
             return null;
         }
 
-        public DiseasePanelAclEntry.DiseasePanelPermissions getDiseasePanelPermission() {
+        public PanelAclEntry.PanelPermissions getPanelPermission() {
             if (this.type == DISEASE_PANEL) {
-                return DiseasePanelAclEntry.DiseasePanelPermissions.valueOf(this.permission);
+                return PanelAclEntry.PanelPermissions.valueOf(this.permission);
             }
             return null;
         }

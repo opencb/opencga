@@ -73,8 +73,7 @@ public class MongoDBVariantStatsCalculator extends AbstractDocumentConverter imp
     }
 
     public VariantStatsWrapper calculateStats(Variant variant, Document study) {
-        VariantStatsWrapper statsWrapper = new VariantStatsWrapper(variant.getChromosome(), variant.getStart(), variant.getEnd(),
-                new HashMap<>(cohortIds.size()), variant.getSv());
+        VariantStatsWrapper statsWrapper = new VariantStatsWrapper(variant, new HashMap<>(cohortIds.size()));
 
         Document gt = study.get(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD, Document.class);
 

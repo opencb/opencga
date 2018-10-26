@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.managers;
 import com.mongodb.BasicDBObject;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -46,6 +47,19 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.*;
 
 public class CatalogManagerTest extends AbstractManagerTest {
+
+    @Test
+    public void createStudyFailMoreThanOneProject() throws CatalogException {
+        catalogManager.getProjectManager().incrementRelease(project1, sessionIdUser);
+        catalogManager.getProjectManager().create("1000G2", "Project about some genomes", "", "ACME", "Homo sapiens",
+                null, null, "GRCh38", new QueryOptions(), sessionIdUser);
+
+        // Create a new study without providing the project. It should raise an error because the user owns more than one project
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("More than one project found");
+        catalogManager.getStudyManager().create(null, "phasexx", null, "Phase 1", Study.Type.TRIO, null, "Done", null, null, null, null,
+                null, null, null, null, sessionIdUser);
+    }
 
     @Test
     public void testAdminUserExists() throws Exception {
@@ -305,8 +319,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("not found");
-        catalogManager.getProjectManager().update(projectId, options, null, sessionIdUser2);
-
+        catalogManager.getProjectManager().update(projectId, options, null, sessionIdUser);
     }
 
     /**
@@ -1072,16 +1085,16 @@ public class CatalogManagerTest extends AbstractManagerTest {
         VariableSet variableSet = study.getVariableSets().get(0);
 
         String individualId1 = catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("INDIVIDUAL_1")
-                .setKaryotypicSex(Individual.KaryotypicSex.UNKNOWN).setLifeStatus(Individual.LifeStatus.UNKNOWN)
-                        .setAffectationStatus(Individual.AffectationStatus.UNKNOWN), new QueryOptions(), sessionIdUser)
+                .setKaryotypicSex(IndividualProperty.KaryotypicSex.UNKNOWN).setLifeStatus(IndividualProperty.LifeStatus.UNKNOWN)
+                        .setAffectationStatus(IndividualProperty.AffectationStatus.UNKNOWN), new QueryOptions(), sessionIdUser)
                 .first().getId();
         String individualId2 = catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("INDIVIDUAL_2")
-                .setKaryotypicSex(Individual.KaryotypicSex.UNKNOWN).setLifeStatus(Individual.LifeStatus.UNKNOWN)
-                        .setAffectationStatus(Individual.AffectationStatus.UNKNOWN), new QueryOptions(), sessionIdUser)
+                .setKaryotypicSex(IndividualProperty.KaryotypicSex.UNKNOWN).setLifeStatus(IndividualProperty.LifeStatus.UNKNOWN)
+                        .setAffectationStatus(IndividualProperty.AffectationStatus.UNKNOWN), new QueryOptions(), sessionIdUser)
                 .first().getId();
         String individualId3 = catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("INDIVIDUAL_3")
-                .setKaryotypicSex(Individual.KaryotypicSex.UNKNOWN).setLifeStatus(Individual.LifeStatus.UNKNOWN)
-                        .setAffectationStatus(Individual.AffectationStatus.UNKNOWN), new QueryOptions(), sessionIdUser)
+                .setKaryotypicSex(IndividualProperty.KaryotypicSex.UNKNOWN).setLifeStatus(IndividualProperty.LifeStatus.UNKNOWN)
+                        .setAffectationStatus(IndividualProperty.AffectationStatus.UNKNOWN), new QueryOptions(), sessionIdUser)
                 .first().getId();
 
         catalogManager.getIndividualManager().update(studyFqn, individualId1, new ObjectMap()

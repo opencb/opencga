@@ -17,16 +17,21 @@
 package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
+import org.opencb.biodata.models.clinical.pedigree.Member;
+import org.opencb.biodata.models.clinical.pedigree.Pedigree;
+import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.pedigree.IndividualProperty;
+import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.Error;
-import org.opencb.commons.datastore.core.result.FacetedQueryResult;
+import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
@@ -62,6 +67,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
+import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
 /**
  * Created by pfurio on 02/05/17.
@@ -71,6 +77,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     protected static Logger logger = LoggerFactory.getLogger(FamilyManager.class);
     private UserManager userManager;
     private StudyManager studyManager;
+
+    private final String defaultFacet = "creationYear>>creationMonth;status;phenotypes;expectedSize;numMembers[0..20]:2";
 
     FamilyManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                   DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory, Configuration configuration) {
@@ -514,9 +522,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 || parameters.containsKey(FamilyDBAdaptor.QueryParams.MEMBERS.key())) {
             // We parse the parameters to a family object
             try {
-                ObjectMapper objectMapper = new ObjectMapper();
-                objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-                objectMapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
+                ObjectMapper objectMapper = getDefaultObjectMapper();
 
                 family = objectMapper.readValue(objectMapper.writeValueAsString(parameters), Family.class);
             } catch (IOException e) {
@@ -544,7 +550,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
             ObjectMap tmpParams;
             try {
-                ObjectMapper objectMapper = new ObjectMapper();
+                ObjectMapper objectMapper = getDefaultObjectMapper();
                 tmpParams = new ObjectMap(objectMapper.writeValueAsString(family));
             } catch (JsonProcessingException e) {
                 logger.error("{}", e.getMessage(), e);
@@ -570,6 +576,46 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         auditManager.recordUpdate(AuditRecord.Resource.family, familyId, resource.getUser(), parameters, null, null);
 
         return queryResult;
+    }
+
+    public Map<String, List<String>> calculateFamilyGenotypes(String studyStr, String familyId, ClinicalProperty.ModeOfInheritance moi,
+                                                         String disease, boolean incompletePenetrance, String token)
+            throws CatalogException {
+        QueryResult<Family> familyQueryResult = get(studyStr, familyId, QueryOptions.empty(), token);
+
+        if (familyQueryResult.getNumResults() == 0) {
+            throw new CatalogException("Family " + familyId + " not found");
+        }
+
+        boolean notFound = true;
+        for (Phenotype phenotype : familyQueryResult.first().getPhenotypes()) {
+            if (phenotype.getId().equals(disease)) {
+                notFound = false;
+                break;
+            }
+        }
+        if (notFound) {
+            throw new CatalogException("Phenotype " + disease + " not found in any member of the family");
+        }
+
+        Phenotype phenotype = new Phenotype(disease, disease, "");
+
+        Pedigree pedigree = getPedigreeFromFamily(familyQueryResult.first());
+
+        switch (moi) {
+            case MONOALLELIC:
+                return ModeOfInheritance.dominant(pedigree, phenotype, incompletePenetrance);
+            case BIALLELIC:
+                return ModeOfInheritance.recessive(pedigree, phenotype, incompletePenetrance);
+            case XLINKED_BIALLELIC:
+                return ModeOfInheritance.xLinked(pedigree, phenotype, false);
+            case XLINKED_MONOALLELIC:
+                return ModeOfInheritance.xLinked(pedigree, phenotype, true);
+            case YLINKED:
+                return ModeOfInheritance.yLinked(pedigree, phenotype);
+            default:
+                throw new CatalogException("Unsupported or unknown mode of inheritance " + moi);
+        }
     }
 
     // **************************   ACLs  ******************************** //
@@ -656,8 +702,16 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
     }
 
-    public FacetedQueryResult facet(String studyStr, Query query, QueryOptions queryOptions, String sessionId)
+    public FacetQueryResult facet(String studyStr, Query query, QueryOptions queryOptions, boolean defaultStats, String sessionId)
             throws CatalogException, IOException {
+        ParamUtils.defaultObject(query, Query::new);
+        ParamUtils.defaultObject(queryOptions, QueryOptions::new);
+
+        if (defaultStats || StringUtils.isEmpty(queryOptions.getString(QueryOptions.FACET))) {
+            String facet = queryOptions.getString(QueryOptions.FACET);
+            queryOptions.put(QueryOptions.FACET, StringUtils.isNotEmpty(facet) ? defaultFacet + ";" + facet : defaultFacet);
+        }
+
         CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);
 
         String userId = userManager.getUserId(sessionId);
@@ -668,6 +722,34 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         AnnotationUtils.fixQueryAnnotationSearch(study, userId, query, authorizationManager);
 
         return catalogSolrManager.facetedQuery(study, CatalogSolrManager.FAMILY_SOLR_COLLECTION, query, queryOptions, userId);
+    }
+
+    public static Pedigree getPedigreeFromFamily(Family family) {
+        List<Individual> members = family.getMembers();
+        Map<String, Member> individualMap = new HashMap<>();
+
+        // Parse all the individuals
+        for (Individual member : members) {
+            Member individual = new Member(
+                    member.getId(), member.getName(), null, null, member.getMultiples(),
+                    Member.Sex.getEnum(member.getSex().toString()), member.getLifeStatus(),
+                    Member.AffectionStatus.getEnum(member.getAffectationStatus().toString()),
+                    member.getPhenotypes(), member.getAttributes());
+            individualMap.put(individual.getId(), individual);
+        }
+
+        // Fill parent information
+        for (Individual member : members) {
+            if (member.getFather() != null && StringUtils.isNotEmpty(member.getFather().getId())) {
+                individualMap.get(member.getId()).setFather(individualMap.get(member.getFather().getId()));
+            }
+            if (member.getMother() != null && StringUtils.isNotEmpty(member.getMother().getId())) {
+                individualMap.get(member.getId()).setMother(individualMap.get(member.getMother().getId()));
+            }
+        }
+
+        List<Member> individuals = new ArrayList<>(individualMap.values());
+        return new Pedigree(family.getId(), individuals, family.getPhenotypes(), family.getAttributes());
     }
 
     /**
@@ -767,14 +849,14 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             for (String parentName : split) {
                 String[] splitNameSex = parentName.split("\\|\\|");
                 String name = splitNameSex[0];
-                Individual.Sex sex = splitNameSex[1].equals("F") ? Individual.Sex.FEMALE : Individual.Sex.MALE;
+                IndividualProperty.Sex sex = splitNameSex[1].equals("F") ? IndividualProperty.Sex.FEMALE : IndividualProperty.Sex.MALE;
 
                 if (!membersMap.containsKey(name)) {
                     throw new CatalogException("The parent " + name + " is not present in the members list");
                 } else {
                     // Check if the sex is correct
-                    Individual.Sex sex1 = membersMap.get(name).getSex();
-                    if (sex1 != null && sex1 != sex && sex1 != Individual.Sex.UNKNOWN) {
+                    IndividualProperty.Sex sex1 = membersMap.get(name).getSex();
+                    if (sex1 != null && sex1 != sex && sex1 != IndividualProperty.Sex.UNKNOWN) {
                         throw new CatalogException("Sex of parent " + name + " is incorrect or the relationship is incorrect. In "
                                 + "principle, it should be " + sex);
                     }
@@ -791,7 +873,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 //            throw new CatalogException("Some members that are not related to any other have been found: "
 //                    + noParentsSet.stream().map(Individual::getName).collect(Collectors.joining(", ")));
             logger.warn("Some members that are not related to any other have been found: {}",
-                    noParentsSet.stream().map(Individual::getName).collect(Collectors.joining(", ")));
+                    noParentsSet.stream().map(Individual::getId).collect(Collectors.joining(", ")));
         }
     }
 

@@ -89,8 +89,8 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
             case "content":
                 queryResponse = content();
                 break;
-            case "facet":
-                queryResponse = facet();
+            case "stats":
+                queryResponse = stats();
                 break;
 //            case "fetch":
 //                queryResponse = fetch();
@@ -442,16 +442,16 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap bodyParams = new ObjectMap();
         bodyParams.putIfNotNull("permissions", commandOptions.permissions);
         bodyParams.putIfNotNull("action", commandOptions.action);
-        bodyParams.putIfNotNull("file", commandOptions.id);
-        bodyParams.putIfNotNull("sample", commandOptions.sample);
+        bodyParams.putIfNotNull("file", extractIdsFromListOrFile(commandOptions.id));
+        bodyParams.putIfNotNull("sample", extractIdsFromListOrFile(commandOptions.sample));
 
         return openCGAClient.getFileClient().updateAcl(commandOptions.memberId, queryParams, bodyParams);
     }
 
-    private QueryResponse facet() throws IOException {
-        logger.debug("File facets");
+    private QueryResponse stats() throws IOException {
+        logger.debug("File stats");
 
-        FileCommandOptions.FacetCommandOptions commandOptions = filesCommandOptions.facetCommandOptions;
+        FileCommandOptions.StatsCommandOptions commandOptions = filesCommandOptions.statsCommandOptions;
 
         Query query = new Query();
         query.putIfNotEmpty("creationYear", commandOptions.creationYear);
@@ -473,11 +473,10 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotEmpty(Constants.ANNOTATION, commandOptions.annotation);
 
         QueryOptions options = new QueryOptions();
-        options.put("defaultStats", commandOptions.defaultStats);
-        options.putIfNotNull("facet", commandOptions.facet);
-        options.putIfNotNull("facetRange", commandOptions.facetRange);
+        options.put("default", commandOptions.defaultStats);
+        options.putIfNotNull("field", commandOptions.field);
 
-        return openCGAClient.getFileClient().facet(commandOptions.study, query, options);
+        return openCGAClient.getFileClient().stats(commandOptions.study, query, options);
     }
 
 }

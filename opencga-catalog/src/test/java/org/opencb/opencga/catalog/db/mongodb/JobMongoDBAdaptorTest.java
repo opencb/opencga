@@ -27,6 +27,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.Status;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -40,7 +41,8 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void createJobTest() throws CatalogDBException {
-        Job job = new Job();
+        Job job = new Job()
+                .setStatus(new Job.JobStatus());
 
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         job.setId("jobName1");
@@ -120,9 +122,10 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
 
         // Job with current date
-        Job job1 = new Job();
-        job1.setId("job1");
-        job1.setCreationDate(TimeUtils.getTime());
+        Job job1 = new Job()
+                .setId("job1")
+                .setCreationDate(TimeUtils.getTime())
+                .setStatus(new Job.JobStatus());
 
         // Job with current date one hour before
         Calendar cal = Calendar.getInstance();
@@ -130,9 +133,10 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
         cal.add(Calendar.HOUR, -1);
         Date oneHourBack = cal.getTime();
 
-        Job job2 = new Job();
-        job2.setId("job2");
-        job2.setCreationDate(TimeUtils.getTime(oneHourBack));
+        Job job2 = new Job()
+                .setId("job2")
+                .setCreationDate(TimeUtils.getTime(oneHourBack))
+                .setStatus(new Job.JobStatus());
 
         // We create the jobs
         catalogJobDBAdaptor.insert(job1, studyId, new QueryOptions());
@@ -162,17 +166,22 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void updateInputAndOutputFiles() throws Exception {
-        Job job = new Job();
-        job.setOutDir(new File().setUid(5));
+        Job job = new Job()
+                .setOutDir(new File().setUid(5))
+                .setStatus(new Job.JobStatus());
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         job.setName("jobName1");
         QueryResult<Job> insert = catalogJobDBAdaptor.insert(job, studyId, null);
 
         List<File> fileInput = Arrays.asList(
-                new File().setUid(5L).setName("file1"), new File().setUid(6L).setName("file2"), new File().setUid(7L).setName("file3")
+                new File().setUid(5L).setName("file1").setStatus(new File.FileStatus()),
+                new File().setUid(6L).setName("file2").setStatus(new File.FileStatus()),
+                new File().setUid(7L).setName("file3").setStatus(new File.FileStatus())
         );
         List<File> fileOutput = Arrays.asList(
-                new File().setUid(15L).setName("file1"), new File().setUid(16L).setName("file2"), new File().setUid(17L).setName("file3")
+                new File().setUid(15L).setName("file1").setStatus(new File.FileStatus()),
+                new File().setUid(16L).setName("file2").setStatus(new File.FileStatus()),
+                new File().setUid(17L).setName("file3").setStatus(new File.FileStatus())
         );
         ObjectMap params = new ObjectMap()
                 .append(JobDBAdaptor.QueryParams.INPUT.key(), fileInput)

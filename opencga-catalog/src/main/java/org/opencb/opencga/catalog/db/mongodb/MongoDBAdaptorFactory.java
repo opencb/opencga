@@ -17,7 +17,6 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DuplicateKeyException;
 import org.apache.commons.lang3.StringUtils;
@@ -41,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.getMongoDBDocument;
+import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
 /**
  * Created by pfurio on 08/01/16.
@@ -56,9 +56,10 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
             "individual",
             "cohort",
             "dataset",
-            "diseasepanel",
+            "panel",
             "family",
             "clinical",
+            "interpretation",
             "metadata",
             "audit"
     );
@@ -72,8 +73,9 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     public static final String COHORT_COLLECTION = "cohort";
     public static final String FAMILY_COLLECTION = "family";
     public static final String DATASET_COLLECTION = "dataset";
-    public static final String PANEL_COLLECTION = "diseasepanel";
+    public static final String PANEL_COLLECTION = "panel";
     public static final String CLINICAL_ANALYSIS_COLLECTION = "clinical";
+    public static final String INTERPRETATION_COLLECTION = "interpretation";
     public static final String METADATA_COLLECTION = "metadata";
     public static final String AUDIT_COLLECTION = "audit";
     static final String METADATA_OBJECT_ID = "METADATA";
@@ -95,6 +97,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     private MongoDBCollection datasetCollection;
     private MongoDBCollection panelCollection;
     private MongoDBCollection clinicalCollection;
+    private MongoDBCollection interpretationCollection;
     private MongoDBCollection auditCollection;
     private Map<String, MongoDBCollection> collections;
     private UserMongoDBAdaptor userDBAdaptor;
@@ -107,8 +110,9 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     private CohortMongoDBAdaptor cohortDBAdaptor;
     private FamilyMongoDBAdaptor familyDBAdaptor;
     private DatasetMongoDBAdaptor datasetDBAdaptor;
-    private DiseasePanelMongoDBAdaptor panelDBAdaptor;
+    private PanelMongoDBAdaptor panelDBAdaptor;
     private ClinicalAnalysisMongoDBAdaptor clinicalDBAdaptor;
+    private InterpretationMongoDBAdaptor interpretationDBAdaptor;
     private AuditMongoDBAdaptor auditDBAdaptor;
     private MetaMongoDBAdaptor metaDBAdaptor;
 
@@ -207,7 +211,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     public ObjectMap getDatabaseStatus() {
         Document dbStatus = mongoManager.get(database, this.configuration).getServerStatus();
         try {
-            ObjectMap map = new ObjectMap(new ObjectMapper().writeValueAsString(dbStatus));
+            ObjectMap map = new ObjectMap(getDefaultObjectMapper().writeValueAsString(dbStatus));
             return new ObjectMap("ok", map.getInt("ok", 0) > 0);
         } catch (JsonProcessingException e) {
             logger.error(e.getMessage(), e);
@@ -297,7 +301,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     }
 
     @Override
-    public DiseasePanelMongoDBAdaptor getCatalogPanelDBAdaptor() {
+    public PanelMongoDBAdaptor getCatalogPanelDBAdaptor() {
         return panelDBAdaptor;
     }
 
@@ -309,6 +313,11 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     @Override
     public ClinicalAnalysisMongoDBAdaptor getClinicalAnalysisDBAdaptor() {
         return clinicalDBAdaptor;
+    }
+
+    @Override
+    public InterpretationMongoDBAdaptor getInterpretationDBAdaptor() {
+        return interpretationDBAdaptor;
     }
 
     @Override
@@ -340,6 +349,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         panelCollection = db.getCollection(PANEL_COLLECTION);
         familyCollection = db.getCollection(FAMILY_COLLECTION);
         clinicalCollection = db.getCollection(CLINICAL_ANALYSIS_COLLECTION);
+        interpretationCollection = db.getCollection(INTERPRETATION_COLLECTION);
 
         collections = new HashMap<>();
         collections.put(METADATA_COLLECTION, metaCollection);
@@ -355,6 +365,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         collections.put(PANEL_COLLECTION, panelCollection);
         collections.put(FAMILY_COLLECTION, familyCollection);
         collections.put(CLINICAL_ANALYSIS_COLLECTION, clinicalCollection);
+        collections.put(INTERPRETATION_COLLECTION, interpretationCollection);
 
         fileDBAdaptor = new FileMongoDBAdaptor(fileCollection, this);
         individualDBAdaptor = new IndividualMongoDBAdaptor(individualCollection, this);
@@ -365,9 +376,10 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         userDBAdaptor = new UserMongoDBAdaptor(userCollection, this);
         cohortDBAdaptor = new CohortMongoDBAdaptor(cohortCollection, this);
         datasetDBAdaptor = new DatasetMongoDBAdaptor(datasetCollection, this);
-        panelDBAdaptor = new DiseasePanelMongoDBAdaptor(panelCollection, this);
+        panelDBAdaptor = new PanelMongoDBAdaptor(panelCollection, this);
         familyDBAdaptor = new FamilyMongoDBAdaptor(familyCollection, this);
         clinicalDBAdaptor = new ClinicalAnalysisMongoDBAdaptor(clinicalCollection, this);
+        interpretationDBAdaptor = new InterpretationMongoDBAdaptor(interpretationCollection, this);
         metaDBAdaptor = new MetaMongoDBAdaptor(metaCollection, this);
         auditDBAdaptor = new AuditMongoDBAdaptor(auditCollection);
     }

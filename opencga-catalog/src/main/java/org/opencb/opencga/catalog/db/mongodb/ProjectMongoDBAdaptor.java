@@ -164,7 +164,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public void editId(long projectUid, String newId) throws CatalogDBException {
+    public void editId(String owner, long projectUid, String oldId, String newId) throws CatalogDBException {
         if (!exists(projectUid)) {
             logger.error("Project {} not found", projectUid);
             throw new CatalogDBException("Project not found.");
@@ -174,12 +174,17 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                 Filters.eq(UserDBAdaptor.QueryParams.PROJECTS_UID.key(), projectUid),
                 Filters.ne(UserDBAdaptor.QueryParams.PROJECTS_ID.key(), newId)
         );
-        Bson update = Updates.set("projects.$." + QueryParams.ID.key(), newId);
-
+        Bson update = new Document("$set", new Document()
+                .append("projects.$." + QueryParams.ID.key(), newId)
+                .append("projects.$." + QueryParams.FQN.key(), owner + "@" + newId)
+        );
         QueryResult<UpdateResult> result = userCollection.update(query, update, null);
         if (result.getResult().get(0).getModifiedCount() == 0) {    //Check if the the project id was modified
             throw new CatalogDBException("Project {id:\"" + newId + "\"} already exists");
         }
+
+        // Update all the internal project ids stored in the study documents
+        dbAdaptorFactory.getCatalogStudyDBAdaptor().updateProjectId(projectUid, newId);
     }
 
     @Override
@@ -287,7 +292,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             // Update modificationDate param
             String time = TimeUtils.getTime();
             Date date = TimeUtils.toDate(time);
-            projectParameters.put(MODIFICATION_DATE, time);
+            projectParameters.put(QueryParams.MODIFICATION_DATE.key(), time);
             projectParameters.put(PRIVATE_MODIFICATION_DATE, date);
 
             Bson bsonQuery = parseQuery(query);
@@ -581,8 +586,13 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         List<Long> projectUids = query.getAsLongList(QueryParams.UID.key());
         Query studyQuery = new Query();
         if (projectUids != null && projectUids.size() > 0) {
-            studyQuery.append(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectUids);
+            studyQuery.append(StudyDBAdaptor.QueryParams.PROJECT_UID.key(), projectUids);
         }
+        List<String> projectIds = query.getAsStringList(QueryParams.ID.key());
+        if (projectIds != null && projectIds.size() > 0) {
+            studyQuery.append(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectIds);
+        }
+
         studyQuery.putIfNotEmpty(StudyDBAdaptor.QueryParams.UID.key(), query.getString(QueryParams.STUDY_UID.key()));
         studyQuery.putIfNotEmpty(StudyDBAdaptor.QueryParams.ID.key(), query.getString(QueryParams.STUDY_ALIAS.key()));
         studyQuery.putIfNotEmpty(StudyDBAdaptor.QueryParams.OWNER.key(), query.getString(QueryParams.USER_ID.key()));
@@ -620,7 +630,9 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                     .map(document -> ((Document) document.get("_project")).getLong("uid"))
                     .collect(Collectors.toList());
         }
-        query.put(QueryParams.UID.key(), projectUids);
+        if (projectUids != null && !projectUids.isEmpty()) {
+            query.put(QueryParams.UID.key(), projectUids);
+        }
 
         return getMongoCursor(query, options);
     }
@@ -741,6 +753,15 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
+                    case MODIFICATION_DATE:
+                        addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
+                    case STATUS_NAME:
+                        // Convert the status to a positive status
+                        query.put(queryParam.key(),
+                                Status.getPositiveStatus(Status.STATUS_LIST, query.getString(queryParam.key())));
+                        addAutoOrQuery("projects." + queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
                     case NAME:
                     case UUID:
                     case ID:
@@ -752,7 +773,6 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                     case ORGANISM_COMMON_NAME:
                     case ORGANISM_TAXONOMY_CODE:
                     case ORGANISM_ASSEMBLY:
-                    case STATUS_NAME:
                     case STATUS_MSG:
                     case STATUS_DATE:
                     case LAST_MODIFIED:

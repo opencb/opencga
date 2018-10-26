@@ -42,6 +42,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.getMongoDBDocument;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.parseObject;
+import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
 /**
  * Created by imedina on 13/01/16.
@@ -77,7 +78,7 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
 
     public void createIndexes() {
         InputStream resourceAsStream = getClass().getResourceAsStream("/catalog-indexes.txt");
-        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectMapper objectMapper = getDefaultObjectMapper();
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(resourceAsStream));
         // We store all the indexes that are in the file in the indexes object
         Map<String, List<Map<String, ObjectMap>>> indexes = new HashMap<>();
@@ -112,7 +113,7 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
         createIndexes(dbAdaptorFactory.getCatalogCohortDBAdaptor().getCohortCollection(), indexes.get("cohort"));
         createIndexes(dbAdaptorFactory.getCatalogJobDBAdaptor().getJobCollection(), indexes.get("job"));
         createIndexes(dbAdaptorFactory.getCatalogFamilyDBAdaptor().getFamilyCollection(), indexes.get("family"));
-        createIndexes(dbAdaptorFactory.getCatalogPanelDBAdaptor().getDiseasePanelCollection(), indexes.get("diseasePanel"));
+        createIndexes(dbAdaptorFactory.getCatalogPanelDBAdaptor().getPanelCollection(), indexes.get("panel"));
 
     }
 
@@ -181,14 +182,20 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
     public String readSecretKey() throws CatalogDBException {
         Bson query = METADATA_QUERY;
         QueryResult queryResult = this.metaCollection.find(query, new QueryOptions("include", "admin"));
-        return (MongoDBUtils.parseObject((Document) ((Document) queryResult.first()).get("admin"), Admin.class)).getSecretKey();
+        if (queryResult.getNumResults() == 1) {
+            return (MongoDBUtils.parseObject((Document) ((Document) queryResult.first()).get("admin"), Admin.class)).getSecretKey();
+        }
+        return "";
     }
 
     @Override
     public String readAlgorithm() throws CatalogDBException {
         Bson query = METADATA_QUERY;
         QueryResult queryResult = this.metaCollection.find(query, new QueryOptions("include", "admin"));
-        return (MongoDBUtils.parseObject((Document) ((Document) queryResult.first()).get("admin"), Admin.class)).getAlgorithm();
+        if (queryResult.getNumResults() == 1) {
+            return (MongoDBUtils.parseObject((Document) ((Document) queryResult.first()).get("admin"), Admin.class)).getAlgorithm();
+        }
+        return "";
     }
 
     @Override

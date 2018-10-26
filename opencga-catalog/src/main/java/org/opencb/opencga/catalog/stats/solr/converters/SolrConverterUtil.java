@@ -1,9 +1,9 @@
 package org.opencb.opencga.catalog.stats.solr.converters;
 
 import org.apache.commons.collections.map.HashedMap;
+import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.core.models.AnnotationSet;
-import org.opencb.opencga.core.models.Phenotype;
 
 import java.util.*;
 

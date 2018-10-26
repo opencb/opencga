@@ -17,6 +17,7 @@
 package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
+import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -77,8 +78,8 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
             case "group-by":
                 queryResponse = groupBy();
                 break;
-            case "facet":
-                queryResponse = facet();
+            case "stats":
+                queryResponse = stats();
                 break;
             case "samples":
                 queryResponse = getSamples();
@@ -127,7 +128,7 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         String sex = individualsCommandOptions.createCommandOptions.sex;
         if (individualsCommandOptions.createCommandOptions.sex != null) {
             try {
-                params.put(IndividualDBAdaptor.QueryParams.SEX.key(), Individual.Sex.valueOf(sex));
+                params.put(IndividualDBAdaptor.QueryParams.SEX.key(), IndividualProperty.Sex.valueOf(sex));
             } catch (IllegalArgumentException e) {
                 logger.error("{} not recognized as a proper individual sex", sex);
                 return null;
@@ -224,7 +225,7 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         String sex = individualsCommandOptions.updateCommandOptions.sex;
         if (individualsCommandOptions.updateCommandOptions.sex != null) {
             try {
-                params.put(IndividualDBAdaptor.QueryParams.SEX.key(), Individual.Sex.valueOf(sex));
+                params.put(IndividualDBAdaptor.QueryParams.SEX.key(), IndividualProperty.Sex.valueOf(sex));
             } catch (IllegalArgumentException e) {
                 logger.error("{} not recognized as a proper individual sex", sex);
                 return null;
@@ -318,16 +319,16 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         bodyParams.putIfNotNull("permissions", commandOptions.permissions);
         bodyParams.putIfNotNull("action", commandOptions.action);
         bodyParams.putIfNotNull("propagate", commandOptions.propagate);
-        bodyParams.putIfNotNull("individual", commandOptions.id);
-        bodyParams.putIfNotNull("sample", commandOptions.sample);
+        bodyParams.putIfNotNull("individual", extractIdsFromListOrFile(commandOptions.id));
+        bodyParams.putIfNotNull("sample", extractIdsFromListOrFile(commandOptions.sample));
 
         return openCGAClient.getIndividualClient().updateAcl(commandOptions.memberId, queryParams, bodyParams);
     }
 
-    private QueryResponse facet() throws IOException {
-        logger.debug("Individual facets");
+    private QueryResponse stats() throws IOException {
+        logger.debug("Individual stats");
 
-        IndividualCommandOptions.FacetCommandOptions commandOptions = individualsCommandOptions.facetCommandOptions;
+        IndividualCommandOptions.StatsCommandOptions commandOptions = individualsCommandOptions.statsCommandOptions;
 
         Query query = new Query();
         query.putIfNotEmpty("creationYear", commandOptions.creationYear);
@@ -353,11 +354,10 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotEmpty(Constants.ANNOTATION, commandOptions.annotation);
 
         QueryOptions options = new QueryOptions();
-        options.put("defaultStats", commandOptions.defaultStats);
-        options.putIfNotNull("facet", commandOptions.facet);
-        options.putIfNotNull("facetRange", commandOptions.facetRange);
+        options.put("default", commandOptions.defaultStats);
+        options.putIfNotNull("field", commandOptions.field);
 
-        return openCGAClient.getIndividualClient().facet(commandOptions.study, query, options);
+        return openCGAClient.getIndividualClient().stats(commandOptions.study, query, options);
     }
 
 }

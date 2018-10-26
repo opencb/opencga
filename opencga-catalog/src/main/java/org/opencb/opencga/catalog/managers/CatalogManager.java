@@ -34,6 +34,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.Logger;
@@ -63,7 +64,8 @@ public class CatalogManager implements AutoCloseable {
     private CohortManager cohortManager;
     private FamilyManager familyManager;
     private ClinicalAnalysisManager clinicalAnalysisManager;
-    private DiseasePanelManager panelManager;
+    private InterpretationManager interpretationManager;
+    private PanelManager panelManager;
 
     private CatalogAuditManager auditManager;
     private AuthorizationManager authorizationManager;
@@ -111,9 +113,11 @@ public class CatalogManager implements AutoCloseable {
                 catalogIOManagerFactory, configuration);
         familyManager = new FamilyManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManagerFactory,
                 configuration);
-        panelManager = new DiseasePanelManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManagerFactory,
+        panelManager = new PanelManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManagerFactory,
                 configuration);
         clinicalAnalysisManager = new ClinicalAnalysisManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
+                catalogIOManagerFactory, configuration);
+        interpretationManager = new InterpretationManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, configuration);
     }
 
@@ -122,9 +126,10 @@ public class CatalogManager implements AutoCloseable {
             this.configuration.getAdmin().setSecretKey(this.catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().readSecretKey());
         }
 
-        if (StringUtils.isEmpty(this.configuration.getAdmin().getAlgorithm())) {
-            this.configuration.getAdmin().setAlgorithm(this.catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().readAlgorithm());
-        }
+        this.configuration.getAdmin().setAlgorithm("HS256");
+//        if (StringUtils.isEmpty(this.configuration.getAdmin().getAlgorithm())) {
+//            this.configuration.getAdmin().setAlgorithm(this.catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().readAlgorithm());
+//        }
     }
 
     public void updateJWTParameters(ObjectMap params, String token) throws CatalogException {
@@ -140,7 +145,11 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public ObjectMap getDatabaseStatus() {
-        return catalogDBAdaptorFactory.getDatabaseStatus();
+        if (existsCatalogDB()) {
+            return catalogDBAdaptorFactory.getDatabaseStatus();
+        } else {
+            return new ObjectMap("error", "Database " + configuration.getDatabasePrefix() + "_opencga not found");
+        }
     }
 
     /**
@@ -152,7 +161,17 @@ public class CatalogManager implements AutoCloseable {
         return catalogDBAdaptorFactory.isCatalogDBReady();
     }
 
-    public void installCatalogDB() throws CatalogException {
+    public void installCatalogDB(String secretKey, String password) throws CatalogException {
+        if (existsCatalogDB()) {
+            throw new CatalogException("Nothing to install. There already exists a catalog database");
+        }
+
+        ParamUtils.checkParameter(secretKey, "secretKey");
+        ParamUtils.checkParameter(password, "password");
+
+        configuration.getAdmin().setPassword(password);
+        configuration.getAdmin().setSecretKey(secretKey);
+
         // Check jobs folder is empty
         URI jobsURI;
         try {
@@ -277,7 +296,11 @@ public class CatalogManager implements AutoCloseable {
         return clinicalAnalysisManager;
     }
 
-    public DiseasePanelManager getDiseasePanelManager() {
+    public InterpretationManager getInterpretationManager() {
+        return interpretationManager;
+    }
+
+    public PanelManager getPanelManager() {
         return panelManager;
     }
 

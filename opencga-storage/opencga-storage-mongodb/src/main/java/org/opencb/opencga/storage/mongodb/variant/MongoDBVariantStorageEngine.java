@@ -20,7 +20,6 @@ import com.google.common.base.Throwables;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.log4j.Level;
-import org.apache.solr.common.SolrException;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -35,6 +34,7 @@ import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
+import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
@@ -204,14 +204,14 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public VariantSearchLoadResult searchIndex(Query inputQuery, QueryOptions inputQueryOptions, boolean overwrite)
-            throws StorageEngineException, IOException, SolrException {
+            throws StorageEngineException, IOException, VariantSearchException {
         VariantSearchManager variantSearchManager = getVariantSearchManager();
 
         int deletedVariants;
         VariantSearchLoadResult searchIndex;
         long timeStamp = System.currentTimeMillis();
 
-        if (configuration.getSearch().getActive() && variantSearchManager.isAlive(dbName)) {
+        if (configuration.getSearch().isActive() && variantSearchManager.isAlive(dbName)) {
             // First remove trashed variants.
             ProgressLogger progressLogger = new ProgressLogger("Variants removed from Solr");
             try (VariantDBIterator removedVariants = getDBAdaptor().trashedVariants(timeStamp)) {
@@ -510,7 +510,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     @Override
     protected boolean doQuerySearchManager(Query query, QueryOptions options) throws StorageEngineException {
         if (super.doQuerySearchManager(query, options)) {
-            if (VariantSearchManager.UseSearchIndex.from(options).equals(VariantSearchManager.UseSearchIndex.YES)) {
+            if (VariantStorageEngine.UseSearchIndex.from(options).equals(VariantStorageEngine.UseSearchIndex.YES)) {
                 // Query search manager is mandatory
                 return true;
             }
@@ -524,7 +524,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
                     && (queryParams.size() == 1 || queryParams.size() == 2 && queryParams.contains(VariantQueryParam.STUDY))
                     && options.getBoolean(QueryOptions.SKIP_COUNT, DEFAULT_SKIP_COUNT)) {   // Do not require total count
                 // Do not use SearchIndex either for intersect.
-                options.put(VariantSearchManager.USE_SEARCH_INDEX, VariantSearchManager.UseSearchIndex.NO);
+                options.put(VariantSearchManager.USE_SEARCH_INDEX, VariantStorageEngine.UseSearchIndex.NO);
                 return false;
             } else {
                 return true;

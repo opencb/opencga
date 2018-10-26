@@ -16,14 +16,19 @@
 
 package org.opencb.opencga.core.config;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.opencb.commons.utils.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -56,7 +61,13 @@ public class Configuration {
     private ServerConfiguration server;
     private Authentication authentication;
 
-    protected static Logger logger = LoggerFactory.getLogger(Configuration.class);
+    private static Logger logger;
+
+    private static final String DEFAULT_CONFIGURATION_FORMAT = "yaml";
+
+    static {
+        logger = LoggerFactory.getLogger(Configuration.class);
+    }
 
     public Configuration() {
     }
@@ -66,27 +77,115 @@ public class Configuration {
         yamlMapper.writerWithDefaultPrettyPrinter().writeValue(configurationOututStream, this);
     }
 
+    public static Configuration load(Path configurationPath) throws IOException {
+        InputStream inputStream = FileUtils.newInputStream(configurationPath);
+        return load(inputStream, DEFAULT_CONFIGURATION_FORMAT);
+    }
+
     public static Configuration load(InputStream configurationInputStream) throws IOException {
-        return load(configurationInputStream, "yaml");
+        return load(configurationInputStream, DEFAULT_CONFIGURATION_FORMAT);
     }
 
     public static Configuration load(InputStream configurationInputStream, String format) throws IOException {
+        if (configurationInputStream == null) {
+            throw new IOException("Configuration file not found");
+        }
         Configuration configuration;
         ObjectMapper objectMapper;
-        switch (format) {
-            case "json":
-                objectMapper = new ObjectMapper();
-                configuration = objectMapper.readValue(configurationInputStream, Configuration.class);
-                break;
-            case "yml":
-            case "yaml":
-            default:
-                objectMapper = new ObjectMapper(new YAMLFactory());
-                configuration = objectMapper.readValue(configurationInputStream, Configuration.class);
-                break;
+        //TODO : create mandatory fields check to avoid invalid or incomplete conf
+        try {
+            switch (format) {
+                case "json":
+                    objectMapper = new ObjectMapper();
+                    configuration = objectMapper.readValue(configurationInputStream, Configuration.class);
+                    break;
+                case "yml":
+                case "yaml":
+                default:
+                    objectMapper = new ObjectMapper(new YAMLFactory());
+                    configuration = objectMapper.readValue(configurationInputStream, Configuration.class);
+                    break;
+            }
+        } catch (IOException e) {
+            throw new IOException("Configuration file could not be parsed: " + e.getMessage(), e);
         }
-        //TODO : create mandatory fileds check to avoid invalid or incomplete conf
+
+        // We must always overwrite configuration with environment parameters
+        overwriteWithEnvironmentVariables(configuration);
         return configuration;
+    }
+
+    private static void overwriteWithEnvironmentVariables(Configuration configuration) {
+        Map<String, String> envVariables = System.getenv();
+        for (String variable : envVariables.keySet()) {
+            if (variable.startsWith("OPENCGA_")) {
+                logger.debug("Overwriting environment parameter '{}'", variable);
+                switch (variable) {
+                    case "OPENCGA_DB_PREFIX":
+                        configuration.setDatabasePrefix(envVariables.get(variable));
+                        break;
+                    case "OPENCGA_USER_WORKSPACE":
+                        configuration.setDataDir(envVariables.get(variable));
+                        break;
+                    case "OPENCGA_JOBS_DIR":
+                        configuration.setTempJobsDir(envVariables.get(variable));
+                        break;
+                    case "OPENCGA_TOOLS_DIR":
+                        configuration.setToolDir(envVariables.get(variable));
+                        break;
+                    case "OPENCGA_MONITOR_PORT":
+                        configuration.getMonitor().setPort(Integer.parseInt(envVariables.get(variable)));
+                        break;
+                    case "OPENCGA_EXECUTION_MODE":
+                        configuration.getExecution().setMode(envVariables.get(variable));
+                        break;
+                    case "OPENCGA_MAIL_HOST":
+                        configuration.getEmail().setHost(envVariables.get(variable));
+                        break;
+                    case "OPENCGA_MAIL_PORT":
+                        configuration.getEmail().setPort(envVariables.get(variable));
+                        break;
+                    case "OPENCGA_MAIL_USER":
+                        configuration.getEmail().setUser(envVariables.get(variable));
+                        break;
+                    case "OPENCGA_MAIL_PASSWORD":
+                        configuration.getEmail().setPassword(envVariables.get(variable));
+                        break;
+                    case "OPENCGA_CATALOG_DB_HOSTS":
+                        configuration.getCatalog().getDatabase().setHosts(Arrays.asList(envVariables.get(variable).split(",")));
+                        break;
+                    case "OPENCGA_CATALOG_DB_USER":
+                        configuration.getCatalog().getDatabase().setUser(envVariables.get(variable));
+                        break;
+                    case "OPENCGA_CATALOG_DB_PASSWORD":
+                        configuration.getCatalog().getDatabase().setPassword(envVariables.get(variable));
+                        break;
+                    case "OPENCGA_CATALOG_DB_AUTHENTICATION_DATABASE":
+                        configuration.getCatalog().getDatabase().getOptions().put("authenticationDatabase", envVariables.get(variable));
+                        break;
+                    case "OPENCGA_CATALOG_DB_CONNECTIONS_PER_HOST":
+                        configuration.getCatalog().getDatabase().getOptions().put("connectionsPerHost", envVariables.get(variable));
+                        break;
+                    case "OPENCGA_CATALOG_SEARCH_HOST":
+                        configuration.getCatalog().getSearch().setHost(envVariables.get(variable));
+                        break;
+                    case "OPENCGA_CATALOG_SEARCH_TIMEOUT":
+                        configuration.getCatalog().getSearch().setTimeout(Integer.parseInt(envVariables.get(variable)));
+                        break;
+                    case "OPENCGA_CATALOG_SEARCH_BATCH":
+                        configuration.getCatalog().getSearch().setInsertBatchSize(Integer.parseInt(envVariables.get(variable)));
+                        break;
+                    case "OPENCGA_SERVER_REST_PORT":
+                        configuration.getServer().getRest().setPort(Integer.parseInt(envVariables.get(variable)));
+                        break;
+                    case "OPENCGA_SERVER_GRPC_PORT":
+                        configuration.getServer().getGrpc().setPort(Integer.parseInt(envVariables.get(variable)));
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
     }
 
     @Override

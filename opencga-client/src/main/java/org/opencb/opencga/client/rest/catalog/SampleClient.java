@@ -20,7 +20,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.commons.datastore.core.result.FacetedQueryResult;
+import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
@@ -61,11 +61,11 @@ public class SampleClient extends AnnotationClient<Sample, SampleAclEntry> {
         return execute(SAMPLES_URL, "groupBy", params, GET, ObjectMap.class);
     }
 
-    public QueryResponse<FacetedQueryResult> facet(String study, Query query, QueryOptions queryOptions) throws IOException {
+    public QueryResponse<FacetQueryResult> stats(String study, Query query, QueryOptions queryOptions) throws IOException {
         ObjectMap params = new ObjectMap(query);
         params.putAll(queryOptions);
         params.put("study", study);
-        return execute(SAMPLES_URL, "facet", params, GET, FacetedQueryResult.class);
+        return execute(SAMPLES_URL, "stats", params, GET, FacetQueryResult.class);
     }
 
 }

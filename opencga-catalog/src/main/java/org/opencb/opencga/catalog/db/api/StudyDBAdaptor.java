@@ -275,6 +275,8 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
 
     QueryResult<Study> getStudiesFromUser(String userId, QueryOptions queryOptions) throws CatalogDBException;
 
+    void updateProjectId(long projectUid, String newProjectId) throws CatalogDBException;
+
     enum QueryParams implements QueryParam {
         ID("id", TEXT, ""),
         UID("uid", INTEGER_ARRAY, ""),
@@ -283,6 +285,7 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
         ALIAS("alias", TEXT, ""),
         FQN("fqn", TEXT, ""),
         CREATION_DATE("creationDate", DATE, ""),
+        MODIFICATION_DATE("modificationDate", DATE, ""),
         DESCRIPTION("description", TEXT, ""),
         CIPHER("cipher", TEXT, ""),
         STATUS_NAME("status.name", TEXT, ""),

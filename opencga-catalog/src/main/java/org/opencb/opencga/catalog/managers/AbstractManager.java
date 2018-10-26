@@ -59,8 +59,9 @@ public abstract class AbstractManager {
     protected final FamilyDBAdaptor familyDBAdaptor;
     protected final DatasetDBAdaptor datasetDBAdaptor;
     protected final JobDBAdaptor jobDBAdaptor;
-    protected final DiseasePanelDBAdaptor panelDBAdaptor;
+    protected final PanelDBAdaptor panelDBAdaptor;
     protected final ClinicalAnalysisDBAdaptor clinicalDBAdaptor;
+    protected final InterpretationDBAdaptor interpretationDBAdaptor;
 
     protected static final String ROOT = "admin";
     protected static final String ANONYMOUS = "*";
@@ -84,6 +85,7 @@ public abstract class AbstractManager {
         this.datasetDBAdaptor = catalogDBAdaptorFactory.getCatalogDatasetDBAdaptor();
         this.panelDBAdaptor = catalogDBAdaptorFactory.getCatalogPanelDBAdaptor();
         this.clinicalDBAdaptor = catalogDBAdaptorFactory.getClinicalAnalysisDBAdaptor();
+        this.interpretationDBAdaptor = catalogDBAdaptorFactory.getInterpretationDBAdaptor();
         this.catalogIOManagerFactory = ioManagerFactory;
         this.catalogDBAdaptorFactory = catalogDBAdaptorFactory;
         this.catalogManager = catalogManager;

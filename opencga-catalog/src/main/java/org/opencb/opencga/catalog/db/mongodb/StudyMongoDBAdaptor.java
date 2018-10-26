@@ -129,7 +129,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         List<Dataset> datasets = study.getDatasets();
         study.setDatasets(Collections.emptyList());
 
-        List<DiseasePanel> panels = study.getPanels();
+        List<Panel> panels = study.getPanels();
         study.setPanels(Collections.emptyList());
 
         study.setFqn(project.getFqn() + ":" + study.getId());
@@ -187,10 +187,10 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             }
         }
 
-        for (DiseasePanel panel : panels) {
+        for (Panel panel : panels) {
             String fileErrorMsg = dbAdaptorFactory.getCatalogPanelDBAdaptor().insert(study.getUid(), panel, options).getErrorMsg();
             if (fileErrorMsg != null && !fileErrorMsg.isEmpty()) {
-                errorMsg += panel.getName() + ":" + fileErrorMsg + ", ";
+                errorMsg += panel.getDiseasePanel().getName() + ":" + fileErrorMsg + ", ";
             }
         }
 
@@ -1218,7 +1218,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             // Update modificationDate param
             String time = TimeUtils.getTime();
             Date date = TimeUtils.toDate(time);
-            studyParameters.put(MODIFICATION_DATE, time);
+            studyParameters.put(QueryParams.MODIFICATION_DATE.key(), time);
             studyParameters.put(PRIVATE_MODIFICATION_DATE, date);
 
             Document updates = new Document("$set", studyParameters);
@@ -1254,6 +1254,34 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
         return endQuery("Update study", startTime, get(id, null));
 
+    }
+
+    @Override
+    public void updateProjectId(long projectUid, String newProjectId) throws CatalogDBException {
+        Query query = new Query(QueryParams.PROJECT_UID.key(), projectUid);
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                QueryParams.FQN.key(), QueryParams.UID.key()
+        ));
+        QueryResult<Study> studyQueryResult = get(query, options);
+
+        for (Study study : studyQueryResult.getResult()) {
+            String[] split = study.getFqn().split("@");
+            String[] split1 = split[1].split(":");
+            String newFqn = split[0] + "@" + newProjectId + ":" + split1[1];
+
+            // Update the internal project id and fqn
+            Bson update = new Document("$set", new Document()
+                    .append(QueryParams.FQN.key(), newFqn)
+                    .append(PRIVATE_PROJECT_ID, newProjectId)
+            );
+
+            Bson bsonQuery = Filters.eq(QueryParams.UID.key(), study.getUid());
+
+            QueryResult<UpdateResult> result = studyCollection.update(bsonQuery, update, null);
+            if (result.getResult().get(0).getModifiedCount() == 0) {    //Check if the the project id was modified
+                throw new CatalogDBException("CRITICAL: Could not update new project id references in study " + study.getFqn());
+            }
+        }
     }
 
     @Override
@@ -1646,6 +1674,9 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
+                    case MODIFICATION_DATE:
+                        addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
                     case ID:
                     case ALIAS:
                         // We perform an OR if both ID and ALIAS are present in the query and both have the exact same value
@@ -1664,11 +1695,16 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                             addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         }
                         break;
+                    case STATUS_NAME:
+                        // Convert the status to a positive status
+                        query.put(queryParam.key(),
+                                Status.getPositiveStatus(Status.STATUS_LIST, query.getString(queryParam.key())));
+                        addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
                     case UUID:
                     case NAME:
                     case DESCRIPTION:
                     case CIPHER:
-                    case STATUS_NAME:
                     case STATUS_MSG:
                     case STATUS_DATE:
                     case LAST_MODIFIED:

@@ -100,14 +100,22 @@ public class ParamUtils {
     }
 
     public static void checkValidUserId(String userId) throws CatalogParameterException {
-        if (userId == null || userId.isEmpty() || !userId.matches("^[A-Za-z]([-_.]?[A-Za-z0-9])*$")) {
-            throw new CatalogParameterException("Invalid user id.");
+        if (userId == null || userId.isEmpty()) {
+            throw new CatalogParameterException("Missing user id.");
+        }
+        if (!userId.matches("^[A-Za-z]([-_.]?[A-Za-z0-9])*$")) {
+            throw new CatalogParameterException("Invalid user id. Id needs to start by any character and might contain single '-', '_', "
+                    + "'.', symbols followed by any character or number.");
         }
     }
 
     public static void checkAlias(String alias, String name) throws CatalogParameterException {
-        if (alias == null || alias.isEmpty() || !alias.matches("^[A-Za-z0-9]([-_.]?[A-Za-z0-9])*$")) {
-            throw new CatalogParameterException("Error in alias: Invalid alias for '" + name + "'.");
+        if (alias == null || alias.isEmpty()) {
+            throw new CatalogParameterException("Missing id.");
+        }
+        if (!alias.matches("^[A-Za-z0-9]([-_.]?[A-Za-z0-9])*$")) {
+            throw new CatalogParameterException("Invalid id for '" + name + "'. Alias needs to start by any character "
+                    + "or number and might contain single '-', '_', '.', symbols followed by any character or number.");
         }
     }
 

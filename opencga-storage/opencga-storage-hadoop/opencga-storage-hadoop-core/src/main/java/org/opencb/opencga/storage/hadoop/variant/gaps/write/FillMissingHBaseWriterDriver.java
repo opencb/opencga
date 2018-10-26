@@ -6,7 +6,6 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
-import org.apache.hadoop.util.ToolRunner;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -15,7 +14,6 @@ import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver;
 import org.opencb.opencga.storage.hadoop.variant.gaps.PrepareFillMissingMapper;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
-import org.opencb.opencga.storage.hadoop.variant.stats.VariantStatsDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,7 +72,7 @@ public class FillMissingHBaseWriterDriver extends AbstractVariantsTableDriver {
         if (mapsLimit == 0) {
             mapsLimit = 40;
         }
-        getConf().setInt(JOB_RUNNING_MAP_LIMIT, mapsLimit);
+        job.getConfiguration().setInt(JOB_RUNNING_MAP_LIMIT, mapsLimit);
         logger.info("Set job running map limit to " + mapsLimit + ". ServersSize: " + serversSize + ", mappersFactor: " + factor);
 
         // input
@@ -108,24 +106,11 @@ public class FillMissingHBaseWriterDriver extends AbstractVariantsTableDriver {
         return "write_fill_missing" + (StringUtils.isNotEmpty(regionStr) ? "_" + regionStr : "");
     }
 
-
-    public int privateMain(String[] args) throws Exception {
-        return privateMain(args, getConf());
-    }
-
-    public int privateMain(String[] args, Configuration conf) throws Exception {
-        // info https://code.google.com/p/temapred/wiki/HbaseWithJava
-        if (conf != null) {
-            setConf(conf);
-        }
-        return ToolRunner.run(this, args);
-    }
-
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         try {
             System.exit(new FillMissingHBaseWriterDriver().privateMain(args));
         } catch (Exception e) {
-            LOG.error("Error executing " + VariantStatsDriver.class, e);
+            LOG.error("Error executing " + FillMissingHBaseWriterDriver.class, e);
             System.exit(1);
         }
     }

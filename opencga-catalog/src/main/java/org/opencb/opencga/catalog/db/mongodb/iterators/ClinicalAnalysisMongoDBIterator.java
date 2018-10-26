@@ -58,7 +58,7 @@ public class ClinicalAnalysisMongoDBIterator<E> extends MongoDBIterator<E>  {
         this.familyQueryOptions = createInnerQueryOptions(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(), false);
 
         this.individualDBAdaptor = dbAdaptorFactory.getCatalogIndividualDBAdaptor();
-        this.individualQueryOptions = createInnerQueryOptions(ClinicalAnalysisDBAdaptor.QueryParams.SUBJECTS.key(), false);
+        this.individualQueryOptions = createInnerQueryOptions(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key(), false);
 
         this.fileDBAdaptor = dbAdaptorFactory.getCatalogFileDBAdaptor();
         this.somaticQueryOptions = createInnerQueryOptions(ClinicalAnalysisDBAdaptor.QueryParams.SOMATIC.key(), true);
@@ -108,14 +108,11 @@ public class ClinicalAnalysisMongoDBIterator<E> extends MongoDBIterator<E>  {
             clinicalAnalysisListBuffer.add(clinicalDocument);
             counter++;
 
-            // Extract all the subjects
-            Object members = clinicalDocument.get(ClinicalAnalysisDBAdaptor.QueryParams.SUBJECTS.key());
-            if (members != null && !options.getBoolean(NATIVE_QUERY)
-                    && !options.getBoolean(NATIVE_QUERY + "_" + ClinicalAnalysisDBAdaptor.QueryParams.SUBJECTS.key())) {
-                List<Document> memberList = (List<Document>) members;
-                if (!memberList.isEmpty()) {
-                    memberList.forEach(subject -> memberSet.add(subject.getLong(UID)));
-                }
+            // Extract the proband
+            Document member = (Document) clinicalDocument.get(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key());
+            if (member != null && !options.getBoolean(NATIVE_QUERY)
+                    && !options.getBoolean(NATIVE_QUERY + "_" + ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key())) {
+                memberSet.add(member.getLong(UID));
             }
 
             // Extract the family uid
@@ -231,43 +228,41 @@ public class ClinicalAnalysisMongoDBIterator<E> extends MongoDBIterator<E>  {
 
             // Add the members and families obtained to the corresponding clinical analyses
             clinicalAnalysisListBuffer.forEach(clinicalAnalysis -> {
-                List<Document> tmpMemberList = new ArrayList<>();
-                List<Document> members = (List<Document>) clinicalAnalysis.get(ClinicalAnalysisDBAdaptor.QueryParams.SUBJECTS.key());
+                Document completeProband = null;
+                Document origMember = (Document) clinicalAnalysis.get(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key());
 
-                members.forEach(s -> {
-                    // If the members has been returned... (it might have not been fetched due to permissions issues)
-                    if (memberMap.containsKey(s.getLong(UID))) {
-                        Document subjectCopy = new Document(memberMap.get(s.getLong(UID)));
+                // If the member has been returned... (it might have not been fetched due to permissions issues)
+                if (memberMap.containsKey(origMember.getLong(UID))) {
+                    Document subjectCopy = new Document(memberMap.get(origMember.getLong(UID)));
 
-                        // Get original samples array stored in the clinical analysis collection
-                        Object samples = s.get(IndividualDBAdaptor.QueryParams.SAMPLES.key());
-                        if (samples != null) {
-                            // Filter out the samples that are not stored in the clinical analysis from the subject
-                            Set<Long> presentSampleIds = new HashSet<>();
-                            for (Document document : ((List<Document>) samples)) {
-                                presentSampleIds.add(document.getLong(UID));
-                            }
-
-                            List<Document> finalSamples = new ArrayList<>(presentSampleIds.size());
-                            Object samplesObtained = subjectCopy.get(IndividualDBAdaptor.QueryParams.SAMPLES.key());
-                            if (samplesObtained != null) {
-                                for (Document document : ((List<Document>) samplesObtained)) {
-                                    if (presentSampleIds.contains(document.getLong(UID))) {
-                                        finalSamples.add(document);
-                                    }
-                                }
-                            }
-                            subjectCopy.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), finalSamples);
-
-                        } else {
-                            subjectCopy.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), Collections.emptyList());
+                    // Get original samples array stored in the clinical analysis collection
+                    Object samples = origMember.get(IndividualDBAdaptor.QueryParams.SAMPLES.key());
+                    if (samples != null) {
+                        // Filter out the samples that are not stored in the clinical analysis from the subject
+                        Set<Long> presentSampleIds = new HashSet<>();
+                        for (Document document : ((List<Document>) samples)) {
+                            presentSampleIds.add(document.getLong(UID));
                         }
 
+                        List<Document> finalSamples = new ArrayList<>(presentSampleIds.size());
+                        Object samplesObtained = subjectCopy.get(IndividualDBAdaptor.QueryParams.SAMPLES.key());
+                        if (samplesObtained != null) {
+                            for (Document document : ((List<Document>) samplesObtained)) {
+                                if (presentSampleIds.contains(document.getLong(UID))) {
+                                    finalSamples.add(document);
+                                }
+                            }
+                        }
+                        subjectCopy.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), finalSamples);
 
-                        tmpMemberList.add(subjectCopy);
+                    } else {
+                        subjectCopy.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), Collections.emptyList());
                     }
-                });
-                clinicalAnalysis.put(ClinicalAnalysisDBAdaptor.QueryParams.SUBJECTS.key(), tmpMemberList);
+
+                    completeProband = subjectCopy;
+                }
+
+                clinicalAnalysis.put(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key(), completeProband);
 
                 Document sourceFamily = (Document) clinicalAnalysis.get(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key());
                 if (sourceFamily != null && familyMap.containsKey(sourceFamily.getLong(UID))) {

@@ -16,9 +16,7 @@
 
 package org.opencb.opencga.server.rest;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.base.Splitter;
@@ -41,10 +39,8 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.server.WebServiceException;
-import org.opencb.opencga.server.rest.json.mixin.PrivateUidMixin;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
@@ -67,6 +63,9 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
+import static org.opencb.opencga.core.common.JacksonUtils.getExternalOpencgaObjectMapper;
 
 @ApplicationPath("/")
 @Path("/{apiVersion}")
@@ -107,8 +106,8 @@ public class OpenCGAWSServer {
     protected Query query;
     protected QueryOptions queryOptions;
 
-    protected static ObjectWriter jsonObjectWriter;
-    protected static ObjectMapper jsonObjectMapper;
+    private static ObjectWriter jsonObjectWriter;
+    private static ObjectMapper jsonObjectMapper;
 
     protected static Logger logger; // = LoggerFactory.getLogger(this.getClass());
 
@@ -125,29 +124,17 @@ public class OpenCGAWSServer {
     private static final int MAX_LIMIT = 5000;
     private static final int MAX_ID_SIZE = 100;
 
+    private static String errorMessage;
+
     static {
         initialized = new AtomicBoolean(false);
 
-        jsonObjectMapper = new ObjectMapper();
+        jsonObjectMapper = getExternalOpencgaObjectMapper();
         jsonObjectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
         jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
         jsonObjectMapper.addMixIn(Genotype.class, GenotypeJsonMixin.class);
         jsonObjectMapper.addMixIn(Alignment.AlignmentDifference.class, AlignmentDifferenceJsonMixin.class);
 
-        jsonObjectMapper.addMixIn(Project.class, PrivateUidMixin.class);
-        jsonObjectMapper.addMixIn(Study.class, PrivateUidMixin.class);
-        jsonObjectMapper.addMixIn(Sample.class, PrivateUidMixin.class);
-        jsonObjectMapper.addMixIn(Individual.class, PrivateUidMixin.class);
-        jsonObjectMapper.addMixIn(org.opencb.opencga.core.models.File.class, PrivateUidMixin.class);
-        jsonObjectMapper.addMixIn(Cohort.class, PrivateUidMixin.class);
-        jsonObjectMapper.addMixIn(DiseasePanel.class, PrivateUidMixin.class);
-        jsonObjectMapper.addMixIn(Job.class, PrivateUidMixin.class);
-        jsonObjectMapper.addMixIn(VariableSet.class, PrivateUidMixin.class);
-        jsonObjectMapper.addMixIn(Family.class, PrivateUidMixin.class);
-        jsonObjectMapper.addMixIn(ClinicalAnalysis.class, PrivateUidMixin.class);
-
-        jsonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        jsonObjectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         jsonObjectWriter = jsonObjectMapper.writer();
 
         //Disable MongoDB useless logging
@@ -175,10 +162,13 @@ public class OpenCGAWSServer {
             init();
         }
 
-        if (catalogManager == null) {
-            throw new IllegalStateException("OpenCGA was not properly initialized. Please, check if the configuration files are reachable "
-                    + "or properly defined.");
+        if (StringUtils.isNotEmpty(errorMessage)) {
+            throw new IllegalStateException(errorMessage);
         }
+//        if (catalogManager == null) {
+//            throw new IllegalStateException("OpenCGA was not properly initialized. Please, check if the configuration files are reachable "
+//                    + "or properly defined.");
+//        }
 
         try {
             verifyHeaders(httpHeaders);
@@ -230,6 +220,7 @@ public class OpenCGAWSServer {
             logger.info("|  * Server logfile: " + configDirPath.getParent().resolve("logs").resolve("server.log"));
             initLogger(configDirPath.getParent().resolve("logs"));
         } else {
+            errorMessage = "No valid configuration directory provided: '" + configDirString + "'";
             logger.error("No valid configuration directory provided: '{}'");
         }
 
@@ -248,21 +239,15 @@ public class OpenCGAWSServer {
             configuration = Configuration
                     .load(new FileInputStream(new File(configDir.toFile().getAbsolutePath() + "/configuration.yml")));
             catalogManager = new CatalogManager(configuration);
-            // TODO think about this
-            if (!catalogManager.existsCatalogDB()) {
-//                logger.info("|  * Catalog database created: '{}'", catalogConfiguration.getDatabase().getDatabase());
-                logger.info("|  * Catalog database created: '{}'", catalogManager.getCatalogDatabase());
-                catalogManager.installCatalogDB();
-            }
 
             logger.info("|  * Storage configuration file: '{}'", configDir.toFile().getAbsolutePath() + "/storage-configuration.yml");
             storageConfiguration = StorageConfiguration
                     .load(new FileInputStream(new File(configDir.toFile().getAbsolutePath() + "/storage-configuration.yml")));
             storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
             variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
-        } catch (IOException e) {
+        } catch (IOException | CatalogException e) {
+            errorMessage = e.getMessage();
             e.printStackTrace();
-        } catch (CatalogException e) {
             logger.error("Error while creating CatalogManager", e);
         }
     }
@@ -359,8 +344,6 @@ public class OpenCGAWSServer {
                     queryOptions.put(entry.getKey(), lazy);
                     break;
                 case QueryOptions.FACET:
-                case QueryOptions.FACET_RANGE:
-                case QueryOptions.FACET_INTERSECTION:
                     queryOptions.put(entry.getKey(), value);
                     break;
                 default:
@@ -490,13 +473,7 @@ public class OpenCGAWSServer {
         logResponse(response.getStatusInfo(), queryResponse);
         return response;
     }
-
-//    protected Response createErrorResponse(String o) {
-//        QueryResult<ObjectMap> result = new QueryResult();
-//        result.setErrorMsg(o.toString());
-//        return createOkResponse(result);
-//    }
-
+    
     protected Response createErrorResponse(String method, String errorMessage) {
         try {
             return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(new ObjectMap("error", errorMessage)),

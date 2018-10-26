@@ -45,6 +45,7 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
         NAME("name", TEXT, ""),
         TYPE("type", TEXT, ""),
         CREATION_DATE("creationDate", DATE, ""),
+        MODIFICATION_DATE("modificationDate", DATE, ""),
         STATUS("status", TEXT_ARRAY, ""),
         STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),

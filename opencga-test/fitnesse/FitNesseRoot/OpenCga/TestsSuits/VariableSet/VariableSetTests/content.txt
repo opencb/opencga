@@ -27,28 +27,28 @@
 #Enhancement Req # 545
 !3 Verify Variable Stored Value
 !|Table: Rest Fixture  | $baseURL |
-| GET | /v1/variableset/search?sid=$sessionId&study=$studyId&id=$variableSetId1 |200| Content-Type : application/json|jsonbody.response[0].result[0].variables[0].name == 'var_double' && jsonbody.response[0].result[0].variables[1].id == 'var_int'|
-|let||js|response.jsonbody.response[0].result[0].variables[0].defaultValue|20.5|
-|let||js|response.jsonbody.response[0].result[0].variables[1].defaultValue|10|
+| GET | /v1/variableset/search?sid=$sessionId&study=$studyId&id=$variableSetId1 |200| Content-Type : application/json|jsonbody.error == '' && jsonbody.response[0].result[0].variables.length == '2'|
+|let||js|!-res=0;if(response.jsonbody.response[0].result[0].variables[0].name == 'var_double') {res = response.jsonbody.response[0].result[0].variables[0].defaultValue;} else {res = response.jsonbody.response[0].result[0].variables[1].defaultValue;}res;-!|20.5|
+|let||js|!-res=0;if(response.jsonbody.response[0].result[0].variables[0].name == 'var_int') {res = response.jsonbody.response[0].result[0].variables[0].defaultValue;} else {res = response.jsonbody.response[0].result[0].variables[1].defaultValue;}res;-!|10|
 
 !3 Get Variable Set Info 
 !|Table: Rest Fixture  | $baseURL |
-| GET | /v1/variableset/$variableSetId1/info?sid=$sessionId |200| Content-Type : application/json||
+| GET | /v1/variableset/$variableSetId1/info?sid=$sessionId&study=$studyId |200| Content-Type : application/json||
 
 !3 Add Field To Variable Set  
 !|Table: Rest Fixture  | $baseURL |
 | setBody |  { "name" : "newField" }  ]}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/variableset/$variableSetId1/field/add?sid=$sessionId |200| Content-Type : application/json|jsonbody.response[0].result[0].variables.length == 3|
+| POST | /v1/variableset/$variableSetId1/field/add?sid=$sessionId&study=$studyId |200| Content-Type : application/json|jsonbody.response[0].result[0].variables.length == 3|
 
 !3 Remove Field From Variable Set  
 !|Table: Rest Fixture  | $baseURL |
-| GET | /v1/variableset/$variableSetId1/field/delete?sid=$sessionId&name=var_int|200| Content-Type : application/json||
+| GET | /v1/variableset/$variableSetId1/field/delete?sid=$sessionId&name=var_int&study=$studyId|200| Content-Type : application/json||
 
 !3 Delete Un-Used Variable Set  
 !|Table: Rest Fixture  | $baseURL |
-| GET | /v1/variableset/$variableSetId1/delete?sid=$sessionId |200| Content-Type : application/json||
+| GET | /v1/variableset/$variableSetId1/delete?sid=$sessionId&study=$studyId |200| Content-Type : application/json||
 
 !3 Search Deleted Variable Set  
 !|Table: Rest Fixture  | $baseURL |
-| GET | /v1/variableset/search?sid=$sessionId&study=$studyId&id=$variableSetId1 |200| Content-Type : application/json|jsonbody.response[0].result.length == '0.0'|
+| GET | /v1/variableset/search?sid=$sessionId&study=$studyId&id=$variableSetId1&study=$studyId |200| Content-Type : application/json|jsonbody.response[0].result.length == '0.0'|

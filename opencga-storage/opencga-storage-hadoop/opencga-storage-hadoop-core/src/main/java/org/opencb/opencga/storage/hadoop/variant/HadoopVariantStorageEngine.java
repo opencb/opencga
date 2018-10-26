@@ -29,7 +29,6 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.io.compress.Compression.Algorithm;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.solr.common.SolrException;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantType;
@@ -42,6 +41,7 @@ import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
+import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
@@ -60,7 +60,6 @@ import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadListener;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.utils.DeleteHBaseColumnDriver;
@@ -171,6 +170,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     public static final String VARIANT_TABLE_PRESPLIT_SIZE = "opencga.variant.table.presplit.size";
     // Do not create phoenix indexes. Testing purposes only
     public static final String VARIANT_TABLE_INDEXES_SKIP = "opencga.variant.table.indexes.skip";
+    public static final String VARIANT_TABLE_LOAD_REFERENCE = "opencga.variant.table.load.reference";
 
     // Archive table configuration
     public static final String ARCHIVE_TABLE_COMPRESSION = "opencga.archive.table.compression";
@@ -181,9 +181,13 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     public static final String ARCHIVE_ROW_KEY_SEPARATOR = "opencga.archive.row_key_sep";
     public static final String ARCHIVE_FILE_BATCH_SIZE = "opencga.archive.file_batch_size";
     public static final int DEFAULT_ARCHIVE_FILE_BATCH_SIZE = 1000;
+    public static final String ARCHIVE_FIELDS = "opencga.archive.fields";
+    public static final String ARCHIVE_NON_REF_FILTER = "opencga.archive.non-ref.filter";
 
     // Sample index table configuration
     public static final String SAMPLE_INDEX_TABLE_COMPRESSION = "opencga.sample-index.table.compression";
+    public static final String SAMPLE_INDEX_TABLE_PRESPLIT_SIZE = "opencga.sample-index.table.presplit.size";
+    public static final int DEFAULT_SAMPLE_INDEX_TABLE_PRESPLIT_SIZE = 15;
 
     public static final String EXTERNAL_MR_EXECUTOR = "opencga.external.mr.executor";
     public static final String STATS_LOCAL = "stats.local";
@@ -195,7 +199,12 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     public static final EnumSet<VariantType> TARGET_VARIANT_TYPE_SET = EnumSet.of(
             VariantType.SNV, VariantType.SNP,
             VariantType.INDEL, /* VariantType.INSERTION, VariantType.DELETION,*/
-            VariantType.MNV, VariantType.MNP);
+            VariantType.MNV, VariantType.MNP,
+            VariantType.INSERTION, VariantType.DELETION,
+            VariantType.CNV, VariantType.DUPLICATION, VariantType.TRANSLOCATION,
+            VariantType.BREAKEND,
+            VariantType.SV, VariantType.SYMBOLIC
+    );
 
     public static final String FILE_ID = "fileId";
     public static final String STUDY_ID = "studyId";
@@ -387,7 +396,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public VariantSearchLoadResult searchIndex(Query query, QueryOptions queryOptions, boolean overwrite)
-            throws StorageEngineException, IOException, SolrException {
+            throws StorageEngineException, IOException, VariantSearchException {
         queryOptions = queryOptions == null ? new QueryOptions() : new QueryOptions(queryOptions);
         queryOptions.putIfAbsent(VariantHadoopDBAdaptor.NATIVE, true);
         return super.searchIndex(query, queryOptions, overwrite);
@@ -573,7 +582,10 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         }
 
         if (mergeMode.equals(MergeMode.ADVANCED)) {
-            throw new IllegalStateException("Unable to load with MergeMode " + MergeMode.ADVANCED);
+//            throw new IllegalStateException("Unable to load with MergeMode " + MergeMode.ADVANCED);
+            // Force to use MergeMode=BASIC for Hadoop
+            options.put(MERGE_MODE.key(), MergeMode.BASIC.name());
+            mergeMode = MergeMode.BASIC;
         }
         HadoopVariantStoragePipeline storageETL = new HadoopLocalLoadVariantStoragePipeline(configuration, dbAdaptor,
                 hadoopConfiguration, getVariantReaderUtils(hadoopConfiguration), options);
@@ -823,7 +835,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         boolean doIntersectWithSearch = super.doIntersectWithSearch(query, options);
         if (doIntersectWithSearch) {
             if (!isValidParam(query, VariantQueryParam.ANNOT_TRAIT)
-                    && VariantSearchManager.UseSearchIndex.from(options).equals(VariantSearchManager.UseSearchIndex.AUTO)
+                    && VariantStorageEngine.UseSearchIndex.from(options).equals(VariantStorageEngine.UseSearchIndex.AUTO)
                     && doHBaseSampleIndexIntersect(query, options)) {
                 return false;
             }

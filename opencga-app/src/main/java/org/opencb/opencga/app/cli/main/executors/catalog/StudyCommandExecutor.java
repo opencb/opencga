@@ -176,12 +176,14 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         String project = studiesCommandOptions.createCommandOptions.project;
         String name = studiesCommandOptions.createCommandOptions.name;
         String alias = studiesCommandOptions.createCommandOptions.alias;
+        String id = studiesCommandOptions.createCommandOptions.id;
 
         ObjectMap params = new ObjectMap();
         params.putIfNotEmpty(StudyDBAdaptor.QueryParams.DESCRIPTION.key(), studiesCommandOptions.createCommandOptions.description);
         params.putIfNotNull(StudyDBAdaptor.QueryParams.TYPE.key(), Study.Type.valueOf(studiesCommandOptions.createCommandOptions.type));
+        params.putIfNotEmpty("alias", alias);
 
-        return openCGAClient.getStudyClient().create(project, name, alias, params);
+        return openCGAClient.getStudyClient().create(project, id, name, params);
     }
 
     private QueryResponse<Study> info() throws CatalogException, IOException {

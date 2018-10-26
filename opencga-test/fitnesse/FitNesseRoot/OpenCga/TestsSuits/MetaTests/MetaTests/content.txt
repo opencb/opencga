@@ -3,15 +3,15 @@
 !3 OpenCGA About
 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/meta/about?sid=?sid=$sessionId |200|  Content-Type: application/json ||
-|let||js|response.jsonbody.response[0].result[0].Version|1.4.0-rc-dev|
+| GET | /v1/meta/about |200|  Content-Type: application/json ||
+|let||js|response.jsonbody.response[0].result[0].Version|1.4.0-rc2-dev|
 
 !3 OpenCGA Status
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/meta/status?sid=?sid=$sessionId |200|  Content-Type: application/json ||
+| GET | /v1/meta/status |200|  Content-Type: application/json ||
 |let||js|response.jsonbody.response[0].result[0].ok|true|
 
 !3 OpenCGA Ping
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/meta/ping?sid=?sid=$sessionId |200|  Content-Type: application/json |jsonbody.response[0].id == 'pong'|
+| GET | /v1/meta/ping |200|  Content-Type: application/json |jsonbody.response[0].id == 'pong'|
 

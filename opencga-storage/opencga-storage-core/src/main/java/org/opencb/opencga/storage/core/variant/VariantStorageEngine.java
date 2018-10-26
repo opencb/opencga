@@ -42,7 +42,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.FacetedQueryResult;
+import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngine;
@@ -50,6 +50,7 @@ import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
+import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.*;
 import org.opencb.opencga.storage.core.metadata.local.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
@@ -68,7 +69,6 @@ import org.opencb.opencga.storage.core.variant.search.VariantSearchModel;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadListener;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager.UseSearchIndex;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchSolrIterator;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
@@ -97,10 +97,12 @@ import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchM
  */
 public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdaptor> implements VariantIterable {
 
-    public static final String REMOVE_OPERATION_NAME = BatchFileOperation.Type.REMOVE.name().toLowerCase();
     private final AtomicReference<VariantSearchManager> variantSearchManager = new AtomicReference<>();
-    private Logger logger = LoggerFactory.getLogger(VariantStorageEngine.class);
     private CellBaseUtils cellBaseUtils;
+
+    public static final String REMOVE_OPERATION_NAME = BatchFileOperation.Type.REMOVE.name().toLowerCase();
+
+    private Logger logger = LoggerFactory.getLogger(VariantStorageEngine.class);
 
     public enum MergeMode {
         BASIC,
@@ -109,6 +111,29 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         public static MergeMode from(ObjectMap options) {
             String mergeModeStr = options.getString(Options.MERGE_MODE.key(), Options.MERGE_MODE.defaultValue().toString());
             return MergeMode.valueOf(mergeModeStr.toUpperCase());
+        }
+    }
+
+    public enum UseSearchIndex {
+        YES, NO, AUTO;
+
+        public static UseSearchIndex from(Map<String, Object> options) {
+            return options == null || !options.containsKey(VariantSearchManager.USE_SEARCH_INDEX)
+                    ? AUTO
+                    : UseSearchIndex.valueOf(options.get(VariantSearchManager.USE_SEARCH_INDEX).toString().toUpperCase());
+        }
+    }
+
+    public enum SyncStatus {
+        SYNCHRONIZED("Y"), NOT_SYNCHRONIZED("N"), UNKNOWN("?");
+        private final String c;
+
+        SyncStatus(String c) {
+            this.c = c;
+        }
+
+        public String key() {
+            return c;
         }
     }
 
@@ -276,7 +301,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                            Query query, QueryOptions queryOptions)
             throws IOException, StorageEngineException {
         VariantExporter exporter = newVariantExporter(metadataFactory);
-        preProcessQuery(query, queryOptions);
+        query = preProcessQuery(query, queryOptions);
         exporter.export(outputFile, outputFormat, query, queryOptions);
     }
 
@@ -554,12 +579,12 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         throw new UnsupportedOperationException();
     }
 
-    public VariantSearchLoadResult searchIndex() throws StorageEngineException, IOException, SolrException {
+    public VariantSearchLoadResult searchIndex() throws StorageEngineException, IOException, VariantSearchException {
         return searchIndex(new Query(), new QueryOptions(), false);
     }
 
     public VariantSearchLoadResult searchIndex(Query inputQuery, QueryOptions inputQueryOptions, boolean overwrite)
-            throws StorageEngineException, IOException, SolrException {
+            throws StorageEngineException, IOException, VariantSearchException {
         Query query = inputQuery == null ? new Query() : new Query(inputQuery);
         QueryOptions queryOptions = inputQueryOptions == null ? new QueryOptions() : new QueryOptions(inputQueryOptions);
 
@@ -568,7 +593,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         VariantSearchManager variantSearchManager = getVariantSearchManager();
         // first, create the collection it it does not exist
         variantSearchManager.create(dbName);
-        if (!configuration.getSearch().getActive() || !variantSearchManager.isAlive(dbName)) {
+        if (!configuration.getSearch().isActive() || !variantSearchManager.isAlive(dbName)) {
             throw new StorageEngineException("Solr is not alive!");
         }
 
@@ -605,7 +630,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             if (options.getBoolean(INDEX_SEARCH.key())) {
                 searchIndex(new Query(), new QueryOptions(), false);
             }
-        } catch (IOException | SolrException e) {
+        } catch (IOException | VariantSearchException e) {
             throw new StorageEngineException("Error indexing in search", e);
         }
     }
@@ -614,7 +639,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         return VariantSearchLoadListener.empty();
     }
 
-    public void searchIndexSamples(String study, List<String> samples) throws StorageEngineException, IOException, SolrException {
+    public void searchIndexSamples(String study, List<String> samples) throws StorageEngineException, IOException, VariantSearchException {
         VariantDBAdaptor dbAdaptor = getDBAdaptor();
 
         VariantSearchManager variantSearchManager = getVariantSearchManager();
@@ -631,7 +656,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
         try {
             variantSearchManager.create(collectionName);
-            if (configuration.getSearch().getActive() && variantSearchManager.isAlive(collectionName)) {
+            if (configuration.getSearch().isActive() && variantSearchManager.isAlive(collectionName)) {
                 // then, load variants
                 QueryOptions queryOptions = new QueryOptions();
                 Query query = new Query(VariantQueryParam.STUDY.key(), study)
@@ -658,7 +683,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         });
     }
 
-    public void removeSearchIndexSamples(String study, List<String> samples) throws StorageEngineException, SolrException {
+    public void removeSearchIndexSamples(String study, List<String> samples) throws StorageEngineException, VariantSearchException {
         VariantSearchManager variantSearchManager = getVariantSearchManager();
 
         StudyConfiguration sc = getStudyConfigurationManager().getStudyConfiguration(study, null).first();
@@ -878,6 +903,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         if (variantSearchManager.get() == null) {
             synchronized (variantSearchManager) {
                 if (variantSearchManager.get() == null) {
+                    // TODO One day we should use reflection here reading from storage-configuration.yml
                     variantSearchManager.set(new VariantSearchManager(getStudyConfigurationManager(), configuration));
                 }
             }
@@ -937,7 +963,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 } else {
                     return getVariantSearchManager().query(specificSearchIndexSamples, query, options);
                 }
-            } catch (IOException | SolrException e) {
+            } catch (IOException | VariantSearchException e) {
                 throw new VariantQueryException("Error querying Solr", e);
             }
         } else if (doQuerySearchManager(query, options)) {
@@ -947,7 +973,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 } else {
                     return getVariantSearchManager().query(dbName, query, options);
                 }
-            } catch (IOException | SolrException e) {
+            } catch (IOException | VariantSearchException e) {
                 throw new VariantQueryException("Error querying Solr", e);
             }
         } else {
@@ -1074,6 +1100,44 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             query.put(ANNOT_CLINICAL_SIGNIFICANCE.key(), clinicalSignificanceList);
         }
 
+        if (isValidParam(query, ANNOT_SIFT)) {
+            String sift = query.getString(ANNOT_SIFT.key());
+            String[] split = splitOperator(sift);
+            if (StringUtils.isNotEmpty(split[0])) {
+                throw VariantQueryException.malformedParam(ANNOT_SIFT, sift);
+            }
+            if (isValidParam(query, ANNOT_PROTEIN_SUBSTITUTION)) {
+                String proteinSubstitution = query.getString(ANNOT_PROTEIN_SUBSTITUTION.key());
+                if (proteinSubstitution.contains("sift")) {
+                    throw VariantQueryException.malformedParam(ANNOT_SIFT,
+                            "Conflict with parameter \"" + ANNOT_PROTEIN_SUBSTITUTION.key() + "\"");
+                }
+                query.put(ANNOT_PROTEIN_SUBSTITUTION.key(), proteinSubstitution + AND + "sift" + split[1] + split[2]);
+            } else {
+                query.put(ANNOT_PROTEIN_SUBSTITUTION.key(), "sift" + split[1] + split[2]);
+            }
+            query.remove(ANNOT_SIFT);
+        }
+
+        if (isValidParam(query, ANNOT_POLYPHEN)) {
+            String polyphen = query.getString(ANNOT_POLYPHEN.key());
+            String[] split = splitOperator(polyphen);
+            if (StringUtils.isNotEmpty(split[0])) {
+                throw VariantQueryException.malformedParam(ANNOT_POLYPHEN, polyphen);
+            }
+            if (isValidParam(query, ANNOT_PROTEIN_SUBSTITUTION)) {
+                String proteinSubstitution = query.getString(ANNOT_PROTEIN_SUBSTITUTION.key());
+                if (proteinSubstitution.contains("sift")) {
+                    throw VariantQueryException.malformedParam(ANNOT_SIFT,
+                            "Conflict with parameter \"" + ANNOT_PROTEIN_SUBSTITUTION.key() + "\"");
+                }
+                query.put(ANNOT_PROTEIN_SUBSTITUTION.key(), proteinSubstitution + AND + "polyphen" + split[1] + split[2]);
+            } else {
+                query.put(ANNOT_PROTEIN_SUBSTITUTION.key(), "polyphen" + split[1] + split[2]);
+            }
+            query.remove(ANNOT_POLYPHEN);
+        }
+
         StudyConfiguration defaultStudyConfiguration = getDefaultStudyConfiguration(query, options, getStudyConfigurationManager());
         QueryOperation formatOperator = null;
         if (isValidParam(query, FORMAT)) {
@@ -1143,6 +1207,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             }
             genotypeParam = SAMPLE;
 
+            if (defaultStudyConfiguration == null) {
+                throw VariantQueryException.missingStudyForSamples(query.getAsStringList(SAMPLE.key()),
+                        getStudyConfigurationManager().getStudyNames(null));
+            }
             List<String> loadedGenotypes = defaultStudyConfiguration.getAttributes().getAsStringList(LOADED_GENOTYPES.key());
             if (CollectionUtils.isEmpty(loadedGenotypes)) {
                 loadedGenotypes = Arrays.asList(
@@ -1368,10 +1436,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         } else {
             try {
                 StopWatch watch = StopWatch.createStarted();
-                long count = getVariantSearchManager().query(dbName, query, new QueryOptions(QueryOptions.LIMIT, 0)).getNumTotalResults();
+                long count = getVariantSearchManager().count(dbName, query);
                 int time = (int) watch.getTime(TimeUnit.MILLISECONDS);
                 return new QueryResult<>("count", time, 1, 1, "", "", Collections.singletonList(count));
-            } catch (IOException | SolrException e) {
+            } catch (IOException | VariantSearchException e) {
                 throw new VariantQueryException("Error querying Solr", e);
             }
         }
@@ -1385,7 +1453,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         try {
             if (doQuerySearchManager(query, new QueryOptions(QueryOptions.COUNT, true))) {
                 approxCount = false;
-                count = getVariantSearchManager().query(dbName, query, new QueryOptions(QueryOptions.LIMIT, 0)).getNumTotalResults();
+                count = getVariantSearchManager().count(dbName, query);
             } else {
                 sampling = options.getInt(APPROXIMATE_COUNT_SAMPLING_SIZE.key(),
                         getOptions().getInt(APPROXIMATE_COUNT_SAMPLING_SIZE.key(), APPROXIMATE_COUNT_SAMPLING_SIZE.defaultValue()));
@@ -1414,7 +1482,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                     count = numResults;
                 }
             }
-        } catch (IOException | SolrException e) {
+        } catch (IOException | VariantSearchException e) {
             throw new VariantQueryException("Error querying Solr", e);
         }
         int time = (int) watch.getTime(TimeUnit.MILLISECONDS);
@@ -1429,7 +1497,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @param options        Query modifiers, accepted values are: facet fields and facet ranges
      * @return               A FacetedQueryResult with the result of the query
      */
-    public FacetedQueryResult facet(Query query, QueryOptions options) {
+    public FacetQueryResult facet(Query query, QueryOptions options) {
         if (query == null) {
             query = new Query();
         }
@@ -1437,10 +1505,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             options = new QueryOptions();
         }
 
-        FacetedQueryResult facetedQueryResult;
+        FacetQueryResult facetedQueryResult;
         try {
             facetedQueryResult = getVariantSearchManager().facetedQuery(dbName, query, options);
-        } catch (IOException | SolrException | StorageEngineException e) {
+        } catch (IOException | SolrException | StorageEngineException | VariantSearchException e) {
             throw Throwables.propagate(e);
         }
 
@@ -1448,7 +1516,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     protected boolean searchActiveAndAlive() throws StorageEngineException {
-        return configuration.getSearch().getActive() && getVariantSearchManager() != null && getVariantSearchManager().isAlive(dbName);
+        return configuration.getSearch().isActive() && getVariantSearchManager() != null && getVariantSearchManager().isAlive(dbName);
     }
 
 
@@ -1481,7 +1549,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 }
                 variantsIterator = Iterators.transform(nativeIterator, VariantSearchModel::getId);
             }
-        } catch (SolrException | IOException e) {
+        } catch (VariantSearchException | IOException e) {
             throw new VariantQueryException("Error querying " + VariantSearchManager.SEARCH_ENGINE_ID, e);
         }
         return variantsIterator;
@@ -1499,3 +1567,4 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
     }
 }
+
