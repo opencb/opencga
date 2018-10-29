@@ -36,15 +36,18 @@ import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBLoade
 import java.io.IOException;
 import java.net.URI;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static junit.framework.TestCase.*;
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.FILE;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ID;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.ARCHIVE_NON_REF_FILTER;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED;
 import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.printVariants;
 import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.removeFile;
@@ -162,6 +165,50 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
     }
 
     @Test
+    public void testFillMissingFilterNonRef() throws Exception {
+        StudyConfiguration studyConfiguration = load(new QueryOptions(VariantStorageEngine.Options.GVCF.key(), true)
+                .append(ARCHIVE_NON_REF_FILTER, "FORMAT:DP<6"), Arrays.asList(
+                getResourceUri("gaps/file1.genome.vcf"),
+                getResourceUri("gaps/file2.genome.vcf")));
+
+        variantStorageEngine.fillMissing(studyConfiguration.getStudyName(), new ObjectMap(), true);
+        VariantHadoopDBAdaptor dbAdaptor = (VariantHadoopDBAdaptor) variantStorageEngine.getDBAdaptor();
+        printVariants(studyConfiguration, dbAdaptor, newOutputUri());
+
+        for (String file : Arrays.asList("file1.genome.vcf", "file2.genome.vcf")) {
+            AtomicInteger refVariants = new AtomicInteger();
+            System.out.println("Query archive file " + file);
+            dbAdaptor.iterator(new Query(STUDY.key(), studyConfiguration.getStudyName())
+                            .append(FILE.key(), file),
+                    new QueryOptions("archive", true)
+                            .append("ref", false)).forEachRemaining(variant -> {
+                System.out.println("variant = " + variant);
+                if (variant.getType().equals(VariantType.NO_VARIATION)) {
+                    StudyEntry study = variant.getStudies().get(0);
+                    Integer dpIdx = study.getFormatPositions().get("DP");
+                    if (dpIdx != null) {
+                        String dpStr = study.getSampleData(0).get(dpIdx);
+                        try {
+                            Integer dp = Integer.valueOf(dpStr);
+                            assertTrue(dp <= 5);
+                            refVariants.getAndIncrement();
+                        } catch (NumberFormatException e) {
+                        }
+                    }
+                }
+            });
+            assertTrue(refVariants.get() > 0);
+        }
+
+        Variant variant = dbAdaptor.get(new Query(ID.key(), "1:10032:A:G"), null).first();
+        assertEquals("0/0", variant.getStudies().get(0).getSampleData("s1", "GT"));
+        assertEquals("5", variant.getStudies().get(0).getSampleData("s1", "DP"));
+        variant = dbAdaptor.get(new Query(ID.key(), "1:10050:A:T"), null).first();
+        assertEquals("0/0", variant.getStudies().get(0).getSampleData("s2", "GT"));
+        assertEquals("other", variant.getStudies().get(0).getSampleData("s2", "OTHER"));
+    }
+
+    @Test
     public void testFillGapsConflictingFilesNonRef() throws Exception {
         StudyConfiguration studyConfiguration = load(new QueryOptions(), Arrays.asList(
                 getResourceUri("gaps2/file1.genome.vcf"),
@@ -200,6 +247,12 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
         assertEquals("<*>", variantMulti.getStudies().get(0).getSecondaryAlternates().get(0).getAlternate());
         assertEquals("0/1", variantMulti.getStudies().get(0).getSampleData("s1", "GT"));
         assertEquals("2/2", variantMulti.getStudies().get(0).getSampleData("s2", "GT"));
+
+        Variant variantNonMulti = dbAdaptor.get(new Query(VariantQueryParam.ID.key(), "1:10054:A:G"), null).first();
+        assertEquals(new HashSet<>(Arrays.asList("C", "T")),
+                variantNonMulti.getStudies().get(0).getSecondaryAlternates().stream().map(AlternateCoordinate::getAlternate).collect(Collectors.toSet()));
+        assertEquals("2/3", variantNonMulti.getStudies().get(0).getSampleData("s1", "GT"));
+        assertEquals("0/1", variantNonMulti.getStudies().get(0).getSampleData("s2", "GT"));
 
     }
 

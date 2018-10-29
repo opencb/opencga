@@ -12,7 +12,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
 
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.SAMPLE_INDEX_TABLE_COMPRESSION;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConverter.toGenotypeColumn;
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConverter.toGenotypeCountColumn;
 
@@ -69,7 +69,16 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
         super.open();
 
         try {
-            hBaseManager.createTableIfNeeded(tableName, family, Compression.getCompressionAlgorithmByName(
+            int files = hBaseManager.getConf().getInt(EXPECTED_FILES_NUMBER, DEFAULT_EXPECTED_FILES_NUMBER);
+            int preSplitSize = hBaseManager.getConf().getInt(SAMPLE_INDEX_TABLE_PRESPLIT_SIZE, DEFAULT_SAMPLE_INDEX_TABLE_PRESPLIT_SIZE);
+
+            int splits = files / preSplitSize;
+            ArrayList<byte[]> preSplits = new ArrayList<>(splits);
+            for (int i = 0; i < splits; i++) {
+                preSplits.add(SampleIndexConverter.toRowKey(i * preSplitSize));
+            }
+
+            hBaseManager.createTableIfNeeded(tableName, family, preSplits, Compression.getCompressionAlgorithmByName(
                     hBaseManager.getConf().get(SAMPLE_INDEX_TABLE_COMPRESSION, Compression.Algorithm.SNAPPY.getName())));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
