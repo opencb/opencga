@@ -58,6 +58,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
     private Map<Integer, LinkedHashSet<Integer>> includeSamples;
     private StudyConfigurationManager studyConfigurationManager;
     private String unknownGenotype;
+    private List<String> format;
 
     private final org.slf4j.Logger logger = LoggerFactory.getLogger(DocumentToSamplesConverter.class.getName());
 
@@ -101,7 +102,6 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
             }
         }
     };
-    private List<String> format;
 
 
     /**
@@ -114,7 +114,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         studyDefaultGenotypeSet = new HashMap<>();
         includeSamples = Collections.emptyMap();
         studyConfigurationManager = null;
-        unknownGenotype = null;
+        unknownGenotype = UNKNOWN_GENOTYPE;
     }
 
     /**
@@ -198,7 +198,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         }
 
         StudyConfiguration studyConfiguration = studyConfigurations.get(studyId);
-        Map<String, Integer> sampleIds = getIndexedSamplesIdMap(studyId);
+        BiMap<String, Integer> sampleIds = getIndexedSamplesIdMap(studyId);
 //        final BiMap<String, Integer> samplesPosition = StudyConfiguration.getIndexedSamplesPosition(studyConfiguration);
         final LinkedHashMap<String, Integer> samplesPositionToReturn = getSamplesPosition(studyConfiguration);
 
@@ -214,6 +214,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
 
         final Set<Integer> filesWithSamplesData;
         final Map<Integer, Document> files;
+        final Set<Integer> loadedSamples;
         final List<String> extraFields;
         if (object.containsKey(DocumentToStudyVariantEntryConverter.FILES_FIELD)) {
             List<Document> fileObjects = getList(object, DocumentToStudyVariantEntryConverter.FILES_FIELD);
@@ -222,11 +223,15 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
                             f -> f.get(DocumentToStudyVariantEntryConverter.FILEID_FIELD, Number.class).intValue(),
                             f -> f));
 
+            loadedSamples = new HashSet<>();
             filesWithSamplesData = new HashSet<>();
             studyConfiguration.getSamplesInFiles().forEach((fileId, samplesInFile) -> {
                 // File indexed and contains any sample (not disjoint)
                 if (studyConfiguration.getIndexedFiles().contains(fileId) && !Collections.disjoint(samplesInFile, sampleIds.values())) {
                     filesWithSamplesData.add(fileId);
+                }
+                if (files.containsKey(fileId) || files.containsKey(-fileId)) {
+                    loadedSamples.addAll(samplesInFile);
                 }
             });
 
@@ -235,30 +240,37 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
             files = Collections.emptyMap();
             extraFields = Collections.emptyList();
             filesWithSamplesData = Collections.emptySet();
+            loadedSamples = Collections.emptySet();
         }
 
         List<List<String>> samplesData = new ArrayList<>(sampleIds.size());
 
 
         // An array of genotypes is initialized with the most common one
-//        String mostCommonGtString = mongoGenotypes.getString("def");
+//        String defaultGenotype = mongoGenotypes.getString("def");
         Set<String> defaultGenotypes = studyDefaultGenotypeSet.get(studyId);
-        String mostCommonGtString = defaultGenotypes.isEmpty() ? null : defaultGenotypes.iterator().next();
-        if (UNKNOWN_GENOTYPE.equals(mostCommonGtString)) {
-            mostCommonGtString = unknownGenotype;
+        String defaultGenotype = defaultGenotypes.isEmpty() ? null : defaultGenotypes.iterator().next();
+        if (UNKNOWN_GENOTYPE.equals(defaultGenotype)) {
+            defaultGenotype = unknownGenotype;
         }
-        if (mostCommonGtString == null) {
-            mostCommonGtString = UNKNOWN_GENOTYPE;
+        if (defaultGenotype == null) {
+            defaultGenotype = UNKNOWN_GENOTYPE;
         }
 
         // Add the samples to the file
-        for (int i = 0; i < sampleIds.size(); i++) {
+        for (String sampleName : samplesPositionToReturn.keySet()) {
+            Integer sampleId = sampleIds.get(sampleName);
+
             String[] values;
             if (excludeGenotypes) {
                 values = new String[extraFields.size()];
             } else {
                 values = new String[1 + extraFields.size()];
-                values[0] = mostCommonGtString;
+                if (loadedSamples.contains(sampleId)) {
+                    values[0] = defaultGenotype;
+                } else {
+                    values[0] = unknownGenotype;
+                }
             }
             samplesData.add(Arrays.asList(values));
         }
@@ -274,14 +286,8 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
             for (Map.Entry<String, Object> dbo : mongoGenotypes.entrySet()) {
                 final String genotype;
                 if (dbo.getKey().equals(UNKNOWN_GENOTYPE)) {
-                    if (unknownGenotype == null) {
-                        continue;
-                    }
-                    if (defaultGenotypes.contains(unknownGenotype)) {
-                        continue;
-                    } else {
-                        genotype = unknownGenotype;
-                    }
+                    // Skip this legacy genotype!
+                    continue;
                 } else {
                     genotype = genotypeToDataModelType(dbo.getKey());
                 }
