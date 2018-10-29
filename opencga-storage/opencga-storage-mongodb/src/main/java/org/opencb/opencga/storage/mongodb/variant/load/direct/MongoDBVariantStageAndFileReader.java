@@ -166,6 +166,12 @@ public class MongoDBVariantStageAndFileReader implements DataReader<Document> {
                     }
                 } else {
                     variant = variantsIterator.next();
+
+                    if (variant != null && MongoDBVariantStoragePipeline.SKIPPED_VARIANTS.contains(variant.getType())) {
+                        skippedVariants++;
+                        moveVariants = true;
+                        continue;
+                    }
                 }
 
                 moveVariants = false;
@@ -210,12 +216,6 @@ public class MongoDBVariantStageAndFileReader implements DataReader<Document> {
 
             if (variant == null && stageVariant == null) {
                 break;
-            }
-
-            if (variant != null && MongoDBVariantStoragePipeline.SKIPPED_VARIANTS.contains(variant.getType())) {
-                skippedVariants++;
-                moveVariants = true;
-                continue;
             }
 
             int comparision = variant != null && stageVariant != null ? variantComparator.compare(variant, stageVariant) : 0;
@@ -296,8 +296,15 @@ public class MongoDBVariantStageAndFileReader implements DataReader<Document> {
         if (variantReaderEmpty) {
             if (!variantsIterator.hasNext()) {
                 variantsBuffer = variantsBufferPending;
+                variantsBufferPending = new ArrayList<>();
+
+                // Check chromosome
+                checkCurrentChromosome();
+
+                // Sort variants if needed
+                ensureVariantsBufferIsSorted();
+
                 variantsIterator = variantsBuffer.listIterator();
-                variantsBufferPending = Collections.emptyList();
             }
             return;
         }
