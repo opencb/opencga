@@ -177,17 +177,24 @@ public class VariantMongoDBQueryParser {
             }
 
             /* ANNOTATION PARAMS */
-            QueryBuilder annotationQuery = new QueryBuilder();
-            parseAnnotationQueryParams(query, annotationQuery);
-            builder.and(annotationQuery.get());
+            QueryBuilder annotationQueryBuilder = new QueryBuilder();
+            parseAnnotationQueryParams(query, annotationQueryBuilder);
+            DBObject annotationQuery = annotationQueryBuilder.get();
+            if (!annotationQuery.keySet().isEmpty()) {
+                builder.and(annotationQuery);
+            }
 
             /* STUDIES */
-            QueryBuilder studyQuery = new QueryBuilder();
-            final StudyConfiguration defaultStudyConfiguration = parseStudyQueryParams(query, studyQuery);
+            QueryBuilder studyQueryBuilder = new QueryBuilder();
+            final StudyConfiguration defaultStudyConfiguration = parseStudyQueryParams(query, studyQueryBuilder);
 
             /* STATS PARAMS */
-            parseStatsQueryParams(query, studyQuery, defaultStudyConfiguration);
-            builder.and(studyQuery.get());
+            parseStatsQueryParams(query, studyQueryBuilder, defaultStudyConfiguration);
+            if (builder.get().keySet().isEmpty()) {
+                builder = studyQueryBuilder;
+            } else {
+                builder.and(studyQueryBuilder.get());
+            }
 
         }
 
