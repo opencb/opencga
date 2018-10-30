@@ -21,7 +21,6 @@ import com.google.common.collect.BiMap;
 import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
 import org.opencb.biodata.formats.variant.io.VariantReader;
-import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantType;
@@ -74,7 +73,8 @@ import java.util.stream.Collectors;
 import static org.opencb.opencga.storage.core.metadata.StudyConfigurationManager.addBatchOperation;
 import static org.opencb.opencga.storage.core.metadata.StudyConfigurationManager.setStatus;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.LOADED_GENOTYPES;
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.POST_LOAD_CHECK_SKIP;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.*;
 
 /**
@@ -122,6 +122,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         super.securePreLoad(studyConfiguration, source);
         int fileId = getFileId();
 
+        // 1) Determine merge mode
         if (studyConfiguration.getAttributes().containsKey(Options.MERGE_MODE.key())
                 || studyConfiguration.getAttributes().containsKey(MERGE_IGNORE_OVERLAPPING_VARIANTS.key())) {
             if (studyConfiguration.getAttributes().getBoolean(MERGE_IGNORE_OVERLAPPING_VARIANTS.key())) {
@@ -138,9 +139,6 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             switch (mergeMode) {
                 case BASIC:
                     studyConfiguration.getAttributes().put(MERGE_IGNORE_OVERLAPPING_VARIANTS.key(), true);
-                    // When ignoring overlapping variants, the default genotype MUST be the UNKNOWN_GENOTYPE (?/?).
-                    // Otherwise, a "fillGaps" step will be needed afterwards
-                    studyConfiguration.getAttributes().put(DEFAULT_GENOTYPE.key(), GenotypeClass.UNKNOWN_GENOTYPE);
                     break;
                 case ADVANCED:
                     studyConfiguration.getAttributes().put(MERGE_IGNORE_OVERLAPPING_VARIANTS.key(), false);
@@ -149,28 +147,26 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     throw new IllegalArgumentException("Unknown merge mode: " + mergeMode);
             }
         }
+
+        // 2) Determine DEFAULT_GENOTYPE
+        if (studyConfiguration.getAttributes().getAsStringList(DEFAULT_GENOTYPE.key()).contains(GenotypeClass.UNKNOWN_GENOTYPE)) {
+            // Remove if UNKNOWN_GENOTYPE
+            studyConfiguration.getAttributes().remove(DEFAULT_GENOTYPE.key());
+        }
         if (studyConfiguration.getAttributes().containsKey(DEFAULT_GENOTYPE.key())) {
             Set<String> defaultGenotype = new HashSet<>(studyConfiguration.getAttributes().getAsStringList(DEFAULT_GENOTYPE.key()));
             logger.debug("Using default genotype from study configuration: {}", defaultGenotype);
         } else {
+            // Read from configuration file, or get the default value
             Set<String> defaultGenotype;
             if (options.containsKey(DEFAULT_GENOTYPE.key())) {
                 defaultGenotype = new HashSet<>(options.getAsStringList(DEFAULT_GENOTYPE.key()));
-            } else {
-                SampleSetType studyType = options.get(Options.STUDY_TYPE.key(), SampleSetType.class, Options.STUDY_TYPE
-                        .defaultValue());
-                switch (studyType) {
-                    case FAMILY:
-                    case TRIO:
-                    case PAIRED:
-                        defaultGenotype = Collections.singleton(GenotypeClass.UNKNOWN_GENOTYPE);
-                        logger.debug("Do not compress genotypes. Default genotype : {}", defaultGenotype);
-                        break;
-                    default:
-                        defaultGenotype = new HashSet<>(DEFAULT_GENOTYPE.defaultValue());
-                        logger.debug("No default genotype found. Using default genotype: {}", defaultGenotype);
-                        break;
+                if (defaultGenotype.contains(GenotypeClass.UNKNOWN_GENOTYPE)) {
+                    throw new StorageEngineException("Unable to use genotype '" + GenotypeClass.UNKNOWN_GENOTYPE + "' as "
+                            + DEFAULT_GENOTYPE.key());
                 }
+            } else {
+                defaultGenotype = new HashSet<>(DEFAULT_GENOTYPE.defaultValue());
             }
             studyConfiguration.getAttributes().put(DEFAULT_GENOTYPE.key(), defaultGenotype);
         }

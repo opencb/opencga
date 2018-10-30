@@ -938,7 +938,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
     @Override
     public void multiIndexPlatinum() throws Exception {
         super.multiIndexPlatinum(new ObjectMap(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "DP,AD,PL"));
-        checkPlatinumDatabase(d -> 17, Collections.singleton("0/0"));
+        checkPlatinumDatabase(d -> ((List) d.get(FILES_FIELD)).size(), Collections.singleton("0/0"));
 
 //        StudyConfiguration studyConfiguration = variantStorageEngine.getStudyConfigurationManager()
 //                .getStudyConfiguration(1, null).first();
@@ -951,11 +951,11 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
 //        }
     }
 
-    @Test
-    public void multiIndexPlatinumNoUnknownGenotypes() throws Exception {
-        super.multiIndexPlatinum(new ObjectMap(MongoDBVariantOptions.DEFAULT_GENOTYPE.key(), GenotypeClass.UNKNOWN_GENOTYPE));
-        checkPlatinumDatabase(d -> ((List) d.get(FILES_FIELD)).size(), Collections.singleton(GenotypeClass.UNKNOWN_GENOTYPE));
-    }
+//    @Test
+//    public void multiIndexPlatinumNoUnknownGenotypes() throws Exception {
+//        super.multiIndexPlatinum(new ObjectMap(MongoDBVariantOptions.DEFAULT_GENOTYPE.key(), GenotypeClass.UNKNOWN_GENOTYPE));
+//        checkPlatinumDatabase(d -> ((List) d.get(FILES_FIELD)).size(), Collections.singleton(GenotypeClass.UNKNOWN_GENOTYPE));
+//    }
 
     @Test
     public void multiIndexPlatinumMergeSimple() throws Exception {
