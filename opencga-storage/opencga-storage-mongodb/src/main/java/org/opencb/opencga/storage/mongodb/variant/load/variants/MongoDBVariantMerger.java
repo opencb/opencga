@@ -35,7 +35,6 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -54,8 +53,6 @@ import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Filters.*;
 import static com.mongodb.client.model.Updates.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass.UNKNOWN_GENOTYPE;
-import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.DEFAULT_GENOTYPE;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.*;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.*;
 import static org.opencb.opencga.storage.mongodb.variant.converters.stage.StageDocumentToVariantConverter.ID_FIELD;
@@ -240,12 +237,10 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
     private final DocumentToStudyVariantEntryConverter studyConverter;
     private final StudyConfiguration studyConfiguration;
     private final boolean excludeGenotypes;
-    private final boolean addUnknownGenotypes;
 
     // Variables that must be aware of concurrent modification
     private final Map<Integer, LinkedHashMap<String, Integer>> samplesPositionMap;
     private final List<Integer> indexedSamples;
-    private Map<String, Set<Integer>> chromosomeInLoadedFiles;
 
 
     private final Logger logger = LoggerFactory.getLogger(MongoDBVariantMerger.class);
@@ -255,7 +250,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 
     private final int release;
 
-    private MongoDBVariantMerger(VariantDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration, List<Integer> fileIds,
+    public MongoDBVariantMerger(VariantDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration, List<Integer> fileIds,
                                 boolean resume, boolean ignoreOverlapping, int release) {
         this.dbAdaptor = Objects.requireNonNull(dbAdaptor);
         this.studyConfiguration = Objects.requireNonNull(studyConfiguration);
@@ -267,7 +262,6 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         studyId = studyConfiguration.getStudyId();
         this.release = release;
         studyIdStr = String.valueOf(studyId);
-        addUnknownGenotypes = loadUnknownGenotypes(studyConfiguration);
 
         checkOverlappings = !ignoreOverlapping && (fileIds.size() > 1 || !studyConfiguration.getIndexedFiles().isEmpty());
         DocumentToSamplesConverter samplesConverter = new DocumentToSamplesConverter(this.studyConfiguration);
@@ -280,25 +274,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         variantMerger.setExpectedFormats(format);
         this.resume = resume;
         ts = System.currentTimeMillis();
-    }
-
-    public MongoDBVariantMerger(VariantDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration, List<Integer> fileIds,
-                                Map<String, Set<Integer>> chromosomeInLoadedFiles, boolean resume, boolean ignoreOverlapping, int release) {
-        this(dbAdaptor, studyConfiguration, fileIds, resume, ignoreOverlapping, release);
-
-        if (chromosomeInLoadedFiles.isEmpty()) {
-            this.indexedFiles = studyConfiguration.getIndexedFiles();
-            this.chromosomeInLoadedFiles = null;
-        } else {
-            this.indexedFiles = null;
-            this.chromosomeInLoadedFiles = chromosomeInLoadedFiles;
-        }
-    }
-
-    public MongoDBVariantMerger(VariantDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration, List<Integer> fileIds,
-                                Set<Integer> indexedFiles, boolean resume, boolean ignoreOverlapping, int release) {
-        this(dbAdaptor, studyConfiguration, fileIds, resume, ignoreOverlapping, release);
-        this.indexedFiles = Objects.requireNonNull(indexedFiles);
+        indexedFiles = studyConfiguration.getIndexedFiles();
         checkOverlappings = !ignoreOverlapping && (fileIds.size() > 1 || !indexedFiles.isEmpty());
     }
 
@@ -489,9 +465,6 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                 List<Object> duplicatedVariants = getListFromDocument(study, fileId.toString());
                 if (duplicatedVariants.size() > 1) {
                     mongoDBOps.setNonInserted(mongoDBOps.getNonInserted() + duplicatedVariants.size());
-                    if (addUnknownGenotypes) {
-                        addSampleIdsGenotypes(gts, UNKNOWN_GENOTYPE, getSamplesInFile(fileId));
-                    }
                     logDuplicatedVariant(emptyVar, duplicatedVariants.size(), fileId);
                     duplicated++;
                     continue;
@@ -549,17 +522,9 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                 }
 
             } else {
-                if (addUnknownGenotypes) {
-                    addSampleIdsGenotypes(gts, UNKNOWN_GENOTYPE, getSamplesInFile(fileId));
-                }
                 missing++;
             }
 
-        }
-
-        if (newStudy && addUnknownGenotypes) {
-            //If it is a new variant for the study, add the already loaded samples as UNKNOWN
-            addSampleIdsGenotypes(gts, UNKNOWN_GENOTYPE, getIndexedSamples());
         }
 
         addCleanStageOperations(document, mongoDBOps, newStudy, missing, skipped, duplicated);
@@ -695,15 +660,13 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                 }
                 fileDocuments.addAll(getListFromDocument(studyDocument, FILES_FIELD));
                 alternateDocuments = getListFromDocument(studyDocument, ALTERNATES_FIELD);
-            } else if (addUnknownGenotypes) {
-                addSampleIdsGenotypes(gts, UNKNOWN_GENOTYPE, getSamplesInFile(fileId));
             }
         }
 
         // For the rest of the files not indexed, only is this variant is new in this study,
         // add all the already indexed files information, if present in this variant.
         if (newStudy) {
-            for (Integer fileId : getInexedFiles(variant.getChromosome())) {
+            for (Integer fileId : getIndexedFiles()) {
                 FileEntry file = studyEntry.getFile(fileId.toString());
                 if (file == null) {
                     file = studyEntry.getFile(String.valueOf(-fileId));
@@ -716,8 +679,6 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                                 .forEach((gt, sampleIds) -> addSampleIdsGenotypes(gts, gt, (Collection<Integer>) sampleIds));
                     }
                     fileDocuments.addAll(getListFromDocument(studyDocument, FILES_FIELD));
-                } else if (addUnknownGenotypes) {
-                    addSampleIdsGenotypes(gts, UNKNOWN_GENOTYPE, getSamplesInFile(fileId));
                 }
             }
         }
@@ -957,7 +918,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
          * in both variants, so we only need to get one of them.
          *
          */
-        if (!completelyNewOverlappingRegion && newOverlappingRegion && !getInexedFiles(mainVariant.getChromosome()).isEmpty()) {
+        if (!completelyNewOverlappingRegion && newOverlappingRegion && !getIndexedFiles().isEmpty()) {
             int i = 0;
             for (Variant variant : variants) {
                 // If the variant is not new in this study, query to the database for the loaded info.
@@ -1346,27 +1307,8 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         return format;
     }
 
-    private Set<Integer> getInexedFiles(String chromosome) {
-        if (indexedFiles != null) {
-            return indexedFiles;
-        } else {
-            return chromosomeInLoadedFiles.getOrDefault(chromosome, Collections.emptySet());
-        }
-    }
-
-    public static boolean loadUnknownGenotypes(StudyConfiguration studyConfiguration) {
-        Logger logger = LoggerFactory.getLogger(MongoDBVariantMerger.class);
-        String defaultGenotype = studyConfiguration.getAttributes().getString(DEFAULT_GENOTYPE.key(), "");
-        if (defaultGenotype.equals(GenotypeClass.UNKNOWN_GENOTYPE)) {
-            logger.debug("Do not need fill unknown genotype array. DefaultGenotype is UNKNOWN_GENOTYPE({}).",
-                    GenotypeClass.UNKNOWN_GENOTYPE);
-            return false;
-        } else if (getExcludeGenotypes(studyConfiguration)) {
-            logger.debug("Do not need fill unknown genotype array. Excluding genotypes.");
-            return false;
-        } else {
-            return true;
-        }
+    private Set<Integer> getIndexedFiles() {
+        return indexedFiles;
     }
 
     public static boolean getExcludeGenotypes(StudyConfiguration studyConfiguration) {
