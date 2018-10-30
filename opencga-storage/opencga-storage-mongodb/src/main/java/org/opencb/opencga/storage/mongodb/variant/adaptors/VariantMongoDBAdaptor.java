@@ -489,8 +489,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             options = new QueryOptions();
         }
 
+        SelectVariantElements selectVariantElements = VariantQueryUtils.parseSelectElements(query, options, studyConfigurationManager);
         Document mongoQuery = queryParser.parseQuery(query);
-        Document projection = queryParser.createProjection(query, options);
+        Document projection = queryParser.createProjection(query, options, selectVariantElements);
         options.putIfAbsent(QueryOptions.SKIP_COUNT, DEFAULT_SKIP_COUNT);
 
         if (options.getBoolean("explain", false)) {
@@ -501,7 +502,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             logger.debug("MongoDB Explain = {}", explain.toJson(new JsonWriterSettings(JsonMode.SHELL, true)));
         }
 
-        DocumentToVariantConverter converter = getDocumentToVariantConverter(query, options);
+        DocumentToVariantConverter converter = getDocumentToVariantConverter(query, selectVariantElements);
         Map<String, List<String>> samples = getSamplesMetadataIfRequested(query, options, studyConfigurationManager);
         return new VariantQueryResult<>(variantsCollection.find(mongoQuery, projection, converter, options), samples);
     }
@@ -645,9 +646,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             options = new QueryOptions();
         }
 
+        SelectVariantElements selectVariantElements = VariantQueryUtils.parseSelectElements(query, options, studyConfigurationManager);
         Document mongoQuery = queryParser.parseQuery(query);
-        Document projection = queryParser.createProjection(query, options);
-        DocumentToVariantConverter converter = getDocumentToVariantConverter(query, options);
+        Document projection = queryParser.createProjection(query, options, selectVariantElements);
+        DocumentToVariantConverter converter = getDocumentToVariantConverter(query, selectVariantElements);
         options.putIfAbsent(MongoDBCollection.BATCH_SIZE, 100);
 
         // Short unsorted queries with timeout or limit don't need the persistent cursor.

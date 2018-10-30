@@ -5,6 +5,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -19,12 +20,13 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.*;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantAnnotationConverterTest.ANY;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantAnnotationConverterTest.checkEqualDocuments;
-import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.STUDIES_FIELD;
+import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.*;
 
 /**
  * Created on 21/08/17.
@@ -240,6 +242,53 @@ public class VariantMongoDBQueryParserTest {
                         .append("$and", Collections.singletonList(ANY));
 
         checkEqualDocuments(expected, mongoQuery);
+    }
+
+    @Test
+    public void testProjectionIncludeSamplesExcludeFiles() {
+        Document expected = new Document()
+                .append(CHROMOSOME_FIELD, 1)
+                .append(START_FIELD, 1)
+                .append(END_FIELD, 1)
+//                .append(LENGTH_FIELD, 1)
+                .append(REFERENCE_FIELD, 1)
+                .append(ALTERNATE_FIELD, 1)
+//                .append(IDS_FIELD, 1)
+                .append(TYPE_FIELD, 1)
+                .append(SV_FIELD, 1)
+//                .append(HGVS_FIELD, 1)
+//                .append(ANNOTATION_FIELD, 1)
+//                .append(CUSTOM_ANNOTATION_FIELD, 1)
+//                .append(RELEASE_FIELD, 1)
+                .append(STATS_FIELD, 1)
+                .append(STUDIES_FIELD + '.' + STUDYID_FIELD, 1)
+                .append(STUDIES_FIELD + '.' + ALTERNATES_FIELD, 1)
+                .append(STUDIES_FIELD + '.' + GENOTYPES_FIELD, 1)
+                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, 1) // Ensure that fileId is always returned
+                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + SAMPLE_DATA_FIELD, 1);
+
+        Document projection = parser.createProjection(new Query(), new QueryOptions(QueryOptions.INCLUDE,
+                STUDIES_SAMPLES_DATA + "," + STUDIES_SECONDARY_ALTERNATES + ',' + STUDIES_STATS));
+        checkEqualDocuments(expected, projection);
+
+        projection = parser.createProjection(new Query()
+                .append(INCLUDE_GENOTYPE.key(), true)
+                .append(INCLUDE_FORMAT.key(), ALL)
+                .append(INCLUDE_FILE.key(), NONE), new QueryOptions(QueryOptions.INCLUDE, STUDIES.fieldName()));
+        checkEqualDocuments(expected, projection);
+
+        expected.append(LENGTH_FIELD, 1);
+        expected.append(HGVS_FIELD, 1);
+        expected.append(IDS_FIELD, 1);
+        projection = parser.createProjection(new Query().append(INCLUDE_SAMPLE.key(), ALL)
+                .append(INCLUDE_FILE.key(), NONE), new QueryOptions(QueryOptions.EXCLUDE, ANNOTATION.fieldName()));
+        checkEqualDocuments(expected, projection);
+
+        expected.remove(STUDIES_FIELD + '.' + FILES_FIELD + '.' + SAMPLE_DATA_FIELD);
+        projection = parser.createProjection(new Query().append(INCLUDE_SAMPLE.key(), ALL)
+                .append(INCLUDE_FILE.key(), NONE).append(INCLUDE_GENOTYPE.key(), true), new QueryOptions(QueryOptions.EXCLUDE, ANNOTATION.fieldName()));
+        checkEqualDocuments(expected, projection);
+
     }
 
 }

@@ -522,9 +522,11 @@ public class VariantMongoDBQueryParser {
                         f -> studyConfigurationManager.getFileIdPair(f, false, defaultStudyConfiguration).getValue());
             } else if (isValidParam(query, INCLUDE_FILE)) {
                 List<String> files = getIncludeFilesList(query);
-                fileIds = new ArrayList<>(files.size());
-                for (String file : files) {
-                    fileIds.add(studyConfigurationManager.getFileIdPair(file, false, defaultStudyConfiguration).getValue());
+                if (files != null) {
+                    fileIds = new ArrayList<>(files.size());
+                    for (String file : files) {
+                        fileIds.add(studyConfigurationManager.getFileIdPair(file, false, defaultStudyConfiguration).getValue());
+                    }
                 }
             }
 
@@ -904,6 +906,10 @@ public class VariantMongoDBQueryParser {
     }
 
     protected Document createProjection(Query query, QueryOptions options) {
+        return createProjection(query, options, VariantQueryUtils.parseSelectElements(query, options, studyConfigurationManager));
+    }
+
+    protected Document createProjection(Query query, QueryOptions options, SelectVariantElements selectVariantElements) {
         if (options == null) {
             options = new QueryOptions();
         }
@@ -919,11 +925,11 @@ public class VariantMongoDBQueryParser {
             }
         }
 
-        Set<VariantField> returnedFields = VariantField.getIncludeFields(options);
+        Set<VariantField> returnedFields = new HashSet<>(selectVariantElements.getFields());
         // Add all required fields
         returnedFields.addAll(DocumentToVariantConverter.REQUIRED_FIELDS_SET);
         // StudyID is mandatory if returning any STUDY element
-        if (returnedFields.contains(VariantField.STUDIES) && !returnedFields.contains(VariantField.STUDIES_STUDY_ID)) {
+        if (returnedFields.contains(VariantField.STUDIES)) {
             returnedFields.add(VariantField.STUDIES_STUDY_ID);
         }
 
@@ -937,7 +943,7 @@ public class VariantMongoDBQueryParser {
         //
         // > db.variants.find({}, {"studies.files":1, studies:{$elemMatch:{sid:1}}})
         // {  studies : [ { sid : 1, files : [ ... ] , gt : { ... } } ]  }
-        List<Integer> studiesIds = VariantQueryUtils.getIncludeStudies(query, options, studyConfigurationManager);
+        List<Integer> studiesIds = selectVariantElements.getStudies();
         // Use elemMatch only if there is one study to return.
         if (studiesIds.size() == 1) {
             projection.put(
@@ -969,10 +975,10 @@ public class VariantMongoDBQueryParser {
                         projection.put(DocumentToVariantConverter.STUDIES_FIELD + '.'
                                 + DocumentToStudyVariantEntryConverter.FILES_FIELD + '.'
                                 + DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD + '.' + format.toLowerCase(), 1);
-                        projection.put(DocumentToVariantConverter.STUDIES_FIELD + '.'
-                                + DocumentToStudyVariantEntryConverter.FILES_FIELD + '.'
-                                + DocumentToStudyVariantEntryConverter.FILEID_FIELD, 1);
                     }
+                    projection.put(DocumentToVariantConverter.STUDIES_FIELD + '.'
+                            + DocumentToStudyVariantEntryConverter.FILES_FIELD + '.'
+                            + DocumentToStudyVariantEntryConverter.FILEID_FIELD, 1);
                 }
             }
         }

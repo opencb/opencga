@@ -498,6 +498,17 @@ public final class VariantQueryUtils {
         Map<Integer, List<Integer>> fileIds = VariantQueryUtils.getIncludeFiles(query, includeStudies, includeFields, provider);
 
 
+        if (fileIds.values().stream().allMatch(List::isEmpty)) {
+            includeFields.remove(VariantField.STUDIES_FILES);
+            includeFields.removeAll(VariantField.STUDIES_FILES.getChildren());
+        }
+
+        if (sampleIds.values().stream().allMatch(List::isEmpty)) {
+            includeFields.remove(VariantField.STUDIES_SAMPLES_DATA);
+            includeFields.removeAll(VariantField.STUDIES_SAMPLES_DATA.getChildren());
+        }
+
+
         return new SelectVariantElements(includeFields, includeStudies, studyConfigurations, sampleIds, fileIds);
     }
 
