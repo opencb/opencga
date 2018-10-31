@@ -422,7 +422,8 @@ public class SolrQueryParser {
                             chromosomes = new ArrayList<>(chromosomeMap.keySet());
                         }
                         for (String chr: chromosomes) {
-                            facetList.add("start[1.." + chromosomeMap.get(chr) + "]:" + step + ":chromosome:" + chr);
+                            facetList.add("start[1.." + chromosomeMap.get(chr) + "]:" + step + ":chromDensity." + chr
+                                    + ":chromosome:" + chr);
                         }
                     } else {
                         throw VariantQueryException.malformedParam(null, CHROM_DENSITY, "Invalid syntax: " + facet);
