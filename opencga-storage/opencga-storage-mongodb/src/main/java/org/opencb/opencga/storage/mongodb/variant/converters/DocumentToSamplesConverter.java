@@ -489,12 +489,12 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
             }
             String genotype;
             if (gtIdx == null) {
-                genotype = UNKNOWN_GENOTYPE;
+                genotype = ".";
             } else {
                 genotype = data.get(gtIdx);
             }
             if (genotype == null) {
-                genotype = UNKNOWN_GENOTYPE;
+                genotype = ".";
             }
 //                Genotype g = new Genotype(genotype);
             List<Integer> samplesWithGenotype = genotypeCodes.get(genotype);
