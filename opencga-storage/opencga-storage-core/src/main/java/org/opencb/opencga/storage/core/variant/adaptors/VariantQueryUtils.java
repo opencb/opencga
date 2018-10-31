@@ -1169,7 +1169,20 @@ public final class VariantQueryUtils {
         Pair<QueryOperation, Map<String, String>> pair = parseMultiKeyValueFilter(GENOTYPE, sampleGenotypes);
 
         for (Map.Entry<String, String> entry : pair.getValue().entrySet()) {
-            map.put(entry.getKey(), splitValue(entry.getValue(), QueryOperation.OR));
+            List<String> gts = splitValue(entry.getValue(), QueryOperation.OR);
+            boolean anyNegated = false;
+            boolean allNegated = true;
+            for (String gt : gts) {
+                if (isNegated(gt)) {
+                    anyNegated = true;
+                } else {
+                    allNegated = false;
+                }
+            }
+            if (!allNegated && anyNegated) {
+                throw VariantQueryException.malformedParam(GENOTYPE, sampleGenotypes);
+            }
+            map.put(entry.getKey(), gts);
         }
 
         return pair.getKey();

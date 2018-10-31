@@ -725,11 +725,60 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
     @Test
     public void testGetByFilterMultiFileNegatedFiles() {
         VariantQueryResult<Variant> allVariants = dbAdaptor.get(new Query()
-                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877")
+                .append(VariantQueryParam.INCLUDE_STUDY.key(), "S_1")
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), ALL)
                 .append(VariantQueryParam.INCLUDE_FILE.key(), asList(file12877, file12878)), options);
 
+        query = new Query()
+                .append(VariantQueryParam.INCLUDE_STUDY.key(), "S_1")
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), ALL)
+                .append(VariantQueryParam.FILE.key(),
+                        file12877
+                                + AND + NOT +
+                                file12878);
+        queryResult = query(query, options);
+
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(
+                withFileId(file12877),
+                not(withFileId(file12878))
+        ))));
 
         query = new Query()
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), ALL)
+                .append(VariantQueryParam.STUDY.key(), 1)
+                .append(VariantQueryParam.SAMPLE.key(), sampleNA12879+OR+sampleNA12880)
+                .append(VariantQueryParam.FILE.key(),
+                        file12877
+                                + AND + NOT +
+                                file12878);
+        queryResult = query(query, options);
+
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(
+                anyOf(withSampleData(sampleNA12879, "GT", not("?/?")), withSampleData(sampleNA12880, "GT", not("?/?"))),
+                withFileId(file12877),
+                not(withFileId(file12878))
+        ))));
+
+        query = new Query()
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), ALL)
+                .append(VariantQueryParam.STUDY.key(), 1)
+                .append(VariantQueryParam.SAMPLE.key(), sampleNA12879 + AND + sampleNA12880)
+                .append(VariantQueryParam.FILE.key(),
+                        file12877
+                                + AND + NOT +
+                                file12878);
+        queryResult = query(query, options);
+
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(
+                withSampleData(sampleNA12879, "GT", not("?/?")),
+                withSampleData(sampleNA12880, "GT", not("?/?")),
+                withFileId(file12877),
+                not(withFileId(file12878))
+        ))));
+
+        query = new Query()
+                .append(VariantQueryParam.INCLUDE_STUDY.key(), "S_1")
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), ALL)
                 .append(VariantQueryParam.FILTER.key(), "LowGQX;LowMQ")
                 .append(VariantQueryParam.FILE.key(),
                         file12877

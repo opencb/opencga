@@ -20,6 +20,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.QueryBuilder;
 import htsjdk.variant.vcf.VCFConstants;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -504,22 +505,24 @@ public class VariantMongoDBQueryParser {
             }
 
             List<Integer> fileIds = Collections.emptyList();
+            List<String> fileNames = Collections.emptyList();
             QueryOperation filesOperation = QueryOperation.OR;
             if (isValidParam(query, FILE)) {
                 String filesValue = query.getString(FILE.key());
                 filesOperation = checkOperator(filesValue);
-                List<String> fileNames = splitValue(filesValue, filesOperation);
+                fileNames = splitValue(filesValue, filesOperation);
 
                 fileIds = fileNames
                         .stream()
                         .filter(value -> !isNegated(value))
-                        .map(value -> studyConfigurationManager.getFileIdPair(value, false, defaultStudyConfiguration).getValue())
+                        .map(value -> {
+                            Integer fileId = studyConfigurationManager.getFileIdPair(value, false, defaultStudyConfiguration).getValue();
+                            if (fileId == null) {
+                                throw VariantQueryException.fileNotFound(value, defaultStudyConfiguration.getStudyName());
+                            }
+                            return fileId;
+                        })
                         .collect(Collectors.toList());
-
-                addQueryFilter(studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD
-                                + '.' + DocumentToStudyVariantEntryConverter.FILEID_FIELD,
-                        fileNames, builder, QueryOperation.AND, filesOperation,
-                        f -> studyConfigurationManager.getFileIdPair(f, false, defaultStudyConfiguration).getValue());
             } else if (isValidParam(query, INCLUDE_FILE)) {
                 List<String> files = getIncludeFilesList(query);
                 if (files != null) {
@@ -635,10 +638,10 @@ public class VariantMongoDBQueryParser {
             }
 
             Map<Object, List<String>> genotypesFilter = new HashMap<>();
-            QueryOperation queryOperation = null;
+            QueryOperation gtQueryOperation = null;
             if (isValidParam(query, GENOTYPE)) {
                 String sampleGenotypes = query.getString(GENOTYPE.key());
-                queryOperation = parseGenotypeFilter(sampleGenotypes, genotypesFilter);
+                gtQueryOperation = parseGenotypeFilter(sampleGenotypes, genotypesFilter);
             }
 
             if (isValidParam(query, SAMPLE)) {
@@ -658,14 +661,14 @@ public class VariantMongoDBQueryParser {
                     );
                 }
                 QueryOperation sampleQueryOperation = VariantQueryUtils.checkOperator(samples);
-                if (queryOperation != null && sampleQueryOperation != null && !queryOperation.equals(sampleQueryOperation)) {
+                if (gtQueryOperation != null && sampleQueryOperation != null && !gtQueryOperation.equals(sampleQueryOperation)) {
                     throw VariantQueryException.incompatibleSampleAndGenotypeOperators();
                 }
-                if (queryOperation == null) {
-                    queryOperation = sampleQueryOperation;
+                if (gtQueryOperation == null) {
+                    gtQueryOperation = sampleQueryOperation;
                 }
 
-                for (String sample : VariantQueryUtils.splitValue(samples, queryOperation)) {
+                for (String sample : VariantQueryUtils.splitValue(samples, gtQueryOperation)) {
                     if (isNegated(sample)) {
                         throw VariantQueryException.malformedParam(SAMPLE, samples, "Unsupported negated samples");
                     }
@@ -674,9 +677,12 @@ public class VariantMongoDBQueryParser {
                 }
             }
 
+            // Only will contain values if the genotypesOperator is AND
+            Set<List<Integer>> fileIdGroupsFromSamples = Collections.emptySet();
+            Set<Integer> fileIdsFromSamples = Collections.emptySet();
             if (!genotypesFilter.isEmpty()) {
-                Set<Integer> files = new HashSet<>();
-                boolean filesFilterBySamples = !isValidParam(query, FILE) && defaultStudyConfiguration != null;
+                fileIdGroupsFromSamples = new HashSet<>();
+                fileIdsFromSamples = new HashSet<>();
 
                 List<String> defaultGenotypes;
                 List<String> loadedGenotypes;
@@ -709,37 +715,56 @@ public class VariantMongoDBQueryParser {
 
                     int sampleId = studyConfigurationManager.getSampleId(sample, defaultStudyConfiguration);
 
-                    if (filesFilterBySamples) {
-                        // We can not filter sample by file if one of the requested genotypes is the unknown genotype
-                        boolean canFilterSampleByFile = !genotypes.contains(GenotypeClass.UNKNOWN_GENOTYPE);
-                        if (canFilterSampleByFile) {
-                            for (String genotype : genotypes) {
-                                // Do not filter sample by file if any of the genotypes is negated, or the is a default genotype
-                                if (isNegated(genotype) || defaultGenotypes.contains(genotype)) {
-                                    canFilterSampleByFile = false;
+                    // We can not filter sample by file if one of the requested genotypes is the unknown genotype
+                    boolean canFilterSampleByFile = !genotypes.contains(GenotypeClass.UNKNOWN_GENOTYPE);
+                    boolean defaultGenotypeNegated = false;
+                    if (canFilterSampleByFile) {
+                        for (String genotype : genotypes) {
+                            // Do not filter sample by file if the genotypes are negated, unless is a defaultGenotype
+                            if (isNegated(genotype)) {
+                                if (defaultGenotypes.contains(removeNegation(genotype))) {
+                                    canFilterSampleByFile = true;
+                                    defaultGenotypeNegated = true;
                                     break;
-                                }
-                            }
-                        }
-                        if (canFilterSampleByFile) {
-                            int filesFromSample = 0;
-                            for (Integer file : defaultStudyConfiguration.getIndexedFiles()) {
-                                if (defaultStudyConfiguration.getSamplesInFiles().get(file).contains(sampleId)) {
-                                    files.add(file);
-                                    filesFromSample++;
-                                    if (filesFromSample > 1) {
-                                        // See #641
-                                        // If there are more than one indexed file per sample, do not use filesFilterBySamples
-                                        filesFilterBySamples = false;
-                                        break;
-                                    }
+                                } else {
+                                    canFilterSampleByFile = false;
                                 }
                             }
                         }
                     }
-
                     QueryBuilder genotypesBuilder = QueryBuilder.start();
+                    if (canFilterSampleByFile) {
+                        List<Integer> fileIdsFromSample = new ArrayList<>();
+                        for (Integer file : defaultStudyConfiguration.getIndexedFiles()) {
+                            if (defaultStudyConfiguration.getSamplesInFiles().get(file).contains(sampleId)) {
+                                fileIdsFromSample.add(file);
+                            }
+                        }
 
+                        if (defaultGenotypeNegated) {
+                            QueryBuilder negatedFileBuilder = new QueryBuilder()
+                                    .and(studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD
+                                            + '.' + DocumentToStudyVariantEntryConverter.FILEID_FIELD);
+                            if (fileIdsFromSample.size() == 1) {
+                                negatedFileBuilder.notEquals(fileIdsFromSample.get(0));
+                            } else {
+                                negatedFileBuilder.notIn(fileIdsFromSample);
+                            }
+                            genotypesBuilder.or(negatedFileBuilder.get());
+                        } else if (gtQueryOperation == QueryOperation.OR) {
+                            genotypesBuilder.and(studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD
+                                    + '.' + DocumentToStudyVariantEntryConverter.FILEID_FIELD);
+                            if (fileIdsFromSample.size() == 1) {
+                                genotypesBuilder.is(fileIdsFromSample.get(0));
+                            } else {
+                                genotypesBuilder.in(fileIdsFromSample);
+                            }
+                        } else {
+                            // FILE ID filter can be added at the end, together with the main FILE filter
+                            fileIdGroupsFromSamples.add(fileIdsFromSample);
+                            fileIdsFromSamples.addAll(fileIdsFromSample);
+                        }
+                    }
 
                     for (String genotype : genotypes) {
                         boolean negated = isNegated(genotype);
@@ -755,7 +780,7 @@ public class VariantMongoDBQueryParser {
                                     }
                                     String key = studyQueryPrefix
                                             + DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD
-                                            + '.' + otherGenotype;
+                                            + '.' + DocumentToSamplesConverter.genotypeToStorageType(otherGenotype);
                                     genotypesBuilder.or(new BasicDBObject(key, sampleId));
                                 }
                             } else {
@@ -766,7 +791,7 @@ public class VariantMongoDBQueryParser {
                                     }
                                     String key = studyQueryPrefix
                                             + DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD
-                                            + '.' + otherGenotype;
+                                            + '.' + DocumentToSamplesConverter.genotypeToStorageType(otherGenotype);
                                     andBuilder.and(new BasicDBObject(key,
                                             new Document("$ne", sampleId)));
                                 }
@@ -789,24 +814,136 @@ public class VariantMongoDBQueryParser {
                     genotypeQueries.add(genotypesBuilder.get());
                 }
 
-                if (queryOperation == QueryOperation.OR) {
+                if (gtQueryOperation == QueryOperation.OR) {
                     builder.or(genotypeQueries.toArray(new DBObject[genotypeQueries.size()])).get();
                 } else {
                     builder.and(genotypeQueries.toArray(new DBObject[genotypeQueries.size()]));
                 }
 
+            }
+
+            if (fileNames.isEmpty()) {
                 // If there is no valid files filter, add files filter to speed up this query
-                if (filesFilterBySamples && !files.isEmpty()
-                        && !files.containsAll(defaultStudyConfiguration.getIndexedFiles())) {
+                if (!fileIdGroupsFromSamples.isEmpty()) {
+                    if ((gtQueryOperation != QueryOperation.AND || fileIdGroupsFromSamples.size() == 1)
+                            && fileIdsFromSamples.containsAll(defaultStudyConfiguration.getIndexedFiles())) {
+                        // Do not add files filter if operator is OR and must select all the files.
+                        // i.e. ANY file among ALL indexed files
+                        logger.debug("Skip filter by all files");
+                    } else {
+                        addFileGroupsFilter(builder, studyQueryPrefix, gtQueryOperation, fileIdGroupsFromSamples, null);
+                    }
+                }
+            } else {
+                if (fileIdGroupsFromSamples.isEmpty()) {
                     addQueryFilter(studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD
-                                    + '.' + DocumentToStudyVariantEntryConverter.FILEID_FIELD, files, builder, QueryOperation.AND,
-                            queryOperation, t -> t);
+                                    + '.' + DocumentToStudyVariantEntryConverter.FILEID_FIELD,
+                            fileNames, builder, QueryOperation.AND, filesOperation,
+                            f -> studyConfigurationManager.getFileIdPair(f, false, defaultStudyConfiguration).getValue());
+                } else {
+                    // fileIdGroupsFromSamples is not empty. gtQueryOperation is always AND at this point
+                    // assert gtQueryOperation == Operation.AND || gtQueryOperation == null
+                    if (filesOperation == QueryOperation.AND || filesOperation == null) {
+                        // sample = AND, files = AND
+                        // Simple mix
+
+                        // Some files may be negated. Get them, and put them appart
+                        List<Integer> negatedFiles = null;
+                        if (fileNames.stream().anyMatch(VariantQueryUtils::isNegated)) {
+                            negatedFiles = fileNames
+                                    .stream()
+                                    .filter(VariantQueryUtils::isNegated)
+                                    .map(value -> {
+                                        Integer fileId = studyConfigurationManager.getFileIdPair(value, false, defaultStudyConfiguration)
+                                                .getValue();
+                                        if (fileId == null) {
+                                            throw VariantQueryException.fileNotFound(value, defaultStudyConfiguration.getStudyName());
+                                        }
+                                        return fileId;
+                                    })
+                                    .collect(Collectors.toList());
+                        }
+                        for (Integer fileId : fileIds) {
+                            fileIdGroupsFromSamples.add(Collections.singletonList(fileId));
+                        }
+                        addFileGroupsFilter(builder, studyQueryPrefix, QueryOperation.AND, fileIdGroupsFromSamples, negatedFiles);
+
+                    } else if (filesOperation == QueryOperation.OR) {
+                        // samples = AND, files = OR
+
+                        // Put all files in a group
+                        // the filesOperation==OR will will be expressed with an "$in" of the new group
+                        fileIdGroupsFromSamples.add(fileIds);
+                        addFileGroupsFilter(builder, studyQueryPrefix, QueryOperation.AND, fileIdGroupsFromSamples, null);
+                    }
                 }
             }
 
             return defaultStudyConfiguration;
         } else {
             return null;
+        }
+    }
+
+    private void addFileGroupsFilter(QueryBuilder builder, String studyQueryPrefix, QueryOperation operation,
+                                     Set<List<Integer>> fileIdGroups, List<Integer> negatedFiles) {
+        if (operation == QueryOperation.OR) {
+            // Merge into one single group
+            HashSet<Integer> fileIds = new HashSet<>();
+            for (List<Integer> files : fileIdGroups) {
+                fileIds.addAll(files);
+            }
+            fileIdGroups = Collections.singleton(new ArrayList<>(fileIds));
+        }
+
+        String fileIdField = studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD
+                + '.' + DocumentToStudyVariantEntryConverter.FILEID_FIELD;
+        List<DBObject> fileQueries = new ArrayList<>(fileIdGroups.size());
+        List<Integer> singleElementGroups = new ArrayList<>();
+        for (List<Integer> group : fileIdGroups) {
+            if (group.size() == 1) {
+                singleElementGroups.add(group.get(0));
+            } else {
+                fileQueries.add(new BasicDBObject(fileIdField, new BasicDBObject("$in", group)));
+            }
+        }
+        if (!singleElementGroups.isEmpty()) {
+            if (singleElementGroups.size() == 1) {
+                fileQueries.add(new BasicDBObject(fileIdField, singleElementGroups.get(0)));
+            } else if (operation == QueryOperation.AND) {
+                fileQueries.add(new BasicDBObject(fileIdField, new BasicDBObject("$all", singleElementGroups)));
+            } else {
+                fileQueries.add(new BasicDBObject(fileIdField, new BasicDBObject("$in", singleElementGroups)));
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(negatedFiles)) {
+            DBObject negatedFilter;
+            if (negatedFiles.size() == 1) {
+                negatedFilter = new BasicDBObject(fileIdField, new BasicDBObject("$ne", negatedFiles.get(0)));
+            } else {
+                negatedFilter = new BasicDBObject(fileIdField, new BasicDBObject("$nin", negatedFiles));
+            }
+            if (operation != QueryOperation.OR) {
+                fileQueries.add(negatedFilter);
+            } else {
+                // This should never happen
+                throw VariantQueryException.internalException(new IllegalStateException("Unsupported negated files with operator OR"));
+            }
+        }
+
+        if (fileQueries.size() == 1) {
+            builder.get().putAll(fileQueries.get(0));
+        } else if (operation == QueryOperation.OR) {
+//            builder.and(new BasicDBObject("$or", fileQueries));
+            Object or = builder.get().removeField("$or");
+            if (or == null) {
+                builder.or(fileQueries.toArray(new DBObject[0]));
+            } else {
+                builder.and(new BasicDBObject("$or", or), new BasicDBObject("$or", fileQueries));
+            }
+        } else {
+            builder.and(fileQueries.toArray(new DBObject[0]));
         }
     }
 
