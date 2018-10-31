@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.benchmark.variant;
 
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.benchmark.BenchmarkRunner;
+import org.opencb.opencga.storage.benchmark.variant.generators.FixedQueryGenerator;
 import org.opencb.opencga.storage.benchmark.variant.generators.MultiQueryGenerator;
 import org.opencb.opencga.storage.benchmark.variant.generators.QueryGenerator;
 import org.opencb.opencga.storage.benchmark.variant.samplers.VariantStorageEngineDirectSampler;
@@ -41,7 +42,7 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
         super(storageConfiguration, jmeterHome, outdir);
     }
 
-    public void addThreadGroup(ConnectionType type, Path dataDir, String queries, QueryOptions queryOptions) {
+    public void addThreadGroup(ConnectionType type, ExecutionMode mode, Path dataDir, String queries, QueryOptions queryOptions) {
 
         // gene,ct;region,phylop
 
@@ -53,16 +54,22 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
             variantStorageSampler.setDBName(dbName);
             variantStorageSampler.setLimit(queryOptions.getInt(QueryOptions.LIMIT, -1));
             variantStorageSampler.setCount(queryOptions.getBoolean(QueryOptions.COUNT, false));
-            variantStorageSampler.setQueryGenerator(MultiQueryGenerator.class);
-            variantStorageSampler.setQueryGeneratorConfig(MultiQueryGenerator.DATA_DIR, dataDir.toString());
-            variantStorageSampler.setQueryGeneratorConfig(MultiQueryGenerator.MULTI_QUERY, query);
+
+            if (mode.equals(ExecutionMode.FIXED)) {
+                variantStorageSampler.setQueryGenerator(FixedQueryGenerator.class);
+                variantStorageSampler.setQueryGeneratorConfig(FixedQueryGenerator.DATA_DIR, dataDir.toString());
+                variantStorageSampler.setQueryGeneratorConfig(FixedQueryGenerator.FIXED_QUERY, query);
+            } else if (mode.equals(ExecutionMode.RANDOM)) {
+                variantStorageSampler.setQueryGenerator(MultiQueryGenerator.class);
+                variantStorageSampler.setQueryGeneratorConfig(MultiQueryGenerator.DATA_DIR, dataDir.toString());
+                variantStorageSampler.setQueryGeneratorConfig(MultiQueryGenerator.MULTI_QUERY, query);
+
+            }
 
             samplers.add(variantStorageSampler);
         }
 
         addThreadGroup(samplers);
-
-
     }
 
     public void addThreadGroup(ConnectionType type, Path dataDir, List<Class<? extends QueryGenerator>> queryGenerators,

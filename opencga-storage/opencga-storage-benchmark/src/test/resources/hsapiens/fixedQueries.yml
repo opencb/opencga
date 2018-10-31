@@ -1,0 +1,20 @@
+---
+queries :
+- id : "RegionAndBiotype"
+  description : "Purpose of this query"
+  params :
+    region : "1:1849612-1850388"
+    gene :   "BRCA2"
+    biotype : "coding"
+    populationFrequencyMaf : "1kG_phase3:ALL>0.1"
+
+- id : "Region"
+  description : "Purpose of this query"
+  params :
+    region : "20:30795819-30825819"
+
+- id : "Gene"
+  description : "Purpose of this query"
+  params :
+    gene : "BRCA2"
+    ct : missense_variant

@@ -34,7 +34,7 @@ import java.util.regex.Pattern;
  */
 public class MultiQueryGenerator extends QueryGenerator {
 
-    public static final String MULTI_QUERY = "multy-query";
+    public static final String MULTI_QUERY = "multi-query";
     private List<QueryGenerator> generators;
     // param(extraParam)
     private Pattern pattern = Pattern.compile("(?<param>[^(]+)(\\((?<extraParam>[^)]+)\\))?");
@@ -108,6 +108,7 @@ public class MultiQueryGenerator extends QueryGenerator {
         for (QueryGenerator generator : generators) {
             generator.generateQuery(query);
         }
+     //   System.out.println("queries = " + query.toJson());
         return query;
     }
 }

@@ -55,6 +55,11 @@ public class BenchmarkRunner {
         GRPC,
     }
 
+    public enum ExecutionMode {
+        FIXED,
+        RANDOM,
+    }
+
     protected final StorageConfiguration storageConfiguration;
     protected final String storageEngine;
     protected Path jmeterHome;

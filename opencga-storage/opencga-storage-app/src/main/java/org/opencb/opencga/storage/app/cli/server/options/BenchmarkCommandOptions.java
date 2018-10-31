@@ -52,6 +52,9 @@ public class BenchmarkCommandOptions {
         @Parameter(names = {"--connector"}, description = "How to connect to the system: REST or DIRECT")
         public BenchmarkRunner.ConnectionType connectionType = BenchmarkRunner.ConnectionType.REST;
 
+        @Parameter(names = {"-m", "--mode"}, description = "Type of queries to execute: FIXED, RANDOM_FILE, RANDOM_MEMORY")
+        public BenchmarkRunner.ExecutionMode executionMode = BenchmarkRunner.ExecutionMode.FIXED;
+
         @Parameter(names = {"--num-repetition"}, description = "Number of repetition to execute.", arity = 1)
         public Integer repetition;
 

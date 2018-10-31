@@ -146,6 +146,7 @@ public class VariantStorageEngineDirectSampler extends JavaSampler implements Va
                 }
 
                 result.setResponseMessage(query.toJson());
+                result.setResponseCodeOK();
                 result.sampleStart();
                 long numResults;
                 if (count) {
@@ -156,13 +157,16 @@ public class VariantStorageEngineDirectSampler extends JavaSampler implements Va
                 }
                 result.sampleEnd();
                 result.setBytes(numResults);
+                result.setSuccessful(true);
 
                 logger.debug("query: {}", numResults);
             } catch (Error e) {
+                result.setSuccessful(false);
                 logger.error("Error!", e);
                 throw e;
             } catch (StorageEngineException | RuntimeException e) {
                 logger.error("Error!", e);
+                result.setSuccessful(false);
                 result.setErrorCount(1);
             }
             return result;
