@@ -84,7 +84,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
 //            new Exception().printStackTrace();
 //            return invocation.callRealMethod();
 //        }).when(solrClient).query(anyString(), any());
-        variantStorageEngine.getConfiguration().getSearch().setActive(true);
+        solr.configure(variantStorageEngine);
         variantStorageEngine.getVariantSearchManager().setSolrClient(solrClient);
     }
 
@@ -192,7 +192,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
 
     @Test
     public void testGetNotFromSearch() throws Exception {
-        Query query = new Query(ANNOT_SIFT.key(), ">0.1");
+        Query query = new Query(ANNOT_PROTEIN_SUBSTITUTION.key(), "sift>0.1");
         VariantQueryResult<Variant> result = variantStorageEngine.get(query, new QueryOptions());
 
         verify(solrClient, never()).query(anyString(), any());
