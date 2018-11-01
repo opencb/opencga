@@ -1299,6 +1299,18 @@ public final class VariantQueryUtils {
      * @throws VariantQueryException if the list contains different operators.
      */
     public static QueryOperation checkOperator(String value) throws VariantQueryException {
+        return checkOperator(value, null);
+    }
+
+    /**
+     * Checks that the filter value list contains only one type of operations.
+     *
+     * @param value List of values to check
+     * @param param Variant query param
+     * @return The used operator. Null if no operator is used.
+     * @throws VariantQueryException if the list contains different operators.
+     */
+    public static QueryOperation checkOperator(String value, VariantQueryParam param) throws VariantQueryException {
         boolean inQuotes = false;
         boolean containsOr = false; //value.contains(OR);
         boolean containsAnd = false; //value.contains(AND);
@@ -1321,7 +1333,11 @@ public final class VariantQueryUtils {
             }
         }
         if (containsAnd && containsOr) {
-            throw VariantQueryException.mixedAndOrOperators();
+            if (param == null) {
+                throw VariantQueryException.mixedAndOrOperators();
+            } else {
+                throw VariantQueryException.mixedAndOrOperators(param, value);
+            }
         } else if (containsAnd) {   // && !containsOr  -> true
             return QueryOperation.AND;
         } else if (containsOr) {    // && !containsAnd  -> true
@@ -1365,6 +1381,10 @@ public final class VariantQueryUtils {
             list = splitQuotes(value, OR_CHAR);
         }
         return list;
+    }
+
+    public static List<String> splitQuotes(String value, QueryOperation operation) {
+        return splitQuotes(value, operation == QueryOperation.AND ? AND_CHAR : OR_CHAR);
     }
 
     public static List<String> splitQuotes(String value, char separator) {
