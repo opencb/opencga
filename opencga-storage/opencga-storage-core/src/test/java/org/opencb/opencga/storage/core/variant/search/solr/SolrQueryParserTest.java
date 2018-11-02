@@ -29,6 +29,7 @@ import org.opencb.opencga.storage.core.variant.dummy.DummyProjectMetadataAdaptor
 import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantFileMetadataDBAdaptor;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
@@ -38,7 +39,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 public class SolrQueryParserTest {
 
     private String flBase = "fl=popFreq_*,geneToSoAcc,traits,caddScaled,genes,stats_*,chromosome,xrefs,start,gerp,type,soAcc,polyphen,sift,siftDesc,caddRaw,biotypes,polyphenDesc,studies,end,id,variantId,phastCons,phylop,id,chromosome,start,end,type";
-    private String flDefault1 = flBase + ",fileInfo__*,qual__*,filter__*,sampleFormat__*";
+    private String flDefault1 = flBase + ",fileInfo__*,qual__*,filter__*,sampleFormat__*__format,sampleFormat__*";
 
     SolrQueryParser solrQueryParser;
 
@@ -62,7 +63,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assert((flDefault1 + "&q=*:*&fq=xrefs:\"rs574335987\"").equals(solrQuery.toString()));
+        assertEquals(flDefault1 + "&q=*:*&fq=xrefs:\"rs574335987\"", solrQuery.toString());
     }
 
     @Test
@@ -74,7 +75,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assert((flDefault1 + "&q=*:*&fq=soAcc:\"1583\"").equals(solrQuery.toString()));
+        assertEquals(flDefault1 + "&q=*:*&fq=soAcc:\"1583\"", solrQuery.toString());
     }
 
     @Test
@@ -86,7 +87,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assert((flDefault1 + "&q=*:*&fq=soAcc:\"1792\"+OR+soAcc:\"1619\"").equals(solrQuery.toString()));
+        assertEquals(flDefault1 + "&q=*:*&fq=soAcc:\"1792\"+OR+soAcc:\"1619\"", solrQuery.toString());
     }
 
     @Test
@@ -99,7 +100,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assert((flDefault1 + "&q=*:*&fq=geneToSoAcc:\"WASH7P_1792\"").equals(solrQuery.toString()));
+        assertEquals(flDefault1 + "&q=*:*&fq=geneToSoAcc:\"WASH7P_1792\"", solrQuery.toString());
     }
 
     @Test
@@ -111,7 +112,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assert((flDefault1 + "&q=*:*&fq=(chromosome:\"1\"+AND+start:17700)").equals(solrQuery.toString()));
+        assertEquals(flDefault1 + "&q=*:*&fq=(chromosome:\"1\"+AND+start:17700)", solrQuery.toString());
     }
 
     @Test
@@ -123,7 +124,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assert((flDefault1 + "&q=*:*&fq=(type:\"CNV\"+OR+type:\"SNV\")").equals(solrQuery.toString()));
+        assertEquals(flDefault1 + "&q=*:*&fq=(type:\"CNV\"+OR+type:\"SNV\")", solrQuery.toString());
     }
 
     @Test
@@ -135,7 +136,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assert((flDefault1 + "&q=*:*&fq=phylop:{-100.0+TO+-1.0}").equals(solrQuery.toString()));
+        assertEquals(flDefault1 + "&q=*:*&fq=phylop:{-100.0+TO+-1.0}", solrQuery.toString());
     }
 
     @Test
@@ -148,7 +149,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assert((flDefault1 + "&q=*:*&fq=xrefs:\"WASH7P\"&fq=phylop:{-100.0+TO+-1.0}").equals(solrQuery.toString()));
+        assertEquals(flDefault1 + "&q=*:*&fq=xrefs:\"WASH7P\"&fq=phylop:{-100.0+TO+-1.0}", solrQuery.toString());
     }
 
     @Test
@@ -162,7 +163,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assert((flDefault1 + "&q=*:*&fq=xrefs:\"WASH7P\"&fq=phylop:{-100.0+TO+-1.0}&fq=popFreq__1kG_phase3__ALL:{0.1+TO+*]").equals(solrQuery.toString()));
+        assertEquals(flDefault1 + "&q=*:*&fq=xrefs:\"WASH7P\"&fq=phylop:{-100.0+TO+-1.0}&fq=popFreq__1kG_phase3__ALL:{0.1+TO+*]", solrQuery.toString());
     }
 
     @Test
@@ -174,7 +175,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assert((flDefault1 + "&q=*:*&fq=(siftDesc:\"tolerated\"+OR+polyphenDesc:\"bening\")").equals(solrQuery.toString()));
+        assertEquals(flDefault1 + "&q=*:*&fq=(siftDesc:\"tolerated\"+OR+polyphenDesc:\"bening\")", solrQuery.toString());
     }
 
     @Test
@@ -186,7 +187,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assert((flDefault1 + "&q=*:*&fq=(popFreq__1kG_phase3__YRI:[0+TO+0.01}+OR+(*+-popFreq__1kG_phase3__YRI:*))").equals(solrQuery.toString()));
+        assertEquals(flDefault1 + "&q=*:*&fq=(popFreq__1kG_phase3__YRI:[0+TO+0.01}+OR+(*+-popFreq__1kG_phase3__YRI:*))", solrQuery.toString());
     }
 
     @Test
@@ -199,7 +200,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assert((flDefault1 + "&q=*:*&fq=(popFreq__1kG_phase3__YRI:[0+TO+0.01}+OR+(*+-popFreq__1kG_phase3__YRI:*))").equals(solrQuery.toString()));
+        assertEquals(flDefault1 + "&q=*:*&fq=(popFreq__1kG_phase3__YRI:[0+TO+0.01}+OR+(*+-popFreq__1kG_phase3__YRI:*))", solrQuery.toString());
     }
 
     @Test
@@ -211,7 +212,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assert((flDefault1 + "&q=*:*&fq=phastCons:{0.02+TO+*]").equals(solrQuery.toString()));
+        assertEquals(flDefault1 + "&q=*:*&fq=phastCons:{0.02+TO+*]", solrQuery.toString());
     }
 
     @Test
@@ -223,7 +224,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assert((flDefault1 + "&q=*:*&fq=(phastCons:{0.02+TO+*]+OR+phastCons:\\-100.0)").equals(solrQuery.toString()));
+        assertEquals(flDefault1 + "&q=*:*&fq=(phastCons:{0.02+TO+*]+OR+phastCons:\\-100.0)", solrQuery.toString());
     }
 
     @Test
@@ -236,7 +237,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assert((flDefault1 + "&q=*:*&fq=sift:[-100.0+TO+0.01}").equals(solrQuery.toString()));
+        assertEquals(flDefault1 + "&q=*:*&fq=sift:[-100.0+TO+0.01}", solrQuery.toString());
     }
 
     @Test
@@ -249,7 +250,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assert((flDefault1 + "&q=*:*&fq=-phastCons:0.035999998450279236").equals(solrQuery.toString()));
+        assertEquals(flDefault1 + "&q=*:*&fq=-phastCons:0.035999998450279236", solrQuery.toString());
     }
 
     @Test
@@ -261,7 +262,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assert((flDefault1 + "&q=*:*&fq=phastCons:0.035999998450279236").equals(solrQuery.toString()));
+        assertEquals(flDefault1 + "&q=*:*&fq=phastCons:0.035999998450279236", solrQuery.toString());
     }
 
     @Test
@@ -273,7 +274,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assert((flDefault1 + "&q=*:*&fq=-popFreq__1kG_phase3__GWD:0.061946902").equals(solrQuery.toString()));
+        assertEquals(flDefault1 + "&q=*:*&fq=-popFreq__1kG_phase3__GWD:0.061946902", solrQuery.toString());
     }
 
     @Test
@@ -285,7 +286,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assert((flDefault1 + "&q=*:*&fq=popFreq__1kG_phase3__GWD:0.061946902").equals(solrQuery.toString()));
+        assertEquals(flDefault1 + "&q=*:*&fq=popFreq__1kG_phase3__GWD:0.061946902", solrQuery.toString());
     }
 
     @Test
@@ -297,7 +298,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assert((flDefault1 + "&q=*:*&fq=siftDesc:\"tolerated\"").equals(solrQuery.toString()));
+        assertEquals(flDefault1 + "&q=*:*&fq=siftDesc:\"tolerated\"", solrQuery.toString());
     }
 
     @Test
@@ -309,7 +310,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assert((flDefault1 + "&q=*:*&fq=siftDesc:\"tolerated\"").equals(solrQuery.toString()));
+        assertEquals(flDefault1 + "&q=*:*&fq=siftDesc:\"tolerated\"", solrQuery.toString());
     }
 
     @Test
@@ -321,7 +322,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assert((flDefault1 + "&q=*:*&fq=-siftDesc:\"tolerated\"").equals(solrQuery.toString()));
+        assertEquals(flDefault1 + "&q=*:*&fq=-siftDesc:\"tolerated\"", solrQuery.toString());
     }
 
     @Test
@@ -333,7 +334,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assert((flDefault1 + "&q=*:*&fq=sift:\\-0.3").equals(solrQuery.toString()));
+        assertEquals(flDefault1 + "&q=*:*&fq=sift:\\-0.3", solrQuery.toString());
     }
 
     @Test
@@ -345,7 +346,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assert((flDefault1 + "&q=*:*&fq=sift:\\-0.3").equals(solrQuery.toString()));
+        assertEquals(flDefault1 + "&q=*:*&fq=sift:\\-0.3", solrQuery.toString());
     }
 
     @Test
@@ -357,7 +358,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assert((flDefault1 + "&q=*:*&fq=-sift:\\-0.3").equals(solrQuery.toString()));
+        assertEquals(flDefault1 + "&q=*:*&fq=-sift:\\-0.3", solrQuery.toString());
     }
 
     @Test
@@ -369,7 +370,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assert((flDefault1 + "&q=*:*&fq=(chromosome:\"1\")+OR+(chromosome:\"3\")").equals(solrQuery.toString()));
+        assertEquals(flDefault1 + "&q=*:*&fq=(chromosome:\"1\")+OR+(chromosome:\"3\")", solrQuery.toString());
     }
 
     @Test
@@ -382,7 +383,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assert((flDefault1 + "&q=*:*&fq=(chromosome:\"1\"+AND+start:66381)+OR+(chromosome:\"1\"+AND+start:98769)").equals(solrQuery.toString()));
+        assertEquals(flDefault1 + "&q=*:*&fq=(chromosome:\"1\"+AND+start:66381)+OR+(chromosome:\"1\"+AND+start:98769)", solrQuery.toString());
     }
 
     @Test
@@ -394,7 +395,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assert((flDefault1 + "&q=*:*&fq=(chromosome:\"1\"+AND+start:[66381+TO+*]+AND+end:[*+TO+76381])+OR+(chromosome:\"1\"+AND+start:[98766+TO+*]+AND+end:[*+TO+117987])").equals(solrQuery.toString()));
+        assertEquals(flDefault1 + "&q=*:*&fq=(chromosome:\"1\"+AND+start:[66381+TO+*]+AND+end:[*+TO+76381])+OR+(chromosome:\"1\"+AND+start:[98766+TO+*]+AND+end:[*+TO+117987])", solrQuery.toString());
     }
 
     @Test
@@ -407,7 +408,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assert((flDefault1 + "&q=*:*&fq=geneToSoAcc:\"RIPK2_1583\"+OR+geneToSoAcc:\"NCF4_1583\"").equals(solrQuery.toString()));
+        assertEquals(flDefault1 + "&q=*:*&fq=geneToSoAcc:\"RIPK2_1583\"+OR+geneToSoAcc:\"NCF4_1583\"", solrQuery.toString());
     }
 
     @Test
@@ -423,7 +424,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assert((flDefault1 + "&q=*:*&fq=geneToSoAcc:\"RIPK2_1583\"+OR+geneToSoAcc:\"RIPK2_1580\"+OR+geneToSoAcc:\"NCF4_1583\"+OR+geneToSoAcc:\"NCF4_1580\"").equals(solrQuery.toString()));
+        assertEquals(flDefault1 + "&q=*:*&fq=geneToSoAcc:\"RIPK2_1583\"+OR+geneToSoAcc:\"RIPK2_1580\"+OR+geneToSoAcc:\"NCF4_1583\"+OR+geneToSoAcc:\"NCF4_1580\"", solrQuery.toString());
     }
 
     @Test
@@ -441,7 +442,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assert((flDefault1 + "&q=*:*&fq=(((chromosome:\"1\")+OR+(chromosome:\"2\"))+AND+(soAcc:\"1583\"+OR+soAcc:\"1580\"))+OR+(geneToSoAcc:\"RIPK2_1583\"+OR+geneToSoAcc:\"RIPK2_1580\"+OR+geneToSoAcc:\"NCF4_1583\"+OR+geneToSoAcc:\"NCF4_1580\")").equals(solrQuery.toString()));
+        assertEquals(flDefault1 + "&q=*:*&fq=(((chromosome:\"1\")+OR+(chromosome:\"2\"))+AND+(soAcc:\"1583\"+OR+soAcc:\"1580\"))+OR+(geneToSoAcc:\"RIPK2_1583\"+OR+geneToSoAcc:\"RIPK2_1580\"+OR+geneToSoAcc:\"NCF4_1583\"+OR+geneToSoAcc:\"NCF4_1580\")", solrQuery.toString());
     }
 
     @Test
@@ -458,7 +459,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assert((flDefault1 + "&q=*:*&fq=((chromosome:\"1\")+OR+(chromosome:\"2\"))+AND+(soAcc:\"1583\"+OR+soAcc:\"1580\")").equals(solrQuery.toString()));
+        assertEquals(flDefault1 + "&q=*:*&fq=((chromosome:\"1\")+OR+(chromosome:\"2\"))+AND+(soAcc:\"1583\"+OR+soAcc:\"1580\")", solrQuery.toString());
     }
 
     @Test
@@ -474,7 +475,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assert((flDefault1 + "&q=*:*&fq=xrefs:\"RIPK2\"+OR+xrefs:\"NCF4\"+OR+(chromosome:\"1\")+OR+(chromosome:\"2\")").equals(solrQuery.toString()));
+        assertEquals(flDefault1 + "&q=*:*&fq=xrefs:\"RIPK2\"+OR+xrefs:\"NCF4\"+OR+(chromosome:\"1\")+OR+(chromosome:\"2\")", solrQuery.toString());
     }
 
     @Test
@@ -487,7 +488,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assert((flDefault1 + "&q=*:*&fq=(traits:\"melanoma\"+OR+traits:\"recessive\")").equals(solrQuery.toString()));
+        assertEquals(flDefault1 + "&q=*:*&fq=(traits:\"melanoma\"+OR+traits:\"recessive\")", solrQuery.toString());
     }
 
     @Test
@@ -500,7 +501,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assert((flDefault1 + "&q=*:*&fq=(traits:\"HP%253A000365\"+OR+traits:\"HP%253A0000007\")").equals(solrQuery.toString()));
+        assertEquals(flDefault1 + "&q=*:*&fq=(traits:\"HP%253A000365\"+OR+traits:\"HP%253A0000007\")", solrQuery.toString());
     }
 
     @Test
@@ -513,7 +514,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assert((flDefault1 + "&q=*:*&fq=xrefs:\"RCV000010071\"").equals(solrQuery.toString()));
+        assertEquals(flDefault1 + "&q=*:*&fq=xrefs:\"RCV000010071\"", solrQuery.toString());
     }
 
     @Test
@@ -528,7 +529,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assert((flBase + "&q=*:*&fq=(dp__" + studyName + "__NA12877:{300+TO+*]+AND+dp__" + studyName + "__NA12878:{500+TO+*])").equals(solrQuery.toString()));
+        assertEquals(flBase + "&q=*:*&fq=(dp__" + studyName + "__NA12877:{300+TO+*]+AND+dp__" + studyName + "__NA12878:{500+TO+*])", solrQuery.toString());
     }
 
     @Test
@@ -562,8 +563,8 @@ public class SolrQueryParserTest {
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
 
-        String fl = ",sampleFormat__platinum__NA12877,sampleFormat__platinum__NA12878";
-        assert((flBase + fl + "&q=*:*&fq=((gt__" + studyName + "__NA12878:\"1/1\")+OR+(gt__" + studyName + "__NA12877:\"1/0\"))").equals(solrQuery.toString()));
+        String fl = ",sampleFormat__*__format,sampleFormat__platinum__sampleName,sampleFormat__platinum__NA12877,sampleFormat__platinum__NA12878";
+        assertEquals(flBase + fl + "&q=*:*&fq=((gt__" + studyName + "__NA12878:\"1/1\")+OR+(gt__" + studyName + "__NA12877:\"1/0\"))", solrQuery.toString());
     }
 
     private void display(Query query, QueryOptions queryOptions, SolrQuery solrQuery) {
