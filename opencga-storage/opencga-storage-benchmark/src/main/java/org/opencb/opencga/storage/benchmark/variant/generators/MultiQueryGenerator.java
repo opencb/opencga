@@ -18,9 +18,11 @@ package org.opencb.opencga.storage.benchmark.variant.generators;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.opencga.storage.benchmark.variant.queries.RandomQueries;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +47,8 @@ public class MultiQueryGenerator extends QueryGenerator {
         super.setUp(params);
         String query = params.get(MULTI_QUERY);
         generators = new ArrayList<>();
+        RandomQueries config = readYmlFile(Paths.get(params.get(DATA_DIR), "randomQueries.yml"), RandomQueries.class);
+
         for (String param : query.split(",")) {
             String extraParam = null;
             Integer arity = 1;
@@ -59,7 +63,7 @@ public class MultiQueryGenerator extends QueryGenerator {
                 arity = Integer.parseInt(extraParam);
             }
 
-            QueryGenerator queryGenerator;
+            ConfiguredQueryGenerator queryGenerator;
             switch (param.toLowerCase()) {
                 case "region":
                     queryGenerator = new RegionQueryGenerator();
@@ -84,21 +88,21 @@ public class MultiQueryGenerator extends QueryGenerator {
                     queryGenerator = new TermQueryGenerator.XrefQueryGenerator();
                     break;
                 case "conservation":
-                    queryGenerator = new ScoreQueryGenerator.ConservationQueryGenerator();
+                    queryGenerator = new ScoreQueryGenerator.ConservationQueryGenerator(config);
                     break;
                 case "protein-substitution":
-                    queryGenerator = new ScoreQueryGenerator.ProteinSubstQueryGenerator();
+                    queryGenerator = new ScoreQueryGenerator.ProteinSubstQueryGenerator(config);
                     break;
                 case "functional":
                 case "cadd":
-                    queryGenerator = new ScoreQueryGenerator.FunctionalScoreQueryGenerator();
+                    queryGenerator = new ScoreQueryGenerator.FunctionalScoreQueryGenerator(config);
                     break;
                 default:
                     throw new IllegalArgumentException("Unknwon query param " + param);
             }
             logger.debug("Using sub query generator: " + queryGenerator.getClass() + " , arity = " + arity);
             params.put(ARITY, arity.toString());
-            queryGenerator.setUp(params);
+            queryGenerator.setUp(params, config);
             generators.add(queryGenerator);
         }
     }
@@ -108,7 +112,7 @@ public class MultiQueryGenerator extends QueryGenerator {
         for (QueryGenerator generator : generators) {
             generator.generateQuery(query);
         }
-     //   System.out.println("queries = " + query.toJson());
+        //   System.out.println("queries = " + query.toJson());
         return query;
     }
 }

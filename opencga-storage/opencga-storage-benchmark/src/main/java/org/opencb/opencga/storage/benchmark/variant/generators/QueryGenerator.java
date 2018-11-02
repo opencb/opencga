@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.storage.benchmark.variant.generators;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.base.Throwables;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
@@ -24,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -50,6 +53,17 @@ public abstract class QueryGenerator {
         arity = Integer.parseInt(params.getOrDefault(ARITY, "1"));
     }
 
+    public <T> T readYmlFile(Path path, Class<T> clazz) {
+        try (FileInputStream inputStream = new FileInputStream(path.toFile())) {
+            ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+            return objectMapper.readValue(inputStream, clazz);
+        } catch (IOException e) {
+            logger.error("Error reading file " + path, e);
+            throw Throwables.propagate(e);
+        }
+    }
+
+    @Deprecated
     protected void readCsvFile(Path path, Consumer<List<String>> consumer) {
         try (BufferedReader is = FileUtils.newBufferedReader(path)) {
             while (true) {

@@ -19,13 +19,14 @@ package org.opencb.opencga.storage.benchmark.variant.generators;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.opencga.storage.benchmark.variant.queries.RandomQueries;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -33,33 +34,33 @@ import java.util.stream.IntStream;
 /**
  * Created by jtarraga on 07/04/17.
  */
-public abstract class TermQueryGenerator extends QueryGenerator {
-    protected ArrayList<String> terms = new ArrayList<>();
-    private String termFilename;
+public abstract class TermQueryGenerator extends ConfiguredQueryGenerator {
+    protected List<String> terms = new ArrayList<>();
     private String queryKey;
     private Logger logger = LoggerFactory.getLogger(getClass());
 
-    public TermQueryGenerator(String termFilename, String queryKey) {
+    public TermQueryGenerator(String queryKey) {
         super();
-        this.termFilename = termFilename;
         this.queryKey = queryKey;
     }
 
     @Override
-    public void setUp(Map<String, String> params) {
+    public void setUp(Map<String, String> params, RandomQueries randomQueries) {
         super.setUp(params);
-        loadTerms(params, Paths.get(params.get(DATA_DIR), termFilename));
-        terms.trimToSize();
+        loadTerms(params, randomQueries);
     }
 
+    @Deprecated
     protected void loadTerms(Map<String, String> params, Path path) {
         readCsvFile(path, strings -> terms.add(strings.get(0)));
     }
 
+    protected abstract void loadTerms(Map<String, String> params, RandomQueries randomQueries);
+
     @Override
     public Query generateQuery(Query query) {
         String value = IntStream.range(0, getArity())
-                .mapToObj(i -> terms.get(random.nextInt(terms.size())))
+                .mapToObj(i -> terms.get(random.nextInt(Math.abs(terms.size()))))
                 .collect(Collectors.joining(","));
         query.append(queryKey, value);
         return query;
@@ -68,7 +69,14 @@ public abstract class TermQueryGenerator extends QueryGenerator {
     public static class XrefQueryGenerator extends TermQueryGenerator {
 
         public XrefQueryGenerator() {
-            super("xrefs.csv", VariantQueryParam.ANNOT_XREF.key());
+            super(VariantQueryParam.ANNOT_XREF.key());
+        }
+
+        @Override
+        protected void loadTerms(Map<String, String> params, RandomQueries randomQueries) {
+            if (randomQueries.getXref() != null) {
+                this.terms = randomQueries.getXref();
+            }
         }
     }
 
@@ -76,35 +84,56 @@ public abstract class TermQueryGenerator extends QueryGenerator {
         private Logger logger = LoggerFactory.getLogger(getClass());
 
         public BiotypeQueryGenerator() {
-            super("biotypes.csv", VariantQueryParam.ANNOT_BIOTYPE.key());
+            super(VariantQueryParam.ANNOT_BIOTYPE.key());
+        }
+
+
+        @Override
+        protected void loadTerms(Map<String, String> params, RandomQueries randomQueries) {
+            if (randomQueries.getBiotype() != null) {
+                this.terms = randomQueries.getBiotype();
+            }
         }
     }
 
     public static class GeneQueryGenerator extends TermQueryGenerator {
 
         public GeneQueryGenerator() {
-            super("genes.csv", VariantQueryParam.GENE.key());
+            super(VariantQueryParam.GENE.key());
         }
 
+        @Override
+        protected void loadTerms(Map<String, String> params, RandomQueries randomQueries) {
+            if (randomQueries.getGene() != null) {
+                this.terms = randomQueries.getGene();
+            }
+        }
     }
 
     public static class StudyQueryGenerator extends TermQueryGenerator {
 
         public StudyQueryGenerator() {
-            super("studies.csv", VariantQueryParam.STUDY.key());
+            super(VariantQueryParam.STUDY.key());
+        }
+
+        @Override
+        protected void loadTerms(Map<String, String> params, RandomQueries randomQueries) {
+            if (randomQueries.getStudy() != null) {
+                this.terms = randomQueries.getStudy();
+            }
         }
     }
 
     public static class TypeQueryGenerator extends TermQueryGenerator {
 
         public TypeQueryGenerator() {
-            super("types.csv", VariantQueryParam.TYPE.key());
+            super(VariantQueryParam.TYPE.key());
         }
 
         @Override
-        protected void loadTerms(Map<String, String> params, Path path) {
-            if (path.toFile().exists()) {
-                super.loadTerms(params, path);
+        protected void loadTerms(Map<String, String> params, RandomQueries randomQueries) {
+            if (randomQueries.getType() != null && !randomQueries.getType().isEmpty()) {
+                this.terms = randomQueries.getType();
             } else {
                 for (VariantType variantType : VariantType.values()) {
                     terms.add(variantType.toString());
@@ -117,13 +146,13 @@ public abstract class TermQueryGenerator extends QueryGenerator {
         private Logger logger = LoggerFactory.getLogger(getClass());
 
         public ConsequenceTypeQueryGenerator() {
-            super("consequence_types.csv", VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key());
+            super(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key());
         }
 
         @Override
-        protected void loadTerms(Map<String, String> params, Path path) {
-            if (path.toFile().exists()) {
-                super.loadTerms(params, path);
+        protected void loadTerms(Map<String, String> params, RandomQueries randomQueries) {
+            if (randomQueries.getCt() != null && !randomQueries.getCt().isEmpty()) {
+                this.terms = randomQueries.getCt();
             } else {
                 for (String term : ConsequenceTypeMappings.termToAccession.keySet()) {
                     terms.add(term);

@@ -1,7 +1,5 @@
 package org.opencb.opencga.storage.benchmark.variant.generators;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.base.Throwables;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.benchmark.variant.queries.FixedQueries;
@@ -11,7 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
@@ -38,7 +36,7 @@ public class FixedQueryGenerator extends QueryGenerator {
         }
 
         try (FileInputStream inputStream = new FileInputStream(Paths.get(params.get(DATA_DIR), "fixedQueries.yml").toFile());) {
-            fixedQueries = readFixedQueriesFromFile(inputStream, queries);
+            fixedQueries = readFixedQueriesFromFile(Paths.get(params.get(DATA_DIR), "fixedQueries.yml"), queries);
         } catch (IOException e) {
             logger.error("Error reading file: fixedQueries.yml", e);
             throw Throwables.propagate(e);
@@ -55,11 +53,9 @@ public class FixedQueryGenerator extends QueryGenerator {
     }
 
 
-    protected FixedQueries readFixedQueriesFromFile(InputStream configurationInputStream, List<String> filterQueries) throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
-        FixedQueries fixedQueries = objectMapper.readValue(configurationInputStream, FixedQueries.class);
+    protected FixedQueries readFixedQueriesFromFile(Path path, List<String> filterQueries) throws IOException {
+        FixedQueries fixedQueries = readYmlFile(path, FixedQueries.class);
         FixedQueries result = new FixedQueries();
-
         if (!filterQueries.isEmpty()) {
             for (FixedQuery fixedQuery : fixedQueries.getQueries()) {
                 for (String query : filterQueries) {
