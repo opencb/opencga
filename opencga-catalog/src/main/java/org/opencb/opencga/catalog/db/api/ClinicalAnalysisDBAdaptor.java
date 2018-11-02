@@ -39,6 +39,7 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         UID("uid", INTEGER, ""),
         UUID("uuid", TEXT, ""),
         DESCRIPTION("description", TEXT, ""),
+        DUE_DATE("dueDate", TEXT, ""),
         CREATION_DATE("creationDate", DATE, ""),
         MODIFICATION_DATE("modificationDate", DATE, ""),
         TYPE("type", TEXT, ""),
@@ -49,6 +50,7 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
+        PRIORITY("priority", TEXT, ""),
         RELEASE("release", INTEGER, ""),
 
         FAMILY("family", TEXT_ARRAY, ""),

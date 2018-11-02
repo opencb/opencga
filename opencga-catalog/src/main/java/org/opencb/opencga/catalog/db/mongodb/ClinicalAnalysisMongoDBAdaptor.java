@@ -177,7 +177,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             document.getSet().put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
         }
 
-        String[] acceptedParams = {QueryParams.DESCRIPTION.key()};
+        String[] acceptedParams = {QueryParams.DESCRIPTION.key(), QueryParams.PRIORITY.key(), QueryParams.DUE_DATE.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
         String[] acceptedObjectParams = {QueryParams.FAMILY.key(), QueryParams.PROBAND.key()};
@@ -624,6 +624,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     case ID:
                     case UUID:
                     case TYPE:
+                    case DUE_DATE:
+                    case PRIORITY:
                     case SAMPLE_UID:
                     case PROBAND_UID:
                     case FAMILY_UID:
