@@ -52,7 +52,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     private Map<String, Object> attributes;
 
     public enum Priority {
-        CRITICAL, HIGH, NORMAL, LOW
+        URGENT, HIGH, MEDIUM, LOW
     }
 
     public enum Type {
