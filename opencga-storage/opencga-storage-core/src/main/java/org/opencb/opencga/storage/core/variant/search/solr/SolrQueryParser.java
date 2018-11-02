@@ -112,14 +112,14 @@ public class SolrQueryParser {
         if (queryOptions.containsKey(QueryOptions.FACET) && StringUtils.isNotEmpty(queryOptions.getString(QueryOptions.FACET))) {
             try {
                 FacetQueryParser facetQueryParser = new FacetQueryParser();
-
                 String facetQuery = queryOptions.getString(QueryOptions.FACET);
+
                 if (facetQuery.contains(CHROM_DENSITY)) {
                     facetQuery = parseFacet(facetQuery);
                 }
                 String jsonFacet = facetQueryParser.parse(facetQuery);
-                solrQuery.set("json.facet", jsonFacet);
 
+                solrQuery.set("json.facet", jsonFacet);
                 solrQuery.setRows(0);
                 solrQuery.setStart(0);
                 solrQuery.setFields();
