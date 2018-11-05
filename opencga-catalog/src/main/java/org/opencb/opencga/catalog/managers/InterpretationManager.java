@@ -88,7 +88,10 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     @Override
     public QueryResult<Interpretation> create(String studyStr, Interpretation entry, QueryOptions options, String sessionId)
             throws CatalogException {
-        throw new IllegalArgumentException("Please call to create passing a clinical analysis");
+        if (StringUtils.isEmpty(entry.getInterpretation().getClinicalAnalysisId())) {
+            throw new IllegalArgumentException("Please call to create passing a clinical analysis");
+        }
+        return create(studyStr, entry.getInterpretation().getClinicalAnalysisId(), entry, options, sessionId);
     }
 
     public QueryResult<Interpretation> create(String studyStr, String clinicalAnalysisStr, Interpretation interpretation,

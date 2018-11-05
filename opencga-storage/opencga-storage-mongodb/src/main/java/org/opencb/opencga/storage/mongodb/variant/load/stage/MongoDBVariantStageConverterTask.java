@@ -23,7 +23,7 @@ import org.bson.types.Binary;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
-import org.opencb.commons.run.ParallelTaskRunner;
+import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStoragePipeline;
 
 import java.util.Collections;
@@ -38,7 +38,7 @@ import static org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVaria
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class MongoDBVariantStageConverterTask implements ParallelTaskRunner.Task<Variant, ListMultimap<Document, Binary>> {
+public class MongoDBVariantStageConverterTask implements Task<Variant, ListMultimap<Document, Binary>> {
 
     private final ProgressLogger progressLogger;
     private final AtomicLong skippedVariants;

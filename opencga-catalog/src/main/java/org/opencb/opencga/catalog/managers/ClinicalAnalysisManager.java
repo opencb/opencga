@@ -48,6 +48,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
+import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.DUE_DATE;
 import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
 /**
@@ -144,6 +145,10 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         ParamUtils.checkAlias(clinicalAnalysis.getId(), "id");
         ParamUtils.checkObj(clinicalAnalysis.getType(), "type");
 
+        if (TimeUtils.toDate(clinicalAnalysis.getDueDate()) == null) {
+            throw new CatalogException("Unrecognised due date. Accepted format is: yyyyMMddHHmmss");
+        }
+
         validateSubjects(clinicalAnalysis, study, sessionId);
         validateFamilyAndSubject(clinicalAnalysis, study, sessionId);
 //        validateInterpretations(clinicalAnalysis.getInterpretations(), studyStr, sessionId);
@@ -166,6 +171,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         clinicalAnalysis.setRelease(catalogManager.getStudyManager().getCurrentRelease(study, userId));
         clinicalAnalysis.setAttributes(ParamUtils.defaultObject(clinicalAnalysis.getAttributes(), Collections.emptyMap()));
         clinicalAnalysis.setInterpretations(ParamUtils.defaultObject(clinicalAnalysis.getInterpretations(), ArrayList::new));
+        clinicalAnalysis.setPriority(ParamUtils.defaultObject(clinicalAnalysis.getPriority(), ClinicalAnalysis.Priority.MEDIUM));
 
         clinicalAnalysis.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.CLINICAL));
         QueryResult<ClinicalAnalysis> queryResult = clinicalDBAdaptor.insert(study.getUid(), clinicalAnalysis, options);
@@ -250,6 +256,11 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                         MyResource<File> fileResource = catalogManager.getFileManager().getUid(String.valueOf(fileMap.get("path")),
                                 studyStr, sessionId);
                         fileMap.put(FileDBAdaptor.QueryParams.UID.key(), fileResource.getResource().getUid());
+                    }
+                    break;
+                case DUE_DATE:
+                    if (TimeUtils.toDate(parameters.getString(DUE_DATE.key())) == null) {
+                        throw new CatalogException("Unrecognised due date. Accepted format is: yyyyMMddHHmmss");
                     }
                     break;
                 case FAMILY:

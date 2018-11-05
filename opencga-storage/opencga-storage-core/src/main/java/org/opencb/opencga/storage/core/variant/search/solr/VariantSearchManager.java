@@ -47,6 +47,7 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchModel;
@@ -304,7 +305,8 @@ public class VariantSearchManager {
         SolrCollection solrCollection = solrManager.getCollection(collection);
         QueryResult<Variant> queryResult;
         try {
-            queryResult = solrCollection.query(solrQuery, VariantSearchModel.class, variantSearchToVariantConverter);
+            queryResult = solrCollection.query(solrQuery, VariantSearchModel.class,
+                    new VariantSearchToVariantConverter(VariantField.getIncludeFields(queryOptions)));
         } catch (SolrServerException e) {
             throw new VariantSearchException("Error executing variant query", e);
         }
@@ -354,7 +356,8 @@ public class VariantSearchManager {
             throws VariantSearchException, IOException {
         try {
             SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
-            return new VariantSolrIterator(solrManager.getSolrClient(), collection, solrQuery);
+            return new VariantSolrIterator(solrManager.getSolrClient(), collection, solrQuery,
+                    new VariantSearchToVariantConverter(VariantField.getIncludeFields(queryOptions)));
         } catch (SolrServerException e) {
             throw new VariantSearchException("Error getting variant iterator", e);
         }

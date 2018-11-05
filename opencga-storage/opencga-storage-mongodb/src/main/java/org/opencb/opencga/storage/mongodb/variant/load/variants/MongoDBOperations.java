@@ -56,19 +56,19 @@ public class MongoDBOperations {
     public MongoDBOperations() {
     }
 
-    NewStudy getNewStudy() {
+    public NewStudy getNewStudy() {
         return newStudy;
     }
 
-    ExistingStudy getExistingStudy() {
+    public ExistingStudy getExistingStudy() {
         return existingStudy;
     }
 
-    List<String> getDocumentsToCleanStudies() {
+    public List<String> getDocumentsToCleanStudies() {
         return documentsToCleanStudies;
     }
 
-    List<String> getDocumentsToCleanFiles() {
+    public List<String> getDocumentsToCleanFiles() {
         return documentsToCleanFiles;
     }
 
@@ -126,7 +126,7 @@ public class MongoDBOperations {
     }
 
     // Document may exist, study does not exist
-    class NewStudy {
+    public class NewStudy {
         private final List<String> ids = new LinkedList<>();
         private final List<Bson> queries = new LinkedList<>();
         private final List<Bson> updates = new LinkedList<>();
@@ -134,38 +134,38 @@ public class MongoDBOperations {
         // This collection may be smaller than the previous collections
         private final List<Document> variants = new LinkedList<>();
 
-        List<String> getIds() {
+        public List<String> getIds() {
             return ids;
         }
 
-        List<Bson> getQueries() {
+        public List<Bson> getQueries() {
             return queries;
         }
 
-        List<Bson> getUpdates() {
+        public List<Bson> getUpdates() {
             return updates;
         }
 
-        List<Document> getVariants() {
+        public List<Document> getVariants() {
             return variants;
         }
     }
 
     // Document and study exist
-    class ExistingStudy {
+    public class ExistingStudy {
         private final List<String> ids = new LinkedList<>();
         private final List<Bson> queries = new LinkedList<>();
         private final List<Bson> updates = new LinkedList<>();
 
-        List<String> getIds() {
+        public List<String> getIds() {
             return ids;
         }
 
-        List<Bson> getQueries() {
+        public List<Bson> getQueries() {
             return queries;
         }
 
-        List<Bson> getUpdates() {
+        public List<Bson> getUpdates() {
             return updates;
         }
     }

@@ -338,6 +338,25 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
         assertThat(queryResult, everyResult(allVariants, withStudy(study, allOf(
                 withSampleData(f1_s1, "GT", is("1|1")),
                 withSampleData(f2_s1, "GT", anyOf(is("0|0"), is("0/0")))))));
+
+        query.put(GENOTYPE.key(), f2_s1 + IS + "0/0" + OR + "0|0");
+        queryResult = dbAdaptor.get(query, new QueryOptions());
+        assertThat(queryResult, everyResult(allVariants, withStudy(study,
+                withSampleData(f2_s1, "GT", anyOf(is("0|0"), is("0/0"))))));
+
+        query.put(GENOTYPE.key(), f1_s1 + IS + "0/0" + OR + "0|0" + OR + f2_s1 + IS + "0/0" + OR + "0|0");
+        queryResult = dbAdaptor.get(query, new QueryOptions());
+        assertThat(queryResult, everyResult(allVariants, withStudy(study, anyOf(
+                withSampleData(f1_s1, "GT", anyOf(is("0|0"), is("0/0"))),
+                withSampleData(f2_s1, "GT", anyOf(is("0|0"), is("0/0")))
+        ))));
+
+        query.put(GENOTYPE.key(), f1_s1 + IS + "0/0" + OR + "0|0" + AND + f2_s1 + IS + "0/0" + OR + "0|0");
+        queryResult = dbAdaptor.get(query, new QueryOptions());
+        assertThat(queryResult, everyResult(allVariants, withStudy(study, allOf(
+                withSampleData(f1_s1, "GT", anyOf(is("0|0"), is("0/0"))),
+                withSampleData(f2_s1, "GT", anyOf(is("0|0"), is("0/0")))
+        ))));
     }
 
     @Test
@@ -373,7 +392,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
         queryResult = dbAdaptor.get(query, new QueryOptions());
         assertThat(queryResult, everyResult(allVariants, withStudy(study, allOf(
                 withSampleData(s1, "GT", is("1|1")),
-                withSampleData(s2, "GT", allOf(not(is("0|0")), not(is("1|0"))))))));
+                withSampleData(s2, "GT", allOf(not(is("0/0")), not(is("1|0"))))))));
 
     }
 

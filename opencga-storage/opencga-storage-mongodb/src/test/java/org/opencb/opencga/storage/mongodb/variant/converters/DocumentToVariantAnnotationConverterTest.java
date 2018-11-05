@@ -298,7 +298,13 @@ public class DocumentToVariantAnnotationConverterTest {
     }
 
     public static void checkEqualDocuments(Document expected, Document actual) {
-        checkEqualObjects(expected, actual, "");
+        try {
+            checkEqualObjects(expected, actual, "");
+        } catch (AssertionError error) {
+            System.out.println("expected = " + expected.toJson());
+            System.out.println("actual   = " + actual.toJson());
+            throw error;
+        }
     }
 
     private static void checkEqualObjects(Object expected, Object actual, String path) {

@@ -805,11 +805,20 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             andBsonList.add(new Document("$isolated", 1));
         }
 
-        fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), query);
-        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), query);
-        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), query);
+        Query myQuery = new Query(query);
 
-        for (Map.Entry<String, Object> entry : query.entrySet()) {
+        // If we receive a query by format or bioformat and the user is also trying to filter by type=FILE, we will remove the latter
+        // to avoid complexity to mongo database as the results obtained should be the same with or without this latter filter
+        if ((myQuery.containsKey(QueryParams.FORMAT.key()) || myQuery.containsKey(QueryParams.BIOFORMAT.key()))
+                && File.Type.FILE.name().equals(myQuery.get(QueryParams.TYPE.key()))) {
+            myQuery.remove(QueryParams.TYPE.key());
+        }
+
+        fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), myQuery);
+        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), myQuery);
+        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), myQuery);
+
+        for (Map.Entry<String, Object> entry : myQuery.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
             QueryParams queryParam = QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
                     : QueryParams.getParam(key);
@@ -823,62 +832,62 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             try {
                 switch (queryParam) {
                     case UID:
-                        addAutoOrQuery(PRIVATE_UID, queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(PRIVATE_UID, queryParam.key(), myQuery, queryParam.type(), andBsonList);
                         break;
                     case STUDY_UID:
-                        addAutoOrQuery(PRIVATE_STUDY_ID, queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(PRIVATE_STUDY_ID, queryParam.key(), myQuery, queryParam.type(), andBsonList);
                         break;
                     case DIRECTORY:
                         // We add the regex in order to look for all the files under the given directory
-                        String value = (String) query.get(queryParam.key());
+                        String value = (String) myQuery.get(queryParam.key());
                         String regExPath = "~^" + value + "[^/]+/?$";
                         Query pathQuery = new Query(QueryParams.PATH.key(), regExPath);
                         addAutoOrQuery(QueryParams.PATH.key(), QueryParams.PATH.key(), pathQuery, QueryParams.PATH.type(), andBsonList);
                         break;
                     case ANNOTATION:
                         if (annotationDocument == null) {
-                            annotationDocument = createAnnotationQuery(query.getString(QueryParams.ANNOTATION.key()),
-                                    query.get(Constants.PRIVATE_ANNOTATION_PARAM_TYPES, ObjectMap.class));
+                            annotationDocument = createAnnotationQuery(myQuery.getString(QueryParams.ANNOTATION.key()),
+                                    myQuery.get(Constants.PRIVATE_ANNOTATION_PARAM_TYPES, ObjectMap.class));
                         }
                         break;
                     case ATTRIBUTES:
-                        addAutoOrQuery(entry.getKey(), entry.getKey(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(entry.getKey(), entry.getKey(), myQuery, queryParam.type(), andBsonList);
                         break;
                     case BATTRIBUTES:
                         String mongoKey = entry.getKey().replace(QueryParams.BATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(mongoKey, entry.getKey(), myQuery, queryParam.type(), andBsonList);
                         break;
                     case NATTRIBUTES:
                         mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(mongoKey, entry.getKey(), myQuery, queryParam.type(), andBsonList);
                         break;
                     case CREATION_DATE:
-                        addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), myQuery, queryParam.type(), andBsonList);
                         break;
                     case STATUS_NAME:
                         // Convert the status to a positive status
-                        query.put(queryParam.key(),
-                                Status.getPositiveStatus(File.FileStatus.STATUS_LIST, query.getString(queryParam.key())));
-                        addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        myQuery.put(queryParam.key(),
+                                Status.getPositiveStatus(File.FileStatus.STATUS_LIST, myQuery.getString(queryParam.key())));
+                        addAutoOrQuery(queryParam.key(), queryParam.key(), myQuery, queryParam.type(), andBsonList);
                         break;
                     case INDEX_STATUS_NAME:
                         // Convert the status to a positive status
-                        query.put(queryParam.key(),
-                                Status.getPositiveStatus(FileIndex.IndexStatus.STATUS_LIST, query.getString(queryParam.key())));
-                        addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        myQuery.put(queryParam.key(),
+                                Status.getPositiveStatus(FileIndex.IndexStatus.STATUS_LIST, myQuery.getString(queryParam.key())));
+                        addAutoOrQuery(queryParam.key(), queryParam.key(), myQuery, queryParam.type(), andBsonList);
                         break;
                     // Other parameter that can be queried.
                     case NAME:
-                        String name = query.getString(queryParam.key());
+                        String name = myQuery.getString(queryParam.key());
                         if (name.startsWith("~") && name.endsWith("$")) {
                             // We remove ~ and $
                             name = name.substring(1, name.length() - 1);
                             // We store the name value reversed
-                            query.put(queryParam.key(), "~^" + StringUtils.reverse(name));
+                            myQuery.put(queryParam.key(), "~^" + StringUtils.reverse(name));
                             // We look for the name field in the REVERSE db field
-                            addAutoOrQuery(REVERSE_NAME, queryParam.key(), query, queryParam.type(), andBsonList);
+                            addAutoOrQuery(REVERSE_NAME, queryParam.key(), myQuery, queryParam.type(), andBsonList);
                         } else {
-                            addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                            addAutoOrQuery(queryParam.key(), queryParam.key(), myQuery, queryParam.type(), andBsonList);
                         }
                         break;
                     case UUID:
@@ -912,7 +921,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                     case INDEX_JOB_ID:
                     case INDEX_TRANSFORMED_FILE:
                     case STATS:
-                        addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(queryParam.key(), queryParam.key(), myQuery, queryParam.type(), andBsonList);
                         break;
                     default:
                         throw new CatalogDBException("Cannot query by parameter " + queryParam.key());

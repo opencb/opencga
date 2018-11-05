@@ -1394,6 +1394,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             // TODO: Improve this heuristic
             // Count only real params
             Collection<VariantQueryParam> coveredParams = coveredParams(query);
+            coveredParams.removeAll(MODIFIER_QUERY_PARAMS);
             int intersectParamsThreshold = getOptions().getInt(INTERSECT_PARAMS_THRESHOLD.key(), INTERSECT_PARAMS_THRESHOLD.defaultValue());
             intersect = coveredParams.size() >= intersectParamsThreshold;
         }

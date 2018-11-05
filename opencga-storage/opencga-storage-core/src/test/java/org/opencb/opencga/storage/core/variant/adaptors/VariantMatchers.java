@@ -113,7 +113,7 @@ public class VariantMatchers {
                         System.out.println("missing " + ((Variant) missingValue).toJson());
                         for (T extraValue : extraValues) {
                             if (((Variant) extraValue).sameGenomicVariant(missingValue)) {
-                                System.out.println("extra " + ((Variant) extraValue).toJson());
+                                System.out.println("extra   " + ((Variant) extraValue).toJson());
                             }
                         }
                     }
