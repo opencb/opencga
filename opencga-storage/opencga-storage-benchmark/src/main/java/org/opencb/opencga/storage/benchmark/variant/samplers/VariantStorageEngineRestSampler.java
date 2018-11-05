@@ -40,7 +40,7 @@ public class VariantStorageEngineRestSampler extends HTTPSampler implements Vari
     private QueryGenerator queryGenerator;
 
     public VariantStorageEngineRestSampler() {
-        setPath("opencga/webservices/rest/variants/fetch");
+        setPath("opencga/webservices/rest/variants/query");
         setMethod("GET");
     }
 

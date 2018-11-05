@@ -22,7 +22,7 @@
       - "10_input"
 
    sample :
-        - "HET"
+        - "GermlineSample"
 
    filter :
       - "PASS"

@@ -64,7 +64,7 @@ public class MultiQueryGenerator extends QueryGenerator {
             }
 
             ConfiguredQueryGenerator queryGenerator;
-            switch (param.toLowerCase()) {
+            switch (param) {
                 case "region":
                     queryGenerator = new RegionQueryGenerator();
                     break;
@@ -87,13 +87,44 @@ public class MultiQueryGenerator extends QueryGenerator {
                 case "xrefs":
                     queryGenerator = new TermQueryGenerator.XrefQueryGenerator();
                     break;
+                case "file":
+                    queryGenerator = new TermQueryGenerator.FileQueryGenerator();
+                    break;
+                case "sample":
+                    queryGenerator = new TermQueryGenerator.SampleQueryGenerator();
+                    break;
+                case "filter":
+                    queryGenerator = new TermQueryGenerator.FilterQueryGenerator();
+                    break;
+                case "drug":
+                    queryGenerator = new TermQueryGenerator.DrugQueryGenerator();
+                    break;
+                case "clinicalSignificance":
+                    queryGenerator = new TermQueryGenerator.ClinicalSignificanceQueryGenerator();
+                    break;
+                case "transcriptionFlag":
+                case "transcriptionFlags":
+                    queryGenerator = new TermQueryGenerator.TranscriptionFlagsQueryGenerator();
+                    break;
                 case "conservation":
                     queryGenerator = new ScoreQueryGenerator.ConservationQueryGenerator(config);
                     break;
-                case "protein-substitution":
+                case "proteinSubstitution":
                     queryGenerator = new ScoreQueryGenerator.ProteinSubstQueryGenerator(config);
                     break;
-                case "functional":
+                case "populationFrequencyAlt":
+                    queryGenerator = new ScoreQueryGenerator.PopulationFrequenciesAltQueryGenerator(config);
+                    break;
+                case "populationFrequencyRef":
+                    queryGenerator = new ScoreQueryGenerator.PopulationFrequenciesRefQueryGenerator(config);
+                    break;
+                case "populationFrequencyMaf":
+                    queryGenerator = new ScoreQueryGenerator.PopulationFrequenciesMafQueryGenerator(config);
+                    break;
+                case "qual":
+                    queryGenerator = new ScoreQueryGenerator.QualQueryGenerator(config);
+                    break;
+                case "functionalScore":
                 case "cadd":
                     queryGenerator = new ScoreQueryGenerator.FunctionalScoreQueryGenerator(config);
                     break;

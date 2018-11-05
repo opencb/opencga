@@ -118,4 +118,52 @@ public abstract class ScoreQueryGenerator extends ConfiguredQueryGenerator {
         }
     }
 
+    public static class PopulationFrequenciesRefQueryGenerator extends ScoreQueryGenerator {
+
+        public PopulationFrequenciesRefQueryGenerator(RandomQueries randomQueries) {
+            super(randomQueries.getPopulationFrequencies(), VariantQueryParam.ANNOT_POPULATION_REFERENCE_FREQUENCY.key());
+        }
+
+        @Override
+        public void setUp(Map<String, String> params, RandomQueries queries) {
+            super.setUp(params);
+        }
+    }
+
+    public static class PopulationFrequenciesMafQueryGenerator extends ScoreQueryGenerator {
+
+        public PopulationFrequenciesMafQueryGenerator(RandomQueries randomQueries) {
+            super(randomQueries.getPopulationFrequencies(), VariantQueryParam.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key());
+        }
+
+        @Override
+        public void setUp(Map<String, String> params, RandomQueries queries) {
+            super.setUp(params);
+        }
+    }
+
+    public static class PopulationFrequenciesAltQueryGenerator extends ScoreQueryGenerator {
+
+        public PopulationFrequenciesAltQueryGenerator(RandomQueries randomQueries) {
+            super(randomQueries.getPopulationFrequencies(), VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key());
+        }
+
+        @Override
+        public void setUp(Map<String, String> params, RandomQueries queries) {
+            super.setUp(params);
+        }
+    }
+
+    public static class QualQueryGenerator extends ScoreQueryGenerator {
+
+        public QualQueryGenerator(RandomQueries randomQueries) {
+            super(Arrays.asList(randomQueries.getQual()), VariantQueryParam.QUAL.key());
+        }
+
+        @Override
+        public void setUp(Map<String, String> params, RandomQueries queries) {
+            super.setUp(params);
+        }
+    }
+
 }

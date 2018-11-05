@@ -30,6 +30,7 @@ import org.apache.jmeter.testelement.TestElement;
 import org.apache.jmeter.testelement.TestPlan;
 import org.apache.jmeter.threads.ThreadGroup;
 import org.apache.jmeter.threads.gui.ThreadGroupGui;
+import org.apache.jmeter.timers.ConstantTimer;
 import org.apache.jmeter.util.JMeterUtils;
 import org.apache.jorphan.collections.HashTree;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
@@ -144,8 +145,14 @@ public class BenchmarkRunner {
         // Construct Test Plan from previously initialized elements
         HashTree threadGroupHashTree = testPlanTree.add(testPlan, threadGroup);
 
+        ConstantTimer timer = new ConstantTimer();
+        timer.setDelay("200");
+        timer.setName("timer");
+
         // Add samplers to the ThreadGroup
         threadGroupHashTree.add(samplers);
+        // Add timer to the ThreadGroup
+        threadGroupHashTree.add(timer);
     }
 
     public void run() throws IOException {

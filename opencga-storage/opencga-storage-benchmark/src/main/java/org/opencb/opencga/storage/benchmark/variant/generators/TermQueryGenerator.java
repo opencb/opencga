@@ -66,6 +66,91 @@ public abstract class TermQueryGenerator extends ConfiguredQueryGenerator {
         return query;
     }
 
+    public static class FileQueryGenerator extends TermQueryGenerator {
+
+        public FileQueryGenerator() {
+            super(VariantQueryParam.FILE.key());
+        }
+
+        @Override
+        protected void loadTerms(Map<String, String> params, RandomQueries randomQueries) {
+            if (randomQueries.getFile() != null) {
+                this.terms = randomQueries.getFile();
+            }
+        }
+    }
+
+    public static class SampleQueryGenerator extends TermQueryGenerator {
+
+        public SampleQueryGenerator() {
+            super(VariantQueryParam.SAMPLE.key());
+        }
+
+        @Override
+        protected void loadTerms(Map<String, String> params, RandomQueries randomQueries) {
+            if (randomQueries.getSample() != null) {
+                this.terms = randomQueries.getSample();
+            }
+        }
+    }
+
+    public static class FilterQueryGenerator extends TermQueryGenerator {
+
+        public FilterQueryGenerator() {
+            super(VariantQueryParam.FILTER.key());
+        }
+
+        @Override
+        protected void loadTerms(Map<String, String> params, RandomQueries randomQueries) {
+            if (randomQueries.getFilter() != null) {
+                this.terms = randomQueries.getFilter();
+            }
+        }
+    }
+
+    public static class TranscriptionFlagsQueryGenerator extends TermQueryGenerator {
+
+        public TranscriptionFlagsQueryGenerator() {
+            super(VariantQueryParam.ANNOT_TRANSCRIPTION_FLAG.key());
+        }
+
+        @Override
+        protected void loadTerms(Map<String, String> params, RandomQueries randomQueries) {
+            if (randomQueries.getTranscriptionFlags() != null) {
+                this.terms = randomQueries.getTranscriptionFlags();
+            }
+        }
+    }
+
+    public static class DrugQueryGenerator extends TermQueryGenerator {
+
+        public DrugQueryGenerator() {
+            super(VariantQueryParam.ANNOT_DRUG.key());
+        }
+
+        @Override
+        protected void loadTerms(Map<String, String> params, RandomQueries randomQueries) {
+            if (randomQueries.getDrug() != null) {
+                this.terms = randomQueries.getDrug();
+            }
+        }
+    }
+
+    public static class ClinicalSignificanceQueryGenerator extends TermQueryGenerator {
+
+        public ClinicalSignificanceQueryGenerator() {
+            super(VariantQueryParam.ANNOT_CLINICAL_SIGNIFICANCE.key());
+        }
+
+        @Override
+        protected void loadTerms(Map<String, String> params, RandomQueries randomQueries) {
+            if (randomQueries.getClinicalSignificance() != null) {
+                this.terms = randomQueries.getClinicalSignificance();
+            }
+        }
+    }
+
+
     public static class XrefQueryGenerator extends TermQueryGenerator {
 
         public XrefQueryGenerator() {

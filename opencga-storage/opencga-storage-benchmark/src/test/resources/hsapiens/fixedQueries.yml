@@ -16,5 +16,4 @@ queries :
 - id : "Gene"
   description : "Purpose of this query"
   params :
-    gene : "BRCA2"
-    ct : missense_variant
+    gene : "MIB2"
