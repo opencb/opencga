@@ -18,12 +18,14 @@ package org.opencb.opencga.storage.core.variant.search.solr;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.variant.Variant;
@@ -480,11 +482,16 @@ public class VariantSearchManager {
 
         // Query
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        Postprocessing postprocessing = null;
+        String jsonFacet = solrQuery.get("json.facet");
+        if (StringUtils.isNotEmpty(jsonFacet) && jsonFacet.contains("includes")) {
+            postprocessing = new Postprocessing().setFacet(jsonFacet);
+        }
         SolrCollection solrCollection = solrManager.getCollection(collection);
 
         FacetQueryResult facetResult;
         try {
-            facetResult = solrCollection.facet(solrQuery);
+            facetResult = solrCollection.facet(solrQuery, null, postprocessing);
         } catch (SolrServerException e) {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
         }
@@ -511,6 +518,8 @@ public class VariantSearchManager {
     public void close() throws IOException {
         solrManager.close();
     }
+
+
 
     /*-------------------------------------
      *  P R I V A T E    M E T H O D S
@@ -646,6 +655,88 @@ public class VariantSearchManager {
                     }
                 }
             }
+        }
+    }
+
+    private class Postprocessing implements SolrCollection.FacetPostprocessing {
+        private String facet;
+
+        public Postprocessing setFacet(String facet) {
+            this.facet = facet;
+            return this;
+        }
+
+        @Override
+        public org.apache.solr.client.solrj.response.QueryResponse apply(
+                org.apache.solr.client.solrj.response.QueryResponse response) {
+
+            Map<String, Set<String>> includeMap = new HashMap<>();
+            try {
+                Map<String, Object> jsonMap = new ObjectMapper().readValue(facet, Map.class);
+                Queue<Map<String, Object>> myQueue = new LinkedList<>();
+                myQueue.add(jsonMap);
+                while (!myQueue.isEmpty()) {
+                    Map<String, Object> map = myQueue.remove();
+                    for (Map.Entry<String, Object> entry : map.entrySet()) {
+                        if (entry.getValue() instanceof Map) {
+                            Map<String, Object> innerMap = (Map<String, Object>) entry.getValue();
+                            if (innerMap.containsKey("includes")) {
+                                includeMap.put(entry.getKey(), new HashSet<>((List<String>) innerMap.get("includes")));
+                            }
+                            if (innerMap.containsKey("facet")) {
+                                myQueue.add((Map<String, Object>) innerMap.get("facet"));
+                            }
+                        }
+                    }
+                }
+            } catch (IOException e) {
+                logger.error(e.getMessage());
+                return response;
+            }
+
+            if (MapUtils.isNotEmpty(includeMap)) {
+                Queue<Map.Entry<String, SimpleOrderedMap>> myQueue = new LinkedList<>();
+                SimpleOrderedMap solrFacets = (SimpleOrderedMap) response.getResponse().get("facets");
+                Iterator iterator = solrFacets.iterator();
+                while (iterator.hasNext()) {
+                    Map.Entry<String, SimpleOrderedMap> next = (Map.Entry<String, SimpleOrderedMap>) iterator.next();
+                    if (next.getValue() instanceof SimpleOrderedMap) {
+                        myQueue.add(next);
+                    }
+                }
+
+                while (!myQueue.isEmpty()) {
+                    Map.Entry<String, SimpleOrderedMap> facet = myQueue.remove();
+                    String key = facet.getKey();
+                    String[] split = key.split("___");
+                    SimpleOrderedMap value = facet.getValue();
+                    List<SimpleOrderedMap<Object>> buckets = (List<SimpleOrderedMap<Object>>) value.get("buckets");
+                    if (ListUtils.isNotEmpty(buckets)) {
+                        List<Integer> indicesToRemove = new ArrayList<>();
+                        for (int i = 0; i < buckets.size(); i++) {
+                            if (includeMap.containsKey(key)
+                                    && !includeMap.get(key).contains(buckets.get(i).get("val"))) {
+                                indicesToRemove.add(i);
+                            }
+                            // Looking for nested buckets
+                            Iterator it = buckets.get(i).iterator();
+                            while (it.hasNext()) {
+                                Map.Entry<String, SimpleOrderedMap> next =
+                                        (Map.Entry<String, SimpleOrderedMap>) it.next();
+                                if (next.getValue() instanceof SimpleOrderedMap) {
+                                    myQueue.add(next);
+                                }
+                            }
+                        }
+                        if (ListUtils.isNotEmpty(indicesToRemove)) {
+                            for (int j = indicesToRemove.size() - 1; j >= 0; j--) {
+                                buckets.remove(indicesToRemove.get(j).intValue());
+                            }
+                        }
+                    }
+                }
+            }
+            return response;
         }
     }
 
