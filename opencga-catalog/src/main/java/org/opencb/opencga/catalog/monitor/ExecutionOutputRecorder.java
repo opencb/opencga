@@ -171,10 +171,10 @@ public class ExecutionOutputRecorder {
         parameters.put(JobDBAdaptor.QueryParams.OUTPUT.key(), files);
         parameters.put(JobDBAdaptor.QueryParams.END_TIME.key(), System.currentTimeMillis());
         try {
-            catalogManager.getJobManager().update(job.getUid(), parameters, null, this.sessionId);
+            catalogManager.getJobManager().update(studyStr, job.getUuid(), parameters, null, this.sessionId);
         } catch (CatalogException e) {
-            logger.error("Critical error. Could not update job output files from job {} with output {}. Error: {}", job.getUid(),
-                    StringUtils.join(files.stream().map(File::getUid).collect(Collectors.toList()), ","), e.getMessage());
+            logger.error("Critical error. Could not update job output files from job {} with output {}. Error: {}", job.getUuid(),
+                    StringUtils.join(files.stream().map(File::getPath).collect(Collectors.toList()), ","), e.getMessage());
             throw e;
         }
 

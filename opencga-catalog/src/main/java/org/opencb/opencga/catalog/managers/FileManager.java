@@ -1919,7 +1919,7 @@ public class FileManager extends AnnotationSetManager<File> {
         ObjectMap attributes = new ObjectMap();
         attributes.put(IndexDaemon.INDEX_TYPE, indexDaemonType);
         attributes.putIfNotNull(Job.OPENCGA_OUTPUT_DIR, outDirPath);
-        attributes.putIfNotNull(Job.OPENCGA_STUDY, studyStr);
+        attributes.putIfNotNull(Job.OPENCGA_STUDY, resource.getStudy().getFqn());
 
         logger.info("job description: " + description);
         jobQueryResult = catalogManager.getJobManager().queue(studyStr, jobName, description, "opencga-analysis.sh",
