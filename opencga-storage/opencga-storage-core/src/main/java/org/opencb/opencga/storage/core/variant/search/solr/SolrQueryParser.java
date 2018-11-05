@@ -54,6 +54,9 @@ public class SolrQueryParser {
 
     private static Map<String, String> includeMap;
 
+    private static Map<String, Integer> chromosomeMap;
+    private static final String CHROM_DENSITY = "chromDensity";
+
     private static final Pattern STUDY_PATTERN = Pattern.compile("^([^=<>!]+):([^=<>!]+)(!=?|<=?|>=?|<<=?|>>=?|==?|=?)([^=<>!]+.*)$");
     private static final Pattern SCORE_PATTERN = Pattern.compile("^([^=<>!]+)(!=?|<=?|>=?|<<=?|>>=?|==?|=?)([^=<>!]+.*)$");
     private static final Pattern NUMERIC_PATTERN = Pattern.compile("(!=?|<=?|>=?|=?)([^=<>!]+.*)$");
@@ -87,6 +90,7 @@ public class SolrQueryParser {
 
     public SolrQueryParser(StudyConfigurationManager studyConfigurationManager) {
         this.studyConfigurationManager = studyConfigurationManager;
+        initChromosomeMap();
     }
 
     /**
@@ -108,12 +112,19 @@ public class SolrQueryParser {
         if (queryOptions.containsKey(QueryOptions.FACET) && StringUtils.isNotEmpty(queryOptions.getString(QueryOptions.FACET))) {
             try {
                 FacetQueryParser facetQueryParser = new FacetQueryParser();
-                String jsonFacet = facetQueryParser.parse(queryOptions.getString(QueryOptions.FACET));
-                solrQuery.set("json.facet", jsonFacet);
+                String facetQuery = queryOptions.getString(QueryOptions.FACET);
 
+                if (facetQuery.contains(CHROM_DENSITY)) {
+                    facetQuery = parseFacet(facetQuery);
+                }
+                String jsonFacet = facetQueryParser.parse(facetQuery);
+
+                solrQuery.set("json.facet", jsonFacet);
                 solrQuery.setRows(0);
                 solrQuery.setStart(0);
                 solrQuery.setFields();
+
+                logger.info(">>>>>> Solr Facet: " + solrQuery.toString());
             } catch (Exception e) {
                 throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Solr parse exception: " + e.getMessage(), e);
             }
@@ -154,7 +165,6 @@ public class SolrQueryParser {
                 solrQuery.addSort(queryOptions.getString(QueryOptions.SORT), getSortOrder(queryOptions));
             }
         }
-
 
         //-------------------------------------
         // Query processing
@@ -386,6 +396,49 @@ public class SolrQueryParser {
         logger.debug("query     : " + VariantQueryUtils.printQuery(query));
         logger.debug("solrQuery : " + solrQuery);
         return solrQuery;
+    }
+
+    private String parseFacet(String facetQuery) {
+        List<String> facetList = new ArrayList<>();
+        String[] facets = facetQuery.split(FacetQueryParser.FACET_SEPARATOR);
+        for (String facet: facets) {
+            if (facet.contains(CHROM_DENSITY)) {
+                // Categorical...
+                Matcher matcher = FacetQueryParser.CATEGORICAL_PATTERN.matcher(facet);
+                if (matcher.find()) {
+                    if (matcher.group(1).equals(CHROM_DENSITY)) {
+                        // Step management
+                        int step = 1000000;
+                        if (StringUtils.isNotEmpty(matcher.group(3))) {
+                            step = Integer.parseInt(matcher.group(3).substring(1));
+                        }
+                        // Include management
+                        List<String> chromosomes;
+                        String include = matcher.group(2);
+                        if (StringUtils.isNotEmpty(include)) {
+                            chromosomes = new ArrayList<>();
+                            include = include.replace("]", "").replace("[", "");
+                            for (String value: include.split(FacetQueryParser.INCLUDE_SEPARATOR)) {
+                                chromosomes.add(value);
+                            }
+                        } else {
+                            chromosomes = new ArrayList<>(chromosomeMap.keySet());
+                        }
+                        for (String chr: chromosomes) {
+                            facetList.add("start[1.." + chromosomeMap.get(chr) + "]:" + step + ":chromDensity." + chr
+                                    + ":chromosome:" + chr);
+                        }
+                    } else {
+                        throw VariantQueryException.malformedParam(null, CHROM_DENSITY, "Invalid syntax: " + facet);
+                    }
+                } else {
+                    throw VariantQueryException.malformedParam(null, CHROM_DENSITY, "Invalid syntax: " + facet);
+                }
+            } else {
+                facetList.add(facet);
+            }
+        }
+        return StringUtils.join(facetList, FacetQueryParser.FACET_SEPARATOR);
     }
 
     /**
@@ -1341,5 +1394,34 @@ public class SolrQueryParser {
         } else {
             return queryOperation;
         }
+    }
+
+    private void initChromosomeMap() {
+        chromosomeMap = new HashMap<>();
+        chromosomeMap.put("1", 249250621);
+        chromosomeMap.put("2", 243199373);
+        chromosomeMap.put("3", 198022430);
+        chromosomeMap.put("4", 191154276);
+        chromosomeMap.put("5", 180915260);
+        chromosomeMap.put("6", 171115067);
+        chromosomeMap.put("7", 159138663);
+        chromosomeMap.put("8", 146364022);
+        chromosomeMap.put("9", 141213431);
+        chromosomeMap.put("10", 135534747);
+        chromosomeMap.put("11", 135006516);
+        chromosomeMap.put("12", 133851895);
+        chromosomeMap.put("13", 115169878);
+        chromosomeMap.put("14", 107349540);
+        chromosomeMap.put("15", 102531392);
+        chromosomeMap.put("16", 90354753);
+        chromosomeMap.put("17", 81195210);
+        chromosomeMap.put("18", 78077248);
+        chromosomeMap.put("20", 63025520);
+        chromosomeMap.put("19", 59128983);
+        chromosomeMap.put("22", 51304566);
+        chromosomeMap.put("21", 48129895);
+        chromosomeMap.put("X", 155270560);
+        chromosomeMap.put("Y", 59373566);
+        chromosomeMap.put("MT", 16571);
     }
 }
