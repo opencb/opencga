@@ -487,7 +487,8 @@ public class VariantSearchManager {
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         Postprocessing postprocessing = null;
         String jsonFacet = solrQuery.get("json.facet");
-        if (StringUtils.isNotEmpty(jsonFacet) && jsonFacet.contains("includes")) {
+        if (StringUtils.isNotEmpty(jsonFacet)
+                && (jsonFacet.contains("includes") || jsonFacet.contains(SolrQueryParser.CHROM_DENSITY))) {
             postprocessing = new Postprocessing().setFacet(jsonFacet);
         }
         SolrCollection solrCollection = solrManager.getCollection(collection);
@@ -673,6 +674,8 @@ public class VariantSearchManager {
         public org.apache.solr.client.solrj.response.QueryResponse apply(
                 org.apache.solr.client.solrj.response.QueryResponse response) {
 
+            // Include management, e.g.: for field[x,y], all values different to x and y will be removed from results
+            // First, get values to be included
             Map<String, Set<String>> includeMap = new HashMap<>();
             try {
                 Map<String, Object> jsonMap = new ObjectMapper().readValue(facet, Map.class);
@@ -697,6 +700,7 @@ public class VariantSearchManager {
                 return response;
             }
 
+            // Second, browse results to find the values to be included and remove other values
             if (MapUtils.isNotEmpty(includeMap)) {
                 Queue<Map.Entry<String, SimpleOrderedMap>> myQueue = new LinkedList<>();
                 SimpleOrderedMap solrFacets = (SimpleOrderedMap) response.getResponse().get("facets");
@@ -711,7 +715,6 @@ public class VariantSearchManager {
                 while (!myQueue.isEmpty()) {
                     Map.Entry<String, SimpleOrderedMap> facet = myQueue.remove();
                     String key = facet.getKey();
-                    String[] split = key.split("___");
                     SimpleOrderedMap value = facet.getValue();
                     List<SimpleOrderedMap<Object>> buckets = (List<SimpleOrderedMap<Object>>) value.get("buckets");
                     if (ListUtils.isNotEmpty(buckets)) {
@@ -739,7 +742,49 @@ public class VariantSearchManager {
                     }
                 }
             }
+
+
+            // Check buckets for chromosome length
+            SimpleOrderedMap solrFacets = (SimpleOrderedMap) response.getResponse().get("facets");
+            Iterator iterator = solrFacets.iterator();
+            while (iterator.hasNext()) {
+                Map.Entry<String, SimpleOrderedMap> next = (Map.Entry<String, SimpleOrderedMap>) iterator.next();
+                if (next.getValue() instanceof SimpleOrderedMap) {
+                    checkChromosomeBuckets(next);
+                }
+            }
+
+            // Check for chromosome density range
             return response;
+        }
+
+        private void checkChromosomeBuckets(Map.Entry<String, SimpleOrderedMap> facet) {
+            logger.info("---> check chromosome buckets: " + facet.getKey());
+
+            if (facet.getKey().startsWith(SolrQueryParser.CHROM_DENSITY)) {
+                SimpleOrderedMap value = facet.getValue();
+                if (value.get("chromosome") != null) {
+                    List<SimpleOrderedMap<Object>> chromBuckets = (List<SimpleOrderedMap<Object>>)
+                            ((SimpleOrderedMap) value.get("chromosome")).get("buckets");
+                    for (SimpleOrderedMap<Object> chromBucket: chromBuckets) {
+                        String chrom = chromBucket.get("val").toString();
+                        SimpleOrderedMap startMap = (SimpleOrderedMap) chromBucket.get("start");
+                        if (startMap != null) {
+                            List<SimpleOrderedMap<Object>> startBuckets =
+                                    (List<SimpleOrderedMap<Object>>) startMap.get("buckets");
+                            for (int i = startBuckets.size() - 1; i >= 0; i--) {
+                                int pos = (int) startBuckets.get(i).get("val");
+                                if (pos > SolrQueryParser.getChromosomeMap().get(chrom)) {
+                                    startBuckets.remove(i);
+                                } else {
+                                    // Should we update "val" to the chromosome length?
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 

@@ -55,7 +55,7 @@ public class SolrQueryParser {
     private static Map<String, String> includeMap;
 
     private static Map<String, Integer> chromosomeMap;
-    private static final String CHROM_DENSITY = "chromDensity";
+    public static final String CHROM_DENSITY = "chromDensity";
 
     private static final Pattern STUDY_PATTERN = Pattern.compile("^([^=<>!]+):([^=<>!]+)(!=?|<=?|>=?|<<=?|>>=?|==?|=?)([^=<>!]+.*)$");
     private static final Pattern SCORE_PATTERN = Pattern.compile("^([^=<>!]+)(!=?|<=?|>=?|<<=?|>>=?|==?|=?)([^=<>!]+.*)$");
@@ -412,22 +412,34 @@ public class SolrQueryParser {
                         if (StringUtils.isNotEmpty(matcher.group(3))) {
                             step = Integer.parseInt(matcher.group(3).substring(1));
                         }
+                        int maxLength = 0;
                         // Include management
-                        List<String> chromosomes;
+                        List<String> chromList;
                         String include = matcher.group(2);
                         if (StringUtils.isNotEmpty(include)) {
-                            chromosomes = new ArrayList<>();
+                            chromList = new ArrayList<>();
                             include = include.replace("]", "").replace("[", "");
                             for (String value: include.split(FacetQueryParser.INCLUDE_SEPARATOR)) {
-                                chromosomes.add(value);
+                                chromList.add(value);
                             }
                         } else {
-                            chromosomes = new ArrayList<>(chromosomeMap.keySet());
+                            chromList = new ArrayList<>(chromosomeMap.keySet());
                         }
-                        for (String chr: chromosomes) {
-                            facetList.add("start[1.." + chromosomeMap.get(chr) + "]:" + step + ":chromDensity." + chr
-                                    + ":chromosome:" + chr);
+
+                        List<String> chromQueryList = new ArrayList<>();
+                        for (String chrom: chromList) {
+                            if (chromosomeMap.get(chrom) > maxLength) {
+                                maxLength = chromosomeMap.get(chrom);
+                            }
+                            chromQueryList.add("chromosome:" + chrom);
                         }
+                        facetList.add("start[1.." + maxLength + "]:" + step + ":chromDensity"
+                                + FacetQueryParser.LABEL_SEPARATOR + "chromosome:"
+                                + StringUtils.join(chromQueryList, " OR "));
+//                        for (String chr: chromosomes) {
+//                            facetList.add("start[1.." + chromosomeMap.get(chr) + "]:" + step + ":chromDensity." + chr
+//                                    + ":chromosome:" + chr);
+//                        }
                     } else {
                         throw VariantQueryException.malformedParam(null, CHROM_DENSITY, "Invalid syntax: " + facet);
                     }
@@ -1423,5 +1435,9 @@ public class SolrQueryParser {
         chromosomeMap.put("X", 155270560);
         chromosomeMap.put("Y", 59373566);
         chromosomeMap.put("MT", 16571);
+    }
+
+    public static Map<String, Integer> getChromosomeMap() {
+        return chromosomeMap;
     }
 }
