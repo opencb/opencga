@@ -381,7 +381,7 @@ public class FileManager extends AnnotationSetManager<File> {
         QueryResult<File> fileQueryResult;
         switch (checkPathExists(path, study.getUid())) {
             case FREE_PATH:
-                fileQueryResult = create(studyStr, File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, path, null,
+                fileQueryResult = create(studyStr, File.Type.DIRECTORY, File.Format.NONE, File.Bioformat.NONE, path, null,
                         description, status, 0, -1, null, -1, null, null, parents, null, options, sessionId);
                 break;
             case DIRECTORY_EXISTS:
@@ -534,7 +534,7 @@ public class FileManager extends AnnotationSetManager<File> {
         if (parentFileId < 0 && StringUtils.isNotEmpty(parentPath)) {
             if (parents) {
                 newParent = true;
-                File parentFile = new File(File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, parentPath, "",
+                File parentFile = new File(File.Type.DIRECTORY, File.Format.NONE, File.Bioformat.NONE, parentPath, "",
                         new File.FileStatus(File.FileStatus.READY), 0, file.getSamples(), -1, null, Collections.emptyMap(),
                         Collections.emptyMap());
                 parentFileId = register(study, parentFile, parents, options, sessionId).first().getUid();

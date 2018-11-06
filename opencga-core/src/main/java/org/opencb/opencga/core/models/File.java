@@ -212,6 +212,7 @@ public class File extends Annotable {
         BINARY,
         EXECUTABLE,
         @Deprecated GZIP,
+        NONE,
         UNKNOWN,
     }
 

@@ -126,6 +126,8 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         TYPE(QueryParams.TYPE.key()),
         SOMATIC(QueryParams.SOMATIC.key()),
         DESCRIPTION(QueryParams.DESCRIPTION.key()),
+        PROCESSING("processing"),
+        COLLECTION("collection"),
         PHENOTYPES(QueryParams.PHENOTYPES.key()),
         STATS(QueryParams.STATS.key()),
         ATTRIBUTES(QueryParams.ATTRIBUTES.key()),
