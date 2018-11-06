@@ -22,6 +22,9 @@ public class RandomQueries {
     private List<String> xref;
     private List<String> drug;
     private List<String> clinicalSignificance;
+    private List<String> includeSample;
+    private List<String> includeFile;
+    private List<String> includeStudy;
 
     private Score qual;
     private Score conservation;
@@ -29,7 +32,18 @@ public class RandomQueries {
     private List<Score> populationFrequencies;
     private List<Score> functionalScore;
 
+    private List<String> sessionIds;
+
     public RandomQueries() {
+    }
+
+    public List<String> getSessionIds() {
+        return sessionIds;
+    }
+
+    public RandomQueries setSessionIds(List<String> sessionIds) {
+        this.sessionIds = sessionIds;
+        return this;
     }
 
     public List<Region> getRegions() {
@@ -194,6 +208,33 @@ public class RandomQueries {
         return this;
     }
 
+    public List<String> getIncludeSample() {
+        return includeSample;
+    }
+
+    public RandomQueries setIncludeSample(List<String> includeSample) {
+        this.includeSample = includeSample;
+        return this;
+    }
+
+    public List<String> getIncludeFile() {
+        return includeFile;
+    }
+
+    public RandomQueries setIncludeFile(List<String> includeFile) {
+        this.includeFile = includeFile;
+        return this;
+    }
+
+    public List<String> getIncludeStudy() {
+        return includeStudy;
+    }
+
+    public RandomQueries setIncludeStudy(List<String> includeStudy) {
+        this.includeStudy = includeStudy;
+        return this;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("RandomQueries{");
@@ -210,11 +251,15 @@ public class RandomQueries {
         sb.append(", xref=").append(xref);
         sb.append(", drug=").append(drug);
         sb.append(", clinicalSignificance=").append(clinicalSignificance);
+        sb.append(", includeSamples=").append(includeSample);
+        sb.append(", includeFiles=").append(includeFile);
+        sb.append(", includeStudies=").append(includeStudy);
         sb.append(", qual=").append(qual);
         sb.append(", conservation=").append(conservation);
         sb.append(", proteinSubstitution=").append(proteinSubstitution);
         sb.append(", populationFrequencies=").append(populationFrequencies);
         sb.append(", functionalScore=").append(functionalScore);
+        sb.append(", sessionIds=").append(sessionIds);
         sb.append('}');
         return sb.toString();
     }

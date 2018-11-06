@@ -9,7 +9,7 @@ import java.util.List;
 public class FixedQueries {
 
     private List<FixedQuery> queries;
-
+    private List<String> sessionIds;
     public FixedQueries() {
     }
 
@@ -31,11 +31,20 @@ public class FixedQueries {
         return this;
     }
 
+    public List<String> getSessionIds() {
+        return sessionIds;
+    }
+
+    public FixedQueries setSessionIds(List<String> sessionIds) {
+        this.sessionIds = sessionIds;
+        return this;
+    }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("FixedQueries{");
         sb.append("queries=").append(queries);
+        sb.append(", sessionIds=").append(sessionIds);
         sb.append('}');
         return sb.toString();
     }

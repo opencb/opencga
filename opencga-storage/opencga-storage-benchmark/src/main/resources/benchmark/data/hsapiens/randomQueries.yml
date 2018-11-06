@@ -6,6 +6,9 @@
       - chromosome : "1"
         start : 10000
         end : 249250621
+      - chromosome : "22"
+        start : 16052853
+        end : 16054112
 
    gene :
       - "ZNF566"
@@ -80,3 +83,7 @@
        min : 0
        max : 1
        operators : ["=", "!="]
+
+   sessionIds :
+     - "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0IiwiYXVkIjoiT3BlbkNHQSB1c2VycyIsImlhdCI6MTU0MTUwOTc1OSwiZXhwIjoxNTQxNTEzMzU5fQ.qYrBbwsESERNvia6pE_IH-EzUWKkGIZnY126D_RYITk"
+     - "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0IiwiYXVkIjoiT3BlbkNHQSB1c2VycyIsImlhdCI6MTU0MTUwOTkwNiwiZXhwIjoxNTQxNTEzNTA2fQ.LDTskBZvCXYavZE-yen1C_ouMr83znQNEdaDTwgUDaw"

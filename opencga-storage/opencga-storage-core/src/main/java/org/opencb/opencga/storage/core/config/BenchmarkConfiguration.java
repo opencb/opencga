@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.config;
 
+import java.net.URI;
 import java.util.List;
 
 /**
@@ -34,6 +35,7 @@ public class BenchmarkConfiguration {
     private String mode;
     private DatabaseCredentials database;
     private int concurrency;
+    private URI rest;
 
     @Override
     public String toString() {
@@ -47,6 +49,7 @@ public class BenchmarkConfiguration {
         sb.append(", mode='").append(mode).append('\'');
         sb.append(", database=").append(database);
         sb.append(", concurrency=").append(concurrency);
+        sb.append(", rest=").append(rest);
         sb.append('}');
         return sb.toString();
     }
@@ -122,5 +125,14 @@ public class BenchmarkConfiguration {
 
     public void setConcurrency(int concurrency) {
         this.concurrency = concurrency;
+    }
+
+    public URI getRest() {
+        return rest;
+    }
+
+    public BenchmarkConfiguration setRest(URI rest) {
+        this.rest = rest;
+        return this;
     }
 }

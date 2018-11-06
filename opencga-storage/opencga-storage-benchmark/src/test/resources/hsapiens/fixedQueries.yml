@@ -3,7 +3,7 @@ queries :
 - id : "RegionAndBiotype"
   description : "Purpose of this query"
   params :
-    region : "1:1849612-1850388"
+    region : "22:16052853-16054112"
     gene :   "BRCA2"
     biotype : "coding"
     populationFrequencyMaf : "1kG_phase3:ALL>0.1"
@@ -11,9 +11,18 @@ queries :
 - id : "Region"
   description : "Purpose of this query"
   params :
-    region : "20:30795819-30825819"
+    region : "22:16052853-16054112"
 
 - id : "Gene"
   description : "Purpose of this query"
   params :
     gene : "MIB2"
+
+- id : "PF"
+  description : "Purpose of this query"
+  params :
+    populationFrequencyMaf : "1kG_phase3:ALL>=0.2"
+
+sessionIds :
+- "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0IiwiYXVkIjoiT3BlbkNHQSB1c2VycyIsImlhdCI6MTU0MTUyMTgwMCwiZXhwIjoxNTQxNTI1NDAwfQ.aOT5GwonAbYB2lYR6ncBOHcoibEvRnDLZRStvvWmRZE"
+- "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0IiwiYXVkIjoiT3BlbkNHQSB1c2VycyIsImlhdCI6MTU0MTUyMTgwMCwiZXhwIjoxNTQxNTI1NDAwfQ.aOT5GwonAbYB2lYR6ncBOHcoibEvRnDLZRStvvWmRZE"

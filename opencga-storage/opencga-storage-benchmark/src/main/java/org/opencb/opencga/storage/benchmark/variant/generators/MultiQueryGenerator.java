@@ -38,7 +38,7 @@ public class MultiQueryGenerator extends QueryGenerator {
 
     public static final String MULTI_QUERY = "multi-query";
     private List<QueryGenerator> generators;
-    // param(extraParam)
+    private RandomQueries randomQueries;
     private Pattern pattern = Pattern.compile("(?<param>[^(]+)(\\((?<extraParam>[^)]+)\\))?");
     private Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -47,7 +47,7 @@ public class MultiQueryGenerator extends QueryGenerator {
         super.setUp(params);
         String query = params.get(MULTI_QUERY);
         generators = new ArrayList<>();
-        RandomQueries config = readYmlFile(Paths.get(params.get(DATA_DIR), "randomQueries.yml"), RandomQueries.class);
+        randomQueries = readYmlFile(Paths.get(params.get(DATA_DIR), "randomQueries.yml"), RandomQueries.class);
 
         for (String param : query.split(",")) {
             String extraParam = null;
@@ -106,34 +106,43 @@ public class MultiQueryGenerator extends QueryGenerator {
                 case "transcriptionFlags":
                     queryGenerator = new TermQueryGenerator.TranscriptionFlagsQueryGenerator();
                     break;
+                case "includeSample":
+                    queryGenerator = new TermQueryGenerator.IncludeSampleQueryGenerator();
+                    break;
+                case "includeFile":
+                    queryGenerator = new TermQueryGenerator.IncludeFileQueryGenerator();
+                    break;
+                case "includeStudy":
+                    queryGenerator = new TermQueryGenerator.IncludeStudyQueryGenerator();
+                    break;
                 case "conservation":
-                    queryGenerator = new ScoreQueryGenerator.ConservationQueryGenerator(config);
+                    queryGenerator = new ScoreQueryGenerator.ConservationQueryGenerator(randomQueries);
                     break;
                 case "proteinSubstitution":
-                    queryGenerator = new ScoreQueryGenerator.ProteinSubstQueryGenerator(config);
+                    queryGenerator = new ScoreQueryGenerator.ProteinSubstQueryGenerator(randomQueries);
                     break;
                 case "populationFrequencyAlt":
-                    queryGenerator = new ScoreQueryGenerator.PopulationFrequenciesAltQueryGenerator(config);
+                    queryGenerator = new ScoreQueryGenerator.PopulationFrequenciesAltQueryGenerator(randomQueries);
                     break;
                 case "populationFrequencyRef":
-                    queryGenerator = new ScoreQueryGenerator.PopulationFrequenciesRefQueryGenerator(config);
+                    queryGenerator = new ScoreQueryGenerator.PopulationFrequenciesRefQueryGenerator(randomQueries);
                     break;
                 case "populationFrequencyMaf":
-                    queryGenerator = new ScoreQueryGenerator.PopulationFrequenciesMafQueryGenerator(config);
+                    queryGenerator = new ScoreQueryGenerator.PopulationFrequenciesMafQueryGenerator(randomQueries);
                     break;
                 case "qual":
-                    queryGenerator = new ScoreQueryGenerator.QualQueryGenerator(config);
+                    queryGenerator = new ScoreQueryGenerator.QualQueryGenerator(randomQueries);
                     break;
                 case "functionalScore":
                 case "cadd":
-                    queryGenerator = new ScoreQueryGenerator.FunctionalScoreQueryGenerator(config);
+                    queryGenerator = new ScoreQueryGenerator.FunctionalScoreQueryGenerator(randomQueries);
                     break;
                 default:
                     throw new IllegalArgumentException("Unknwon query param " + param);
             }
             logger.debug("Using sub query generator: " + queryGenerator.getClass() + " , arity = " + arity);
             params.put(ARITY, arity.toString());
-            queryGenerator.setUp(params, config);
+            queryGenerator.setUp(params, randomQueries);
             generators.add(queryGenerator);
         }
     }
@@ -143,7 +152,7 @@ public class MultiQueryGenerator extends QueryGenerator {
         for (QueryGenerator generator : generators) {
             generator.generateQuery(query);
         }
-        //   System.out.println("queries = " + query.toJson());
+        appendRandomSessionId(randomQueries.getSessionIds(), query);
         return query;
     }
 }

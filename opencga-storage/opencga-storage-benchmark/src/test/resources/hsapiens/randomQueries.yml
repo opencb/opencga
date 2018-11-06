@@ -7,9 +7,16 @@
       - chromosome : "12"
         start : 1749612
         end : 2850388
+      - chromosome : "22"
+        start : 16052853
+        end : 16054112
 
    gene :
       - "ZNF566"
+
+   ct :
+      - "missense_variant"
+      - "SO:0001578"
 
    type :
       - "SV"
@@ -77,3 +84,6 @@
        min : 0
        max : 1
        operators : ["=", "!="]
+   sessionIds :
+     - "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0IiwiYXVkIjoiT3BlbkNHQSB1c2VycyIsImlhdCI6MTU0MTUyMTgwMCwiZXhwIjoxNTQxNTI1NDAwfQ.aOT5GwonAbYB2lYR6ncBOHcoibEvRnDLZRStvvWmRZE"
+     - "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0IiwiYXVkIjoiT3BlbkNHQSB1c2VycyIsImlhdCI6MTU0MTUyMTgwMCwiZXhwIjoxNTQxNTI1NDAwfQ.aOT5GwonAbYB2lYR6ncBOHcoibEvRnDLZRStvvWmRZE"

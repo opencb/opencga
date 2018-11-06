@@ -69,6 +69,7 @@ benchmark:
   table: "variants"
   concurrency: 5
   mode: REST # REST, DIRECT or GRPC
+  rest: "http://localhost:8080/opencga-1.4.0-rc2-dev/webservices/rest/v1/analysis/variant/query"
   database:   ## 'local' connection to CellBase MongoDB
       hosts:
       - "localhost:27017"

@@ -34,7 +34,7 @@ import java.util.Map;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class VariantStorageEngineRestSampler extends HTTPSampler implements VariantStorageEngineSampler{
+public class VariantStorageEngineRestSampler extends HTTPSampler implements VariantStorageEngineSampler {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
     private QueryGenerator queryGenerator;
@@ -50,6 +50,13 @@ public class VariantStorageEngineRestSampler extends HTTPSampler implements Vari
         setPort(port);
     }
 
+    public VariantStorageEngineRestSampler(String host, String path, int port) {
+        setDomain(host);
+        setPort(port);
+        setPath(path);
+        setMethod("GET");
+    }
+
     @Override
     public String getQueryString(String contentEncoding) {
         StringBuilder sb = new StringBuilder(super.getQueryString(contentEncoding));
@@ -61,7 +68,9 @@ public class VariantStorageEngineRestSampler extends HTTPSampler implements Vari
         Query query = getQueryGenerator().generateQuery(new Query());
         query.forEach((key, value) -> sb.append(key).append('=').append(value).append('&'));
 
-        return sb.toString();
+        sb.append("#" + getQueryGenerator().getQueryId());
+
+        return encodedString(sb.toString());
     }
 
     @Override
@@ -130,5 +139,10 @@ public class VariantStorageEngineRestSampler extends HTTPSampler implements Vari
             }
         }
         return queryGenerator;
+    }
+
+    private String encodedString(String string) {
+        string = string.replaceAll(">=", "%3E%3D").replaceAll("<=", "%3C%3D");
+        return string.replaceAll(">", "%3E").replaceAll("<", "%3C");
     }
 }

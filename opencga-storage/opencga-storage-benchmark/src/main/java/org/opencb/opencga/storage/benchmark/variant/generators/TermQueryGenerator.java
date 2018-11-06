@@ -94,6 +94,48 @@ public abstract class TermQueryGenerator extends ConfiguredQueryGenerator {
         }
     }
 
+    public static class IncludeSampleQueryGenerator extends TermQueryGenerator {
+
+        public IncludeSampleQueryGenerator() {
+            super(VariantQueryParam.INCLUDE_SAMPLE.key());
+        }
+
+        @Override
+        protected void loadTerms(Map<String, String> params, RandomQueries randomQueries) {
+            if (randomQueries.getIncludeSample() != null) {
+                this.terms = randomQueries.getIncludeSample();
+            }
+        }
+    }
+
+    public static class IncludeFileQueryGenerator extends TermQueryGenerator {
+
+        public IncludeFileQueryGenerator() {
+            super(VariantQueryParam.INCLUDE_FILE.key());
+        }
+
+        @Override
+        protected void loadTerms(Map<String, String> params, RandomQueries randomQueries) {
+            if (randomQueries.getIncludeFile() != null) {
+                this.terms = randomQueries.getIncludeFile();
+            }
+        }
+    }
+
+    public static class IncludeStudyQueryGenerator extends TermQueryGenerator {
+
+        public IncludeStudyQueryGenerator() {
+            super(VariantQueryParam.INCLUDE_STUDY.key());
+        }
+
+        @Override
+        protected void loadTerms(Map<String, String> params, RandomQueries randomQueries) {
+            if (randomQueries.getIncludeStudy() != null) {
+                this.terms = randomQueries.getIncludeStudy();
+            }
+        }
+    }
+
     public static class FilterQueryGenerator extends TermQueryGenerator {
 
         public FilterQueryGenerator() {

@@ -11,10 +11,14 @@ queries :
 - id : "Region"
   description : "Purpose of this query"
   params :
-    region : "20:30795819-30825819"
+    region : "22:16052853-16054112"
 
 - id : "Gene"
   description : "Purpose of this query"
   params :
     gene : "BRCA2"
     ct : missense_variant
+
+sessionIds :
+- "AAAAAAAAAAAAA"
+- "BBBBBBBBBBBBB"

@@ -27,6 +27,7 @@ import org.opencb.opencga.storage.benchmark.variant.samplers.VariantStorageEngin
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -95,7 +96,13 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
     public VariantStorageEngineSampler newVariantStorageEngineSampler(ConnectionType type) {
         switch (type) {
             case REST:
-                return new VariantStorageEngineRestSampler("localhost", storageConfiguration.getServer().getRest());
+                URI rest = storageConfiguration.getBenchmark().getRest();
+                if (rest != null) {
+                    return new VariantStorageEngineRestSampler(rest.getHost(), rest.getPath(), rest.getPort());
+                } else {
+
+                    return new VariantStorageEngineRestSampler("localhost", storageConfiguration.getServer().getRest());
+                }
             case DIRECT:
                 return new VariantStorageEngineDirectSampler();
             case GRPC:

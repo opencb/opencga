@@ -25,6 +25,7 @@ public class FixedQueryGenerator extends QueryGenerator {
     private List<String> queries;
     private Logger logger = LoggerFactory.getLogger(getClass());
     private int counter = 0;
+    private String queryId;
 
     @Override
     public void setUp(Map<String, String> params) {
@@ -47,6 +48,8 @@ public class FixedQueryGenerator extends QueryGenerator {
     public Query generateQuery(Query query) {
         FixedQuery fixedQuery = fixedQueries.getQueries().get(counter);
         query.putAll(fixedQuery.getParams());
+        appendRandomSessionId(fixedQueries.getSessionIds(), query);
+        this.queryId = fixedQuery.getId();
         counter++;
         counter %= fixedQueries.getQueries().size();
         return query;
@@ -65,6 +68,12 @@ public class FixedQueryGenerator extends QueryGenerator {
                 }
             }
         }
+        result.setSessionIds(fixedQueries.getSessionIds());
         return result;
+    }
+
+    @Override
+    public String getQueryId() {
+        return queryId;
     }
 }

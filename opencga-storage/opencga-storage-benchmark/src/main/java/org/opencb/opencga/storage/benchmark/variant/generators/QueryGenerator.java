@@ -83,6 +83,10 @@ public abstract class QueryGenerator {
 
     public abstract Query generateQuery(Query query);
 
+    public String getQueryId() {
+        return "";
+    }
+
     protected int getArity() {
         return arity;
     }
@@ -91,4 +95,11 @@ public abstract class QueryGenerator {
         this.arity = arity;
         return this;
     }
+
+    protected void appendRandomSessionId(List<String> sessionIds, Query query) {
+        if (sessionIds != null && sessionIds.size() > 0) {
+            query.append("sid", sessionIds.get(random.nextInt(sessionIds.size())));
+        }
+    }
+
 }
