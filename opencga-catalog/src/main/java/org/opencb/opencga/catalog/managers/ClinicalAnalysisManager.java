@@ -144,6 +144,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         ParamUtils.checkObj(clinicalAnalysis, "clinicalAnalysis");
         ParamUtils.checkAlias(clinicalAnalysis.getId(), "id");
         ParamUtils.checkObj(clinicalAnalysis.getType(), "type");
+        ParamUtils.checkObj(clinicalAnalysis.getDueDate(), "dueDate");
 
         if (TimeUtils.toDate(clinicalAnalysis.getDueDate()) == null) {
             throw new CatalogException("Unrecognised due date. Accepted format is: yyyyMMddHHmmss");

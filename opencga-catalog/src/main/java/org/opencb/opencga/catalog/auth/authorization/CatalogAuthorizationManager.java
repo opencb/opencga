@@ -73,7 +73,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     // List of Acls defined for the special users (admin, daemon...) read from the main configuration file.
     private static final List<StudyAclEntry> SPECIAL_ACL_LIST = Arrays.asList(
-            new StudyAclEntry(ADMIN, Arrays.asList("VIEW_FILE_HEADERS", "VIEW_FILE_CONTENTS", "VIEW_FILES", "WRITE_FILES",
+            new StudyAclEntry(ADMIN, Arrays.asList("VIEW_FILE_HEADERS", "VIEW_FILE_CONTENTS", "VIEW_FILES", "WRITE_FILES", "UPLOAD_FILES",
                     "VIEW_JOBS", "WRITE_JOBS")));
 
     private final boolean openRegister;

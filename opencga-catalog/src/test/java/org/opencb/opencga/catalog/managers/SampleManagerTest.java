@@ -111,6 +111,46 @@ public class SampleManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void updateProcessingField() throws CatalogException {
+        catalogManager.getSampleManager().create(studyFqn,
+                new Sample().setId("testSample").setDescription("description"), null, sessionIdUser);
+
+        SampleProcessing processing = new SampleProcessing("product", "preparationMethod", "extractionMethod", "labSampleId", "quantity",
+                "date", Collections.emptyMap());
+        ObjectMap params = new ObjectMap(SampleDBAdaptor.UpdateParams.PROCESSING.key(), processing);
+        catalogManager.getSampleManager().update(studyFqn, "testSample", params, new QueryOptions(Constants.INCREMENT_VERSION, true),
+                sessionIdUser);
+
+        QueryResult<Sample> testSample = catalogManager.getSampleManager().get(studyFqn, "testSample", new QueryOptions(), sessionIdUser);
+        assertEquals("product", testSample.first().getProcessing().getProduct());
+        assertEquals("preparationMethod", testSample.first().getProcessing().getPreparationMethod());
+        assertEquals("extractionMethod", testSample.first().getProcessing().getExtractionMethod());
+        assertEquals("labSampleId", testSample.first().getProcessing().getLabSampleId());
+        assertEquals("quantity", testSample.first().getProcessing().getQuantity());
+        assertEquals("date", testSample.first().getProcessing().getDate());
+        assertTrue(testSample.first().getProcessing().getAttributes().isEmpty());
+    }
+
+    @Test
+    public void updateCollectionField() throws CatalogException {
+        catalogManager.getSampleManager().create(studyFqn,
+                new Sample().setId("testSample").setDescription("description"), null, sessionIdUser);
+
+        SampleCollection collection = new SampleCollection("tissue", "organ", "quantity", "method", "date", Collections.emptyMap());
+        ObjectMap params = new ObjectMap(SampleDBAdaptor.UpdateParams.COLLECTION.key(), collection);
+        catalogManager.getSampleManager().update(studyFqn, "testSample", params, new QueryOptions(Constants.INCREMENT_VERSION, true),
+                sessionIdUser);
+
+        QueryResult<Sample> testSample = catalogManager.getSampleManager().get(studyFqn, "testSample", new QueryOptions(), sessionIdUser);
+        assertEquals("tissue", testSample.first().getCollection().getTissue());
+        assertEquals("organ", testSample.first().getCollection().getOrgan());
+        assertEquals("quantity", testSample.first().getCollection().getQuantity());
+        assertEquals("method", testSample.first().getCollection().getMethod());
+        assertEquals("date", testSample.first().getCollection().getDate());
+        assertTrue(testSample.first().getCollection().getAttributes().isEmpty());
+    }
+
+    @Test
     public void testCreateSample() throws CatalogException {
         QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("HG007"), null,
                 sessionIdUser);

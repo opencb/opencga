@@ -109,8 +109,7 @@ public class AlignmentStorageManager extends StorageManager {
             ObjectWriter objectWriter = new ObjectMapper().typedWriter(AlignmentGlobalStats.class);
             ObjectMap globalStats = new ObjectMap(GLOBAL_STATS, objectWriter.writeValueAsString(stats.first()));
             ObjectMap alignmentStats = new ObjectMap(FileDBAdaptor.QueryParams.STATS.key(), globalStats);
-            catalogManager.getFileManager().update(studyIdStr, String.valueOf(fileInfo.getFileUid()), alignmentStats, new QueryOptions(),
-                    sessionId);
+            catalogManager.getFileManager().update(studyIdStr, fileInfo.getPath(), alignmentStats, new QueryOptions(), sessionId);
 
             // Remove the stats file
             Path statsFile = outDir.resolve(fileInfo.getName() + ".stats");

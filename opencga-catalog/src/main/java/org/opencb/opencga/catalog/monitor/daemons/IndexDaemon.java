@@ -204,7 +204,7 @@ public class IndexDaemon extends MonitorParentDaemon {
                 try {
                     jobDBAdaptor.update(job.getUid(), parameters, QueryOptions.empty());
                 } catch (CatalogException e) {
-                    logger.error("Error updating job {} with {}", job.getUid(), parameters.toJson(), e);
+                    logger.error("Error updating job {} with {}", job.getUuid(), parameters.toJson(), e);
                 }
             }
 
@@ -291,6 +291,8 @@ public class IndexDaemon extends MonitorParentDaemon {
                     commandLine.append(" ").append(param.getValue());
                 }
             }
+
+            commandLine.append(" -s ").append(job.getAttributes().get(Job.OPENCGA_STUDY));
         }
 
         logger.info("Updating job CLI '{}' from '{}' to '{}'", commandLine.toString(), Job.JobStatus.PREPARED, Job.JobStatus.QUEUED);
