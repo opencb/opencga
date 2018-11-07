@@ -59,7 +59,7 @@ public class FixedQueryGenerator extends QueryGenerator {
     protected FixedQueries readFixedQueriesFromFile(Path path, List<String> filterQueries) throws IOException {
         FixedQueries fixedQueries = readYmlFile(path, FixedQueries.class);
         FixedQueries result = new FixedQueries();
-        if (!filterQueries.isEmpty()) {
+        if (filterQueries != null && !filterQueries.isEmpty()) {
             for (FixedQuery fixedQuery : fixedQueries.getQueries()) {
                 for (String query : filterQueries) {
                     if (fixedQuery.getId().equals(query)) {
@@ -67,6 +67,8 @@ public class FixedQueryGenerator extends QueryGenerator {
                     }
                 }
             }
+        } else {
+            result = fixedQueries;
         }
         result.setSessionIds(fixedQueries.getSessionIds());
         return result;

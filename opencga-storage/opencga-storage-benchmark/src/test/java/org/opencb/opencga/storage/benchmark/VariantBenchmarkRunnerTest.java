@@ -296,9 +296,13 @@ public class VariantBenchmarkRunnerTest extends VariantStorageBaseTest implement
 
     @Test
     public void testByRegionAndBiotypeAndGeneRESTAndFixed() throws Exception {
-        queriesTestDefault("PF,Gene", BenchmarkRunner.ConnectionType.REST, BenchmarkRunner.ExecutionMode.FIXED);
+        queriesTestDefault("RegionAndBiotype,Gene", BenchmarkRunner.ConnectionType.REST, BenchmarkRunner.ExecutionMode.FIXED);
     }
 
+    @Test
+    public void testAllRESTAndFixed() throws Exception {
+        queriesTestDefault("", BenchmarkRunner.ConnectionType.REST, BenchmarkRunner.ExecutionMode.FIXED);
+    }
 
     public void queriesTestDefault(String query, BenchmarkRunner.ConnectionType connectionType, BenchmarkRunner.ExecutionMode mode) throws Exception {
 
@@ -317,7 +321,7 @@ public class VariantBenchmarkRunnerTest extends VariantStorageBaseTest implement
 
     private List<Integer> setTestConfig(BenchmarkRunner.ConnectionType connectionType, BenchmarkRunner.ExecutionMode mode) {
         int concurrency = 1 + random.nextInt(5);
-        int repetition = 1 + random.nextInt(3);
+        int repetition = 1 + random.nextInt(5);
         variantBenchmarkRunner.storageConfiguration.getBenchmark().setConcurrency(concurrency);
         variantBenchmarkRunner.storageConfiguration.getBenchmark().setNumRepetitions(repetition);
         variantBenchmarkRunner.storageConfiguration.getBenchmark().setConnectionType(connectionType.toString());
