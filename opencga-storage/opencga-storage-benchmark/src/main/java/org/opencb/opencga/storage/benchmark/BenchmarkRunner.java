@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.benchmark;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.config.gui.ArgumentsPanel;
 import org.apache.jmeter.control.LoopController;
@@ -36,12 +37,12 @@ import org.apache.jorphan.collections.HashTree;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created on 06/04/17.
@@ -166,13 +167,52 @@ public class BenchmarkRunner {
         // Run Test Plan
         jmeter.configure(testPlanTree);
         jmeter.run();
-
+        if (this.storageConfiguration.getBenchmark().getMode().equals("FIXED")
+                && this.storageConfiguration.getBenchmark().getConnectionType().equals("REST")) {
+            printResults();
+        }
         System.out.println("Test completed. See " + resultFile + " file for results");
         System.out.println("JMeter .jmx script is available at " + jmxFile.toPath());
     }
 
     private String buildOutputFileName() {
         return dbName + "." + "benchmark";
+    }
+
+    private void printResults() {
+        Map<String, ArrayList<Double>> result = new HashMap<>();
+        try (BufferedReader br = new BufferedReader(new FileReader(resultFile))) {
+            System.out.println("\n\n*********   Results   **********\n\n");
+            String line = br.readLine(); // ignore first line
+            while ((line = br.readLine()) != null) {
+                ArrayList<Double> averages = new ArrayList<Double>();
+                String[] splittedResult = line.split(",");
+                String queryURL = splittedResult[13];
+                if (result.keySet().contains(queryURL)) {
+                    averages = result.get(queryURL);
+                    averages.set(0, averages.get(0) + Double.parseDouble(splittedResult[1]));
+                    averages.set(1, averages.get(1) + (splittedResult[7].equals("true") ? 1D : 0D));
+                    averages.set(2, averages.get(2) + 1D);
+                } else {
+                    averages.add(0, Double.parseDouble(splittedResult[1]));
+                    averages.add(1, (splittedResult[7].equals("true") ? 1D : 0D));
+                    averages.add(2, 1D);
+                }
+
+                result.put(queryURL, averages);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        int i = 0;
+        for (String key : result.keySet()) {
+            System.out.println(++i + ": Query ID : " + String.format("%1$-18s", key.split("#")[key.split("#").length - 1])
+                    + ", Avg. Time : " + String.format("%.2f", (result.get(key).get(0) / result.get(key).get(2)))
+                    + " ms, Success Ratio : " + (result.get(key).get(1) / result.get(key).get(2) * 100) + "%,  QueryParams : "
+                    + StringUtils.substringBetween(key, "count=false&", "&sid="));
+        }
+        System.out.println("\n\n\n");
     }
 
 }

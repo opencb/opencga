@@ -33,6 +33,7 @@ public class BenchmarkConfiguration {
     @Deprecated
     private String table;
     private String mode;
+    private String connectionType;
     private DatabaseCredentials database;
     private int concurrency;
     private URI rest;
@@ -47,11 +48,21 @@ public class BenchmarkConfiguration {
         sb.append(", databaseName='").append(databaseName).append('\'');
         sb.append(", table='").append(table).append('\'');
         sb.append(", mode='").append(mode).append('\'');
+        sb.append(", connectionType='").append(connectionType).append('\'');
         sb.append(", database=").append(database);
         sb.append(", concurrency=").append(concurrency);
         sb.append(", rest=").append(rest);
         sb.append('}');
         return sb.toString();
+    }
+
+    public String getConnectionType() {
+        return connectionType;
+    }
+
+    public BenchmarkConfiguration setConnectionType(String connectionType) {
+        this.connectionType = connectionType;
+        return this;
     }
 
     public String getStorageEngine() {

@@ -35,6 +35,8 @@ benchmark:
   databaseName: "opencga"
   table: "variants"
   concurrency: 1
+  connectionType: REST
+  mode: FIXED
   rest: "http://localhost:8080/opencga-1.4.0-rc2-dev/webservices/rest/v1/analysis/variant/query"
   database:   ## 'local' connection to CellBase MongoDB
       hosts:

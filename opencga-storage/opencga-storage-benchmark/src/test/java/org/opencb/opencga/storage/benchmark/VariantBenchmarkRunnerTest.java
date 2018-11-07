@@ -55,148 +55,148 @@ public class VariantBenchmarkRunnerTest extends VariantStorageBaseTest implement
 
     @Test
     public void testByRegionAndProteinSubstitutionDirectAndFix() throws Exception {
-        queriesTestDefault("Region,protein-substitution(2)", BenchmarkRunner.ExecutionMode.FIXED, BenchmarkRunner.ConnectionType.DIRECT);
+        queriesTestDefault("Region,proteinSubstitution(2)", BenchmarkRunner.ConnectionType.DIRECT, BenchmarkRunner.ExecutionMode.FIXED);
     }
 
     @Test
     public void testByRegionDirectAndRandom() throws Exception {
-        queriesTestDefault("region", BenchmarkRunner.ExecutionMode.RANDOM, BenchmarkRunner.ConnectionType.DIRECT);
+        queriesTestDefault("region", BenchmarkRunner.ConnectionType.DIRECT, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
     @Test
     public void testByGeneDirectAndRandom() throws Exception {
-        queriesTestDefault("gene", BenchmarkRunner.ExecutionMode.RANDOM, BenchmarkRunner.ConnectionType.DIRECT);
+        queriesTestDefault("gene", BenchmarkRunner.ConnectionType.DIRECT, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
     @Test
     public void testByCTDirectAndRandom() throws Exception {
-        queriesTestDefault("ct", BenchmarkRunner.ExecutionMode.RANDOM, BenchmarkRunner.ConnectionType.DIRECT);
+        queriesTestDefault("ct", BenchmarkRunner.ConnectionType.DIRECT, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
     @Test
     public void testByTypeDirectAndRandom() throws Exception {
-        queriesTestDefault("type", BenchmarkRunner.ExecutionMode.RANDOM, BenchmarkRunner.ConnectionType.DIRECT);
+        queriesTestDefault("type", BenchmarkRunner.ConnectionType.DIRECT, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
     @Test
     public void testByStudyDirectAndRandom() throws Exception {
-        queriesTestDefault("study", BenchmarkRunner.ExecutionMode.RANDOM, BenchmarkRunner.ConnectionType.DIRECT);
+        queriesTestDefault("study", BenchmarkRunner.ConnectionType.DIRECT, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
     @Test
     public void testByBioTypeDirectAndRandom() throws Exception {
-        queriesTestDefault("biotype", BenchmarkRunner.ExecutionMode.RANDOM, BenchmarkRunner.ConnectionType.DIRECT);
+        queriesTestDefault("biotype", BenchmarkRunner.ConnectionType.DIRECT, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
     @Test
     public void testByxrefsDirectAndRandom() throws Exception {
-        queriesTestDefault("xrefs", BenchmarkRunner.ExecutionMode.RANDOM, BenchmarkRunner.ConnectionType.DIRECT);
+        queriesTestDefault("xrefs", BenchmarkRunner.ConnectionType.DIRECT, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
     @Test
     public void testByfileDirectAndRandom() throws Exception {
-        queriesTestDefault("file", BenchmarkRunner.ExecutionMode.RANDOM, BenchmarkRunner.ConnectionType.DIRECT);
+        queriesTestDefault("file", BenchmarkRunner.ConnectionType.DIRECT, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
     @Test
     public void testBysampleDirectAndRandom() throws Exception {
-        queriesTestDefault("sample", BenchmarkRunner.ExecutionMode.RANDOM, BenchmarkRunner.ConnectionType.DIRECT);
+        queriesTestDefault("sample", BenchmarkRunner.ConnectionType.DIRECT, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
     @Test
     public void testByFilterDirectAndRandom() throws Exception {
-        queriesTestDefault("filter", BenchmarkRunner.ExecutionMode.RANDOM, BenchmarkRunner.ConnectionType.DIRECT);
+        queriesTestDefault("filter", BenchmarkRunner.ConnectionType.DIRECT, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
     @Test
     public void testByDrugDirectAndRandom() throws Exception {
-        queriesTestDefault("drug", BenchmarkRunner.ExecutionMode.RANDOM, BenchmarkRunner.ConnectionType.DIRECT);
+        queriesTestDefault("drug", BenchmarkRunner.ConnectionType.DIRECT, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
     @Test
     public void testByClinicalSignificanceDirectAndRandom() throws Exception {
-        queriesTestDefault("clinicalSignificance", BenchmarkRunner.ExecutionMode.RANDOM, BenchmarkRunner.ConnectionType.DIRECT);
+        queriesTestDefault("clinicalSignificance", BenchmarkRunner.ConnectionType.DIRECT, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
     @Test
     public void testByTranscriptionFlagDirectAndRandom() throws Exception {
-        queriesTestDefault("transcriptionFlag", BenchmarkRunner.ExecutionMode.RANDOM, BenchmarkRunner.ConnectionType.DIRECT);
+        queriesTestDefault("transcriptionFlag", BenchmarkRunner.ConnectionType.DIRECT, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
     @Test
     public void testByConservationDirectAndRandom() throws Exception {
-        queriesTestDefault("conservation", BenchmarkRunner.ExecutionMode.RANDOM, BenchmarkRunner.ConnectionType.DIRECT);
+        queriesTestDefault("conservation", BenchmarkRunner.ConnectionType.DIRECT, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
     @Test
     public void testByProteinSubstitutionDirectAndRandom() throws Exception {
-        queriesTestDefault("proteinSubstitution", BenchmarkRunner.ExecutionMode.RANDOM, BenchmarkRunner.ConnectionType.DIRECT);
+        queriesTestDefault("proteinSubstitution", BenchmarkRunner.ConnectionType.DIRECT, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
     @Test
     public void testByPopulationFrequencyAltDirectAndRandom() throws Exception {
-        queriesTestDefault("populationFrequencyAlt", BenchmarkRunner.ExecutionMode.RANDOM, BenchmarkRunner.ConnectionType.DIRECT);
+        queriesTestDefault("populationFrequencyAlt", BenchmarkRunner.ConnectionType.DIRECT, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
     @Test
     public void testByPopulationFrequencyRefDirectAndRandom() throws Exception {
-        queriesTestDefault("populationFrequencyRef", BenchmarkRunner.ExecutionMode.RANDOM, BenchmarkRunner.ConnectionType.DIRECT);
+        queriesTestDefault("populationFrequencyRef", BenchmarkRunner.ConnectionType.DIRECT, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
     @Test
     public void testByPopulationFrequencyMafDirectAndRandom() throws Exception {
-        queriesTestDefault("populationFrequencyMaf", BenchmarkRunner.ExecutionMode.RANDOM, BenchmarkRunner.ConnectionType.DIRECT);
+        queriesTestDefault("populationFrequencyMaf", BenchmarkRunner.ConnectionType.DIRECT, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
     @Test
     public void testByFunctionalScoreMafDirectAndRandom() throws Exception {
-        queriesTestDefault("functionalScore", BenchmarkRunner.ExecutionMode.RANDOM, BenchmarkRunner.ConnectionType.DIRECT);
+        queriesTestDefault("functionalScore", BenchmarkRunner.ConnectionType.DIRECT, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
     @Test
     public void testByRegionAndBiotypeDirectAndFixed() throws Exception {
-        queriesTestDefault("RegionAndBiotype", BenchmarkRunner.ExecutionMode.FIXED, BenchmarkRunner.ConnectionType.DIRECT);
+        queriesTestDefault("RegionAndBiotype", BenchmarkRunner.ConnectionType.DIRECT, BenchmarkRunner.ExecutionMode.FIXED);
     }
 
     @Test
     public void testByGeneDirectAndFixed() throws Exception {
-        queriesTestDefault("Gene", BenchmarkRunner.ExecutionMode.FIXED, BenchmarkRunner.ConnectionType.DIRECT);
+        queriesTestDefault("Gene", BenchmarkRunner.ConnectionType.DIRECT, BenchmarkRunner.ExecutionMode.FIXED);
     }
 
 
     @Test
     public void testByGeneRestAndFixed() throws Exception {
-        queriesTestDefault("Gene", BenchmarkRunner.ExecutionMode.FIXED, BenchmarkRunner.ConnectionType.REST);
+        queriesTestDefault("Gene", BenchmarkRunner.ConnectionType.REST, BenchmarkRunner.ExecutionMode.FIXED);
     }
 
     @Test
     public void testByRegionAndBiotypeAndGeneDirectAndFixed() throws Exception {
-        queriesTestDefault("RegionAndBiotype,Gene", BenchmarkRunner.ExecutionMode.FIXED, BenchmarkRunner.ConnectionType.DIRECT);
+        queriesTestDefault("RegionAndBiotype,Gene", BenchmarkRunner.ConnectionType.DIRECT, BenchmarkRunner.ExecutionMode.FIXED);
     }
 
     @Test
     public void testByRegionAndProteinSubstitutionRESTAndFix() throws Exception {
-        queriesTestDefault("Region,proteinSubstitution(2)", BenchmarkRunner.ExecutionMode.FIXED, BenchmarkRunner.ConnectionType.REST);
+        queriesTestDefault("Region,proteinSubstitution(2)", BenchmarkRunner.ConnectionType.REST, BenchmarkRunner.ExecutionMode.FIXED);
     }
 
     @Test
     public void testByRegionRESTAndRandom() throws Exception {
-        queriesTestDefault("region", BenchmarkRunner.ExecutionMode.RANDOM, BenchmarkRunner.ConnectionType.REST);
+        queriesTestDefault("region", BenchmarkRunner.ConnectionType.REST, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
     @Test
     public void testByGeneRESTAndRandom() throws Exception {
-        queriesTestDefault("gene", BenchmarkRunner.ExecutionMode.RANDOM, BenchmarkRunner.ConnectionType.REST);
+        queriesTestDefault("gene", BenchmarkRunner.ConnectionType.REST, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
     @Test
     public void testByCTRESTAndRandom() throws Exception {
-        queriesTestDefault("ct", BenchmarkRunner.ExecutionMode.RANDOM, BenchmarkRunner.ConnectionType.REST);
+        queriesTestDefault("ct", BenchmarkRunner.ConnectionType.REST, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
     @Test
     public void testByTypeRESTAndRandom() throws Exception {
-        queriesTestDefault("type", BenchmarkRunner.ExecutionMode.RANDOM, BenchmarkRunner.ConnectionType.REST);
+        queriesTestDefault("type", BenchmarkRunner.ConnectionType.REST, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
 /*
@@ -208,12 +208,12 @@ public class VariantBenchmarkRunnerTest extends VariantStorageBaseTest implement
 
     @Test
     public void testByBioTypeRESTAndRandom() throws Exception {
-        queriesTestDefault("biotype", BenchmarkRunner.ExecutionMode.RANDOM, BenchmarkRunner.ConnectionType.REST);
+        queriesTestDefault("biotype", BenchmarkRunner.ConnectionType.REST, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
     @Test
     public void testByxrefsRESTAndRandom() throws Exception {
-        queriesTestDefault("xrefs", BenchmarkRunner.ExecutionMode.RANDOM, BenchmarkRunner.ConnectionType.REST);
+        queriesTestDefault("xrefs", BenchmarkRunner.ConnectionType.REST, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
 /*
@@ -231,78 +231,78 @@ public class VariantBenchmarkRunnerTest extends VariantStorageBaseTest implement
 
     @Test
     public void testByFilterRESTAndRandom() throws Exception {
-        queriesTestDefault("filter", BenchmarkRunner.ExecutionMode.RANDOM, BenchmarkRunner.ConnectionType.REST);
+        queriesTestDefault("filter", BenchmarkRunner.ConnectionType.REST, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
     @Test
     public void testByDrugRESTAndRandom() throws Exception {
-        queriesTestDefault("drug", BenchmarkRunner.ExecutionMode.RANDOM, BenchmarkRunner.ConnectionType.REST);
+        queriesTestDefault("drug", BenchmarkRunner.ConnectionType.REST, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
     @Test
     public void testByClinicalSignificanceRESTAndRandom() throws Exception {
-        queriesTestDefault("clinicalSignificance", BenchmarkRunner.ExecutionMode.RANDOM, BenchmarkRunner.ConnectionType.REST);
+        queriesTestDefault("clinicalSignificance", BenchmarkRunner.ConnectionType.REST, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
     @Test
     public void testByTranscriptionFlagRESTAndRandom() throws Exception {
-        queriesTestDefault("transcriptionFlag", BenchmarkRunner.ExecutionMode.RANDOM, BenchmarkRunner.ConnectionType.REST);
+        queriesTestDefault("transcriptionFlag", BenchmarkRunner.ConnectionType.REST, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
     @Test
     public void testByConservationRESTAndRandom() throws Exception {
-        queriesTestDefault("conservation", BenchmarkRunner.ExecutionMode.RANDOM, BenchmarkRunner.ConnectionType.REST);
+        queriesTestDefault("conservation", BenchmarkRunner.ConnectionType.REST, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
     @Test
     public void testByProteinSubstitutionRESTAndRandom() throws Exception {
-        queriesTestDefault("proteinSubstitution", BenchmarkRunner.ExecutionMode.RANDOM, BenchmarkRunner.ConnectionType.REST);
+        queriesTestDefault("proteinSubstitution", BenchmarkRunner.ConnectionType.REST, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
     @Test
     public void testByPopulationFrequencyAltRESTAndRandom() throws Exception {
-        queriesTestDefault("populationFrequencyAlt", BenchmarkRunner.ExecutionMode.RANDOM, BenchmarkRunner.ConnectionType.REST);
+        queriesTestDefault("populationFrequencyAlt", BenchmarkRunner.ConnectionType.REST, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
     @Test
     public void testByPopulationFrequencyRefRESTAndRandom() throws Exception {
-        queriesTestDefault("populationFrequencyRef", BenchmarkRunner.ExecutionMode.RANDOM, BenchmarkRunner.ConnectionType.REST);
+        queriesTestDefault("populationFrequencyRef", BenchmarkRunner.ConnectionType.REST, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
     @Test
     public void testByPopulationFrequencyMafRESTAndRandom() throws Exception {
-        queriesTestDefault("populationFrequencyMaf", BenchmarkRunner.ExecutionMode.RANDOM, BenchmarkRunner.ConnectionType.REST);
+        queriesTestDefault("populationFrequencyMaf", BenchmarkRunner.ConnectionType.REST, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
     @Test
     public void testByFunctionalScoreMafRESTAndRandom() throws Exception {
-        queriesTestDefault("functionalScore", BenchmarkRunner.ExecutionMode.RANDOM, BenchmarkRunner.ConnectionType.REST);
+        queriesTestDefault("functionalScore", BenchmarkRunner.ConnectionType.REST, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
     @Test
     public void testByRegionAndBiotypeRESTAndFixed() throws Exception {
-        queriesTestDefault("Region", BenchmarkRunner.ExecutionMode.FIXED, BenchmarkRunner.ConnectionType.REST);
+        queriesTestDefault("Region", BenchmarkRunner.ConnectionType.REST, BenchmarkRunner.ExecutionMode.FIXED);
     }
 
     @Test
     public void testByRegionAndBiotypeRESTAndRandom() throws Exception {
-        queriesTestDefault("region", BenchmarkRunner.ExecutionMode.RANDOM, BenchmarkRunner.ConnectionType.REST);
+        queriesTestDefault("region", BenchmarkRunner.ConnectionType.REST, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
     @Test
     public void testByGeneRESTAndFixed() throws Exception {
-        queriesTestDefault("Gene", BenchmarkRunner.ExecutionMode.FIXED, BenchmarkRunner.ConnectionType.REST);
+        queriesTestDefault("Gene", BenchmarkRunner.ConnectionType.REST, BenchmarkRunner.ExecutionMode.FIXED);
     }
 
     @Test
     public void testByRegionAndBiotypeAndGeneRESTAndFixed() throws Exception {
-        queriesTestDefault("PF", BenchmarkRunner.ExecutionMode.FIXED, BenchmarkRunner.ConnectionType.REST);
+        queriesTestDefault("PF,Gene", BenchmarkRunner.ConnectionType.REST, BenchmarkRunner.ExecutionMode.FIXED);
     }
 
 
-    public void queriesTestDefault(String query, BenchmarkRunner.ExecutionMode mode, BenchmarkRunner.ConnectionType connectionType) throws Exception {
+    public void queriesTestDefault(String query, BenchmarkRunner.ConnectionType connectionType, BenchmarkRunner.ExecutionMode mode) throws Exception {
 
-        List<Integer> totalQueryExecutions = setTestConfig();
+        List<Integer> totalQueryExecutions = setTestConfig(connectionType, mode);
         variantBenchmarkRunner.addThreadGroup(connectionType, mode,
                 Paths.get("src/test/resources/hsapiens"), query, new QueryOptions(QueryOptions.LIMIT, "2"));
         variantBenchmarkRunner.run();
@@ -315,16 +315,18 @@ public class VariantBenchmarkRunnerTest extends VariantStorageBaseTest implement
         return Files.lines(Paths.get(outdir.getPath(), "opencga.benchmark.jtl")).count() - 1;
     }
 
-    private List<Integer> setTestConfig() {
+    private List<Integer> setTestConfig(BenchmarkRunner.ConnectionType connectionType, BenchmarkRunner.ExecutionMode mode) {
         int concurrency = 1 + random.nextInt(5);
         int repetition = 1 + random.nextInt(3);
         variantBenchmarkRunner.storageConfiguration.getBenchmark().setConcurrency(concurrency);
         variantBenchmarkRunner.storageConfiguration.getBenchmark().setNumRepetitions(repetition);
+        variantBenchmarkRunner.storageConfiguration.getBenchmark().setConnectionType(connectionType.toString());
+        variantBenchmarkRunner.storageConfiguration.getBenchmark().setMode(mode.toString());
         return Arrays.asList(concurrency, repetition);
     }
 
     private int grepFile() throws IOException {
-//        DataInputStream input = new DataInputStream(IOUtils.grepFile(Paths.get(outdir.getPath().toString() + "opencga.benchmark.jtl"), "true", false, true));
+//        DataInputStream input = new DataInputStream(IOUtils.grepFile(Paths.get(outdir.getPath() + "opencga.benchmark.jtl"), "true", false, true));
         Profile localProfile = ProfileBuilder.newBuilder().
                 name("test").filePath(outdir.getPath() + "opencga.benchmark.jtl").
                 onLocalhost().build();
