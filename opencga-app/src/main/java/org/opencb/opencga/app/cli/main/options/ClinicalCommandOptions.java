@@ -78,8 +78,8 @@ public class ClinicalCommandOptions {
         @Parameter(names = {"--family"}, description = "Family id", required = false, arity = 1)
         public String family;
 
-        @Parameter(names = {"--subject"}, description = "Subject id of the clinical analysis", required = false, arity = 1)
-        public String subject;
+        @Parameter(names = {"--proband"}, description = "Proband id of the clinical analysis", required = false, arity = 1)
+        public String proband;
 
         @Parameter(names = {"--sample"}, description = "Sampe id", arity = 1)
         public String sample;
@@ -118,8 +118,8 @@ public class ClinicalCommandOptions {
         @Parameter(names = {"--family"}, description = "Family id", required = false, arity = 1)
         public String family;
 
-        @Parameter(names = {"--subject"}, description = "Subject id of the clinical analysis", required = false, arity = 1)
-        public String subject;
+        @Parameter(names = {"--proband"}, description = "Proband id of the clinical analysis", required = false, arity = 1)
+        public String proband;
 
         @Parameter(names = {"--sample"}, description = "Sampe id", arity = 1)
         public String sample;

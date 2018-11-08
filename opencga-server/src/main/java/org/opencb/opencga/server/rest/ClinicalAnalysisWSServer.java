@@ -187,7 +187,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Germline") @QueryParam("germline") String germline,
             @ApiParam(value = "Somatic") @QueryParam("somatic") String somatic,
             @ApiParam(value = "Family") @QueryParam("family") String family,
-            @ApiParam(value = "Subject") @QueryParam("subject") String subject,
+            @ApiParam(value = "Proband") @QueryParam("proband") String proband,
             @ApiParam(value = "Sample") @QueryParam("sample") String sample,
             @ApiParam(value = "Release value") @QueryParam("release") String release,
             @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)") @QueryParam("attributes") String attributes,
@@ -228,7 +228,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Germline") @QueryParam("germline") String germline,
             @ApiParam(value = "Somatic") @QueryParam("somatic") String somatic,
             @ApiParam(value = "Family") @QueryParam("family") String family,
-            @ApiParam(value = "Subject") @QueryParam("subject") String subject,
+            @ApiParam(value = "Proband") @QueryParam("proband") String proband,
             @ApiParam(value = "Sample") @QueryParam("sample") String sample,
             @ApiParam(value = "Release value (Current release from the moment the families were first created)") @QueryParam("release") String release) {
         try {
@@ -287,7 +287,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
         public String id;
     }
 
-    private static class SubjectParam {
+    private static class ProbandParam {
         public String id;
         public List<SampleParams> samples;
     }
@@ -325,7 +325,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
         public String germline;
         public String somatic;
 
-        public SubjectParam subject;
+        public ProbandParam proband;
         public String family;
         public List<ClinicalInterpretationParameters> interpretations;
 
@@ -337,10 +337,10 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
         public ClinicalAnalysis toClinicalAnalysis() {
 
             Individual individual = null;
-            if (subject != null) {
-                individual = new Individual().setId(subject.id);
-                if (subject.samples != null) {
-                    List<Sample> sampleList = subject.samples.stream()
+            if (proband != null) {
+                individual = new Individual().setId(proband.id);
+                if (proband.samples != null) {
+                    List<Sample> sampleList = proband.samples.stream()
                             .map(sample -> new Sample().setId(sample.id))
                             .collect(Collectors.toList());
                     individual.setSamples(sampleList);
