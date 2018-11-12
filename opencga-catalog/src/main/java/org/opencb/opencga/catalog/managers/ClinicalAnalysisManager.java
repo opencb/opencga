@@ -264,6 +264,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                         throw new CatalogException("Unrecognised due date. Accepted format is: yyyyMMddHHmmss");
                     }
                     break;
+                case DISEASE:
                 case FAMILY:
                 case PROBAND:
                     break;
