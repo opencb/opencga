@@ -154,6 +154,9 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
                                  + "exception whenever one of the entries looked for cannot be shown for whichever reason",
                                  defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
+            query.remove("study");
+            query.remove("clinicalAnalyses");
+
             List<String> analysisList = getIdList(clinicalAnalysisStr);
             List<QueryResult<ClinicalAnalysis>> analysisResult = clinicalManager.get(studyStr, analysisList, query, queryOptions, silent, sessionId);
             return createOkResponse(analysisResult);
