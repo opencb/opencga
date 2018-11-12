@@ -365,11 +365,11 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     }
 
     private void fixQueryObject(Query query, Study study, String sessionId) throws CatalogException {
-        if (query.containsKey("family")) {
-            MyResource<Family> familyResource = catalogManager.getFamilyManager().getUid(query.getString("family"), study.getFqn(),
-                    sessionId);
+        if (query.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key())) {
+            MyResource<Family> familyResource = catalogManager.getFamilyManager()
+                    .getUid(query.getString(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key()), study.getFqn(), sessionId);
             query.put(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY_UID.key(), familyResource.getResource().getUid());
-            query.remove("family");
+            query.remove(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key());
         }
         if (query.containsKey("sample")) {
             MyResource<Sample> sampleResource = catalogManager.getSampleManager().getUid(query.getString("sample"), study.getFqn(),
@@ -377,21 +377,23 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             query.put(ClinicalAnalysisDBAdaptor.QueryParams.SAMPLE_UID.key(), sampleResource.getResource().getUid());
             query.remove("sample");
         }
-        if (query.containsKey("subject")) {
-            MyResource<Individual> probandResource = catalogManager.getIndividualManager().getUid(query.getString("subject"),
-                    study.getFqn(), sessionId);
+        if (query.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key())) {
+            MyResource<Individual> probandResource = catalogManager.getIndividualManager()
+                    .getUid(query.getString(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key()), study.getFqn(), sessionId);
             query.put(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND_UID.key(), probandResource.getResource().getUid());
-            query.remove("subject");
+            query.remove(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key());
         }
-        if (query.containsKey("germline")) {
-            MyResource<File> resource = catalogManager.getFileManager().getUid(query.getString("germline"), study.getFqn(), sessionId);
+        if (query.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.GERMLINE.key())) {
+            MyResource<File> resource = catalogManager.getFileManager()
+                    .getUid(query.getString(ClinicalAnalysisDBAdaptor.QueryParams.GERMLINE.key()), study.getFqn(), sessionId);
             query.put(ClinicalAnalysisDBAdaptor.QueryParams.GERMLINE_UID.key(), resource.getResource().getUid());
-            query.remove("germline");
+            query.remove(ClinicalAnalysisDBAdaptor.QueryParams.GERMLINE.key());
         }
-        if (query.containsKey("somatic")) {
-            MyResource<File> resource = catalogManager.getFileManager().getUid(query.getString("somatic"), study.getFqn(), sessionId);
+        if (query.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.SOMATIC.key())) {
+            MyResource<File> resource = catalogManager.getFileManager()
+                    .getUid(query.getString(ClinicalAnalysisDBAdaptor.QueryParams.SOMATIC.key()), study.getFqn(), sessionId);
             query.put(ClinicalAnalysisDBAdaptor.QueryParams.SOMATIC_UID.key(), resource.getResource().getUid());
-            query.remove("somatic");
+            query.remove(ClinicalAnalysisDBAdaptor.QueryParams.SOMATIC.key());
         }
     }
 
