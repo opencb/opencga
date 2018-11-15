@@ -1,19 +1,17 @@
 package org.opencb.opencga.storage.benchmark.variant.generators;
 
-import com.google.common.base.Throwables;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.benchmark.variant.queries.FixedQueries;
 import org.opencb.opencga.storage.benchmark.variant.queries.FixedQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created by wasim on 30/10/18.
@@ -21,10 +19,11 @@ import java.util.Map;
 public class FixedQueryGenerator extends QueryGenerator {
 
     public static final String FIXED_QUERY = "fixed-query";
+    public static final String FIXED_QUERIES_FILE = "fixedQueries.yml";
     private FixedQueries fixedQueries;
     private List<String> queries;
     private Logger logger = LoggerFactory.getLogger(getClass());
-    private int counter = 0;
+    private AtomicInteger counter = new AtomicInteger(0);
     private String queryId;
 
     @Override
@@ -36,30 +35,32 @@ public class FixedQueryGenerator extends QueryGenerator {
             queries = Arrays.asList(query.split(","));
         }
 
-        try (FileInputStream inputStream = new FileInputStream(Paths.get(params.get(DATA_DIR), "fixedQueries.yml").toFile());) {
-            fixedQueries = readFixedQueriesFromFile(Paths.get(params.get(DATA_DIR), "fixedQueries.yml"), queries);
-        } catch (IOException e) {
-            logger.error("Error reading file: fixedQueries.yml", e);
-            throw Throwables.propagate(e);
+        Path queryFilePath;
+        String queryFile = params.get(FILE);
+
+        if (queryFile == null || queryFile.isEmpty()) {
+            queryFile = params.get(DATA_DIR).concat("/").concat(FIXED_QUERIES_FILE);
         }
+
+        queryFilePath = Paths.get(queryFile);
+        fixedQueries = readFixedQueriesFromFile(queryFilePath, queries);
     }
 
     @Override
     public Query generateQuery(Query query) {
-        FixedQuery fixedQuery = fixedQueries.getQueries().get(counter);
+        FixedQuery fixedQuery = fixedQueries.getQueries().get(counter.getAndIncrement());
         query.putAll(fixedQuery.getParams());
         appendRandomSessionId(fixedQueries.getSessionIds(), query);
         this.queryId = fixedQuery.getId();
-        counter++;
-        counter %= fixedQueries.getQueries().size();
+        counter.compareAndSet(fixedQueries.getQueries().size(), 0);
         return query;
     }
 
 
-    protected FixedQueries readFixedQueriesFromFile(Path path, List<String> filterQueries) throws IOException {
+    protected FixedQueries readFixedQueriesFromFile(Path path, List<String> filterQueries) {
         FixedQueries fixedQueries = readYmlFile(path, FixedQueries.class);
         FixedQueries result = new FixedQueries();
-        if (filterQueries != null && !filterQueries.isEmpty()) {
+        if (filterQueries != null && !filterQueries.get(0).equals("all")) {
             for (FixedQuery fixedQuery : fixedQueries.getQueries()) {
                 for (String query : filterQueries) {
                     if (fixedQuery.getId().equals(query)) {
@@ -67,10 +68,10 @@ public class FixedQueryGenerator extends QueryGenerator {
                     }
                 }
             }
+            result.setSessionIds(fixedQueries.getSessionIds());
         } else {
             result = fixedQueries;
         }
-        result.setSessionIds(fixedQueries.getSessionIds());
         return result;
     }
 

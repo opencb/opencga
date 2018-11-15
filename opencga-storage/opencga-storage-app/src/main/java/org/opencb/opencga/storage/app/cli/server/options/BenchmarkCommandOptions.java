@@ -79,6 +79,9 @@ public class BenchmarkCommandOptions {
         @Parameter(names = {"--count"}, description = "Count results. Do not return elements.", required = false, arity = 0)
         public boolean count;
 
+        @Parameter(names = {"-f", "--file"}, description = "File path to load queries", required = false, arity = 1)
+        public String queryFile;
+
     }
 
     /**
@@ -91,7 +94,7 @@ public class BenchmarkCommandOptions {
         public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"-q", "--query"}, description = "Query pattern to execute. e.g. gene,ct(30);region(3)", arity = 1)
-        public String query = "region";
+        public String query = "all";
     }
 
     /**

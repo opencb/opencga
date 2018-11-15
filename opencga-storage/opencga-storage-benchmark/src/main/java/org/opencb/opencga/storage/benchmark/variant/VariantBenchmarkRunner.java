@@ -43,7 +43,8 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
         super(storageConfiguration, jmeterHome, outdir);
     }
 
-    public void addThreadGroup(ConnectionType type, ExecutionMode mode, Path dataDir, String queries, QueryOptions queryOptions) {
+    public void addThreadGroup(ConnectionType type, ExecutionMode mode, Path dataDir, String queryFile,
+                               String queries, QueryOptions queryOptions) {
 
         // gene,ct;region,phylop
 
@@ -55,6 +56,7 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
             variantStorageSampler.setDBName(dbName);
             variantStorageSampler.setLimit(queryOptions.getInt(QueryOptions.LIMIT, -1));
             variantStorageSampler.setCount(queryOptions.getBoolean(QueryOptions.COUNT, false));
+            variantStorageSampler.setQueryGeneratorConfig(FixedQueryGenerator.FILE, queryFile);
 
             if (mode.equals(ExecutionMode.FIXED)) {
                 variantStorageSampler.setQueryGenerator(FixedQueryGenerator.class);
@@ -64,7 +66,6 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
                 variantStorageSampler.setQueryGenerator(MultiQueryGenerator.class);
                 variantStorageSampler.setQueryGeneratorConfig(MultiQueryGenerator.DATA_DIR, dataDir.toString());
                 variantStorageSampler.setQueryGeneratorConfig(MultiQueryGenerator.MULTI_QUERY, query);
-
             }
 
             samplers.add(variantStorageSampler);

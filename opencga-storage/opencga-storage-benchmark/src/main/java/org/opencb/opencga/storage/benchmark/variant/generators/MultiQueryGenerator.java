@@ -22,6 +22,7 @@ import org.opencb.opencga.storage.benchmark.variant.queries.RandomQueries;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,6 +38,7 @@ import java.util.regex.Pattern;
 public class MultiQueryGenerator extends QueryGenerator {
 
     public static final String MULTI_QUERY = "multi-query";
+    public static final String RANDOM_QUERIES_FILE = "randomQueries.yml";
     private List<QueryGenerator> generators;
     private RandomQueries randomQueries;
     private Pattern pattern = Pattern.compile("(?<param>[^(]+)(\\((?<extraParam>[^)]+)\\))?");
@@ -46,8 +48,17 @@ public class MultiQueryGenerator extends QueryGenerator {
     public void setUp(Map<String, String> params) {
         super.setUp(params);
         String query = params.get(MULTI_QUERY);
+        String queryFile = params.get(FILE);
+        Path queryFilePath;
+
+        if (queryFile == null || queryFile.isEmpty()) {
+            queryFilePath = Paths.get(params.get(DATA_DIR), RANDOM_QUERIES_FILE);
+        } else {
+            queryFilePath = Paths.get(queryFile);
+        }
+
         generators = new ArrayList<>();
-        randomQueries = readYmlFile(Paths.get(params.get(DATA_DIR), "randomQueries.yml"), RandomQueries.class);
+        randomQueries = readYmlFile(queryFilePath, RandomQueries.class);
 
         for (String param : query.split(",")) {
             String extraParam = null;

@@ -83,7 +83,7 @@ public class BenchmarkCommandExecutor extends CommandExecutor {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.append(QueryOptions.LIMIT, options.limit);
         queryOptions.append(QueryOptions.COUNT, options.count);
-        variantBenchmarkRunner.addThreadGroup(options.connectionType, options.executionMode, dataDir, options.query, queryOptions);
+        variantBenchmarkRunner.addThreadGroup(options.connectionType, options.executionMode, dataDir, options.queryFile, options.query, queryOptions);
 //        variantBenchmarkRunner.newThreadGroup(VariantBenchmarkRunner.ConnectionType.REST, dataDir,
 //                Arrays.asList(RegionQueryGenerator.class));
 //        variantBenchmarkRunner.newThreadGroup(VariantBenchmarkRunner.ConnectionType.REST, dataDir,

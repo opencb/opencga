@@ -54,6 +54,9 @@
      - id : "cadd_raw"
        min : 0
        max : 1
+     - id : "cadd_scaled"
+       min : -10
+       max : 40
 
    populationFrequencies :
      - id : "1kG_phase3:ALL"
@@ -85,5 +88,5 @@
        operators : ["=", "!="]
 
    sessionIds :
-     - "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0IiwiYXVkIjoiT3BlbkNHQSB1c2VycyIsImlhdCI6MTU0MTUwOTc1OSwiZXhwIjoxNTQxNTEzMzU5fQ.qYrBbwsESERNvia6pE_IH-EzUWKkGIZnY126D_RYITk"
-     - "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0IiwiYXVkIjoiT3BlbkNHQSB1c2VycyIsImlhdCI6MTU0MTUwOTkwNiwiZXhwIjoxNTQxNTEzNTA2fQ.LDTskBZvCXYavZE-yen1C_ouMr83znQNEdaDTwgUDaw"
+     - "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0IiwiYXVkIjoiT3BlbkNHQSB1c2VycyIsImlhdCI6MTU0MjIwODU5OCwiZXhwIjoxNTQyMjEyMTk4fQ.0IWBgolv1tJDsoxI0JT8LymgvdZvmm7c4bO_SzQO6qE"
+     - "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0IiwiYXVkIjoiT3BlbkNHQSB1c2VycyIsImlhdCI6MTU0MjIwODU5OCwiZXhwIjoxNTQyMjEyMTk4fQ.0IWBgolv1tJDsoxI0JT8LymgvdZvmm7c4bO_SzQO6qE"

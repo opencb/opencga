@@ -55,7 +55,7 @@ public class VariantBenchmarkRunnerTest extends VariantStorageBaseTest implement
 
     @Test
     public void testByRegionAndProteinSubstitutionDirectAndFix() throws Exception {
-        queriesTestDefault("Region,proteinSubstitution(2)", BenchmarkRunner.ConnectionType.DIRECT, BenchmarkRunner.ExecutionMode.FIXED);
+        queriesTestDefault("Region", BenchmarkRunner.ConnectionType.DIRECT, BenchmarkRunner.ExecutionMode.FIXED);
     }
 
     @Test
@@ -276,7 +276,7 @@ public class VariantBenchmarkRunnerTest extends VariantStorageBaseTest implement
 
     @Test
     public void testByFunctionalScoreMafRESTAndRandom() throws Exception {
-        queriesTestDefault("functionalScore", BenchmarkRunner.ConnectionType.REST, BenchmarkRunner.ExecutionMode.RANDOM);
+        queriesTestDefault("functionalScore(2)", BenchmarkRunner.ConnectionType.REST, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
     @Test
@@ -308,7 +308,7 @@ public class VariantBenchmarkRunnerTest extends VariantStorageBaseTest implement
 
         List<Integer> totalQueryExecutions = setTestConfig(connectionType, mode);
         variantBenchmarkRunner.addThreadGroup(connectionType, mode,
-                Paths.get("src/test/resources/hsapiens"), query, new QueryOptions(QueryOptions.LIMIT, "2"));
+                Paths.get("src/test/resources/hsapiens"),"", query, new QueryOptions(QueryOptions.LIMIT, "2"));
         variantBenchmarkRunner.run();
         assertEquals(executedQueries(), totalQueryExecutions.get(0) * totalQueryExecutions.get(1));
         assertEquals(grepFile(), totalQueryExecutions.get(0) * totalQueryExecutions.get(1));
