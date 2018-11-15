@@ -156,7 +156,7 @@ public class IndexDaemon extends MonitorParentDaemon {
         }
     }
 
-    private void checkRunningJob(Job job) throws CatalogIOException {
+    private void checkRunningJob(Job job) throws CatalogException {
         Path tmpOutdirPath = getJobTemporaryFolder(job.getUid(), tempJobFolder);
         Job.JobStatus jobStatus;
 
@@ -195,8 +195,10 @@ public class IndexDaemon extends MonitorParentDaemon {
                     }
                 } catch (CatalogException | URISyntaxException e) {
                     logger.error("Error removing temporal directory", e);
+                    outputRecorder.updateJobStatus(job, new Job.JobStatus(Job.JobStatus.ERROR));
                 } catch (IOException e) {
                     logger.error("Error recording files generated to Catalog", e);
+                    outputRecorder.updateJobStatus(job, new Job.JobStatus(Job.JobStatus.ERROR));
                 } finally {
                     closeSessionId(job);
                 }
