@@ -244,12 +244,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
         getLog().info("Scan set Caching to " + caching);
         scan.setCaching(caching);        // 1 is the default in Scan, 200 caused timeout issues.
         scan.setCacheBlocks(false);  // don't set to true for MR jobs
-        // https://hbase.apache.org/book.html#perf.hbase.client.seek
-        int lookAhead = getConf().getInt("hadoop.load.variant.scan.lookahead", -1);
-        if (lookAhead > 0) {
-            getLog().info("Scan set LOOKAHEAD to " + lookAhead);
-            scan.setAttribute(Scan.HINT_LOOKAHEAD, Bytes.toBytes(lookAhead));
-        }
+
         // specify return columns (file IDs)
         FilterList filter = new FilterList(FilterList.Operator.MUST_PASS_ONE);
         for (String fileIdStr : fileArr) {

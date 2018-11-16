@@ -58,6 +58,14 @@
     <artifactId>opencga-storage-hadoop-deps</artifactId>
     <version>1.4.0-rc2-dev</version>
 
+    <!--
+        Some dependencies included in the UBER-JAR are not defined, so they MUST defined at the
+        specific hadoop flavour profiles.
+          - hadoop.version
+          - hbase.version
+          - phoenix.version
+          - tephra.version
+    -->
     <properties>
         <checkstyle.skip>true</checkstyle.skip>
         <protobuf2.version>2.5.0</protobuf2.version>
@@ -91,11 +99,10 @@
         <collections.version>3.2.1</collections.version>
         <sqlline.version>1.1.9</sqlline.version>
         <jline.version>2.11</jline.version>
-        <antlr.version>3.5</antlr.version>
+        <antlr.version>3.5.2</antlr.version> <!--see [PHOENIX-2465]-->
         <!--Do not specify tephra version here, so it can be overwritten-->
         <!--<tephra.version>0.7.0</tephra.version>-->
         <snappy.version>0.3</snappy.version>
-
     </properties>
 
     <dependencies>
@@ -118,6 +125,7 @@
 
         <!-- =================================================== -->
         <!-- Dependencies that we WANT. Included in the uber-jar -->
+        <!-- Add <optional>true</optional> to avoid transitivity -->
         <!-- =================================================== -->
 
         <!--Hadoop dependencies-->
@@ -244,7 +252,7 @@
         <!-- ============================================= -->
         <!-- TRANSITIVE dependencies. Not to be included   -->
         <!-- Needed by some dependencies.                  -->
-        <!-- Dependency broken due to including parent     -->
+        <!-- Dependency broken due to optional parent      -->
         <!-- ============================================= -->
         <dependency>
             <groupId>org.apache.htrace</groupId>
@@ -704,6 +712,9 @@
 
                                     <include>com.google.guava</include>
                                     <include>com.google.protobuf</include>
+
+                                    <!--Netty uses proto2 (see ProtobufDecoder)-->
+                                    <include>org.apache.hbase.thirdparty:hbase-shaded-netty</include>
                                 </includes>
                                 <!--Exclude all test dependencies.-->
                                 <excludes>
@@ -848,6 +859,21 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+        <profile>
+            <id>hdf-3.0.1</id>
+            <properties>
+                <hbase-thirdparty.version>2.1.0</hbase-thirdparty.version>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.hbase.thirdparty</groupId>
+                    <artifactId>hbase-shaded-netty</artifactId>
+                    <version>${hbase-thirdparty.version}</version>
+                    <!--included in uber-jar-->
+                    <optional>true</optional>
+                </dependency>
+            </dependencies>
         </profile>
     </profiles>
 
