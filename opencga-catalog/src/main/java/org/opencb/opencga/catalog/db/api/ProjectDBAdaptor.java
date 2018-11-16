@@ -62,7 +62,7 @@ public interface ProjectDBAdaptor extends DBAdaptor<Project> {
 
         STUDY("study", TEXT, ""), // For the project/search ws
         STUDY_UID("study.uid", INTEGER_ARRAY, ""),
-        STUDY_ALIAS("study.alias", TEXT_ARRAY, ""),
+        STUDY_ID("study.alias", TEXT_ARRAY, ""),
 
         // TOCHECK: Pedro. Check parameter user_others_id.
         ACL_USER_ID("acl.userId", TEXT_ARRAY, "");

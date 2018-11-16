@@ -74,6 +74,13 @@
     <field name="status" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="type" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="somatic" type="boolean" indexed="true" stored="true" multiValued="false"/>
+    <field name="product" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="preparationMethod" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="extractionMethod" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="labSampleId" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="tissue" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="organ" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="method" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="phenotypes" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="acl" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="annotationSets" type="strings" multiValued="true" indexed="true" stored="true"/>

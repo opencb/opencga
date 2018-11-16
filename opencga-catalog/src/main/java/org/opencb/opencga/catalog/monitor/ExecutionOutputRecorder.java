@@ -118,13 +118,19 @@ public class ExecutionOutputRecorder {
         String outputDir = (String) job.getAttributes().get(Job.OPENCGA_OUTPUT_DIR);
 //        String userToken = (String) job.getAttributes().get(Job.OPENCGA_USER_TOKEN);
         File outDir;
-        try {
-             outDir = catalogManager.getFileManager().createFolder(studyStr, outputDir, new File.FileStatus(), true, "",
-                     QueryOptions.empty(), userToken).first();
-             parameters.append(JobDBAdaptor.QueryParams.OUT_DIR.key(), outDir);
-        } catch (CatalogException e) {
-            logger.error("Cannot find file {}. Error: {}", job.getOutDir().getUid(), e.getMessage());
-            throw e;
+
+        // If outputDir is the root
+        if ("/".equals(outputDir)) {
+            outDir = catalogManager.getFileManager().get(studyStr, outputDir, QueryOptions.empty(), userToken).first();
+        } else {
+            try {
+                outDir = catalogManager.getFileManager().createFolder(studyStr, outputDir, new File.FileStatus(), true, "",
+                        QueryOptions.empty(), userToken).first();
+                parameters.append(JobDBAdaptor.QueryParams.OUT_DIR.key(), outDir);
+            } catch (CatalogException e) {
+                logger.error("Cannot find file {}. Error: {}", job.getOutDir().getPath(), e.getMessage());
+                throw e;
+            }
         }
 
         FileScanner fileScanner = new FileScanner(catalogManager);
@@ -171,10 +177,10 @@ public class ExecutionOutputRecorder {
         parameters.put(JobDBAdaptor.QueryParams.OUTPUT.key(), files);
         parameters.put(JobDBAdaptor.QueryParams.END_TIME.key(), System.currentTimeMillis());
         try {
-            catalogManager.getJobManager().update(job.getUid(), parameters, null, this.sessionId);
+            catalogManager.getJobManager().update(studyStr, job.getUuid(), parameters, null, this.sessionId);
         } catch (CatalogException e) {
-            logger.error("Critical error. Could not update job output files from job {} with output {}. Error: {}", job.getUid(),
-                    StringUtils.join(files.stream().map(File::getUid).collect(Collectors.toList()), ","), e.getMessage());
+            logger.error("Critical error. Could not update job output files from job {} with output {}. Error: {}", job.getUuid(),
+                    StringUtils.join(files.stream().map(File::getPath).collect(Collectors.toList()), ","), e.getMessage());
             throw e;
         }
 

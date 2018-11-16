@@ -48,6 +48,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
+import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.DUE_DATE;
 import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
 /**
@@ -143,6 +144,11 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         ParamUtils.checkObj(clinicalAnalysis, "clinicalAnalysis");
         ParamUtils.checkAlias(clinicalAnalysis.getId(), "id");
         ParamUtils.checkObj(clinicalAnalysis.getType(), "type");
+        ParamUtils.checkObj(clinicalAnalysis.getDueDate(), "dueDate");
+
+        if (TimeUtils.toDate(clinicalAnalysis.getDueDate()) == null) {
+            throw new CatalogException("Unrecognised due date. Accepted format is: yyyyMMddHHmmss");
+        }
 
         validateSubjects(clinicalAnalysis, study, sessionId);
         validateFamilyAndSubject(clinicalAnalysis, study, sessionId);
@@ -166,6 +172,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         clinicalAnalysis.setRelease(catalogManager.getStudyManager().getCurrentRelease(study, userId));
         clinicalAnalysis.setAttributes(ParamUtils.defaultObject(clinicalAnalysis.getAttributes(), Collections.emptyMap()));
         clinicalAnalysis.setInterpretations(ParamUtils.defaultObject(clinicalAnalysis.getInterpretations(), ArrayList::new));
+        clinicalAnalysis.setPriority(ParamUtils.defaultObject(clinicalAnalysis.getPriority(), ClinicalAnalysis.Priority.MEDIUM));
 
         clinicalAnalysis.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.CLINICAL));
         QueryResult<ClinicalAnalysis> queryResult = clinicalDBAdaptor.insert(study.getUid(), clinicalAnalysis, options);
@@ -252,6 +259,12 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                         fileMap.put(FileDBAdaptor.QueryParams.UID.key(), fileResource.getResource().getUid());
                     }
                     break;
+                case DUE_DATE:
+                    if (TimeUtils.toDate(parameters.getString(DUE_DATE.key())) == null) {
+                        throw new CatalogException("Unrecognised due date. Accepted format is: yyyyMMddHHmmss");
+                    }
+                    break;
+                case DISEASE:
                 case FAMILY:
                 case PROBAND:
                     break;
@@ -353,11 +366,11 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     }
 
     private void fixQueryObject(Query query, Study study, String sessionId) throws CatalogException {
-        if (query.containsKey("family")) {
-            MyResource<Family> familyResource = catalogManager.getFamilyManager().getUid(query.getString("family"), study.getFqn(),
-                    sessionId);
+        if (query.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key())) {
+            MyResource<Family> familyResource = catalogManager.getFamilyManager()
+                    .getUid(query.getString(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key()), study.getFqn(), sessionId);
             query.put(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY_UID.key(), familyResource.getResource().getUid());
-            query.remove("family");
+            query.remove(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key());
         }
         if (query.containsKey("sample")) {
             MyResource<Sample> sampleResource = catalogManager.getSampleManager().getUid(query.getString("sample"), study.getFqn(),
@@ -365,21 +378,23 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             query.put(ClinicalAnalysisDBAdaptor.QueryParams.SAMPLE_UID.key(), sampleResource.getResource().getUid());
             query.remove("sample");
         }
-        if (query.containsKey("subject")) {
-            MyResource<Individual> probandResource = catalogManager.getIndividualManager().getUid(query.getString("subject"),
-                    study.getFqn(), sessionId);
+        if (query.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key())) {
+            MyResource<Individual> probandResource = catalogManager.getIndividualManager()
+                    .getUid(query.getString(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key()), study.getFqn(), sessionId);
             query.put(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND_UID.key(), probandResource.getResource().getUid());
-            query.remove("subject");
+            query.remove(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key());
         }
-        if (query.containsKey("germline")) {
-            MyResource<File> resource = catalogManager.getFileManager().getUid(query.getString("germline"), study.getFqn(), sessionId);
+        if (query.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.GERMLINE.key())) {
+            MyResource<File> resource = catalogManager.getFileManager()
+                    .getUid(query.getString(ClinicalAnalysisDBAdaptor.QueryParams.GERMLINE.key()), study.getFqn(), sessionId);
             query.put(ClinicalAnalysisDBAdaptor.QueryParams.GERMLINE_UID.key(), resource.getResource().getUid());
-            query.remove("germline");
+            query.remove(ClinicalAnalysisDBAdaptor.QueryParams.GERMLINE.key());
         }
-        if (query.containsKey("somatic")) {
-            MyResource<File> resource = catalogManager.getFileManager().getUid(query.getString("somatic"), study.getFqn(), sessionId);
+        if (query.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.SOMATIC.key())) {
+            MyResource<File> resource = catalogManager.getFileManager()
+                    .getUid(query.getString(ClinicalAnalysisDBAdaptor.QueryParams.SOMATIC.key()), study.getFqn(), sessionId);
             query.put(ClinicalAnalysisDBAdaptor.QueryParams.SOMATIC_UID.key(), resource.getResource().getUid());
-            query.remove("somatic");
+            query.remove(ClinicalAnalysisDBAdaptor.QueryParams.SOMATIC.key());
         }
     }
 

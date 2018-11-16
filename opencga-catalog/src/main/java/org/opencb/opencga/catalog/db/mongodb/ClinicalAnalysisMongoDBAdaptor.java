@@ -177,10 +177,10 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             document.getSet().put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
         }
 
-        String[] acceptedParams = {QueryParams.DESCRIPTION.key()};
+        String[] acceptedParams = {QueryParams.DESCRIPTION.key(), QueryParams.PRIORITY.key(), QueryParams.DUE_DATE.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
-        String[] acceptedObjectParams = {QueryParams.FAMILY.key(), QueryParams.PROBAND.key()};
+        String[] acceptedObjectParams = {QueryParams.FAMILY.key(), QueryParams.DISEASE.key(), QueryParams.PROBAND.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         clinicalConverter.validateFamilyToUpdate(document.getSet());
         clinicalConverter.validateSubjectsToUpdate(document.getSet());
@@ -521,34 +521,25 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     public QueryResult<ClinicalAnalysis> get(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
+        List<ClinicalAnalysis> documentList = new ArrayList<>();
+        QueryResult<ClinicalAnalysis> queryResult;
+        try (DBIterator<ClinicalAnalysis> dbIterator = iterator(query, options, user)) {
+            while (dbIterator.hasNext()) {
+                documentList.add(dbIterator.next());
+            }
+        }
+        queryResult = endQuery("Get", startTime, documentList);
 
-        // Get the study document
-        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_UID.key()));
-        QueryResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
-        if (queryResult.getNumResults() == 0) {
-            throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_UID.key()) + " not found");
+        if (options != null && options.getBoolean(QueryOptions.SKIP_COUNT, false)) {
+            return queryResult;
         }
 
-        // Get the document query needed to check the permissions as well
-        Document queryForAuthorisedEntries = getQueryForAuthorisedEntries((Document) queryResult.first(), user,
-                StudyAclEntry.StudyPermissions.VIEW_CLINICAL_ANALYSIS.name(),
-                ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.VIEW.name(), Entity.CLINICAL_ANALYSIS.name());
-
-        filterOutDeleted(query);
-        Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
-        QueryOptions qOptions;
-        if (options != null) {
-            qOptions = options;
-        } else {
-            qOptions = new QueryOptions();
+        // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
+        if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
+            QueryResult<Long> count = count(query, user, StudyAclEntry.StudyPermissions.VIEW_CLINICAL_ANALYSIS);
+            queryResult.setNumTotalResults(count.first());
         }
-
-        QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult = clinicalCollection.find(bson, clinicalConverter, qOptions);
-//        addReferencesInfoToClinicalAnalysis(clinicalAnalysisQueryResult);
-
-        logger.debug("Clinical Analysis get: query : {}, dbTime: {}", bson.toBsonDocument(Document.class,
-                MongoClient.getDefaultCodecRegistry()), qOptions.toJson(), clinicalAnalysisQueryResult.getDbTime());
-        return endQuery("Get clinical analysis", startTime, clinicalAnalysisQueryResult);
+        return queryResult;
     }
 
     @Override
@@ -624,6 +615,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     case ID:
                     case UUID:
                     case TYPE:
+                    case DUE_DATE:
+                    case PRIORITY:
                     case SAMPLE_UID:
                     case PROBAND_UID:
                     case FAMILY_UID:
