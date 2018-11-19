@@ -14,13 +14,19 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.core.variant;
+package org.opencb.opencga.storage.core.variant.transform;
 
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
+import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.Collections;
@@ -34,6 +40,20 @@ import static org.opencb.opencga.storage.core.variant.io.VariantReaderUtils.MALF
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public abstract class VariantStoragePipelineTransformTest extends VariantStorageBaseTest {
+
+
+    private static InputStream in;
+
+    @BeforeClass
+    public static void beforeClass() throws Exception {
+        in = System.in;
+    }
+
+    @Before
+    public void setUp() throws Exception {
+        // Reset input stream
+        System.setIn(in);
+    }
 
     @Test
     public void transformIsolated() throws Exception {
@@ -97,5 +117,28 @@ public abstract class VariantStoragePipelineTransformTest extends VariantStorage
         assertEquals(2, result.getTransformStats().getInt("malformed lines"));
     }
 
+    @Test
+    public void transformFromSTDIN() throws Exception {
+
+        URI outputUri = newOutputUri();
+
+        VariantStorageEngine variantStorageManager = getVariantStorageEngine();
+
+        InputStream inputStream = FileUtils.newInputStream(Paths.get(smallInputUri));
+        System.setIn(inputStream);
+
+
+
+        ObjectMap options = variantStorageManager.getConfiguration()
+                .getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
+
+        options.append(VariantStorageEngine.Options.STDIN.key(), true);
+
+        URI inputFile = Paths.get(smallInputUri).getFileName().toUri();
+        System.out.println("inputFile = " + inputFile);
+        assertFalse("File should not exist in that specific location", Paths.get(inputFile).toFile().exists());
+        StoragePipelineResult storagePipelineResult =
+                variantStorageManager.index(Collections.singletonList(inputFile), outputUri, true, true, false).get(0);
+    }
 
 }

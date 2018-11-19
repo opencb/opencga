@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.mongodb.variant;
+package org.opencb.opencga.storage.mongodb.variant.transform;
 
-import org.opencb.opencga.storage.core.variant.VariantStoragePipelineTransformTest;
+import org.opencb.opencga.storage.core.variant.transform.VariantStoragePipelineTransformTest;
+import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
 
 /**
  * Created on 01/04/16
