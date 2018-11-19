@@ -97,7 +97,7 @@ public class VariantReaderUtils {
         if (isJson(fileName)) {
             return getVariantJsonReader(input, metadata);
         } else if (isAvro(fileName)) {
-            return getVariantAvroReader(input, metadata);
+            return getVariantAvroReader(input, metadata, stdin);
         } else if (isVcf(fileName)) {
             return getVariantVcfReader(input, metadata, stdin);
         } else {
@@ -120,11 +120,16 @@ public class VariantReaderUtils {
         return variantJsonReader;
     }
 
-    protected static VariantAvroReader getVariantAvroReader(Path input, VariantStudyMetadata metadata) throws StorageEngineException {
+    protected static VariantAvroReader getVariantAvroReader(Path input, VariantStudyMetadata metadata, boolean stdin)
+            throws StorageEngineException {
         VariantAvroReader variantAvroReader;
         if (isAvro(input.toString())) {
             String sourceFile = getMetaFromTransformedFile(input.toAbsolutePath().toString());
-            variantAvroReader = new VariantAvroReader(input.toAbsolutePath().toFile(), new File(sourceFile), metadata);
+            if (stdin) {
+                variantAvroReader = new VariantAvroReader(System.in, new File(sourceFile), metadata);
+            } else {
+                variantAvroReader = new VariantAvroReader(input.toAbsolutePath().toFile(), new File(sourceFile), metadata);
+            }
         } else {
             throw variantInputNotSupported(input);
         }

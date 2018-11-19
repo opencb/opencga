@@ -23,6 +23,7 @@ import org.opencb.commons.io.avro.AvroDataReader;
 import org.opencb.opencga.storage.core.variant.io.AbstractVariantReader;
 
 import java.io.File;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -36,6 +37,11 @@ import java.util.Map;
 public class VariantAvroReader extends AbstractVariantReader {
 
     private final AvroDataReader<VariantAvro> avroDataReader;
+
+    public VariantAvroReader(InputStream is, File metadataFile, VariantStudyMetadata metadata) {
+        super(metadataFile.toPath(), metadata);
+        avroDataReader = new AvroDataReader<>(is, VariantAvro.class);
+    }
 
     public VariantAvroReader(File variantsFile, File metadataFile, VariantStudyMetadata metadata) {
         super(metadataFile.toPath(), metadata);
