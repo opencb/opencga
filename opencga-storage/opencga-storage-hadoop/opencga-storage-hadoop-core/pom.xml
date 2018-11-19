@@ -65,12 +65,6 @@
             <version>1.7.0</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.opencb.hpg-bigdata</groupId>
-            <artifactId>hpg-bigdata-analysis</artifactId>
-            <version>${hpg-bigdata.version}</version>
-        </dependency>
-
         <!--Test dependencies-->
         <dependency>
             <groupId>org.opencb.opencga</groupId>

@@ -37,8 +37,8 @@ import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.commons.io.avro.AvroFileWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
-import org.opencb.hpg.bigdata.core.io.avro.AvroFileWriter;
 import org.opencb.opencga.storage.core.StoragePipeline;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -57,8 +57,6 @@ import org.opencb.opencga.storage.core.variant.transform.VariantTransformTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -303,11 +301,10 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
             //Writer
             DataWriter<ByteBuffer> dataWriter;
-            try {
-                dataWriter = new AvroFileWriter<>(VariantAvro.getClassSchema(), compression, new FileOutputStream(outputVariantsFile
-                        .toFile()));
-            } catch (FileNotFoundException e) {
-                throw new StorageEngineException("Fail init writer", e);
+            if (stdout) {
+                dataWriter = new AvroFileWriter<>(VariantAvro.getClassSchema(), compression, System.out);
+            } else {
+                dataWriter = new AvroFileWriter<>(VariantAvro.getClassSchema(), compression, outputVariantsFile);
             }
             Supplier<VariantTransformTask<ByteBuffer>> taskSupplier;
 
@@ -366,7 +363,12 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             dataReader.setReadBytesListener((totalRead, delta) -> progressLogger.increment(delta, "Bytes"));
 
             //Writers
-            StringDataWriter dataWriter = new StringDataWriter(outputVariantsFile, true);
+            StringDataWriter dataWriter;
+            if (stdout) {
+                dataWriter = new StringDataWriter(System.out, true);
+            } else {
+                dataWriter = new StringDataWriter(outputVariantsFile, true);
+            }
 
             ParallelTaskRunner<String, String> ptr;
 

@@ -19,17 +19,20 @@ package org.opencb.opencga.storage.core.variant.transform;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.io.avro.AvroDataReader;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 
-import java.io.InputStream;
+import java.io.*;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.List;
 
 import static org.junit.Assert.*;
 import static org.opencb.opencga.storage.core.variant.io.VariantReaderUtils.MALFORMED_FILE;
@@ -43,16 +46,19 @@ public abstract class VariantStoragePipelineTransformTest extends VariantStorage
 
 
     private static InputStream in;
+    private static PrintStream out;
 
     @BeforeClass
     public static void beforeClass() throws Exception {
         in = System.in;
+        out = System.out;
     }
 
     @Before
     public void setUp() throws Exception {
-        // Reset input stream
+        // Reset input/output stream
         System.setIn(in);
+        System.setOut(out);
     }
 
     @Test
@@ -139,6 +145,81 @@ public abstract class VariantStoragePipelineTransformTest extends VariantStorage
         assertFalse("File should not exist in that specific location", Paths.get(inputFile).toFile().exists());
         StoragePipelineResult storagePipelineResult =
                 variantStorageManager.index(Collections.singletonList(inputFile), outputUri, true, true, false).get(0);
+
+        assertEquals(999, countLinesFromAvro(Paths.get(storagePipelineResult.getTransformResult()).toFile()));
+    }
+
+    @Test
+    public void transformToJsonSTDOUT() throws Exception {
+        URI outputUri = newOutputUri();
+
+        VariantStorageEngine variantStorageManager = getVariantStorageEngine();
+
+        File outputFile = Paths.get(outputUri.resolve("outputFile.json")).toFile();
+        try (PrintStream os = new PrintStream(new FileOutputStream(outputFile))) {
+            System.setOut(os);
+
+            ObjectMap options = variantStorageManager.getConfiguration()
+                    .getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
+
+            options.append(VariantStorageEngine.Options.STDOUT.key(), true);
+            options.append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "json");
+
+            variantStorageManager.index(Collections.singletonList(smallInputUri), outputUri, true, true, false).get(0);
+        } finally {
+            System.setOut(out);
+        }
+
+        assertEquals(999, countLines(outputFile));
+    }
+
+    @Test
+    public void transformToAvroSTDOUT() throws Exception {
+        URI outputUri = newOutputUri();
+
+        VariantStorageEngine variantStorageManager = getVariantStorageEngine();
+
+        File outputFile = Paths.get(outputUri.resolve("outputFile.avro")).toFile();
+        try (PrintStream os = new PrintStream(new FileOutputStream(outputFile))) {
+            System.setOut(os);
+
+            ObjectMap options = variantStorageManager.getConfiguration()
+                    .getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
+
+            options.append(VariantStorageEngine.Options.STDOUT.key(), true);
+            options.append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro");
+
+            variantStorageManager.index(Collections.singletonList(smallInputUri), outputUri, true, true, false).get(0);
+        } finally {
+            System.setOut(out);
+        }
+
+        assertEquals(999, countLinesFromAvro(outputFile));
+    }
+
+    public int countLines(File outputFile) throws IOException {
+        int numLines = 0;
+        try (DataInputStream is = new DataInputStream(new FileInputStream(outputFile))) {
+            String s;
+
+            s = is.readLine();
+            while (s != null) {
+                numLines++;
+                s = is.readLine();
+            }
+        }
+        return numLines;
+    }
+
+    public int countLinesFromAvro(File file) {
+        AvroDataReader<VariantAvro> reader = new AvroDataReader<>(file, VariantAvro.class);
+        reader.open();
+        reader.pre();
+        List<VariantAvro> read = reader.read(2000);
+        reader.post();
+        reader.close();
+
+        return read.size();
     }
 
 }
