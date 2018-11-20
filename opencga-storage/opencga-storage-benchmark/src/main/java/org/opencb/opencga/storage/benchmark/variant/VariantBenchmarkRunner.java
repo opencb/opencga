@@ -101,7 +101,6 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
                 if (rest != null) {
                     return new VariantStorageEngineRestSampler(rest.getHost(), rest.getPath(), rest.getPort());
                 } else {
-
                     return new VariantStorageEngineRestSampler("localhost", storageConfiguration.getServer().getRest());
                 }
             case DIRECT:

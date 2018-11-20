@@ -60,7 +60,7 @@ public abstract class TermQueryGenerator extends ConfiguredQueryGenerator {
     @Override
     public Query generateQuery(Query query) {
         String value = IntStream.range(0, getArity())
-                .mapToObj(i -> terms.get(random.nextInt(Math.abs(terms.size()))))
+                .mapToObj(i -> terms.get(random.nextInt(terms.size())))
                 .collect(Collectors.joining(","));
         query.append(queryKey, value);
         return query;
