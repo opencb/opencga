@@ -93,7 +93,7 @@ public class BenchmarkCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-q", "--query"}, description = "Query pattern to execute. e.g. gene,ct(30);region(3)", arity = 1)
+        @Parameter(names = {"-q", "--query"}, description = "Query Ids to execute for FIXED mode (Default All) OR Query pattern to execute for Random mode e.g. gene,ct(30);region(3)", arity = 1)
         public String query;
     }
 
