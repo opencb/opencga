@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.storage.benchmark.variant;
 
+import com.beust.jcommander.MissingCommandException;
+import org.apache.commons.lang.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.benchmark.BenchmarkRunner;
 import org.opencb.opencga.storage.benchmark.variant.generators.FixedQueryGenerator;
@@ -45,6 +47,12 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
 
     public void addThreadGroup(ConnectionType type, ExecutionMode mode, Path dataDir, String queryFile,
                                String queries, QueryOptions queryOptions) {
+
+        if (StringUtils.isEmpty(queries) && mode.equals(ExecutionMode.FIXED)) {
+            queries = "all";
+        } else if (StringUtils.isEmpty(queries) && mode.equals(ExecutionMode.RANDOM)) {
+            throw new MissingCommandException("Please provide execution queries for dynamic mode.");
+        }
 
         // gene,ct;region,phylop
 

@@ -147,7 +147,7 @@ public class BenchmarkRunner {
         HashTree threadGroupHashTree = testPlanTree.add(testPlan, threadGroup);
 
         ConstantTimer timer = new ConstantTimer();
-        timer.setDelay("200");
+        timer.setDelay("100");
         timer.setName("timer");
 
         // Add samplers to the ThreadGroup

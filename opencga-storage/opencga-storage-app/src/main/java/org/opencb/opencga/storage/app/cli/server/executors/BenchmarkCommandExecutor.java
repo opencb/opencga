@@ -77,6 +77,9 @@ public class BenchmarkCommandExecutor extends CommandExecutor {
             configuration.getBenchmark().setConcurrency(options.concurrency);
         }
 
+        configuration.getBenchmark().setMode(options.executionMode.name());
+        configuration.getBenchmark().setConnectionType(options.connectionType.name());
+
         VariantBenchmarkRunner variantBenchmarkRunner = new VariantBenchmarkRunner(configuration, jmeterHome, outdirPath);
 //        variantBenchmarkRunner.addThreadGroup(options.connectionType, dataDir,
 //                Arrays.asList(GeneQueryGenerator.class, RegionQueryGenerator.class));
