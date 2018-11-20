@@ -217,8 +217,10 @@ public class VariantCommandExecutor extends CommandExecutor {
         String inputs[] = indexVariantsCommandOptions.commonIndexOptions.input.split(",");
         for (String uri : inputs) {
             URI variantsUri = UriUtils.createUri(uri);
-            if (variantsUri.getScheme().startsWith("file") || variantsUri.getScheme().isEmpty()) {
-                FileUtils.checkFile(Paths.get(variantsUri));
+            if (!indexVariantsCommandOptions.stdin) {
+                if (variantsUri.getScheme().startsWith("file") || variantsUri.getScheme().isEmpty()) {
+                    FileUtils.checkFile(Paths.get(variantsUri));
+                }
             }
             inputUris.add(variantsUri);
         }
