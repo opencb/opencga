@@ -158,6 +158,7 @@ public class VariantStorageEngineDirectSampler extends JavaSampler implements Va
                 result.sampleEnd();
                 result.setBytes(numResults);
                 result.setSuccessful(true);
+                result.setSampleLabel(queryGenerator.getQueryId());
 
                 logger.debug("query: {}", numResults);
             } catch (Error e) {

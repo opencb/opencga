@@ -76,6 +76,9 @@ public class BenchmarkCommandExecutor extends CommandExecutor {
         if (options.concurrency != null) {
             configuration.getBenchmark().setConcurrency(options.concurrency);
         }
+        if (options.delay != null) {
+            configuration.getBenchmark().setDelay(options.delay);
+        }
 
         configuration.getBenchmark().setMode(options.executionMode.name());
         configuration.getBenchmark().setConnectionType(options.connectionType.name());

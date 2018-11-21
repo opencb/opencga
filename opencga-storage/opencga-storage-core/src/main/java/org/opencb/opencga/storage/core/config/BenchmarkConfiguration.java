@@ -33,6 +33,7 @@ public class BenchmarkConfiguration {
     @Deprecated
     private String table;
     private String mode;
+    private int delay;
     private String connectionType;
     private DatabaseCredentials database;
     private int concurrency;
@@ -48,6 +49,7 @@ public class BenchmarkConfiguration {
         sb.append(", databaseName='").append(databaseName).append('\'');
         sb.append(", table='").append(table).append('\'');
         sb.append(", mode='").append(mode).append('\'');
+        sb.append(", delay=").append(delay);
         sb.append(", connectionType='").append(connectionType).append('\'');
         sb.append(", database=").append(database);
         sb.append(", concurrency=").append(concurrency);
@@ -144,6 +146,15 @@ public class BenchmarkConfiguration {
 
     public BenchmarkConfiguration setRest(URI rest) {
         this.rest = rest;
+        return this;
+    }
+
+    public int getDelay() {
+        return delay;
+    }
+
+    public BenchmarkConfiguration setDelay(int delay) {
+        this.delay = delay;
         return this;
     }
 }

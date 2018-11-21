@@ -43,11 +43,12 @@ public class MultiQueryGenerator extends QueryGenerator {
     private RandomQueries randomQueries;
     private Pattern pattern = Pattern.compile("(?<param>[^(]+)(\\((?<extraParam>[^)]+)\\))?");
     private Logger logger = LoggerFactory.getLogger(getClass());
+    private String query;
 
     @Override
     public void setUp(Map<String, String> params) {
         super.setUp(params);
-        String query = params.get(MULTI_QUERY);
+        query = params.get(MULTI_QUERY);
         String queryFile = params.get(FILE);
         Path queryFilePath;
 
@@ -156,6 +157,11 @@ public class MultiQueryGenerator extends QueryGenerator {
             queryGenerator.setUp(params, randomQueries);
             generators.add(queryGenerator);
         }
+    }
+
+    @Override
+    public String getQueryId() {
+        return query;
     }
 
     @Override

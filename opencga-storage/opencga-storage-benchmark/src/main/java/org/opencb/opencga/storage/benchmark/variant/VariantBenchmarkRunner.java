@@ -17,21 +17,29 @@
 package org.opencb.opencga.storage.benchmark.variant;
 
 import com.beust.jcommander.MissingCommandException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.google.common.base.Throwables;
 import org.apache.commons.lang.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.benchmark.BenchmarkRunner;
 import org.opencb.opencga.storage.benchmark.variant.generators.FixedQueryGenerator;
 import org.opencb.opencga.storage.benchmark.variant.generators.MultiQueryGenerator;
 import org.opencb.opencga.storage.benchmark.variant.generators.QueryGenerator;
+import org.opencb.opencga.storage.benchmark.variant.queries.FixedQueries;
+import org.opencb.opencga.storage.benchmark.variant.queries.FixedQuery;
 import org.opencb.opencga.storage.benchmark.variant.samplers.VariantStorageEngineDirectSampler;
 import org.opencb.opencga.storage.benchmark.variant.samplers.VariantStorageEngineRestSampler;
 import org.opencb.opencga.storage.benchmark.variant.samplers.VariantStorageEngineSampler;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -48,16 +56,24 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
     public void addThreadGroup(ConnectionType type, ExecutionMode mode, Path dataDir, String queryFile,
                                String queries, QueryOptions queryOptions) {
 
-        if (StringUtils.isEmpty(queries) && mode.equals(ExecutionMode.FIXED)) {
-            queries = "all";
-        } else if (StringUtils.isEmpty(queries) && mode.equals(ExecutionMode.RANDOM)) {
-            throw new MissingCommandException("Please provide execution queries for dynamic mode.");
+        List<String> queriesList = new ArrayList<>();
+        if (mode.equals(ExecutionMode.FIXED)) {
+            if (StringUtils.isEmpty(queries)) {
+                queriesList = readFixedQueriesIdsFromFile(dataDir, queryFile);
+            } else {
+                queriesList = Arrays.asList(queries.replaceAll(";", ",").split(","));
+            }
+        } else if (mode.equals(ExecutionMode.RANDOM)) {
+            if (StringUtils.isEmpty(queries)) {
+                throw new MissingCommandException("Please provide execution queries for dynamic mode.");
+            }
+            queriesList = Arrays.asList(queries.split(";"));
         }
 
         // gene,ct;region,phylop
 
         List<VariantStorageEngineSampler> samplers = new ArrayList<>();
-        for (String query : queries.split(";")) {
+        for (String query : queriesList) {
             VariantStorageEngineSampler variantStorageSampler = newVariantStorageEngineSampler(type);
 
             variantStorageSampler.setStorageEngine(storageEngine);
@@ -75,6 +91,7 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
                 variantStorageSampler.setQueryGeneratorConfig(MultiQueryGenerator.DATA_DIR, dataDir.toString());
                 variantStorageSampler.setQueryGeneratorConfig(MultiQueryGenerator.MULTI_QUERY, query);
             }
+            variantStorageSampler.setName(query);
 
             samplers.add(variantStorageSampler);
         }
@@ -119,4 +136,31 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
                 throw new IllegalArgumentException("Unknown type " + type);
         }
     }
+
+    private List<String> readFixedQueriesIdsFromFile(Path dataDir, String queryFile) {
+
+        Path queryFilePath;
+        FixedQueries fixedQueries;
+        List<String> queryList = new ArrayList<>();
+
+        if (queryFile == null || queryFile.isEmpty()) {
+            queryFilePath = Paths.get(dataDir.toString(), FixedQueryGenerator.FIXED_QUERIES_FILE);
+        } else {
+            queryFilePath = Paths.get(queryFile);
+        }
+        try (FileInputStream inputStream = new FileInputStream(queryFilePath.toFile())) {
+            ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+            fixedQueries = objectMapper.readValue(inputStream, FixedQueries.class);
+        } catch (IOException e) {
+            throw Throwables.propagate(e);
+        }
+
+        for (FixedQuery fixedQuery : fixedQueries.getQueries()) {
+            queryList.add(fixedQuery.getId());
+        }
+
+        return queryList;
+    }
+
+
 }

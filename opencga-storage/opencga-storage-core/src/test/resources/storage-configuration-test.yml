@@ -29,12 +29,10 @@ server:
 
 benchmark:
   storageEngine: "mongodb"
-  numRepetitions: 3
-  load: false
-  queries: ["count", "distinct"]
+  numRepetitions: 20
   databaseName: "opencga"
-  table: "variants"
-  concurrency: 1
+  concurrency: 5
+  delay: 100
   connectionType: REST
   mode: FIXED
   rest: "http://localhost:8080/opencga-1.4.0-rc2-dev/webservices/rest/v1/analysis/variant/query"

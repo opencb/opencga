@@ -67,16 +67,14 @@ public class VariantStorageEngineRestSampler extends HTTPSampler implements Vari
 
         Query query = getQueryGenerator().generateQuery(new Query());
         query.forEach((key, value) -> sb.append(key).append('=').append(value).append('&'));
-
-        sb.append("#" + getQueryGenerator().getQueryId());
-
         return encodedString(sb.toString());
     }
 
     @Override
     protected HTTPSampleResult sample(java.net.URL u, String method, boolean areFollowingRedirect, int depth) {
-//        logger.debug("url = {}", u);
-        return super.sample(u, method, areFollowingRedirect, depth);
+        HTTPSampleResult sample = super.sample(u, method, areFollowingRedirect, depth);
+        sample.setSampleLabel(queryGenerator.getQueryId());
+        return sample;
     }
 
     @Override

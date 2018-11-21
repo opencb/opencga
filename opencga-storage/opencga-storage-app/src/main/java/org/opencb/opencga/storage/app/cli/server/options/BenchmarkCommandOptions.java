@@ -82,6 +82,9 @@ public class BenchmarkCommandOptions {
         @Parameter(names = {"-f", "--file"}, description = "File path to load queries", required = false, arity = 1)
         public String queryFile;
 
+        @Parameter(names = {"--delay"}, description = "Delay between each sampler thread.", required = false, arity = 1)
+        public Integer delay;
+
     }
 
     /**
