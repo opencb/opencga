@@ -40,9 +40,6 @@ public class FixedQueryGenerator extends QueryGenerator {
                 break;
             }
         }
-        if (fixedQuery == null) {
-            throw new UnsupportedOperationException("Given queryId doesn't exist: " + queryId);
-        }
     }
 
     @Override

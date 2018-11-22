@@ -62,6 +62,9 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
                 queriesList = readFixedQueriesIdsFromFile(dataDir, queryFile);
             } else {
                 queriesList = Arrays.asList(queries.replaceAll(";", ",").split(","));
+                if (!isSubList(readFixedQueriesIdsFromFile(dataDir, queryFile), queriesList)) {
+                    throw new IllegalArgumentException("Query id(s) does not exist in config file : " + queriesList);
+                }
             }
         } else if (mode.equals(ExecutionMode.RANDOM)) {
             if (StringUtils.isEmpty(queries)) {
@@ -69,8 +72,6 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
             }
             queriesList = Arrays.asList(queries.split(";"));
         }
-
-        // gene,ct;region,phylop
 
         List<VariantStorageEngineSampler> samplers = new ArrayList<>();
         for (String query : queriesList) {
@@ -162,5 +163,8 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
         return queryList;
     }
 
+    public boolean isSubList(List<String> first, List<String> second) {
+        return second.stream().allMatch(t -> first.contains(t));
+    }
 
 }
