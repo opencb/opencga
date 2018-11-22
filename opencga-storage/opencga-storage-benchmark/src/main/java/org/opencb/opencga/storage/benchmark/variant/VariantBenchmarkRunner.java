@@ -62,7 +62,7 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
                 queriesList = readFixedQueriesIdsFromFile(dataDir, queryFile);
             } else {
                 queriesList = Arrays.asList(queries.replaceAll(";", ",").split(","));
-                if (!isSubList(readFixedQueriesIdsFromFile(dataDir, queryFile), queriesList)) {
+                if (!readFixedQueriesIdsFromFile(dataDir, queryFile).containsAll(queriesList)) {
                     throw new IllegalArgumentException("Query id(s) does not exist in config file : " + queriesList);
                 }
             }
@@ -162,9 +162,4 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
 
         return queryList;
     }
-
-    public boolean isSubList(List<String> completeList, List<String> subList) {
-        return subList.stream().allMatch(t -> completeList.contains(t));
-    }
-
 }
