@@ -36,33 +36,45 @@
         <dependency>
             <groupId>org.apache.jmeter</groupId>
             <artifactId>ApacheJMeter_core</artifactId>
-            <version>5.0</version>
+            <version>${jmeter.version}</version>
             <exclusions>
                 <exclusion>
                     <artifactId>mongo-java-driver</artifactId>
                     <groupId>org.mongodb</groupId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.logging.log4j</groupId>
+                    <artifactId>log4j-slf4j-impl</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.jmeter</groupId>
             <artifactId>ApacheJMeter_http</artifactId>
-            <version>5.0</version>
+            <version>${jmeter.version}</version>
             <exclusions>
                 <exclusion>
                     <artifactId>mongo-java-driver</artifactId>
                     <groupId>org.mongodb</groupId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.logging.log4j</groupId>
+                    <artifactId>log4j-slf4j-impl</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.jmeter</groupId>
             <artifactId>ApacheJMeter_java</artifactId>
-            <version>5.0</version>
+            <version>${jmeter.version}</version>
             <exclusions>
                 <exclusion>
                     <artifactId>mongo-java-driver</artifactId>
                     <groupId>org.mongodb</groupId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.logging.log4j</groupId>
+                    <artifactId>log4j-slf4j-impl</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -100,5 +112,8 @@
         </dependency>
 
     </dependencies>
+    <properties>
+        <jmeter.version>5.0</jmeter.version>
+    </properties>
 
 </project>
