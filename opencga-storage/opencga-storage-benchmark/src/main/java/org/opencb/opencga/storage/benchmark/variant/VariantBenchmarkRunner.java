@@ -163,8 +163,8 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
         return queryList;
     }
 
-    public boolean isSubList(List<String> first, List<String> second) {
-        return second.stream().allMatch(t -> first.contains(t));
+    public boolean isSubList(List<String> completeList, List<String> subList) {
+        return subList.stream().allMatch(t -> completeList.contains(t));
     }
 
 }
