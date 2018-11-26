@@ -55,10 +55,10 @@ public class BenchmarkCommandOptions {
         @Parameter(names = {"-m", "--mode"}, description = "Type of queries to execute: FIXED, RANDOM")
         public BenchmarkRunner.ExecutionMode executionMode = BenchmarkRunner.ExecutionMode.FIXED;
 
-        @Parameter(names = {"--num-repetition"}, description = "Number of repetition to execute.", arity = 1)
+        @Parameter(names = {"-r", "--num-repetition"}, description = "Number of repetition to execute.", arity = 1)
         public Integer repetition;
 
-        @Parameter(names = {"--concurrency"}, description = "Number of concurrent threads.", arity = 1)
+        @Parameter(names = {"-c", "--concurrency"}, description = "Number of concurrent threads.", arity = 1)
         public Integer concurrency;
 
         @Parameter(names = {"--host"}, description = "Remote host.", arity = 1)
