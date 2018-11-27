@@ -94,7 +94,7 @@ public class BenchmarkCommandExecutor extends CommandExecutor {
     }
 
     private Path getBenchmarkPath(BenchmarkCommandOptions.VariantBenchmarkCommandOptions options) {
-        return Paths.get(options.outdir == null ? "" : options.outdir, "opencga_benchmark_" + new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date())).toAbsolutePath();
+        return Paths.get(options.outdir == null ? "" : options.outdir, "opencga_benchmark_" + new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date())).toAbsolutePath();
     }
 
 
