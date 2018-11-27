@@ -183,9 +183,4 @@ public class VariantStorageEngineDirectSampler extends JavaSampler implements Va
             }
         }
     }
-
-//    @Override
-//    public Arguments getDefaultParameters() {
-//        return null;
-//    }
 }

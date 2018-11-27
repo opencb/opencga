@@ -23,8 +23,6 @@ import org.opencb.opencga.storage.benchmark.variant.queries.RandomQueries;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -48,11 +46,6 @@ public abstract class TermQueryGenerator extends ConfiguredQueryGenerator {
     public void setUp(Map<String, String> params, RandomQueries randomQueries) {
         super.setUp(params);
         loadTerms(params, randomQueries);
-    }
-
-    @Deprecated
-    protected void loadTerms(Map<String, String> params, Path path) {
-        readCsvFile(path, strings -> terms.add(strings.get(0)));
     }
 
     protected abstract void loadTerms(Map<String, String> params, RandomQueries randomQueries);

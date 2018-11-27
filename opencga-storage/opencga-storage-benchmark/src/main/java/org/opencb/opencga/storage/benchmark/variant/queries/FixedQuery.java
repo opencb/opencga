@@ -8,8 +8,8 @@ import java.util.Map;
 public class FixedQuery {
     private String id;
     private String description;
-    private Map<String, String> query;
     private int tolerationThreshold;
+    private Map<String, String> query;
 
     public FixedQuery() {
     }

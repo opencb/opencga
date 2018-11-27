@@ -25,7 +25,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.benchmark.BenchmarkRunner;
 import org.opencb.opencga.storage.benchmark.variant.generators.FixedQueryGenerator;
 import org.opencb.opencga.storage.benchmark.variant.generators.MultiQueryGenerator;
-import org.opencb.opencga.storage.benchmark.variant.generators.QueryGenerator;
 import org.opencb.opencga.storage.benchmark.variant.queries.FixedQueries;
 import org.opencb.opencga.storage.benchmark.variant.queries.FixedQuery;
 import org.opencb.opencga.storage.benchmark.variant.samplers.VariantStorageEngineDirectSampler;
@@ -99,26 +98,6 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
         }
 
         addThreadGroup(samplers);
-    }
-
-    public void addThreadGroup(ConnectionType type, Path dataDir, List<Class<? extends QueryGenerator>> queryGenerators,
-                               QueryOptions queryOptions) {
-        List<VariantStorageEngineSampler> samplers = new ArrayList<>(queryGenerators.size());
-        for (Class<? extends QueryGenerator> clazz : queryGenerators) {
-            VariantStorageEngineSampler variantStorageSampler = newVariantStorageEngineSampler(type);
-
-            variantStorageSampler.setStorageEngine(storageEngine);
-            variantStorageSampler.setDBName(dbName);
-            variantStorageSampler.setLimit(queryOptions.getInt(QueryOptions.LIMIT, -1));
-            variantStorageSampler.setCount(queryOptions.getBoolean(QueryOptions.COUNT, false));
-            variantStorageSampler.setQueryGenerator(clazz);
-            variantStorageSampler.setQueryGeneratorConfig(QueryGenerator.DATA_DIR, dataDir.toString());
-
-            samplers.add(variantStorageSampler);
-        }
-
-        addThreadGroup(samplers);
-
     }
 
     public VariantStorageEngineSampler newVariantStorageEngineSampler(ConnectionType type) {

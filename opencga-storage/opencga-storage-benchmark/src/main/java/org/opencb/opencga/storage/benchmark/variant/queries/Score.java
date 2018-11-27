@@ -63,4 +63,14 @@ public class Score {
         return this;
     }
 
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Score{");
+        sb.append("id='").append(id).append('\'');
+        sb.append(", min=").append(min);
+        sb.append(", max=").append(max);
+        sb.append(", operators=").append(operators);
+        sb.append('}');
+        return sb.toString();
+    }
 }

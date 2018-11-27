@@ -211,9 +211,7 @@ public class BenchmarkRunner {
             System.out.println(++i + ": Query ID : " + String.format("%1$-18s", key)
                     + ", Avg. Time : " + String.format("%.2f", (result.get(key).get(0) / result.get(key).get(2)))
                     + " ms, Success Ratio : " + (result.get(key).get(1) / result.get(key).get(2) * 100));
-
         }
         System.out.println("\n\n\n");
     }
-
 }

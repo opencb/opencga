@@ -19,21 +19,16 @@ package org.opencb.opencga.storage.benchmark.variant.generators;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.base.Throwables;
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.utils.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.function.Consumer;
 
 /**
  * Created on 06/04/17.
@@ -60,24 +55,6 @@ public abstract class QueryGenerator {
         try (FileInputStream inputStream = new FileInputStream(path.toFile())) {
             ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
             return objectMapper.readValue(inputStream, clazz);
-        } catch (IOException e) {
-            logger.error("Error reading file " + path, e);
-            throw Throwables.propagate(e);
-        }
-    }
-
-    @Deprecated
-    protected void readCsvFile(Path path, Consumer<List<String>> consumer) {
-        try (BufferedReader is = FileUtils.newBufferedReader(path)) {
-            while (true) {
-                String line = is.readLine();
-                if (line == null) {
-                    break;
-                } else if (StringUtils.isBlank(line) || line.startsWith("#")) {
-                    continue;
-                }
-                consumer.accept(Arrays.asList(line.split(",")));
-            }
         } catch (IOException e) {
             logger.error("Error reading file " + path, e);
             throw Throwables.propagate(e);
