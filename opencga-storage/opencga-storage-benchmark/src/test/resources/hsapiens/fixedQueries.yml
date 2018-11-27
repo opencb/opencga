@@ -1,4 +1,7 @@
 ---
+baseQuery :
+  summary : true
+
 queries :
 - id : "RegionAndBiotype"
   description : "Purpose of this query"
@@ -7,22 +10,26 @@ queries :
     gene :   "BRCA2"
     biotype : "coding"
     populationFrequencyMaf : "1kG_phase3:ALL>0.1"
+  tolerationThreshold : 300
 
 - id : "Region"
   description : "Purpose of this query"
   query :
     region : "22:16052853-16054112"
+  tolerationThreshold : 400
 
 - id : "Gene"
   description : "Purpose of this query"
   query :
     gene : "MIB2"
+  tolerationThreshold : 500
 
 - id : "PF"
   description : "Purpose of this query"
   query :
     populationFrequencyMaf : "1kG_phase3:ALL>=0.2"
+  tolerationThreshold : 600
 
 sessionIds :
-- "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0IiwiYXVkIjoiT3BlbkNHQSB1c2VycyIsImlhdCI6MTU0MTU5OTQwNiwiZXhwIjoxNTQxNjAzMDA2fQ.nNDLgIhWQ-561bEbkMSzPx2EEuz2a57GIwhxFAaRXnQ"
-- "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0IiwiYXVkIjoiT3BlbkNHQSB1c2VycyIsImlhdCI6MTU0MTU5OTQwNiwiZXhwIjoxNTQxNjAzMDA2fQ.nNDLgIhWQ-561bEbkMSzPx2EEuz2a57GIwhxFAaRXnQ"
+- "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0IiwiYXVkIjoiT3BlbkNHQSB1c2VycyIsImlhdCI6MTU0MzMxOTExNywiZXhwIjoxNTQzMzIyNzE3fQ.767cui_pUQFGy567VQX9PqJTH6X4JIEWQpgXZFvkXxk"
+- "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0IiwiYXVkIjoiT3BlbkNHQSB1c2VycyIsImlhdCI6MTU0MzMxOTExNywiZXhwIjoxNTQzMzIyNzE3fQ.767cui_pUQFGy567VQX9PqJTH6X4JIEWQpgXZFvkXxk"

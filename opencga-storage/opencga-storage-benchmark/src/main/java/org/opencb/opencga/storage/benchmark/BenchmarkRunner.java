@@ -159,8 +159,10 @@ public class BenchmarkRunner {
 
     public void run() throws IOException {
 
+        if (!Files.exists(outdir)) {
+            Files.createDirectory(outdir);
+        }
         // save generated test plan to JMeter's .jmx file format
-        Files.createDirectory(outdir);
         File jmxFile = outdir.resolve(buildOutputFileName() + ".jmx").toFile();
         SaveService.saveTree(testPlanTree, new FileOutputStream(jmxFile));
 

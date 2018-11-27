@@ -20,10 +20,10 @@ public class FixedQueryGenerator extends QueryGenerator {
     public static final String FIXED_QUERY = "fixed-query";
     public static final String FIXED_QUERIES_FILE = "fixedQueries.yml";
 
+    private Path outDir;
     private String queryId;
     private FixedQuery fixedQuery;
     private FixedQueries fixedQueries;
-    private Path outDir;
 
     @Override
     public void setUp(Map<String, String> params) {
@@ -71,9 +71,9 @@ public class FixedQueryGenerator extends QueryGenerator {
                 StringBuilder st = new StringBuilder();
                 for (FixedQuery fixedQuery : fixedQueries.getQueries()) {
                     int th = fixedQuery.getTolerationThreshold();
-                    st.append(fixedQuery.getId() + ":" + th + "|" + (int) (th + (th * 15.0 / 100)) + ";" + "\\\n");
+                    st.append(String.format("%70s", (fixedQuery.getId() + ":" + th + "|" + (int) (th + (th * 15.0 / 100)) + ";\\\n")));
                 }
-                printWriter.println("jmeter.reportgenerator.apdex_per_transaction=" + st);
+                printWriter.println("jmeter.reportgenerator.apdex_per_transaction=" + st.toString().trim());
             } catch (IOException e) {
                 e.printStackTrace();
             }
