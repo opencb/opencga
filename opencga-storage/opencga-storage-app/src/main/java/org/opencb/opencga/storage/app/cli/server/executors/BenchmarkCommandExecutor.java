@@ -25,6 +25,8 @@ import org.opencb.opencga.storage.benchmark.variant.VariantBenchmarkRunner;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
  * Created on 07/04/17.
@@ -60,7 +62,7 @@ public class BenchmarkCommandExecutor extends CommandExecutor {
     private void variant() throws IOException {
         BenchmarkCommandOptions.VariantBenchmarkCommandOptions options = commandOptions.variantBenchmarkCommandOptions;
 
-        Path outdirPath = Paths.get(options.outdir == null ? "" : options.outdir).toAbsolutePath();
+        Path outdirPath = getBenchmarkPath(options);
         Path jmeterHome = Paths.get(appHome, "benchmark", "jmeter");
         Path dataDir = Paths.get(appHome, "benchmark", "data", "hsapiens");
 
@@ -89,6 +91,10 @@ public class BenchmarkCommandExecutor extends CommandExecutor {
         queryOptions.append(QueryOptions.COUNT, options.count);
         variantBenchmarkRunner.addThreadGroup(options.connectionType, options.executionMode, dataDir, options.queryFile, options.query, queryOptions);
         variantBenchmarkRunner.run();
+    }
+
+    private Path getBenchmarkPath(BenchmarkCommandOptions.VariantBenchmarkCommandOptions options) {
+        return Paths.get(options.outdir == null ? "" : options.outdir, "opencga_benchmark_" + new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date())).toAbsolutePath();
     }
 
 

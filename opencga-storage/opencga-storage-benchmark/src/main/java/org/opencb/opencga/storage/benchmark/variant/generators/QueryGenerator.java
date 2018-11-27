@@ -44,6 +44,8 @@ public abstract class QueryGenerator {
     public static final String DATA_DIR = "dataDir";
     public static final String ARITY = "arity";
     public static final String FILE = "file";
+    public static final String OUT_DIR = "outDir";
+    public static final String USER_PROPERTIES_FILE = "user.properties";
     protected Random random;
 
     private Logger logger = LoggerFactory.getLogger(getClass());

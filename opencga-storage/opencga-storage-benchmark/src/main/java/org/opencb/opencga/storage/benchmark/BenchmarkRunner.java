@@ -37,6 +37,7 @@ import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -115,7 +116,7 @@ public class BenchmarkRunner {
 
         // Store execution results into a .jtl file
         resultFile = outdir.resolve(buildOutputFileName() + "_" + storageConfiguration.getBenchmark().getDatabaseName()
-                + "_" + storageConfiguration.getBenchmark().getMode() + "_" + System.currentTimeMillis() + ".jtl").toString();
+                + "_" + storageConfiguration.getBenchmark().getMode() + ".jtl").toString();
         ResultCollector resultCollector = new ResultCollector(summer);
         resultCollector.setFilename(resultFile);
         testPlanTree.add(testPlan, resultCollector);
@@ -159,6 +160,7 @@ public class BenchmarkRunner {
     public void run() throws IOException {
 
         // save generated test plan to JMeter's .jmx file format
+        Files.createDirectory(outdir);
         File jmxFile = outdir.resolve(buildOutputFileName() + ".jmx").toFile();
         SaveService.saveTree(testPlanTree, new FileOutputStream(jmxFile));
 

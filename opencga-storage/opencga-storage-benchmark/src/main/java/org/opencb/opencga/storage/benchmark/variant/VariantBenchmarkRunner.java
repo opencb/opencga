@@ -82,6 +82,7 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
             variantStorageSampler.setLimit(queryOptions.getInt(QueryOptions.LIMIT, -1));
             variantStorageSampler.setCount(queryOptions.getBoolean(QueryOptions.COUNT, false));
             variantStorageSampler.setQueryGeneratorConfig(FixedQueryGenerator.FILE, queryFile);
+            variantStorageSampler.setQueryGeneratorConfig(FixedQueryGenerator.OUT_DIR, outdir.toString());
 
             if (mode.equals(ExecutionMode.FIXED)) {
                 variantStorageSampler.setQueryGenerator(FixedQueryGenerator.class);

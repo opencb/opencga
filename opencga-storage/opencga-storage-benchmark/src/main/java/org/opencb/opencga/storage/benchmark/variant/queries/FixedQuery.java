@@ -9,6 +9,7 @@ public class FixedQuery {
     private String id;
     private String description;
     private Map<String, String> query;
+    private int tolerationThreshold;
 
     public FixedQuery() {
     }
@@ -19,6 +20,14 @@ public class FixedQuery {
         this.query = query;
     }
 
+    public int getTolerationThreshold() {
+        return tolerationThreshold;
+    }
+
+    public FixedQuery setTolerationThreshold(int tolerationThreshold) {
+        this.tolerationThreshold = tolerationThreshold;
+        return this;
+    }
 
     public String getId() {
         return id;
@@ -53,6 +62,7 @@ public class FixedQuery {
         sb.append("id='").append(id).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", query=").append(query);
+        sb.append(", tolerationThreshold=").append(tolerationThreshold);
         sb.append('}');
         return sb.toString();
     }

@@ -1,89 +1,96 @@
 ---
-   regions :
-      - chromosome : "1"
-        start : 1849612
-        end : 1850388
+baseQuery :
+  summary : true
+  exclude : studies
 
-      - chromosome : "12"
-        start : 1749612
-        end : 2850388
-      - chromosome : "22"
-        start : 16052853
-        end : 16054112
+regions :
+  - chromosome : "1"
+    start : 10000
+    end : 249250621
+  - chromosome : "1"
+    start : 10000
+    end : 249250621
+  - chromosome : "22"
+    start : 16052853
+    end : 16054112
 
-   gene :
-      - "ZNF566"
+gene :
+  - "ZNF566"
 
-   ct :
-      - "missense_variant"
-      - "SO:0001578"
+ct :
+  - "missense_variant"
+  - "SO:0001578"
 
-   type :
-      - "SV"
-      - "CNV"
+type :
+  - "SV"
+  - "CNV"
 
-   study :
-      - "1kG_phase3"
+study :
+  - "1kG_phase3"
 
-   file :
-      - "10_input"
+file :
+  - "10_input"
 
-   sample :
-        - "GermlineSample"
+sample :
+  - "GermlineSample"
 
-   filter :
-      - "PASS"
-      - "LowGQX"
+filter :
+  - "PASS"
+  - "LowGQX"
 
-   biotype :
-     - "protein_coding"
+biotype :
+  - "protein_coding"
 
-   transcriptionFlags :
-     - "CCDS"
-     - "basic"
+transcriptionFlags :
+  - "CCDS"
+  - "basic"
 
-   xref :
-     - "HPO"
+xref :
+  - "HPO"
 
-   drug :
-     - "Neto"
+drug :
+  - "Neto"
 
-   clinicalSignificance :
-     - "likely_benign"
+clinicalSignificance :
+  - "likely_benign"
 
-   functionalScore :
-     - id : "cadd_raw"
-       min : 0
-       max : 1
+functionalScore :
+  - id : "cadd_raw"
+    min : 0
+    max : 1
+  - id : "cadd_scaled"
+    min : -10
+    max : 40
 
-   populationFrequencies :
-     - id : "1kG_phase3:ALL"
-       min : 0
-       max : 0.2
-     - id : "1kG_phase3:AFR"
-       min : 0
-       max : 0.15
+populationFrequencies :
+  - id : "1kG_phase3:ALL"
+    min : 0
+    max : 0.2
+  - id : "1kG_phase3:AFR"
+    min : 0
+    max : 0.15
 
-   proteinSubstitution :
-     - id : "polyphen"
-       min : 0.1
-       max : 0.9
-       operators : [">", "<"]
-     - id : "sift"
-       min : 0.1
-       max : 0.9
-       operators : [">", "<"]
-   qual :
-       id : "polyphen"
-       min : 1
-       max : 9
-       operators : [">"]
+proteinSubstitution :
+  - id : "polyphen"
+    min : 0.1
+    max : 0.9
+    operators : [">", "<"]
+  - id : "sift"
+    min : 0.1
+    max : 0.9
 
-   conservation :
-       id : "phylop"
-       min : 0
-       max : 1
-       operators : ["=", "!="]
-   sessionIds :
-     - "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0IiwiYXVkIjoiT3BlbkNHQSB1c2VycyIsImlhdCI6MTU0MTU5OTQwNiwiZXhwIjoxNTQxNjAzMDA2fQ.nNDLgIhWQ-561bEbkMSzPx2EEuz2a57GIwhxFAaRXnQ"
-     - "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0IiwiYXVkIjoiT3BlbkNHQSB1c2VycyIsImlhdCI6MTU0MTU5OTQwNiwiZXhwIjoxNTQxNjAzMDA2fQ.nNDLgIhWQ-561bEbkMSzPx2EEuz2a57GIwhxFAaRXnQ"
+qual :
+  id : "polyphen"
+  min : 1
+  max : 9
+  operators : [">"]
+
+conservation :
+  id : "phylop"
+  min : 0
+  max : 1
+  operators : ["=", "!="]
+
+sessionIds :
+  - "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0IiwiYXVkIjoiT3BlbkNHQSB1c2VycyIsImlhdCI6MTU0MzMxNTE3MCwiZXhwIjoxNTQzMzE4NzcwfQ.punfImt4yVt2-PmmabGeQizSr2A6JGBGdnYCn5sWAOA"
+  - "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0IiwiYXVkIjoiT3BlbkNHQSB1c2VycyIsImlhdCI6MTU0MzMxNTE3MCwiZXhwIjoxNTQzMzE4NzcwfQ.punfImt4yVt2-PmmabGeQizSr2A6JGBGdnYCn5sWAOA"
