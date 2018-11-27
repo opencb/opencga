@@ -8,16 +8,17 @@ import java.util.Map;
 public class FixedQuery {
     private String id;
     private String description;
-    private Map<String, String> params;
+    private Map<String, String> query;
 
     public FixedQuery() {
     }
 
-    public FixedQuery(String id, String description, Map<String, String> params) {
+    public FixedQuery(String id, String description, Map<String, String> query) {
         this.id = id;
         this.description = description;
-        this.params = params;
+        this.query = query;
     }
+
 
     public String getId() {
         return id;
@@ -37,12 +38,12 @@ public class FixedQuery {
         return this;
     }
 
-    public Map<String, String> getParams() {
-        return params;
+    public Map<String, String> getQuery() {
+        return query;
     }
 
-    public FixedQuery setParams(Map<String, String> params) {
-        this.params = params;
+    public FixedQuery setQuery(Map<String, String> query) {
+        this.query = query;
         return this;
     }
 
@@ -51,7 +52,7 @@ public class FixedQuery {
         final StringBuilder sb = new StringBuilder("FixedQuery{");
         sb.append("id='").append(id).append('\'');
         sb.append(", description='").append(description).append('\'');
-        sb.append(", params=").append(params);
+        sb.append(", query=").append(query);
         sb.append('}');
         return sb.toString();
     }

@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.benchmark.variant.queries;
 import org.opencb.biodata.models.core.Region;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by wasim on 31/10/18.
@@ -33,8 +34,18 @@ public class RandomQueries {
     private List<Score> functionalScore;
 
     private List<String> sessionIds;
+    private Map<String, String> baseQuery;
 
     public RandomQueries() {
+    }
+
+    public Map<String, String> getBaseQuery() {
+        return baseQuery;
+    }
+
+    public RandomQueries setBaseQuery(Map<String, String> baseQuery) {
+        this.baseQuery = baseQuery;
+        return this;
     }
 
     public List<String> getSessionIds() {
@@ -251,15 +262,16 @@ public class RandomQueries {
         sb.append(", xref=").append(xref);
         sb.append(", drug=").append(drug);
         sb.append(", clinicalSignificance=").append(clinicalSignificance);
-        sb.append(", includeSamples=").append(includeSample);
-        sb.append(", includeFiles=").append(includeFile);
-        sb.append(", includeStudies=").append(includeStudy);
+        sb.append(", includeSample=").append(includeSample);
+        sb.append(", includeFile=").append(includeFile);
+        sb.append(", includeStudy=").append(includeStudy);
         sb.append(", qual=").append(qual);
         sb.append(", conservation=").append(conservation);
         sb.append(", proteinSubstitution=").append(proteinSubstitution);
         sb.append(", populationFrequencies=").append(populationFrequencies);
         sb.append(", functionalScore=").append(functionalScore);
         sb.append(", sessionIds=").append(sessionIds);
+        sb.append(", baseQuery=").append(baseQuery);
         sb.append('}');
         return sb.toString();
     }

@@ -15,9 +15,9 @@ public class FixedQueryGenerator extends QueryGenerator {
 
     public static final String FIXED_QUERY = "fixed-query";
     public static final String FIXED_QUERIES_FILE = "fixedQueries.yml";
-    private FixedQueries fixedQueries;
     private String queryId;
     private FixedQuery fixedQuery;
+    private FixedQueries fixedQueries;
 
     @Override
     public void setUp(Map<String, String> params) {
@@ -44,7 +44,8 @@ public class FixedQueryGenerator extends QueryGenerator {
 
     @Override
     public Query generateQuery(Query query) {
-        query.putAll(fixedQuery.getParams());
+        query.putAll(fixedQueries.getBaseQuery());
+        query.putAll(fixedQuery.getQuery());
         appendRandomSessionId(fixedQueries.getSessionIds(), query);
         return query;
     }

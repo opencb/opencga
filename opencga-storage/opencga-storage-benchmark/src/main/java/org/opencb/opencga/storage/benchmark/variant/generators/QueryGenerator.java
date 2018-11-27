@@ -103,4 +103,9 @@ public abstract class QueryGenerator {
         }
     }
 
+    protected void appendbaseQuery(Map<String, String> baseQuery, Query query) {
+        for (String key : baseQuery.keySet()) {
+            query.append(key, baseQuery.get(key));
+        }
+    }
 }

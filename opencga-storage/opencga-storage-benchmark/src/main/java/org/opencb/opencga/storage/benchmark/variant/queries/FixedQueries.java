@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.benchmark.variant.queries;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by wasim on 30/10/18.
@@ -10,9 +11,19 @@ public class FixedQueries {
 
     private List<FixedQuery> queries;
     private List<String> sessionIds;
+    private Map<String, String> baseQuery;
+
     public FixedQueries() {
     }
 
+    public Map<String, String> getBaseQuery() {
+        return baseQuery;
+    }
+
+    public FixedQueries setBaseQuery(Map<String, String> baseQuery) {
+        this.baseQuery = baseQuery;
+        return this;
+    }
 
     public List<FixedQuery> getQueries() {
         return queries;
@@ -45,6 +56,7 @@ public class FixedQueries {
         final StringBuilder sb = new StringBuilder("FixedQueries{");
         sb.append("queries=").append(queries);
         sb.append(", sessionIds=").append(sessionIds);
+        sb.append(", baseQuery=").append(baseQuery);
         sb.append('}');
         return sb.toString();
     }
