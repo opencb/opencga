@@ -367,11 +367,15 @@ public class CatalogSampleManagerTest extends GenericTest {
     public void searchSamples() throws CatalogException {
         long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
 
-        catalogManager.getStudyManager().createGroup(Long.toString(studyId), "myGroup", "user2,user3", sessionIdUser);
-        catalogManager.getStudyManager().createGroup(Long.toString(studyId), "myGroup2", "user2,user3", sessionIdUser);
-        catalogManager.getStudyManager().updateAcl(Arrays.asList(Long.toString(studyId)), "@myGroup", new Study.StudyAclParams("", AclParams.Action.SET, null), sessionIdUser);
+        catalogManager.getStudyManager().createGroup(Long.toString(studyId), new Group("myGroup", Arrays.asList("user2", "user3")),
+                sessionIdUser);
+        catalogManager.getStudyManager().createGroup(Long.toString(studyId), new Group("myGroup2", Arrays.asList("user2", "user3")),
+                sessionIdUser);
+//        catalogManager.getStudyManager().updateAcl(Arrays.asList(Long.toString(studyId)), "@myGroup",
+//                new Study.StudyAclParams("", AclParams.Action.SET, null), sessionIdUser);
 
-        catalogManager.getSampleManager().updateAcl(Long.toString(studyId), Arrays.asList("s_1"), "@myGroup", new Sample.SampleAclParams("VIEW", AclParams.Action.SET, null, null, null), sessionIdUser);
+        catalogManager.getSampleManager().updateAcl(Long.toString(studyId), Arrays.asList("s_1"), "@myGroup",
+                new Sample.SampleAclParams("VIEW", AclParams.Action.SET, null, null, null), sessionIdUser);
 
         QueryResult<Sample> search = catalogManager.getSampleManager().search(Long.toString(studyId), new Query(), new QueryOptions(),
                 sessionIdUser2);

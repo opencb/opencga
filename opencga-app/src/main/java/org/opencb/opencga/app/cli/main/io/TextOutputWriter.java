@@ -159,7 +159,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                                 sb.append(String.format("    - %s\t%s\t%s\t%s\t%d\t%s\t%d\n", study.getAlias(), study.getName(),
                                         study.getType(), study.getDescription(), study.getId(),
                                         study.getGroups() == null ? ""
-                                                : study.getGroups().stream().map(Group::getName).collect(Collectors.joining(",")),
+                                                : study.getGroups().stream().map(Group::getId).collect(Collectors.joining(",")),
                                         study.getSize()));
 
                                 if (study.getGroups() != null && study.getGroups().size() > 0) {
@@ -225,7 +225,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
     }
 
     private void printGroup(Group group, StringBuilder sb, String prefix) {
-        sb.append(String.format("%s%s\t%s\n", prefix, group.getName(), StringUtils.join(group.getUserIds(), ", ")));
+        sb.append(String.format("%s%s\t%s\n", prefix, group.getId(), StringUtils.join(group.getUserIds(), ", ")));
     }
 
     private void printACL(AbstractAclEntry aclEntry, StringBuilder sb, String prefix) {

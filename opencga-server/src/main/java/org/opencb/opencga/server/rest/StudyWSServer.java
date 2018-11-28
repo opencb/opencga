@@ -391,14 +391,22 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
             @PathParam("study") String studyStr,
             @ApiParam(value = "JSON containing the parameters", required = true) GroupCreateParams params) {
-        if (StringUtils.isNotEmpty(params.groupId) && StringUtils.isEmpty(params.name)) {
-            params.name = params.groupId;
+        if (StringUtils.isNotEmpty(params.name)) {
+            params.name = params.id;
         }
-        if (StringUtils.isEmpty(params.name)) {
-            return createErrorResponse(new CatalogException("groupId key missing."));
+
+        if (StringUtils.isNotEmpty(params.id)) {
+            params.id = params.name;
         }
+        if (StringUtils.isEmpty(params.id)) {
+            return createErrorResponse(new CatalogException("Group 'id' key missing."));
+        }
+
+        List<String> userList = StringUtils.isEmpty(params.users) ? Collections.emptyList() : Arrays.asList(params.users.split(","));
+
         try {
-            QueryResult group = catalogManager.getStudyManager().createGroup(studyStr, params.name, params.users, sessionId);
+            QueryResult group = catalogManager.getStudyManager().createGroup(studyStr, new Group(params.id, params.name, userList),
+                    sessionId);
             return createOkResponse(group);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -590,9 +598,8 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     public static class GroupCreateParams {
         @JsonProperty(required = true)
+        public String id;
         public String name;
-        @Deprecated
-        public String groupId;
         public String users;
     }
 

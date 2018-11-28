@@ -257,7 +257,8 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 //        thrown.expect(CatalogException.class);
 //        catalogManager.addUsersToGroup(s1, groupMember, externalUser, ownerSessionId);
         updateGroup(Long.toString(s1), groupAdmin, null, externalUser, null, ownerSessionId);
-        catalogManager.getStudyManager().createGroup(Long.toString(s1), groupMember, externalUser, ownerSessionId);
+        catalogManager.getStudyManager().createGroup(Long.toString(s1), new Group(groupMember, Collections.singletonList(externalUser)),
+                ownerSessionId);
         //        catalogManager.updateGroup(Long.toString(s1), groupMember, externalUser, null, null, ownerSessionId);
         groups = getGroupMap();
         assertTrue(groups.get(groupMember).getUserIds().contains(externalUser));
@@ -278,8 +279,8 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     @Test
     public void removeMemberFromGroup() throws CatalogException {
         // Create new group
-        catalogManager.getStudyManager().createGroup(String.valueOf(s1), groupMember, studyAdminUser1 + "," + studyAdminUser2,
-                ownerSessionId);
+        catalogManager.getStudyManager().createGroup(String.valueOf(s1),
+                new Group(groupMember, Arrays.asList(studyAdminUser1, studyAdminUser2)), ownerSessionId);
 
         // Remove one of the users
         updateGroup(Long.toString(s1), groupMember, null, studyAdminUser1, null, ownerSessionId);
@@ -421,7 +422,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     @Test
     public void removeGroupFromRole() throws CatalogException {
         String group = "@newGroup";
-        catalogManager.getStudyManager().createGroup(Long.toString(s1), group, studyAdminUser1 + "," + studyAdminUser2,
+        catalogManager.getStudyManager().createGroup(Long.toString(s1), new Group(group, Arrays.asList(studyAdminUser1, studyAdminUser2)),
                 studyAdmin1SessionId);
         catalogManager.getStudyManager().updateAcl(Arrays.asList(Long.toString(s1)), group, new Study.StudyAclParams("", AclParams.Action.SET, "admin"), ownerSessionId);
 
@@ -889,7 +890,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     /////////// Aux methods
     private Map<String, Group> getGroupMap() throws CatalogException {
-        return catalogManager.getStudyManager().get(String.valueOf((Long) s1), null, ownerSessionId).first().getGroups().stream().collect(Collectors.toMap(Group::getName, f -> f));
+        return catalogManager.getStudyManager().get(String.valueOf((Long) s1), null, ownerSessionId).first().getGroups().stream().collect(Collectors.toMap(Group::getId, f -> f));
     }
 
 }

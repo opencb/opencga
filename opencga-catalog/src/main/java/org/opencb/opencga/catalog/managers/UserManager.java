@@ -1085,8 +1085,8 @@ public class UserManager extends AbstractManager {
         }
 
         try {
-            catalogManager.getStudyManager().createGroup(Long.toString(studyId), retResult.getInput().getStudyGroup(),
-                    StringUtils.join(userSet, ","), ADMIN_TOKEN);
+            catalogManager.getStudyManager().createGroup(Long.toString(studyId), new Group(retResult.getInput().getStudyGroup(),
+                    userSet.stream().collect(Collectors.toList())), ADMIN_TOKEN);
         } catch (CatalogException e) {
             if (e.getMessage().contains("users already belong to")) {
                 // Cannot create a group with those users because they already belong to other group

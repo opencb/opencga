@@ -34,7 +34,6 @@ import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
-import org.opencb.opencga.core.results.LdapImportResult;
 
 import javax.naming.NamingException;
 import java.io.ByteArrayInputStream;
@@ -397,7 +396,7 @@ public class CatalogManagerTest extends GenericTest {
 
         QueryResult<Group> test = catalogManager.getStudyManager().getGroup("user@1000G:phase1", "test", sessionIdUser);
         assertEquals(1, test.getNumResults());
-        assertEquals("@test", test.first().getName());
+        assertEquals("@test", test.first().getId());
         assertTrue(test.first().getUserIds().size() > 0);
 
 //        internalGroup = "test1";
@@ -671,7 +670,7 @@ public class CatalogManagerTest extends GenericTest {
         QueryResult<Group> groupQueryResult = studyManager.updateGroup(String.valueOf(studyId), "@members",
                 new GroupParams("user2,user3", GroupParams.Action.ADD), sessionIdUser);
         assertEquals(2, groupQueryResult.first().getUserIds().size());
-        assertEquals("@members", groupQueryResult.first().getName());
+        assertEquals("@members", groupQueryResult.first().getId());
 
         // Obtain all samples from study
         QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().get(studyId, new Query(), QueryOptions.empty(),
@@ -718,7 +717,7 @@ public class CatalogManagerTest extends GenericTest {
         QueryResult<Group> groupQueryResult = studyManager.updateGroup(String.valueOf(studyId), "@members",
                 new GroupParams("user2,user3", GroupParams.Action.ADD), sessionIdUser);
         assertEquals(2, groupQueryResult.first().getUserIds().size());
-        assertEquals("@members", groupQueryResult.first().getName());
+        assertEquals("@members", groupQueryResult.first().getId());
 
         // Obtain all samples from study
         QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().get(studyId, new Query(), QueryOptions.empty(),

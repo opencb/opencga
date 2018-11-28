@@ -91,21 +91,21 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
                 for (Group group : allGroups.getResult()) {
                     if (group.getSyncedFrom() != null && group.getSyncedFrom().getAuthOrigin().equals(executor.authOrigin)) {
                         foundAny = true;
-                        logger.info("Synchronising users from {} to {}", group.getSyncedFrom().getRemoteGroup(), group.getName());
+                        logger.info("Synchronising users from {} to {}", group.getSyncedFrom().getRemoteGroup(), group.getId());
 
                         // Sync
                         GroupParams groupParams = new GroupParams(StringUtils.join(group.getUserIds(), ","), GroupParams.Action.REMOVE);
                         QueryResult<Group> deleteUsers = catalogManager.getStudyManager()
-                                .updateGroup(executor.study, group.getName(), groupParams, sessionId);
+                                .updateGroup(executor.study, group.getId(), groupParams, sessionId);
                         if (deleteUsers.first().getUserIds().size() > 0) {
                             logger.error("Could not sync. An internal error happened. {} users could not be removed from {}.",
-                                    deleteUsers.first().getUserIds().size(), deleteUsers.first().getName());
+                                    deleteUsers.first().getUserIds().size(), deleteUsers.first().getId());
                             return;
                         }
 
                         ObjectMap params = new ObjectMap();
                         params.putIfNotNull("group", group.getSyncedFrom().getRemoteGroup());
-                        params.putIfNotNull("study-group", group.getName());
+                        params.putIfNotNull("study-group", group.getId());
                         params.putIfNotNull("study", executor.study);
                         params.putIfNotNull("expirationDate", executor.expDate);
                         LdapImportResult ldapImportResult = catalogManager.getUserManager().importFromExternalAuthOrigin(executor.authOrigin,

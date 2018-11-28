@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.utils;
 
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.models.Account;
+import org.opencb.opencga.core.models.Group;
 import org.opencb.opencga.core.models.GroupParams;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.acls.AclParams;
@@ -108,7 +109,8 @@ public final class CatalogDemo {
         catalogManager.getStudyManager().updateGroup(Long.toString(studyId), "@admins", new GroupParams("user5", GroupParams.Action.ADD),
                 userSessions.get("user1"));
         // user5 will add the rest of users. user2, user3 and user4 go to group "members"
-        catalogManager.getStudyManager().createGroup(Long.toString(studyId), "analyst", "user2,user3,user4", sessionId);
+        catalogManager.getStudyManager().createGroup(Long.toString(studyId), new Group("analyst", Arrays.asList("user2", "user3", "user4")),
+                sessionId);
         //        // @members will have the role "analyst"
         Study.StudyAclParams aclParams1 = new Study.StudyAclParams("", AclParams.Action.ADD, "analyst");
         catalogManager.getStudyManager().updateAcl(Arrays.asList(Long.toString(studyId)), "@analyst", aclParams1, sessionId).get(0);
