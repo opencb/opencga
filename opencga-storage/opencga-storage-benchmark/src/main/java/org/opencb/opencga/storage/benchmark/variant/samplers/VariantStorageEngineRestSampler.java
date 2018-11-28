@@ -75,6 +75,11 @@ public class VariantStorageEngineRestSampler extends HTTPSampler implements Vari
     protected HTTPSampleResult sample(java.net.URL u, String method, boolean areFollowingRedirect, int depth) {
         HTTPSampleResult sample = super.sample(u, method, areFollowingRedirect, depth);
         sample.setSampleLabel(queryGenerator.getQueryId());
+
+        if (getArguments().getArgumentsAsMap().get(QueryOptions.COUNT).equalsIgnoreCase("true")) {
+            String str = sample.getResponseDataAsString();
+            sample.setResponseMessage(str.substring(str.lastIndexOf("[") + 1, str.indexOf("]")));
+        }
         return sample;
     }
 

@@ -75,7 +75,7 @@ public class FixedQueryGenerator extends QueryGenerator {
             try (PrintWriter printWriter = new PrintWriter(new FileWriter(userPropertyFile.toFile()))) {
                 StringBuilder st = new StringBuilder();
                 for (FixedQuery fixedQuery : fixedQueries.getQueries()) {
-                    int th = fixedQuery.getTolerationThreshold();
+                    int th = (fixedQuery.getTolerationThreshold() == 0 ? 2000 : fixedQuery.getTolerationThreshold());
                     st.append(String.format("%50s:%d|%d;\\\n", fixedQuery.getId(), th, (int) (th + (th * 15.0 / 100))));
                 }
                 printWriter.println("jmeter.reportgenerator.apdex_per_transaction=" + st.toString().trim());
