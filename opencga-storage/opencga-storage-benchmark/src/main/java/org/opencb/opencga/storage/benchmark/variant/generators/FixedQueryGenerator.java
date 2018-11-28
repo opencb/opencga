@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Created by wasim on 30/10/18.
@@ -52,8 +53,11 @@ public class FixedQueryGenerator extends QueryGenerator {
 
     @Override
     public Query generateQuery(Query query) {
-        query.putAll(fixedQueries.getBaseQuery());
         query.putAll(fixedQuery.getQuery());
+
+        if (Objects.nonNull(fixedQueries.getBaseQuery())) {
+            query.putAll(fixedQueries.getBaseQuery());
+        }
         appendRandomSessionId(fixedQueries.getSessionIds(), query);
         return query;
     }
@@ -71,7 +75,7 @@ public class FixedQueryGenerator extends QueryGenerator {
                 StringBuilder st = new StringBuilder();
                 for (FixedQuery fixedQuery : fixedQueries.getQueries()) {
                     int th = fixedQuery.getTolerationThreshold();
-                    st.append(String.format("%70s", (fixedQuery.getId() + ":" + th + "|" + (int) (th + (th * 15.0 / 100)) + ";\\\n")));
+                    st.append(String.format("%50s:%d|%d;\\\n", fixedQuery.getId(), th, (int) (th + (th * 15.0 / 100))));
                 }
                 printWriter.println("jmeter.reportgenerator.apdex_per_transaction=" + st.toString().trim());
             } catch (IOException e) {

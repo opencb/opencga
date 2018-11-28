@@ -169,8 +169,8 @@ public class MultiQueryGenerator extends QueryGenerator {
         for (QueryGenerator generator : generators) {
             generator.generateQuery(query);
         }
+        appendbaseQuery(randomQueries, query);
         appendRandomSessionId(randomQueries.getSessionIds(), query);
-        appendbaseQuery(randomQueries.getBaseQuery(), query);
         return query;
     }
 }

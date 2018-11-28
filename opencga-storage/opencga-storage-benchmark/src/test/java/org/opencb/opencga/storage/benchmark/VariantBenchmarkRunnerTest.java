@@ -50,6 +50,7 @@ public class VariantBenchmarkRunnerTest extends VariantStorageBaseTest implement
 
         Map<String, String> params = new HashMap<>();
         params.put(FixedQueryGenerator.DATA_DIR, "src/test/resources/hsapiens");
+        params.put(QueryOptions.LIMIT, "5");
 
     }
 

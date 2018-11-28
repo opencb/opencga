@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.base.Throwables;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.opencga.storage.benchmark.variant.queries.RandomQueries;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +29,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 
 /**
@@ -77,14 +79,14 @@ public abstract class QueryGenerator {
     }
 
     protected void appendRandomSessionId(List<String> sessionIds, Query query) {
-        if (sessionIds != null && sessionIds.size() > 0) {
+        if (Objects.nonNull(sessionIds)) {
             query.append("sid", sessionIds.get(random.nextInt(sessionIds.size())));
         }
     }
 
-    protected void appendbaseQuery(Map<String, String> baseQuery, Query query) {
-        for (String key : baseQuery.keySet()) {
-            query.append(key, baseQuery.get(key));
+    protected void appendbaseQuery(RandomQueries randomQueries, Query query) {
+        if (Objects.nonNull(randomQueries.getBaseQuery())) {
+            query.putAll(randomQueries.getBaseQuery());
         }
     }
 }
