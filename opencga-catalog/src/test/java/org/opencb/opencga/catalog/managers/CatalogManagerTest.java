@@ -362,73 +362,61 @@ public class CatalogManagerTest extends GenericTest {
     @Test
     public void importLdapUsers() throws CatalogException, NamingException, IOException {
         // Action only for admins
-        ObjectMap params = new ObjectMap()
-                .append("users", "pfurio,imedina");
+        catalogManager.getUserManager().importRemoteUsers("ldap", Arrays.asList("pfurio", "imedina"), null, null, getAdminToken());
 
-        LdapImportResult ldapImportResult = catalogManager.getUserManager().importFromExternalAuthOrigin("ldap", Account.GUEST, params,
-                getAdminToken());
-
-        assertEquals(2, ldapImportResult.getResult().getUserSummary().getTotal());
+        // TODO: Validate the users have been imported
     }
 
     // To make this test work we will need to add a correct user and password to be able to login
     @Ignore
     @Test
-    public void loginNotRegisteredUsers() throws CatalogException, NamingException, IOException {
+    public void loginNotRegisteredUsers() throws CatalogException {
         // Action only for admins
-        catalogManager.getStudyManager().createGroup(Long.toString(studyId), "ldap", "", sessionIdUser);
-        catalogManager.getStudyManager().syncGroupWith(Long.toString(studyId), "ldap", new Group.Sync("ldap", "bio"), sessionIdUser);
+        Group group = new Group("ldap", Collections.emptyList()).setSyncedFrom(new Group.Sync("ldap", "bio"));
+        catalogManager.getStudyManager().createGroup(Long.toString(studyId), group, sessionIdUser);
         catalogManager.getStudyManager().updateAcl(Arrays.asList(Long.toString(studyId)), "@ldap", new Study.StudyAclParams("",
                 AclParams.Action.SET, "view_only"), sessionIdUser);
         String token = catalogManager.getUserManager().login("user", "password");
 
-        QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), QueryOptions.empty(),
-                token);
-        assertEquals(1, studyQueryResult.getNumResults());
+        assertEquals(9, catalogManager.getSampleManager().count(String.valueOf(studyId), new Query(), token).getNumTotalResults());
 
         // We remove the permissions for group ldap
         catalogManager.getStudyManager().updateAcl(Arrays.asList(Long.toString(studyId)), "@ldap", new Study.StudyAclParams("",
                 AclParams.Action.RESET, ""), sessionIdUser);
-        thrown.expect(CatalogAuthorizationException.class);
-        catalogManager.getStudyManager().get(String.valueOf((Long) studyId), QueryOptions.empty(), token);
+        assertEquals(0, catalogManager.getSampleManager().count(String.valueOf(studyId), new Query(), token).getNumTotalResults());
     }
 
     @Ignore
     @Test
-    public void importLdapGroups() throws CatalogException, NamingException, IOException {
+    public void importLdapGroups() throws CatalogException, IOException {
         // Action only for admins
-        ObjectMap params = new ObjectMap()
-                .append("group", "bio")
-                .append("study", "user@1000G:phase1")
-                .append("study-group", "test");
-        catalogManager.getUserManager().importFromExternalAuthOrigin("ldap", Account.GUEST, params, getAdminToken());
+        String remoteGroup = "bio";
+        String internalGroup = "test";
+        String study = "user@1000G:phase1";
+        catalogManager.getUserManager().importRemoteGroupOfUsers("ldap", remoteGroup, internalGroup, study, getAdminToken());
 
         QueryResult<Group> test = catalogManager.getStudyManager().getGroup("user@1000G:phase1", "test", sessionIdUser);
         assertEquals(1, test.getNumResults());
         assertEquals("@test", test.first().getName());
         assertTrue(test.first().getUserIds().size() > 0);
 
-        params.put("study-group", "test1");
-        try {
-            catalogManager.getUserManager().importFromExternalAuthOrigin("ldap", Account.GUEST, params, getAdminToken());
-            fail("Should not be possible creating another group containing the same users that belong to a different group");
-        } catch (CatalogException e) {
-            System.out.println(e.getMessage());
-        }
+//        internalGroup = "test1";
+//        try {
+//            catalogManager.getUserManager().importRemoteGroupOfUsers("ldap", remoteGroup, internalGroup, study, getAdminToken());
+//            fail("Should not be possible creating another group containing the same users that belong to a different group");
+//        } catch (CatalogException e) {
+//            System.out.println(e.getMessage());
+//        }
 
-        params = new ObjectMap()
-                .append("group", "bioo")
-                .append("study", "user@1000G:phase1")
-                .append("study-group", "test2");
-        catalogManager.getUserManager().importFromExternalAuthOrigin("ldap", Account.GUEST, params, getAdminToken());
-
-        thrown.expect(CatalogDBException.class);
-        thrown.expectMessage("not exist");
-        catalogManager.getStudyManager().getGroup("user@1000G:phase1", "test2", sessionIdUser);
+        remoteGroup = "bioo";
+        internalGroup = "test2";
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("not found");
+        catalogManager.getUserManager().importRemoteGroupOfUsers("ldap", remoteGroup, internalGroup, study, getAdminToken());
     }
 
     @Test
-    public void testAssignPermissions() throws CatalogException, IOException {
+    public void testAssignPermissions() throws CatalogException {
         catalogManager.getUserManager().create("test", "test", "test@mail.com", "test", null, 100L, "guest", null);
 
         catalogManager.getStudyManager().createGroup("user@1000G:phase1", "group_cancer_some_thing_else", "test", sessionIdUser);

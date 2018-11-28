@@ -18,101 +18,144 @@ package org.opencb.opencga.catalog.auth.authentication;
 
 import io.jsonwebtoken.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.UnsupportedEncodingException;
-import java.util.Date;
+import javax.annotation.Nullable;
+import java.security.Key;
+import java.util.*;
 
 public class JwtManager {
 
-    private Configuration configuration;
+    private SignatureAlgorithm algorithm;
 
-    private String secretKey;
-    private Long expiration;
+    private Key privateKey;
+    private Key publicKey;
+
     private Logger logger;
 
-    JwtManager(Configuration configuration) {
-        this.configuration = configuration;
+    JwtManager(String algorithm, Key secretKey) {
+        this(algorithm, secretKey, secretKey);
+    }
 
-        this.secretKey = this.configuration.getAdmin().getSecretKey();
-        this.expiration = this.configuration.getAuthentication().getExpiration();
+    JwtManager(String algorithm, @Nullable Key privateKey, Key publicKey) {
+        this.algorithm = SignatureAlgorithm.forName(algorithm);
+        this.privateKey = privateKey;
+        this.publicKey = publicKey;
 
         logger = LoggerFactory.getLogger(JwtManager.class);
     }
 
-    String getSecretKey() {
-        return secretKey;
+    public SignatureAlgorithm getAlgorithm() {
+        return algorithm;
     }
 
-    JwtManager setSecretKey(String secretKey) {
-        this.secretKey = secretKey;
+    public JwtManager setAlgorithm(SignatureAlgorithm algorithm) {
+        this.algorithm = algorithm;
         return this;
     }
 
-    Long getExpiration() {
-        return expiration;
+    public Key getPrivateKey() {
+        return privateKey;
     }
 
-    JwtManager setExpiration(Long expiration) {
-        this.expiration = expiration;
+    public JwtManager setPrivateKey(Key privateKey) {
+        this.privateKey = privateKey;
         return this;
     }
 
-    String createJWTToken(String userId) {
-        return createJWTToken(userId, expiration);
+    public Key getPublicKey() {
+        return publicKey;
+    }
+
+    public JwtManager setPublicKey(Key publicKey) {
+        this.publicKey = publicKey;
+        return this;
     }
 
     String createJWTToken(String userId, long expiration) {
-        String jwt = null;
-        try {
-            long currentTime = System.currentTimeMillis();
-            JwtBuilder jwtBuilder = Jwts.builder()
-                    .setSubject(userId)
-                    .setAudience("OpenCGA users")
-                    .setIssuedAt(new Date(currentTime))
-                    .signWith(SignatureAlgorithm.forName(configuration.getAdmin().getAlgorithm()), this.secretKey.getBytes("UTF-8"));
+        return createJWTToken(userId, Collections.emptyMap(), expiration);
+    }
 
-            // Set the expiration in number of seconds only if 'expiration' is greater than 0
-            if (expiration > 0) {
-                jwtBuilder.setExpiration(new Date(currentTime + expiration * 1000L));
-            }
+    String createJWTToken(String userId, Map<String, Object> claims, long expiration) {
+        long currentTime = System.currentTimeMillis();
 
-            jwt = jwtBuilder.compact();
-        } catch (UnsupportedEncodingException e) {
-            logger.error("error while creating jwt token");
+        JwtBuilder jwtBuilder = Jwts.builder();
+        if (claims != null && !claims.isEmpty()) {
+            jwtBuilder.setClaims(claims);
         }
-        return jwt;
+        jwtBuilder.setSubject(userId)
+                .setAudience("OpenCGA users")
+                .setIssuedAt(new Date(currentTime))
+                .signWith(algorithm, privateKey);
+
+        // Set the expiration in number of seconds only if 'expiration' is greater than 0
+        if (expiration > 0) {
+            jwtBuilder.setExpiration(new Date(currentTime + expiration * 1000L));
+        }
+
+        return jwtBuilder.compact();
     }
 
-    void validateToken(String jwtKey) throws CatalogAuthenticationException {
-        parseClaims(jwtKey);
+    void validateToken(String token) throws CatalogAuthenticationException {
+        parseClaims(token);
     }
 
-    String getAudience(String jwtKey) throws CatalogAuthenticationException {
-        return parseClaims(jwtKey).getBody().getAudience();
+    String getAudience(String token) throws CatalogAuthenticationException {
+        return parseClaims(token).getBody().getAudience();
     }
 
-    String getUser(String jwtKey) throws CatalogAuthenticationException {
-        return parseClaims(jwtKey).getBody().getSubject();
+    String getUser(String token) throws CatalogAuthenticationException {
+        Set<Map.Entry<String, Object>> entries = parseClaims(token).getBody().entrySet();
+        return parseClaims(token).getBody().getSubject();
     }
 
-    Date getExpiration(String jwtKey) throws CatalogAuthenticationException {
-        return parseClaims(jwtKey).getBody().getExpiration();
+    String getUser(String token, String fieldKey) throws CatalogAuthenticationException {
+        return String.valueOf(parseClaims(token).getBody().get(fieldKey));
     }
 
-    private Jws<Claims> parseClaims(String jwtKey) throws CatalogAuthenticationException {
+    List<String> getGroups(String token, String fieldKey) throws CatalogAuthenticationException {
+        Object o = parseClaims(token).getBody().get(fieldKey);
+
+        if (o instanceof List) {
+            return (List<String>) o;
+        } else {
+            return Collections.singletonList(String.valueOf(o));
+        }
+    }
+
+    Date getExpiration(String token) throws CatalogAuthenticationException {
+        return parseClaims(token).getBody().getExpiration();
+    }
+
+    Object getClaim(String token, String claimId) throws CatalogAuthenticationException {
+        return parseClaims(token).getBody().get(claimId);
+    }
+
+    private Jws<Claims> parseClaims(String token) throws CatalogAuthenticationException {
         try {
-            return Jwts.parser().setSigningKey(this.secretKey.getBytes("UTF-8")).parseClaimsJws(jwtKey);
+            return Jwts.parser().setSigningKey(publicKey).parseClaimsJws(token);
         } catch (ExpiredJwtException e) {
-            throw CatalogAuthenticationException.tokenExpired(jwtKey);
+            throw CatalogAuthenticationException.tokenExpired(token);
         } catch (MalformedJwtException | SignatureException e) {
-            throw CatalogAuthenticationException.invalidAuthenticationToken(jwtKey);
-        } catch (UnsupportedEncodingException e) {
-            throw CatalogAuthenticationException.invalidAuthenticationEncodingToken(jwtKey);
+            throw CatalogAuthenticationException.invalidAuthenticationToken(token);
         }
     }
 
+    // Check if the token contains the key and any of the values from 'filters'
+    public boolean passFilters(String token, Map<String, List<String>> filters) throws CatalogAuthenticationException {
+        if (filters == null || filters.isEmpty()) {
+            return true;
+        }
+
+        Claims body = parseClaims(token).getBody();
+        for (Map.Entry<String, List<String>> entry : filters.entrySet()) {
+            if (!entry.getValue().contains(String.valueOf(body.get(entry.getKey())))) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 
 }

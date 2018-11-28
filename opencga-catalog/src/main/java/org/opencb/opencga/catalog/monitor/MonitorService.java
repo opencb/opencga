@@ -71,14 +71,15 @@ public class MonitorService {
 
         try {
             this.catalogManager = new CatalogManager(this.configuration);
-            String sessionId = this.catalogManager.getUserManager().getSystemTokenForUser("admin", password);
+            String expiringToken = this.catalogManager.getUserManager().login("admin", password);
+            String nonExpiringToken = this.catalogManager.getUserManager().getSystemTokenForUser("admin", expiringToken);
 
-            executionDaemon = new ExecutionDaemon(configuration.getMonitor().getExecutionDaemonInterval(), sessionId,
+            executionDaemon = new ExecutionDaemon(configuration.getMonitor().getExecutionDaemonInterval(), nonExpiringToken,
                     catalogManager, appHome);
-            indexDaemon = new IndexDaemon(configuration.getMonitor().getExecutionDaemonInterval(), sessionId, catalogManager,
+            indexDaemon = new IndexDaemon(configuration.getMonitor().getExecutionDaemonInterval(), nonExpiringToken, catalogManager,
                     appHome);
             fileDaemon = new FileDaemon(configuration.getMonitor().getFileDaemonInterval(),
-                    configuration.getMonitor().getDaysToRemove(), sessionId, catalogManager);
+                    configuration.getMonitor().getDaysToRemove(), nonExpiringToken, catalogManager);
 
             executionThread = new Thread(executionDaemon, "execution-thread");
             indexThread = new Thread(indexDaemon, "index-thread");

@@ -16,12 +16,18 @@
 
 package org.opencb.opencga.catalog.auth.authentication;
 
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.impl.TextCodec;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.config.Configuration;
+
+import javax.crypto.spec.SecretKeySpec;
+import java.security.Key;
+import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -37,15 +43,14 @@ public class JwtSessionManagerTest extends GenericTest {
     @Before
     public void setUp() throws Exception  {
         Configuration configuration = Configuration.load(getClass().getResource("/configuration-test.yml").openStream());
-        configuration.getAdmin().setSecretKey("12345");
-        configuration.getAdmin().setAlgorithm("HS256");
-        jwtSessionManager = new JwtManager(configuration);
+        Key key = new SecretKeySpec(TextCodec.BASE64.decode("12345"), SignatureAlgorithm.HS256.getJcaName());
+        jwtSessionManager = new JwtManager(SignatureAlgorithm.HS256.getValue(), key, key);
         testCreateJWTToken();
     }
 
     @Test
     public void testCreateJWTToken() throws Exception {
-        jwtToken = jwtSessionManager.createJWTToken("testUser", 60L);
+        jwtToken = jwtSessionManager.createJWTToken("testUser", Collections.emptyMap(), 60L);
     }
 
     @Test
@@ -67,13 +72,13 @@ public class JwtSessionManagerTest extends GenericTest {
 
     @Test(expected = CatalogAuthenticationException.class)
     public void testInvalidSecretKey() throws CatalogAuthenticationException {
-        jwtSessionManager.setSecretKey("wrongKey");
+        jwtSessionManager.setPublicKey(new SecretKeySpec(TextCodec.BASE64.decode("wrongKey"), SignatureAlgorithm.HS256.getJcaName()));
         jwtSessionManager.validateToken(jwtToken);
     }
 
     @Test
     public void testNonExpiringToken() throws CatalogException {
-        String nonExpiringToken = jwtSessionManager.createJWTToken("System", -1L);
+        String nonExpiringToken = jwtSessionManager.createJWTToken("System", null, -1L);
         assertEquals(jwtSessionManager.getUser(nonExpiringToken), "System");
         assertNull(jwtSessionManager.getExpiration(nonExpiringToken));
     }

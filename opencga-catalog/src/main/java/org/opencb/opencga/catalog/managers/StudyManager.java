@@ -21,15 +21,13 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogIOException;
+import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidator;
@@ -653,40 +651,49 @@ public class StudyManager extends AbstractManager {
     }
 
     public QueryResult<Group> createGroup(String studyStr, String groupId, String users, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(groupId, "groupId");
+        List<String> userList = StringUtils.isNotEmpty(users) ? Arrays.asList(users.split(",")) : Collections.emptyList();
+        return createGroup(studyStr, new Group(groupId, userList), sessionId);
+    }
+
+    public QueryResult<Group> createGroup(String studyStr, Group group, String sessionId) throws CatalogException {
+        ParamUtils.checkObj(group, "group");
+        ParamUtils.checkParameter(group.getName(), "Group name");
+
+        if (group.getSyncedFrom() != null) {
+            ParamUtils.checkParameter(group.getSyncedFrom().getAuthOrigin(), "Authentication origin");
+            ParamUtils.checkParameter(group.getSyncedFrom().getRemoteGroup(), "Remote group id");
+        }
 
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = getId(userId, studyStr);
 
-        // Fix the groupId
-        if (!groupId.startsWith("@")) {
-            groupId = "@" + groupId;
+        // Fix the group name
+        if (!group.getName().startsWith("@")) {
+            group.setName("@" + group.getName());
         }
 
-        authorizationManager.checkCreateDeleteGroupPermissions(studyId, userId, groupId);
-
-        // Create the list of users
-        List<String> userList;
-        if (StringUtils.isNotEmpty(users)) {
-            userList = Arrays.asList(users.split(","));
-        } else {
-            userList = Collections.emptyList();
-        }
+        authorizationManager.checkCreateDeleteGroupPermissions(studyId, userId, group.getName());
 
         // Check group exists
-        if (existsGroup(studyId, groupId)) {
-            throw new CatalogException("The group " + groupId + " already exists.");
+        if (existsGroup(studyId, group.getName())) {
+            throw new CatalogException("The group " + group.getName() + " already exists.");
         }
 
-        // Check the list of users is ok
-        if (userList.size() > 0) {
-            userDBAdaptor.checkIds(userList);
+        List<String> users = group.getUserIds();
+        if (ListUtils.isNotEmpty(users)) {
+            // We remove possible duplicates
+            users = users.stream().collect(Collectors.toSet()).stream().collect(Collectors.toList());
+            userDBAdaptor.checkIds(users);
+            group.setUserIds(users);
+        } else {
+            users = Collections.emptyList();
         }
 
         // Add those users to the members group
-        studyDBAdaptor.addUsersToGroup(studyId, MEMBERS, userList);
+        studyDBAdaptor.addUsersToGroup(studyId, MEMBERS, users);
+
         // Create the group
-        return studyDBAdaptor.createGroup(studyId, new Group(groupId, userList));
+        return studyDBAdaptor.createGroup(studyId, group);
     }
 
     public QueryResult<Group> getGroup(String studyStr, String groupId, String sessionId) throws CatalogException {
@@ -751,11 +758,6 @@ public class StudyManager extends AbstractManager {
             }
         } else {
             users = Collections.emptyList();
-        }
-
-        // Fix the group name
-        if (!groupId.startsWith("@")) {
-            groupId = "@" + groupId;
         }
 
         switch (groupParams.getAction()) {
