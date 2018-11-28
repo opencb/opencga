@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Created on 06/04/17.
@@ -118,7 +119,7 @@ public class VariantStorageEngineRestSampler extends HTTPSampler implements Vari
     }
 
     private QueryGenerator getQueryGenerator() {
-        if (queryGenerator == null) {
+        if (Objects.isNull(queryGenerator)) {
             String queryGeneratorClassName = getQueryGeneratorClassName();
             try {
                 Map<String, String> map = new HashMap<>();

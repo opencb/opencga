@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.benchmark.variant.generators;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.benchmark.variant.queries.FixedQueries;
 import org.opencb.opencga.storage.benchmark.variant.queries.FixedQuery;
@@ -35,7 +36,7 @@ public class FixedQueryGenerator extends QueryGenerator {
         outDir = Paths.get(params.get(OUT_DIR));
         queryId = params.get(FIXED_QUERY);
 
-        if (queryFile == null || queryFile.isEmpty()) {
+        if (StringUtils.isEmpty(queryFile)) {
             queryFile = params.get(DATA_DIR).concat("/").concat(FIXED_QUERIES_FILE);
         }
 

@@ -40,6 +40,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Created on 06/04/17.
@@ -104,7 +105,7 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
         switch (type) {
             case REST:
                 URI rest = storageConfiguration.getBenchmark().getRest();
-                if (rest != null) {
+                if (Objects.nonNull(rest)) {
                     return new VariantStorageEngineRestSampler(rest.getHost(), rest.getPath(), rest.getPort());
                 } else {
                     return new VariantStorageEngineRestSampler("localhost", storageConfiguration.getServer().getRest());
@@ -124,7 +125,7 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
         FixedQueries fixedQueries;
         List<String> queryList = new ArrayList<>();
 
-        if (queryFile == null || queryFile.isEmpty()) {
+        if (StringUtils.isEmpty(queryFile)) {
             queryFilePath = Paths.get(dataDir.toString(), FixedQueryGenerator.FIXED_QUERIES_FILE);
         } else {
             queryFilePath = Paths.get(queryFile);

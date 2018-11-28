@@ -77,7 +77,7 @@ public abstract class ScoreQueryGenerator extends ConfiguredQueryGenerator {
     }
 
     private String getOperators(Score score) {
-        return (score.getOperators() == null)
+        return (Objects.isNull(score.getOperators()))
                 ? DEF_OPS.get(random.nextInt(2)) : score.getOperators().get(random.nextInt(score.getOperators().size()));
     }
 
