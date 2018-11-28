@@ -33,10 +33,7 @@ import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.AnnotationSet;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Individual;
-import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.server.WebServiceException;
 
@@ -725,10 +722,13 @@ public class SampleWSServer extends OpenCGAWSServer {
         public String name;
         public String description;
         public String type;
+        public SampleProcessing processing;
+        public SampleCollection collection;
         public String source;
         public boolean somatic;
         public List<Phenotype> phenotypes;
         public List<AnnotationSet> annotationSets;
+        @Deprecated
         public Map<String, Object> stats;
         public Map<String, Object> attributes;
     }
@@ -755,7 +755,8 @@ public class SampleWSServer extends OpenCGAWSServer {
             String sampleId = StringUtils.isEmpty(id) ? name : id;
             String sampleName = StringUtils.isEmpty(name) ? sampleId : name;
             return new Sample(sampleId, source, individual != null ? individual.toIndividual(studyStr, studyManager, sessionId) : null,
-                    description, type, somatic, 1, 1, annotationSets, phenotypes, stats, attributes).setName(sampleName);
+                    processing, collection, 1, 1, description, type, somatic, phenotypes, annotationSets, attributes)
+                    .setName(sampleName).setStats(stats);
         }
     }
 }

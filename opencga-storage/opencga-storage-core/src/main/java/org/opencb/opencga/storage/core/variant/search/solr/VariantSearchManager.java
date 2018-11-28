@@ -24,9 +24,11 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.Query;
@@ -44,6 +46,7 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchModel;
@@ -301,7 +304,8 @@ public class VariantSearchManager {
         SolrCollection solrCollection = solrManager.getCollection(collection);
         QueryResult<Variant> queryResult;
         try {
-            queryResult = solrCollection.query(solrQuery, VariantSearchModel.class, variantSearchToVariantConverter);
+            queryResult = solrCollection.query(solrQuery, VariantSearchModel.class,
+                    new VariantSearchToVariantConverter(VariantField.getIncludeFields(queryOptions)));
         } catch (SolrServerException e) {
             throw new VariantSearchException("Error executing variant query", e);
         }
@@ -351,7 +355,8 @@ public class VariantSearchManager {
             throws VariantSearchException, IOException {
         try {
             SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
-            return new VariantSolrIterator(solrManager.getSolrClient(), collection, solrQuery);
+            return new VariantSolrIterator(solrManager.getSolrClient(), collection, solrQuery,
+                    new VariantSearchToVariantConverter(VariantField.getIncludeFields(queryOptions)));
         } catch (SolrServerException e) {
             throw new VariantSearchException("Error getting variant iterator", e);
         }
@@ -409,11 +414,16 @@ public class VariantSearchManager {
      */
     public FacetQueryResult facetedQuery(String collection, Query query, QueryOptions queryOptions)
             throws VariantSearchException, IOException {
-        // As "genes" contains, for each gene: gene names, Ensembl gene ID and all its Ensembl transcript IDs,
-        // we do not have to repeat counts for all of them, by default, only for gene names
+        // Pre-processing
+        //   - As "genes" contains, for each gene: gene names, Ensembl gene ID and all its Ensembl transcript IDs,
+        //     we do not have to repeat counts for all of them, by default, only for gene names
+        //   - consequenceType is replaced by soAcc (i.e., by the field name in the Solr schema)
+        boolean replaceSoAcc = false;
         boolean replaceGenes = false;
         if (queryOptions.containsKey(QueryOptions.FACET) && StringUtils.isNotEmpty(queryOptions.getString(QueryOptions.FACET))) {
             String facetQuery = queryOptions.getString(QueryOptions.FACET);
+
+            // Gene management
             if (facetQuery.contains("genes[")
                     && (facetQuery.contains("genes;") || facetQuery.contains("genes>>") || facetQuery.endsWith("genes"))) {
                 throw new VariantSearchException("Invalid gene facet query: " + facetQuery);
@@ -423,26 +433,85 @@ public class VariantSearchManager {
                 queryOptions.put(QueryOptions.FACET, facetQuery.replace("genes", "genes[ENSG0*]"));
                 replaceGenes = true;
             }
+
+            // Consequence type management
+            facetQuery = queryOptions.getString(QueryOptions.FACET);
+            if (facetQuery.contains("consequenceType")) {
+                replaceSoAcc = true;
+
+                facetQuery = facetQuery.replace("consequenceType", "soAcc");
+                queryOptions.put(QueryOptions.FACET, facetQuery);
+
+                String[] split = facetQuery.split("soAcc\\[");
+                if (split.length > 1 || facetQuery.startsWith("soAcc[")) {
+                    int start = 0;
+                    StringBuilder newFacetQuery = new StringBuilder();
+                    if (!facetQuery.startsWith("soAcc[")) {
+                        newFacetQuery.append(split[0]);
+                        start = 1;
+                    }
+                    for (int i = start; i < split.length; i++) {
+                        newFacetQuery.append("soAcc");
+
+                        // Manage values to include
+                        int index = split[i].indexOf("]");
+                        String strValues = split[i].substring(0, index);
+                        String[] arrValues = strValues.split(",");
+                        List<String> soAccs = new ArrayList<>();
+                        for (String value: arrValues) {
+                            String val = value.replace("SO:", "");
+                            try {
+                                // Try to get SO accession, and if it is a valid SO accession
+                                int soAcc = Integer.parseInt(val);
+                                if (ConsequenceTypeMappings.accessionToTerm.containsKey(soAcc)) {
+                                    soAccs.add(String.valueOf(soAcc));
+                                }
+                            } catch (NumberFormatException e) {
+                                // Otherwise, it is treated as a SO term, and check if it is a valid SO term
+                                if (ConsequenceTypeMappings.termToAccession.containsKey(val)) {
+                                    soAccs.add(String.valueOf(ConsequenceTypeMappings.termToAccession.get(val)));
+                                }
+                            }
+                        }
+                        if (ListUtils.isNotEmpty(soAccs)) {
+                            newFacetQuery.append("[").append(StringUtils.join(soAccs, ",")).append("]");
+                        }
+                    }
+                    queryOptions.put(QueryOptions.FACET, newFacetQuery.toString());
+                }
+            }
         }
 
+        // Query
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        Postprocessing postprocessing = null;
+        String jsonFacet = solrQuery.get("json.facet");
+        if (StringUtils.isNotEmpty(jsonFacet) && jsonFacet.contains(SolrQueryParser.CHROM_DENSITY)) {
+            postprocessing = new Postprocessing().setFacet(jsonFacet);
+        }
         SolrCollection solrCollection = solrManager.getCollection(collection);
 
         FacetQueryResult facetResult;
         try {
-            facetResult = solrCollection.facet(solrQuery);
+            facetResult = solrCollection.facet(solrQuery, null, postprocessing);
         } catch (SolrServerException e) {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
         }
 
+        // Post-processing
+        Map<String, String> ensemblGeneIdToGeneName = null;
         if (replaceGenes) {
             List<String> ensemblGeneIds = getEnsemblGeneIds(facetResult.getResults());
             QueryResponse<Gene> geneQueryResponse = cellBaseClient.getGeneClient().get(ensemblGeneIds, QueryOptions.empty());
-            Map<String, String> ensemblGeneIdToGeneName = new HashMap<>();
+            ensemblGeneIdToGeneName = new HashMap<>();
             for (Gene gene: geneQueryResponse.allResults()) {
                 ensemblGeneIdToGeneName.put(gene.getId(), gene.getName());
             }
-            replaceEnsemblGeneIds(facetResult.getResults(), ensemblGeneIdToGeneName);
+//            replaceEnsemblGeneIds(facetResult.getResults(), ensemblGeneIdToGeneName);
+        }
+
+        if (replaceGenes || replaceSoAcc) {
+            facetPostProcessing(facetResult.getResults(), ensemblGeneIdToGeneName, replaceSoAcc);
         }
 
         return facetResult;
@@ -451,6 +520,8 @@ public class VariantSearchManager {
     public void close() throws IOException {
         solrManager.close();
     }
+
+
 
     /*-------------------------------------
      *  P R I V A T E    M E T H O D S
@@ -559,23 +630,83 @@ public class VariantSearchManager {
         return new ArrayList<>(ensemblGeneIds);
     }
 
-    private void replaceEnsemblGeneIds(List<FacetQueryResult.Field> results, Map<String, String> ensemblGeneIdToGeneName) {
+    private void facetPostProcessing(List<FacetQueryResult.Field> results, Map<String, String> ensemblGeneIdToGeneName,
+                                     boolean replaceSoAcc) {
         Queue<FacetQueryResult.Field> queue = new LinkedList<>();
         for (FacetQueryResult.Field facetField: results) {
             queue.add(facetField);
         }
         while (queue.size() > 0) {
             FacetQueryResult.Field facet = queue.remove();
+            boolean toSoTerm = false;
+            if (replaceSoAcc && "soAcc".equals(facet.getName())) {
+                facet.setName("consequenceType");
+                toSoTerm = true;
+            }
             for (FacetQueryResult.Bucket bucket: facet.getBuckets()) {
-                if (bucket.getValue().startsWith("ENSG0")) {
+                if (toSoTerm) {
+                    bucket.setValue(ConsequenceTypeMappings.accessionToTerm.get(Integer.parseInt(bucket.getValue())));
+                } else if (ensemblGeneIdToGeneName != null && bucket.getValue().startsWith("ENSG0")) {
                     bucket.setValue(ensemblGeneIdToGeneName.getOrDefault(bucket.getValue(), bucket.getValue()));
                 }
+
+                // Add next fields
                 if (ListUtils.isNotEmpty(bucket.getFields())) {
                     for (FacetQueryResult.Field facetField: bucket.getFields()) {
                         queue.add(facetField);
                     }
                 }
             }
+        }
+    }
+
+    private class Postprocessing implements SolrCollection.FacetPostprocessing {
+        private String facet;
+
+        public Postprocessing setFacet(String facet) {
+            this.facet = facet;
+            return this;
+        }
+
+        @Override
+        public org.apache.solr.client.solrj.response.QueryResponse apply(
+                org.apache.solr.client.solrj.response.QueryResponse response) {
+
+            // Check buckets for chromosome length
+            SimpleOrderedMap solrFacets = (SimpleOrderedMap) response.getResponse().get("facets");
+            Iterator iterator = solrFacets.iterator();
+            while (iterator.hasNext()) {
+                Map.Entry<String, SimpleOrderedMap> next = (Map.Entry<String, SimpleOrderedMap>) iterator.next();
+                if (next.getValue() instanceof SimpleOrderedMap) {
+                    if (next.getKey().startsWith(SolrQueryParser.CHROM_DENSITY)) {
+                        SimpleOrderedMap value = next.getValue();
+                        if (value.get("chromosome") != null) {
+                            List<SimpleOrderedMap<Object>> chromBuckets = (List<SimpleOrderedMap<Object>>)
+                                    ((SimpleOrderedMap) value.get("chromosome")).get("buckets");
+                            for (SimpleOrderedMap<Object> chromBucket: chromBuckets) {
+                                String chrom = chromBucket.get("val").toString();
+                                SimpleOrderedMap startMap = (SimpleOrderedMap) chromBucket.get("start");
+                                if (startMap != null) {
+                                    List<SimpleOrderedMap<Object>> startBuckets =
+                                            (List<SimpleOrderedMap<Object>>) startMap.get("buckets");
+                                    for (int i = startBuckets.size() - 1; i >= 0; i--) {
+                                        int pos = (int) startBuckets.get(i).get("val");
+                                        if (pos > SolrQueryParser.getChromosomeMap().get(chrom)) {
+                                            startBuckets.remove(i);
+                                        } else {
+                                            // Should we update "val" to the chromosome length?
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Check for chromosome density range
+            return response;
         }
     }
 

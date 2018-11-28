@@ -34,9 +34,10 @@ public class VariantSolrIterator extends VariantDBIterator {
     private VariantSearchToVariantConverter variantSearchToVariantConverter;
     private int count = 0;
 
-    public VariantSolrIterator(SolrClient solrClient, String collection, SolrQuery solrQuery) throws IOException, SolrServerException {
+    public VariantSolrIterator(SolrClient solrClient, String collection, SolrQuery solrQuery, VariantSearchToVariantConverter converter)
+            throws IOException, SolrServerException {
         variantSearchSolrIterator = new VariantSearchSolrIterator(solrClient, collection, solrQuery);
-        variantSearchToVariantConverter = new VariantSearchToVariantConverter();
+        this.variantSearchToVariantConverter = converter;
     }
 
     @Override

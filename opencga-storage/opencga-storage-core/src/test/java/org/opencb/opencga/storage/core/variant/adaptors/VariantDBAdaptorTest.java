@@ -239,7 +239,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     protected String getHomRefGT() {
-        return "0|0";
+        return "0/0";
     }
 
     protected String getHomAltGT() {
@@ -1652,8 +1652,9 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
         query = new Query(GENOTYPE.key(), na19600 + IS + NOT + homRef + OR + het1)
                 .append(INCLUDE_SAMPLE.key(), ALL);
+        thrown.expect(VariantQueryException.class);
         queryResult = query(query, new QueryOptions());
-        assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withSampleData("NA19600", "GT", is(het1)))));
+//        assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withSampleData("NA19600", "GT", is(het1)))));
     }
 
     @Test

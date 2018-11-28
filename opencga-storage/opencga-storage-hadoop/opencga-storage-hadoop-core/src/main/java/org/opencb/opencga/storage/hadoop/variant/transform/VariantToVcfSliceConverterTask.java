@@ -135,8 +135,10 @@ public class VariantToVcfSliceConverterTask implements Task<ImmutablePair<Long, 
     }
 
     private static void parseArchiveFields(Set<String> attributeFields, Set<String> formatFields, String fields) {
-        // Always store GT in archive table!
+        // Always store GT, QUAL and FILTER in archive table!
         formatFields.add("GT");
+        formatFields.add("FILTER");
+        formatFields.add("QUAL");
 
         Set<String> currentFieldsSet = null;
         for (String field : fields.split(",")) {

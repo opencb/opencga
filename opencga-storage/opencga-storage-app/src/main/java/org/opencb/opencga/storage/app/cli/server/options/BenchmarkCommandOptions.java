@@ -52,10 +52,13 @@ public class BenchmarkCommandOptions {
         @Parameter(names = {"--connector"}, description = "How to connect to the system: REST or DIRECT")
         public BenchmarkRunner.ConnectionType connectionType = BenchmarkRunner.ConnectionType.REST;
 
-        @Parameter(names = {"--num-repetition"}, description = "Number of repetition to execute.", arity = 1)
+        @Parameter(names = {"-m", "--mode"}, description = "Type of queries to execute: FIXED, RANDOM")
+        public BenchmarkRunner.ExecutionMode executionMode = BenchmarkRunner.ExecutionMode.FIXED;
+
+        @Parameter(names = {"-r", "--num-repetition"}, description = "Number of repetition to execute.", arity = 1)
         public Integer repetition;
 
-        @Parameter(names = {"--concurrency"}, description = "Number of concurrent threads.", arity = 1)
+        @Parameter(names = {"-c", "--concurrency"}, description = "Number of concurrent threads.", arity = 1)
         public Integer concurrency;
 
         @Parameter(names = {"--host"}, description = "Remote host.", arity = 1)
@@ -76,6 +79,12 @@ public class BenchmarkCommandOptions {
         @Parameter(names = {"--count"}, description = "Count results. Do not return elements.", required = false, arity = 0)
         public boolean count;
 
+        @Parameter(names = {"-f", "--file"}, description = "File path to load queries", required = false, arity = 1)
+        public String queryFile;
+
+        @Parameter(names = {"--delay"}, description = "Delay between each sampler thread.", required = false, arity = 1)
+        public Integer delay;
+
     }
 
     /**
@@ -87,8 +96,8 @@ public class BenchmarkCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-q", "--query"}, description = "Query pattern to execute. e.g. gene,ct(30);region(3)", arity = 1)
-        public String query = "region";
+        @Parameter(names = {"-q", "--query"}, description = "Query Ids to execute for FIXED mode (Default All) OR Query pattern to execute for Random mode e.g. gene,ct(30);region(3)", arity = 1)
+        public String query;
     }
 
     /**

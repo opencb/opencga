@@ -54,7 +54,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.InputStream;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.zip.GZIPInputStream;
@@ -96,6 +99,39 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         VariantFileMetadata fileMetadata = checkTransformedVariants(etlResult.getTransformResult(), studyConfiguration);
         checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyConfiguration, true, false, true, getExpectedNumLoadedVariants
                 (fileMetadata));
+    }
+
+    @Test
+    public void loadFromSTDIN() throws Exception {
+        clearDB(DB_NAME);
+        StudyConfiguration studyConfiguration = newStudyConfiguration();
+        StoragePipelineResult etlResult = runDefaultETL(smallInputUri, variantStorageEngine, studyConfiguration,
+                new ObjectMap(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro"), true, false);
+
+        VariantFileMetadata fileMetadata = checkTransformedVariants(etlResult.getTransformResult(), studyConfiguration);
+
+        Path tempFile = Paths.get(outputUri).resolve("temp_file");
+        Files.move(Paths.get(etlResult.getTransformResult()), tempFile);
+        assertFalse(Files.exists(Paths.get(etlResult.getTransformResult())));
+
+        InputStream in = System.in;
+        try (InputStream is = new FileInputStream(tempFile.toFile())) {
+            System.setIn(is);
+
+            variantStorageEngine.getConfiguration()
+                    .getStorageEngine(variantStorageEngine.getStorageEngineId()).getVariant().getOptions()
+                    .put(VariantStorageEngine.Options.STDIN.key(), true);
+            variantStorageEngine.index(Collections.singletonList(etlResult.getTransformResult()), outputUri, false, false, true);
+
+        } finally {
+            System.setIn(in);
+        }
+
+        studyConfiguration = variantStorageEngine.getStudyConfigurationManager().getStudyConfiguration(STUDY_NAME, null).first();
+
+        assertEquals(1, studyConfiguration.getIndexedFiles().size());
+        checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyConfiguration, true, false, true,
+                getExpectedNumLoadedVariants(fileMetadata));
     }
 
     @Test
@@ -171,7 +207,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
 
         //Check that both studies contains the same information
         VariantDBIterator iterator = dbAdaptor.iterator(new Query(VariantQueryParam.STUDY.key(),
-                studyConfigurationMultiFile.getStudyId() + "," + studyConfigurationSingleFile.getStudyId()), new QueryOptions());
+                studyConfigurationMultiFile.getStudyId() + "," + studyConfigurationSingleFile.getStudyId()).append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "0/0"), new QueryOptions());
         int numVariants = 0;
         for (; iterator.hasNext(); ) {
             Variant variant = iterator.next();

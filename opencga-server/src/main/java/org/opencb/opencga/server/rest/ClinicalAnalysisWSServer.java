@@ -154,6 +154,9 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
                                  + "exception whenever one of the entries looked for cannot be shown for whichever reason",
                                  defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
+            query.remove("study");
+            query.remove("clinicalAnalyses");
+
             List<String> analysisList = getIdList(clinicalAnalysisStr);
             List<QueryResult<ClinicalAnalysis>> analysisResult = clinicalManager.get(studyStr, analysisList, query, queryOptions, silent, sessionId);
             return createOkResponse(analysisResult);
@@ -176,16 +179,18 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]{study} where study and project can be either the id or alias.")
             @QueryParam("study") String studyStr,
             @ApiParam(value = "Clinical analysis type") @QueryParam("type") ClinicalAnalysis.Type type,
+            @ApiParam(value = "Priority") @QueryParam("priority") String priority,
             @ApiParam(value = "Clinical analysis status") @QueryParam("status") String status,
             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
                 @QueryParam("creationDate") String creationDate,
             @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
                 @QueryParam("modificationDate") String modificationDate,
+            @ApiParam(value = "Due date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)") @QueryParam("dueDate") String dueDate,
             @ApiParam(value = "Description") @QueryParam("description") String description,
             @ApiParam(value = "Germline") @QueryParam("germline") String germline,
             @ApiParam(value = "Somatic") @QueryParam("somatic") String somatic,
             @ApiParam(value = "Family") @QueryParam("family") String family,
-            @ApiParam(value = "Subject") @QueryParam("subject") String subject,
+            @ApiParam(value = "Proband") @QueryParam("proband") String proband,
             @ApiParam(value = "Sample") @QueryParam("sample") String sample,
             @ApiParam(value = "Release value") @QueryParam("release") String release,
             @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)") @QueryParam("attributes") String attributes,
@@ -226,7 +231,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Germline") @QueryParam("germline") String germline,
             @ApiParam(value = "Somatic") @QueryParam("somatic") String somatic,
             @ApiParam(value = "Family") @QueryParam("family") String family,
-            @ApiParam(value = "Subject") @QueryParam("subject") String subject,
+            @ApiParam(value = "Proband") @QueryParam("proband") String proband,
             @ApiParam(value = "Sample") @QueryParam("sample") String sample,
             @ApiParam(value = "Release value (Current release from the moment the families were first created)") @QueryParam("release") String release) {
         try {
@@ -285,7 +290,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
         public String id;
     }
 
-    private static class SubjectParam {
+    private static class ProbandParam {
         public String id;
         public List<SampleParams> samples;
     }
@@ -323,19 +328,22 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
         public String germline;
         public String somatic;
 
-        public SubjectParam subject;
+        public ProbandParam proband;
         public String family;
         public List<ClinicalInterpretationParameters> interpretations;
+
+        public String dueDate;
+        public ClinicalAnalysis.Priority priority;
 
         public Map<String, Object> attributes;
 
         public ClinicalAnalysis toClinicalAnalysis() {
 
             Individual individual = null;
-            if (subject != null) {
-                individual = new Individual().setId(subject.id);
-                if (subject.samples != null) {
-                    List<Sample> sampleList = subject.samples.stream()
+            if (proband != null) {
+                individual = new Individual().setId(proband.id);
+                if (proband.samples != null) {
+                    List<Sample> sampleList = proband.samples.stream()
                             .map(sample -> new Sample().setId(sample.id))
                             .collect(Collectors.toList());
                     individual.setSamples(sampleList);
@@ -357,7 +365,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
                             : new ArrayList<>();
             String clinicalId = StringUtils.isEmpty(id) ? name : id;
             return new ClinicalAnalysis(clinicalId, description, type, disease, germlineFile, somaticFile, individual, f,
-                    interpretationList, null, null, 1, attributes).setName(name);
+                    interpretationList, priority, null, dueDate, null, 1, attributes).setName(name);
         }
     }
 

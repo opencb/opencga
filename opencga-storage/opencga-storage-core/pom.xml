@@ -51,10 +51,6 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>org.opencb.hpg-bigdata</groupId>
-            <artifactId>hpg-bigdata-core</artifactId>
-        </dependency>
-        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
         </dependency>

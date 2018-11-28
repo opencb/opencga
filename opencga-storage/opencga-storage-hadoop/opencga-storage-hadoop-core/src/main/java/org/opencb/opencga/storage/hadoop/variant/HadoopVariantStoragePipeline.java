@@ -36,11 +36,10 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
-import org.opencb.commons.utils.FileUtils;
-import org.opencb.hpg.bigdata.core.io.ProtoFileWriter;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
+import org.opencb.opencga.storage.core.io.proto.ProtoFileWriter;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -63,7 +62,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -161,23 +159,17 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
         VariantSetStatsCalculator statsCalculator = new VariantSetStatsCalculator(String.valueOf(getStudyId()), fileMetadata);
 
         final VariantReader dataReader;
-        try {
-            String studyId = String.valueOf(getStudyId());
-            if (VariantReaderUtils.isVcf(input.toString())) {
-                InputStream inputStream = FileUtils.newInputStream(input);
-
-                VariantVcfHtsjdkReader reader = new VariantVcfHtsjdkReader(inputStream, fileMetadata.toVariantStudyMetadata(studyId),
-                        normalizer);
-                if (null != malformatedHandler) {
-                    reader.registerMalformatedVcfHandler(malformatedHandler);
-                    reader.setFailOnError(failOnError);
-                }
-                dataReader = reader;
-            } else {
-                dataReader = VariantReaderUtils.getVariantReader(input, fileMetadata.toVariantStudyMetadata(studyId));
+        String studyId = String.valueOf(getStudyId());
+        if (VariantReaderUtils.isVcf(input.toString())) {
+            VariantVcfHtsjdkReader reader = new VariantVcfHtsjdkReader(input, fileMetadata.toVariantStudyMetadata(studyId),
+                    normalizer);
+            if (null != malformatedHandler) {
+                reader.registerMalformatedVcfHandler(malformatedHandler);
+                reader.setFailOnError(failOnError);
             }
-        } catch (IOException e) {
-            throw new StorageEngineException("Unable to read from " + input, e);
+            dataReader = reader;
+        } else {
+            dataReader = VariantReaderUtils.getVariantReader(input, fileMetadata.toVariantStudyMetadata(studyId));
         }
 
         // Transformer

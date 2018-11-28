@@ -131,10 +131,14 @@ public class FamilyMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
             }
 
             // Map each member uid - version to the member entry
-            Map<String, Document> memberMap = new HashMap<>(memberList.size());
-            memberList.forEach(member ->
-                    memberMap.put(String.valueOf(member.get(FamilyDBAdaptor.QueryParams.UID.key())) + "__"
-                            + String.valueOf(member.get(FamilyDBAdaptor.QueryParams.VERSION.key())), member)
+            Map<String, Document> memberUidVersionMap = new HashMap<>(memberList.size());
+            // Map each member uid to the member entry
+            Map<String, Document> memberUidMap = new HashMap<>(memberList.size());
+            memberList.forEach(member -> {
+                        memberUidVersionMap.put(String.valueOf(member.get(FamilyDBAdaptor.QueryParams.UID.key())) + "__"
+                                + String.valueOf(member.get(FamilyDBAdaptor.QueryParams.VERSION.key())), member);
+                        memberUidMap.put(String.valueOf(member.get(FamilyDBAdaptor.QueryParams.UID.key())), member);
+                    }
             );
 
             // Add the members obtained to the corresponding families
@@ -148,13 +152,32 @@ public class FamilyMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
                     String key = uid + "__" + version;
 
                     // If the members has been returned... (it might have not been fetched due to permissions issues)
-                    if (memberMap.containsKey(key)) {
-                        tmpMemberList.add(memberMap.get(key));
+                    if (memberUidVersionMap.containsKey(key)) {
+                        tmpMemberList.add(memberUidVersionMap.get(key));
+
+                        // We try to fill the parent id with the information we have
+                        fillParentInformation(memberUidVersionMap.get(key), IndividualDBAdaptor.QueryParams.FATHER.key(), memberUidMap);
+                        fillParentInformation(memberUidVersionMap.get(key), IndividualDBAdaptor.QueryParams.MOTHER.key(), memberUidMap);
                     }
                 });
 
                 family.put(FamilyMongoDBAdaptor.QueryParams.MEMBERS.key(), tmpMemberList);
             });
+        }
+    }
+
+    private void fillParentInformation(Document member, String key, Map<String, Document> memberUidMap) {
+        Document parent = (Document) member.get(key);
+        if (parent != null && !parent.isEmpty()) {
+            Object uidObject = parent.get(IndividualDBAdaptor.QueryParams.UID.key());
+            if (uidObject instanceof Long) {
+                Document parentDocument = memberUidMap.get(String.valueOf((long) uidObject));
+                if (parentDocument != null) {
+                    parent.put(IndividualDBAdaptor.QueryParams.ID.key(), parentDocument.get(IndividualDBAdaptor.QueryParams.ID.key()));
+                    parent.put(IndividualDBAdaptor.QueryParams.UUID.key(), parentDocument.get(IndividualDBAdaptor.QueryParams.UUID.key()));
+                }
+            }
+
         }
     }
 

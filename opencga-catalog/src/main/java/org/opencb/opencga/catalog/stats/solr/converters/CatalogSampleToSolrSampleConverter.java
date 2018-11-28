@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.stats.solr.converters;
 
 import org.apache.commons.lang3.NotImplementedException;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -81,6 +82,19 @@ public class CatalogSampleToSolrSampleConverter implements ComplexTypeConverter<
             sampleSolrModel.setAnnotationSets(sample.getAnnotationSets().stream().map(AnnotationSet::getId).collect(Collectors.toList()));
         } else {
             sampleSolrModel.setAnnotationSets(Collections.emptyList());
+        }
+
+        if (sample.getCollection() != null) {
+            sampleSolrModel.setTissue(StringUtils.defaultIfEmpty(sample.getCollection().getTissue(), ""));
+            sampleSolrModel.setOrgan(StringUtils.defaultIfEmpty(sample.getCollection().getOrgan(), ""));
+            sampleSolrModel.setMethod(StringUtils.defaultIfEmpty(sample.getCollection().getMethod(), ""));
+        }
+
+        if (sample.getProcessing() != null) {
+            sampleSolrModel.setProduct(StringUtils.defaultIfEmpty(sample.getProcessing().getProduct(), ""));
+            sampleSolrModel.setPreparationMethod(StringUtils.defaultIfEmpty(sample.getProcessing().getPreparationMethod(), ""));
+            sampleSolrModel.setExtractionMethod(StringUtils.defaultIfEmpty(sample.getProcessing().getExtractionMethod(), ""));
+            sampleSolrModel.setLabSampleId(StringUtils.defaultIfEmpty(sample.getProcessing().getLabSampleId(), ""));
         }
 
         // Extract the permissions

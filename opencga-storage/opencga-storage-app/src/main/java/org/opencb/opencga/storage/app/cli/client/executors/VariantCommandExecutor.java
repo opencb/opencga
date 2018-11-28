@@ -217,8 +217,10 @@ public class VariantCommandExecutor extends CommandExecutor {
         String inputs[] = indexVariantsCommandOptions.commonIndexOptions.input.split(",");
         for (String uri : inputs) {
             URI variantsUri = UriUtils.createUri(uri);
-            if (variantsUri.getScheme().startsWith("file") || variantsUri.getScheme().isEmpty()) {
-                FileUtils.checkFile(Paths.get(variantsUri));
+            if (!indexVariantsCommandOptions.stdin) {
+                if (variantsUri.getScheme().startsWith("file") || variantsUri.getScheme().isEmpty()) {
+                    FileUtils.checkFile(Paths.get(variantsUri));
+                }
             }
             inputUris.add(variantsUri);
         }
@@ -255,6 +257,8 @@ public class VariantCommandExecutor extends CommandExecutor {
 //        variantOptions.put(VariantStorageEngine.Options.INCLUDE_SRC.key(), indexVariantsCommandOptions.includeSrc);
 //        variantOptions.put(VariantStorageEngine.Options.COMPRESS_GENOTYPES.key(), indexVariantsCommandOptions.compressGenotypes);
         params.put(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), indexVariantsCommandOptions.aggregated);
+        params.put(VariantStorageEngine.Options.STDIN.key(), indexVariantsCommandOptions.stdin);
+        params.put(VariantStorageEngine.Options.STDOUT.key(), indexVariantsCommandOptions.stdout);
 
         params.put(VariantStorageEngine.Options.ANNOTATE.key(), indexVariantsCommandOptions.annotate);
         if (indexVariantsCommandOptions.annotator != null) {

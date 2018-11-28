@@ -16,23 +16,20 @@
 
 package org.opencb.opencga.storage.server.rest;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.feature.Genotype;
-import org.opencb.biodata.models.variant.StudyEntry;
-import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenotypeJsonMixin;
-import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantAnnotationMixin;
-import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantSourceEntryJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
 import org.opencb.opencga.storage.server.common.AuthManager;
 import org.opencb.opencga.storage.server.common.DefaultAuthManager;
@@ -49,6 +46,8 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.*;
+
+import static org.opencb.opencga.core.common.JacksonUtils.getExternalOpencgaObjectMapper;
 
 /**
  * Created by imedina on 23/10/14.
@@ -87,13 +86,12 @@ public class GenericRestWebService {
     private static ObjectWriter jsonObjectWriter;
 
     static {
-        jsonObjectMapper = new ObjectMapper();
-        jsonObjectMapper.addMixIn(StudyEntry.class, VariantSourceEntryJsonMixin.class);
-        jsonObjectMapper.addMixIn(VariantAnnotation.class, VariantAnnotationMixin.class);
+        jsonObjectMapper = getExternalOpencgaObjectMapper();
+        jsonObjectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
         jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
         jsonObjectMapper.addMixIn(Genotype.class, GenotypeJsonMixin.class);
         jsonObjectMapper.addMixIn(Alignment.AlignmentDifference.class, AlignmentDifferenceJsonMixin.class);
-        jsonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+
         jsonObjectWriter = jsonObjectMapper.writer();
 
         privLogger = LoggerFactory.getLogger("org.opencb.opencga.storage.server.rest.GenericRestWebService");

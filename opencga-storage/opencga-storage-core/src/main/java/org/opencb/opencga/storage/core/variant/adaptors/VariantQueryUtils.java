@@ -498,6 +498,17 @@ public final class VariantQueryUtils {
         Map<Integer, List<Integer>> fileIds = VariantQueryUtils.getIncludeFiles(query, includeStudies, includeFields, provider);
 
 
+        if (fileIds.values().stream().allMatch(List::isEmpty)) {
+            includeFields.remove(VariantField.STUDIES_FILES);
+            includeFields.removeAll(VariantField.STUDIES_FILES.getChildren());
+        }
+
+        if (sampleIds.values().stream().allMatch(List::isEmpty)) {
+            includeFields.remove(VariantField.STUDIES_SAMPLES_DATA);
+            includeFields.removeAll(VariantField.STUDIES_SAMPLES_DATA.getChildren());
+        }
+
+
         return new SelectVariantElements(includeFields, includeStudies, studyConfigurations, sampleIds, fileIds);
     }
 
@@ -1158,7 +1169,20 @@ public final class VariantQueryUtils {
         Pair<QueryOperation, Map<String, String>> pair = parseMultiKeyValueFilter(GENOTYPE, sampleGenotypes);
 
         for (Map.Entry<String, String> entry : pair.getValue().entrySet()) {
-            map.put(entry.getKey(), splitValue(entry.getValue(), QueryOperation.OR));
+            List<String> gts = splitValue(entry.getValue(), QueryOperation.OR);
+            boolean anyNegated = false;
+            boolean allNegated = true;
+            for (String gt : gts) {
+                if (isNegated(gt)) {
+                    anyNegated = true;
+                } else {
+                    allNegated = false;
+                }
+            }
+            if (!allNegated && anyNegated) {
+                throw VariantQueryException.malformedParam(GENOTYPE, sampleGenotypes);
+            }
+            map.put(entry.getKey(), gts);
         }
 
         return pair.getKey();
@@ -1275,6 +1299,18 @@ public final class VariantQueryUtils {
      * @throws VariantQueryException if the list contains different operators.
      */
     public static QueryOperation checkOperator(String value) throws VariantQueryException {
+        return checkOperator(value, null);
+    }
+
+    /**
+     * Checks that the filter value list contains only one type of operations.
+     *
+     * @param value List of values to check
+     * @param param Variant query param
+     * @return The used operator. Null if no operator is used.
+     * @throws VariantQueryException if the list contains different operators.
+     */
+    public static QueryOperation checkOperator(String value, VariantQueryParam param) throws VariantQueryException {
         boolean inQuotes = false;
         boolean containsOr = false; //value.contains(OR);
         boolean containsAnd = false; //value.contains(AND);
@@ -1297,7 +1333,11 @@ public final class VariantQueryUtils {
             }
         }
         if (containsAnd && containsOr) {
-            throw VariantQueryException.mixedAndOrOperators();
+            if (param == null) {
+                throw VariantQueryException.mixedAndOrOperators();
+            } else {
+                throw VariantQueryException.mixedAndOrOperators(param, value);
+            }
         } else if (containsAnd) {   // && !containsOr  -> true
             return QueryOperation.AND;
         } else if (containsOr) {    // && !containsAnd  -> true
@@ -1341,6 +1381,10 @@ public final class VariantQueryUtils {
             list = splitQuotes(value, OR_CHAR);
         }
         return list;
+    }
+
+    public static List<String> splitQuotes(String value, QueryOperation operation) {
+        return splitQuotes(value, operation == QueryOperation.AND ? AND_CHAR : OR_CHAR);
     }
 
     public static List<String> splitQuotes(String value, char separator) {

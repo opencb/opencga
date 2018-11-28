@@ -49,6 +49,27 @@ public class SampleSolrModel {
     private boolean somatic;
 
     @Field
+    private String product;
+
+    @Field
+    private String preparationMethod;
+
+    @Field
+    private String extractionMethod;
+
+    @Field
+    private String labSampleId;
+
+    @Field
+    private String tissue;
+
+    @Field
+    private String organ;
+
+    @Field
+    private String method;
+
+    @Field
     private List<String> phenotypes;
 
     @Field
@@ -81,6 +102,13 @@ public class SampleSolrModel {
         sb.append(", status='").append(status).append('\'');
         sb.append(", type='").append(type).append('\'');
         sb.append(", somatic=").append(somatic);
+        sb.append(", product='").append(product).append('\'');
+        sb.append(", preparationMethod='").append(preparationMethod).append('\'');
+        sb.append(", extractionMethod='").append(extractionMethod).append('\'');
+        sb.append(", labSampleId='").append(labSampleId).append('\'');
+        sb.append(", tissue='").append(tissue).append('\'');
+        sb.append(", organ='").append(organ).append('\'');
+        sb.append(", method='").append(method).append('\'');
         sb.append(", phenotypes=").append(phenotypes);
         sb.append(", acl=").append(acl);
         sb.append(", annotationSets=").append(annotationSets);
@@ -194,6 +222,69 @@ public class SampleSolrModel {
 
     public SampleSolrModel setSomatic(boolean somatic) {
         this.somatic = somatic;
+        return this;
+    }
+
+    public String getProduct() {
+        return product;
+    }
+
+    public SampleSolrModel setProduct(String product) {
+        this.product = product;
+        return this;
+    }
+
+    public String getPreparationMethod() {
+        return preparationMethod;
+    }
+
+    public SampleSolrModel setPreparationMethod(String preparationMethod) {
+        this.preparationMethod = preparationMethod;
+        return this;
+    }
+
+    public String getExtractionMethod() {
+        return extractionMethod;
+    }
+
+    public SampleSolrModel setExtractionMethod(String extractionMethod) {
+        this.extractionMethod = extractionMethod;
+        return this;
+    }
+
+    public String getLabSampleId() {
+        return labSampleId;
+    }
+
+    public SampleSolrModel setLabSampleId(String labSampleId) {
+        this.labSampleId = labSampleId;
+        return this;
+    }
+
+    public String getTissue() {
+        return tissue;
+    }
+
+    public SampleSolrModel setTissue(String tissue) {
+        this.tissue = tissue;
+        return this;
+    }
+
+    public String getOrgan() {
+        return organ;
+    }
+
+    public SampleSolrModel setOrgan(String organ) {
+        this.organ = organ;
+        return this;
+    }
+
+    public String getMethod() {
+        return method;
+    }
+
+    public SampleSolrModel setMethod(String method) {
+        this.method = method;
         return this;
     }
 
