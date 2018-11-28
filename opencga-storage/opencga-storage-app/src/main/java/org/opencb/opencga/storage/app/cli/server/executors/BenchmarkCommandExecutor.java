@@ -81,6 +81,9 @@ public class BenchmarkCommandExecutor extends CommandExecutor {
         if (options.delay != null) {
             configuration.getBenchmark().setDelay(options.delay);
         }
+        if (options.port != null) {
+            configuration.getServer().setRest(options.port);
+        }
 
         configuration.getBenchmark().setMode(options.executionMode.name());
         configuration.getBenchmark().setConnectionType(options.connectionType.name());
