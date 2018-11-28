@@ -8,6 +8,7 @@ import org.opencb.opencga.storage.benchmark.variant.queries.FixedQuery;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -80,9 +81,8 @@ public class FixedQueryGenerator extends QueryGenerator {
                 }
                 printWriter.println("jmeter.reportgenerator.apdex_per_transaction=" + st.toString().trim());
             } catch (IOException e) {
-                e.printStackTrace();
+                throw new UncheckedIOException(e);
             }
         }
     }
-
 }
