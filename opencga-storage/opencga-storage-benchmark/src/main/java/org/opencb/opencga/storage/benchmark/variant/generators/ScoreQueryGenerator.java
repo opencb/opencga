@@ -17,6 +17,8 @@
 package org.opencb.opencga.storage.benchmark.variant.generators;
 
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.opencga.storage.benchmark.variant.queries.RandomQueries;
+import org.opencb.opencga.storage.benchmark.variant.queries.Score;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,21 +30,19 @@ import java.util.*;
  *
  * @author Joaquin Tarraga &lt;joaquintarraga@gmail.com&gt;
  */
-public abstract class ScoreQueryGenerator extends QueryGenerator {
-    protected static final List<String> NUM_OPS = Arrays.asList(">", ">=", "<", "<=");
-    private ArrayList<Score> scores;
-    private List<String> ops;
+public abstract class ScoreQueryGenerator extends ConfiguredQueryGenerator {
+    protected static final List<String> DEF_OPS = Arrays.asList(">", "<");
+    private List<Score> scores;
     private String queryKey;
     private Logger logger = LoggerFactory.getLogger(getClass());
 
-    public ScoreQueryGenerator(List<String> ops, String queryKey) {
-        this(new ArrayList<>(), ops, queryKey);
+    public ScoreQueryGenerator(String queryKey) {
+        this(new ArrayList<>(), queryKey);
     }
 
-    public ScoreQueryGenerator(ArrayList<Score> scores, List<String> ops, String queryKey) {
+    public ScoreQueryGenerator(List<Score> scores, String queryKey) {
         super();
         this.scores = scores;
-        this.ops = ops;
         this.queryKey = queryKey;
     }
 
@@ -67,8 +67,8 @@ public abstract class ScoreQueryGenerator extends QueryGenerator {
             if (sb.length() > 0) {
                 sb.append(',');
             }
-            sb.append(score.getName());
-            sb.append(ops.get(random.nextInt(ops.size())));
+            sb.append(score.getId());
+            sb.append(getOperators(score));
             sb.append(random.nextDouble() * (score.getMax() - score.getMin()) + score.getMin());
         }
         query.append(queryKey, sb.toString());
@@ -76,75 +76,94 @@ public abstract class ScoreQueryGenerator extends QueryGenerator {
         return query;
     }
 
-    protected ScoreQueryGenerator addScore(Score score) {
-        if (scores == null) {
-            scores = new ArrayList<>();
-        }
-        scores.add(score);
-        return this;
+    private String getOperators(Score score) {
+        return (Objects.isNull(score.getOperators()))
+                ? DEF_OPS.get(random.nextInt(2)) : score.getOperators().get(random.nextInt(score.getOperators().size()));
     }
 
-    public static class Score {
-        private String name;
-        private double min;
-        private double max;
-
-        public Score(String name, double min, double max) {
-            this.name = name;
-            this.min = min;
-            this.max = max;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        public double getMin() {
-            return min;
-        }
-
-        public void setMin(double min) {
-            this.min = min;
-        }
-
-        public double getMax() {
-            return max;
-        }
-
-        public void setMax(double max) {
-            this.max = max;
-        }
-    }
 
     public static class ProteinSubstQueryGenerator extends ScoreQueryGenerator {
 
-        public ProteinSubstQueryGenerator() {
-            super(NUM_OPS, VariantQueryParam.ANNOT_PROTEIN_SUBSTITUTION.key());
-            addScore(new Score("sift", 0, 1));
-            addScore(new Score("polyphen", 0, 1));
+        public ProteinSubstQueryGenerator(RandomQueries randomQueries) {
+            super(randomQueries.getProteinSubstitution(), VariantQueryParam.ANNOT_PROTEIN_SUBSTITUTION.key());
+        }
+
+        @Override
+        public void setUp(Map<String, String> params, RandomQueries queries) {
+            super.setUp(params);
         }
     }
 
     public static class ConservationQueryGenerator extends ScoreQueryGenerator {
 
-        public ConservationQueryGenerator() {
-            super(NUM_OPS, VariantQueryParam.ANNOT_CONSERVATION.key());
-            addScore(new Score("phylop", 0, 1));
-            addScore(new Score("phastCons", 0, 1));
-            addScore(new Score("gerp", 0, 1));
+        public ConservationQueryGenerator(RandomQueries randomQueries) {
+            super(Arrays.asList(randomQueries.getConservation()), VariantQueryParam.ANNOT_CONSERVATION.key());
+        }
+
+        @Override
+        public void setUp(Map<String, String> params, RandomQueries queries) {
+            super.setUp(params);
         }
     }
 
     public static class FunctionalScoreQueryGenerator extends ScoreQueryGenerator {
 
-        public FunctionalScoreQueryGenerator() {
-            super(NUM_OPS, VariantQueryParam.ANNOT_FUNCTIONAL_SCORE.key());
-            addScore(new Score("cadd_raw", 0, 1));
-            addScore(new Score("cadd_scaled", -10, 40));
+        public FunctionalScoreQueryGenerator(RandomQueries randomQueries) {
+            super(randomQueries.getFunctionalScore(), VariantQueryParam.ANNOT_FUNCTIONAL_SCORE.key());
+        }
+
+        @Override
+        public void setUp(Map<String, String> params, RandomQueries queries) {
+            super.setUp(params);
         }
     }
+
+    public static class PopulationFrequenciesRefQueryGenerator extends ScoreQueryGenerator {
+
+        public PopulationFrequenciesRefQueryGenerator(RandomQueries randomQueries) {
+            super(randomQueries.getPopulationFrequencies(), VariantQueryParam.ANNOT_POPULATION_REFERENCE_FREQUENCY.key());
+        }
+
+        @Override
+        public void setUp(Map<String, String> params, RandomQueries queries) {
+            super.setUp(params);
+        }
+    }
+
+    public static class PopulationFrequenciesMafQueryGenerator extends ScoreQueryGenerator {
+
+        public PopulationFrequenciesMafQueryGenerator(RandomQueries randomQueries) {
+            super(randomQueries.getPopulationFrequencies(), VariantQueryParam.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key());
+        }
+
+        @Override
+        public void setUp(Map<String, String> params, RandomQueries queries) {
+            super.setUp(params);
+        }
+    }
+
+    public static class PopulationFrequenciesAltQueryGenerator extends ScoreQueryGenerator {
+
+        public PopulationFrequenciesAltQueryGenerator(RandomQueries randomQueries) {
+            super(randomQueries.getPopulationFrequencies(), VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key());
+        }
+
+        @Override
+        public void setUp(Map<String, String> params, RandomQueries queries) {
+            super.setUp(params);
+        }
+    }
+
+    public static class QualQueryGenerator extends ScoreQueryGenerator {
+
+        public QualQueryGenerator(RandomQueries randomQueries) {
+            super(Arrays.asList(randomQueries.getQual()), VariantQueryParam.QUAL.key());
+        }
+
+        @Override
+        public void setUp(Map<String, String> params, RandomQueries queries) {
+            super.setUp(params);
+        }
+    }
+
 }

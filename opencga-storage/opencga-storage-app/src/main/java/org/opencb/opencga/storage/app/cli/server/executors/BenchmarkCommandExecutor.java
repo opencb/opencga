@@ -25,6 +25,8 @@ import org.opencb.opencga.storage.benchmark.variant.VariantBenchmarkRunner;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
  * Created on 07/04/17.
@@ -60,7 +62,7 @@ public class BenchmarkCommandExecutor extends CommandExecutor {
     private void variant() throws IOException {
         BenchmarkCommandOptions.VariantBenchmarkCommandOptions options = commandOptions.variantBenchmarkCommandOptions;
 
-        Path outdirPath = Paths.get(options.outdir == null ? "" : options.outdir).toAbsolutePath();
+        Path outdirPath = getBenchmarkPath(options);
         Path jmeterHome = Paths.get(appHome, "benchmark", "jmeter");
         Path dataDir = Paths.get(appHome, "benchmark", "data", "hsapiens");
 
@@ -76,19 +78,26 @@ public class BenchmarkCommandExecutor extends CommandExecutor {
         if (options.concurrency != null) {
             configuration.getBenchmark().setConcurrency(options.concurrency);
         }
+        if (options.delay != null) {
+            configuration.getBenchmark().setDelay(options.delay);
+        }
+        if (options.port != null) {
+            configuration.getServer().setRest(options.port);
+        }
+
+        configuration.getBenchmark().setMode(options.executionMode.name());
+        configuration.getBenchmark().setConnectionType(options.connectionType.name());
 
         VariantBenchmarkRunner variantBenchmarkRunner = new VariantBenchmarkRunner(configuration, jmeterHome, outdirPath);
-//        variantBenchmarkRunner.addThreadGroup(options.connectionType, dataDir,
-//                Arrays.asList(GeneQueryGenerator.class, RegionQueryGenerator.class));
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.append(QueryOptions.LIMIT, options.limit);
         queryOptions.append(QueryOptions.COUNT, options.count);
-        variantBenchmarkRunner.addThreadGroup(options.connectionType, dataDir, options.query, queryOptions);
-//        variantBenchmarkRunner.newThreadGroup(VariantBenchmarkRunner.ConnectionType.REST, dataDir,
-//                Arrays.asList(RegionQueryGenerator.class));
-//        variantBenchmarkRunner.newThreadGroup(VariantBenchmarkRunner.ConnectionType.REST, dataDir,
-//                Arrays.asList(GeneQueryGenerator.class));
+        variantBenchmarkRunner.addThreadGroup(options.connectionType, options.executionMode, dataDir, options.queryFile, options.query, queryOptions);
         variantBenchmarkRunner.run();
+    }
+
+    private Path getBenchmarkPath(BenchmarkCommandOptions.VariantBenchmarkCommandOptions options) {
+        return Paths.get(options.outdir == null ? "" : options.outdir, "opencga_benchmark_" + new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date())).toAbsolutePath();
     }
 
 

@@ -28,19 +28,20 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Created on 06/04/17.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class VariantStorageEngineRestSampler extends HTTPSampler implements VariantStorageEngineSampler{
+public class VariantStorageEngineRestSampler extends HTTPSampler implements VariantStorageEngineSampler {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
     private QueryGenerator queryGenerator;
 
     public VariantStorageEngineRestSampler() {
-        setPath("opencga/webservices/rest/variants/fetch");
+        setPath("opencga/webservices/rest/variants/query");
         setMethod("GET");
     }
 
@@ -48,6 +49,13 @@ public class VariantStorageEngineRestSampler extends HTTPSampler implements Vari
         this();
         setDomain(host);
         setPort(port);
+    }
+
+    public VariantStorageEngineRestSampler(String host, String path, int port) {
+        setDomain(host);
+        setPort(port);
+        setPath(path);
+        setMethod("GET");
     }
 
     @Override
@@ -60,14 +68,19 @@ public class VariantStorageEngineRestSampler extends HTTPSampler implements Vari
 
         Query query = getQueryGenerator().generateQuery(new Query());
         query.forEach((key, value) -> sb.append(key).append('=').append(value).append('&'));
-
-        return sb.toString();
+        return encodedString(sb.toString());
     }
 
     @Override
     protected HTTPSampleResult sample(java.net.URL u, String method, boolean areFollowingRedirect, int depth) {
-//        logger.debug("url = {}", u);
-        return super.sample(u, method, areFollowingRedirect, depth);
+        HTTPSampleResult sample = super.sample(u, method, areFollowingRedirect, depth);
+        sample.setSampleLabel(queryGenerator.getQueryId());
+
+        if (getArguments().getArgumentsAsMap().get(QueryOptions.COUNT).equalsIgnoreCase("true")) {
+            String str = sample.getResponseDataAsString();
+            sample.setResponseMessage(str.substring(str.lastIndexOf("[") + 1, str.indexOf("]")));
+        }
+        return sample;
     }
 
     @Override
@@ -111,7 +124,7 @@ public class VariantStorageEngineRestSampler extends HTTPSampler implements Vari
     }
 
     private QueryGenerator getQueryGenerator() {
-        if (queryGenerator == null) {
+        if (Objects.isNull(queryGenerator)) {
             String queryGeneratorClassName = getQueryGeneratorClassName();
             try {
                 Map<String, String> map = new HashMap<>();
@@ -130,5 +143,10 @@ public class VariantStorageEngineRestSampler extends HTTPSampler implements Vari
             }
         }
         return queryGenerator;
+    }
+
+    private String encodedString(String string) {
+        string = string.replaceAll(">=", "%3E%3D").replaceAll("<=", "%3C%3D");
+        return string.replaceAll(">", "%3E").replaceAll("<", "%3C");
     }
 }

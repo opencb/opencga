@@ -16,21 +16,21 @@
 
 package org.opencb.opencga.storage.benchmark.variant.generators;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.base.Throwables;
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.utils.FileUtils;
+import org.opencb.opencga.storage.benchmark.variant.queries.RandomQueries;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
-import java.util.function.Consumer;
 
 /**
  * Created on 06/04/17.
@@ -40,6 +40,9 @@ import java.util.function.Consumer;
 public abstract class QueryGenerator {
     public static final String DATA_DIR = "dataDir";
     public static final String ARITY = "arity";
+    public static final String FILE = "file";
+    public static final String OUT_DIR = "outDir";
+    public static final String USER_PROPERTIES_FILE = "user.properties";
     protected Random random;
 
     private Logger logger = LoggerFactory.getLogger(getClass());
@@ -50,17 +53,10 @@ public abstract class QueryGenerator {
         arity = Integer.parseInt(params.getOrDefault(ARITY, "1"));
     }
 
-    protected void readCsvFile(Path path, Consumer<List<String>> consumer) {
-        try (BufferedReader is = FileUtils.newBufferedReader(path)) {
-            while (true) {
-                String line = is.readLine();
-                if (line == null) {
-                    break;
-                } else if (StringUtils.isBlank(line) || line.startsWith("#")) {
-                    continue;
-                }
-                consumer.accept(Arrays.asList(line.split(",")));
-            }
+    public <T> T readYmlFile(Path path, Class<T> clazz) {
+        try (FileInputStream inputStream = new FileInputStream(path.toFile())) {
+            ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+            return objectMapper.readValue(inputStream, clazz);
         } catch (IOException e) {
             logger.error("Error reading file " + path, e);
             throw Throwables.propagate(e);
@@ -69,6 +65,10 @@ public abstract class QueryGenerator {
 
     public abstract Query generateQuery(Query query);
 
+    public String getQueryId() {
+        return "";
+    }
+
     protected int getArity() {
         return arity;
     }
@@ -76,5 +76,17 @@ public abstract class QueryGenerator {
     public QueryGenerator setArity(int arity) {
         this.arity = arity;
         return this;
+    }
+
+    protected void appendRandomSessionId(List<String> sessionIds, Query query) {
+        if (Objects.nonNull(sessionIds)) {
+            query.append("sid", sessionIds.get(random.nextInt(sessionIds.size())));
+        }
+    }
+
+    protected void appendbaseQuery(RandomQueries randomQueries, Query query) {
+        if (Objects.nonNull(randomQueries.getBaseQuery())) {
+            query.putAll(randomQueries.getBaseQuery());
+        }
     }
 }
