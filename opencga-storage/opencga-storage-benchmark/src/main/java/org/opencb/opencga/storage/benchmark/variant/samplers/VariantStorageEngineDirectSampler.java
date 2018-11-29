@@ -30,6 +30,7 @@ import org.opencb.opencga.storage.benchmark.variant.generators.QueryGenerator;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -144,6 +145,8 @@ public class VariantStorageEngineDirectSampler extends JavaSampler implements Va
                 if (limit > 0) {
                     queryOptions.append(QueryOptions.LIMIT, limit);
                 }
+
+                VariantQueryUtils.addDefaultLimit(queryOptions);
 
                 result.setResponseMessage(query.toJson());
                 result.setResponseCodeOK();
