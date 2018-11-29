@@ -115,8 +115,7 @@ public class BenchmarkRunner {
         }
 
         // Store execution results into a .jtl file
-        resultFile = outdir.resolve(buildOutputFileName() + "_" + storageConfiguration.getBenchmark().getDatabaseName()
-                + "_" + storageConfiguration.getBenchmark().getMode() + ".jtl").toString();
+        resultFile = outdir.resolve(buildOutputFileName()).toString() + ".jtl";
         ResultCollector resultCollector = new ResultCollector(summer);
         resultCollector.setFilename(resultFile);
         testPlanTree.add(testPlan, resultCollector);
@@ -171,18 +170,21 @@ public class BenchmarkRunner {
         jmeter.run();
 
         printResults();
-        System.out.println("Test completed. See " + resultFile + " file for results");
-        System.out.println("JMeter .jmx script is available at " + jmxFile.toPath());
+        System.out.println("\n\nTest Results File  : " + resultFile);
+        System.out.println("JMeter Script File : " + jmxFile.toPath());
+        System.out.println("\n\n** How To Generate JMeter HTML Report ** \n\nUse the following command from outDir (" + outdir + ") :"
+                + "\n\"jmeter -g " + buildOutputFileName() + ".jtl -o Dashboard\" to generate JMeter HTML Report\n");
+
     }
 
     private String buildOutputFileName() {
-        return dbName + "." + "benchmark";
+        return dbName + "." + "benchmark" + "." + storageConfiguration.getBenchmark().getMode();
     }
 
     private void printResults() {
         Map<String, ArrayList<Double>> result = new HashMap<>();
         try (BufferedReader br = new BufferedReader(new FileReader(resultFile))) {
-            System.out.println("\n\n*********   Results   **********\n\n");
+            System.out.println("\n\n*********   Test completed   **********\n\n");
             String line = br.readLine(); // ignore first line
             while ((line = br.readLine()) != null) {
                 ArrayList<Double> averages = new ArrayList<Double>();
@@ -210,6 +212,5 @@ public class BenchmarkRunner {
                     + ", Avg. Time : " + String.format("%.2f", (result.get(key).get(0) / result.get(key).get(2)))
                     + " ms, Success Ratio : " + (result.get(key).get(1) / result.get(key).get(2) * 100));
         }
-        System.out.println("\n\n\n");
     }
 }
