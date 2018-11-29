@@ -30,17 +30,19 @@ import org.apache.jmeter.testelement.TestElement;
 import org.apache.jmeter.testelement.TestPlan;
 import org.apache.jmeter.threads.ThreadGroup;
 import org.apache.jmeter.threads.gui.ThreadGroupGui;
+import org.apache.jmeter.timers.ConstantTimer;
 import org.apache.jmeter.util.JMeterUtils;
 import org.apache.jorphan.collections.HashTree;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created on 06/04/17.
@@ -53,6 +55,11 @@ public class BenchmarkRunner {
         REST,
         DIRECT,
         GRPC,
+    }
+
+    public enum ExecutionMode {
+        FIXED,
+        RANDOM,
     }
 
     protected final StorageConfiguration storageConfiguration;
@@ -108,7 +115,7 @@ public class BenchmarkRunner {
         }
 
         // Store execution results into a .jtl file
-        resultFile = outdir.resolve(buildOutputFileName() + ".jtl").toString();
+        resultFile = outdir.resolve(buildOutputFileName()).toString() + ".jtl";
         ResultCollector resultCollector = new ResultCollector(summer);
         resultCollector.setFilename(resultFile);
         testPlanTree.add(testPlan, resultCollector);
@@ -139,12 +146,19 @@ public class BenchmarkRunner {
         // Construct Test Plan from previously initialized elements
         HashTree threadGroupHashTree = testPlanTree.add(testPlan, threadGroup);
 
+        ConstantTimer timer = new ConstantTimer();
+        timer.setDelay(String.valueOf(storageConfiguration.getBenchmark().getDelay()));
+        timer.setName("timer");
+
         // Add samplers to the ThreadGroup
         threadGroupHashTree.add(samplers);
+        // Add timer to the ThreadGroup
+        threadGroupHashTree.add(timer);
     }
 
     public void run() throws IOException {
 
+        Files.createDirectories(outdir);
         // save generated test plan to JMeter's .jmx file format
         File jmxFile = outdir.resolve(buildOutputFileName() + ".jmx").toFile();
         SaveService.saveTree(testPlanTree, new FileOutputStream(jmxFile));
@@ -155,12 +169,48 @@ public class BenchmarkRunner {
         jmeter.configure(testPlanTree);
         jmeter.run();
 
-        System.out.println("Test completed. See " + resultFile + " file for results");
-        System.out.println("JMeter .jmx script is available at " + jmxFile.toPath());
+        printResults();
+        System.out.println("\n\nTest Results File  : " + resultFile);
+        System.out.println("JMeter Script File : " + jmxFile.toPath());
+        System.out.println("\n\n** How To Generate JMeter HTML Report ** \n\nUse the following command from outDir (" + outdir + ") :"
+                + "\n\"jmeter -g " + buildOutputFileName() + ".jtl -o Dashboard\" to generate JMeter HTML Report\n");
+
     }
 
     private String buildOutputFileName() {
-        return dbName + "." + "benchmark";
+        return dbName + "." + "benchmark" + "." + storageConfiguration.getBenchmark().getMode();
     }
 
+    private void printResults() {
+        Map<String, ArrayList<Double>> result = new HashMap<>();
+        try (BufferedReader br = new BufferedReader(new FileReader(resultFile))) {
+            System.out.println("\n\n*********   Test completed   **********\n\n");
+            String line = br.readLine(); // ignore first line
+            while ((line = br.readLine()) != null) {
+                ArrayList<Double> averages = new ArrayList<Double>();
+                String[] splittedResult = line.split(",(?=([^\"]*\"[^\"]*\")*[^\"]*$)");
+                String label = splittedResult[2];
+                if (result.keySet().contains(label)) {
+                    averages = result.get(label);
+                    averages.set(0, averages.get(0) + Double.parseDouble(splittedResult[1]));
+                    averages.set(1, averages.get(1) + (splittedResult[7].equals("true") ? 1D : 0D));
+                    averages.set(2, averages.get(2) + 1D);
+                } else {
+                    averages.add(0, Double.parseDouble(splittedResult[1]));
+                    averages.add(1, (splittedResult[7].equals("true") ? 1D : 0D));
+                    averages.add(2, 1D);
+                }
+                result.put(label, averages);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        int i = 0;
+        for (String key : result.keySet()) {
+            System.out.println(++i + ": Query ID : " + String.format("%1$-18s", key)
+                    + ", Avg. Time : " + String.format("%.2f", (result.get(key).get(0) / result.get(key).get(2)))
+                    + " ms, Success Ratio : " + (result.get(key).get(1) / result.get(key).get(2) * 100));
+        }
+    }
 }
