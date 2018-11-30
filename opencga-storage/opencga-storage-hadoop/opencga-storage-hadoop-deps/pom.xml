@@ -33,7 +33,7 @@
   ~          * ...
   ~  -3 Dependencies we DON'T want (will be shaded)
   ~      * jersey 1.9
-  ~      * org.mortbay.jetty:servlet-api
+  ~      * org.mortbay.jetty:servlet-api (only for testing)
   ~      * proto 2.5.0
   ~      * guava 11
   ~
@@ -88,6 +88,7 @@
         <netty.version>4.0.23.Final</netty.version>
         <jamon-runtime.version>2.4.1</jamon-runtime.version>
         <codehaus.jackson.version>1.9.13</codehaus.jackson.version>
+        <mortbay.jetty.version>6.1.26</mortbay.jetty.version>
 
         <!--Read from main phoenix pom.xml-->
         <commons-configuration.version>1.6</commons-configuration.version>
@@ -439,6 +440,18 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <!-- hadoop-azure uses the class org.mortbay.util.ajax.JSON -->
+        <dependency>
+            <groupId>org.mortbay.jetty</groupId>
+            <artifactId>jetty-util</artifactId>
+            <version>${mortbay.jetty.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.mortbay.jetty</groupId>
+                    <artifactId>servlet-api</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
 
         <!--Needed by hbase-server -->
         <dependency>
@@ -739,6 +752,7 @@
 
                                     <!--Netty uses proto2 (see ProtobufDecoder)-->
                                     <include>org.apache.hbase.thirdparty:hbase-shaded-netty</include>
+
                                 </includes>
                                 <!--Exclude all test dependencies.-->
                                 <excludes>
@@ -914,3 +928,4 @@
     </distributionManagement>
 
 </project>
+
