@@ -392,7 +392,7 @@ public class CatalogManagerTest extends GenericTest {
         String remoteGroup = "bio";
         String internalGroup = "test";
         String study = "user@1000G:phase1";
-        catalogManager.getUserManager().importRemoteGroupOfUsers("ldap", remoteGroup, internalGroup, study, getAdminToken());
+        catalogManager.getUserManager().importRemoteGroupOfUsers("ldap", remoteGroup, internalGroup, study, true, getAdminToken());
 
         QueryResult<Group> test = catalogManager.getStudyManager().getGroup("user@1000G:phase1", "test", sessionIdUser);
         assertEquals(1, test.getNumResults());
@@ -411,7 +411,7 @@ public class CatalogManagerTest extends GenericTest {
         internalGroup = "test2";
         thrown.expect(CatalogException.class);
         thrown.expectMessage("not found");
-        catalogManager.getUserManager().importRemoteGroupOfUsers("ldap", remoteGroup, internalGroup, study, getAdminToken());
+        catalogManager.getUserManager().importRemoteGroupOfUsers("ldap", remoteGroup, internalGroup, study, true, getAdminToken());
     }
 
     @Test

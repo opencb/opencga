@@ -119,7 +119,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
                 }
             } else {
                 catalogManager.getUserManager().importRemoteGroupOfUsers(executor.authOrigin, executor.from, executor.to, executor.study,
-                        sessionId);
+                        true, sessionId);
             }
         }
     }
@@ -137,7 +137,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
                         executor.studyGroup, executor.study, token);
             } else if (StringUtils.isNotEmpty(executor.group)) {
                 catalogManager.getUserManager().importRemoteGroupOfUsers(executor.authOrigin, executor.group, executor.studyGroup,
-                        executor.study, token);
+                        executor.study, false, token);
             } else {
                 logger.error("Nothing to do. Missing 'users' or 'groups'");
             }

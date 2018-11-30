@@ -243,11 +243,12 @@ public class UserManager extends AbstractManager {
      * @param remoteGroup Group name of the remote authentication origin.
      * @param internalGroup Group name in Catalog that will be associated to the remote group.
      * @param study Study where the internal group will be associated.
+     * @param sync Boolean indicating whether the remote group will be synced with the internal group or not.
      * @param token JWT token. The token should belong to the root user.
      * @throws CatalogException If any of the parameters is wrong or there is any internal error.
      */
     public void importRemoteGroupOfUsers(String authOrigin, String remoteGroup, @Nullable String internalGroup, @Nullable String study,
-                                         String token) throws CatalogException {
+                                         boolean sync, String token) throws CatalogException {
         if (!"admin".equals(authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token))) {
             throw new CatalogAuthorizationException("Only the root user can perform this action");
         }
@@ -259,16 +260,22 @@ public class UserManager extends AbstractManager {
             throw new CatalogException("Unknown authentication origin");
         }
 
-        logger.info("Fetching users from authentication origin '{}'", authOrigin);
+        List<User> userList;
+        if (sync) {
+            // We don't create any user as they will be automatically populate during login
+            userList = Collections.emptyList();
+        } else {
+            logger.info("Fetching users from authentication origin '{}'", authOrigin);
 
-        // Register the users
-        List<User> userList = authenticationManagerMap.get(authOrigin).getUsersFromRemoteGroup(remoteGroup);
-        for (User user : userList) {
-            try {
-                create(user, token);
-                logger.info("User '{}' successfully created", user.getId());
-            } catch (CatalogException e) {
-                logger.warn("{}", e.getMessage());
+            // Register the users
+            userList = authenticationManagerMap.get(authOrigin).getUsersFromRemoteGroup(remoteGroup);
+            for (User user : userList) {
+                try {
+                    create(user, token);
+                    logger.info("User '{}' successfully created", user.getId());
+                } catch (CatalogException e) {
+                    logger.warn("{}", e.getMessage());
+                }
             }
         }
 
@@ -287,8 +294,12 @@ public class UserManager extends AbstractManager {
             // Create new group associating it to the remote group
             try {
                 logger.info("Attempting to register group '{}' in study '{}'", internalGroup, study);
+                Group.Sync groupSync = null;
+                if (sync) {
+                    groupSync = new Group.Sync(authOrigin, remoteGroup);
+                }
                 Group group = new Group(internalGroup, userList.stream().map(User::getId).collect(Collectors.toList()))
-                        .setSyncedFrom(new Group.Sync(authOrigin, remoteGroup));
+                        .setSyncedFrom(groupSync);
                 catalogManager.getStudyManager().createGroup(study, group, ADMIN_TOKEN);
             } catch (CatalogException e) {
                 logger.error("Could not register group '{}' in study '{}'\n{}", internalGroup, study, e.getMessage());
