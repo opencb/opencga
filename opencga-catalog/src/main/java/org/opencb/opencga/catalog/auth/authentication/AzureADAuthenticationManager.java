@@ -2,16 +2,23 @@ package org.opencb.opencga.catalog.auth.authentication;
 
 import com.microsoft.aad.adal4j.AuthenticationContext;
 import com.microsoft.aad.adal4j.AuthenticationResult;
+import com.microsoft.azure.credentials.ApplicationTokenCredentials;
+import com.microsoft.azure.management.Azure;
+import com.microsoft.azure.management.graphrbac.ActiveDirectoryGroup;
+import com.microsoft.azure.management.graphrbac.ActiveDirectoryObject;
+import com.microsoft.azure.management.graphrbac.ActiveDirectoryUser;
 import com.nimbusds.jose.Header;
 import com.nimbusds.jwt.JWTParser;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
+import io.jsonwebtoken.SignatureAlgorithm;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.AuthenticationOrigin;
+import org.opencb.opencga.core.models.Account;
 import org.opencb.opencga.core.models.User;
 
 import java.io.ByteArrayInputStream;
@@ -22,51 +29,61 @@ import java.security.PublicKey;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 public class AzureADAuthenticationManager extends AuthenticationManager {
 
+    private String originId;
+
     private OIDCProviderMetadata oidcProviderMetadata;
+    private String tenantId;
     private String clientId;
+    private String clientIdSecretKey;
     private Map<String, List<String>> filters;
 
-    private String idMapping;
     private String groupMapping;
 
     private Map<String, PublicKey> publicKeyMap;
 
-    public AzureADAuthenticationManager(String host, Map<String, String> options, Configuration configuration) throws CatalogException {
+    public AzureADAuthenticationManager(AuthenticationOrigin authenticationOrigin) throws CatalogException {
         super();
-        init(host, options);
-    }
 
-    private void init(String host, Map<String, String> options) throws CatalogException {
-        if (StringUtils.isEmpty(host)) {
+        this.originId = authenticationOrigin.getId();
+
+        if (StringUtils.isEmpty(authenticationOrigin.getHost())) {
             throw new CatalogException("AzureAD authentication origin configuration error. Missing mandatory 'host' field.");
         }
         try {
-            this.oidcProviderMetadata = getProviderMetadata(host);
+            this.oidcProviderMetadata = getProviderMetadata(authenticationOrigin.getHost());
         } catch (IOException | ParseException e) {
             throw new CatalogException("AzureAD authentication origin configuration error. Check 'host' field. Is it pointing to the main "
                     + "open-id configuration url? - " + e.getMessage(), e);
         }
 
-        if (options == null || options.isEmpty()) {
+        if (authenticationOrigin.getOptions() == null || authenticationOrigin.getOptions().isEmpty()) {
             throw new CatalogException("AzureAD authentication origin configuration error. Missing mandatory 'options' field.");
         }
 
-        this.clientId = options.get("clientId");
+        this.tenantId = (String) authenticationOrigin.getOptions().get("tenantId");
+        if (StringUtils.isEmpty(this.tenantId)) {
+            throw new CatalogException("AzureAD authentication origin configuration error. Missing mandatory 'tenantId' option field.");
+        }
+
+        this.clientId = (String) authenticationOrigin.getOptions().get("clientId");
         if (StringUtils.isEmpty(this.clientId)) {
             throw new CatalogException("AzureAD authentication origin configuration error. Missing mandatory 'clientId' option field.");
         }
 
-        String filterString = options.get("filters");
+        this.clientIdSecretKey = (String) authenticationOrigin.getOptions().get("clientSecretKey");
+        if (StringUtils.isEmpty(this.clientIdSecretKey)) {
+            throw new CatalogException("AzureAD authentication origin configuration error. Missing mandatory 'clientSecretKey' option "
+                    + "field.");
+        }
+
+        String filterString = (String) authenticationOrigin.getOptions().get("filters");
         this.filters = new HashMap<>();
         if (StringUtils.isNotEmpty(filterString)) {
             String[] filterList = filterString.split(";");
@@ -82,7 +99,7 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
             }
         }
 
-        String mappingString = options.get("mappings");
+        String mappingString = (String) authenticationOrigin.getOptions().get("mappings");
         if (StringUtils.isNotEmpty(mappingString)) {
             String[] mappingList = mappingString.split(";");
             for (String mappingBucket : mappingList) {
@@ -90,27 +107,23 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
                 if (split.length != 2) {
                     throw new CatalogException("AzureAD authentication origin configuration error. 'mappings' field could not be parsed.");
                 }
-                if ("id".equals(split[0])) {
-                    this.idMapping = split[1];
-                } else if ("groups".equals(split[0])) {
+                if ("groups".equals(split[0])) {
                     this.groupMapping = split[1];
                 } else {
                     throw new CatalogException("AzureAD authentication origin configuration error. Unexpected '" + split[0] + "' key found"
-                            + " in the 'mappings' field. Expected keys are 'id' and 'groups'");
+                            + " in the 'mappings' field. Expected 'groups' key");
                 }
             }
         } else {
             throw new CatalogException("AzureAD authentication origin configuration error. Missing mandatory 'mappings' option field.");
         }
 
-        if (StringUtils.isEmpty(this.idMapping)) {
-            throw new CatalogException("AzureAD authentication origin configuration error. Missing mandatory 'id' key from the 'mappings' "
-                    + "field in 'options'.");
-        }
         if (StringUtils.isEmpty(this.groupMapping)) {
             throw new CatalogException("AzureAD authentication origin configuration error. Missing mandatory 'groups' key from the "
                     + "'mappings' field in 'options'.");
         }
+
+        this.jwtManager = new JwtManager(SignatureAlgorithm.RS256.getValue());
 
         this.publicKeyMap = new HashMap<>();
     }
@@ -128,40 +141,46 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
         return OIDCProviderMetadata.parse(providerInfo);
     }
 
-    private PublicKey getPublicKey(String token) throws IOException, java.text.ParseException, CertificateException, CatalogException {
-        Header header = JWTParser.parse(token).getHeader();
-        String kid = String.valueOf(header.toJSONObject().get("kid"));
+    private PublicKey getPublicKey(String token) throws CatalogAuthenticationException {
+        String kid;
 
-        if (!this.publicKeyMap.containsKey(kid)) {
-            this.publicKeyMap.clear();
+        try {
+            Header header = JWTParser.parse(token).getHeader();
+            kid = String.valueOf(header.toJSONObject().get("kid"));
 
-            // We look for the new public keys in the url
-            URL providerConfigurationURL = this.oidcProviderMetadata.getJWKSetURI().toURL();
-            InputStream stream = providerConfigurationURL.openStream();
+            if (!this.publicKeyMap.containsKey(kid)) {
+                this.publicKeyMap.clear();
 
-            // Read all data from URL
-            String providerInfo;
-            try (java.util.Scanner s = new java.util.Scanner(stream)) {
-                providerInfo = s.useDelimiter("\\A").hasNext() ? s.next() : "";
+                // We look for the new public keys in the url
+                URL providerConfigurationURL = this.oidcProviderMetadata.getJWKSetURI().toURL();
+                InputStream stream = providerConfigurationURL.openStream();
+
+                // Read all data from URL
+                String providerInfo;
+                try (java.util.Scanner s = new java.util.Scanner(stream)) {
+                    providerInfo = s.useDelimiter("\\A").hasNext() ? s.next() : "";
+                }
+
+                ObjectMap map = new ObjectMap(providerInfo);
+                List keys = map.getAsList("keys");
+                for (Object keyObject : keys) {
+                    Map<String, Object> currentKey = (Map<String, Object>) keyObject;
+                    String x5c = ((List<String>) currentKey.get("x5c")).get(0);
+
+                    InputStream in = new ByteArrayInputStream(java.util.Base64.getDecoder().decode(x5c));
+                    CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
+                    X509Certificate cert = (X509Certificate) certFactory.generateCertificate(in);
+
+                    // And store the new keys in the map
+                    this.publicKeyMap.put(kid, cert.getPublicKey());
+                }
             }
 
-            ObjectMap map = new ObjectMap(providerInfo);
-            List keys = map.getAsList("keys");
-            for (Object keyObject : keys) {
-                Map<String, Object> currentKey = (Map<String, Object>) keyObject;
-                String x5c = ((List<String>) currentKey.get("x5c")).get(0);
-
-                InputStream in = new ByteArrayInputStream(java.util.Base64.getDecoder().decode(x5c));
-                CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
-                X509Certificate cert = (X509Certificate)certFactory.generateCertificate(in);
-
-                // And store the new keys in the map
-                this.publicKeyMap.put(kid, cert.getPublicKey());
+            if (!this.publicKeyMap.containsKey(kid)) {
+                throw new CatalogAuthenticationException("Could not find public key for the token");
             }
-        }
-
-        if (!this.publicKeyMap.containsKey(kid)) {
-            throw new CatalogException("Could not find public key for the token");
+        } catch (CertificateException | java.text.ParseException | IOException e) {
+            throw new CatalogAuthenticationException("Could not get public key\n" + e.getMessage(), e);
         }
 
         return this.publicKeyMap.get(kid);
@@ -189,7 +208,7 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
             throw CatalogAuthenticationException.incorrectUserOrPassword();
         }
 
-        if (jwtManager.passFilters(result.getAccessToken(), this.filters)) {
+        if (jwtManager.passFilters(result.getAccessToken(), this.filters, getPublicKey(result.getAccessToken()))) {
             return result.getAccessToken();
         } else {
             throw CatalogAuthenticationException.userNotAllowed();
@@ -198,17 +217,115 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
 
     @Override
     public List<User> getUsersFromRemoteGroup(String group) throws CatalogException {
-        throw new UnsupportedOperationException();
+        ApplicationTokenCredentials tokenCredentials = new ApplicationTokenCredentials(clientId, tenantId, clientIdSecretKey, null);
+        Azure.Authenticated azureAuthenticated = Azure.authenticate(tokenCredentials);
+
+        // This method should only be called from the admin environment to sync or obtain groups from AAD. We are going to force users to
+        // pass always the group name instead of the group oid.
+        /*ActiveDirectoryGroup azureADGroup = azureAuthenticated.activeDirectoryGroups().getById(group);
+        if (azureADGroup == null) {
+            // We try to get the group by name
+            azureADGroup = azureAuthenticated.activeDirectoryGroups().getByName(group);
+            if (azureADGroup == null) {
+                logger.error("Group '{}' not found.");
+                throw new CatalogException("Group '" + group + "' not found");
+            }
+        }*/
+        ActiveDirectoryGroup azureADGroup = azureAuthenticated.activeDirectoryGroups().getByName(group);
+        if (azureADGroup == null) {
+            logger.error("Group '{}' not found.");
+            throw new CatalogException("Group '" + group + "' not found");
+        }
+
+        List<ActiveDirectoryUser> azureADUserList = new ArrayList<>(azureADGroup.listMembers().size());
+        for (ActiveDirectoryObject azureADUser : azureADGroup.listMembers()) {
+            if (azureADUser instanceof ActiveDirectoryUser) {
+                azureADUserList.add((ActiveDirectoryUser) azureADUser);
+            }
+        }
+
+        return extractUserInformation(azureADUserList);
     }
 
     @Override
     public List<User> getRemoteUserInformation(List<String> userStringList) throws CatalogException {
-        throw new UnsupportedOperationException();
+        ApplicationTokenCredentials tokenCredentials = new ApplicationTokenCredentials(clientId, tenantId, clientIdSecretKey, null);
+        Azure.Authenticated azureAuthenticated = Azure.authenticate(tokenCredentials);
+
+        List<ActiveDirectoryUser> azureADUserList = new ArrayList<>(userStringList.size());
+        for (String user : userStringList) {
+            ActiveDirectoryUser azureADUser = azureAuthenticated.activeDirectoryUsers().getById(user);
+            if (azureADUser == null) {
+                logger.error("User '{}' not found");
+                throw new CatalogException("User '" + user + "' not found");
+            } else {
+                azureADUserList.add(azureADUser);
+            }
+        }
+
+        return extractUserInformation(azureADUserList);
     }
 
     @Override
     public List<String> getRemoteGroups(String token) throws CatalogException {
-        return jwtManager.getGroups(token, groupMapping);
+        List<String> groupOids = jwtManager.getGroups(token, groupMapping, getPublicKey(token));
+
+        ApplicationTokenCredentials tokenCredentials = new ApplicationTokenCredentials(clientId, tenantId, clientIdSecretKey, null);
+        Azure.Authenticated azureAuthenticated = Azure.authenticate(tokenCredentials);
+
+        List<String> groupIds = new ArrayList<>();
+        for (String groupOid : groupOids) {
+            ActiveDirectoryGroup group = azureAuthenticated.activeDirectoryGroups().getById(groupOid);
+            if (group == null) {
+                // Try to get the group by name instead. This works as a validation that the group name exists.
+                group = azureAuthenticated.activeDirectoryGroups().getByName(groupOid);
+            }
+
+            if (group != null) {
+                groupIds.add(group.name());
+            }
+        }
+
+        return groupIds;
+    }
+
+    private List<User> extractUserInformation(List<ActiveDirectoryUser> azureAdUserList) {
+        List<User> userList = new ArrayList<>(azureAdUserList.size());
+
+        String name;
+        String mail;
+        String id;
+        Map<String, Object> attributes = new HashMap<>();
+
+        for (ActiveDirectoryUser activeDirectoryUser : azureAdUserList) {
+            id = activeDirectoryUser.id();
+            name = activeDirectoryUser.name();
+            if (!StringUtils.isEmpty(activeDirectoryUser.mail())) {
+                mail = activeDirectoryUser.mail();
+            } else {
+                mail = activeDirectoryUser.userPrincipalName();
+            }
+
+            ObjectMap azureADMap = new ObjectMap()
+                    .append("UserPrincipalName", activeDirectoryUser.userPrincipalName())
+                    .append("TenantId", tenantId)
+                    .append("UserType", activeDirectoryUser.inner().userType())
+                    .append("AdditionalProperties", activeDirectoryUser.inner().additionalProperties());
+            attributes.put("OPENCGA_REGISTRATION_TOKEN", azureADMap);
+
+            User user = new User(id, name, mail, "", "", new Account().setType(Account.GUEST).setAuthOrigin(originId),
+                    User.UserStatus.READY, "", -1, -1, Collections.emptyList(), Collections.emptyList(), Collections.emptyMap(),
+                    attributes);
+
+            userList.add(user);
+        }
+
+        return userList;
+    }
+
+    @Override
+    public String getUserId(String token) throws CatalogException {
+        return jwtManager.getUser(token, getPublicKey(token));
     }
 
     @Override

@@ -85,6 +85,11 @@
             <version>1.17.1</version>
         </dependency>
         <dependency>
+            <groupId>com.microsoft.rest</groupId>
+            <artifactId>client-runtime</artifactId>
+            <version>1.6.3</version>
+        </dependency>
+        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <scope>test</scope>

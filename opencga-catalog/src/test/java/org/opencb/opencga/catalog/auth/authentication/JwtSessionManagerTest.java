@@ -23,7 +23,6 @@ import org.junit.Test;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.config.Configuration;
 
 import javax.crypto.spec.SecretKeySpec;
 import java.security.Key;
@@ -42,7 +41,6 @@ public class JwtSessionManagerTest extends GenericTest {
 
     @Before
     public void setUp() throws Exception  {
-        Configuration configuration = Configuration.load(getClass().getResource("/configuration-test.yml").openStream());
         Key key = new SecretKeySpec(TextCodec.BASE64.decode("12345"), SignatureAlgorithm.HS256.getJcaName());
         jwtSessionManager = new JwtManager(SignatureAlgorithm.HS256.getValue(), key, key);
         testCreateJWTToken();

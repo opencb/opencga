@@ -23,10 +23,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
-import org.opencb.opencga.catalog.auth.authentication.AuthenticationManager;
-import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
-import org.opencb.opencga.catalog.auth.authentication.LDAPAuthenticationManager;
-import org.opencb.opencga.catalog.auth.authentication.LDAPUtils;
+import org.opencb.opencga.catalog.auth.authentication.*;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
@@ -64,7 +61,7 @@ public class UserManager extends AbstractManager {
 
     UserManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                 DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                Configuration configuration) {
+                Configuration configuration) throws CatalogException {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
 
         String secretKey = configuration.getAdmin().getSecretKey();
@@ -78,6 +75,10 @@ public class UserManager extends AbstractManager {
                         case LDAP:
                             authenticationManagerMap.put(authenticationOrigin.getId(),
                                     new LDAPAuthenticationManager(authenticationOrigin, secretKey, expiration));
+                            break;
+                        case AAD:
+                            authenticationManagerMap.put(authenticationOrigin.getId(),
+                                    new AzureADAuthenticationManager(authenticationOrigin));
                             break;
                         default:
                             break;

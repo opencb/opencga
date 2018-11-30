@@ -34,11 +34,15 @@ public class JwtManager {
 
     private Logger logger;
 
+    JwtManager(String algorithm) {
+        this(algorithm, null, null);
+    }
+
     JwtManager(String algorithm, Key secretKey) {
         this(algorithm, secretKey, secretKey);
     }
 
-    JwtManager(String algorithm, @Nullable Key privateKey, Key publicKey) {
+    JwtManager(String algorithm, @Nullable Key privateKey, @Nullable Key publicKey) {
         this.algorithm = SignatureAlgorithm.forName(algorithm);
         this.privateKey = privateKey;
         this.publicKey = publicKey;
@@ -98,24 +102,40 @@ public class JwtManager {
     }
 
     void validateToken(String token) throws CatalogAuthenticationException {
-        parseClaims(token);
+        validateToken(token, this.publicKey);
+    }
+
+    void validateToken(String token, Key publicKey) throws CatalogAuthenticationException {
+        parseClaims(token, publicKey);
     }
 
     String getAudience(String token) throws CatalogAuthenticationException {
-        return parseClaims(token).getBody().getAudience();
+        return getAudience(token, this.publicKey);
+    }
+
+    String getAudience(String token, Key publicKey) throws CatalogAuthenticationException {
+        return parseClaims(token, publicKey).getBody().getAudience();
     }
 
     String getUser(String token) throws CatalogAuthenticationException {
-        Set<Map.Entry<String, Object>> entries = parseClaims(token).getBody().entrySet();
-        return parseClaims(token).getBody().getSubject();
+        return getUser(token, this.publicKey);
+    }
+
+    String getUser(String token, Key publicKey) throws CatalogAuthenticationException {
+        Set<Map.Entry<String, Object>> entries = parseClaims(token, publicKey).getBody().entrySet();
+        return parseClaims(token, publicKey).getBody().getSubject();
     }
 
     String getUser(String token, String fieldKey) throws CatalogAuthenticationException {
-        return String.valueOf(parseClaims(token).getBody().get(fieldKey));
+        return String.valueOf(parseClaims(token, publicKey).getBody().get(fieldKey));
     }
 
     List<String> getGroups(String token, String fieldKey) throws CatalogAuthenticationException {
-        Object o = parseClaims(token).getBody().get(fieldKey);
+        return getGroups(token, fieldKey, this.publicKey);
+    }
+
+    List<String> getGroups(String token, String fieldKey, Key publicKey) throws CatalogAuthenticationException {
+        Object o = parseClaims(token, publicKey).getBody().get(fieldKey);
 
         if (o instanceof List) {
             return (List<String>) o;
@@ -125,14 +145,22 @@ public class JwtManager {
     }
 
     Date getExpiration(String token) throws CatalogAuthenticationException {
-        return parseClaims(token).getBody().getExpiration();
+        return getExpiration(token, this.publicKey);
+    }
+
+    Date getExpiration(String token, Key publicKey) throws CatalogAuthenticationException {
+        return parseClaims(token, publicKey).getBody().getExpiration();
     }
 
     Object getClaim(String token, String claimId) throws CatalogAuthenticationException {
-        return parseClaims(token).getBody().get(claimId);
+        return getClaim(token, claimId, this.publicKey);
     }
 
-    private Jws<Claims> parseClaims(String token) throws CatalogAuthenticationException {
+    Object getClaim(String token, String claimId, Key publicKey) throws CatalogAuthenticationException {
+        return parseClaims(token, publicKey).getBody().get(claimId);
+    }
+
+    private Jws<Claims> parseClaims(String token, Key publicKey) throws CatalogAuthenticationException {
         try {
             return Jwts.parser().setSigningKey(publicKey).parseClaimsJws(token);
         } catch (ExpiredJwtException e) {
@@ -144,11 +172,15 @@ public class JwtManager {
 
     // Check if the token contains the key and any of the values from 'filters'
     public boolean passFilters(String token, Map<String, List<String>> filters) throws CatalogAuthenticationException {
+        return passFilters(token, filters, this.publicKey);
+    }
+
+    public boolean passFilters(String token, Map<String, List<String>> filters, Key publicKey) throws CatalogAuthenticationException {
         if (filters == null || filters.isEmpty()) {
             return true;
         }
 
-        Claims body = parseClaims(token).getBody();
+        Claims body = parseClaims(token, publicKey).getBody();
         for (Map.Entry<String, List<String>> entry : filters.entrySet()) {
             if (!entry.getValue().contains(String.valueOf(body.get(entry.getKey())))) {
                 return false;
