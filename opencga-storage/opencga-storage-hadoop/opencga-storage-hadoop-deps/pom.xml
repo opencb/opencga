@@ -33,7 +33,7 @@
   ~          * ...
   ~  -3 Dependencies we DON'T want (will be shaded)
   ~      * jersey 1.9
-  ~      * org.mortbay.jetty:servlet-api
+  ~      * org.mortbay.jetty:servlet-api (only for testing)
   ~      * proto 2.5.0
   ~      * guava 11
   ~
@@ -88,6 +88,7 @@
         <netty.version>4.0.23.Final</netty.version>
         <jamon-runtime.version>2.4.1</jamon-runtime.version>
         <codehaus.jackson.version>1.9.13</codehaus.jackson.version>
+        <mortbay.jetty.version>6.1.26</mortbay.jetty.version>
 
         <!--Read from main phoenix pom.xml-->
         <commons-configuration.version>1.6</commons-configuration.version>
@@ -141,6 +142,14 @@
             <version>${hadoop.version}</version>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-azure</artifactId>
+            <version>${hadoop.version}</version>
+            <optional>true</optional>
+        </dependency>
+
+        <!--HBase dependencies-->
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-server</artifactId>
@@ -218,6 +227,10 @@
                     <artifactId>hadoop-annotations</artifactId>
                 </exclusion>
                 <exclusion>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-azure</artifactId>
+                </exclusion>
+                <exclusion>
                     <groupId>org.apache.hbase</groupId>
                     <artifactId>hbase-server</artifactId>
                 </exclusion>
@@ -247,7 +260,6 @@
                 </exclusion>
             </exclusions>
         </dependency>
-
 
         <!-- ============================================= -->
         <!-- TRANSITIVE dependencies. Not to be included   -->
@@ -412,6 +424,31 @@
                 <exclusion>
                     <groupId>net.sf.ehcache</groupId>
                     <artifactId>ehcache-core</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <!--Needed by hadoop-azure -->
+        <dependency>
+            <groupId>com.microsoft.azure</groupId>
+            <artifactId>azure-storage</artifactId>
+            <version>2.0.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-lang3</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <!-- hadoop-azure uses the class org.mortbay.util.ajax.JSON -->
+        <dependency>
+            <groupId>org.mortbay.jetty</groupId>
+            <artifactId>jetty-util</artifactId>
+            <version>${mortbay.jetty.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.mortbay.jetty</groupId>
+                    <artifactId>servlet-api</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -715,6 +752,7 @@
 
                                     <!--Netty uses proto2 (see ProtobufDecoder)-->
                                     <include>org.apache.hbase.thirdparty:hbase-shaded-netty</include>
+
                                 </includes>
                                 <!--Exclude all test dependencies.-->
                                 <excludes>
@@ -783,6 +821,7 @@
                                     <include>org.mortbay.jetty:servlet-api</include>
                                     <include>org.mortbay.jetty:jetty</include>
                                     <include>org.mortbay.jetty:jetty-util</include>
+                                    <include>org.mortbay.jetty:jetty-sslengine</include>
                                 </includes>
                             </artifactSet>
 
@@ -889,3 +928,4 @@
     </distributionManagement>
 
 </project>
+

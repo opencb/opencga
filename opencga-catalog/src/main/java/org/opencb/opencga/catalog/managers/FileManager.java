@@ -650,19 +650,12 @@ public class FileManager extends AnnotationSetManager<File> {
         try {
             if (!Files.exists(tempFilePath.getParent())) {
                 logger.debug("Creating temporal folder: {}", tempFilePath.getParent());
-                Files.createDirectory(tempFilePath.getParent());
+                ioManager.createDirectory(tempFilePath.getParent().toUri(), true);
             }
 
             // Start uploading the file to the temporal directory
-            int read;
-            byte[] bytes = new byte[1024];
-
             // Upload the file to a temporary folder
-            try (OutputStream out = new FileOutputStream(new java.io.File(tempFilePath.toString()))) {
-                while ((read = fileInputStream.read(bytes)) != -1) {
-                    out.write(bytes, 0, read);
-                }
-            }
+            Files.copy(fileInputStream, tempFilePath);
         } catch (Exception e) {
             logger.error("Error uploading file {}", file.getName(), e);
 
