@@ -35,7 +35,7 @@ benchmark:
   delay: 100
   connectionType: REST
   mode: FIXED
-  rest: "http://localhost:8080/opencga-1.4.0-rc2/webservices/rest/v1/analysis/variant/query"
+  rest: "http://localhost:8080/opencga-1.4.0-rc3-dev/webservices/rest/v1/analysis/variant/query"
   database:   ## 'local' connection to CellBase MongoDB
       hosts:
       - "localhost:27017"
