@@ -559,11 +559,25 @@
                                         <echo>Compile opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.version}-${opencga-storage-hadoop-deps.classifier}</echo>
                                         <exec executable="mvn">
                                             <arg value="-f"/>
-                                            <arg value="${project.basedir}/opencga-storage-hadoop-deps/pom.xml"/>
+                                            <arg value="${project.basedir}/pom.xml"/>
                                             <arg value="-P${opencga-storage-hadoop-deps.classifier}"/>
+                                            <arg value="-Popencga-storage-hadoop-deps"/>
+                                            <arg value="-pl"/>
+                                            <arg value=":opencga-storage-hadoop-deps"/>
                                             <arg value="install"/>
                                         </exec>
                                     </then>
+                                    <else>
+                                        <if>
+                                            <equals arg1="${project.artifactId}" arg2="opencga-storage-hadoop" />
+                                            <then>
+                                                <echo>------------------------------------------------------------------------</echo>
+                                                <echo>Skip compile opencga-storage-hadoop-deps. If required, use -Popencga-storage-hadoop-deps</echo>
+                                                <echo>Existing jar file : ${settings.localRepository}/org/opencb/opencga/opencga-storage-hadoop-deps/${opencga-storage-hadoop-deps.version}/opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.version}-${opencga-storage-hadoop-deps.classifier}-shaded.jar</echo>
+                                                <echo>------------------------------------------------------------------------</echo>
+                                            </then>
+                                        </if>
+                                    </else>
                                 </if>
                             </target>
                         </configuration>
