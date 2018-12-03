@@ -39,7 +39,7 @@ queries :
 - id : "FCAndType"
   description : "Purpose of this query"
   query :
-    functionalScore : "cadd_scaled>=0.2,Ccadd_raw>0"
+    functionalScore : "cadd_scaled>=0.2,cadd_raw>0"
     type : SNV
   tolerationThreshold : 600
 
