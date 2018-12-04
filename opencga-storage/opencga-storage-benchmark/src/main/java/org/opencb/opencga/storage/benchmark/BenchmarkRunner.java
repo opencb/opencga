@@ -75,7 +75,7 @@ public class BenchmarkRunner {
         StorageEngineFactory.configure(storageConfiguration);
         this.storageConfiguration = storageConfiguration;
 
-        storageEngine = storageConfiguration.getBenchmark().getStorageEngine();
+        storageEngine = storageConfiguration.getDefaultStorageEngineId();
         dbName = storageConfiguration.getBenchmark().getDatabaseName();
         this.jmeterHome = jmeterHome;
         this.outdir = outdir;
@@ -169,11 +169,8 @@ public class BenchmarkRunner {
         jmeter.configure(testPlanTree);
         jmeter.run();
 
-        printResults();
-        System.out.println("\n\nTest Results File  : " + resultFile);
-        System.out.println("JMeter Script File : " + jmxFile.toPath());
-        System.out.println("\n\n** How To Generate JMeter HTML Report ** \n\nUse the following command from outDir (" + outdir + ") :"
-                + "\n\"jmeter -g " + buildOutputFileName() + ".jtl -o Dashboard\" to generate JMeter HTML Report\n");
+        printResults(jmxFile, System.out);
+        printResults(jmxFile, new PrintStream(outdir.resolve("benchmark.Results").toFile()));
 
     }
 
@@ -181,7 +178,8 @@ public class BenchmarkRunner {
         return dbName + "." + "benchmark" + "." + storageConfiguration.getBenchmark().getMode();
     }
 
-    private void printResults() {
+    private void printResults(File jmxFile, PrintStream printStream) {
+        System.setOut(printStream);
         Map<String, ArrayList<Double>> result = new HashMap<>();
         try (BufferedReader br = new BufferedReader(new FileReader(resultFile))) {
             System.out.println("\n\n*********   Test completed   **********\n\n");
@@ -212,5 +210,10 @@ public class BenchmarkRunner {
                     + ", Avg. Time : " + String.format("%.2f", (result.get(key).get(0) / result.get(key).get(2)))
                     + " ms, Success Ratio : " + (result.get(key).get(1) / result.get(key).get(2) * 100));
         }
+
+        System.out.println("\n\nTest Results File  : " + resultFile);
+        System.out.println("JMeter Script File : " + jmxFile.toPath());
+        System.out.println("\n\n** How To Generate JMeter HTML Report ** \n\nUse the following command from outDir (" + outdir + ") :"
+                + "\n\ncd " + outdir + "\njmeter -g " + buildOutputFileName() + ".jtl -o Dashboard\n");
     }
 }

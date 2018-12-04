@@ -66,8 +66,8 @@ public final class VariantQueryUtils {
     public static final String ALL = "all";
     public static final String GT = "GT";
 
-    private static final int LIMIT_DEFAULT = 1000;
-    private static final int LIMIT_MAX = 5000;
+    public static final int LIMIT_DEFAULT = 1000;
+    public static final int LIMIT_MAX = 5000;
 
     // Some private query params
     public static final QueryParam ANNOT_EXPRESSION_GENES = QueryParam.create("annot_expression_genes", "", QueryParam.Type.TEXT_ARRAY);

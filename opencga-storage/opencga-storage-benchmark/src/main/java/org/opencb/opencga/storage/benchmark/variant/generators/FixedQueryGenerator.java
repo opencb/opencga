@@ -27,6 +27,7 @@ public class FixedQueryGenerator extends QueryGenerator {
     private String queryId;
     private FixedQuery fixedQuery;
     private FixedQueries fixedQueries;
+    private Map<String, String> baseQueriesFromCLI;
 
     @Override
     public void setUp(Map<String, String> params) {
@@ -36,6 +37,7 @@ public class FixedQueryGenerator extends QueryGenerator {
         String queryFile = params.get(FILE);
         outDir = Paths.get(params.get(OUT_DIR));
         queryId = params.get(FIXED_QUERY);
+        baseQueriesFromCLI = getBaseQueryFromCLI(params);
 
         if (StringUtils.isEmpty(queryFile)) {
             queryFile = params.get(DATA_DIR).concat("/").concat(FIXED_QUERIES_FILE);
@@ -55,11 +57,13 @@ public class FixedQueryGenerator extends QueryGenerator {
 
     @Override
     public Query generateQuery(Query query) {
-        query.putAll(fixedQuery.getQuery());
 
         if (Objects.nonNull(fixedQueries.getBaseQuery())) {
             query.putAll(fixedQueries.getBaseQuery());
         }
+
+        query.putAll(fixedQuery.getQuery());
+        query.putAll(baseQueriesFromCLI);
         appendRandomSessionId(fixedQueries.getSessionIds(), query);
         return query;
     }

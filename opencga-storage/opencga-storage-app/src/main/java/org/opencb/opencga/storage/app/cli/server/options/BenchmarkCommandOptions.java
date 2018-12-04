@@ -16,12 +16,12 @@
 
 package org.opencb.opencga.storage.app.cli.server.options;
 
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameter;
-import com.beust.jcommander.Parameters;
-import com.beust.jcommander.ParametersDelegate;
+import com.beust.jcommander.*;
 import org.opencb.opencga.storage.app.cli.GeneralCliOptions;
 import org.opencb.opencga.storage.benchmark.BenchmarkRunner;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created on 07/04/17.
@@ -64,9 +64,6 @@ public class BenchmarkCommandOptions {
         @Parameter(names = {"--host"}, description = "Remote host.", arity = 1)
         public String host;
 
-        @Parameter(names = {"--port"}, description = "Port number.", arity = 1)
-        public Integer port;
-
         @Parameter(names = {"-d", "--database"}, description = "DataBase name to load the data", required = false, arity = 1)
         public String dbName;
 
@@ -98,6 +95,9 @@ public class BenchmarkCommandOptions {
 
         @Parameter(names = {"-q", "--query"}, description = "Query Ids to execute for FIXED mode (Default All) OR Query pattern to execute for Random mode e.g. gene,ct(30);region(3)", arity = 1)
         public String query;
+
+        @DynamicParameter(names = {"-B", "--baseQuery"}, description = "Overwrite baseQuery options from file, comma separated, ie. -Blimit=1000", hidden = false)
+        public Map<String, String> baseQuery = new HashMap<>();
     }
 
     /**
