@@ -140,7 +140,7 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
     }
 
     private void setBaseQueryFromCommandLine(VariantStorageEngineSampler variantStorageEngineSampler, Map<String, String> baseQuery) {
-                if (Objects.nonNull(baseQuery)) {
+        if (Objects.nonNull(baseQuery)) {
             StringBuilder baseQueryPairs = new StringBuilder();
             for (String key : baseQuery.keySet()) {
                 baseQueryPairs.append(key).append(",").append(baseQuery.get(key)).append(";");
