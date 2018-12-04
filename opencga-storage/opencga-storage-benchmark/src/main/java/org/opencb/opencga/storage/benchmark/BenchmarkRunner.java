@@ -169,20 +169,25 @@ public class BenchmarkRunner {
         jmeter.configure(testPlanTree);
         jmeter.run();
 
-        printResults(jmxFile, System.out);
-        printResults(jmxFile, new PrintStream(outdir.resolve("benchmark.Results").toFile()));
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        try (PrintStream out = new PrintStream(stream)) {
+            printResults(jmxFile, out);
+        }
 
+        System.out.println(stream.toString());
+        try (FileOutputStream fileOutputStream = new FileOutputStream(outdir.resolve("results.txt").toFile())) {
+            stream.writeTo(fileOutputStream);
+        }
     }
 
     private String buildOutputFileName() {
         return dbName + "." + "benchmark" + "." + storageConfiguration.getBenchmark().getMode();
     }
 
-    private void printResults(File jmxFile, PrintStream printStream) {
-        System.setOut(printStream);
+    private void printResults(File jmxFile, PrintStream out) {
         Map<String, ArrayList<Double>> result = new HashMap<>();
         try (BufferedReader br = new BufferedReader(new FileReader(resultFile))) {
-            System.out.println("\n\n*********   Test completed   **********\n\n");
+            out.println("\n\n*********   Test completed   **********\n\n");
             String line = br.readLine(); // ignore first line
             while ((line = br.readLine()) != null) {
                 ArrayList<Double> averages = new ArrayList<Double>();
@@ -201,19 +206,19 @@ public class BenchmarkRunner {
                 result.put(label, averages);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new UncheckedIOException(e);
         }
 
         int i = 0;
         for (String key : result.keySet()) {
-            System.out.println(++i + ": Query ID : " + String.format("%1$-18s", key)
+            out.println(++i + ": Query ID : " + String.format("%1$-18s", key)
                     + ", Avg. Time : " + String.format("%.2f", (result.get(key).get(0) / result.get(key).get(2)))
                     + " ms, Success Ratio : " + (result.get(key).get(1) / result.get(key).get(2) * 100));
         }
 
-        System.out.println("\n\nTest Results File  : " + resultFile);
-        System.out.println("JMeter Script File : " + jmxFile.toPath());
-        System.out.println("\n\n** How To Generate JMeter HTML Report ** \n\nUse the following command from outDir (" + outdir + ") :"
+        out.println("\n\nTest Results File  : " + resultFile);
+        out.println("JMeter Script File : " + jmxFile.toPath());
+        out.println("\n\n** How To Generate JMeter HTML Report ** \n\nUse the following command from outDir (" + outdir + ") :"
                 + "\n\ncd " + outdir + "\njmeter -g " + buildOutputFileName() + ".jtl -o Dashboard\n");
     }
 }

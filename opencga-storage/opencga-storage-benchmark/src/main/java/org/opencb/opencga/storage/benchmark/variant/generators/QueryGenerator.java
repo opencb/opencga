@@ -94,10 +94,11 @@ public abstract class QueryGenerator {
         Map<String, String> baseQueryFromCLI = new HashMap<>();
         String baseQueryPairs = params.get(BASE_QUERY_REFIX);
         if (StringUtils.isNotEmpty(baseQueryPairs)) {
-            baseQueryFromCLI = Arrays.asList(baseQueryPairs.split(";")).stream()
+            baseQueryFromCLI = Arrays.stream(baseQueryPairs.split(";"))
                     .map(s -> s.split(","))
                     .collect(Collectors.toMap(a -> a[0], a -> a[1]));
         }
         return baseQueryFromCLI;
     }
 }
+
