@@ -35,7 +35,12 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     private OntologyTerm disease;
 
+    // Map of sample id, list of files (VCF, BAM and BIGWIG)
+    private Map<String, List<File>> files;
+
+    @Deprecated
     private File germline;
+    @Deprecated
     private File somatic;
 
     private Individual proband;
@@ -90,6 +95,25 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         this.attributes = attributes;
     }
 
+    public ClinicalAnalysis(String id, String description, Type type, OntologyTerm disease, Map<String, List<File>> files,
+                            Individual proband, Family family, List<Interpretation> interpretations, Priority priority, String creationDate,
+                            String dueDate, Status status, int release, Map<String, Object> attributes) {
+        this.id = id;
+        this.description = description;
+        this.type = type;
+        this.disease = disease;
+        this.files = files;
+        this.proband = proband;
+        this.family = family;
+        this.interpretations = interpretations;
+        this.priority = priority;
+        this.creationDate = creationDate;
+        this.dueDate = dueDate;
+        this.status = status;
+        this.release = release;
+        this.attributes = attributes;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClinicalAnalysis{");
@@ -98,8 +122,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         sb.append(", description='").append(description).append('\'');
         sb.append(", type=").append(type);
         sb.append(", disease=").append(disease);
-        sb.append(", germline=").append(germline);
-        sb.append(", somatic=").append(somatic);
+        sb.append(", files=").append(files);
         sb.append(", proband=").append(proband);
         sb.append(", family=").append(family);
         sb.append(", interpretations=").append(interpretations);
@@ -177,6 +200,15 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     public ClinicalAnalysis setDisease(OntologyTerm disease) {
         this.disease = disease;
+        return this;
+    }
+
+    public Map<String, List<File>> getFiles() {
+        return files;
+    }
+
+    public ClinicalAnalysis setFiles(Map<String, List<File>> files) {
+        this.files = files;
         return this;
     }
 

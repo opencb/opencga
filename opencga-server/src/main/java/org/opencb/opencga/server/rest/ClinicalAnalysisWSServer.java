@@ -295,6 +295,11 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
         public List<SampleParams> samples;
     }
 
+    private static class FamilyParam {
+        public String id;
+        public List<ProbandParam> members;
+    }
+
     private static class ClinicalInterpretationParameters {
         public String id;
         public String description;
@@ -325,11 +330,10 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 
         public OntologyTerm disease;
 
-        public String germline;
-        public String somatic;
+        public Map<String, List<String>> files;
 
         public ProbandParam proband;
-        public String family;
+        public FamilyParam family;
         public List<ClinicalInterpretationParameters> interpretations;
 
         public String dueDate;
@@ -350,12 +354,29 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
                 }
             }
 
-            File germlineFile = StringUtils.isNotEmpty(germline) ? new File().setName(germline) : null;
-            File somaticFile = StringUtils.isNotEmpty(somatic) ? new File().setName(somatic) : null;
+            Map<String, List<File>> fileMap = new HashMap<>();
+            if (files != null) {
+                for (Map.Entry<String, List<String>> entry : files.entrySet()) {
+                    List<File> fileList = entry.getValue().stream().map(fileId -> new File().setPath(fileId)).collect(Collectors.toList());
+                    fileMap.put(entry.getKey(), fileList);
+                }
+            }
 
             Family f = null;
-            if (StringUtils.isNotEmpty(family)) {
-                f = new Family().setId(family);
+            if (family != null) {
+                f = new Family().setId(family.id);
+                if (family.members != null) {
+                    List<Individual> members = new ArrayList<>(family.members.size());
+                    for (ProbandParam member : family.members) {
+                        Individual auxIndividual = new Individual().setId(member.id);
+                        if (member.samples != null) {
+                            List<Sample> samples = member.samples.stream().map(s -> new Sample().setId(s.id)).collect(Collectors.toList());
+                            auxIndividual.setSamples(samples);
+                        }
+                        members.add(auxIndividual);
+                    }
+                    f.setMembers(members);
+                }
             }
 
             List<Interpretation> interpretationList =
@@ -364,7 +385,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
                             .map(ClinicalInterpretationParameters::toClinicalInterpretation).collect(Collectors.toList())
                             : new ArrayList<>();
             String clinicalId = StringUtils.isEmpty(id) ? name : id;
-            return new ClinicalAnalysis(clinicalId, description, type, disease, germlineFile, somaticFile, individual, f,
+            return new ClinicalAnalysis(clinicalId, description, type, disease, fileMap, individual, f,
                     interpretationList, priority, null, dueDate, null, 1, attributes).setName(name);
         }
     }

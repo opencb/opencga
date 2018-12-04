@@ -837,6 +837,12 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     void fixQueryObject(Study study, Query query, String sessionId) throws CatalogException {
+        if (StringUtils.isNotEmpty(query.getString(FileDBAdaptor.QueryParams.ID.key()))) {
+            MyResources<File> uids = getUids(query.getAsStringList(FileDBAdaptor.QueryParams.ID.key()), study.getFqn(), sessionId);
+            query.remove(FileDBAdaptor.QueryParams.ID.key());
+            query.put(FileDBAdaptor.QueryParams.UID.key(), uids.getResourceList().stream().map(File::getUid).collect(Collectors.toList()));
+        }
+
         // The samples introduced could be either ids or names. As so, we should use the smart resolutor to do this.
         if (StringUtils.isNotEmpty(query.getString(FileDBAdaptor.QueryParams.SAMPLES.key()))) {
             MyResources<Sample> resource = catalogManager.getSampleManager().getUids(

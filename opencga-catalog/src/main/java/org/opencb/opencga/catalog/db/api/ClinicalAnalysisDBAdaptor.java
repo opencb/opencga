@@ -56,6 +56,7 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
 
         FAMILY("family", TEXT_ARRAY, ""),
         FAMILY_UID("family.uid", INTEGER, ""),
+        FILES("files", TEXT_ARRAY, ""),
         SOMATIC("somatic", TEXT_ARRAY, ""),
         SOMATIC_UID("somatic.uid", INTEGER, ""),
         GERMLINE("germline", TEXT_ARRAY, ""),
