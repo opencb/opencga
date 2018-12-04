@@ -63,8 +63,8 @@ public class FixedQueryGenerator extends QueryGenerator {
         }
 
         query.putAll(fixedQuery.getQuery());
-        query.putAll(baseQueriesFromCLI);
         appendRandomSessionId(fixedQueries.getSessionIds(), query);
+        query.putAll(baseQueriesFromCLI);
         return query;
     }
 
