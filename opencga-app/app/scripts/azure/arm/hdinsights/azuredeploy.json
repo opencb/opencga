@@ -21,13 +21,7 @@
                 "description": "The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
             }
         },
-        "location": {
-            "type": "string",
-            "defaultValue": "uksouth",
-            "metadata": {
-                "description": "The location where all azure resources will be deployed."
-            }
-        },
+       
         "clusterVersion": {
             "type": "string",
             "defaultValue": "3.6",
@@ -59,7 +53,7 @@
         },
         "clusterWorkerNodeSize": {
             "type": "string",
-            "defaultValue": "Standard_D2_V2",
+            "defaultValue": "Standard_D4_V2",
             "metadata": {
                 "description": "Worker node VM Size"
             }
@@ -97,11 +91,16 @@
             "metadata": {
                 "description": "The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
             }
+        },
+        "storageAccountName": {
+            "type": "string",
+            "metadata": {
+                "description": "Storage account to be used by HD Insight."
+            }
         }
     },
     "variables": {
-        "storageAccountName": "[concat('opencga',uniqueString( resourceGroup().id))]"
-        
+          
       
     },
     "resources": [
@@ -109,10 +108,10 @@
             "apiVersion": "2015-03-01-preview",
             "name": "[parameters('clusterName')]",
             "type": "Microsoft.HDInsight/clusters",
-            "location": "[parameters('location')]",
+            "location": "[resourceGroup().location]",
+                           
             "dependsOn": [
-                "[concat('Microsoft.Storage/storageAccounts/',variables('storageAccountName'))]"
-            ],
+                ],
             "properties": {
                 "clusterVersion": "[parameters('clusterVersion')]",
                 "osType": "Linux",
@@ -133,10 +132,10 @@
                 "storageProfile": {
                     "storageaccounts": [
                         {
-                            "name": "[concat(variables('storageAccountName'),'.blob.core.windows.net')]",
+                            "name": "[concat(parameters('storageAccountName'),'.blob.core.windows.net')]",
                             "isDefault": true,
                             "container": "azure-opencga-dev",
-                            "key": "[listKeys(concat('Microsoft.Storage/storageAccounts/',variables('storageAccountName')), '2015-05-01-preview').key1]"
+                            "key": "[listKeys(concat('Microsoft.Storage/storageAccounts/',parameters('storageAccountName')), '2015-05-01-preview').key1]"
                         }
                     ]
                 },
@@ -200,15 +199,6 @@
                         }
                     ]
                 }
-            }
-        },
-        {
-            "type": "Microsoft.Storage/storageAccounts",
-            "name": "[variables('storageAccountName')]",
-            "apiVersion": "2015-05-01-preview",
-            "location": "[parameters('location')]",
-            "properties": {
-                "accountType": "Standard_LRS"
             }
         }
     ]

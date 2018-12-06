@@ -2,16 +2,16 @@
     "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
-
+        "clusterName": {
+            "value": "admin"
+        },
         "clusterLoginUserName": {
             "value": "admin"
         },
         "clusterLoginPassword": {
             "value": ""
         },
-        "location": {
-            "value": "uksouth"
-        },
+       
         "clusterWorkerNodeCount": {
             "value": 1
         },
@@ -25,6 +25,9 @@
             "value": "sshuser"
         },
         "sshPassword": {
+            "value": ""
+        },
+        "storageAccountName": {
             "value": ""
         }
     }

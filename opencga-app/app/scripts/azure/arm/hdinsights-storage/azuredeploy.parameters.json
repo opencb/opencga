@@ -1,0 +1,37 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "value": "uksouth"
+        },
+        "storageAccountName": {
+            "value": ""
+        },
+        "accountType": {
+            "value": "Standard_LRS"
+        },
+        "kind": {
+            "value": "StorageV2"
+        },
+        "accessTier": {
+            "value": "Hot"
+        },
+        "supportsHttpsTrafficOnly": {
+            "value": true
+        },
+        "networkAclsBypass": {
+            "value": "AzureServices"
+        },
+        "networkAclsDefaultAction": {
+            "value": "Deny"
+        },
+        "networkAclsVirtualNetworkRule": {
+           "value": ""
+        
+        },
+        "isHnsEnabled": {
+            "value": true
+        }
+    }
+}
