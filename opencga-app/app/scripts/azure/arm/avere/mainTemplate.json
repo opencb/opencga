@@ -1,0 +1,310 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "servicePrincipalTenant": {
+      "type": "string",
+      "minLength": 36,
+      "maxLength": 36,
+      "metadata": {
+        "description": "Directory ID (tenant) of the Azure Active Directory used by the az cli to deploy vFXT installation."
+      }
+    },
+    "servicePrincipalAppId": {
+      "type": "string",
+      "minLength": 36,
+      "maxLength": 36,
+      "metadata": {
+        "description": "Azure Active Directory Application client ID (appid) used by the az cli to deploy vFXT installation."
+      }
+    },
+    "servicePrincipalPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Azure Active Directory Application client ID password used by the az cli to deploy vFXT installation."
+      }
+    },
+    "virtualNetworkResourceGroup": {
+      "type": "string",
+      "defaultValue": "",
+      "minLength": 0,
+      "metadata": {
+        "description": "The resource group name for the VNET.  If createVirtualNetwork is set to true, the current resource group must be specified, otherwise the value should be blank."
+      }
+    },
+    "virtualNetworkName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name used for the virtual network.  If createVirtualNetwork is set to true, you may reuse the unique name above."
+      }
+    },
+    "virtualNetworkSubnetName": {
+      "type": "string",
+      "metadata": {
+        "description": "The unique name used for the virtual network subnet.  If createVirtualNetwork is set to true, you may reuse the unique name above."
+      }
+    },
+    "controllerAdminUsername": {
+      "type": "string",
+      "defaultValue": "azureuser",
+      "metadata": {
+        "description": "The controller admin username."
+      }
+    },
+    "controllerSSHKeyData": {
+      "type": "string",
+      "metadata": {
+        "description": "The controller public SSH key."
+      }
+    },
+    "adminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The admin password used for the Avere vFXT cluster."
+      }
+    },
+    "avereClusterRole": {
+      "type": "string",
+      "defaultValue": "avere-cluster",
+      "metadata": {
+        "description": "The unique name used for the AAD role."
+      }
+    },
+    "avereInstanceType": {
+      "type": "string",
+      "defaultValue": "Standard_D16s_v3",
+      "allowedValues": [
+        "Standard_D16s_v3",
+        "Standard_E32s_v3"
+      ],
+      "metadata": {
+        "description": "The SKU for the Avere vFXT VM."
+      }
+    },
+    "avereNodeCount": {
+      "type": "int",
+      "defaultValue": 3,
+      "minValue": 3,
+      "maxValue": 12,
+      "metadata": {
+        "description": "The number of vFXT nodes in the Avere vFXT cluster"
+      }
+    },
+    "avereCacheSizeGB": {
+      "type": "int",
+      "defaultValue": 1024,
+      "allowedValues": [
+        1024,
+        4096
+      ],
+      "metadata": {
+        "description": "The cache size in GB to use for each Avere vFXT VM."
+      }
+    }
+  },
+  "variables": {
+    "servicePrincipalTenant": "[parameters('servicePrincipalTenant')]",
+    "servicePrincipalAppId": "[parameters('servicePrincipalAppId')]",
+    "servicePrincipalPassword": "[parameters('servicePrincipalPassword')]",
+    "controllerName": "avere-controller",
+    "avereClusterName": "avere-cluster",
+    "controllerAdminUsername": "[parameters('controllerAdminUsername')]",
+    "controllerSSHKeyData": "[parameters('controllerSSHKeyData')]",
+    "adminPassword": "[parameters('adminPassword')]",
+    "nicName": "[concat('vmnic-',variables('controllerName'))]",
+    "virtualNetworkResourceGroup": "[if(variables('createVirtualNetwork'), resourceGroup().name, parameters('virtualNetworkResourceGroup'))]",
+    "virtualNetworkName": "[parameters('virtualNetworkName')]",
+    "virtualNetworkSubnetName": "[parameters('virtualNetworkSubnetName')]",
+    "avereClusterRole": "[parameters('avereClusterRole')]",
+    "avereBackedStorageAccountName": "[concat('averestorage', uniqueString(resourceGroup().id))]",
+    "avereInstanceType": "[parameters('avereInstanceType')]",
+    "avereCacheSizeGB": "[parameters('avereCacheSizeGB')]",
+    "additionalVFXTParameters": "[concat(' --nodes ', parameters('avereNodeCount'), ' ')]",
+    "controllerVMSize": "Standard_A1_v2",
+    "publicIPAddressName": "[concat('publicip-',variables('controllerName'))]",
+    "networkSecurityGroupName": "[concat('nsg-',variables('controllerName'))]",
+    "vnetID": "[resourceId(variables('virtualNetworkResourceGroup'),'Microsoft.Network/virtualNetworks',variables('virtualNetworkName'))]",
+    "subnetId": "[concat(variables('vnetID'),'/subnets/',variables('virtualNetworkSubnetName'))]",
+    "vmName": "[concat('vm-',variables('controllerName'))]",
+    "pipId": {
+      "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName'))]"
+    },
+    "createNic?": true,
+    "storageAccountType": "Standard_LRS",
+    "storageAccountKind": "StorageV2",
+    "environmentVariables": "[concat(' AZURE_TENANT_ID=', variables('servicePrincipalTenant'),' AZURE_CLIENT_ID=', variables('servicePrincipalAppId'),' RESOURCE_GROUP=', resourceGroup().name,' LOCATION=', resourceGroup().location,' NETWORK_RESOURCE_GROUP=', variables('virtualNetworkResourceGroup'),' NETWORK=', variables('virtualNetworkName'),' SUBNET=', variables('virtualNetworkSubnetName'),' AVERE_CLUSTER_ROLE=\"', variables('avereClusterRole'),'\" CREATE_CLOUD_BACKED_CLUSTER='TRUE', STORAGE_ACCOUNT=', variables('avereBackedStorageAccountName'),' CACHE_SIZE=', variables('avereCacheSizeGB'),' CLUSTER_NAME=', variables('avereClusterName'),' INSTANCE_TYPE=', variables('avereInstanceType'),' CONTROLLER_ADMIN_USER_NAME=',variables('controllerAdminUsername'),' DEBUG=\"',variables('additionalVFXTParameters'),'\"')]",
+    "sshKeyPath": "[concat('/home/',variables('controllerAdminUsername'),'/.ssh/authorized_keys')]",
+    "vs": "Creating vserver vserver (",
+    "ve": "/255.255.255.255",
+    "ms": " management address: ",
+    "maxIPLen": 15
+  },
+  "resources": [
+    {
+      "apiVersion": "2017-10-01",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[concat('averecontroller-pip-', uniqueString(resourceGroup().id))]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "publicIPAllocationMethod": "Static"
+      }
+    },
+    {
+      "apiVersion": "2018-02-01",
+      "name": "pid-7a86fa6c-a5c7-4f21-b9fa-efa3dcbfbb86",
+      "type": "Microsoft.Resources/deployments",
+      "properties": {
+        "mode": "Incremental",
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "resources": []
+        }
+      }
+    },
+    {
+      "apiVersion": "2017-10-01",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[variables('nicName')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))]",
+        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]",
+        "[concat('Microsoft.Network/networkSecurityGroups/', variables('networkSecurityGroupName'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIPAddress": "[variables('pipId')]",
+              "subnet": {
+                "id": "[variables('subnetId')]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2017-12-01",
+      "tags": {
+        "averevfxt": "server"
+      }, 
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[variables('vmName')]",
+      "location": "[resourceGroup().location]",
+      "plan": {
+        "name": "avere-vfxt-controller",
+        "publisher": "microsoft-avere",
+        "product": "vfxt"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'))]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('controllerVMSize')]"
+        },
+        "osProfile": {
+          "computername": "[variables('vmName')]",
+          "adminUsername": "[variables('controllerAdminUsername')]",
+          "customData": "[base64('#cloud-config\n\nwrite_files:\n -  encoding: gzip\n    content: !!binary |\n        H4sIAAAAAAAC/41W3Y+bRhB/56+YYKS7U0K5vPQhFQ8E08SKDSfASZuqXXGwtlfFC+LD50vV/u2dXWMMmDvBC/sx85vZ2ZnfzuyN8ci48RiVO0WZQUHzrKggSlNIGaflO4h4AvTIKsg40KLICqWkFejH048qiuWvSOivHVMNi5qqyjdrEZLAsT13Hpg/398r1ve175DP3soh84VvGrtsTw0N90PfWy4dn1jz1cIl6wCHrrVylK+//haShRuE1nJJQmf1sLRCx9T6OMZhc6wYLyv0VbGX3npOPlr2F2d+0TDigkYV1eM0q5PHKP6bJjiuy4oWClpcrKzltfCecbaP0lZQ2dQ8rhie/iliFYl+1AUl4ggkYcXtHfyjAH5xVnOUNu/l7GnHUgp/wBvQExj4DX/+AkkmxcRXppTm8L6dn4G029tmCG/h/d1dK8A2CKyd9/QtBa0bcQFf7Shv5cVH410GKvpL4yornq9c4hle+SFiafSIfkcbgSxOy/h2gF7SOONJqfbhRXpcjrBhcphknCr/duKHCVPnGMA2aDMhc1NBucuehNMQp4zyShgpaCVFRJK9Pcph9APSbMs46HpJiwOLqZ4XjMcsj1LQ6/Oh7OXCcTF95qDngzU8hO+EqF9RHqGdZjd0XEtqtBYxu7uO45E3bCvuXeQcqeg+TzFV2nPIK1E1BMdEIr1ctJfrIHR8FUwTJc6lol7dUoy+jiYxaKPVIBVpWtIewjCpX1PGW2ouoc4TPI28ACaSimM8D1HBRDKUTUwS0BnclMZfvhN4a992yCffWz8Ys8F8e/OazQ7O0rOtcOG5xqwdTdZ1nfCb538xZufBZM1g/RF1jFnzn6xnfXVkGsnLJEhbjjEbWZvuR+j51ieHWLbtrV3h0GBhMpJt2Z8dEiy+o0ed8XT9xn9BvIjQnU2PjuTvBysI8DbmGJn+fDKO3Hcxl8LfH9CZ/nQSilp++E8+DD8hVXwYezHkxlaFl8B6dS9fBFn0F6K/InS5PAEtqfc5ofxAsLbKFu9EzfiK4auLm1JKvexot/lTcteRpEf5QA+4zhySnzqBYN/hk54+A/qX7fdiGXnsOashKigk9LHeItluG5yXjZ9I1RxjWvUlv1vGNYcUPKLSZxhT689HFM6EYmrn0YhQQx1kiD6+/jJAqzEicmIZUzv9x6JxRSEYkKu1EcVXnhrz1XdoxMk+86C3/YUx6y3PoLF2PCbYoRMU7cxGhHvlbmq96VjseiSDcevNuwob7OjKXae6ulW5jxgfFKPofED2eSD6PMC+6QQ30gA2b2jTYCG6NCMqHDZZcSmjph57HKB0CUD0RmhUPfcgslPqSrRNCAg+gqbzhXMzojZt6Gin0sO5kFqjc1noyjUGoqYDQiAqrGDsRMiU/wF+jA3mOAwAAA==\n    path: /opt/avere/installvfxt.sh\n    permissions: \"0744\"\n\n')]",
+          "linuxConfiguration": {
+            "disablePasswordAuthentication": true,
+            "ssh": {
+              "publicKeys": [
+                {
+                  "path": "[variables('sshKeyPath')]",
+                  "keyData": "[variables('controllerSSHKeyData')]"
+                }
+              ]
+            }
+          }
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "microsoft-avere",
+            "offer": "vfxt",
+            "sku": "avere-vfxt-controller",
+            "version": "latest"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',variables('nicName'))]"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(variables('vmName'), '/configureagent')]",
+      "apiVersion": "2017-12-01",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/', variables('vmName'))]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.Azure.Extensions",
+        "type": "CustomScript",
+        "typeHandlerVersion": "2.0",
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {
+          "commandToExecute": "[concat(' ADMIN_PASSWORD=', variables('adminPassword'),' AZURE_CLIENT_SECRET=',variables('servicePrincipalPassword'),variables('environmentVariables'), ' /bin/bash /opt/avere/installvfxt.sh')]"
+        }
+      }
+    },
+    {
+      "name": "[variables('avereBackedStorageAccountName')]",
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2017-10-01",
+      "sku": {
+        "name": "[variables('storageAccountType')]"
+      },
+      "kind": "[variables('storageAccountKind')]",
+      "location": "[resourceGroup().location]"
+    }
+  ],
+  "outputs": {
+    "SSH_STRING": {
+      "type": "string",
+      "value": "[concat(variables('controllerAdminUsername'), '@', reference(resourceId('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))).ipAddress)]"
+    },
+    "RESOURCE_GROUP": {
+      "type": "string",
+      "value": "[resourceGroup().name]"
+    },
+    "LOCATION": {
+      "type": "string",
+      "value": "[resourceGroup().location]"
+    },
+    "NETWORK_RESOURCE_GROUP": {
+      "type": "string",
+      "value": "[variables('virtualNetworkResourceGroup')]"
+    },
+    "NETWORK": {
+      "type": "string",
+      "value": "[variables('virtualNetworkName')]"
+    },
+    "SUBNET": {
+      "type": "string",
+      "value": "[variables('virtualNetworkSubnetName')]"
+    },
+    "SUBNET_ID": {
+      "type": "string",
+      "value": "[variables('subnetId')]"
+    },
+    "VSERVER_IPS": {
+      "type": "string",
+      "value": "[substring(reference(concat('Microsoft.Compute/virtualMachines/',variables('vmName'),'/extensions/configureagent')).instanceView.statuses[0].message,add(indexOf(reference(concat('Microsoft.Compute/virtualMachines/',variables('vmName'),'/extensions/configureagent')).instanceView.statuses[0].message,variables('vs')),length(variables('vs'))),sub(indexOf(reference(concat('Microsoft.Compute/virtualMachines/',variables('vmName'),'/extensions/configureagent')).instanceView.statuses[0].message,variables('ve')),add(indexOf(reference(concat('Microsoft.Compute/virtualMachines/',variables('vmName'),'/extensions/configureagent')).instanceView.statuses[0].message,variables('vs')),length(variables('vs')))))]"
+    },
+    "MGMT_IP": {
+      "type": "string",
+      "value": "[substring(reference(concat('Microsoft.Compute/virtualMachines/',variables('vmName'),'/extensions/configureagent')).instanceView.statuses[0].message,add(indexOf(reference(concat('Microsoft.Compute/virtualMachines/',variables('vmName'),'/extensions/configureagent')).instanceView.statuses[0].message,variables('ms')),length(variables('ms'))),indexOf(substring(reference(concat('Microsoft.Compute/virtualMachines/',variables('vmName'),'/extensions/configureagent')).instanceView.statuses[0].message,add(indexOf(reference(concat('Microsoft.Compute/virtualMachines/',variables('vmName'),'/extensions/configureagent')).instanceView.statuses[0].message,variables('ms')),length(variables('ms'))),variables('maxIPLen')),'\n'))]"
+    }
+  }
+}
