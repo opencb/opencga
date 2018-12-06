@@ -1,0 +1,31 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+
+        "clusterLoginUserName": {
+            "value": "admin"
+        },
+        "clusterLoginPassword": {
+            "value": ""
+        },
+        "location": {
+            "value": "uksouth"
+        },
+        "clusterWorkerNodeCount": {
+            "value": 1
+        },
+        "clusterKind": {
+            "value": "HBASE"
+        },
+        "clusterVersion": {
+            "value": "3.6"
+        },
+        "sshUserName": {
+            "value": "sshuser"
+        },
+        "sshPassword": {
+            "value": ""
+        }
+    }
+}
