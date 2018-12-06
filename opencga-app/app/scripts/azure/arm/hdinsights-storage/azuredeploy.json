@@ -6,22 +6,28 @@
             "type": "string"
         },
         "accountType": {
-            "type": "string"
+            "type": "string",
+            "defaultValue": "Standard_LRS"
         },
         "kind": {
-            "type": "string"
+            "type": "string",
+            "defaultValue": "StorageV2"
         },
         "accessTier": {
-            "type": "string"
+            "type": "string",
+            "defaultValue": "Hot"
         },
         "supportsHttpsTrafficOnly": {
-            "type": "bool"
+            "type": "bool",
+            "defaultValue": "supportsHttpsTrafficOnly"
         },
         "networkAclsBypass": {
-            "type": "string"
+            "type": "string",
+            "defaultValue": "AzureServices"
         },
         "networkAclsDefaultAction": {
-            "type": "string"
+            "type": "string",
+            "defaultValue": "Deny"
         },
         "networkAclsVirtualNetworkRule": {
             "type": "string",
@@ -31,7 +37,8 @@
             
         },
         "isHnsEnabled": {
-            "type": "bool"
+            "type": "bool",
+            "value": true
         }
     },
     "variables": {},
