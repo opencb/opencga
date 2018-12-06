@@ -42,6 +42,11 @@
                             }
                         }
                     ],
-                    "outputs": {}
+                    "outputs": {
+                        "subnetId":{
+                            "type" : "string",
+                            "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', 'vnet')).subnets[0].id]"
+                        }
+                    }
                 }
               

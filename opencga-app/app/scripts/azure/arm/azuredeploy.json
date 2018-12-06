@@ -1,0 +1,128 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "_artifactsLocation": {
+           "type": "string",
+           "metadata": {
+                "description": ""
+            }
+        },
+        "_artifactsLocationSasToken": {
+            "type": "string",
+            "metadata": {
+                 "description": ""
+             }
+         },
+         "clusterName": {
+            "type": "string",
+            "metadata": {
+                "description": "The name of the HDInsight cluster to create."
+            }
+        },
+        "clusterLoginUserName": {
+            "type": "string",
+            "defaultValue": "admin",
+            "metadata": {
+                "description": "These credentials can be used to submit jobs to the cluster and to log into cluster dashboards."
+            }
+        },
+        "clusterLoginPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
+            }
+        },
+        "sshPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
+            }
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2015-01-01",
+            "name": "vnet",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/vnet/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parametersLink": {
+                    "uri":"[concat(parameters('_artifactsLocation'), '/vnet/azuredeploy.parameters.json', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion":"1.0.0.0"
+                 },
+                "parameters": {
+
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2015-01-01",
+            "name": "hdinsights-storage",
+            "dependsOn": [
+                "vnet"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/hdinsights-storage/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parametersLink": {
+                    "uri":"[concat(parameters('_artifactsLocation'), '/hdinsights-storage/azuredeploy.parameters.json', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion":"1.0.0.0"
+                 },
+                "parameters": {
+
+                    "storageAccountName": {
+                        "value": "[concat('opencga',uniqueString(resourceGroup().id))]"
+                    },
+                    "networkAclsVirtualNetworkRule": {
+                        "value": "[reference('vnet').outputs.subnetId.value]"
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2015-01-01",
+            "name": "hdinsights",
+            "dependsOn": [
+                "hdinsights-storage"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/hdinsights/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parametersLink": {
+                    "uri":"[concat(parameters('_artifactsLocation'), '/hdinsights/azuredeploy.parameters.json', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion":"1.0.0.0"
+                 },
+                "parameters": {
+
+                    "clusterName": {
+                        "value": "[parameters('clusterName')]"
+                    },
+                    "clusterLoginUserName": {
+                        "value": "[parameters('clusterLoginUserName')]"
+                    },
+                    "clusterLoginPassword": {
+                        "value": "[parameters('clusterLoginPassword')]"
+                    },
+                    "sshPassword": {
+                        "value": "[parameters('sshPassword')]"
+                    }
+                }
+            }
+        }
+    ],
+    "outputs": {}
+}

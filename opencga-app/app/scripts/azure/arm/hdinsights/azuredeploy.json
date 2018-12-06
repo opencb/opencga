@@ -201,5 +201,13 @@
                 }
             }
         }
-    ]
+    ],
+    "outputs": {
+
+        "clusterDNSName":{
+
+            "type": "string",
+            "value": ""
+        }
+    }
 }
