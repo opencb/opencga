@@ -1,0 +1,74 @@
+{
+
+                    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {
+                        
+                    },
+                    "variables": {},
+                    "resources": [
+                        {
+                            "apiVersion": "2018-08-01",
+                            "name": "vnet",
+                            "type": "Microsoft.Network/virtualNetworks",
+                            "location": "[resourceGroup().location]",
+                            "properties": {
+                                    "addressSpace": {
+                                    "addressPrefixes": [
+                                        "10.0.0.0/16"
+                                    ]
+                                },
+                                "subnets": [
+                                    {
+                                        "name": "default",
+                                        "properties": {
+                                            "addressPrefix": "10.0.0.0/24",
+                                            "ipConfigurations": [
+                                             
+                                            ],
+                                            "delegations": [],
+                                            "serviceEndpoints": [
+                                                {
+                                                    "service": "Microsoft.Storage"
+                                                }
+                                            ]
+                                        },
+                                        "type": "Microsoft.Network/virtualNetworks/subnets"
+                                    },
+                                    {
+                                        "name": "solr",
+                                        "properties": {
+                                            "addressPrefix": "10.0.2.0/24",
+                                            "ipConfigurations": [
+                                             
+                                            ],
+                                            "delegations": [],
+                                            "serviceEndpoints": [
+                                                
+                                            ]
+                                        },
+                                        "type": "Microsoft.Network/virtualNetworks/subnets"
+                                    }
+                                ],
+                                "virtualNetworkPeerings": [],
+                                "enableDdosProtection": false,
+                                "enableVmProtection": false
+                            }
+                        }
+                    ],
+                    "outputs": {
+                        "vnetId":{
+                            "type" : "string",
+                            "value": "[resourceId('Microsoft.Network/virtualNetworks', 'vnet')]"
+                        },
+                        "hdinsightSubnetId":{
+                            "type" : "string",
+                            "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', 'vnet')).subnets[0].id]"
+                        },
+                        "solrSubnetId":{
+                            "type" : "string",
+                            "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', 'vnet')).subnets[1].id]"
+                        }
+                    }
+                }
+              

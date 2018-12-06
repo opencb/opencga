@@ -1,0 +1,174 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "_artifactsLocation": {
+           "type": "string",
+           "metadata": {
+                "description": ""
+            }
+        },
+        "_artifactsLocationSasToken": {
+            "type": "string",
+            "metadata": {
+                 "description": ""
+             }
+         },
+         "rgPrefix": {
+            "type": "string",
+            "metadata": {
+                "description": "The resource group prefix"
+            }
+        },
+        "rgLocation": {
+            "type": "string",
+            "defaultValue": "UK South",
+            "metadata": {
+                "description": "Location for deployment"
+            }
+        },
+         "clusterName": {
+            "type": "string",
+            "metadata": {
+                "description": "The name of the HDInsight cluster to create."
+            }
+        },
+        "clusterLoginUserName": {
+            "type": "string",
+            "defaultValue": "admin",
+            "metadata": {
+                "description": "These credentials can be used to submit jobs to the cluster and to log into cluster dashboards."
+            }
+        },
+        "clusterLoginPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
+            }
+        },
+        "sshPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
+            }
+        },
+        "storageOption": {
+            "type": "string",
+            "allowedValues": [
+                "DataLake",
+                "Blob"
+            ],
+            "metadata": {
+                "description": "What type of storage will be used"
+            }
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.Resources/resourceGroups",
+            "apiVersion": "2018-05-01",
+            "location": "[parameters('rgLocation')]",
+            "name": "[parameters('rgPrefix')]",
+            "properties": {}
+        },
+        {
+            "resourceGroup": "[parameters('rgPrefix')]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2017-05-10",
+            "name": "vnet",
+            "dependsOn": [
+                "[parameters('rgPrefix')]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/vnet/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                }
+            }
+        },
+        {   
+            "resourceGroup": "[parameters('rgPrefix')]",
+          "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2017-05-10",
+            "name": "hdinsight-storage",
+            "dependsOn": [
+                "vnet",
+                "[parameters('rgPrefix')]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/hdinsight-storage/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+
+              
+                    "networkAclsVirtualNetworkRule": {
+                        "value": "[reference('vnet').outputs.hdinsightSubnetId.value]"
+                    },
+                    "isHnsEnabled":  {
+                        "value": "[if(equals(parameters('storageOption'), 'DataLake'), json('true'), json('false'))]"
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Resources/resourceGroups",
+            "apiVersion": "2018-05-01",
+            "location": "[parameters('rgLocation')]",
+            "name": "[concat(parameters('rgPrefix'),'-hdinsight')]",
+            "properties": {}
+        },
+        {   
+            "resourceGroup": "[concat(parameters('rgPrefix'),'-hdinsight')]",
+             "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2017-05-10",
+            "name": "hdinsight",
+            "dependsOn": [
+                "hdinsight-storage",
+                "[concat(parameters('rgPrefix'),'-hdinsight')]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/hdinsight/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+
+                    "clusterName": {
+                        "value": "[parameters('clusterName')]"
+                    },
+                    "clusterLoginUserName": {
+                        "value": "[parameters('clusterLoginUserName')]"
+                    },
+                    "clusterLoginPassword": {
+                        "value": "[parameters('clusterLoginPassword')]"
+                    },
+                    "sshPassword": {
+                        "value": "[parameters('sshPassword')]"
+                    },
+                    "storageAccountName": {
+                        "value": "[reference('hdinsight-storage').outputs.storageAccountName.value]"
+                    },
+                    "storageAccountKey": {
+                        "value": "[reference('hdinsight-storage').outputs.storageAccountKey.value]"
+                    },
+                    "vnetId": {
+                        "value":  "[reference('vnet').outputs.vnetId.value]"
+                    },
+                    "subnetId": {
+                        "value":  "[reference('vnet').outputs.hdinsightSubnetId.value]"
+                    },
+                    "storageOption":{
+                        "value":  "[parameters('storageOption')]"
+                    }
+                }
+            }
+        }
+    ],
+    "outputs": {}
+}
