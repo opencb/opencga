@@ -19,7 +19,7 @@
         },
         "supportsHttpsTrafficOnly": {
             "type": "bool",
-            "defaultValue": "supportsHttpsTrafficOnly"
+            "defaultValue": "true"
         },
         "networkAclsBypass": {
             "type": "string",
