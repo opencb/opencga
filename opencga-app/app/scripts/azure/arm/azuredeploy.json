@@ -51,13 +51,6 @@
                 "templateLink": {
                     "uri": "[concat(parameters('_artifactsLocation'), '/vnet/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
                     "contentVersion": "1.0.0.0"
-                },
-                "parametersLink": {
-                    "uri":"[concat(parameters('_artifactsLocation'), '/vnet/azuredeploy.parameters.json', parameters('_artifactsLocationSasToken'))]",
-                    "contentVersion":"1.0.0.0"
-                 },
-                "parameters": {
-
                 }
             }
         },
@@ -74,10 +67,6 @@
                     "uri": "[concat(parameters('_artifactsLocation'), '/hdinsights-storage/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
                     "contentVersion": "1.0.0.0"
                 },
-                "parametersLink": {
-                    "uri":"[concat(parameters('_artifactsLocation'), '/hdinsights-storage/azuredeploy.parameters.json', parameters('_artifactsLocationSasToken'))]",
-                    "contentVersion":"1.0.0.0"
-                 },
                 "parameters": {
 
                     "storageAccountName": {
@@ -102,10 +91,6 @@
                     "uri": "[concat(parameters('_artifactsLocation'), '/hdinsights/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
                     "contentVersion": "1.0.0.0"
                 },
-                "parametersLink": {
-                    "uri":"[concat(parameters('_artifactsLocation'), '/hdinsights/azuredeploy.parameters.json', parameters('_artifactsLocationSasToken'))]",
-                    "contentVersion":"1.0.0.0"
-                 },
                 "parameters": {
 
                     "clusterName": {

@@ -38,7 +38,7 @@
         },
         "isHnsEnabled": {
             "type": "bool",
-            "value": true
+            "defaultValue": true
         }
     },
     "variables": {},
