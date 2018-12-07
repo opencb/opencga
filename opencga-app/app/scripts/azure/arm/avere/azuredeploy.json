@@ -24,24 +24,22 @@
         "description": "Azure Active Directory Application client ID password used by the az cli to deploy vFXT installation."
       }
     },
-    "virtualNetworkResourceGroup": {
-      "type": "string",
-      "defaultValue": "",
-      "minLength": 0,
-      "metadata": {
-        "description": "The resource group name for the VNET.  If createVirtualNetwork is set to true, the current resource group must be specified, otherwise the value should be blank."
-      }
-    },
     "virtualNetworkName": {
       "type": "string",
       "metadata": {
-        "description": "The name used for the virtual network.  If createVirtualNetwork is set to true, you may reuse the unique name above."
+        "description": "The name used for the virtual network."
       }
     },
     "virtualNetworkSubnetName": {
       "type": "string",
       "metadata": {
-        "description": "The unique name used for the virtual network subnet.  If createVirtualNetwork is set to true, you may reuse the unique name above."
+        "description": "The unique name used for the virtual network subnet."
+      }
+    },
+    "virtualNetworkSubnetId": {
+      "type": "string",
+      "metadata": {
+        "description": "The ID of the subnet in which the Avere cluster should be deployed"
       }
     },
     "controllerAdminUsername": {
@@ -63,7 +61,7 @@
         "description": "The admin password used for the Avere vFXT cluster."
       }
     },
-    "avereClusterRole": {
+    "avereClusterRBACRole": {
       "type": "string",
       "defaultValue": "avere-cluster",
       "metadata": {
@@ -112,27 +110,22 @@
     "controllerSSHKeyData": "[parameters('controllerSSHKeyData')]",
     "adminPassword": "[parameters('adminPassword')]",
     "nicName": "[concat('vmnic-',variables('controllerName'))]",
-    "virtualNetworkResourceGroup": "[if(variables('createVirtualNetwork'), resourceGroup().name, parameters('virtualNetworkResourceGroup'))]",
+    "virtualNetworkResourceGroup": "[resourceGroup().name]",
     "virtualNetworkName": "[parameters('virtualNetworkName')]",
     "virtualNetworkSubnetName": "[parameters('virtualNetworkSubnetName')]",
-    "avereClusterRole": "[parameters('avereClusterRole')]",
-    "avereBackedStorageAccountName": "[concat('averestorage', uniqueString(resourceGroup().id))]",
+    "avereBackedStorageAccountName": "[concat('avere', uniqueString(resourceGroup().id))]",
     "avereInstanceType": "[parameters('avereInstanceType')]",
     "avereCacheSizeGB": "[parameters('avereCacheSizeGB')]",
     "additionalVFXTParameters": "[concat(' --nodes ', parameters('avereNodeCount'), ' ')]",
     "controllerVMSize": "Standard_A1_v2",
     "publicIPAddressName": "[concat('publicip-',variables('controllerName'))]",
-    "networkSecurityGroupName": "[concat('nsg-',variables('controllerName'))]",
-    "vnetID": "[resourceId(variables('virtualNetworkResourceGroup'),'Microsoft.Network/virtualNetworks',variables('virtualNetworkName'))]",
-    "subnetId": "[concat(variables('vnetID'),'/subnets/',variables('virtualNetworkSubnetName'))]",
     "vmName": "[concat('vm-',variables('controllerName'))]",
     "pipId": {
       "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName'))]"
     },
-    "createNic?": true,
     "storageAccountType": "Standard_LRS",
     "storageAccountKind": "StorageV2",
-    "environmentVariables": "[concat(' AZURE_TENANT_ID=', variables('servicePrincipalTenant'),' AZURE_CLIENT_ID=', variables('servicePrincipalAppId'),' RESOURCE_GROUP=', resourceGroup().name,' LOCATION=', resourceGroup().location,' NETWORK_RESOURCE_GROUP=', variables('virtualNetworkResourceGroup'),' NETWORK=', variables('virtualNetworkName'),' SUBNET=', variables('virtualNetworkSubnetName'),' AVERE_CLUSTER_ROLE=\"', variables('avereClusterRole'),'\" CREATE_CLOUD_BACKED_CLUSTER='TRUE', STORAGE_ACCOUNT=', variables('avereBackedStorageAccountName'),' CACHE_SIZE=', variables('avereCacheSizeGB'),' CLUSTER_NAME=', variables('avereClusterName'),' INSTANCE_TYPE=', variables('avereInstanceType'),' CONTROLLER_ADMIN_USER_NAME=',variables('controllerAdminUsername'),' DEBUG=\"',variables('additionalVFXTParameters'),'\"')]",
+    "environmentVariables": "[concat(' AZURE_TENANT_ID=', variables('servicePrincipalTenant'),' AZURE_CLIENT_ID=', variables('servicePrincipalAppId'),' RESOURCE_GROUP=', resourceGroup().name,' LOCATION=', resourceGroup().location,' NETWORK_RESOURCE_GROUP=', variables('virtualNetworkResourceGroup'),' NETWORK=', variables('virtualNetworkName'),' SUBNET=', variables('virtualNetworkSubnetName'),' AVERE_CLUSTER_ROLE=\"', parameters('avereClusterRBACRole'),'\" CREATE_CLOUD_BACKED_CLUSTER=\"TRUE\", STORAGE_ACCOUNT=', variables('avereBackedStorageAccountName'),' CACHE_SIZE=', variables('avereCacheSizeGB'),' CLUSTER_NAME=', variables('avereClusterName'),' INSTANCE_TYPE=', variables('avereInstanceType'),' CONTROLLER_ADMIN_USER_NAME=',variables('controllerAdminUsername'),' DEBUG=\"',variables('additionalVFXTParameters'),'\"')]",
     "sshKeyPath": "[concat('/home/',variables('controllerAdminUsername'),'/.ssh/authorized_keys')]",
     "vs": "Creating vserver vserver (",
     "ve": "/255.255.255.255",
@@ -143,23 +136,10 @@
     {
       "apiVersion": "2017-10-01",
       "type": "Microsoft.Network/publicIPAddresses",
-      "name": "[concat('averecontroller-pip-', uniqueString(resourceGroup().id))]",
+      "name": "publicip-avere-controller",
       "location": "[resourceGroup().location]",
       "properties": {
         "publicIPAllocationMethod": "Static"
-      }
-    },
-    {
-      "apiVersion": "2018-02-01",
-      "name": "pid-7a86fa6c-a5c7-4f21-b9fa-efa3dcbfbb86",
-      "type": "Microsoft.Resources/deployments",
-      "properties": {
-        "mode": "Incremental",
-        "template": {
-          "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
-          "contentVersion": "1.0.0.0",
-          "resources": []
-        }
       }
     },
     {
@@ -168,9 +148,7 @@
       "name": "[variables('nicName')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))]",
-        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]",
-        "[concat('Microsoft.Network/networkSecurityGroups/', variables('networkSecurityGroupName'))]"
+        "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))]"
       ],
       "properties": {
         "ipConfigurations": [
@@ -180,7 +158,7 @@
               "privateIPAllocationMethod": "Dynamic",
               "publicIPAddress": "[variables('pipId')]",
               "subnet": {
-                "id": "[variables('subnetId')]"
+                "id": "[parameters('virtualNetworkSubnetId')]"
               }
             }
           }
@@ -253,6 +231,9 @@
         "type": "CustomScript",
         "typeHandlerVersion": "2.0",
         "autoUpgradeMinorVersion": true,
+        "settings": {
+          "timestamp": 2
+        },
         "protectedSettings": {
           "commandToExecute": "[concat(' ADMIN_PASSWORD=', variables('adminPassword'),' AZURE_CLIENT_SECRET=',variables('servicePrincipalPassword'),variables('environmentVariables'), ' /bin/bash /opt/avere/installvfxt.sh')]"
         }
@@ -293,10 +274,6 @@
     "SUBNET": {
       "type": "string",
       "value": "[variables('virtualNetworkSubnetName')]"
-    },
-    "SUBNET_ID": {
-      "type": "string",
-      "value": "[variables('subnetId')]"
     },
     "VSERVER_IPS": {
       "type": "string",
