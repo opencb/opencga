@@ -13,11 +13,11 @@
         "description": "Storage Account type"
       }
     },
-    "vmName": {
+    "clusterName": {
       "type": "string",
-      "defaultValue": "opencga-zookeeper",
+      "defaultValue": "opencga",
       "metadata": {
-        "description": "VM name"
+        "description": "Cluster name"
       }
     },
     "vmSize": {
@@ -88,8 +88,9 @@
     }
   },
   "variables": {
-    "availabilitySetName": "zookeeperAvSet",
-    "nicName": "zookeeperNIC",
+    "availabilitySetName": "[concat(parameters('clusterName'), '-zookeeper-AvSet')]",
+    "vmName": "[concat(parameters('clusterName'), '-zookeeper')]",
+    "niName": "[concat(parameters('clusterName'), '-zookeeper-ni')]",
     "customScriptFilePath": "https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/zookeeper-cluster-ubuntu-vm/zookeeper.sh",
     "customScriptCommandToExecute": "sh zookeeper.sh",
     "vmExtensionName": "zookeeperExtension",
@@ -112,7 +113,7 @@
     {
       "apiVersion": "2015-05-01-preview",
       "type": "Microsoft.Network/networkInterfaces",
-      "name": "[concat(variables('nicName'), copyIndex())]",
+      "name": "[concat(variables('niName'), copyIndex())]",
       "location": "[parameters('location')]",
       "copy": {
         "name": "foo",
@@ -137,14 +138,14 @@
     {
       "apiVersion": "2017-03-30",
       "type": "Microsoft.Compute/virtualMachines",
-      "name": "[concat(parameters('vmName'), copyIndex())]",
+      "name": "[concat(variables('vmName'), copyIndex())]",
       "location": "[parameters('location')]",
       "copy": {
         "name": "foo",
         "count": "[parameters('scaleNumber')]"
       },
       "dependsOn": [
-        "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'), copyIndex())]",
+        "[concat('Microsoft.Network/networkInterfaces/', variables('niName'), copyIndex())]",
         "[concat('Microsoft.Compute/availabilitySets/', variables('availabilitySetName'))]"
       ],
       "properties": {
@@ -155,7 +156,7 @@
           "vmSize": "[parameters('vmSize')]"
         },
         "osProfile": {
-          "computerName": "[concat(parameters('vmName'), copyIndex())]",
+          "computerName": "[concat(variables('vmName'), copyIndex())]",
           "adminUsername": "[parameters('clusterLoginUserName')]",
           "adminPassword": "[parameters('clusterLoginPassword')]"
         },
@@ -167,7 +168,7 @@
             "version": "latest"
           },
           "osDisk": {
-            "name": "[concat(parameters('vmName'), copyIndex(),'_OSDisk')]",
+            "name": "[concat(variables('vmName'), copyIndex(),'_OSDisk')]",
             "caching": "ReadWrite",
             "createOption": "FromImage",
             "managedDisk": {
@@ -178,7 +179,7 @@
         "networkProfile": {
           "networkInterfaces": [
             {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('nicName'), copyIndex()))]"
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('niName'), copyIndex()))]"
             }
           ]
         }
@@ -186,7 +187,7 @@
     },
     {
       "type": "Microsoft.Compute/virtualMachines/extensions",
-      "name": "[concat(parameters('vmName'), copyIndex(),'/', variables('vmExtensionName'))]",
+      "name": "[concat(variables('vmName'), copyIndex(),'/', variables('vmExtensionName'))]",
       "apiVersion": "2015-05-01-preview",
       "location": "[parameters('location')]",
       "copy": {
@@ -194,7 +195,7 @@
         "count": "[parameters('scaleNumber')]"
       },
       "dependsOn": [
-        "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'), copyIndex())]"
+        "[concat('Microsoft.Compute/virtualMachines/', variables('vmName'), copyIndex())]"
       ],
       "properties": {
         "publisher": "Microsoft.Azure.Extensions",
