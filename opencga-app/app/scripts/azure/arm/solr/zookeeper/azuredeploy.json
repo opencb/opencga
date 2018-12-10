@@ -48,13 +48,13 @@
         "description": "Image SKU"
       }
     },
-    "adminUsername": {
+    "clusterLoginUserName": {
       "type": "string",
       "metadata": {
         "description": "Admin username"
       }
     },
-    "adminPassword": {
+    "clusterLoginPassword": {
       "type": "securestring",
       "metadata": {
         "description": "Admin password"
@@ -74,10 +74,16 @@
         "description": "Location for all resources."
       }
     },
-    "solrSubnetId": {
+    "subnetId": {
       "type": "string",
       "metadata": {
         "description": "Subnet ID."
+      }
+    },
+    "privateIPFirst": {
+      "type": "int",
+      "metadata": {
+        "description": "First IP from the subnet to assign"
       }
     }
   },
@@ -86,7 +92,8 @@
     "nicName": "zookeeperNIC",
     "customScriptFilePath": "https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/zookeeper-cluster-ubuntu-vm/zookeeper.sh",
     "customScriptCommandToExecute": "sh zookeeper.sh",
-    "vmExtensionName": "zookeeperExtension"
+    "vmExtensionName": "zookeeperExtension",
+    "subnetPrefix": "10.0.2."
   },
   "resources": [
     {
@@ -118,9 +125,9 @@
             "name": "ipconfig1",
             "properties": {
               "privateIPAllocationMethod": "Static",
-              "privateIPAddress": "[concat('10.0.2.', copyIndex(4))]",
+              "privateIPAddress": "[concat(variables('subnetPrefix'), copyIndex(parameters('privateIPFirst')))]",
               "subnet": {
-                "id": "[parameters('solrSubnetId')]"
+                "id": "[parameters('subnetId')]"
               }
             }
           }
@@ -149,8 +156,8 @@
         },
         "osProfile": {
           "computerName": "[concat(parameters('vmName'), copyIndex())]",
-          "adminUsername": "[parameters('adminUsername')]",
-          "adminPassword": "[parameters('adminPassword')]"
+          "adminUsername": "[parameters('clusterLoginUserName')]",
+          "adminPassword": "[parameters('clusterLoginPassword')]"
         },
         "storageProfile": {
           "imageReference": {
@@ -204,5 +211,9 @@
     }
   ],
   "outputs": {
+    "zookeeperHosts" :{
+      "type": "string",
+      "value": "dummy"
+    }
   }
 }
