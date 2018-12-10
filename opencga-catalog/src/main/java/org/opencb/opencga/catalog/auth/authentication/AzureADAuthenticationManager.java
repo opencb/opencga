@@ -40,8 +40,11 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
 
     private OIDCProviderMetadata oidcProviderMetadata;
     private String tenantId;
-    private String clientId;
-    private String clientIdSecretKey;
+
+    private String authClientId;
+    private String syncClientId;
+    private String syncSecretKey;
+
     private Map<String, List<String>> filters;
 
     private String groupMapping;
@@ -72,14 +75,19 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
             throw new CatalogException("AzureAD authentication origin configuration error. Missing mandatory 'tenantId' option field.");
         }
 
-        this.clientId = (String) authenticationOrigin.getOptions().get("clientId");
-        if (StringUtils.isEmpty(this.clientId)) {
-            throw new CatalogException("AzureAD authentication origin configuration error. Missing mandatory 'clientId' option field.");
+        this.authClientId = (String) authenticationOrigin.getOptions().get("authClientId");
+        if (StringUtils.isEmpty(this.authClientId)) {
+            throw new CatalogException("AzureAD authentication origin configuration error. Missing mandatory 'authClientId' option field.");
         }
 
-        this.clientIdSecretKey = (String) authenticationOrigin.getOptions().get("clientSecretKey");
-        if (StringUtils.isEmpty(this.clientIdSecretKey)) {
-            throw new CatalogException("AzureAD authentication origin configuration error. Missing mandatory 'clientSecretKey' option "
+        this.syncClientId = (String) authenticationOrigin.getOptions().get("syncClientId");
+        if (StringUtils.isEmpty(this.syncClientId)) {
+            throw new CatalogException("AzureAD authentication origin configuration error. Missing mandatory 'syncClientId' option field.");
+        }
+
+        this.syncSecretKey = (String) authenticationOrigin.getOptions().get("syncSecretKey");
+        if (StringUtils.isEmpty(this.syncSecretKey)) {
+            throw new CatalogException("AzureAD authentication origin configuration error. Missing mandatory 'syncSecretKey' option "
                     + "field.");
         }
 
@@ -151,6 +159,8 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
             if (!this.publicKeyMap.containsKey(kid)) {
                 this.publicKeyMap.clear();
 
+                logger.info("Public key not stored. Retrieving new set of public keys");
+
                 // We look for the new public keys in the url
                 URL providerConfigurationURL = this.oidcProviderMetadata.getJWKSetURI().toURL();
                 InputStream stream = providerConfigurationURL.openStream();
@@ -166,14 +176,17 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
                 for (Object keyObject : keys) {
                     Map<String, Object> currentKey = (Map<String, Object>) keyObject;
                     String x5c = ((List<String>) currentKey.get("x5c")).get(0);
+                    String currentKid = String.valueOf(currentKey.get("kid"));
 
                     InputStream in = new ByteArrayInputStream(java.util.Base64.getDecoder().decode(x5c));
                     CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
                     X509Certificate cert = (X509Certificate) certFactory.generateCertificate(in);
 
                     // And store the new keys in the map
-                    this.publicKeyMap.put(kid, cert.getPublicKey());
+                    this.publicKeyMap.put(currentKid, cert.getPublicKey());
                 }
+
+                logger.info("Found {} new public keys available", this.publicKeyMap.size());
             }
 
             if (!this.publicKeyMap.containsKey(kid)) {
@@ -195,7 +208,7 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
         try {
             service = Executors.newFixedThreadPool(1);
             context = new AuthenticationContext(String.valueOf(this.oidcProviderMetadata.getAuthorizationEndpointURI()), false, service);
-            Future<AuthenticationResult> future = context.acquireToken(clientId, clientId, username, password, null);
+            Future<AuthenticationResult> future = context.acquireToken(authClientId, authClientId, username, password, null);
             result = future.get();
         } catch (Exception e) {
             logger.error("{}", e.getMessage(), e);
@@ -217,7 +230,7 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
 
     @Override
     public List<User> getUsersFromRemoteGroup(String group) throws CatalogException {
-        ApplicationTokenCredentials tokenCredentials = new ApplicationTokenCredentials(clientId, tenantId, clientIdSecretKey, null);
+        ApplicationTokenCredentials tokenCredentials = new ApplicationTokenCredentials(syncClientId, tenantId, syncSecretKey, null);
         Azure.Authenticated azureAuthenticated = Azure.authenticate(tokenCredentials);
 
         // This method should only be called from the admin environment to sync or obtain groups from AAD. We are going to force users to
@@ -249,7 +262,7 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
 
     @Override
     public List<User> getRemoteUserInformation(List<String> userStringList) throws CatalogException {
-        ApplicationTokenCredentials tokenCredentials = new ApplicationTokenCredentials(clientId, tenantId, clientIdSecretKey, null);
+        ApplicationTokenCredentials tokenCredentials = new ApplicationTokenCredentials(syncClientId, tenantId, syncSecretKey, null);
         Azure.Authenticated azureAuthenticated = Azure.authenticate(tokenCredentials);
 
         List<ActiveDirectoryUser> azureADUserList = new ArrayList<>(userStringList.size());
@@ -270,7 +283,7 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
     public List<String> getRemoteGroups(String token) throws CatalogException {
         List<String> groupOids = jwtManager.getGroups(token, groupMapping, getPublicKey(token));
 
-        ApplicationTokenCredentials tokenCredentials = new ApplicationTokenCredentials(clientId, tenantId, clientIdSecretKey, null);
+        ApplicationTokenCredentials tokenCredentials = new ApplicationTokenCredentials(syncClientId, tenantId, syncSecretKey, null);
         Azure.Authenticated azureAuthenticated = Azure.authenticate(tokenCredentials);
 
         List<String> groupIds = new ArrayList<>();

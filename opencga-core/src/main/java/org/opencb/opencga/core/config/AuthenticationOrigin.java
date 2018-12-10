@@ -32,7 +32,7 @@ public class AuthenticationOrigin {
     public enum AuthenticationType {
         OPENCGA,
         LDAP,
-        AAD
+        AzureAD
     }
 
     // Possible keys of the options map

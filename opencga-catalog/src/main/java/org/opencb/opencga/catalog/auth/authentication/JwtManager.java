@@ -122,7 +122,6 @@ public class JwtManager {
     }
 
     String getUser(String token, Key publicKey) throws CatalogAuthenticationException {
-        Set<Map.Entry<String, Object>> entries = parseClaims(token, publicKey).getBody().entrySet();
         return parseClaims(token, publicKey).getBody().getSubject();
     }
 

@@ -76,7 +76,7 @@ public class UserManager extends AbstractManager {
                             authenticationManagerMap.put(authenticationOrigin.getId(),
                                     new LDAPAuthenticationManager(authenticationOrigin, secretKey, expiration));
                             break;
-                        case AAD:
+                        case AzureAD:
                             authenticationManagerMap.put(authenticationOrigin.getId(),
                                     new AzureADAuthenticationManager(authenticationOrigin));
                             break;
@@ -263,7 +263,7 @@ public class UserManager extends AbstractManager {
 
         List<User> userList;
         if (sync) {
-            // We don't create any user as they will be automatically populate during login
+            // We don't create any user as they will be automatically populated during login
             userList = Collections.emptyList();
         } else {
             logger.info("Fetching users from authentication origin '{}'", authOrigin);
@@ -285,7 +285,7 @@ public class UserManager extends AbstractManager {
             try {
                 QueryResult<Group> group = catalogManager.getStudyManager().getGroup(study, internalGroup, token);
                 if (group.getNumResults() == 1) {
-                    logger.error("Cannot synchronise with group {}. The group already exists and is already in use.");
+                    logger.error("Cannot synchronise with group {}. The group already exists and is already in use.", internalGroup);
                     return;
                 }
             } catch (CatalogException e) {
@@ -303,7 +303,7 @@ public class UserManager extends AbstractManager {
                         .setSyncedFrom(groupSync);
                 catalogManager.getStudyManager().createGroup(study, group, ADMIN_TOKEN);
             } catch (CatalogException e) {
-                logger.error("Could not register group '{}' in study '{}'\n{}", internalGroup, study, e.getMessage());
+                logger.error("Could not register group '{}' in study '{}'\n{}", internalGroup, study, e.getMessage(), e);
             }
         }
     }
@@ -558,7 +558,7 @@ public class UserManager extends AbstractManager {
             // External authorization
             try {
                 // If the user is not registered, an exception will be raised
-                userDBAdaptor.get(userId, new QueryOptions(), null);
+                userDBAdaptor.checkId(userId);
             } catch (CatalogDBException e) {
                 // The user does not exist so we register it
                 User user = authenticationManagerMap.get(authId).getRemoteUserInformation(Collections.singletonList(userId)).get(0);
