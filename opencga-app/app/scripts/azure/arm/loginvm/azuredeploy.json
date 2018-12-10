@@ -1,0 +1,132 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "subnetName": {
+            "type": "string",
+            "defaultvalue": "default"
+        },
+        "virtualNetworkId": {
+            "type": "string"
+        },
+        "publicIpAddressType": {
+            "type": "string",
+            "defaultvalue": "Dynamic"
+        },
+        "publicIpAddressSku": {
+            "type": "string",
+            "defaultvalue": "Basic"
+        },
+        "osDiskType": {
+            "type": "string",
+            "defaultvalue": "Premium_LRS"
+        },
+        "virtualMachineSize": {
+            "type": "string",
+            "defaultvalue": "Standard_D2s_v3"
+        },
+        "adminUsername": {
+            "type": "string",
+            "defaultValue": "opencgaadmin"
+        },
+        "adminPassword": {
+            "type": "secureString"
+        }
+    },
+    "variables": {
+        "vnetId": "[parameters('virtualNetworkId')]",
+        "subnetRef": "[concat(variables('vnetId'), '/subnets/', parameters('subnetName'))]",
+        "customData": "I2Nsb3VkLWNvbmZpZwpwYWNrYWdlczoK4oCTIGRvY2tlci5pbwoKcGFja2FnZV91cGdyYWRlOiB0cnVlCnBhY2thZ2VfcmVib290X2lmX3JlcXVpcmVkOiB0cnVlCgp1c2VyczoKLSBuYW1lOiBvcGVuY2dhCiAgdWlkOiAyMDAwCgp3cml0ZV9maWxlczoKLSBwYXRoOiAvZXRjL3N5c3RlbWQvc3lzdGVtL29wZW5jZ2Euc2VydmljZQogIHBlcm1pc3Npb25zOiAwNjQ0CiAgb3duZXI6IHJvb3QKICBjb250ZW50OiB8CiAgICBbVW5pdF0KICAgIERlc2NyaXB0aW9uPU9wZW5DR0EgZGFlbW9uCiAgICBSZXF1aXJlcz1kb2NrZXIuc2VydmljZQogICAgQWZ0ZXI9ZG9ja2VyLnNlcnZpY2UKCiAgICBbU2VydmljZV0KICAgIFJlc3RhcnQ9YWx3YXlzCiAgICBFeGVjU3RhcnQ9L3Vzci9iaW4vZG9ja2VyIHJ1biAtLW5hbWU9b3BlbmNnYS1kYWVtb24gbWFycm9iaS9vcGVuY2dhLWRhZW1vbgogICAgRXhlY1N0b3A9L3Vzci9iaW4vZG9ja2VyIHN0b3Agb3BlbmNnYS1kYWVtb24="
+    },
+    "resources": [
+        {
+            "name": "loginvm-nic",
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2018-04-01",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/publicIpAddresses/', 'loginvm-ip')]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "subnet": {
+                                "id": "[variables('subnetRef')]"
+                            },
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIpAddress": {
+                                "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIpAddresses', 'loginvm-ip')]"
+                            }
+                        }
+                    }
+                ]
+              
+            },
+            "tags": {}
+        },
+     
+        {
+            "name": "loginvm-ip",
+            "type": "Microsoft.Network/publicIpAddresses",
+            "apiVersion": "2018-08-01",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "publicIpAllocationMethod": "[parameters('publicIpAddressType')]"
+            },
+            "sku": {
+                "name": "[parameters('publicIpAddressSku')]"
+            },
+            "tags": {}
+        },
+        {
+            "name": "loginvm",
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2018-06-01",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/networkInterfaces/', 'loginvm-nic')]"
+            ],
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[parameters('virtualMachineSize')]"
+                },
+                "storageProfile": {
+                    "osDisk": {
+                        "createOption": "fromImage",
+                        "managedDisk": {
+                            "storageAccountType": "[parameters('osDiskType')]"
+                        }
+                    },
+                    "imageReference": {
+                        "publisher": "Canonical",
+                        "offer": "UbuntuServer",
+                        "sku": "18.04-LTS",
+                        "version": "latest"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', 'loginvm-nic')]"
+                        }
+                    ]
+                },
+                "osProfile": {
+                    "computerName": "loginvm",
+                    "adminUsername": "[parameters('adminUsername')]",
+                    "adminPassword": "[parameters('adminPassword')]",
+                    "customData": "[variables('customData')]"
+                }
+            },
+            "tags": {}
+        }
+    ],
+    "outputs": {
+        "adminUsername": {
+            "type": "string",
+            "value": "[parameters('adminUsername')]"
+        }
+    }
+}

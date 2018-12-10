@@ -188,6 +188,33 @@
                 }
             }
         },
+        {   
+            "resourceGroup": "[parameters('rgPrefix')]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2017-05-10",
+            "name": "loginvm",
+            "dependsOn": [
+                "vnet",
+                "[parameters('rgPrefix')]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/loginvm/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+
+              
+                    "virtualNetworkId": {
+                        "value":  "[reference('vnet').outputs.vnetId.value]"
+                    },
+                    "adminPassword":  {
+                        "value": "[parameters('sshPassword')]"
+                    }
+                }
+            }
+        },
         {
             "type": "Microsoft.Resources/resourceGroups",
             "apiVersion": "2018-05-01",
