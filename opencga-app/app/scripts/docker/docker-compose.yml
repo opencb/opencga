@@ -1,0 +1,35 @@
+version: '3'
+services:
+  opencga:
+    build: ./opencga-app
+    ports:
+     - "8080:8080"
+    environment: 
+      - HD_INSIGHTS_SSH_DNS=opencga-dev-ssh.azurehdinsight.net
+      - HD_INSIGHTS_SSH_USER=sshuser
+      - HD_INSIGHTS_SSH_PASS=0penCG@@zure 
+  opencga-daemon:
+    build: ./opencga
+    environment: 
+      - HD_INSIGHTS_SSH_DNS=opencga-dev-ssh.azurehdinsight.net
+      - HD_INSIGHTS_SSH_USER=sshuser
+      - HD_INSIGHTS_SSH_PASS=0penCG@@zure 
+  mongo:
+    image: 'mongo:3.6'
+    ports:
+      - '27017:27017'
+    volumes:
+      - 'data:/data/db'
+  solr:
+    image: solr:latest
+    ports:
+      - '8983:8983'
+    #volumes:
+    #  - data:/opt/solr/server/solr/mycores
+    entrypoint:
+      - docker-entrypoint.sh
+      - solr-precreate
+      - opencga
+volumes:
+  data:
+  
