@@ -104,8 +104,10 @@
   "variables": {
     "availabilitySetName": "[concat(parameters('clusterName'), '-solr-AvSet')]",
     "vmName": "[concat(parameters('clusterName'), '-solr')]",
-    "niName": "[concat(parameters('clusterName'), '-solr-ni')]",
+    "nicName": "[concat(parameters('clusterName'), '-solr-nic')]",
     "subnetPrefix": "10.0.2.",
+    "privateIPFirst": 4,
+    "zookeeperPrivateIPFirst": "[add(1, add(variables('privateIPFirst'), variables('scaleNumber')))]",
     "vmExtensionName": "solrExtension",
     "scaleNumber": "[if(parameters('highAvailability'), 2, 1)]",
     "zookeeperScaleNumber": "[if(parameters('highAvailability'), 3, 0)]",
@@ -119,7 +121,7 @@
       }
     ],
     "customScriptFilePath": "[concat(parameters('artifactsLocation'), 'solr/solr-setup.sh')]",
-    "customScriptCommandToExecute": "[concat('bash solr-setup.sh ', variables('zookeeperScaleNumber'), ' ', variables('subnetPrefix'), '{', add(5, variables('scaleNumber')), '..', add(add(4, variables('scaleNumber')), variables('zookeeperScaleNumber')),'}')]"
+    "customScriptCommandToExecute": "bash solr-setup.sh"
   },
   "resources": [
     {
@@ -145,13 +147,22 @@
             "value": "[parameters('subnetId')]"
           },
           "privateIPFirst" : {
-            "value" : "[add(5, variables('scaleNumber'))]"
+            "value" : "[variables('zookeeperPrivateIPFirst')]"
           },
           "scaleNumber" : {
             "value" : "[variables('zookeeperScaleNumber')]"
           },
           "vmSize" : {
             "value" : "[parameters('zookeeperVMSize')]"
+          },
+          "clusterName" : {
+            "value" : "[parameters('clusterName')]"
+          },
+          "artifactsLocation" : {
+            "value" : "[parameters('artifactsLocation')]"
+          },
+          "artifactsLocationSasToken" : {
+            "value" : "[parameters('artifactsLocationSasToken')]"
           }
         }
       }
@@ -172,7 +183,7 @@
     {
       "apiVersion": "2015-05-01-preview",
       "type": "Microsoft.Network/networkInterfaces",
-      "name": "[concat(variables('niName'), copyIndex())]",
+      "name": "[concat(variables('nicName'), copyIndex())]",
       "location": "[parameters('location')]",
       "copy": {
         "name": "foo",
@@ -185,7 +196,7 @@
             "name": "ipconfig1",
             "properties": {
               "privateIPAllocationMethod": "Static",
-              "privateIPAddress": "[concat(variables('subnetPrefix'), copyIndex(4))]",
+              "privateIPAddress": "[concat(variables('subnetPrefix'), copyIndex(variables('privateIPFirst')))]",
               "subnet": {
                 "id": "[parameters('subnetId')]"
               }
@@ -204,7 +215,7 @@
         "count": "[variables('scaleNumber')]"
       },
       "dependsOn": [
-        "[concat('Microsoft.Network/networkInterfaces/', variables('niName'), copyIndex())]",
+        "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'), copyIndex())]",
         "[concat('Microsoft.Compute/availabilitySets/', variables('availabilitySetName'))]"
       ],
       "properties": {
@@ -238,7 +249,7 @@
         "networkProfile": {
           "networkInterfaces": [
             {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('niName'), copyIndex()))]"
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('nicName'), copyIndex()))]"
             }
           ]
         }
@@ -266,7 +277,7 @@
           "fileUris": [
             "[variables('customScriptFilePath')]"
           ],
-          "commandToExecute": "[concat(variables('customScriptCommandToExecute'), ' ', copyIndex(), ' ', variables('scaleNumber'))]"
+          "commandToExecute": "[concat(variables('customScriptCommandToExecute'), ' ', copyIndex(), ' ', variables('subnetPrefix'), ' ', variables('zookeeperPrivateIPFirst'), ' ', variables('zookeeperScaleNumber'))]"
         }
       }
     }

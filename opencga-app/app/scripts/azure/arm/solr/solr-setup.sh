@@ -1,4 +1,7 @@
-#!/usr/bin/env bash
+#!/bin/bash
+
+set -x
+set -e
 
 ## Nacho (6/12/2018)
 ## Install Docker following: https://docs.docker.com/install/linux/docker-ce/ubuntu/#extra-steps-for-aufs
@@ -18,17 +21,26 @@ apt-get install -y docker-ce
 ## Install Solr 6.6 in Docker
 docker pull solr:6.6
 
-ZK_HOSTS_NUM=$1
+MY_ID=$(($1+1))
+SUBNET_PREFIX=$2
+IP_FIRST=$3
+ZK_HOSTS_NUM=$4
+
 DOCKER_NAME=opencga-solr-6.6
 
-if [[ $ZK_HOSTS_NUM -gt 0 ]]; then
-    ZK_HOSTS=$2
+docker create --name ${DOCKER_NAME} --restart always -p 8983:8983 -t solr:6.6
 
-    for i in "${@:3}"; do
-        ZK_HOSTS=${ZK_HOSTS},$i
+if [[ $ZK_HOSTS_NUM -gt 0 ]]; then
+
+    i=0
+    while [ $i -lt $ZK_HOSTS_NUM ]
+    do
+        ZK_HOST=${ZK_HOST},${SUBNET_PREFIX}$(($i+$IP_FIRST))
+        i=$(($i+1))
     done
 
-    docker create --name ${DOCKER_NAME} --restart always -p 8983:8983 -t solr:6.6
+    echo $ZK_HOST
+
     docker cp ${DOCKER_NAME}:/opt/solr/bin/solr.in.sh .
     sed -i -e 's/#ZK_HOST=.*/ZK_HOST='$ZK_HOST'/' solr.in.sh
 

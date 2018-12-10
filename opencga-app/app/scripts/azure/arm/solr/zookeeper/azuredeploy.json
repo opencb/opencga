@@ -85,14 +85,27 @@
       "metadata": {
         "description": "First IP from the subnet to assign"
       }
+    },
+    "artifactsLocation": {
+      "type": "string",
+      "metadata": {
+        "description": "Artifacts location."
+      }
+    },
+    "artifactsLocationSasToken": {
+      "type": "string",
+      "defaultValue" : "",
+      "metadata": {
+        "description": "Artifacts location."
+      }
     }
   },
   "variables": {
     "availabilitySetName": "[concat(parameters('clusterName'), '-zookeeper-AvSet')]",
     "vmName": "[concat(parameters('clusterName'), '-zookeeper')]",
-    "niName": "[concat(parameters('clusterName'), '-zookeeper-ni')]",
-    "customScriptFilePath": "https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/zookeeper-cluster-ubuntu-vm/zookeeper.sh",
-    "customScriptCommandToExecute": "sh zookeeper.sh",
+    "nicName": "[concat(parameters('clusterName'), '-zookeeper-nic')]",
+    "customScriptFilePath": "[concat(parameters('artifactsLocation'), 'solr/zookeeper/zookeeper-setup.sh')]",
+    "customScriptCommandToExecute": "bash zookeeper-setup.sh",
     "vmExtensionName": "zookeeperExtension",
     "subnetPrefix": "10.0.2."
   },
@@ -113,7 +126,7 @@
     {
       "apiVersion": "2015-05-01-preview",
       "type": "Microsoft.Network/networkInterfaces",
-      "name": "[concat(variables('niName'), copyIndex())]",
+      "name": "[concat(variables('nicName'), copyIndex())]",
       "location": "[parameters('location')]",
       "copy": {
         "name": "foo",
@@ -145,7 +158,7 @@
         "count": "[parameters('scaleNumber')]"
       },
       "dependsOn": [
-        "[concat('Microsoft.Network/networkInterfaces/', variables('niName'), copyIndex())]",
+        "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'), copyIndex())]",
         "[concat('Microsoft.Compute/availabilitySets/', variables('availabilitySetName'))]"
       ],
       "properties": {
@@ -179,7 +192,7 @@
         "networkProfile": {
           "networkInterfaces": [
             {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('niName'), copyIndex()))]"
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('nicName'), copyIndex()))]"
             }
           ]
         }
@@ -206,7 +219,7 @@
           "fileUris": [
             "[variables('customScriptFilePath')]"
           ],
-          "commandToExecute": "[concat(variables('customScriptCommandToExecute'), ' ', copyIndex(), ' ', parameters('scaleNumber'))]"
+          "commandToExecute": "[concat(variables('customScriptCommandToExecute'), ' ', copyIndex(), ' ', variables('subnetPrefix'), ' ', parameters('privateIPFirst'), ' ', parameters('scaleNumber'))]"
         }
       }
     }
