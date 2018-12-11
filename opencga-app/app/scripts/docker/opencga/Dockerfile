@@ -1,28 +1,20 @@
+
+FROM opencga-build as build
+
+
 FROM opencga-java-base
-
-# Get opencga
-ARG OPENCGA_VERSION="1.4.0-rc2"
-
-RUN mkdir /install
-
-WORKDIR /install
-
-# RUN wget --quiet https://github.com/opencb/opencga/releases/download/v${OPENCGA_VERSION}/opencga-${OPENCGA_VERSION}.tar.gz 
-COPY ./opencga-${OPENCGA_VERSION}.tar.gz ./opencga.tar.gz
-
-# extract
-RUN  mkdir /opt/opencga && tar xvf opencga.tar.gz  -C /opt/opencga 
-
-COPY ./conf /opt/opencga/conf
 
 RUN  apt-get update && apt-get install sshpass -y
 
-COPY ./config_and_run.sh /install
+# Get opencga
+WORKDIR /opt/opencga 
 
-ENV HD_INSIGHTS_SSH_DNS=""
+COPY --from=build /build/build /opt/opencga
 
-ENV HD_INSIGHTS_SSH_USER=""
+# extract
+#RUN   wget --quiet ${OPENCGA_RELEASE_URL} && mkdir /opt/opencga && tar xvf opencga-${OPENCGA_VERSION}.tar.gz --strip-components=1 -C /opt/opencga  && rm ./opencga-${OPENCGA_VERSION}.tar.gz
 
-ENV HD_INSIGHTS_SSH_PASS=""
- 
-CMD ["sh", "-c", "/install/config_and_run.sh", "&&",  "/opt/opencga/bin/opencga-admin.sh", "catalog", "daemon", "--start"] 
+COPY ./conf /opt/opencga/conf
+
+COPY ./config.sh /tmp/
+
