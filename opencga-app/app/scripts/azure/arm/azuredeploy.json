@@ -14,33 +14,59 @@
                  "description": ""
              }
          },
-         "clusterName": {
+         "HDInsightClusterName": {
             "type": "string",
             "metadata": {
                 "description": "The name of the HDInsight cluster to create."
             }
         },
-        "clusterLoginUserName": {
+        "HDInsightClusterLoginUserName": {
             "type": "string",
             "defaultValue": "admin",
             "metadata": {
                 "description": "These credentials can be used to submit jobs to the cluster and to log into cluster dashboards."
             }
         },
-        "clusterLoginPassword": {
+        "HDInsightClusterLoginPassword": {
             "type": "securestring",
             "metadata": {
                 "description": "The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
             }
         },
-        "sshPassword": {
+        "HDInsightSshPassword": {
             "type": "securestring",
             "metadata": {
                 "description": "The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
             }
+        },
+        "avereServerPrincipalAppId": {
+            "type": "string",
+            "metadata": {
+                "description": "The ServicePrincipal which Avere will use to provision the storage cluster. This SP needs to have 'Owner' rights to the ResourceGroup."
+            }
+        },
+        "avereServerPrincipalPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The ServicePrincipal's Password."
+            }
+        },
+        "avereSSHKeyData": {
+            "type": "string",
+            "metadata": {
+                "description": "The RSA data for the SSH Public Key used to authenticate to Avere nodes."
+            }
+        },
+        "avereAdminPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The password for the 'admin' user on the Avere cluster configuration portal."
+            }
         }
     },
-    "variables": {},
+    "variables": {
+
+    },
     "resources": [
         {
             "type": "Microsoft.Resources/deployments",
@@ -94,20 +120,66 @@
                 "parameters": {
 
                     "clusterName": {
-                        "value": "[parameters('clusterName')]"
+                        "value": "[parameters('HDInsightClusterName')]"
                     },
                     "clusterLoginUserName": {
-                        "value": "[parameters('clusterLoginUserName')]"
+                        "value": "[parameters('HDInsightClusterLoginUserName')]"
                     },
                     "clusterLoginPassword": {
-                        "value": "[parameters('clusterLoginPassword')]"
+                        "value": "[parameters('HDInsightClusterLoginPassword')]"
                     },
                     "sshPassword": {
-                        "value": "[parameters('sshPassword')]"
+                        "value": "[parameters('HDInsightSshPassword')]"
+                    }
+                }
+            }
+        }, 
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2015-01-01",
+            "name": "avere",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/avere/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "servicePrincipalTenant": {
+                        "value": "[subscription().tenantId]"
+                    },
+                    "servicePrincipalAppId": {
+                        "value": "[parameters('avereServerPrincipalAppId')]"
+                    },
+                    "servicePrincipalPassword": {
+                        "value": "[parameters('avereServerPrincipalPassword')]"
+                    },
+                    "virtualNetworkName": {
+                        "value": "[reference('vnet').outputs.virtualNetworkName]"
+                    },
+                    "virtualNetworkSubnetName": {
+                        "value": "[reference('vnet').outputs.avereSubnetName]"
+                    },
+                    "virtualNetworkSubnetId": {
+                        "value": "[reference('vnet').outputs.avereClusterSubnetId]"
+                    },
+                    "controllerAdminUsername": {
+                        "value": "avere"
+                    },
+                    "controllerSSHKeyData": {
+                        "value": "[parameters('avereSSHKeyData')]"
+                    },
+                    "adminPassword": {
+                        "value": "[parameters('avereAdminPassword')]"
                     }
                 }
             }
         }
     ],
-    "outputs": {}
+    "outputs": {
+        "avere_controller_ssh": {
+            "type": "string",
+            "value": "[reference('avere').outputs.SSH_STRING]"
+        }
+    }
 }

@@ -8,18 +8,29 @@
         "_artifactsLocationSasToken": {
             "value": ""
         },
-        "clusterName": {
+        "HDInsightClusterName": {
             "value": ""
         },
-        "clusterLoginUserName": {
+        "HDInsightClusterLoginUserName": {
             "value": "admin"
         },
-        "clusterLoginPassword": {
+        "HDInsightClusterLoginPassword": {
             "value": ""
         },
-        "sshPassword": {
+        "HDInsightSshPassword": {
+            "value": ""
+        },
+        "avereServerPrincipalAppId": {
+            "value": ""
+        },
+        "avereServerPrincipalPassword": {
+            "value": ""
+        },
+        "avereSSHKeyData": {
+            "value": ""
+        },
+        "avereAdminPassword": {
             "value": ""
         }
-       
     }
 }
