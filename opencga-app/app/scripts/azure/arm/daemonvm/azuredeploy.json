@@ -60,10 +60,27 @@
         "subnetRef": "[concat(variables('vnetId'), '/subnets/', parameters('subnetName'))]",
         "cloud-init": [
 
-            "#include",
-            "[concat(parameters('_artifactsLocation'), '/daemonvm/cloudinit.yaml', parameters('_artifactsLocationSasToken'))]"
-
-
+            "#cloud-config",
+            "package_upgrade: true",
+            "package_reboot_if_required: true",
+            "",
+            "packages:",
+            "- docker.io",
+            "",
+            "write_files:",
+            "- path: /etc/systemd/system/opencga.service",
+            "  permissions: 0644",
+            "  owner: root",
+            "  content: |    ",
+            "\n    [Unit]",
+            "    Description=OpenCGA daemon",
+            "    Requires=docker.service",
+            "    After=docker.service",
+            "\n    [Service]",
+            "    Restart=always",
+            "[concat('    ExecStart=/usr/bin/docker run --name=opencga-daemon -e HD_INSIGHTS_SSH_DNS=',parameters('hdInsightSshDns'),' -e HD_INSIGHTS_SSH_USER=',parameters('hdInsightSshUsername'),' -e HD_INSIGHTS_SSH_PASS=',parameters('hdInsightSshPassword'),' marrobi/opencga-daemon')]",
+            "    ExecStop=/usr/bin/docker stop opencga-daemon",
+            ""
         ],
         "cloud-init-string": "[replace(replace(replace(string(variables('cloud-init')),'\",\"','\n'),'[\"',''),'\"]','')]",
         "customData": "[base64(variables('cloud-init-string'))]"
