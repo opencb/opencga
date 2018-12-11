@@ -38,11 +38,6 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     // Map of sample id, list of files (VCF, BAM and BIGWIG)
     private Map<String, List<File>> files;
 
-    @Deprecated
-    private File germline;
-    @Deprecated
-    private File somatic;
-
     private Individual proband;
     private Family family;
     private List<Interpretation> interpretations;
@@ -73,26 +68,6 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     }
 
     public ClinicalAnalysis() {
-    }
-
-    public ClinicalAnalysis(String id, String description, Type type, OntologyTerm disease, File germline, File somatic, Individual proband,
-                            Family family, List<Interpretation> interpretations, Priority priority, String creationDate, String dueDate,
-                            Status status, int release, Map<String, Object> attributes) {
-        this.id = id;
-        this.description = description;
-        this.type = type;
-        this.disease = disease;
-        this.germline = germline;
-        this.somatic = somatic;
-        this.proband = proband;
-        this.family = family;
-        this.interpretations = interpretations;
-        this.priority = priority;
-        this.creationDate = creationDate;
-        this.dueDate = dueDate;
-        this.status = status;
-        this.release = release;
-        this.attributes = attributes;
     }
 
     public ClinicalAnalysis(String id, String description, Type type, OntologyTerm disease, Map<String, List<File>> files,
@@ -209,24 +184,6 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     public ClinicalAnalysis setFiles(Map<String, List<File>> files) {
         this.files = files;
-        return this;
-    }
-
-    public File getGermline() {
-        return germline;
-    }
-
-    public ClinicalAnalysis setGermline(File germline) {
-        this.germline = germline;
-        return this;
-    }
-
-    public File getSomatic() {
-        return somatic;
-    }
-
-    public ClinicalAnalysis setSomatic(File somatic) {
-        this.somatic = somatic;
         return this;
     }
 
