@@ -62,6 +62,10 @@
                 "description": "The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
             }
         },
+        "deployAvere": {
+            "defaultValue": false,
+            "type": "bool"
+        },
         "avereServicePrincipalAppId": {
             "type": "string",
             "metadata": {
@@ -100,7 +104,7 @@
             }
         },
         "solrHighAvailability": {
-             "type": "bool",
+            "type": "bool",
             "defaultValue": true,
             "metadata": {
                 "description": ""
@@ -136,6 +140,12 @@
             ],
             "metadata": {
                 "description": "Storage Account type"
+            }
+        },
+        "daemonVmAdminPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "SSH Password (maybe change to key)"
             }
         }
     },
@@ -188,11 +198,11 @@
                 }
             }
         },
-        {   
+        {
             "resourceGroup": "[parameters('rgPrefix')]",
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2017-05-10",
-            "name": "loginvm",
+            "name": "daemonvm",
             "dependsOn": [
                 "vnet",
                 "[parameters('rgPrefix')]"
@@ -204,13 +214,20 @@
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
-
-              
                     "virtualNetworkId": {
-                        "value":  "[reference('vnet').outputs.vnetId.value]"
+                        "value": "[reference('vnet').outputs.vnetId.value]"
                     },
-                    "adminPassword":  {
-                        "value": "[parameters('sshPassword')]"
+                    "adminPassword": {
+                        "value": "[parameters('daemonVmAdminPassword')]"
+                    },
+                    "hdInsightSshDns": {
+                        "value": "[reference('hdinsight').outputs.clusterSshDns.value]"
+                    },
+                    "hdInsightSshUsername": {
+                        "value": "[reference('hdinsight').outputs.clusterSshUsername.value]"
+                    },
+                    "hdInsightSshPassword": {
+                        "value": "[reference('hdinsight').outputs.clusterSshPassword.value]"
                     }
                 }
             }
@@ -276,6 +293,7 @@
             "properties": {}
         },
         {
+            "condition": "[parameters('deployAvere')]",
             "type": "Microsoft.Resources/deployments",
             "resourceGroup": "[concat(parameters('rgPrefix'),'-avere')]",
             "apiVersion": "2018-05-01",

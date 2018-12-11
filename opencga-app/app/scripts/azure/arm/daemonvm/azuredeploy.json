@@ -59,13 +59,11 @@
             "- path: /etc/systemd/system/opencga.service\n",
             "  permissions: 0644\n",
             "  owner: root\n",
-            "  content: |\n",
-            "    [Unit]\n",
+            "  content: |\n[Unit]\n",
             "    Description=OpenCGA daemon\n",
             "    Requires=docker.service\n",
             "    After=docker.service\n",
-            "    \n",
-            "    [Service]\n",
+            "    \n[Service]\n",
             "    Restart=always\n",
             "[concat('    ExecStart=/usr/bin/docker run --name=opencga-daemon -e HD_INSIGHTS_SSH_DNS=',parameters('hdInsightSshDns'),' -e HD_INSIGHTS_SSH_USER=',parameters('hdInsightSshUsername'),' -e HD_INSIGHTS_SSH_PASS=',parameters('hdInsightSshPassword'),' marrobi/opencga-daemon\n')]",
             "    ExecStop=/usr/bin/docker stop opencga-daemon\n"
@@ -73,15 +71,16 @@
         ],
         
         "customData": "[base64(concat(variables('cloud-config')))]"
+        
     },
     "resources": [
         {
-            "name": "loginvm-nic",
+            "name": "daemonvm-nic",
             "type": "Microsoft.Network/networkInterfaces",
             "apiVersion": "2018-04-01",
             "location": "[resourceGroup().location]",
             "dependsOn": [
-                "[concat('Microsoft.Network/publicIpAddresses/', 'loginvm-ip')]"
+                "[concat('Microsoft.Network/publicIpAddresses/', 'daemonvm-ip')]"
             ],
             "properties": {
                 "ipConfigurations": [
@@ -93,7 +92,7 @@
                             },
                             "privateIPAllocationMethod": "Dynamic",
                             "publicIpAddress": {
-                                "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIpAddresses', 'loginvm-ip')]"
+                                "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIpAddresses', 'daemonvm-ip')]"
                             }
                         }
                     }
@@ -104,7 +103,7 @@
         },
      
         {
-            "name": "loginvm-ip",
+            "name": "daemonvm-ip",
             "type": "Microsoft.Network/publicIpAddresses",
             "apiVersion": "2018-08-01",
             "location": "[resourceGroup().location]",
@@ -117,12 +116,12 @@
             "tags": {}
         },
         {
-            "name": "loginvm",
+            "name": "daemonvm",
             "type": "Microsoft.Compute/virtualMachines",
             "apiVersion": "2018-06-01",
             "location": "[resourceGroup().location]",
             "dependsOn": [
-                "[concat('Microsoft.Network/networkInterfaces/', 'loginvm-nic')]"
+                "[concat('Microsoft.Network/networkInterfaces/', 'daemonvm-nic')]"
             ],
             "properties": {
                 "hardwareProfile": {
@@ -145,12 +144,12 @@
                 "networkProfile": {
                     "networkInterfaces": [
                         {
-                            "id": "[resourceId('Microsoft.Network/networkInterfaces', 'loginvm-nic')]"
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', 'daemonvm-nic')]"
                         }
                     ]
                 },
                 "osProfile": {
-                    "computerName": "loginvm",
+                    "computerName": "daemonvm",
                     "adminUsername": "[parameters('adminUsername')]",
                     "adminPassword": "[parameters('adminPassword')]",
                     "customData": "[variables('customData')]"
