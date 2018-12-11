@@ -39,7 +39,8 @@ if [[ $ZK_HOSTS_NUM -gt 0 ]]; then
         i=$(($i+1))
     done
 
-    echo $ZK_HOST
+    # Remove leading comma
+    ZK_HOST=`echo $ZK_HOST | cut -c 2-`
 
     docker cp ${DOCKER_NAME}:/opt/solr/bin/solr.in.sh .
     sed -i -e 's/#ZK_HOST=.*/ZK_HOST='$ZK_HOST'/' solr.in.sh

@@ -3,45 +3,32 @@
 set -x
 set -e
 
-MY_ID=$1
+ZOO_MY_ID=$1
 SUBNET_PREFIX=$2
 IP_FIRST=$3
 NUM_NODES=$4
 
+DOCKER_NAME=opencga-zookeeper-3.4
 
-wget --no-check-certificate --no-cookies --header "Cookie: oraclelicense=accept-securebackup-cookie"  "https://download.oracle.com/otn-pub/java/jdk/8u191-b12/2787e4a523244c269598db4e85c51e0c/jdk-8u191-linux-x64.tar.gz"
-tar -xvf jdk-8*
-mkdir /usr/lib/jvm
-mv ./jdk1.8* /usr/lib/jvm/jdk1.8.0
-update-alternatives --install "/usr/bin/java" "java" "/usr/lib/jvm/jdk1.8.0/bin/java" 1
-update-alternatives --install "/usr/bin/javac" "javac" "/usr/lib/jvm/jdk1.8.0/bin/javac" 1
-update-alternatives --install "/usr/bin/javaws" "javaws" "/usr/lib/jvm/jdk1.8.0/bin/javaws" 1
-chmod a+x /usr/bin/java
-chmod a+x /usr/bin/javac
-chmod a+x /usr/bin/javaws
-
-cd /usr/local
-
-wget "http://mirrors.ukfast.co.uk/sites/ftp.apache.org/zookeeper/stable/zookeeper-3.4.12.tar.gz"
-tar -xvf "zookeeper-3.4.12.tar.gz"
-
-touch zookeeper-3.4.12/conf/zoo.cfg
-
-echo "tickTime=2000" >> zookeeper-3.4.12/conf/zoo.cfg
-echo "dataDir=/var/lib/zookeeper" >> zookeeper-3.4.12/conf/zoo.cfg
-echo "clientPort=2181" >> zookeeper-3.4.12/conf/zoo.cfg
-echo "initLimit=5" >> zookeeper-3.4.12/conf/zoo.cfg
-echo "syncLimit=2" >> zookeeper-3.4.12/conf/zoo.cfg
-
+ZOO_SERVERS=
 i=0
 while [ $i -lt $NUM_NODES ]
 do
-    echo "server.$i=${SUBNET_PREFIX}$(($i+$IP_FIRST)):2888:3888" >> zookeeper-3.4.12/conf/zoo.cfg
+    ZOO_SERVERS="${ZOO_SERVERS} server.${i}=${SUBNET_PREFIX}$(($i+$IP_FIRST)):2888:3888"
     i=$(($i+1))
 done
 
-mkdir -p /var/lib/zookeeper
+## Install Docker following: https://docs.docker.com/install/linux/docker-ce/ubuntu/#extra-steps-for-aufs
+## Set up Docker repository for Ubuntu
+apt-get update
+apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+apt-key fingerprint 0EBFCD88
+add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
 
-echo ${MY_ID} >> /var/lib/zookeeper/myid
+## Install Docker CE
+apt-get update
+apt-get install -y docker-ce
 
-zookeeper-3.4.12/bin/zkServer.sh start
+## Create docker container
+docker run --name ${DOCKER_NAME} --restart always -d -e ZOO_MY_ID=$ZOO_MY_ID -e "ZOO_SERVERS=$ZOO_SERVERS" zookeeper:3.4
