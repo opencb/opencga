@@ -30,7 +30,7 @@
             "defaultValue": "opencgaadmin"
         },
         "adminPassword": {
-            "type": "secureString"
+            "type": "securestring"
         }
     },
     "variables": {

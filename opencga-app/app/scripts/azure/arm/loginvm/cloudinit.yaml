@@ -1,25 +1,21 @@
 #cloud-config
-packages:
-  – docker.io
-
 package_upgrade: true
 package_reboot_if_required: true
 
-users:
-  - name: opencga
-    uid: 2000
+packages:
+- docker.io
 
 write_files:
-  - path: /etc/systemd/system/opencga.service
-    permissions: 0644
-    owner: root
-    content: |
-      [Unit]
-      Description=OpenCGA daemon
-      Requires=docker.service
-      After=docker.service
-      
-      [Service]
-      Restart=always
-      ExecStart=/usr/bin/docker run --name=opencga-daemon marrobi/opencga-daemon
-      ExecStop=/usr/bin/docker stop opencga-daemon
+- path: /etc/systemd/system/opencga.service
+  permissions: 0644
+  owner: root
+  content: |
+    [Unit]
+    Description=OpenCGA daemon
+    Requires=docker.service
+    After=docker.service
+    
+    [Service]
+    Restart=always
+    ExecStart=/usr/bin/docker run --name=opencga-daemon marrobi/opencga-daemon
+    ExecStop=/usr/bin/docker stop opencga-daemon
