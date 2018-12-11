@@ -199,7 +199,7 @@
         {
             "type": "Microsoft.Resources/deployments",
             "resourceGroup": "[concat(parameters('rgPrefix'),'-avere')]",
-            "apiVersion": "2018-05-01",
+            "apiVersion": "2017-05-10",
             "name": "avere",
             "dependsOn": [
                 "vnet",
@@ -222,16 +222,16 @@
                         "value": "[parameters('avereServicePrincipalPassword')]"
                     },
                     "virtualNetworkName": {
-                        "value": "vnet"
+                        "value": "[reference('vnet').outputs.virtualNetworkName.value]"
                     },
                     "virtualNetworkResourceGroup": {
                         "value": "[parameters('rgPrefix')]"
                     },
                     "virtualNetworkSubnetName": {
-                        "value": "[reference('vnet').outputs.avereSubnetName]"
+                        "value": "[reference('vnet').outputs.avereSubnetName.value]"
                     },
                     "virtualNetworkSubnetId": {
-                        "value": "[reference('vnet').outputs.avereClusterSubnetId]"
+                        "value": "[reference('vnet').outputs.avereClusterSubnetId.value]"
                     },
                     "controllerAdminUsername": {
                         "value": "avere"
