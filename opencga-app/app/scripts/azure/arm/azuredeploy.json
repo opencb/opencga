@@ -203,7 +203,7 @@
             "name": "avere",
             "dependsOn": [
                 "vnet",
-                "[parameters('rgPrefix')]"
+                "[concat(parameters('rgPrefix'),'-avere')]"
             ],
             "properties": {
                 "mode": "Incremental",
@@ -222,7 +222,10 @@
                         "value": "[parameters('avereServicePrincipalPassword')]"
                     },
                     "virtualNetworkName": {
-                        "value": "[reference('vnet').outputs.virtualNetworkName]"
+                        "value": "vnet"
+                    },
+                    "virtualNetworkResourceGroup": {
+                        "value": "[parameters('rgPrefix')]"
                     },
                     "virtualNetworkSubnetName": {
                         "value": "[reference('vnet').outputs.avereSubnetName]"

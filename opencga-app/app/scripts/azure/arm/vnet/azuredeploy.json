@@ -72,7 +72,7 @@
         },
         "avereSubnetName": {
             "type": "string",
-            "value": "averecluster"
+            "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', 'vnet')).subnets[1].name]"
         },
         "hdinsightSubnetId": {
             "type": "string",

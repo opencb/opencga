@@ -30,6 +30,12 @@
         "description": "The name used for the virtual network."
       }
     },
+    "virtualNetworkResourceGroup": {
+      "type": "string",
+      "metadata": {
+        "description": "The RG in which the Vnet is deployed."
+      }
+    },
     "virtualNetworkSubnetName": {
       "type": "string",
       "metadata": {
@@ -110,7 +116,7 @@
     "controllerSSHKeyData": "[parameters('controllerSSHKeyData')]",
     "adminPassword": "[parameters('adminPassword')]",
     "nicName": "[concat('vmnic-',variables('controllerName'))]",
-    "virtualNetworkResourceGroup": "[resourceGroup().name]",
+    "virtualNetworkResourceGroup": "[parameters('virtualNetworkResourceGroup')]",
     "virtualNetworkName": "[parameters('virtualNetworkName')]",
     "virtualNetworkSubnetName": "[parameters('virtualNetworkSubnetName')]",
     "avereBackedStorageAccountName": "[concat('avere', uniqueString(resourceGroup().id))]",
