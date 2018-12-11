@@ -89,11 +89,6 @@
     },
     "resources": [
         {
-            "type": "Microsoft.Resources/deployments",
-            "apiVersion": "2015-01-01",
-            "name": "vnet",
-        },
-        {
             "type": "Microsoft.Resources/resourceGroups",
             "apiVersion": "2018-05-01",
             "location": "[parameters('rgLocation')]",
@@ -204,7 +199,7 @@
         {
             "type": "Microsoft.Resources/deployments",
             "resourceGroup": "[concat(parameters('rgPrefix'),'-avere')]",
-            "apiVersion": "2015-01-01",
+            "apiVersion": "2018-05-01",
             "name": "avere",
             "properties": {
                 "mode": "Incremental",

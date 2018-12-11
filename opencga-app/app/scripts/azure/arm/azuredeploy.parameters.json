@@ -20,6 +20,9 @@
         "HDInsightSshPassword": {
             "value": ""
         },
+        "HDInsightStorageOption": {
+            "value": "DataLake"
+        },
         "rgPrefix":{
             "value": "opencga"
         },
