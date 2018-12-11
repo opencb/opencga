@@ -19,3 +19,4 @@ write_files:
     Restart=always
     ExecStart=/usr/bin/docker run --name=opencga-daemon -e HD_INSIGHTS_SSH_DNS=${HD_INSIGHTS_SSH_DNS} -e HD_INSIGHTS_SSH_USER={HD_INSIGHTS_SSH_USER} -e HD_INSIGHTS_SSH_PASS=${HD_INSIGHTS_SSH_PASS} marrobi/opencga-daemon
     ExecStop=/usr/bin/docker stop opencga-daemon
+

@@ -201,7 +201,7 @@
         {
             "resourceGroup": "[parameters('rgPrefix')]",
             "type": "Microsoft.Resources/deployments",
-            "apiVersion": "2017-05-10",
+            "apiVersion": "2018-05-01",
             "name": "daemonvm",
             "dependsOn": [
                 "vnet",
@@ -210,10 +210,17 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(parameters('_artifactsLocation'), '/loginvm/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "uri": "[concat(parameters('_artifactsLocation'), '/daemonvm/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
+
+                    "_artifactsLocation": {
+                        "value": "[parameters('_artifactsLocation')]"
+                    },
+                    "_artifactsLocationSasToken": {
+                        "value": "[parameters('_artifactsLocationSasToken')]"
+                    },
                     "virtualNetworkId": {
                         "value": "[reference('vnet').outputs.vnetId.value]"
                     },
@@ -221,7 +228,7 @@
                         "value": "[parameters('daemonVmAdminPassword')]"
                     },
                     "hdInsightSshDns": {
-                        "value": "[reference('hdinsight').outputs.clusterSshDns.value]"
+                        "value":  "[reference('hdinsight').outputs.clusterSshDnsName.value]"
                     },
                     "hdInsightSshUsername": {
                         "value": "[reference('hdinsight').outputs.clusterSshUsername.value]"
@@ -407,7 +414,7 @@
     "outputs": {
         "avere_controller_ssh": {
             "type": "string",
-            "value": "[reference('avere').outputs.SSH_STRING.value]"
+            "value": "[if(parameters('deployAvere'),reference('avere','2018-05-01').outputs.SSH_STRING,'')]"
         }
     }
 }

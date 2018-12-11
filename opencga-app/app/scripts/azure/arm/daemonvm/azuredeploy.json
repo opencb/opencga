@@ -2,6 +2,18 @@
     "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
+        "_artifactsLocation": {
+            "type": "string",
+            "metadata": {
+                "description": ""
+            }
+        },
+        "_artifactsLocationSasToken": {
+            "type": "string",
+            "metadata": {
+                "description": ""
+            }
+        },
         "subnetName": {
             "type": "string",
             "defaultvalue": "default"
@@ -46,31 +58,15 @@
     "variables": {
         "vnetId": "[parameters('virtualNetworkId')]",
         "subnetRef": "[concat(variables('vnetId'), '/subnets/', parameters('subnetName'))]",
-        "cloud-config": [
+        "cloud-init": [
 
-            "#cloud-config\n",
-            "package_upgrade: true\n",
-            "package_reboot_if_required: true\n",
-            "\n",
-            "packages:\n",
-            "- docker.io\n",
-            "\n",
-            "write_files:\n",
-            "- path: /etc/systemd/system/opencga.service\n",
-            "  permissions: 0644\n",
-            "  owner: root\n",
-            "  content: |\n[Unit]\n",
-            "    Description=OpenCGA daemon\n",
-            "    Requires=docker.service\n",
-            "    After=docker.service\n",
-            "    \n[Service]\n",
-            "    Restart=always\n",
-            "[concat('    ExecStart=/usr/bin/docker run --name=opencga-daemon -e HD_INSIGHTS_SSH_DNS=',parameters('hdInsightSshDns'),' -e HD_INSIGHTS_SSH_USER=',parameters('hdInsightSshUsername'),' -e HD_INSIGHTS_SSH_PASS=',parameters('hdInsightSshPassword'),' marrobi/opencga-daemon\n')]",
-            "    ExecStop=/usr/bin/docker stop opencga-daemon\n"
+            "#include",
+            "[concat(parameters('_artifactsLocation'), '/daemonvm/cloudinit.yaml', parameters('_artifactsLocationSasToken'))]"
+
 
         ],
-        "cloud-config-string": "[replace(replace(replace(string(variables('cloud-config')),'\",\"',''),'[\"',''),'\"]','')]",
-        "customData": "[base64(variables('cloud-config-string'))]"
+        "cloud-init-string": "[replace(replace(replace(string(variables('cloud-init')),'\",\"','\n'),'[\"',''),'\"]','')]",
+        "customData": "[base64(variables('cloud-init-string'))]"
         
     },
     "resources": [
@@ -163,9 +159,9 @@
             "type": "string",
             "value": "[parameters('adminUsername')]"
         },  
-        " cloud-config-string": {
+        "cloud-config-string": {
             "type": "string",
-            "value": "[variables('cloud-config-string')]"
+            "value": "[variables('cloud-init-string')]"
         }
        
     }
