@@ -19,10 +19,57 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+
+    <!--
+    Some dependencies included in the UBER-JAR are not defined, so they MUST defined at the
+    specific hadoop flavour profiles.
+      - hadoop.version
+      - hbase.version
+      - phoenix.version
+      - tephra.version
+-->
     <properties>
         <opencga-storage-hadoop-deps.version>${opencga.version}</opencga-storage-hadoop-deps.version>
         <module-opencga-storage-hadoop-deps>false</module-opencga-storage-hadoop-deps>
+
+        <protobuf2.version>2.5.0</protobuf2.version>
+        <guava.version>15.0</guava.version>
+
+        <!--Read from main hadoop pom.xml . Versions not as a property in that pom-->
+        <commons-httpclient.version>3.1</commons-httpclient.version>
+        <commons-compress.version>1.4.1</commons-compress.version>
+        <commons-io.version>2.4</commons-io.version>
+        <commons-net.version>3.1</commons-net.version>
+        <curator.version>2.7.1</curator.version>
+        <apacheds-kerberos-codec.version>2.0.0-M15</apacheds-kerberos-codec.version>
+        <leveldbjni-all.version>1.8</leveldbjni-all.version>
+        <zookeeper.version>3.4.6</zookeeper.version>
+
+        <!--Read from main hbase pom.xml-->
+        <metrics-core.version>2.2.0</metrics-core.version>
+        <disruptor.version>3.3.0</disruptor.version>
+        <commons-math.version>2.2</commons-math.version>
+        <netty.version>4.0.23.Final</netty.version>
+        <jamon-runtime.version>2.4.1</jamon-runtime.version>
+        <codehaus.jackson.version>1.9.13</codehaus.jackson.version>
+        <mortbay.jetty.version>6.1.26</mortbay.jetty.version>
+
+        <!--Read from main phoenix pom.xml-->
+        <commons-configuration.version>1.6</commons-configuration.version>
+        <!--<commons-io.version>2.1</commons-io.version>-->
+        <commons-lang.version>2.5</commons-lang.version>
+        <commons-logging.version>1.2</commons-logging.version>
+        <commons-csv.version>1.0</commons-csv.version>
+        <commons-codec.version>1.7</commons-codec.version>
+        <collections.version>3.2.1</collections.version>
+        <sqlline.version>1.1.9</sqlline.version>
+        <jline.version>2.11</jline.version>
+        <antlr.version>3.5.2</antlr.version> <!--see [PHOENIX-2465]-->
+        <!--Do not specify tephra version here, so it can be overwritten-->
+        <!--<tephra.version>0.7.0</tephra.version>-->
+        <snappy.version>0.3</snappy.version>
     </properties>
+
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga-storage</artifactId>
@@ -38,6 +85,46 @@
         <module>opencga-storage-hadoop-core</module>
     </modules>
 
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.lmax</groupId>
+                <artifactId>disruptor</artifactId>
+                <version>${disruptor.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-compress</artifactId>
+                <version>${commons-compress.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>${commons-io.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-net</groupId>
+                <artifactId>commons-net</artifactId>
+                <version>${commons-net.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.curator</groupId>
+                <artifactId>curator-recipes</artifactId>
+                <version>${curator.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.curator</groupId>
+                <artifactId>curator-client</artifactId>
+                <version>${curator.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.curator</groupId>
+                <artifactId>curator-framework</artifactId>
+                <version>${curator.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <profiles>
         <!-- Add opencga-storage-hadoop-deps as an extra module. Force to recompile the opencga-storage-hadoop-deps -->
         <profile>
@@ -48,10 +135,12 @@
             <properties>
                 <module-opencga-storage-hadoop-deps>true</module-opencga-storage-hadoop-deps>
                 <!--Version values for the default profile hdp-2.5.0-->
-                <opencga-storage-hadoop-deps.classifier>hdp-2.5.0</opencga-storage-hadoop-deps.classifier>
-                <hadoop.version>2.7.1</hadoop.version>
-                <hbase.version>1.1.2.2.5.0.0-1245</hbase.version>
-                <phoenix.version>4.7.0.2.5.0.0-1245</phoenix.version>
+                <opencga-storage-hadoop-deps.classifier>hdp-2.5.6</opencga-storage-hadoop-deps.classifier>
+                <hdp.dependencies.version>2.5.6.13-3</hdp.dependencies.version>
+
+                <hadoop.version>2.7.3.${hdp.dependencies.version}</hadoop.version>
+                <hbase.version>1.1.2.${hdp.dependencies.version}</hbase.version>
+                <phoenix.version>4.7.0.${hdp.dependencies.version}</phoenix.version>
                 <tephra.version>0.7.0</tephra.version>
             </properties>
             <repositories>
@@ -68,13 +157,13 @@
 
         <!-- Each profile will modify the version of some hadoop dependencies and add some repositories, if needed.
              1. Change version of a dependency (not in uber-jar)
-                 Add the new dependency with the amended version to the dependencyManager
+                 Ensure that the dependency is in the general dependencyManagement section, and ammend the version property
 
              2. Add new dependency (not in uber-jar)
-                 Add the new dependency to the list of dependencies
+                 Add the new dependency to the list of dependencies (in the profile)
 
              3. Remove a dependency (not in uber-jar)
-                 Exclude the dependency from the opencga-storage-hadoop-deps.
+                 Exclude the dependency from the opencga-storage-hadoop-deps in the profile dependencyManagement
                  From main jar AND test-jar
 
              4. Replace a dependency (not in uber-jar)
@@ -92,10 +181,12 @@
             </activation>
             <!--Default values copied copied in the opencga-storage-hadoop-deps profile-->
             <properties>
-                <opencga-storage-hadoop-deps.classifier>hdp-2.5.0</opencga-storage-hadoop-deps.classifier>
-                <hadoop.version>2.7.1</hadoop.version>
-                <hbase.version>1.1.2.2.5.0.0-1245</hbase.version>
-                <phoenix.version>4.7.0.2.5.0.0-1245</phoenix.version>
+                <opencga-storage-hadoop-deps.classifier>hdp-2.5.6</opencga-storage-hadoop-deps.classifier>
+                <hdp.dependencies.version>2.5.6.13-3</hdp.dependencies.version>
+
+                <hadoop.version>2.7.1.${hdp.dependencies.version}</hadoop.version>
+                <hbase.version>1.1.2.${hdp.dependencies.version}</hbase.version>
+                <phoenix.version>4.7.0.${hdp.dependencies.version}</phoenix.version>
                 <tephra.version>0.7.0</tephra.version>
             </properties>
             <repositories>
@@ -119,9 +210,38 @@
             </activation>
             <properties>
                 <opencga-storage-hadoop-deps.classifier>hdp-2.6.0</opencga-storage-hadoop-deps.classifier>
-                <hadoop.version>2.7.3.2.6.0.3-8</hadoop.version>
-                <hbase.version>1.1.2.2.6.0.3-8</hbase.version>
-                <phoenix.version>4.7.0.2.6.0.3-8</phoenix.version>
+                <hdp.dependencies.version>2.6.0.3-8</hdp.dependencies.version>
+
+                <hadoop.version>2.7.3.${hdp.dependencies.version}</hadoop.version>
+                <hbase.version>1.1.2.${hdp.dependencies.version}</hbase.version>
+                <phoenix.version>4.7.0.${hdp.dependencies.version}</phoenix.version>
+            </properties>
+            <repositories>
+                <repository>
+                    <id>hortonworks-releases</id>
+                    <url>http://repo.hortonworks.com/content/repositories/releases/</url>
+                </repository>
+                <repository>
+                    <id>hortonworks-public</id>
+                    <url>http://repo.hortonworks.com/content/groups/public</url>
+                </repository>
+            </repositories>
+        </profile>
+        <profile>
+            <id>hdp-2.6.5</id>
+            <activation>
+                <property>
+                    <name>opencga-storage-hadoop-deps.classifier</name>
+                    <value>hdp-2.6.5</value>
+                </property>
+            </activation>
+            <properties>
+                <opencga-storage-hadoop-deps.classifier>hdp-2.6.5</opencga-storage-hadoop-deps.classifier>
+                <hdp.dependencies.version>2.6.5.90-1</hdp.dependencies.version>
+
+                <hadoop.version>2.7.3.${hdp.dependencies.version}</hadoop.version>
+                <hbase.version>1.1.2.${hdp.dependencies.version}</hbase.version>
+                <phoenix.version>4.7.0.${hdp.dependencies.version}</phoenix.version>
             </properties>
             <repositories>
                 <repository>
@@ -144,13 +264,14 @@
             </activation>
             <properties>
                 <opencga-storage-hadoop-deps.classifier>hdp-3.0.1</opencga-storage-hadoop-deps.classifier>
-                <hdp.dependencies.version>.3.0.1.4-1</hdp.dependencies.version>
-                <hadoop.version>3.1.1${hdp.dependencies.version}</hadoop.version>
-                <hbase.version>2.0.0${hdp.dependencies.version}</hbase.version>
+                <hdp.dependencies.version>3.0.1.4-1</hdp.dependencies.version>
+
+                <hadoop.version>3.1.1.${hdp.dependencies.version}</hadoop.version>
+                <hbase.version>2.0.0.${hdp.dependencies.version}</hbase.version>
                 <!--Despite using hbase v2.0.0, this HDP version uses the 2.1.0 thirdparty libraries-->
                 <hbase-thirdparty.version>2.1.0</hbase-thirdparty.version>
                 <zookeeper.version>3.4.6</zookeeper.version>
-                <phoenix.version>5.0.0${hdp.dependencies.version}</phoenix.version>
+                <phoenix.version>5.0.0.${hdp.dependencies.version}</phoenix.version>
                 <apache.tephra.version>0.14.0-incubating</apache.tephra.version>
                 <tephra.version>0.7.0</tephra.version>
                 <!--Version changes in hbase2-->
@@ -252,43 +373,6 @@
                                 <artifactId>metrics-core</artifactId>
                             </exclusion>
                         </exclusions>
-                    </dependency>
-
-                    <dependency>
-                        <!--Version changes in hbase2-->
-                        <groupId>com.lmax</groupId>
-                        <artifactId>disruptor</artifactId>
-                        <version>${disruptor.version}</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.apache.commons</groupId>
-                        <artifactId>commons-compress</artifactId>
-                        <version>${commons-compress.version}</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>commons-io</groupId>
-                        <artifactId>commons-io</artifactId>
-                        <version>${commons-io.version}</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>commons-net</groupId>
-                        <artifactId>commons-net</artifactId>
-                        <version>${commons-net.version}</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.apache.curator</groupId>
-                        <artifactId>curator-recipes</artifactId>
-                        <version>${curator.version}</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.apache.curator</groupId>
-                        <artifactId>curator-client</artifactId>
-                        <version>${curator.version}</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.apache.curator</groupId>
-                        <artifactId>curator-framework</artifactId>
-                        <version>${curator.version}</version>
                     </dependency>
                 </dependencies>
             </dependencyManagement>
@@ -569,7 +653,15 @@
                                     </then>
                                     <else>
                                         <if>
-                                            <equals arg1="${project.artifactId}" arg2="opencga-storage-hadoop" />
+                                            <and>
+                                                <equals arg1="${project.artifactId}" arg2="opencga-storage-hadoop" />
+
+                                                <not>
+                                                    <equals arg1="${module-opencga-storage-hadoop-deps}" arg2="true"/>
+                                                </not>
+
+                                                <available file="${settings.localRepository}/org/opencb/opencga/opencga-storage-hadoop-deps/${opencga-storage-hadoop-deps.version}/opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.version}-${opencga-storage-hadoop-deps.classifier}-shaded.jar"/>
+                                            </and>
                                             <then>
                                                 <echo>------------------------------------------------------------------------</echo>
                                                 <echo>Skip compile opencga-storage-hadoop-deps. If required, use -Popencga-storage-hadoop-deps</echo>
