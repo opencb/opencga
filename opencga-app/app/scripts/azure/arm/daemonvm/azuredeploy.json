@@ -162,6 +162,11 @@
         "adminUsername": {
             "type": "string",
             "value": "[parameters('adminUsername')]"
+        },  
+        " cloud-config-string": {
+            "type": "string",
+            "value": "[variables('cloud-config-string')]"
         }
+       
     }
 }
