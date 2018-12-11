@@ -25,4 +25,4 @@ ENV HD_INSIGHTS_SSH_USER=""
 
 ENV HD_INSIGHTS_SSH_PASS=""
  
-CMD ["sh", "-c", "/install/config_and_run.sh &&  /opt/opencga/bin/opencga-admin.sh catalog daemon --start -p $HD_INSIGHTS_SSH_PASS"] 
+CMD ["sh", "-c", "/install/config_and_run.sh", "&&",  "/opt/opencga/bin/opencga-admin.sh", "catalog", "daemon", "--start"] 
