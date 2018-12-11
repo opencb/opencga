@@ -63,7 +63,7 @@
     },
     "avereClusterRBACRole": {
       "type": "string",
-      "defaultValue": "avere-cluster",
+      "defaultValue": "Contributor",
       "metadata": {
         "description": "The unique name used for the AAD role."
       }

@@ -201,6 +201,10 @@
             "resourceGroup": "[concat(parameters('rgPrefix'),'-avere')]",
             "apiVersion": "2018-05-01",
             "name": "avere",
+            "dependsOn": [
+                "vnet",
+                "[parameters('rgPrefix')]"
+            ],
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
