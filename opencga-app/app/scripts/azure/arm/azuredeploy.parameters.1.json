@@ -29,10 +29,10 @@
         "rgLocation":{
             "value": "uksouth"
         },
-        "avereServerPrincipalAppId": {
+        "avereServicePrincipalAppId": {
             "value": ""
         },
-        "avereServerPrincipalPassword": {
+        "avereServicePrincipalPassword": {
             "value": ""
         },
         "avereSSHKeyData": {
