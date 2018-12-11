@@ -82,9 +82,7 @@ public class BenchmarkCommandExecutor extends CommandExecutor {
         if (options.delay != null) {
             configuration.getBenchmark().setDelay(options.delay);
         }
-        if (options.host != null) {
-            setHost(options);
-        }
+        setHost(options);
 
         configuration.getBenchmark().setMode(options.executionMode.name());
         configuration.getBenchmark().setConnectionType(options.connectionType.name());
@@ -106,7 +104,15 @@ public class BenchmarkCommandExecutor extends CommandExecutor {
     }
 
     private void setHost(BenchmarkCommandOptions.VariantBenchmarkCommandOptions options) throws URISyntaxException {
-        URIBuilder uriBuilder = new URIBuilder(options.host);
+        URIBuilder uriBuilder = null;
+        String host = options.host;
+
+        if (host == null) {
+            uriBuilder = new URIBuilder(configuration.getBenchmark().getRest());
+        } else {
+            uriBuilder = new URIBuilder(host);
+        }
+
         String storageRest = commandOptions.commonCommandOptions.params.get("storage.rest");
 
         if (StringUtils.isNotEmpty(storageRest) && storageRest.equals("true")) {
