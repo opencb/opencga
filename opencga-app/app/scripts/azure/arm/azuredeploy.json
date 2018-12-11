@@ -249,7 +249,7 @@
     "outputs": {
         "avere_controller_ssh": {
             "type": "string",
-            "value": "[reference('avere').outputs.SSH_STRING]"
+            "value": "[reference('avere').outputs.SSH_STRING.value]"
         }
     }
 }
