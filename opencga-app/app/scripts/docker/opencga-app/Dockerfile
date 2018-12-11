@@ -1,6 +1,6 @@
 FROM opencga
 
-ARG OPENCGA_VERSION="1.4.0-rc2"
+ARG OPENCGA_VERSION="1.4.0-rc3-dev"
 
 # Get Tomcat
 ARG TOMCAT_VERSION="8.5.35"
@@ -20,6 +20,6 @@ RUN cp  /opt/opencga/opencga-${OPENCGA_VERSION}.war /opt/tomcat/webapps/opencga-
 COPY ./opencga.xml /var/lib/tomcat8/conf/Catalina/localhost/opencga-${OPENCGA_VERSION}.xml 
 
 # Launch Tomcat
-CMD ["sh", "-c", "/install/config_and_run.sh","&&","/opt/tomcat/bin/catalina.sh", "run"] 
+CMD ["sh", "-c", "/tmp/config.sh && /opt/tomcat/bin/catalina.sh run"] 
 
 EXPOSE 8080

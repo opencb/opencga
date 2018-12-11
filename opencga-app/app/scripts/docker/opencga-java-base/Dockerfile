@@ -5,7 +5,7 @@ ARG JAVA_VERSION="8u191-1~webupd8~1"
 
 # Install dependencies
 RUN apt-get update && \
-apt-get install -y git build-essential curl wget unzip tar software-properties-common vim
+apt-get install -y software-properties-common 
 
 # Install JDK 8
 RUN \
