@@ -1,19 +1,17 @@
 version: '3'
 services:
-  opencga:
+  opencga-app:
     build: ./opencga-app
     ports:
      - "8080:8080"
     environment: 
       - HD_INSIGHTS_SSH_DNS=opencga-dev-ssh.azurehdinsight.net
       - HD_INSIGHTS_SSH_USER=sshuser
-      - HD_INSIGHTS_SSH_PASS=0penCG@@zure 
-  opencga-daemon:
+  opencga:
     build: ./opencga
     environment: 
       - HD_INSIGHTS_SSH_DNS=opencga-dev-ssh.azurehdinsight.net
       - HD_INSIGHTS_SSH_USER=sshuser
-      - HD_INSIGHTS_SSH_PASS=0penCG@@zure 
   mongo:
     image: 'mongo:3.6'
     ports:
