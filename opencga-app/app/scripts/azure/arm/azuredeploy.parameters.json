@@ -20,6 +20,12 @@
         "HDInsightSshPassword": {
             "value": ""
         },
+        "rgPrefix":{
+            "value": "opencga"
+        },
+        "rgLocation":{
+            "value": "uksouth"
+        },
         "avereServerPrincipalAppId": {
             "value": ""
         },

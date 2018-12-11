@@ -3,18 +3,41 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
         "_artifactsLocation": {
-           "type": "string",
-           "metadata": {
+            "type": "string",
+            "metadata": {
                 "description": ""
             }
         },
         "_artifactsLocationSasToken": {
             "type": "string",
             "metadata": {
-                 "description": ""
-             }
-         },
-         "HDInsightClusterName": {
+                "description": ""
+            }
+        },
+        "rgPrefix": {
+            "type": "string",
+            "metadata": {
+                "description": "The resource group prefix"
+            }
+        },
+        "rgLocation": {
+            "type": "string",
+            "defaultValue": "UK South",
+            "metadata": {
+                "description": "Location for deployment"
+            }
+        },
+        "HDInsightStorageOption": {
+            "type": "string",
+            "allowedValues": [
+                "DataLake",
+                "Blob"
+            ],
+            "metadata": {
+                "description": "What type of storage will be used"
+            }
+        },
+        "HDInsightClusterName": {
             "type": "string",
             "metadata": {
                 "description": "The name of the HDInsight cluster to create."
@@ -64,14 +87,27 @@
             }
         }
     },
-    "variables": {
-
-    },
     "resources": [
         {
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2015-01-01",
             "name": "vnet",
+        },
+        {
+            "type": "Microsoft.Resources/resourceGroups",
+            "apiVersion": "2018-05-01",
+            "location": "[parameters('rgLocation')]",
+            "name": "[parameters('rgPrefix')]",
+            "properties": {}
+        },
+        {
+            "resourceGroup": "[parameters('rgPrefix')]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2017-05-10",
+            "name": "vnet",
+            "dependsOn": [
+                "[parameters('rgPrefix')]"
+            ],
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
@@ -81,44 +117,53 @@
             }
         },
         {
+            "resourceGroup": "[parameters('rgPrefix')]",
             "type": "Microsoft.Resources/deployments",
-            "apiVersion": "2015-01-01",
-            "name": "hdinsights-storage",
+            "apiVersion": "2017-05-10",
+            "name": "hdinsight-storage",
             "dependsOn": [
-                "vnet"
+                "vnet",
+                "[parameters('rgPrefix')]"
             ],
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(parameters('_artifactsLocation'), '/hdinsights-storage/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "uri": "[concat(parameters('_artifactsLocation'), '/hdinsight-storage/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
-
-                    "storageAccountName": {
-                        "value": "[concat('opencga',uniqueString(resourceGroup().id))]"
-                    },
                     "networkAclsVirtualNetworkRule": {
-                        "value": "[reference('vnet').outputs.subnetId.value]"
+                        "value": "[reference('vnet').outputs.hdinsightSubnetId.value]"
+                    },
+                    "isHnsEnabled": {
+                        "value": "[if(equals(parameters('HDInsightstorageOption'), 'DataLake'), json('true'), json('false'))]"
                     }
                 }
             }
         },
         {
+            "type": "Microsoft.Resources/resourceGroups",
+            "apiVersion": "2018-05-01",
+            "location": "[parameters('rgLocation')]",
+            "name": "[concat(parameters('rgPrefix'),'-hdinsight')]",
+            "properties": {}
+        },
+        {
+            "resourceGroup": "[concat(parameters('rgPrefix'),'-hdinsight')]",
             "type": "Microsoft.Resources/deployments",
-            "apiVersion": "2015-01-01",
-            "name": "hdinsights",
+            "apiVersion": "2017-05-10",
+            "name": "hdinsight",
             "dependsOn": [
-                "hdinsights-storage"
+                "hdinsight-storage",
+                "[concat(parameters('rgPrefix'),'-hdinsight')]"
             ],
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(parameters('_artifactsLocation'), '/hdinsights/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "uri": "[concat(parameters('_artifactsLocation'), '/hdinsight/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
-
                     "clusterName": {
                         "value": "[parameters('HDInsightClusterName')]"
                     },
@@ -130,12 +175,35 @@
                     },
                     "sshPassword": {
                         "value": "[parameters('HDInsightSshPassword')]"
+                    },
+                    "storageAccountName": {
+                        "value": "[reference('hdinsight-storage').outputs.storageAccountName.value]"
+                    },
+                    "storageAccountKey": {
+                        "value": "[reference('hdinsight-storage').outputs.storageAccountKey.value]"
+                    },
+                    "vnetId": {
+                        "value": "[reference('vnet').outputs.vnetId.value]"
+                    },
+                    "subnetId": {
+                        "value": "[reference('vnet').outputs.hdinsightSubnetId.value]"
+                    },
+                    "storageOption": {
+                        "value": "[parameters('HDInsightstorageOption')]"
                     }
                 }
             }
-        }, 
+        },
+        {
+            "type": "Microsoft.Resources/resourceGroups",
+            "apiVersion": "2018-05-01",
+            "location": "[parameters('rgLocation')]",
+            "name": "[concat(parameters('rgPrefix'),'-avere')]",
+            "properties": {}
+        },
         {
             "type": "Microsoft.Resources/deployments",
+            "resourceGroup": "[concat(parameters('rgPrefix'),'-avere')]",
             "apiVersion": "2015-01-01",
             "name": "avere",
             "properties": {

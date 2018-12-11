@@ -108,6 +108,7 @@
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-azure-datalake</artifactId>
             <version>${hadoop.version}</version>
+            <optional>true</optional>
         </dependency>
 
         <!--HBase dependencies-->
@@ -716,9 +717,6 @@
 
                                 </includes>
                                 <excludes>
-                                    <!--hadoop-azure-datalake dependency not required in the uber jar-->
-                                    <exclude>org.apache.hadoop:hadoop-azure-datalake</exclude>
-
                                     <!--Exclude all test dependencies.-->
                                     <exclude>org.apache.hbase:**:tests</exclude>
                                     <exclude>org.apache.hadoop:hadoop-minicluster</exclude>

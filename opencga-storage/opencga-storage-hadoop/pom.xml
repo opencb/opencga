@@ -68,7 +68,6 @@
         <!--Do not specify tephra version here, so it can be overwritten-->
         <!--<tephra.version>0.7.0</tephra.version>-->
         <snappy.version>0.3</snappy.version>
-        <hdp.dependencies.version>2.6.0.3-8</hdp.dependencies.version>
     </properties>
 
     <parent>
@@ -123,11 +122,6 @@
                 <artifactId>curator-framework</artifactId>
                 <version>${curator.version}</version>
             </dependency>
-            <dependency>
-                <groupId>org.apache.hadoop</groupId>
-                <artifactId>hadoop-azure-datalake</artifactId>
-                <version>${hadoop.version}</version>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -141,10 +135,12 @@
             <properties>
                 <module-opencga-storage-hadoop-deps>true</module-opencga-storage-hadoop-deps>
                 <!--Version values for the default profile hdp-2.5.0-->
-                <opencga-storage-hadoop-deps.classifier>hdp-2.5.0</opencga-storage-hadoop-deps.classifier>
-                <hadoop.version>2.7.1</hadoop.version>
-                <hbase.version>1.1.2.2.5.0.0-1245</hbase.version>
-                <phoenix.version>4.7.0.2.5.0.0-1245</phoenix.version>
+                <opencga-storage-hadoop-deps.classifier>hdp-2.5.6</opencga-storage-hadoop-deps.classifier>
+                <hdp.dependencies.version>2.5.6.13-3</hdp.dependencies.version>
+
+                <hadoop.version>2.7.3.${hdp.dependencies.version}</hadoop.version>
+                <hbase.version>1.1.2.${hdp.dependencies.version}</hbase.version>
+                <phoenix.version>4.7.0.${hdp.dependencies.version}</phoenix.version>
                 <tephra.version>0.7.0</tephra.version>
             </properties>
             <repositories>
@@ -185,10 +181,12 @@
             </activation>
             <!--Default values copied copied in the opencga-storage-hadoop-deps profile-->
             <properties>
-                <opencga-storage-hadoop-deps.classifier>hdp-2.5.0</opencga-storage-hadoop-deps.classifier>
-                <hadoop.version>2.7.1</hadoop.version>
-                <hbase.version>1.1.2.2.5.0.0-1245</hbase.version>
-                <phoenix.version>4.7.0.2.5.0.0-1245</phoenix.version>
+                <opencga-storage-hadoop-deps.classifier>hdp-2.5.6</opencga-storage-hadoop-deps.classifier>
+                <hdp.dependencies.version>2.5.6.13-3</hdp.dependencies.version>
+
+                <hadoop.version>2.7.1.${hdp.dependencies.version}</hadoop.version>
+                <hbase.version>1.1.2.${hdp.dependencies.version}</hbase.version>
+                <phoenix.version>4.7.0.${hdp.dependencies.version}</phoenix.version>
                 <tephra.version>0.7.0</tephra.version>
             </properties>
             <repositories>
@@ -212,6 +210,8 @@
             </activation>
             <properties>
                 <opencga-storage-hadoop-deps.classifier>hdp-2.6.0</opencga-storage-hadoop-deps.classifier>
+                <hdp.dependencies.version>2.6.0.3-8</hdp.dependencies.version>
+
                 <hadoop.version>2.7.3.${hdp.dependencies.version}</hadoop.version>
                 <hbase.version>1.1.2.${hdp.dependencies.version}</hbase.version>
                 <phoenix.version>4.7.0.${hdp.dependencies.version}</phoenix.version>
@@ -653,7 +653,15 @@
                                     </then>
                                     <else>
                                         <if>
-                                            <equals arg1="${project.artifactId}" arg2="opencga-storage-hadoop" />
+                                            <and>
+                                                <equals arg1="${project.artifactId}" arg2="opencga-storage-hadoop" />
+
+                                                <not>
+                                                    <equals arg1="${module-opencga-storage-hadoop-deps}" arg2="true"/>
+                                                </not>
+
+                                                <available file="${settings.localRepository}/org/opencb/opencga/opencga-storage-hadoop-deps/${opencga-storage-hadoop-deps.version}/opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.version}-${opencga-storage-hadoop-deps.classifier}-shaded.jar"/>
+                                            </and>
                                             <then>
                                                 <echo>------------------------------------------------------------------------</echo>
                                                 <echo>Skip compile opencga-storage-hadoop-deps. If required, use -Popencga-storage-hadoop-deps</echo>

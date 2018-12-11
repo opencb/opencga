@@ -1,4 +1,4 @@
 #!/bin/bash
 cd $(dirname "$0")
 
-az group deployment create -n storage -g $RG --template-file azuredeploy.json --parameters @azuredeploy.parameters.json    --parameters sshPassword=$PASSWORD --parameters clusterLoginPassword=$PASSWORD --parameters clusterName=$CLUSTERNAME --parameters _artifactsLocation=$ARTIFACTS_LOCATION --parameters  _artifactsLocationSasToken=?$RANDOM
+az deployment create -n opencga --template-file azuredeploy.json --parameters @azuredeploy.parameters.json    --parameters sshPassword=$PASSWORD --parameters clusterLoginPassword=$PASSWORD --parameters clusterName=$CLUSTERNAME --parameters storageOption=$STORAGE_OPTION --parameters _artifactsLocation=$ARTIFACTS_LOCATION --parameters rgPrefix=$RG --parameters  _artifactsLocationSasToken=?$RANDOM -l $LOCATION

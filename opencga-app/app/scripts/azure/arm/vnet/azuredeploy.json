@@ -43,6 +43,16 @@
                             ]
                         },
                         "type": "Microsoft.Network/virtualNetworks/subnets"
+                    },
+                    {
+                        "name": "solr",
+                        "properties": {
+                            "addressPrefix": "10.0.2.0/24",
+                            "ipConfigurations": [],
+                            "delegations": [],
+                            "serviceEndpoints": []
+                        },
+                        "type": "Microsoft.Network/virtualNetworks/subnets"
                     }
                 ],
                 "virtualNetworkPeerings": [],
@@ -52,13 +62,9 @@
         }
     ],
     "outputs": {
-        "subnetId": {
+        "vnetId": {
             "type": "string",
-            "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', 'vnet')).subnets[0].id]"
-        },
-        "avereClusterSubnetId": {
-            "type": "string",
-            "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', 'vnet')).subnets[1].id]"
+            "value": "[resourceId('Microsoft.Network/virtualNetworks', 'vnet')]"
         },
         "virtualNetworkName": {
             "type": "string",
@@ -67,7 +73,18 @@
         "avereSubnetName": {
             "type": "string",
             "value": "averecluster"
+        },
+        "hdinsightSubnetId": {
+            "type": "string",
+            "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', 'vnet')).subnets[0].id]"
+        },
+        "avereClusterSubnetId": {
+            "type": "string",
+            "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', 'vnet')).subnets[1].id]"
+        },
+        "solrSubnetId": {
+            "type": "string",
+            "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', 'vnet')).subnets[2].id]"
         }
-
     }
 }
