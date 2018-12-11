@@ -69,8 +69,8 @@
             "    ExecStop=/usr/bin/docker stop opencga-daemon\n"
 
         ],
-        
-        "customData": "[base64(concat(variables('cloud-config')))]"
+        "cloud-config-string": "[replace(replace(replace(string(variables('cloud-config')),'\",\"',''),'[\"',''),'\"]','')]",
+        "customData": "[base64(variables('cloud-config-string'))]"
         
     },
     "resources": [
