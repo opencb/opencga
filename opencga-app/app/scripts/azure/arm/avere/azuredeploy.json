@@ -126,6 +126,7 @@
     "controllerVMSize": "Standard_A1_v2",
     "publicIPAddressName": "[concat('publicip-',variables('controllerName'))]",
     "vmName": "[concat('vm-',variables('controllerName'))]",
+    "ownerRoleID": "8e3af657-a8ff-443c-a75c-2fe8c4bcb635",
     "pipId": {
       "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName'))]"
     },
@@ -139,6 +140,16 @@
     "maxIPLen": 15
   },
   "resources": [
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2017-09-01",
+      "name": "spRoleAssignment",
+      "properties": {
+        "roleDefinitionId": "[variables('ownerRoleID')]",
+        "principalId": "[parameters('servicePrincipalAppId')]",
+        "scope": "[resourceGroup().id]"
+      }
+    },
     {
       "apiVersion": "2017-10-01",
       "type": "Microsoft.Network/publicIPAddresses",
@@ -175,7 +186,7 @@
       "apiVersion": "2017-12-01",
       "tags": {
         "averevfxt": "server"
-      }, 
+      },
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[variables('vmName')]",
       "location": "[resourceGroup().location]",
@@ -186,6 +197,7 @@
       },
       "dependsOn": [
         "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'))]",
+        "[concat('Microsoft.Authorization/roleAssignments', 'spRoleAssignment')]",
         "[concat('Microsoft.Storage/storageAccounts/', variables('avereBackedStorageAccountName'))]"
       ],
       "properties": {
@@ -239,7 +251,7 @@
         "typeHandlerVersion": "2.0",
         "autoUpgradeMinorVersion": true,
         "settings": {
-          "timestamp": 2
+          "timestamp": 3
         },
         "protectedSettings": {
           "commandToExecute": "[concat(' ADMIN_PASSWORD=', variables('adminPassword'),' AZURE_CLIENT_SECRET=',variables('servicePrincipalPassword'),variables('environmentVariables'), ' /bin/bash /opt/avere/installvfxt.sh')]"
