@@ -31,12 +31,48 @@
         },
         "adminPassword": {
             "type": "securestring"
+        },
+        "hdInsightSshDns": {
+            "type": "string"
+        },
+        "hdInsightSshUsername": {
+            "type": "string"
+        },
+        "hdInsightSshPassword": {
+            "type": "securestring"
         }
+
     },
     "variables": {
         "vnetId": "[parameters('virtualNetworkId')]",
         "subnetRef": "[concat(variables('vnetId'), '/subnets/', parameters('subnetName'))]",
-        "customData": "I2Nsb3VkLWNvbmZpZwpwYWNrYWdlczoKICDigJMgZG9ja2VyLmlvCgpwYWNrYWdlX3VwZ3JhZGU6IHRydWUKcGFja2FnZV9yZWJvb3RfaWZfcmVxdWlyZWQ6IHRydWUKCnVzZXJzOgogIC0gbmFtZTogb3BlbmNnYQogICAgdWlkOiAyMDAwCgp3cml0ZV9maWxlczoKICAtIHBhdGg6IC9ldGMvc3lzdGVtZC9zeXN0ZW0vb3BlbmNnYS5zZXJ2aWNlCiAgICBwZXJtaXNzaW9uczogMDY0NAogICAgb3duZXI6IHJvb3QKICAgIGNvbnRlbnQ6IHwKICAgICAgW1VuaXRdCiAgICAgIERlc2NyaXB0aW9uPU9wZW5DR0EgZGFlbW9uCiAgICAgIFJlcXVpcmVzPWRvY2tlci5zZXJ2aWNlCiAgICAgIEFmdGVyPWRvY2tlci5zZXJ2aWNlCiAgICAgIAogICAgICBbU2VydmljZV0KICAgICAgUmVzdGFydD1hbHdheXMKICAgICAgRXhlY1N0YXJ0PS91c3IvYmluL2RvY2tlciBydW4gLS1uYW1lPW9wZW5jZ2EtZGFlbW9uIG1hcnJvYmkvb3BlbmNnYS1kYWVtb24KICAgICAgRXhlY1N0b3A9L3Vzci9iaW4vZG9ja2VyIHN0b3Agb3BlbmNnYS1kYWVtb24="
+        "cloud-config": [
+
+            "#cloud-config\n",
+            "package_upgrade: true\n",
+            "package_reboot_if_required: true\n",
+            "\n",
+            "packages:\n",
+            "- docker.io\n",
+            "\n",
+            "write_files:\n",
+            "- path: /etc/systemd/system/opencga.service\n",
+            "  permissions: 0644\n",
+            "  owner: root\n",
+            "  content: |\n",
+            "    [Unit]\n",
+            "    Description=OpenCGA daemon\n",
+            "    Requires=docker.service\n",
+            "    After=docker.service\n",
+            "    \n",
+            "    [Service]\n",
+            "    Restart=always\n",
+            "[concat('    ExecStart=/usr/bin/docker run --name=opencga-daemon -e HD_INSIGHTS_SSH_DNS=',parameters('hdInsightSshDns'),' -e HD_INSIGHTS_SSH_USER=',parameters('hdInsightSshUsername'),' -e HD_INSIGHTS_SSH_PASS=',parameters('hdInsightSshPassword'),' marrobi/opencga-daemon\n')]",
+            "    ExecStop=/usr/bin/docker stop opencga-daemon\n"
+
+        ],
+        
+        "customData": "[base64(concat(variables('cloud-config')))]"
     },
     "resources": [
         {
