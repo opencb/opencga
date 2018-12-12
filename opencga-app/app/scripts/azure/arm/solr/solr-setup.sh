@@ -28,8 +28,16 @@ ZK_HOSTS_NUM=$4
 
 DOCKER_NAME=opencga-solr-6.6
 
+# Create docker
 docker create --name ${DOCKER_NAME} --restart always -p 8983:8983 -t solr:6.6
 
+# Add OpenCGA Configuration Set 
+wget 'http://docs.opencb.org/download/attachments/9240577/OpenCGAConfSet_1.4.x.tar.gz?version=1&modificationDate=1523459489793&api=v2' -O OpenCGAConfSet_1.4.x.tar.gz
+tar zxfv OpenCGAConfSet_1.4.x.tar.gz
+
+docker cp OpenCGAConfSet opencga-solr-6.6:/opt/solr/server/solr/configsets/OpenCGAConfSet-1.4.x
+
+ZK_CLI=
 if [[ $ZK_HOSTS_NUM -gt 0 ]]; then
 
     i=0
@@ -46,7 +54,17 @@ if [[ $ZK_HOSTS_NUM -gt 0 ]]; then
     sed -i -e 's/#ZK_HOST=.*/ZK_HOST='$ZK_HOST'/' solr.in.sh
 
     docker cp solr.in.sh ${DOCKER_NAME}:/opt/solr/bin/solr.in.sh
-
+else
+    ZK_CLI="-z localhost:9983"
 fi
 
 docker start ${DOCKER_NAME}
+
+# Wait solr to be started
+# FIXME: Improve this wait
+sleep 60
+
+# Register opencga configuration set
+docker exec opencga-solr-6.6 /opt/solr/bin/solr zk upconfig -n OpenCGAConfSet-1.4.x -d /opt/solr/server/solr/configsets/OpenCGAConfSet-1.4.x $ZK_CLI
+
+

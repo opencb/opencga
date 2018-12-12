@@ -111,15 +111,6 @@
     "vmExtensionName": "solrExtension",
     "scaleNumber": "[if(parameters('highAvailability'), 2, 1)]",
     "zookeeperScaleNumber": "[if(parameters('highAvailability'), 3, 0)]",
-    "copy" : [
-      {
-        "name" : "zookeeperIPs",
-        "count" : "[variables('zookeeperScaleNumber')]",
-        "input" : {
-          "ip" : "[concat(variables('subnetPrefix'), add(add(5, variables('scaleNumber')), copyIndex('zookeeperIPs')))]"
-        }
-      }
-    ],
     "customScriptFilePath": "[concat(parameters('artifactsLocation'), 'solr/solr-setup.sh')]",
     "customScriptCommandToExecute": "bash solr-setup.sh"
   },
