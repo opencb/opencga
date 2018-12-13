@@ -8,5 +8,5 @@ ARG IVA_VERSION="1.0.0-beta"
 
 RUN   wget --quiet "https://github.com/opencb/iva/releases/download/v${IVA_VERSION}/iva-${IVA_VERSION}.tar.gz" && tar xvf iva-${IVA_VERSION}.tar.gz --strip-components=1 -C /usr/local/apache2/htdocs/  && rm ./iva-${IVA_VERSION}.tar.gz
 
-
+# shoudl mount in config instead?
 COPY ./conf /usr/local/apache2/htdocs/conf
