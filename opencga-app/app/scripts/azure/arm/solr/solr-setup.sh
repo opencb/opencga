@@ -37,6 +37,8 @@ tar zxfv OpenCGAConfSet_1.4.x.tar.gz
 
 docker cp OpenCGAConfSet opencga-solr-6.6:/opt/solr/server/solr/configsets/OpenCGAConfSet-1.4.x
 
+# Configure solr.in.sh
+docker cp ${DOCKER_NAME}:/opt/solr/bin/solr.in.sh .
 ZK_CLI=
 if [[ $ZK_HOSTS_NUM -gt 0 ]]; then
 
@@ -50,13 +52,15 @@ if [[ $ZK_HOSTS_NUM -gt 0 ]]; then
     # Remove leading comma
     ZK_HOST=`echo $ZK_HOST | cut -c 2-`
 
-    docker cp ${DOCKER_NAME}:/opt/solr/bin/solr.in.sh .
     sed -i -e 's/#ZK_HOST=.*/ZK_HOST='$ZK_HOST'/' solr.in.sh
-
-    docker cp solr.in.sh ${DOCKER_NAME}:/opt/solr/bin/solr.in.sh
 else
     ZK_CLI="-z localhost:9983"
 fi
+
+## Ensure always using cloud mode, even for the single server configurations.
+echo 'SOLR_MODE="solrcloud"' >> solr.in.sh
+
+docker cp solr.in.sh ${DOCKER_NAME}:/opt/solr/bin/solr.in.sh
 
 docker start ${DOCKER_NAME}
 
