@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # TODO
 # Change hbase.client.keyvalue.maxsize to 0 in /etc/hbase/conf/hbase-site.xml on hadoop cluster to avoid 'KeyValue size too large' error
 # by sshing to your (hdinsight cluster e.g. ssh sshuser@bartcga-ssh.azurehdinsight.net) and changing the xml (e.g. vi /etc/hbase/conf/hbase-site.xml)
