@@ -42,7 +42,7 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         DUE_DATE("dueDate", TEXT, ""),
         CREATION_DATE("creationDate", DATE, ""),
         MODIFICATION_DATE("modificationDate", DATE, ""),
-        DISEASE("disease", TEXT_ARRAY, ""),
+        DISORDER("disorder", TEXT_ARRAY, ""),
         TYPE("type", TEXT, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"

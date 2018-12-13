@@ -16,8 +16,6 @@
 
 package org.opencb.opencga.core.models;
 
-import org.opencb.biodata.models.commons.OntologyTerm;
-
 import java.util.List;
 import java.util.Map;
 
@@ -33,7 +31,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     private String description;
     private Type type;
 
-    private OntologyTerm disease;
+    private Disorder disorder;
 
     // Map of sample id, list of files (VCF, BAM and BIGWIG)
     private Map<String, List<File>> files;
@@ -70,13 +68,13 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     public ClinicalAnalysis() {
     }
 
-    public ClinicalAnalysis(String id, String description, Type type, OntologyTerm disease, Map<String, List<File>> files,
+    public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, Map<String, List<File>> files,
                             Individual proband, Family family, List<Interpretation> interpretations, Priority priority, String creationDate,
                             String dueDate, Status status, int release, Map<String, Object> attributes) {
         this.id = id;
         this.description = description;
         this.type = type;
-        this.disease = disease;
+        this.disorder = disorder;
         this.files = files;
         this.proband = proband;
         this.family = family;
@@ -96,7 +94,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", type=").append(type);
-        sb.append(", disease=").append(disease);
+        sb.append(", disorder=").append(disorder);
         sb.append(", files=").append(files);
         sb.append(", proband=").append(proband);
         sb.append(", family=").append(family);
@@ -169,12 +167,12 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
-    public OntologyTerm getDisease() {
-        return disease;
+    public Disorder getDisorder() {
+        return disorder;
     }
 
-    public ClinicalAnalysis setDisease(OntologyTerm disease) {
-        this.disease = disease;
+    public ClinicalAnalysis setDisorder(Disorder disorder) {
+        this.disorder = disorder;
         return this;
     }
 

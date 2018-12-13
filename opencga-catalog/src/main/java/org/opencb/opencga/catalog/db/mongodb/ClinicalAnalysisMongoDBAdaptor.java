@@ -180,7 +180,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         String[] acceptedParams = {QueryParams.DESCRIPTION.key(), QueryParams.PRIORITY.key(), QueryParams.DUE_DATE.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
-        String[] acceptedObjectParams = {QueryParams.FILES.key(), QueryParams.FAMILY.key(), QueryParams.DISEASE.key(),
+        String[] acceptedObjectParams = {QueryParams.FILES.key(), QueryParams.FAMILY.key(), QueryParams.DISORDER.key(),
                 QueryParams.PROBAND.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         clinicalConverter.validateFamilyToUpdate(document.getSet());
@@ -599,6 +599,9 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     case NATTRIBUTES:
                         mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
                         addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
+                        break;
+                    case DISORDER:
+                        addOntologyQueryFilter(queryParam.key(), queryParam.key(), query, andBsonList);
                         break;
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);

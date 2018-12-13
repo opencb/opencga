@@ -24,7 +24,6 @@ import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.ReportedLowCoverage;
 import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
 import org.opencb.biodata.models.commons.Analyst;
-import org.opencb.biodata.models.commons.OntologyTerm;
 import org.opencb.biodata.models.commons.Software;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -328,7 +327,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
         public String description;
         public ClinicalAnalysis.Type type;
 
-        public OntologyTerm disease;
+        public Disorder disorder;
 
         public Map<String, List<String>> files;
 
@@ -385,7 +384,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
                             .map(ClinicalInterpretationParameters::toClinicalInterpretation).collect(Collectors.toList())
                             : new ArrayList<>();
             String clinicalId = StringUtils.isEmpty(id) ? name : id;
-            return new ClinicalAnalysis(clinicalId, description, type, disease, fileMap, individual, f,
+            return new ClinicalAnalysis(clinicalId, description, type, disorder, fileMap, individual, f,
                     interpretationList, priority, null, dueDate, null, 1, attributes).setName(name);
         }
     }

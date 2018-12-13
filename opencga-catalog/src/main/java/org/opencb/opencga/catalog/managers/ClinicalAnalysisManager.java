@@ -414,7 +414,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                     }
                     break;
                 case FILES:
-                case DISEASE:
+                case DISORDER:
                 case FAMILY:
                 case PROBAND:
                     break;
