@@ -1,13 +1,16 @@
 package org.opencb.opencga.storage.mongodb.variant.load.direct;
 
-import com.google.common.collect.ListMultimap;
-import org.apache.commons.lang3.tuple.Pair;
+import com.google.common.collect.LinkedListMultimap;
 import org.bson.Document;
 import org.bson.types.Binary;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
+import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
+import org.opencb.opencga.storage.mongodb.variant.converters.stage.StageDocumentToVariantConverter;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantWriteResult;
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader;
 import org.opencb.opencga.storage.mongodb.variant.load.variants.MongoDBOperations;
@@ -21,20 +24,21 @@ import java.util.List;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class MongoDBVariantDirectLoader implements DataWriter<Pair<ListMultimap<Document, Binary>, MongoDBOperations>> {
+public class MongoDBVariantDirectLoader implements DataWriter<MongoDBOperations> {
+
 
     private final MongoDBVariantStageLoader stageLoader;
     private final MongoDBVariantMergeLoader variantsLoader;
 
     public MongoDBVariantDirectLoader(VariantMongoDBAdaptor dbAdaptor, final StudyConfiguration studyConfiguration, int fileId,
-                                      boolean resume) {
+                                      boolean resume, ProgressLogger progressLogger) {
         MongoDBCollection stageCollection = dbAdaptor.getStageCollection(studyConfiguration.getStudyId());
         stageLoader = new MongoDBVariantStageLoader(stageCollection, studyConfiguration.getStudyId(), fileId, resume, true);
         variantsLoader = new MongoDBVariantMergeLoader(
                 dbAdaptor.getVariantsCollection(),
                 stageCollection,
                 dbAdaptor.getStudiesCollection(),
-                studyConfiguration, Collections.singletonList(fileId), resume, false, null);
+                studyConfiguration, Collections.singletonList(fileId), resume, false, progressLogger);
     }
 
     @Override
@@ -66,14 +70,20 @@ public class MongoDBVariantDirectLoader implements DataWriter<Pair<ListMultimap<
     }
 
     @Override
-    public boolean write(List<Pair<ListMultimap<Document, Binary>, MongoDBOperations>> batch) {
-        for (Pair<ListMultimap<Document, Binary>, MongoDBOperations> pair : batch) {
-            // Write in stage collection
-            stageLoader.write(pair.getKey());
-
-            // Write in variants collection
-            variantsLoader.write(pair.getValue());
+    public boolean write(List<MongoDBOperations> batch) {
+        LinkedListMultimap<Document, Binary> map = LinkedListMultimap.create();
+        for (MongoDBOperations mongoDBOperations : batch) {
+            for (Document document : mongoDBOperations.getNewStudy().getVariants()) {
+                Variant variant = new DocumentToVariantConverter().convertToDataModelType(document);
+                Document stageDocument = new StageDocumentToVariantConverter().convertToStorageType(variant);
+                map.put(stageDocument, null);
+            }
         }
+
+        stageLoader.write(map);
+
+        variantsLoader.write(batch);
+
         return true;
     }
 

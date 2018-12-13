@@ -14,31 +14,15 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.config;
+package org.opencb.opencga.storage.mongodb.variant.transform;
+
+import org.opencb.opencga.storage.core.variant.transform.VariantStoragePipelineTransformTest;
+import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
 
 /**
- * Created by pfurio on 07/04/16.
+ * Created on 01/04/16
+ *
+ * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-@Deprecated
-public class Policies {
-
-    private UserCreation userCreation;
-
-    public Policies() {
-        this.userCreation = UserCreation.ALWAYS;
-    }
-
-    public UserCreation getUserCreation() {
-        return userCreation;
-    }
-
-    public Policies setUserCreation(UserCreation userCreation) {
-        this.userCreation = userCreation;
-        return this;
-    }
-
-    public enum UserCreation {
-        ONLY_ADMIN, ANY_LOGGED_USER, ALWAYS
-    }
-
+public class MongoVariantStoragePipelineTransformTest extends VariantStoragePipelineTransformTest implements MongoDBVariantStorageTest {
 }

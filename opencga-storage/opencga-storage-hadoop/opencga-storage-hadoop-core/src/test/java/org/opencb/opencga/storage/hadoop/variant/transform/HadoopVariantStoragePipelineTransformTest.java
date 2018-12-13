@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.hadoop.variant;
+package org.opencb.opencga.storage.hadoop.variant.transform;
 
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -22,7 +22,8 @@ import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.VariantStoragePipelineTransformTest;
+import org.opencb.opencga.storage.core.variant.transform.VariantStoragePipelineTransformTest;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 
 import java.net.URI;
 import java.nio.file.Paths;

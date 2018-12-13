@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga-storage</artifactId>
-        <version>1.4.0-rc2-dev</version>
+        <version>1.4.0-rc3-dev</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -49,10 +49,6 @@
                     <groupId>org.opencb.bionetdb</groupId>
                 </exclusion>
             </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.opencb.hpg-bigdata</groupId>
-            <artifactId>hpg-bigdata-core</artifactId>
         </dependency>
         <dependency>
             <groupId>junit</groupId>

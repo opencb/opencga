@@ -143,7 +143,7 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
         Path originalVcf = Paths.get(getResourceUri("filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"));
 
         VariantReader variantReader = new VariantVcfHtsjdkReader(
-                FileUtils.newInputStream(originalVcf),
+                originalVcf,
                 getMetadata(originalVcf),
                 VARIANT_NORMALIZER);
         variantReader.open();
@@ -254,11 +254,7 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
             region = new Region();
         }
 
-        InputStream is = new FileInputStream(vcfPath.toFile());
-        if (vcfPath.toString().endsWith(".gz")) {
-            is = new GZIPInputStream(is);
-        }
-        VariantReader variantVcfReader = new VariantVcfHtsjdkReader(is, getMetadata(vcfPath), VARIANT_NORMALIZER);
+        VariantReader variantVcfReader = new VariantVcfHtsjdkReader(vcfPath, getMetadata(vcfPath), VARIANT_NORMALIZER);
         variantVcfReader.open();
         variantVcfReader.pre();
 

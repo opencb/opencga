@@ -381,7 +381,7 @@ public class FileManager extends AnnotationSetManager<File> {
         QueryResult<File> fileQueryResult;
         switch (checkPathExists(path, study.getUid())) {
             case FREE_PATH:
-                fileQueryResult = create(studyStr, File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, path, null,
+                fileQueryResult = create(studyStr, File.Type.DIRECTORY, File.Format.NONE, File.Bioformat.NONE, path, null,
                         description, status, 0, -1, null, -1, null, null, parents, null, options, sessionId);
                 break;
             case DIRECTORY_EXISTS:
@@ -534,7 +534,7 @@ public class FileManager extends AnnotationSetManager<File> {
         if (parentFileId < 0 && StringUtils.isNotEmpty(parentPath)) {
             if (parents) {
                 newParent = true;
-                File parentFile = new File(File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, parentPath, "",
+                File parentFile = new File(File.Type.DIRECTORY, File.Format.NONE, File.Bioformat.NONE, parentPath, "",
                         new File.FileStatus(File.FileStatus.READY), 0, file.getSamples(), -1, null, Collections.emptyMap(),
                         Collections.emptyMap());
                 parentFileId = register(study, parentFile, parents, options, sessionId).first().getUid();
@@ -650,19 +650,12 @@ public class FileManager extends AnnotationSetManager<File> {
         try {
             if (!Files.exists(tempFilePath.getParent())) {
                 logger.debug("Creating temporal folder: {}", tempFilePath.getParent());
-                Files.createDirectory(tempFilePath.getParent());
+                ioManager.createDirectory(tempFilePath.getParent().toUri(), true);
             }
 
             // Start uploading the file to the temporal directory
-            int read;
-            byte[] bytes = new byte[1024];
-
             // Upload the file to a temporary folder
-            try (OutputStream out = new FileOutputStream(new java.io.File(tempFilePath.toString()))) {
-                while ((read = fileInputStream.read(bytes)) != -1) {
-                    out.write(bytes, 0, read);
-                }
-            }
+            Files.copy(fileInputStream, tempFilePath);
         } catch (Exception e) {
             logger.error("Error uploading file {}", file.getName(), e);
 
@@ -844,6 +837,12 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     void fixQueryObject(Study study, Query query, String sessionId) throws CatalogException {
+        if (StringUtils.isNotEmpty(query.getString(FileDBAdaptor.QueryParams.ID.key()))) {
+            MyResources<File> uids = getUids(query.getAsStringList(FileDBAdaptor.QueryParams.ID.key()), study.getFqn(), sessionId);
+            query.remove(FileDBAdaptor.QueryParams.ID.key());
+            query.put(FileDBAdaptor.QueryParams.UID.key(), uids.getResourceList().stream().map(File::getUid).collect(Collectors.toList()));
+        }
+
         // The samples introduced could be either ids or names. As so, we should use the smart resolutor to do this.
         if (StringUtils.isNotEmpty(query.getString(FileDBAdaptor.QueryParams.SAMPLES.key()))) {
             MyResources<Sample> resource = catalogManager.getSampleManager().getUids(
@@ -1919,7 +1918,7 @@ public class FileManager extends AnnotationSetManager<File> {
         ObjectMap attributes = new ObjectMap();
         attributes.put(IndexDaemon.INDEX_TYPE, indexDaemonType);
         attributes.putIfNotNull(Job.OPENCGA_OUTPUT_DIR, outDirPath);
-        attributes.putIfNotNull(Job.OPENCGA_STUDY, studyStr);
+        attributes.putIfNotNull(Job.OPENCGA_STUDY, resource.getStudy().getFqn());
 
         logger.info("job description: " + description);
         jobQueryResult = catalogManager.getJobManager().queue(studyStr, jobName, description, "opencga-analysis.sh",

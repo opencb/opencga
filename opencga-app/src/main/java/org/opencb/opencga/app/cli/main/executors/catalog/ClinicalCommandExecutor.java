@@ -69,7 +69,7 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotNull(ClinicalAnalysisDBAdaptor.QueryParams.GERMLINE.key(), commandOptions.germline);
         params.putIfNotNull(ClinicalAnalysisDBAdaptor.QueryParams.SOMATIC.key(), commandOptions.somatic);
         params.putIfNotNull(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(), commandOptions.family);
-        params.putIfNotNull("subject", commandOptions.subject);
+        params.putIfNotNull("proband", commandOptions.proband);
         params.putIfNotEmpty("sample", commandOptions.sample);
         params.putAll(commandOptions.commonOptions.params);
 
@@ -88,7 +88,7 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotNull(ClinicalAnalysisDBAdaptor.QueryParams.GERMLINE.key(), commandOptions.germline);
         query.putIfNotNull(ClinicalAnalysisDBAdaptor.QueryParams.SOMATIC.key(), commandOptions.somatic);
         query.putIfNotNull(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(), commandOptions.family);
-        query.putIfNotNull("subject", commandOptions.subject);
+        query.putIfNotNull("proband", commandOptions.proband);
         query.putIfNotEmpty("sample", commandOptions.sample);
         query.putAll(commandOptions.commonOptions.params);
 

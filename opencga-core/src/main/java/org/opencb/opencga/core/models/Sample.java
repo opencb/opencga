@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.core.models;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.acls.AclParams;
@@ -32,6 +34,8 @@ public class Sample extends Annotable {
     private String name;
     private String uuid;
     private String source;
+    private SampleProcessing processing;
+    private SampleCollection collection;
     @Deprecated
     private Individual individual;
 
@@ -54,27 +58,29 @@ public class Sample extends Annotable {
     }
 
     public Sample(String id, String source, Individual individual, String description, int release) {
-        this(id, source, individual, description, "", false, release, 1, new LinkedList<>(), new ArrayList<>(), new HashMap<>(),
+        this(id, source, individual, null, null, release, 1, description, "", false, new LinkedList<>(), new ArrayList<>(),
                 new HashMap<>());
     }
 
-    public Sample(String id, String source, Individual individual, String description, String type, boolean somatic, int release,
-                  int version, List<AnnotationSet> annotationSets, List<Phenotype> phenotypeList, Map<String, Object> stats,
-                  Map<String, Object> attributes) {
+    public Sample(String id, String source, Individual individual, SampleProcessing processing, SampleCollection collection, int release,
+                  int version, String description, String type, boolean somatic, List<Phenotype> phenotypes,
+                  List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.source = source;
+        this.processing = processing;
+        this.collection = collection;
+        this.release = release;
         this.version = version;
-        this.individual = individual;
-        this.type = type;
-        this.somatic = somatic;
         this.creationDate = TimeUtils.getTime();
         this.status = new Status();
         this.description = description;
-        this.release = release;
-        this.phenotypes = phenotypeList;
+        this.type = type;
+        this.somatic = somatic;
+        this.phenotypes = phenotypes;
         this.annotationSets = annotationSets;
-        this.stats = stats;
         this.attributes = attributes;
+        this.stats = new HashMap<>();
+        this.individual = individual;
     }
 
     @Override
@@ -83,6 +89,8 @@ public class Sample extends Annotable {
         sb.append("uuid='").append(uuid).append('\'');
         sb.append(", id='").append(id).append('\'');
         sb.append(", source='").append(source).append('\'');
+        sb.append(", processing='").append(processing).append('\'');
+        sb.append(", collection='").append(collection).append('\'');
         sb.append(", release=").append(release);
         sb.append(", version=").append(version);
         sb.append(", creationDate='").append(creationDate).append('\'');
@@ -101,34 +109,56 @@ public class Sample extends Annotable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof Sample)) {
-            return false;
-        }
+        if (this == o) return true;
+
+        if (o == null || getClass() != o.getClass()) return false;
+
         Sample sample = (Sample) o;
-        return release == sample.release
-                && version == sample.version
-                && somatic == sample.somatic
-                && Objects.equals(uuid, sample.uuid)
-                && Objects.equals(id, sample.id)
-                && Objects.equals(name, sample.name)
-                && Objects.equals(source, sample.source)
-                && Objects.equals(individual, sample.individual)
-                && Objects.equals(creationDate, sample.creationDate)
-                && Objects.equals(status, sample.status)
-                && Objects.equals(description, sample.description)
-                && Objects.equals(type, sample.type)
-                && Objects.equals(phenotypes, sample.phenotypes)
-                && Objects.equals(stats, sample.stats)
-                && Objects.equals(attributes, sample.attributes);
+
+        return new EqualsBuilder()
+                .append(release, sample.release)
+                .append(version, sample.version)
+                .append(somatic, sample.somatic)
+                .append(id, sample.id)
+                .append(name, sample.name)
+                .append(uuid, sample.uuid)
+                .append(source, sample.source)
+                .append(processing, sample.processing)
+                .append(collection, sample.collection)
+                .append(individual, sample.individual)
+                .append(creationDate, sample.creationDate)
+                .append(modificationDate, sample.modificationDate)
+                .append(status, sample.status)
+                .append(description, sample.description)
+                .append(type, sample.type)
+                .append(phenotypes, sample.phenotypes)
+                .append(stats, sample.stats)
+                .append(attributes, sample.attributes)
+                .isEquals();
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(uuid, id, name, source, individual, release, version, creationDate, status,
-                description, type, somatic, phenotypes, stats, attributes);
+        return new HashCodeBuilder(17, 37)
+                .append(id)
+                .append(name)
+                .append(uuid)
+                .append(source)
+                .append(processing)
+                .append(collection)
+                .append(individual)
+                .append(release)
+                .append(version)
+                .append(creationDate)
+                .append(modificationDate)
+                .append(status)
+                .append(description)
+                .append(type)
+                .append(somatic)
+                .append(phenotypes)
+                .append(stats)
+                .append(attributes)
+                .toHashCode();
     }
 
     @Override
@@ -178,6 +208,24 @@ public class Sample extends Annotable {
 
     public Sample setSource(String source) {
         this.source = source;
+        return this;
+    }
+
+    public SampleProcessing getProcessing() {
+        return processing;
+    }
+
+    public Sample setProcessing(SampleProcessing processing) {
+        this.processing = processing;
+        return this;
+    }
+
+    public SampleCollection getCollection() {
+        return collection;
+    }
+
+    public Sample setCollection(SampleCollection collection) {
+        this.collection = collection;
         return this;
     }
 

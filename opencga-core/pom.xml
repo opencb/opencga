@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>1.4.0-rc2-dev</version>
+        <version>1.4.0-rc3-dev</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 

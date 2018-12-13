@@ -304,7 +304,7 @@ public class ProjectManager extends AbstractManager {
                 query.put(ProjectDBAdaptor.QueryParams.STUDY_UID.key(), StringUtils.join(idList, ","));
             }
             if (CollectionUtils.isNotEmpty(aliasList)) {
-                query.put(ProjectDBAdaptor.QueryParams.STUDY_ALIAS.key(), StringUtils.join(aliasList, ","));
+                query.put(ProjectDBAdaptor.QueryParams.STUDY_ID.key(), StringUtils.join(aliasList, ","));
             }
         }
 

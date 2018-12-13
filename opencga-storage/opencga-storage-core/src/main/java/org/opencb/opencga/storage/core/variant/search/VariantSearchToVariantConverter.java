@@ -32,6 +32,7 @@ import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.common.ArrayUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.annotation.converters.VariantTraitAssociationToEvidenceEntryConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,9 +53,15 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
     private Logger logger = LoggerFactory.getLogger(VariantSearchToVariantConverter.class);
     private final VariantTraitAssociationToEvidenceEntryConverter evidenceEntryConverter;
+    private Set<VariantField> includeFields;
 
     public VariantSearchToVariantConverter() {
         evidenceEntryConverter = new VariantTraitAssociationToEvidenceEntryConverter();
+    }
+
+    public VariantSearchToVariantConverter(Set<VariantField> includeFields) {
+        this();
+        this.includeFields = includeFields;
     }
 
     /**
@@ -114,10 +121,11 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         if (StringUtils.isNotEmpty(stringToList)) {
                             sampleData.add(Arrays.asList(stringToList.split(LIST_SEPARATOR)));
                             samplePosition.put(sampleName, pos++);
-                        } else {
-                            logger.error("Error converting samplesFormat, sample '{}' is missing or empty, value: '{}'",
-                                    sampleName, stringToList);
                         }
+//                        else {
+//                            logger.error("Error converting samplesFormat, sample '{}' is missing or empty, value: '{}'",
+//                                    sampleName, stringToList);
+//                        }
                     }
 
                     if (ListUtils.isNotEmpty(sampleData)) {
@@ -167,7 +175,23 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         }
 
         // process annotation
+        variant.setAnnotation(getVariantAnnotation(variantSearchModel, variant));
+
+        return variant;
+    }
+
+    public VariantAnnotation getVariantAnnotation(VariantSearchModel variantSearchModel, Variant variant) {
+
+        if (includeFields != null && !includeFields.contains(VariantField.ANNOTATION)) {
+            return null;
+        }
+
         VariantAnnotation variantAnnotation = new VariantAnnotation();
+        variantAnnotation.setChromosome(variant.getChromosome());
+        variantAnnotation.setStart(variant.getStart());
+        variantAnnotation.setEnd(variant.getEnd());
+        variantAnnotation.setAlternate(variant.getAlternate());
+        variantAnnotation.setReference(variant.getReference());
 
         // Set 'release' if it was not missing
         if (variantSearchModel.getRelease() > 0) {
@@ -413,7 +437,9 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         }
 
         // Set displayConsequenceType, hgvs, cytobands and repeats from 'other' field
-        variantAnnotation.setHgvs(new ArrayList<>());
+        if (variantAnnotation.getHgvs() == null) {
+            variantAnnotation.setHgvs(new ArrayList<>());
+        }
         variantAnnotation.setCytoband(new ArrayList<>());
         variantAnnotation.setRepeat(new ArrayList<>());
         for (String other : variantSearchModel.getOther()) {
@@ -455,11 +481,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     break;
             }
         }
-
-        // set variant annotation
-        variant.setAnnotation(variantAnnotation);
-
-        return variant;
+        return variantAnnotation;
     }
 
     /**
@@ -579,16 +601,16 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             fileInfoMap.putAll(fileEntry.getAttributes());
 
                             // In additon, store QUAL and FILTER separately
-                            String value = fileEntry.getAttributes().get("QUAL");
-                            if (StringUtils.isNotEmpty(value)) {
+                            String qual = fileEntry.getAttributes().get(StudyEntry.QUAL);
+                            if (StringUtils.isNotEmpty(qual)) {
                                 variantSearchModel.getQual().put("qual" + VariantSearchUtils.FIELD_SEPARATOR + studyId
-                                        + VariantSearchUtils.FIELD_SEPARATOR + fileEntry.getFileId(), Float.parseFloat(value));
+                                        + VariantSearchUtils.FIELD_SEPARATOR + fileEntry.getFileId(), Float.parseFloat(qual));
                             }
 
-                            value = fileEntry.getAttributes().get("FILTER");
-                            if (StringUtils.isNotEmpty(value)) {
+                            String filter = fileEntry.getAttributes().get(StudyEntry.FILTER);
+                            if (StringUtils.isNotEmpty(filter)) {
                                 variantSearchModel.getFilter().put("filter" + VariantSearchUtils.FIELD_SEPARATOR + studyId
-                                        + VariantSearchUtils.FIELD_SEPARATOR + fileEntry.getFileId(), value);
+                                        + VariantSearchUtils.FIELD_SEPARATOR + fileEntry.getFileId(), filter);
                             }
                         }
                         if (MapUtils.isNotEmpty(fileInfoMap)) {

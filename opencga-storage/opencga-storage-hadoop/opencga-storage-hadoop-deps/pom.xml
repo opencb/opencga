@@ -33,7 +33,7 @@
   ~          * ...
   ~  -3 Dependencies we DON'T want (will be shaded)
   ~      * jersey 1.9
-  ~      * org.mortbay.jetty:servlet-api
+  ~      * org.mortbay.jetty:servlet-api (only for testing)
   ~      * proto 2.5.0
   ~      * guava 11
   ~
@@ -50,52 +50,16 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga-storage-hadoop</artifactId>
-        <version>1.4.0-rc2-dev</version>
+        <version>1.4.0-rc3-dev</version>
         <!--<relativePath>../pom.xml</relativePath>-->
     </parent>
 
     <!--<groupId>org.opencb.opencga</groupId>-->
     <artifactId>opencga-storage-hadoop-deps</artifactId>
-    <version>1.4.0-rc2-dev</version>
+    <version>1.4.0-rc3-dev</version>
 
     <properties>
         <checkstyle.skip>true</checkstyle.skip>
-        <protobuf2.version>2.5.0</protobuf2.version>
-        <guava.version>15.0</guava.version>
-
-        <!--Read from main hadoop pom.xml . Versions not as a property in that pom-->
-        <commons-httpclient.version>3.1</commons-httpclient.version>
-        <commons-compress.version>1.4.1</commons-compress.version>
-        <commons-io.version>2.4</commons-io.version>
-        <commons-net.version>3.1</commons-net.version>
-        <curator.version>2.7.1</curator.version>
-        <apacheds-kerberos-codec.version>2.0.0-M15</apacheds-kerberos-codec.version>
-        <leveldbjni-all.version>1.8</leveldbjni-all.version>
-        <zookeeper.version>3.4.6</zookeeper.version>
-
-        <!--Read from main hbase pom.xml-->
-        <metrics-core.version>2.2.0</metrics-core.version>
-        <disruptor.version>3.3.0</disruptor.version>
-        <commons-math.version>2.2</commons-math.version>
-        <netty.version>4.0.23.Final</netty.version>
-        <jamon-runtime.version>2.4.1</jamon-runtime.version>
-        <codehaus.jackson.version>1.9.13</codehaus.jackson.version>
-
-        <!--Read from main phoenix pom.xml-->
-        <commons-configuration.version>1.6</commons-configuration.version>
-        <!--<commons-io.version>2.1</commons-io.version>-->
-        <commons-lang.version>2.5</commons-lang.version>
-        <commons-logging.version>1.2</commons-logging.version>
-        <commons-csv.version>1.0</commons-csv.version>
-        <commons-codec.version>1.7</commons-codec.version>
-        <collections.version>3.2.1</collections.version>
-        <sqlline.version>1.1.9</sqlline.version>
-        <jline.version>2.11</jline.version>
-        <antlr.version>3.5</antlr.version>
-        <!--Do not specify tephra version here, so it can be overwritten-->
-        <!--<tephra.version>0.7.0</tephra.version>-->
-        <snappy.version>0.3</snappy.version>
-
     </properties>
 
     <dependencies>
@@ -118,6 +82,7 @@
 
         <!-- =================================================== -->
         <!-- Dependencies that we WANT. Included in the uber-jar -->
+        <!-- Add <optional>true</optional> to avoid transitivity -->
         <!-- =================================================== -->
 
         <!--Hadoop dependencies-->
@@ -133,6 +98,20 @@
             <version>${hadoop.version}</version>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-azure</artifactId>
+            <version>${hadoop.version}</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-azure-datalake</artifactId>
+            <version>${hadoop.version}</version>
+            <optional>true</optional>
+        </dependency>
+
+        <!--HBase dependencies-->
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-server</artifactId>
@@ -210,6 +189,10 @@
                     <artifactId>hadoop-annotations</artifactId>
                 </exclusion>
                 <exclusion>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-azure</artifactId>
+                </exclusion>
+                <exclusion>
                     <groupId>org.apache.hbase</groupId>
                     <artifactId>hbase-server</artifactId>
                 </exclusion>
@@ -240,11 +223,10 @@
             </exclusions>
         </dependency>
 
-
         <!-- ============================================= -->
         <!-- TRANSITIVE dependencies. Not to be included   -->
         <!-- Needed by some dependencies.                  -->
-        <!-- Dependency broken due to including parent     -->
+        <!-- Dependency broken due to optional parent      -->
         <!-- ============================================= -->
         <dependency>
             <groupId>org.apache.htrace</groupId>
@@ -404,6 +386,31 @@
                 <exclusion>
                     <groupId>net.sf.ehcache</groupId>
                     <artifactId>ehcache-core</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <!--Needed by hadoop-azure -->
+        <dependency>
+            <groupId>com.microsoft.azure</groupId>
+            <artifactId>azure-storage</artifactId>
+            <version>2.0.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-lang3</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <!-- hadoop-azure uses the class org.mortbay.util.ajax.JSON -->
+        <dependency>
+            <groupId>org.mortbay.jetty</groupId>
+            <artifactId>jetty-util</artifactId>
+            <version>${mortbay.jetty.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.mortbay.jetty</groupId>
+                    <artifactId>servlet-api</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -704,10 +711,13 @@
 
                                     <include>com.google.guava</include>
                                     <include>com.google.protobuf</include>
+
+                                    <!--Netty uses proto2 (see ProtobufDecoder)-->
+                                    <include>org.apache.hbase.thirdparty:hbase-shaded-netty</include>
+
                                 </includes>
-                                <!--Exclude all test dependencies.-->
                                 <excludes>
-                                    <!--Test dependencies-->
+                                    <!--Exclude all test dependencies.-->
                                     <exclude>org.apache.hbase:**:tests</exclude>
                                     <exclude>org.apache.hadoop:hadoop-minicluster</exclude>
                                     <exclude>org.apache.hadoop:**:tests</exclude>
@@ -772,6 +782,7 @@
                                     <include>org.mortbay.jetty:servlet-api</include>
                                     <include>org.mortbay.jetty:jetty</include>
                                     <include>org.mortbay.jetty:jetty-util</include>
+                                    <include>org.mortbay.jetty:jetty-sslengine</include>
                                 </includes>
                             </artifactSet>
 
@@ -849,6 +860,21 @@
                 </plugins>
             </build>
         </profile>
+        <profile>
+            <id>hdf-3.0.1</id>
+            <properties>
+                <hbase-thirdparty.version>2.1.0</hbase-thirdparty.version>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.hbase.thirdparty</groupId>
+                    <artifactId>hbase-shaded-netty</artifactId>
+                    <version>${hbase-thirdparty.version}</version>
+                    <!--included in uber-jar-->
+                    <optional>true</optional>
+                </dependency>
+            </dependencies>
+        </profile>
     </profiles>
 
     <distributionManagement>
@@ -863,3 +889,4 @@
     </distributionManagement>
 
 </project>
+

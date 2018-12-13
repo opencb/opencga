@@ -23,7 +23,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.tools.variant.stats.VariantSetStatsCalculator;
-import org.opencb.hpg.bigdata.core.io.avro.AvroEncoder;
+import org.opencb.commons.io.avro.AvroEncoder;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

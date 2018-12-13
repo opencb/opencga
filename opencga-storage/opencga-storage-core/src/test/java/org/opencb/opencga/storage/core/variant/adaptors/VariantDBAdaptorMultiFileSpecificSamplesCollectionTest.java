@@ -2,10 +2,7 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 
 import org.apache.solr.common.SolrException;
 import org.hamcrest.CoreMatchers;
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.ClassRule;
+import org.junit.*;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -19,6 +16,13 @@ import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
 
 import java.io.IOException;
 import java.util.ArrayList;
+
+import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+import static org.opencb.biodata.models.variant.StudyEntry.FILTER;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
 
 /**
  * Created on 23/07/18.
@@ -34,6 +38,7 @@ public abstract class VariantDBAdaptorMultiFileSpecificSamplesCollectionTest ext
     public void before() throws Exception {
         solr.configure(variantStorageEngine);
         super.before();
+        options.append(QueryOptions.EXCLUDE, VariantField.ANNOTATION);
     }
 
     @Override
@@ -53,6 +58,7 @@ public abstract class VariantDBAdaptorMultiFileSpecificSamplesCollectionTest ext
 
     protected VariantQueryResult<Variant> query(Query query, QueryOptions options) {
         try {
+            query = preProcessQuery(query, options);
             StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
             String collection = VariantSearchUtils.inferSpecificSearchIndexSamplesCollection(query, options, scm, DB_NAME);
 
@@ -70,6 +76,89 @@ public abstract class VariantDBAdaptorMultiFileSpecificSamplesCollectionTest ext
             Assert.fail(e.getMessage());
         }
         return null;
+    }
+
+
+    @Test
+    public void testGetByFilterAndSample() {
+        VariantQueryResult<Variant> allVariants = dbAdaptor.get(new Query()
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877")
+                .append(VariantQueryParam.INCLUDE_FILE.key(), file12877)
+                .append(VariantQueryParam.INCLUDE_STUDY.key(), "S_1"), options);
+
+        query = new Query()
+                .append(VariantQueryParam.FILTER.key(), "LowGQX;LowMQ;LowQD;TruthSensitivityTranche99.90to100.00")
+                .append(VariantQueryParam.SAMPLE.key(), "NA12877")
+                .append(VariantQueryParam.FILE.key(), file12877)
+                .append(VariantQueryParam.STUDY.key(), "S_1");
+        queryResult = query(query, options);
+        System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(
+                withSampleData(sampleNA12877, "GT", anyOf(is("0/1"), is("1/1"))),
+                withFileId(file12877,
+                        with(FILTER, fileEntry -> fileEntry.getAttributes().get(FILTER), allOf(
+                                containsString("LowGQX"),
+                                containsString("LowMQ"),
+                                containsString("LowQD"),
+                                containsString("TruthSensitivityTranche99.90to100.00")
+                        )))))));
+
+        query = new Query()
+                .append(VariantQueryParam.FILTER.key(), "MaxDepth")
+                .append(VariantQueryParam.FILE.key(), file12877)
+                .append(VariantQueryParam.SAMPLE.key(), "NA12877")
+                .append(VariantQueryParam.STUDY.key(), "S_1");
+        queryResult = query(query, options);
+        System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(
+                withSampleData(sampleNA12877, "GT", anyOf(is("0/1"), is("1/1"))),
+                withFileId(file12877,
+                        with(FILTER, fileEntry -> fileEntry.getAttributes().get(FILTER), anyOf(
+                                containsString("MaxDepth")
+                        )))
+        ))));
+
+        query = new Query()
+                .append(VariantQueryParam.FILTER.key(), "LowGQX,LowMQ")
+                .append(VariantQueryParam.FILE.key(), file12877)
+                .append(VariantQueryParam.SAMPLE.key(), "NA12877")
+                .append(VariantQueryParam.STUDY.key(), "S_1");
+        queryResult = query(query, options);
+        System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(
+                withSampleData(sampleNA12877, "GT", anyOf(is("0/1"), is("1/1"))),
+                withFileId(file12877,
+                        with(FILTER, fileEntry -> fileEntry.getAttributes().get(FILTER), anyOf(
+                                containsString("LowGQX"),
+                                containsString("LowMQ")
+                        )))))));
+
+        query = new Query()
+                .append(VariantQueryParam.FILTER.key(), "\"LowGQX;LowMQ;LowQD;TruthSensitivityTranche99.90to100.00\"")
+                .append(VariantQueryParam.FILE.key(), file12877)
+                .append(VariantQueryParam.SAMPLE.key(), "NA12877")
+                .append(VariantQueryParam.STUDY.key(), "S_1");
+        queryResult = query(query, options);
+        System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(
+                withSampleData(sampleNA12877, "GT", anyOf(is("0/1"), is("1/1"))),
+                withFileId(file12877,
+                        with(FILTER, fileEntry -> fileEntry.getAttributes().get(FILTER), is("LowGQX;LowMQ;LowQD;TruthSensitivityTranche99.90to100.00")))))));
+
+        query = new Query()
+                .append(VariantQueryParam.FILTER.key(), "\"LowGQX;LowMQ;LowQD;TruthSensitivityTranche99.90to100.00\",\"LowGQX;LowQD;SiteConflict\"")
+                .append(VariantQueryParam.FILE.key(), file12877)
+                .append(VariantQueryParam.SAMPLE.key(), "NA12877")
+                .append(VariantQueryParam.STUDY.key(), "S_1");
+        queryResult = query(query, options);
+        System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(
+                withSampleData(sampleNA12877, "GT", anyOf(is("0/1"), is("1/1"))),
+                withFileId(file12877,
+                        with(FILTER, fileEntry -> fileEntry.getAttributes().get(FILTER), anyOf(
+                                is("LowGQX;LowMQ;LowQD;TruthSensitivityTranche99.90to100.00"),
+                                is("LowGQX;LowQD;SiteConflict")
+                        )))))));
     }
 
 }

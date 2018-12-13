@@ -223,6 +223,16 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         }
         individual.setSamples(sampleList);
 
+        if (individual.getFather() != null && StringUtils.isNotEmpty(individual.getFather().getId())) {
+            MyResource<Individual> fatherResource = getUid(individual.getFather().getId(), study.getFqn(), sessionId);
+            individual.setFather(fatherResource.getResource());
+        }
+
+        if (individual.getMother() != null && StringUtils.isNotEmpty(individual.getMother().getId())) {
+            MyResource<Individual> motherResource = getUid(individual.getMother().getId(), study.getFqn(), sessionId);
+            individual.setMother(motherResource.getResource());
+        }
+
         // Create the individual
         individual.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.INDIVIDUAL));
         QueryResult<Individual> queryResult = individualDBAdaptor.insert(studyUid, individual, variableSetList, options);
@@ -231,7 +241,10 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         return queryResult;
     }
 
-    private void checkSamplesNotInUseInOtherIndividual(Set<Long> sampleIds, long studyId, Long individualId) throws CatalogException {
+    private Map<Long, Integer> checkSamplesNotInUseInOtherIndividual(Set<Long> sampleIds, long studyId, Long individualId)
+            throws CatalogException {
+        Map<Long, Integer> currentSamples = new HashMap<>();
+
         // Check if any of the existing samples already belong to an individual
         Query query = new Query()
                 .append(IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleIds)
@@ -241,16 +254,19 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         QueryResult<Individual> queryResult = individualDBAdaptor.get(query, options);
         if (queryResult.getNumResults() > 0) {
             // Check which of the samples are already associated to an individual
-            List<Long> usedSamples = new ArrayList<>();
+            List<String> usedSamples = new ArrayList<>();
             for (Individual individual1 : queryResult.getResult()) {
                 if (individualId != null && individualId == individual1.getUid()) {
-                    // It already belongs to the proper individual. Nothing to do
+                    // It already belongs to the proper individual.
+                    for (Sample sample : individual1.getSamples()) {
+                        currentSamples.put(sample.getUid(), sample.getVersion());
+                    }
                     continue;
                 }
                 if (individual1.getSamples() != null) {
                     for (Sample sample : individual1.getSamples()) {
                         if (sampleIds.contains(sample.getUid())) {
-                            usedSamples.add(sample.getUid());
+                            usedSamples.add(sample.getId());
                         }
                     }
                 }
@@ -261,6 +277,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                         + "individuals: " + StringUtils.join(usedSamples, ", "));
             }
         }
+
+        return currentSamples;
     }
 
     @Override
@@ -651,23 +669,43 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             // Check those samples can be used
             List<String> samples = parameters.getAsStringList(IndividualDBAdaptor.UpdateParams.SAMPLES.key());
             MyResources<Sample> sampleResource = catalogManager.getSampleManager().getUids(samples, studyStr, sessionId);
-            checkSamplesNotInUseInOtherIndividual(sampleResource.getResourceList().stream().map(Sample::getUid).collect(Collectors.toSet()),
-                    studyId, individualId);
+            Map<Long, Integer> existingSamplesInIndividual = checkSamplesNotInUseInOtherIndividual(
+                    sampleResource.getResourceList().stream().map(Sample::getUid).collect(Collectors.toSet()), studyId, individualId);
 
-            // Fetch the samples to obtain the latest version as well
-            Query sampleQuery = new Query()
-                    .append(SampleDBAdaptor.QueryParams.UID.key(), sampleResource.getResourceList().stream().map(Sample::getUid)
-                            .collect(Collectors.toList()));
-            QueryOptions sampleOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                    SampleDBAdaptor.QueryParams.UID.key(), SampleDBAdaptor.QueryParams.VERSION.key()));
-            QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(sampleQuery, sampleOptions);
+            List<Sample> updatedSamples = new ArrayList<>();
+            Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
+            String action = (String) actionMap.getOrDefault(IndividualDBAdaptor.UpdateParams.SAMPLES.key(),
+                    ParamUtils.UpdateAction.ADD.name());
+            if (ParamUtils.UpdateAction.ADD.name().equals(action)) {
+                // We will convert the ADD action into a SET to remove existing samples with older versions and replace them for the newest
+                // ones
+                Iterator<Sample> iterator = sampleResource.getResourceList().iterator();
+                while (iterator.hasNext()) {
+                    Sample sample = iterator.next();
+                    // We check if the sample is already present in the individual. If so, and the current version is higher than the one
+                    // stored, we will change the version to the current one.
+                    if (existingSamplesInIndividual.containsKey(sample.getUid())
+                            && existingSamplesInIndividual.get(sample.getUid()) < sample.getVersion()) {
+                        existingSamplesInIndividual.put(sample.getUid(), sample.getVersion());
 
-            if (sampleQueryResult.getNumResults() < sampleResource.getResourceList().size()) {
-                throw new CatalogException("Internal error: Could not obtain all the samples to be updated.");
+                        // We remove the sample from the list to avoid duplicities
+                        iterator.remove();
+                    }
+                }
+                for (Map.Entry<Long, Integer> entry : existingSamplesInIndividual.entrySet()) {
+                    updatedSamples.add(new Sample().setUid(entry.getKey()).setVersion(entry.getValue()));
+                }
+
+                updatedSamples.addAll(sampleResource.getResourceList());
+
+                // Replace action
+                actionMap.put(IndividualDBAdaptor.UpdateParams.SAMPLES.key(),  ParamUtils.UpdateAction.SET.name());
             }
+            // We add the rest of the samples the user want to add
+            updatedSamples.addAll(sampleResource.getResourceList());
 
             // Update the parameters with the proper list of samples
-            parameters.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), sampleQueryResult.getResult());
+            parameters.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), updatedSamples);
         }
 
         if (StringUtils.isNotEmpty(parameters.getString(IndividualDBAdaptor.QueryParams.FATHER.key()))) {

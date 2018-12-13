@@ -108,6 +108,8 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         o.putIfNotNull("outDir", variantCommandOptions.indexVariantCommandOptions.outdir);
         o.putIfNotNull(VariantFileIndexerStorageOperation.TRANSFORMED_FILES, variantCommandOptions.indexVariantCommandOptions.transformedPaths);
         o.putIfNotNull("transform", variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.transform);
+        o.putIfNotNull(VariantStorageEngine.Options.STDIN.key(), variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.stdin);
+        o.putIfNotNull(VariantStorageEngine.Options.STDOUT.key(), variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.stdout);
         o.putIfNotNull("load", variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.load);
         o.putIfNotNull(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(), variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.excludeGenotype);
         o.putIfNotNull("includeExtraFields", variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.extraFields);

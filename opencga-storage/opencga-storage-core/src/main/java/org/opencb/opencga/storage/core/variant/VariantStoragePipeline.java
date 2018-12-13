@@ -17,17 +17,14 @@
 package org.opencb.opencga.storage.core.variant;
 
 import com.google.common.collect.BiMap;
-import htsjdk.tribble.readers.LineIterator;
 import htsjdk.variant.vcf.VCFConstants;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLineType;
 import htsjdk.variant.vcf.VCFHeaderVersion;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.formats.io.FileFormatException;
-import org.opencb.biodata.formats.variant.vcf4.FullVcfCodec;
 import org.opencb.biodata.formats.variant.vcf4.VariantVcfFactory;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
@@ -40,8 +37,8 @@ import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.commons.io.avro.AvroFileWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
-import org.opencb.hpg.bigdata.core.io.avro.AvroFileWriter;
 import org.opencb.opencga.storage.core.StoragePipeline;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -60,7 +57,7 @@ import org.opencb.opencga.storage.core.variant.transform.VariantTransformTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
@@ -70,9 +67,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-import java.util.zip.GZIPInputStream;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS;
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
 
 /**
  * Created on 30/03/16.
@@ -176,21 +172,6 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         return new VariantFileMetadata(fileId.toString(), fileName);
     }
 
-
-    public static Pair<VCFHeader, VCFHeaderVersion> readHtsHeader(Path input) throws StorageEngineException {
-        try (InputStream fileInputStream = input.toString().endsWith("gz")
-                ? new GZIPInputStream(new FileInputStream(input.toFile()))
-                : new FileInputStream(input.toFile())) {
-            FullVcfCodec codec = new FullVcfCodec();
-            LineIterator lineIterator = codec.makeSourceFromStream(fileInputStream);
-            VCFHeader header = (VCFHeader) codec.readActualHeader(lineIterator);
-            VCFHeaderVersion headerVersion = codec.getVCFHeaderVersion();
-            return new ImmutablePair<>(header, headerVersion);
-        } catch (IOException e) {
-            throw new StorageEngineException("Unable to read VCFHeader", e);
-        }
-    }
-
     /**
      * Transform raw variant files into biodata model.
      *
@@ -218,10 +199,14 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         String format = options.getString(Options.TRANSFORM_FORMAT.key(), Options.TRANSFORM_FORMAT.defaultValue());
         String parser = options.getString("transform.parser", HTSJDK_PARSER);
 
-        // Create empty VariantSource
+        boolean stdin = options.getBoolean(STDIN.key(), STDIN.defaultValue());
+        boolean stdout = options.getBoolean(STDOUT.key(), STDOUT.defaultValue());
+
+        // Create empty VariantFileMetadata
         VariantFileMetadata metadataTemplate = buildVariantFileMetadata(input);
-        // Read VariantSource
-        final VariantFileMetadata metadata = VariantReaderUtils.readVariantFileMetadata(input, metadataTemplate);
+        // Read VariantFileMetadata
+        final VariantFileMetadata metadata = VariantReaderUtils.readVariantFileMetadata(input, metadataTemplate, stdin);
+
 
         VariantFileHeader variantMetadata = metadata.getHeader();
         String fileName = metadata.getPath();
@@ -304,7 +289,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         if ("avro".equals(format)) {
 
             //Reader
-            StringDataReader dataReader = new StringDataReader(input);
+            StringDataReader dataReader = stdin ? new StringDataReader(System.in) : new StringDataReader(input);
             long fileSize = 0;
             try {
                 fileSize = dataReader.getFileSize();
@@ -316,17 +301,16 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
             //Writer
             DataWriter<ByteBuffer> dataWriter;
-            try {
-                dataWriter = new AvroFileWriter<>(VariantAvro.getClassSchema(), compression, new FileOutputStream(outputVariantsFile
-                        .toFile()));
-            } catch (FileNotFoundException e) {
-                throw new StorageEngineException("Fail init writer", e);
+            if (stdout) {
+                dataWriter = new AvroFileWriter<>(VariantAvro.getClassSchema(), compression, System.out);
+            } else {
+                dataWriter = new AvroFileWriter<>(VariantAvro.getClassSchema(), compression, outputVariantsFile);
             }
             Supplier<VariantTransformTask<ByteBuffer>> taskSupplier;
 
             if (parser.equalsIgnoreCase(HTSJDK_PARSER)) {
                 logger.info("Using HTSJDK to read variants.");
-                Pair<VCFHeader, VCFHeaderVersion> header = readHtsHeader(input);
+                Pair<VCFHeader, VCFHeaderVersion> header = VariantReaderUtils.readHtsHeader(input, stdin);
                 VariantSetStatsCalculator statsCalculator = new VariantSetStatsCalculator(studyId, metadata);
                 taskSupplier = () -> new VariantAvroTransformTask(header.getKey(), header.getValue(), studyId, metadata, outputMetaFile,
                         statsCalculator, includeSrc, generateReferenceBlocks)
@@ -368,7 +352,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             end = System.currentTimeMillis();
         } else if ("json".equals(format)) {
             //Reader
-            StringDataReader dataReader = new StringDataReader(input);
+            StringDataReader dataReader = stdin ? new StringDataReader(System.in) : new StringDataReader(input);
             long fileSize = 0;
             try {
                 fileSize = dataReader.getFileSize();
@@ -379,14 +363,19 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             dataReader.setReadBytesListener((totalRead, delta) -> progressLogger.increment(delta, "Bytes"));
 
             //Writers
-            StringDataWriter dataWriter = new StringDataWriter(outputVariantsFile, true);
+            StringDataWriter dataWriter;
+            if (stdout) {
+                dataWriter = new StringDataWriter(System.out, true);
+            } else {
+                dataWriter = new StringDataWriter(outputVariantsFile, true);
+            }
 
             ParallelTaskRunner<String, String> ptr;
 
             Supplier<VariantTransformTask<String>> taskSupplier;
             if (parser.equalsIgnoreCase(HTSJDK_PARSER)) {
                 logger.info("Using HTSJDK to read variants.");
-                Pair<VCFHeader, VCFHeaderVersion> header = readHtsHeader(input);
+                Pair<VCFHeader, VCFHeaderVersion> header = VariantReaderUtils.readHtsHeader(input, stdin);
                 VariantSetStatsCalculator statsCalculator = new VariantSetStatsCalculator(studyId, metadata);
                 taskSupplier = () -> new VariantJsonTransformTask(header.getKey(), header.getValue(), studyId, metadata,
                         outputMetaFile, statsCalculator, includeSrc, generateReferenceBlocks)
