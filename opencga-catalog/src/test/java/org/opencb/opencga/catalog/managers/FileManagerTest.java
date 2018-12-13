@@ -952,12 +952,6 @@ public class FileManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    public void testSearchFileFail3() throws CatalogException {
-        thrown.expect(CatalogDBException.class);
-        catalogManager.getFileManager().get(studyFqn, new Query("id", "~5"), null, sessionIdUser);
-    }
-
-    @Test
     public void testGetFileParents1() throws CatalogException {
         long fileId;
         QueryResult<File> fileParents;

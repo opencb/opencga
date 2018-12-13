@@ -34,10 +34,7 @@ import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.AnnotationSet;
-import org.opencb.opencga.core.models.Family;
-import org.opencb.opencga.core.models.Individual;
-import org.opencb.opencga.core.models.Location;
+import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.server.WebServiceException;
 
@@ -117,6 +114,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("members") String members,
             @ApiParam(value = "Comma separated list of sample ids or names") @QueryParam("samples") String samples,
             @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
+            @ApiParam(value = "Comma separated list of disorder ids or names") @QueryParam("disorders") String disorders,
             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
                 @QueryParam("creationDate") String creationDate,
             @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
@@ -577,6 +575,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
         public IndividualProperty.AffectationStatus affectationStatus;
         public List<AnnotationSet> annotationSets;
         public List<Phenotype> phenotypes;
+        public List<Disorder> disorders;
         public Map<String, Object> attributes;
 
 
@@ -595,7 +594,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             return new Individual(individualId, individualName, father != null ? new Individual().setId(father) : null,
                     mother != null ? new Individual().setId(mother) : null, multiples, location,
                     sex, karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth,
-                    null, parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes)
+                    null, parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes, disorders)
                     .setAttributes(attributes);
         }
 
@@ -619,6 +618,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
                     .setDateOfBirth(dateOfBirth)
                     .setParentalConsanguinity(parentalConsanguinity != null ? parentalConsanguinity : false)
                     .setPhenotypes(phenotypes)
+                    .setDisorders(disorders)
                     .setAttributes(attributes);
             individual.setAnnotationSets(annotationSets);
             return individual;
@@ -631,6 +631,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
         public String description;
 
         public List<Phenotype> phenotypes;
+        public List<Disorder> disorders;
         public List<IndividualPOST> members;
 
         public Integer expectedSize;
@@ -651,7 +652,8 @@ public class FamilyWSServer extends OpenCGAWSServer {
             String familyId = StringUtils.isEmpty(id) ? name : id;
             String familyName = StringUtils.isEmpty(name) ? familyId : name;
             int familyExpectedSize = expectedSize != null ? expectedSize : -1;
-            return new Family(familyId, familyName, phenotypes, relatives, description, familyExpectedSize, annotationSets, attributes);
+            return new Family(familyId, familyName, phenotypes, disorders, relatives, description, familyExpectedSize, annotationSets,
+                    attributes);
         }
 
         public ObjectMap toFamilyObjectMap() throws JsonProcessingException {

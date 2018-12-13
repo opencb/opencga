@@ -184,7 +184,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                 QueryParams.PROBAND.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         clinicalConverter.validateFamilyToUpdate(document.getSet());
-        clinicalConverter.validateSubjectsToUpdate(document.getSet());
+        clinicalConverter.validateProbandToUpdate(document.getSet());
 
         if (parameters.containsKey(QueryParams.INTERPRETATIONS.key())) {
             List<Object> objectInterpretationList = parameters.getAsList(QueryParams.INTERPRETATIONS.key());

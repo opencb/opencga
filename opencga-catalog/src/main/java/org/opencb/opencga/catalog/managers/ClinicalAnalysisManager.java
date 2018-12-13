@@ -251,7 +251,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         }
         Family finalFamily = familyQueryResult.first();
 
-        if (!ListUtils.isNotEmpty(selectedMembers)) {
+        if (ListUtils.isNotEmpty(selectedMembers)) {
             if (ListUtils.isEmpty(finalFamily.getMembers())) {
                 throw new CatalogException("Family " + family.getId() + " does not have any members associated");
             }

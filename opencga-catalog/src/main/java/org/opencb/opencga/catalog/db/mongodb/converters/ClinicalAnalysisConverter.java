@@ -18,6 +18,10 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import org.bson.Document;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
+import org.opencb.commons.utils.ListUtils;
+import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.Interpretation;
 
@@ -35,12 +39,12 @@ public class ClinicalAnalysisConverter extends GenericDocumentComplexConverter<C
     }
 
     @Override
-    public Document convertToStorageType(ClinicalAnalysis object) {
-        Document document = super.convertToStorageType(object);
-        document.put("uid", object.getUid());
-        document.put("studyUid", object.getStudyUid());
+    public Document convertToStorageType(ClinicalAnalysis clinicalAnalysis) {
+        Document document = super.convertToStorageType(clinicalAnalysis);
+        document.put("uid", clinicalAnalysis.getUid());
+        document.put("studyUid", clinicalAnalysis.getStudyUid());
 
-        document.put("interpretations", convertInterpretations(object.getInterpretations()));
+        document.put("interpretations", convertInterpretations(clinicalAnalysis.getInterpretations()));
 
         validateDocumentToUpdate(document);
 
@@ -50,13 +54,52 @@ public class ClinicalAnalysisConverter extends GenericDocumentComplexConverter<C
     public void validateDocumentToUpdate(Document document) {
         validateInterpretationToUpdate(document);
         validateFamilyToUpdate(document);
-        validateSubjectsToUpdate(document);
+        validateProbandToUpdate(document);
     }
 
     public void validateFamilyToUpdate(Document document) {
+        Document family = (Document) document.get(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key());
+        if (family != null) {
+            // Store the uid as a long value
+            family.put("uid", getLongValue(family, "uid"));
+            family.remove("studyUid");
+
+            // Check if family contains members
+            List<Document> members = (List<Document>) family.get(FamilyDBAdaptor.QueryParams.MEMBERS.key());
+            if (ListUtils.isNotEmpty(members)) {
+                for (Document member : members) {
+                   validateProbandToUpdate(member);
+                }
+            }
+        }
     }
 
-    public void validateSubjectsToUpdate(Document document) {
+    public void validateProbandToUpdate(Document document) {
+        Document member = (Document) document.get(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key());
+        if (member != null) {
+            member.put("uid", getLongValue(member, "uid"));
+            member.remove("studyUid");
+
+            Document father = (Document) member.get(IndividualDBAdaptor.QueryParams.FATHER.key());
+            if (father != null) {
+                father.put("uid", getLongValue(father, "uid"));
+                father.remove("studyUid");
+            }
+
+            Document mother = (Document) member.get(IndividualDBAdaptor.QueryParams.MOTHER.key());
+            if (mother != null) {
+                mother.put("uid", getLongValue(mother, "uid"));
+                mother.remove("studyUid");
+            }
+
+            List<Document> samples = (List<Document>) member.get(IndividualDBAdaptor.QueryParams.SAMPLES.key());
+            if (ListUtils.isNotEmpty(samples)) {
+                for (Document sample : samples) {
+                    sample.put("uid", getLongValue(sample, "uid"));
+                    sample.remove("studyUid");
+                }
+            }
+        }
     }
 
     public void validateInterpretationToUpdate(Document document) {

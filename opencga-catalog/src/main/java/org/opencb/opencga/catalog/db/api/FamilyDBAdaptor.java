@@ -62,6 +62,9 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
         SNAPSHOT("snapshot", INTEGER, ""), // Last version of individual at release = snapshot
         VERSION("version", INTEGER, ""), // Version of the individual
 
+        DISORDERS("disorders", TEXT_ARRAY, ""),
+        DISORDERS_ID("disorders.id", TEXT, ""),
+
         PHENOTYPES("phenotypes", TEXT_ARRAY, ""),
         PHENOTYPES_ID("phenotypes.id", TEXT, ""),
         PHENOTYPES_NAME("phenotypes.name", TEXT, ""),
@@ -119,6 +122,7 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
         ID(QueryParams.ID.key()),
         NAME(QueryParams.NAME.key()),
         PHENOTYPES(QueryParams.PHENOTYPES.key()),
+        DISORDERS(QueryParams.DISORDERS.key()),
         MEMBERS(QueryParams.MEMBERS.key()),
         DESCRIPTION(QueryParams.DESCRIPTION.key()),
         EXPECTED_SIZE(QueryParams.EXPECTED_SIZE.key()),
