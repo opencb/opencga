@@ -414,7 +414,7 @@
     "outputs": {
         "avere_controller_ssh": {
             "type": "string",
-            "value": "[if(parameters('deployAvere'),reference('avere','2018-05-01').outputs.SSH_STRING,'')]"
+            "value": "[if(parameters('deployAvere'),reference('avere','2018-05-01').outputs.SSH_STRING.value,'')]"
         }
     }
 }
