@@ -5,8 +5,13 @@ import struct
 import random
 import os
 import shutil
+import subprocess
+import time
+
+# Run `python -m unittest discover` in this dir to execute tests
 
 default_mount_options_nfs = "nfs hard,nointr,proto=tcp,mountproto=tcp,retry=30 0 0"
+default_mount_options_cifs = "dir_mode=0777,file_mode=0777,serverino,nofail,vers=3.0"
 
 
 def get_avere_ips(vserver_string):
@@ -46,34 +51,93 @@ def ip_as_int(ip):
     res = (16777216 * o[0]) + (65536 * o[1]) + (256 * o[2]) + o[3]
     return res
 
+def remove_lines_containing(file, contains):
+    with open(file,"r+") as file:
+        d = file.readlines()
+        file.seek(0)
+        for i in d:
+            if contains not in i and i != "\n":
+                file.write(i)
+        file.truncate()
+
+def print_help():
+    print "For example 'sudo python mount.py avere 10.0.1.10-10.0.1.14'"
+    print "or 'sudo python mount.py azurefiles <storage-account-name>,<share-name>,<storage-account-key>'"
+
+def install_apt_package(package):
+    try:
+        print "Attempt to install " + package
+        subprocess.check_call(["apt", "install", package, "-y"])
+        print "Install completed successfully"
+    except subprocess.CalledProcessError as e:
+        print "Failed install " + package + " error:" + e.message
+        exit(4)
+
 def main():  
     if len(sys.argv) < 3:
         print "Expected arg1: 'mount_type' and arg2 'mount_data'"
-        print "For example 'sudo python mount.py avere 10.0.1.10-10.0.1.14'"
+        print_help()
         exit(1)
 
-    mount_type = sys.argv[1]
-    mount_data = sys.argv[2]
+    mount_type = str(sys.argv[1])
+    mount_data = str(sys.argv[2])
 
-    if str(mount_type).lower() != "avere" and str(mount_type).lower() != "azurefiles": 
+    if mount_type.lower() != "avere" and mount_type.lower() != "azurefiles": 
         print "Expected first arg to be either 'avere' or 'azurefiles'"
-        print "For example 'sudo python mount.py avere 10.0.1.10-10.0.1.14'"
+        print_help()
         exit(1)
 
-    if str(mount_data) == "":
+    if mount_data == "":
         print "Expected second arg to be the mounting data. For avere this is the vserver iprange. Fo azure files this should be the azure files connection details."
-        print "For example 'sudo python mount.py avere 10.0.1.10-10.0.1.14'"
+        print_help()
         exit(2)
 
 
     print 'Mounting type:' + sys.argv[1]
     print 'Mounting data:' + sys.argv[2]
+    
+    mount_point_permissions = 0o0777 #Todo: What permissions does this really need?
+    primary_mount_folder = "/media/primarynfs"
+    seconday_mount_folder_prefix = "/media/secondarynfs"
+
     try:
-        if str(mount_type).lower() == "avere":
+        # Create folder to mount to 
+        if not os.path.exists(primary_mount_folder):
+            os.makedirs(primary_mount_folder)
+            os.chmod(primary_mount_folder, mount_point_permissions)
+        
+        # Make a backup of the fstab config incase we go wrong
+        shutil.copy("/etc/fstab", "/etc/fstab-averescriptbackup")
+
+        # Clear existing NFS mount data to make script idempotent
+        remove_lines_containing("/etc/fstab", primary_mount_folder)
+        remove_lines_containing("/etc/fstab", seconday_mount_folder_prefix)
+
+        if mount_type.lower() == "azurefiles":
+            install_apt_package("cifs-utils")
+
+            params = mount_data.split(",")
+            if len(params) != 3:
+                print "Wrong params for azure files mount, expected 3 as CSV"
+                print_help()
+                exit(1)
+            
+            account_name = params[0]
+            share_name = params[1]
+            account_key = params[2]
+
+            with open('/etc/fstab', 'a') as file:
+                print "Mounting primary"
+                file.write("\n//{0}.file.core.windows.net/{1} {2} cifs username={0},password={3},{4} \n"
+                    .format(account_name, share_name, primary_mount_folder, account_key, default_mount_options_cifs))
+                
+
+        if mount_type.lower() == "avere":
+            install_apt_package("nfs-common")            
+
             ips = get_avere_ips(mount_data)
             print "Found ips:" + ",".join(ips)
 
-            
             # Deterministically select a primary node from the available
             # servers for this vm to use. By using the ip as a seed this ensures
             # re-running will get the same node as primary
@@ -90,50 +154,48 @@ def main():
             print "Primary node selected:" + primary
             print "Secondary nodes selected:" + ",".join(secondarys)
 
-            shutil.copy("/etc/fstab", "/etc/fstab-averescriptbackup")
-
-            # Remove existing entried in the fstab file for avere
-            with open("/etc/fstab","r+") as file:
-                d = file.readlines()
-                file.seek(0)
-                for i in d:
-                    if "avere" not in i:
-                        file.write(i)
-                file.truncate()
-
             with open('/etc/fstab', 'a') as file:
 
                 print "Mounting primary"
-
-                primary_mount_folder = "/media/avere/primary"
-                if not os.path.exists(primary_mount_folder):
-                    os.makedirs(primary_mount_folder)
-                    os.chmod(primary_mount_folder, 0o0777) #Todo: What permissions does this really need?
-
-                file.write("\n"+ primary +":/msazure"+ primary_mount_folder + " "+ default_mount_options_nfs + "\n")
+                file.write("\n"+ primary +":/msazure "+ primary_mount_folder + " "+ default_mount_options_nfs + "\n")
                 
                 print "Mounting secondarys"
-
                 number = 0
                 for ip in secondarys:
                     number = number+1
-                    folder = "/media/avere/secondary" + str(number)
+                    folder = "/media/secondarynfs" + str(number)
                     if not os.path.exists(folder):
                         os.makedirs(folder)
-                        os.chmod(folder, 0o0777) #Todo: What permissions does this really need?
+                        os.chmod(folder, mount_point_permissions)
                     
-                    file.write("\n"+ ip +":/msazure"+ folder + " "+ default_mount_options_nfs + "\n")
+                    file.write("\n"+ ip +":/msazure "+ folder + " "+ default_mount_options_nfs + "\n")
     except IOError as (errno, strerror):
         print "I/O error({0}): {1}".format(errno, strerror)
-        exit(1)
-    except ValueError:
-        print "Could not convert data to an integer."
         exit(1)
     except:
         print "Unexpected error:", sys.exc_info()[0]
         exit(1)
 
-    print "Done"
+    print "Done editing fstab ... attempting mount"
+
+    # Retry mounting for a while to handle race where VM exists before storage 
+    # or temporary issue with storage
+    retryExponentialFactor = 3
+    for i in range(1,100):
+        if i == 100:
+            print "Failed to mount after max 100 retries"
+            exit(3)
+        try:
+            print "Attempt #" + str(i)
+            subprocess.check_call(["mount", "-a"])
+        except subprocess.CalledProcessError as e:
+            print "Failed to mount:" + e.message
+            retry_in = i*retryExponentialFactor
+            print "retrying in {0}secs".format(retry_in)
+            time.sleep(retry_in)
+            continue
+        else:
+            break
 
 if __name__== "__main__":
   main()
