@@ -27,27 +27,6 @@
         "description": "Size of the VM"
       }
     },
-    "imagePublisher": {
-      "type": "string",
-      "defaultValue": "Canonical",
-      "metadata": {
-        "description": "Image Publisher"
-      }
-    },
-    "imageOffer": {
-      "type": "string",
-      "defaultValue": "UbuntuServer",
-      "metadata": {
-        "description": "Image Offer"
-      }
-    },
-    "imageSKU": {
-      "type": "string",
-      "defaultValue": "14.04.5-LTS",
-      "metadata": {
-        "description": "Image SKU"
-      }
-    },
     "clusterLoginUserName": {
       "type": "string",
       "metadata": {
@@ -108,13 +87,25 @@
     }
   },
   "variables": {
-    "availabilitySetName": "[concat(parameters('clusterName'), '-zookeeper-AvSet')]",
-    "vmName": "[concat(parameters('clusterName'), '-zookeeper')]",
-    "nicName": "[concat(parameters('clusterName'), '-zookeeper-nic')]",
+    "availabilitySetName": "[concat(parameters('clusterName'), '-zookeeper-as')]",
     "customScriptFilePath": "[concat(parameters('_artifactsLocation'), 'solr/zookeeper/zookeeper-setup.sh')]",
     "customScriptCommandToExecute": "bash zookeeper-setup.sh",
     "vmExtensionName": "zookeeperExtension",
-    "subnetPrefix": "10.0.2."
+    "subnetPrefix": "10.0.2.",
+    "imagePublisher": "Canonical",
+    "imageOffer": "UbuntuServer",
+    "imageSKU": "18.04-LTS",
+    "copy": [
+      {
+        "name": "vmNames",
+        "count": "[variables('scaleNumber')]",
+        "input": {
+          "vmName": "[concat(parameters('clusterName'), '-zookeeper', padLeft(add(1, copyIndex('vmNames')), 2, '0'))]",
+          "nicName": "[concat(parameters('clusterName'), '-zookeeper', padLeft(add(1, copyIndex('vmNames')), 2, '0'), '-nic')]",
+          "diskName": "[concat(parameters('clusterName'), '-zookeeper', padLeft(add(1, copyIndex('vmNames')), 2, '0'), '-disk')]"
+        }
+      }
+    ]
   },
   "resources": [
     {
@@ -133,7 +124,7 @@
     {
       "apiVersion": "2018-08-01",
       "type": "Microsoft.Network/networkInterfaces",
-      "name": "[concat(variables('nicName'), copyIndex())]",
+      "name": "[variables('vmNames')[copyIndex()].nicName]",
       "location": "[parameters('location')]",
       "copy": {
         "name": "foo",
@@ -158,14 +149,14 @@
     {
       "apiVersion": "2017-03-30",
       "type": "Microsoft.Compute/virtualMachines",
-      "name": "[concat(variables('vmName'), copyIndex())]",
+      "name": "[variables('vmNames')[copyIndex()].vmName]",
       "location": "[parameters('location')]",
       "copy": {
         "name": "foo",
         "count": "[parameters('scaleNumber')]"
       },
       "dependsOn": [
-        "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'), copyIndex())]",
+        "[concat('Microsoft.Network/networkInterfaces/', variables('vmNames')[copyIndex()].nicName)]",
         "[concat('Microsoft.Compute/availabilitySets/', variables('availabilitySetName'))]"
       ],
       "properties": {
@@ -176,21 +167,22 @@
           "vmSize": "[parameters('vmSize')]"
         },
         "osProfile": {
-          "computerName": "[concat(variables('vmName'), copyIndex())]",
+          "computerName": "[variables('vmNames')[copyIndex()].vmName]",
           "adminUsername": "[parameters('clusterLoginUserName')]",
           "adminPassword": "[parameters('clusterLoginPassword')]"
         },
         "storageProfile": {
           "imageReference": {
-            "publisher": "[parameters('imagePublisher')]",
-            "offer": "[parameters('imageOffer')]",
-            "sku": "[parameters('imageSKU')]",
+            "publisher": "[variables('imagePublisher')]",
+            "offer": "[variables('imageOffer')]",
+            "sku": "[variables('imageSKU')]",
             "version": "latest"
           },
           "osDisk": {
-            "name": "[concat(variables('vmName'), copyIndex(),'_OSDisk')]",
+            "name": "[variables('vmNames')[copyIndex()].diskName]",
             "caching": "ReadWrite",
             "createOption": "FromImage",
+            "diskSizeGB" : "50",
             "managedDisk": {
               "storageAccountType": "[parameters('diskType')]"
             }
@@ -199,7 +191,7 @@
         "networkProfile": {
           "networkInterfaces": [
             {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('nicName'), copyIndex()))]"
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('vmNames')[copyIndex()].nicName)]"
             }
           ]
         }
@@ -207,7 +199,7 @@
     },
     {
       "type": "Microsoft.Compute/virtualMachines/extensions",
-      "name": "[concat(variables('vmName'), copyIndex(),'/', variables('vmExtensionName'))]",
+      "name": "[concat(variables('vmNames')[copyIndex()].vmName,'/', variables('vmExtensionName'))]",
       "apiVersion": "2018-06-01",
       "location": "[parameters('location')]",
       "copy": {
@@ -215,7 +207,7 @@
         "count": "[parameters('scaleNumber')]"
       },
       "dependsOn": [
-        "[concat('Microsoft.Compute/virtualMachines/', variables('vmName'), copyIndex())]"
+        "[concat('Microsoft.Compute/virtualMachines/', variables('vmNames')[copyIndex()].vmName)]"
       ],
       "properties": {
         "publisher": "Microsoft.Azure.Extensions",
