@@ -18,24 +18,24 @@ apt-get update
 apt-get install -y docker-ce
 
 
-## Install Solr 6.6 in Docker
-docker pull solr:6.6
-
 MY_ID=$(($1+1))
 SUBNET_PREFIX=$2
 IP_FIRST=$3
 ZK_HOSTS_NUM=$4
+SOLR_VERSION=$5
 
-DOCKER_NAME=opencga-solr-6.6
+DOCKER_NAME=opencga-solr-${SOLR_VERSION}
+
+## Install Solr in Docker
+docker pull solr:${SOLR_VERSION}
 
 # Create docker
-docker create --name ${DOCKER_NAME} --restart always -p 8983:8983 -t solr:6.6
+docker create --name ${DOCKER_NAME} --restart always -p 8983:8983 -t solr:${SOLR_VERSION}
 
 # Add OpenCGA Configuration Set 
-wget 'http://docs.opencb.org/download/attachments/9240577/OpenCGAConfSet_1.4.x.tar.gz?version=1&modificationDate=1523459489793&api=v2' -O OpenCGAConfSet_1.4.x.tar.gz
 tar zxfv OpenCGAConfSet_1.4.x.tar.gz
 
-docker cp OpenCGAConfSet opencga-solr-6.6:/opt/solr/server/solr/configsets/OpenCGAConfSet-1.4.x
+docker cp OpenCGAConfSet ${DOCKER_NAME}:/opt/solr/server/solr/configsets/OpenCGAConfSet-1.4.x
 
 # Configure solr.in.sh
 docker cp ${DOCKER_NAME}:/opt/solr/bin/solr.in.sh .
@@ -69,6 +69,6 @@ docker start ${DOCKER_NAME}
 sleep 60
 
 # Register opencga configuration set
-docker exec opencga-solr-6.6 /opt/solr/bin/solr zk upconfig -n OpenCGAConfSet-1.4.x -d /opt/solr/server/solr/configsets/OpenCGAConfSet-1.4.x $ZK_CLI
+docker exec ${DOCKER_NAME} /opt/solr/bin/solr zk upconfig -n OpenCGAConfSet-1.4.x -d /opt/solr/server/solr/configsets/OpenCGAConfSet-1.4.x $ZK_CLI
 
 

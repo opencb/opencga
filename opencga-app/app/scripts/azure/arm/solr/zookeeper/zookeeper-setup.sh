@@ -19,8 +19,9 @@ ZOO_MY_ID=$(($1+1))
 SUBNET_PREFIX=$2
 IP_FIRST=$3
 NUM_NODES=$4
+ZOOKEEPER_VERSION=$5
 
-DOCKER_NAME=opencga-zookeeper-3.4
+DOCKER_NAME=opencga-zookeeper-${ZOOKEEPER_VERSION}
 
 ZOO_SERVERS=
 i=1
@@ -42,4 +43,4 @@ apt-get install -y docker-ce
 ## Create docker container
 docker run --name ${DOCKER_NAME} --restart always -d \
         -e ZOO_MY_ID=$ZOO_MY_ID -e "ZOO_SERVERS=$ZOO_SERVERS" -e ZOO_LOG4J_PROP="INFO,ROLLINGFILE" \
-        -p 2888:2888 -p 2181:2181 -p 3888:3888 zookeeper:3.4
+        -p 2888:2888 -p 2181:2181 -p 3888:3888 zookeeper:${ZOOKEEPER_VERSION}

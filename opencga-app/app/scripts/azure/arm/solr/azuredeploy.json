@@ -87,17 +87,23 @@
         "description": "Subnet ID."
       }
     },
-    "artifactsLocation": {
+    "solrVersion": {
+      "type": "string",
+      "metadata": {
+        "description": "Version of Apache Solr."
+      }
+    },
+    "_artifactsLocation": {
       "type": "string",
       "metadata": {
         "description": "Artifacts location."
       }
     },
-    "artifactsLocationSasToken": {
+    "_artifactsLocationSasToken": {
       "type": "string",
       "defaultValue" : "",
       "metadata": {
-        "description": "Artifacts location."
+        "description": "Artifacts location SAS token."
       }
     }
   },
@@ -111,8 +117,9 @@
     "vmExtensionName": "solrExtension",
     "scaleNumber": "[if(parameters('highAvailability'), 2, 1)]",
     "zookeeperScaleNumber": "[if(parameters('highAvailability'), 3, 0)]",
-    "customScriptFilePath": "[concat(parameters('artifactsLocation'), 'solr/solr-setup.sh')]",
-    "customScriptCommandToExecute": "bash solr-setup.sh"
+    "customScriptFilePath": "[concat(parameters('_artifactsLocation'), 'solr/solr-setup.sh')]",
+    "customScriptCommandToExecute": "bash solr-setup.sh",
+    "configSetLocation": "http://docs.opencb.org/download/attachments/9240577/OpenCGAConfSet_1.4.x.tar.gz"
   },
   "resources": [
     {
@@ -124,7 +131,7 @@
       "properties": {
         "mode": "Incremental",
         "templateLink": {
-          "uri": "[concat(parameters('artifactsLocation'), '/solr/zookeeper/azuredeploy.json', parameters('artifactsLocationSasToken'))]",
+          "uri": "[concat(parameters('_artifactsLocation'), '/solr/zookeeper/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
@@ -149,11 +156,11 @@
           "clusterName" : {
             "value" : "[parameters('clusterName')]"
           },
-          "artifactsLocation" : {
-            "value" : "[parameters('artifactsLocation')]"
+          "_artifactsLocation" : {
+            "value" : "[parameters('_artifactsLocation')]"
           },
-          "artifactsLocationSasToken" : {
-            "value" : "[parameters('artifactsLocationSasToken')]"
+          "_artifactsLocationSasToken" : {
+            "value" : "[parameters('_artifactsLocationSasToken')]"
           }
         }
       }
@@ -172,7 +179,7 @@
       }
     },
     {
-      "apiVersion": "2015-05-01-preview",
+      "apiVersion": "2018-08-01",
       "type": "Microsoft.Network/networkInterfaces",
       "name": "[concat(variables('nicName'), copyIndex())]",
       "location": "[parameters('location')]",
@@ -249,7 +256,7 @@
     {
       "type": "Microsoft.Compute/virtualMachines/extensions",
       "name": "[concat(variables('vmName'), copyIndex(),'/', variables('vmExtensionName'))]",
-      "apiVersion": "2015-05-01-preview",
+      "apiVersion": "2018-06-01",
       "location": "[parameters('location')]",
       "copy": {
         "name": "foo",
@@ -266,9 +273,10 @@
         "autoUpgradeMinorVersion": true,
         "settings": {
           "fileUris": [
+            "[variables('configSetLocation')]",
             "[variables('customScriptFilePath')]"
           ],
-          "commandToExecute": "[concat(variables('customScriptCommandToExecute'), ' ', copyIndex(), ' ', variables('subnetPrefix'), ' ', variables('zookeeperPrivateIPFirst'), ' ', variables('zookeeperScaleNumber'))]"
+          "commandToExecute": "[concat(variables('customScriptCommandToExecute'), ' ', copyIndex(), ' ', variables('subnetPrefix'), ' ', variables('zookeeperPrivateIPFirst'), ' ', variables('zookeeperScaleNumber'), ' ', parameters('solrVersion'))]"
         }
       }
     }

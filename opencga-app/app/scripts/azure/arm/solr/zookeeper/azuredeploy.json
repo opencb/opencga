@@ -86,13 +86,20 @@
         "description": "First IP from the subnet to assign"
       }
     },
-    "artifactsLocation": {
+    "zookeeperVersion": {
+      "type": "string",
+      "defaultValue" : "3.4",
+      "metadata": {
+        "description": "Version of zookeeper"
+      }
+    },
+    "_artifactsLocation": {
       "type": "string",
       "metadata": {
         "description": "Artifacts location."
       }
     },
-    "artifactsLocationSasToken": {
+    "_artifactsLocationSasToken": {
       "type": "string",
       "defaultValue" : "",
       "metadata": {
@@ -104,7 +111,7 @@
     "availabilitySetName": "[concat(parameters('clusterName'), '-zookeeper-AvSet')]",
     "vmName": "[concat(parameters('clusterName'), '-zookeeper')]",
     "nicName": "[concat(parameters('clusterName'), '-zookeeper-nic')]",
-    "customScriptFilePath": "[concat(parameters('artifactsLocation'), 'solr/zookeeper/zookeeper-setup.sh')]",
+    "customScriptFilePath": "[concat(parameters('_artifactsLocation'), 'solr/zookeeper/zookeeper-setup.sh')]",
     "customScriptCommandToExecute": "bash zookeeper-setup.sh",
     "vmExtensionName": "zookeeperExtension",
     "subnetPrefix": "10.0.2."
@@ -124,7 +131,7 @@
       }
     },
     {
-      "apiVersion": "2015-05-01-preview",
+      "apiVersion": "2018-08-01",
       "type": "Microsoft.Network/networkInterfaces",
       "name": "[concat(variables('nicName'), copyIndex())]",
       "location": "[parameters('location')]",
@@ -201,7 +208,7 @@
     {
       "type": "Microsoft.Compute/virtualMachines/extensions",
       "name": "[concat(variables('vmName'), copyIndex(),'/', variables('vmExtensionName'))]",
-      "apiVersion": "2015-05-01-preview",
+      "apiVersion": "2018-06-01",
       "location": "[parameters('location')]",
       "copy": {
         "name": "foo",
@@ -219,7 +226,7 @@
           "fileUris": [
             "[variables('customScriptFilePath')]"
           ],
-          "commandToExecute": "[concat(variables('customScriptCommandToExecute'), ' ', copyIndex(), ' ', variables('subnetPrefix'), ' ', parameters('privateIPFirst'), ' ', parameters('scaleNumber'))]"
+          "commandToExecute": "[concat(variables('customScriptCommandToExecute'), ' ', copyIndex(), ' ', variables('subnetPrefix'), ' ', parameters('privateIPFirst'), ' ', parameters('scaleNumber'), ' ', parameters('zookeeperVersion'))]"
         }
       }
     }
