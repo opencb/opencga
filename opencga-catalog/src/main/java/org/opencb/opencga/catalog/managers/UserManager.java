@@ -302,6 +302,7 @@ public class UserManager extends AbstractManager {
                 Group group = new Group(internalGroup, userList.stream().map(User::getId).collect(Collectors.toList()))
                         .setSyncedFrom(groupSync);
                 catalogManager.getStudyManager().createGroup(study, group, ADMIN_TOKEN);
+                logger.info("Group '{}' created and synchronised with external group", internalGroup);
             } catch (CatalogException e) {
                 logger.error("Could not register group '{}' in study '{}'\n{}", internalGroup, study, e.getMessage(), e);
             }
@@ -543,7 +544,7 @@ public class UserManager extends AbstractManager {
                 authId = entry.getKey();
                 break;
             } catch (CatalogAuthenticationException e) {
-                logger.warn("Attempted authentication failed with {} for user '{}'\n{}", entry.getKey(), username, e.getMessage(), e);
+                logger.debug("Attempted authentication failed with {} for user '{}'\n{}", entry.getKey(), username, e.getMessage(), e);
             }
         }
 

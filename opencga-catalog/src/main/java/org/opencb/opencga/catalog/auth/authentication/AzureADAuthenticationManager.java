@@ -13,6 +13,8 @@ import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
@@ -47,24 +49,12 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
 
     private Map<String, List<String>> filters;
 
-    private String groupMapping;
-
     private Map<String, PublicKey> publicKeyMap;
 
     public AzureADAuthenticationManager(AuthenticationOrigin authenticationOrigin) throws CatalogException {
         super();
 
         this.originId = authenticationOrigin.getId();
-
-        if (StringUtils.isEmpty(authenticationOrigin.getHost())) {
-            throw new CatalogException("AzureAD authentication origin configuration error. Missing mandatory 'host' field.");
-        }
-        try {
-            this.oidcProviderMetadata = getProviderMetadata(authenticationOrigin.getHost());
-        } catch (IOException | ParseException e) {
-            throw new CatalogException("AzureAD authentication origin configuration error. Check 'host' field. Is it pointing to the main "
-                    + "open-id configuration url? - " + e.getMessage(), e);
-        }
 
         if (authenticationOrigin.getOptions() == null || authenticationOrigin.getOptions().isEmpty()) {
             throw new CatalogException("AzureAD authentication origin configuration error. Missing mandatory 'options' field.");
@@ -107,33 +97,26 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
             }
         }
 
-        String mappingString = (String) authenticationOrigin.getOptions().get("mappings");
-        if (StringUtils.isNotEmpty(mappingString)) {
-            String[] mappingList = mappingString.split(";");
-            for (String mappingBucket : mappingList) {
-                String[] split = mappingBucket.split("=");
-                if (split.length != 2) {
-                    throw new CatalogException("AzureAD authentication origin configuration error. 'mappings' field could not be parsed.");
-                }
-                if ("groups".equals(split[0])) {
-                    this.groupMapping = split[1];
-                } else {
-                    throw new CatalogException("AzureAD authentication origin configuration error. Unexpected '" + split[0] + "' key found"
-                            + " in the 'mappings' field. Expected 'groups' key");
-                }
-            }
-        } else {
-            throw new CatalogException("AzureAD authentication origin configuration error. Missing mandatory 'mappings' option field.");
+        if (StringUtils.isEmpty(authenticationOrigin.getHost())) {
+            // Default host
+            authenticationOrigin.setHost("https://login.microsoftonline.com/" + this.tenantId + "/v2.0/.well-known/openid-configuration");
         }
-
-        if (StringUtils.isEmpty(this.groupMapping)) {
-            throw new CatalogException("AzureAD authentication origin configuration error. Missing mandatory 'groups' key from the "
-                    + "'mappings' field in 'options'.");
+        try {
+            this.oidcProviderMetadata = getProviderMetadata(authenticationOrigin.getHost());
+        } catch (IOException | ParseException e) {
+            throw new CatalogException("AzureAD authentication origin configuration error. Check 'host' field. Is it pointing to the main "
+                    + "open-id configuration url? - " + e.getMessage(), e);
         }
 
         this.jwtManager = new JwtManager(SignatureAlgorithm.RS256.getValue());
 
         this.publicKeyMap = new HashMap<>();
+
+
+        // Disable Azure loggers
+        Logger.getLogger(AuthenticationContext.class).setLevel(Level.OFF);
+        Logger.getLogger("com.microsoft.aad.adal4j.UserDiscoveryRequest").setLevel(Level.WARN);
+        Logger.getLogger("com.microsoft.aad.adal4j.AuthenticationAuthority").setLevel(Level.WARN);
     }
 
     private OIDCProviderMetadata getProviderMetadata(String host) throws IOException, ParseException {
@@ -211,7 +194,6 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
             Future<AuthenticationResult> future = context.acquireToken(authClientId, authClientId, username, password, null);
             result = future.get();
         } catch (Exception e) {
-            logger.error("{}", e.getMessage(), e);
             throw CatalogAuthenticationException.incorrectUserOrPassword();
         } finally {
             service.shutdown();
@@ -281,7 +263,7 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
 
     @Override
     public List<String> getRemoteGroups(String token) throws CatalogException {
-        List<String> groupOids = jwtManager.getGroups(token, groupMapping, getPublicKey(token));
+        List<String> groupOids = jwtManager.getGroups(token, "groups", getPublicKey(token));
 
         ApplicationTokenCredentials tokenCredentials = new ApplicationTokenCredentials(syncClientId, tenantId, syncSecretKey, null);
         Azure.Authenticated azureAuthenticated = Azure.authenticate(tokenCredentials);
@@ -338,7 +320,7 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
 
     @Override
     public String getUserId(String token) throws CatalogException {
-        return jwtManager.getUser(token, getPublicKey(token));
+        return (String) jwtManager.getClaim(token, "oid", getPublicKey(token));
     }
 
     @Override
