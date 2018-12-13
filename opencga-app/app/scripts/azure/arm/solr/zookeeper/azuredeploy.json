@@ -65,13 +65,6 @@
         "description": "First IP from the subnet to assign"
       }
     },
-    "zookeeperVersion": {
-      "type": "string",
-      "defaultValue" : "3.4",
-      "metadata": {
-        "description": "Version of zookeeper"
-      }
-    },
     "_artifactsLocation": {
       "type": "string",
       "metadata": {
@@ -95,10 +88,11 @@
     "imagePublisher": "Canonical",
     "imageOffer": "UbuntuServer",
     "imageSKU": "18.04-LTS",
+    "zookeeperVersion": "3.4",
     "copy": [
       {
         "name": "vmNames",
-        "count": "[variables('scaleNumber')]",
+        "count": "[parameters('scaleNumber')]",
         "input": {
           "vmName": "[concat(parameters('clusterName'), '-zookeeper', padLeft(add(1, copyIndex('vmNames')), 2, '0'))]",
           "nicName": "[concat(parameters('clusterName'), '-zookeeper', padLeft(add(1, copyIndex('vmNames')), 2, '0'), '-nic')]",
@@ -218,7 +212,7 @@
           "fileUris": [
             "[variables('customScriptFilePath')]"
           ],
-          "commandToExecute": "[concat(variables('customScriptCommandToExecute'), ' ', copyIndex(), ' ', variables('subnetPrefix'), ' ', parameters('privateIPFirst'), ' ', parameters('scaleNumber'), ' ', parameters('zookeeperVersion'))]"
+          "commandToExecute": "[concat(variables('customScriptCommandToExecute'), ' ', copyIndex(), ' ', variables('subnetPrefix'), ' ', parameters('privateIPFirst'), ' ', parameters('scaleNumber'), ' ', variables('zookeeperVersion'))]"
         }
       }
     }
