@@ -104,7 +104,7 @@ Copy OpenCGA build to Tomcat server
 ```
 sudo cp /opt/opencga/opencga*.war /var/lib/tomcat8/webapps
 sudo chown -R tomcat8 /opt/opencga/ #give tomcat8 user ownership of opencga folder
-sudo chmod 777 /opt/opencga/ #necessary to write in sessions folder
+sudo chmod -R 777 /opt/opencga/ #necessary to write in sessions folder
 ```
 
 If you chose Hadoop as a backend, configure Tomcat to use this configuration (replace `opencga-1.4.0-rc2.xml` with the exact name of your `.war` file placed in `/var/lib/tomcat8/webapps`)
