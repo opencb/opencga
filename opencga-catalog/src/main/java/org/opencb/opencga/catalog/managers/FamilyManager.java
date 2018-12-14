@@ -33,6 +33,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.commons.datastore.core.result.WriteResult;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
@@ -146,6 +147,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         family.setName(ParamUtils.defaultObject(family.getName(), family.getId()));
         family.setMembers(ParamUtils.defaultObject(family.getMembers(), Collections.emptyList()));
         family.setPhenotypes(ParamUtils.defaultObject(family.getPhenotypes(), Collections.emptyList()));
+        family.setDisorders(ParamUtils.defaultObject(family.getDisorders(), Collections.emptyList()));
         family.setCreationDate(TimeUtils.getTime());
         family.setDescription(ParamUtils.defaultString(family.getDescription(), ""));
         family.setStatus(new Family.FamilyStatus());
@@ -160,6 +162,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         validateFamily(family);
         validateMultiples(family);
         validatePhenotypes(family);
+        validateDisorders(family);
         createMissingMembers(family, study, sessionId);
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -519,6 +522,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             ParamUtils.checkAlias(parameters.getString(FamilyDBAdaptor.QueryParams.ID.key()), FamilyDBAdaptor.QueryParams.ID.key());
         }
         if (parameters.containsKey(FamilyDBAdaptor.QueryParams.PHENOTYPES.key())
+                || parameters.containsKey(FamilyDBAdaptor.QueryParams.DISORDERS.key())
                 || parameters.containsKey(FamilyDBAdaptor.QueryParams.MEMBERS.key())) {
             // We parse the parameters to a family object
             try {
@@ -543,10 +547,14 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             if (family.getPhenotypes() == null || family.getMembers().isEmpty()) {
                 family.setPhenotypes(familyQueryResult.first().getPhenotypes());
             }
+            if (ListUtils.isEmpty(family.getDisorders())) {
+                family.setDisorders(familyQueryResult.first().getDisorders());
+            }
 
             validateFamily(family);
             validateMultiples(family);
             validatePhenotypes(family);
+            validateDisorders(family);
 
             ObjectMap tmpParams;
             try {
@@ -909,22 +917,96 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
     private void validatePhenotypes(Family family) throws CatalogException {
         if (family.getPhenotypes() == null || family.getPhenotypes().isEmpty()) {
-            return;
-        }
+            if (ListUtils.isNotEmpty(family.getMembers())) {
+                Map<String, Phenotype> phenotypeMap = new HashMap<>();
 
-        if (family.getMembers() == null || family.getMembers().isEmpty()) {
-            throw new CatalogException("Missing family members");
-        }
+                for (Individual member : family.getMembers()) {
+                    if (ListUtils.isNotEmpty(member.getPhenotypes())) {
+                        for (Phenotype phenotype : member.getPhenotypes()) {
+                            phenotypeMap.put(phenotype.getId(), phenotype);
+                        }
+                    }
+                }
 
-        Set<String> memberPhenotypes = new HashSet<>();
-        for (Individual individual : family.getMembers()) {
-            if (individual.getPhenotypes() != null && !individual.getPhenotypes().isEmpty()) {
-                memberPhenotypes.addAll(individual.getPhenotypes().stream().map(Phenotype::getId).collect(Collectors.toSet()));
+                // Set the new phenotype list
+                List<Phenotype> phenotypeList = new ArrayList<>(phenotypeMap.values());
+                family.setPhenotypes(phenotypeList);
+            }
+        } else {
+            // We need to validate the phenotypes are actually correct
+            if (family.getMembers() == null || family.getMembers().isEmpty()) {
+                throw new CatalogException("Missing family members");
+            }
+
+            // Validate all the phenotypes are contained in at least one individual
+            Set<String> memberPhenotypes = new HashSet<>();
+            for (Individual individual : family.getMembers()) {
+                if (individual.getPhenotypes() != null && !individual.getPhenotypes().isEmpty()) {
+                    memberPhenotypes.addAll(individual.getPhenotypes().stream().map(Phenotype::getId).collect(Collectors.toSet()));
+                }
+            }
+            Set<String> familyPhenotypes = family.getPhenotypes().stream().map(Phenotype::getId).collect(Collectors.toSet());
+            if (!familyPhenotypes.containsAll(memberPhenotypes)) {
+                throw new CatalogException("Some of the phenotypes are not present in any member of the family");
             }
         }
-        Set<String> familyPhenotypes = family.getPhenotypes().stream().map(Phenotype::getId).collect(Collectors.toSet());
-        if (!familyPhenotypes.containsAll(memberPhenotypes)) {
-            throw new CatalogException("Some of the phenotypes are not present in any member of the family");
+    }
+
+    private void validateDisorders(Family family) throws CatalogException {
+        if (ListUtils.isEmpty(family.getDisorders())) {
+            if (ListUtils.isNotEmpty(family.getMembers())) {
+                // Obtain the union of all disorders
+                Map<String, Disorder> disorderMap = new HashMap<>();
+                Map<String, Map<String, Phenotype>> disorderPhenotypeMap = new HashMap<>();
+
+                for (Individual member : family.getMembers()) {
+                    if (ListUtils.isNotEmpty(member.getDisorders())) {
+                        for (Disorder disorder : member.getDisorders()) {
+                            disorderMap.put(disorder.getId(), disorder);
+
+                            if (ListUtils.isNotEmpty(disorder.getEvidences())) {
+                                if (!disorderPhenotypeMap.containsKey(disorder.getId())) {
+                                    disorderPhenotypeMap.put(disorder.getId(), new HashMap<>());
+                                }
+
+                                for (Phenotype evidence : disorder.getEvidences()) {
+                                    disorderPhenotypeMap.get(disorder.getId()).put(evidence.getId(), evidence);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Set the new disorder list
+                List<Disorder> disorderList = new ArrayList<>(disorderMap.size());
+                for (Disorder disorder : disorderMap.values()) {
+                    List<Phenotype> phenotypeList = null;
+                    if (disorderPhenotypeMap.get(disorder.getId()) != null) {
+                        phenotypeList = new ArrayList<>(disorderPhenotypeMap.get(disorder.getId()).values());
+                    }
+                    disorder.setEvidences(phenotypeList);
+                    disorderList.add(disorder);
+                }
+
+                family.setDisorders(disorderList);
+            }
+        } else {
+            // We need to validate the disorders are actually correct
+            if (family.getMembers() == null || family.getMembers().isEmpty()) {
+                throw new CatalogException("Missing family members");
+            }
+
+            // Validate all the disorders are contained in at least one individual
+            Set<String> memberDisorders = new HashSet<>();
+            for (Individual individual : family.getMembers()) {
+                if (ListUtils.isNotEmpty(individual.getDisorders())) {
+                    memberDisorders.addAll(individual.getDisorders().stream().map(Disorder::getId).collect(Collectors.toSet()));
+                }
+            }
+            Set<String> familyDisorders = family.getDisorders().stream().map(Disorder::getId).collect(Collectors.toSet());
+            if (!familyDisorders.containsAll(memberDisorders)) {
+                throw new CatalogException("Some of the disorders are not present in any member of the family");
+            }
         }
     }
 
