@@ -223,6 +223,16 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         }
         individual.setSamples(sampleList);
 
+        if (individual.getFather() != null && StringUtils.isNotEmpty(individual.getFather().getId())) {
+            MyResource<Individual> fatherResource = getUid(individual.getFather().getId(), study.getFqn(), sessionId);
+            individual.setFather(fatherResource.getResource());
+        }
+
+        if (individual.getMother() != null && StringUtils.isNotEmpty(individual.getMother().getId())) {
+            MyResource<Individual> motherResource = getUid(individual.getMother().getId(), study.getFqn(), sessionId);
+            individual.setMother(motherResource.getResource());
+        }
+
         // Create the individual
         individual.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.INDIVIDUAL));
         QueryResult<Individual> queryResult = individualDBAdaptor.insert(studyUid, individual, variableSetList, options);

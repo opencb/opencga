@@ -58,52 +58,8 @@
     <artifactId>opencga-storage-hadoop-deps</artifactId>
     <version>1.4.0-rc3-dev</version>
 
-    <!--
-        Some dependencies included in the UBER-JAR are not defined, so they MUST defined at the
-        specific hadoop flavour profiles.
-          - hadoop.version
-          - hbase.version
-          - phoenix.version
-          - tephra.version
-    -->
     <properties>
         <checkstyle.skip>true</checkstyle.skip>
-        <protobuf2.version>2.5.0</protobuf2.version>
-        <guava.version>15.0</guava.version>
-
-        <!--Read from main hadoop pom.xml . Versions not as a property in that pom-->
-        <commons-httpclient.version>3.1</commons-httpclient.version>
-        <commons-compress.version>1.4.1</commons-compress.version>
-        <commons-io.version>2.4</commons-io.version>
-        <commons-net.version>3.1</commons-net.version>
-        <curator.version>2.7.1</curator.version>
-        <apacheds-kerberos-codec.version>2.0.0-M15</apacheds-kerberos-codec.version>
-        <leveldbjni-all.version>1.8</leveldbjni-all.version>
-        <zookeeper.version>3.4.6</zookeeper.version>
-
-        <!--Read from main hbase pom.xml-->
-        <metrics-core.version>2.2.0</metrics-core.version>
-        <disruptor.version>3.3.0</disruptor.version>
-        <commons-math.version>2.2</commons-math.version>
-        <netty.version>4.0.23.Final</netty.version>
-        <jamon-runtime.version>2.4.1</jamon-runtime.version>
-        <codehaus.jackson.version>1.9.13</codehaus.jackson.version>
-        <mortbay.jetty.version>6.1.26</mortbay.jetty.version>
-
-        <!--Read from main phoenix pom.xml-->
-        <commons-configuration.version>1.6</commons-configuration.version>
-        <!--<commons-io.version>2.1</commons-io.version>-->
-        <commons-lang.version>2.5</commons-lang.version>
-        <commons-logging.version>1.2</commons-logging.version>
-        <commons-csv.version>1.0</commons-csv.version>
-        <commons-codec.version>1.7</commons-codec.version>
-        <collections.version>3.2.1</collections.version>
-        <sqlline.version>1.1.9</sqlline.version>
-        <jline.version>2.11</jline.version>
-        <antlr.version>3.5.2</antlr.version> <!--see [PHOENIX-2465]-->
-        <!--Do not specify tephra version here, so it can be overwritten-->
-        <!--<tephra.version>0.7.0</tephra.version>-->
-        <snappy.version>0.3</snappy.version>
     </properties>
 
     <dependencies>
@@ -145,6 +101,12 @@
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-azure</artifactId>
+            <version>${hadoop.version}</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-azure-datalake</artifactId>
             <version>${hadoop.version}</version>
             <optional>true</optional>
         </dependency>
@@ -754,9 +716,8 @@
                                     <include>org.apache.hbase.thirdparty:hbase-shaded-netty</include>
 
                                 </includes>
-                                <!--Exclude all test dependencies.-->
                                 <excludes>
-                                    <!--Test dependencies-->
+                                    <!--Exclude all test dependencies.-->
                                     <exclude>org.apache.hbase:**:tests</exclude>
                                     <exclude>org.apache.hadoop:hadoop-minicluster</exclude>
                                     <exclude>org.apache.hadoop:**:tests</exclude>
