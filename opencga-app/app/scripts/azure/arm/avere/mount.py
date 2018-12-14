@@ -125,75 +125,11 @@ def main():
         remove_lines_containing("/etc/fstab", seconday_mount_folder_prefix)
 
         if mount_type.lower() == "azurefiles":
-            install_apt_package("cifs-utils")
-
-            params = mount_data.split(",")
-            if len(params) != 3:
-                print("Wrong params for azure files mount, expected 3 as CSV")
-                print_help()
-                exit(1)
-
-            account_name = params[0]
-            share_name = params[1]
-            account_key = params[2]
-
-            with open("/etc/fstab", "a") as file:
-                print("Mounting primary")
-                file.write(
-                    "\n//{0}.file.core.windows.net/{1} {2} cifs username={0},password={3},{4} \n".format(
-                        account_name,
-                        share_name,
-                        primary_mount_folder,
-                        account_key,
-                        default_mount_options_cifs,
-                    )
-                )
+            mount_azurefiles(mount_data, primary_mount_folder)
 
         if mount_type.lower() == "avere":
-            install_apt_package("nfs-common")
+            mount_avere(mount_data, primary_mount_folder, mount_point_permissions)
 
-            ips = get_avere_ips(mount_data)
-            print("Found ips:{}".format(",".join(ips)))
-
-            # Deterministically select a primary node from the available
-            # servers for this vm to use. By using the ip as a seed this ensures
-            # re-running will get the same node as primary
-            current_ip = get_ip_address()
-            current_ip_int = ip_as_int(current_ip)
-            print("Using ip as int: {0} for random seed".format((current_ip_int)))
-            random.seed(current_ip_int)
-            random_node = random.randint(0, len(ips)-1)
-
-            primary = ips[random_node]
-            ips.remove(primary)
-            secondarys = ips
-
-            print("Primary node selected: {}".format(primary))
-            print("Secondary nodes selected: {}".format(",".join(secondarys)))
-
-            with open("/etc/fstab", "a") as file:
-
-                print("Mounting primary")
-                file.write("\n{}:/msazure {} {} \n".format(
-                    primary,
-                    primary_mount_folder,
-                    default_mount_options_nfs
-                ))
-
-                print("Mounting secondarys")
-                number = 0
-                for ip in secondarys:
-                    number = number + 1
-                    folder = "/media/secondarynfs" + str(number)
-                    if not os.path.exists(folder):
-                        os.makedirs(folder)
-                        os.chmod(folder, mount_point_permissions)
-
-                    file.write("\n{}:/msazure {} {} \n".format(
-                        ip,
-                        folder,
-                        default_mount_options_nfs
-                    ))
     except IOError as e:
         print("I/O error({0})".format(e))
         exit(1)
@@ -222,6 +158,77 @@ def main():
             continue
         else:
             break
+
+
+def mount_avere(mount_data, primary_mount_folder, mount_point_permissions):
+    install_apt_package("nfs-common")
+
+    ips = get_avere_ips(mount_data)
+    print("Found ips:{}".format(",".join(ips)))
+
+    # Deterministically select a primary node from the available
+    # servers for this vm to use. By using the ip as a seed this ensures
+    # re-running will get the same node as primary
+    current_ip = get_ip_address()
+    current_ip_int = ip_as_int(current_ip)
+    print("Using ip as int: {0} for random seed".format((current_ip_int)))
+    random.seed(current_ip_int)
+    random_node = random.randint(0, len(ips) - 1)
+
+    primary = ips[random_node]
+    ips.remove(primary)
+    secondarys = ips
+
+    print("Primary node selected: {}".format(primary))
+    print("Secondary nodes selected: {}".format(",".join(secondarys)))
+
+    with open("/etc/fstab", "a") as file:
+
+        print("Mounting primary")
+        file.write(
+            "\n{}:/msazure {} {} \n".format(
+                primary, primary_mount_folder, default_mount_options_nfs
+            )
+        )
+
+        print("Mounting secondarys")
+        number = 0
+        for ip in secondarys:
+            number = number + 1
+            folder = "/media/secondarynfs" + str(number)
+            if not os.path.exists(folder):
+                os.makedirs(folder)
+                os.chmod(folder, mount_point_permissions)
+
+            file.write(
+                "\n{}:/msazure {} {} \n".format(ip, folder, default_mount_options_nfs)
+            )
+
+
+def mount_azurefiles(mount_data, primary_mount_folder):
+    install_apt_package("cifs-utils")
+
+    params = mount_data.split(",")
+    if len(params) != 3:
+        print("Wrong params for azure files mount, expected 3 as CSV")
+        print_help()
+        exit(1)
+
+    account_name = params[0]
+    share_name = params[1]
+    account_key = params[2]
+
+    with open("/etc/fstab", "a") as file:
+        print("Mounting primary")
+        file.write(
+            "\n//{0}.file.core.windows.net/{1} {2} cifs username={0},password={3},{4} \n".format(
+                account_name,
+                share_name,
+                primary_mount_folder,
+                account_key,
+                default_mount_options_cifs,
+            )
+        )
 
 
 if __name__ == "__main__":
