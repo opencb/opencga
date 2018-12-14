@@ -125,7 +125,7 @@ ssh sshuser@opencga-ssh.azurehdinsight.net
 
 Change hbase.client.keyvalue.maxsize to 0 in `/etc/hbase/conf/hbase-site.xml` on hadoop cluster to avoid 'KeyValue size too large' error
 ```
-sudo vi /etc/hbase/conf/hbase-site.xml
+sudo sed -i '/<name>hbase.client.keyvalue.maxsize<\/name>/!b;n;c<value>0</value>' /etc/hbase/conf/hbase-site.xml
 ```
 
 Copy required Hadoop and HBase configuration files to the OpenCGA Virtual Machine (change username & IP address)
