@@ -125,6 +125,8 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
                 .add("authenticationDatabase", catalogConfiguration.getCatalog().getDatabase().getOptions().get("authenticationDatabase"))
                 .setConnectionsPerHost(Integer.parseInt(catalogConfiguration.getCatalog().getDatabase().getOptions()
                         .getOrDefault(MongoDBConfiguration.CONNECTIONS_PER_HOST, "20")))
+                .setSslEnabled(Boolean.parseBoolean(catalogConfiguration.getCatalog().getDatabase().getOptions()
+                        .getOrDefault(MongoDBConfiguration.SSL_ENABLED, Boolean.toString(MongoDBConfiguration.SSL_ENABLED_DEFAULT))))
                 .build();
 
         List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
