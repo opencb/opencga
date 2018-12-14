@@ -3,18 +3,18 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
         "_artifactsLocation": {
-           "type": "string",
-           "metadata": {
+            "type": "string",
+            "metadata": {
                 "description": ""
             }
         },
         "_artifactsLocationSasToken": {
             "type": "string",
             "metadata": {
-                 "description": ""
-             }
-         },
-         "rgPrefix": {
+                "description": ""
+            }
+        },
+        "rgPrefix": {
             "type": "string",
             "metadata": {
                 "description": "The resource group prefix"
@@ -27,32 +27,7 @@
                 "description": "Location for deployment"
             }
         },
-         "clusterName": {
-            "type": "string",
-            "metadata": {
-                "description": "The name of the HDInsight cluster to create."
-            }
-        },
-        "clusterLoginUserName": {
-            "type": "string",
-            "defaultValue": "admin",
-            "metadata": {
-                "description": "These credentials can be used to submit jobs to the cluster and to log into cluster dashboards."
-            }
-        },
-        "clusterLoginPassword": {
-            "type": "securestring",
-            "metadata": {
-                "description": "The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
-            }
-        },
-        "sshPassword": {
-            "type": "securestring",
-            "metadata": {
-                "description": "The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
-            }
-        },
-        "storageOption": {
+        "HDInsightStorageOption": {
             "type": "string",
             "allowedValues": [
                 "DataLake",
@@ -61,9 +36,57 @@
             "metadata": {
                 "description": "What type of storage will be used"
             }
+        },
+        "HDInsightClusterName": {
+            "type": "string",
+            "metadata": {
+                "description": "The name of the HDInsight cluster to create."
+            }
+        },
+        "HDInsightClusterLoginUserName": {
+            "type": "string",
+            "defaultValue": "admin",
+            "metadata": {
+                "description": "These credentials can be used to submit jobs to the cluster and to log into cluster dashboards."
+            }
+        },
+        "HDInsightClusterLoginPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
+            }
+        },
+        "HDInsightSshPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
+            }
+        },
+        "avereServicePrincipalAppId": {
+            "type": "string",
+            "metadata": {
+                "description": "The ServicePrincipal which Avere will use to provision the storage cluster. This SP needs to have 'Owner' rights to the ResourceGroup."
+            }
+        },
+        "avereServicePrincipalPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The ServicePrincipal's Password."
+            }
+        },
+        "avereSSHKeyData": {
+            "type": "string",
+            "metadata": {
+                "description": "The RSA data for the SSH Public Key used to authenticate to Avere nodes."
+            }
+        },
+        "avereAdminPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The password for the 'admin' user on the Avere cluster configuration portal."
+            }
         }
     },
-    "variables": {},
     "resources": [
         {
             "type": "Microsoft.Resources/resourceGroups",
@@ -88,9 +111,9 @@
                 }
             }
         },
-        {   
+        {
             "resourceGroup": "[parameters('rgPrefix')]",
-          "type": "Microsoft.Resources/deployments",
+            "type": "Microsoft.Resources/deployments",
             "apiVersion": "2017-05-10",
             "name": "hdinsight-storage",
             "dependsOn": [
@@ -104,13 +127,11 @@
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
-
-              
                     "networkAclsVirtualNetworkRule": {
                         "value": "[reference('vnet').outputs.hdinsightSubnetId.value]"
                     },
-                    "isHnsEnabled":  {
-                        "value": "[if(equals(parameters('storageOption'), 'DataLake'), json('true'), json('false'))]"
+                    "isHnsEnabled": {
+                        "value": "[if(equals(parameters('HDInsightstorageOption'), 'DataLake'), json('true'), json('false'))]"
                     }
                 }
             }
@@ -122,9 +143,9 @@
             "name": "[concat(parameters('rgPrefix'),'-hdinsight')]",
             "properties": {}
         },
-        {   
+        {
             "resourceGroup": "[concat(parameters('rgPrefix'),'-hdinsight')]",
-             "type": "Microsoft.Resources/deployments",
+            "type": "Microsoft.Resources/deployments",
             "apiVersion": "2017-05-10",
             "name": "hdinsight",
             "dependsOn": [
@@ -138,18 +159,17 @@
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
-
                     "clusterName": {
-                        "value": "[parameters('clusterName')]"
+                        "value": "[parameters('HDInsightClusterName')]"
                     },
                     "clusterLoginUserName": {
-                        "value": "[parameters('clusterLoginUserName')]"
+                        "value": "[parameters('HDInsightClusterLoginUserName')]"
                     },
                     "clusterLoginPassword": {
-                        "value": "[parameters('clusterLoginPassword')]"
+                        "value": "[parameters('HDInsightClusterLoginPassword')]"
                     },
                     "sshPassword": {
-                        "value": "[parameters('sshPassword')]"
+                        "value": "[parameters('HDInsightSshPassword')]"
                     },
                     "storageAccountName": {
                         "value": "[reference('hdinsight-storage').outputs.storageAccountName.value]"
@@ -158,17 +178,78 @@
                         "value": "[reference('hdinsight-storage').outputs.storageAccountKey.value]"
                     },
                     "vnetId": {
-                        "value":  "[reference('vnet').outputs.vnetId.value]"
+                        "value": "[reference('vnet').outputs.vnetId.value]"
                     },
                     "subnetId": {
-                        "value":  "[reference('vnet').outputs.hdinsightSubnetId.value]"
+                        "value": "[reference('vnet').outputs.hdinsightSubnetId.value]"
                     },
-                    "storageOption":{
-                        "value":  "[parameters('storageOption')]"
+                    "storageOption": {
+                        "value": "[parameters('HDInsightstorageOption')]"
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Resources/resourceGroups",
+            "apiVersion": "2018-05-01",
+            "location": "[parameters('rgLocation')]",
+            "name": "[concat(parameters('rgPrefix'),'-avere')]",
+            "properties": {}
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "resourceGroup": "[concat(parameters('rgPrefix'),'-avere')]",
+            "apiVersion": "2017-05-10",
+            "name": "avere",
+            "dependsOn": [
+                "vnet",
+                "[concat(parameters('rgPrefix'),'-avere')]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/avere/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "servicePrincipalTenant": {
+                        "value": "[subscription().tenantId]"
+                    },
+                    "servicePrincipalAppId": {
+                        "value": "[parameters('avereServicePrincipalAppId')]"
+                    },
+                    "servicePrincipalPassword": {
+                        "value": "[parameters('avereServicePrincipalPassword')]"
+                    },
+                    "virtualNetworkName": {
+                        "value": "[reference('vnet').outputs.virtualNetworkName.value]"
+                    },
+                    "virtualNetworkResourceGroup": {
+                        "value": "[parameters('rgPrefix')]"
+                    },
+                    "virtualNetworkSubnetName": {
+                        "value": "[reference('vnet').outputs.avereSubnetName.value]"
+                    },
+                    "virtualNetworkSubnetId": {
+                        "value": "[reference('vnet').outputs.avereClusterSubnetId.value]"
+                    },
+                    "controllerAdminUsername": {
+                        "value": "avere"
+                    },
+                    "controllerSSHKeyData": {
+                        "value": "[parameters('avereSSHKeyData')]"
+                    },
+                    "adminPassword": {
+                        "value": "[parameters('avereAdminPassword')]"
                     }
                 }
             }
         }
     ],
-    "outputs": {}
+    "outputs": {
+        "avere_controller_ssh": {
+            "type": "string",
+            "value": "[reference('avere').outputs.SSH_STRING.value]"
+        }
+    }
 }
