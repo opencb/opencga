@@ -98,7 +98,7 @@
         {
             "resourceGroup": "[parameters('rgPrefix')]",
             "type": "Microsoft.Resources/deployments",
-            "apiVersion": "2017-05-10",
+            "apiVersion": "2018-05-01",
             "name": "vnet",
             "dependsOn": [
                 "[parameters('rgPrefix')]"
@@ -114,7 +114,7 @@
         {
             "resourceGroup": "[parameters('rgPrefix')]",
             "type": "Microsoft.Resources/deployments",
-            "apiVersion": "2017-05-10",
+            "apiVersion": "2018-05-01",
             "name": "hdinsight-storage",
             "dependsOn": [
                 "vnet",
@@ -146,7 +146,7 @@
         {
             "resourceGroup": "[concat(parameters('rgPrefix'),'-hdinsight')]",
             "type": "Microsoft.Resources/deployments",
-            "apiVersion": "2017-05-10",
+            "apiVersion": "2018-05-01",
             "name": "hdinsight",
             "dependsOn": [
                 "hdinsight-storage",
@@ -199,7 +199,7 @@
         {
             "type": "Microsoft.Resources/deployments",
             "resourceGroup": "[concat(parameters('rgPrefix'),'-avere')]",
-            "apiVersion": "2017-05-10",
+            "apiVersion": "2018-05-01",
             "name": "avere",
             "dependsOn": [
                 "vnet",
