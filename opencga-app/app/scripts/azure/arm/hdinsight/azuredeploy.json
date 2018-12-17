@@ -251,10 +251,20 @@
     ],
     "outputs": {
 
-        "clusterDNSName":{
+        "clusterSshDNSName":{
 
             "type": "string",
-            "value": ""
+            "value": "[concat(parameters('clusterName'),'-ssh.azurehdinsight.net')]"
+        },
+        "clusterSshUsername":{
+
+            "type": "string",
+            "value": "[concat(parameters('sshUserName'))]"
+        },
+        "clusterSshPassword":{
+
+            "type": "string",
+            "value": "[concat(parameters('sshPassword'))]"
         }
     }
 }
