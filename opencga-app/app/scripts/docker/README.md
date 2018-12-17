@@ -1,1 +1,0 @@
-Built upon https://github.com/JohnGarbutt/opencb-ansible-docker
