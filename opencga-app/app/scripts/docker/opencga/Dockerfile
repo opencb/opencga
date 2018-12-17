@@ -14,8 +14,5 @@ COPY --from=build /build/build /opt/opencga
 # extract
 #RUN   wget --quiet ${OPENCGA_RELEASE_URL} && mkdir /opt/opencga && tar xvf opencga-${OPENCGA_VERSION}.tar.gz --strip-components=1 -C /opt/opencga  && rm ./opencga-${OPENCGA_VERSION}.tar.gz
 
-# should mount in config instead?
-COPY ./conf /opt/opencga/conf
-
 COPY ./config.sh /tmp/
 
