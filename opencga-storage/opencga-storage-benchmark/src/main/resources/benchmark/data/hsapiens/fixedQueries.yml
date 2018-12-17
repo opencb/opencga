@@ -7,267 +7,257 @@ baseQuery :
   includeFile : platinum-genomes-vcf-NA12877_S1.genome.vcf.gz
 
 queries :
-- id : "2Filters"
-  description : "Purpose of this query"
+- id : "TwoFiltersAndOneFile"
+  description : ""
   query :
     file : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"
     filter : "LowGQX;LowMQ"
+  tolerationThreshold : 1500
 
-  tolerationThreshold : 300
-
-- id : "MultipleFilters"
-  description : "Purpose of this query"
+- id : "MultipleFiltersAndTwoFiles"
+  description : ""
   query :
     file : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,platinum-genomes-vcf-NA12878_S1.genome.vcf.gz"
     filter : "LowGQX;LowMQ;LowQD"
+  tolerationThreshold : 1500
 
-  tolerationThreshold : 300
-
-- id : "Filter-MaxDepth"
-  description : "Purpose of this query"
+- id : "FileAndFilter-MaxDepth"
+  description : ""
   query :
     file : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"
     filter : MaxDepth
+  tolerationThreshold : 1500
 
-  tolerationThreshold : 300
-
-- id : "6Filters"
-  description : "Purpose of this query"
+- id : "SixFilters"
+  description : ""
   query :
     file : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,platinum-genomes-vcf-NA12878_S1.genome.vcf.gz"
     filter : "LowGQX;LowMQ;LowQD;LowGQX;LowQD;SiteConflict"
-  tolerationThreshold : 300
+  tolerationThreshold : 1500
 
-- id : "TwoSamplesTwoFiles"
-  description : "Purpose of this query"
-  query :
-    file : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,platinum-genomes-vcf-NA12878_S1.genome.vcf.gz"
-    includeSample : "NA12877,NA12878"
-    includeFile : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,platinum-genomes-vcf-NA12878_S1.genome.vcf.gz"
-
-  tolerationThreshold : 300
-
-- id : "MultipleFilesAndSamples"
-  description : "Purpose of this query"
+- id : "MultipleIncludeFilesAndSamples"
+  description : ""
   query :
     release : 1
     includeSample : "NA12877,NA12878,NA12879,NA12880,NA12881,NA12882,NA12883,NA12884"
     includeFile : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,platinum-genomes-vcf-NA12878_S1.genome.vcf.gz,platinum-genomes-vcf-NA12879_S1.genome.vcf.gz,platinum-genomes-vcf-NA12880_S1.genome.vcf.gz,platinum-genomes-vcf-NA12881_S1.genome.vcf.gz,platinum-genomes-vcf-NA12882_S1.genome.vcf.gz,platinum-genomes-vcf-NA12883_S1.genome.vcf.gz,platinum-genomes-vcf-NA12884_S1.genome.vcf.gz"
+  tolerationThreshold : 1500
 
-  tolerationThreshold : 300
-
-- id : "AllStudySampleAndFile"
-  description : "Purpose of this query"
+- id : "AllIncludeStudySampleAndFile"
+  description : ""
   query :
     includeStudy : all
     includeSample : all
     includeFile : all
-
-  tolerationThreshold : 300
+  tolerationThreshold : 1500
 
 - id : "FileNegated"
-  description : "Purpose of this query"
+  description : ""
   query :
     file : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz;!platinum-genomes-vcf-NA12878_S1.genome.vcf.gz"
     includeFile : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"
+  tolerationThreshold : 1500
 
-  tolerationThreshold : 300
-
-- id : "FileNegatedAndGenotype"
-  description : "Purpose of this query"
+- id : "FileNegatedAndGenotypes"
+  description : ""
   query :
     includeSample : all
     file : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz;!platinum-genomes-vcf-NA12878_S1.genome.vcf.gz"
     genotype : "NA12879:0/1,1/1,NA12880:0/1,1/1"
-
-  tolerationThreshold : 300
+  tolerationThreshold : 1500
 
 - id : "FileNegatedAndGenotypeAndFilter"
-  description : "Purpose of this query"
+  description : ""
   query :
     includeStudy : "platinum"
     file : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz;!platinum-genomes-vcf-NA12878_S1.genome.vcf.gz"
     genotype : "NA12879:0/1,1/1,NA12880:0/1,1/1"
     filter : "LowGQX;LowMQ"
+  tolerationThreshold : 1500
 
-  tolerationThreshold : 300
-
-- id : "TwoFileTwoSamples"
-  description : "Purpose of this query"
+- id : "TwoFiles"
+  description : ""
   query :
     includeFile : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,platinum-genomes-vcf-NA12882_S1.genome.vcf.gz"
     includeSample : "NA12877,NA12882"
     file : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,platinum-genomes-vcf-NA12882_S1.genome.vcf.gz"
+  tolerationThreshold : 1500
 
-  tolerationThreshold : 300
-
-- id : "1File1Sample"
-  description : "Purpose of this query"
+- id : "FileAndSample"
+  description : ""
   query :
     file : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"
+    sample : "NA12877"
+  tolerationThreshold : 1500
 
-  tolerationThreshold : 300
-
-- id : "AllStudiesOneSample"
-  description : "Purpose of this query"
+- id : "FileAndIncludeAllStudiesOneSample"
+  description : ""
   query :
     includeStudy : all
     includeFile : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"
     includeSample : "NA12877"
     file : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"
+  tolerationThreshold : 1500
 
-  tolerationThreshold : 300
-
-- id : "SampleInfo"
-  description : "Purpose of this query"
+- id : "Info_DP_HaplotypeScore"
+  description : ""
   query :
     includeSample : "NA12877,NA12878"
     info : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz:HaplotypeScore<10,platinum-genomes-vcf-NA12878_S1.genome.vcf.gz:DP>100"
     file : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,platinum-genomes-vcf-NA12878_S1.genome.vcf.gz"
     includeFile : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,platinum-genomes-vcf-NA12878_S1.genome.vcf.gz"
-
-  tolerationThreshold : 300
-
-- id : "2SamplesAndMultipleGenotype"
-  description : "Purpose of this query"
-  query :
-    includeSample : "NA12877,NA12878"
-    includeFile : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,platinum-genomes-vcf-NA12878_S1.genome.vcf.gz"
-    genotype : "NA12877:0/1,1/1;NA12878:0/1,1/1"
-
-  tolerationThreshold : 300
-
-- id : "4Samples4Files"
-  description : "Purpose of this query"
-  query :
-    includeSample : "NA12877,NA12878,NA12877,NA12880"
-    includeFile : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,platinum-genomes-vcf-NA12878_S1.genome.vcf.gz,platinum-genomes-vcf-NA12879_S1.genome.vcf.gz,platinum-genomes-vcf-NA12880_S1.genome.vcf.gz"
-
-  tolerationThreshold : 300
+  tolerationThreshold : 1500
 
 - id : "SampleAndFilterAndGenotype"
-  description : "Purpose of this query"
+  description : ""
   query :
     includeSample : "NA12877"
     includeFile : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,platinum-genomes-vcf-NA12878_S1.genome.vcf.gz,platinum-genomes-vcf-NA12879_S1.genome.vcf.gz,platinum-genomes-vcf-NA12880_S1.genome.vcf.gz"
     filter : "LowGQX;LowMQ"
     genotype : "NA12877:0/1,1/1"
     file : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,platinum-genomes-vcf-NA12878_S1.genome.vcf.gz,platinum-genomes-vcf-NA12879_S1.genome.vcf.gz,platinum-genomes-vcf-NA12880_S1.genome.vcf.gz"
+  tolerationThreshold : 1500
 
-  tolerationThreshold : 300
-
-- id : "SampleAndNegatedFilterAndGenotype"
-  description : "Purpose of this query"
+- id : "FileAndNegatedFilterAndGenotype"
+  description : ""
   query :
     includeSample : "NA12877"
     includeFile : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,platinum-genomes-vcf-NA12878_S1.genome.vcf.gz,platinum-genomes-vcf-NA12879_S1.genome.vcf.gz,platinum-genomes-vcf-NA12880_S1.genome.vcf.gz"
     filter : "LowGQX;LowMQ;!SiteConflict"
     file : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,platinum-genomes-vcf-NA12878_S1.genome.vcf.gz,platinum-genomes-vcf-NA12879_S1.genome.vcf.gz,platinum-genomes-vcf-NA12880_S1.genome.vcf.gz"
     genotype : "NA12877:0/1,1/1"
-
-  tolerationThreshold : 300
-
-- id : "FilesAndFilters"
-  description : "Purpose of this query"
-  query :
-    includeSample : "NA12877"
-    includeFile : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,platinum-genomes-vcf-NA12878_S1.genome.vcf.gz,platinum-genomes-vcf-NA12879_S1.genome.vcf.gz,platinum-genomes-vcf-NA12880_S1.genome.vcf.gz"
-    filter : "LowGQX;LowQD;!LowGQX;LowQD;SiteConflict"
-    file : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,platinum-genomes-vcf-NA12878_S1.genome.vcf.gz,platinum-genomes-vcf-NA12879_S1.genome.vcf.gz,platinum-genomes-vcf-NA12880_S1.genome.vcf.gz"
-    genotype : "NA12877:0/1,1/1"
-
-  tolerationThreshold : 300
+  tolerationThreshold : 1500
 
 - id : "FilesFiltersAndGenotype"
-  description : "Purpose of this query"
+  description : ""
   query :
     includeSample : "NA12877"
     includeFile : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,platinum-genomes-vcf-NA12878_S1.genome.vcf.gz,platinum-genomes-vcf-NA12879_S1.genome.vcf.gz,platinum-genomes-vcf-NA12880_S1.genome.vcf.gz"
     genotype : "NA12877:0/1,1/1"
+  tolerationThreshold : 1500
 
-  tolerationThreshold : 300
-
-- id : "Files"
-  description : "Purpose of this query"
+- id : "IncludeNone"
+  description : ""
   query :
     includeSample : "none"
     includeFile : "none"
     includeStudy : "none"
-
-  tolerationThreshold : 300
+  tolerationThreshold : 1500
 
 - id : "Qual>50"
-  description : "Purpose of this query"
+  description : ""
   query :
     qual : ">50"
-
-  tolerationThreshold : 300
+  tolerationThreshold : 1500
 
 - id : "Qual<50"
-  description : "Purpose of this query"
+  description : ""
   query :
     qual : "<50"
-
-  tolerationThreshold : 300
+  tolerationThreshold : 1500
 
 - id : "Qual<<5"
-  description : "Purpose of this query"
+  description : ""
   query :
     qual : "<<5"
+  tolerationThreshold : 1500
 
-  tolerationThreshold : 300
-
-- id : "QualAndFilters"
-  description : "Purpose of this query"
+- id : "QualAndFiltersAndFile"
+  description : ""
   query :
     qual : "<50"
     filter : "LowGQX,LowMQ"
     file : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"
-
-  tolerationThreshold : 300
+  tolerationThreshold : 1500
 
 - id : "NeglectedStudy"
-  description : "Purpose of this query"
+  description : ""
   query :
     study : "platinum;!GNOMAD_EXOMES"
     includeSample : "NA12877,NA12878,NA12879,NA12880"
     includeFile : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,platinum-genomes-vcf-NA12878_S1.genome.vcf.gz,platinum-genomes-vcf-NA12879_S1.genome.vcf.gz,platinum-genomes-vcf-NA12880_S1.genome.vcf.gz"
-
-  tolerationThreshold : 300
+  tolerationThreshold : 1500
 
 - id : "Genotype-NA12877:1/1"
-  description : "Purpose of this query"
+  description : ""
   query :
     includeSample : "NA12877"
     genotype : "NA12877:1/1"
-
-  tolerationThreshold : 300
+  tolerationThreshold : 1500
 
 - id : "Genotype-NA12877:0/1"
-  description : "Purpose of this query"
+  description : ""
   query :
     includeSample : "NA12877"
     genotype : "NA12877:0/1"
+  tolerationThreshold : 1500
 
-  tolerationThreshold : 300
-
-- id : "Genotype-NA12877:x/x"
-  description : "Purpose of this query"
+- id : "Genotype-NA12877:HOM_REF"
+  description : ""
   query :
     includeSample : "NA12877"
-    genotype : "NA12877:x/x"
-
-  tolerationThreshold : 300
+    genotype : "NA12877:HOM_ALT"
+  tolerationThreshold : 1500
 
 - id : "MultipleGenotype"
-  description : "Purpose of this query"
+  description : ""
   query :
     genotype : "NA12877:0/1,1/1,NA12878:0/1,1/1"
     includeSample : "NA12877,NA12878"
     includeFile : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,platinum-genomes-vcf-NA12878_S1.genome.vcf.gz"
+  tolerationThreshold : 1500
 
-  tolerationThreshold : 300
+- id : "Gene-DDX11L1"
+  description : ""
+  query :
+    gene : "DDX11L1"
+  tolerationThreshold : 1500
+
+- id : "TwoGenes"
+  description : ""
+  query :
+    gene : "DDX11L1,WASH7P"
+  tolerationThreshold : 1500
+
+- id : "TwoGenesAndFourCT"
+  description : ""
+  query :
+    gene : "DDX11L1,WASH7P"
+    ct : "missense_variant,start_lost,stop_lost,frameshift_variant"
+  tolerationThreshold : 1500
+
+- id : "FourCT"
+  description : ""
+  query :
+    ct : "inframe_deletion,inframe_insertion,stop_gained,splice_donor_variant"
+  tolerationThreshold : 1500
+
+- id : "Biotype"
+  description : ""
+  query :
+    biotype : "protein_coding"
+  tolerationThreshold : 1500
+
+- id : "PopulationFrequencyMaf"
+  description : ""
+  query :
+    populationFrequencyMaf : "1kG_phase3:ALL<0.01"
+  tolerationThreshold : 1500
+
+- id : "ProteinSubstitution"
+  description : ""
+  query :
+    proteinSubstitution : "polyphen>0.1,sift=tolerant"
+  tolerationThreshold : 1500
+
+- id : "BiotypeAndLOF"
+  description : ""
+  query :
+    biotype : "protein_coding"
+    populationFrequencyMaf : "1kG_phase3:ALL<0.01"
+  tolerationThreshold : 1500
 
 sessionIds :
 - "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjYWZldGVybyIsImF1ZCI6Ik9wZW5DR0EgdXNlcnMiLCJpYXQiOjE1MzcyODEzNzAsImV4cCI6MjUzNzI4NDk3MH0.8OfajGwcEHuAAgzY6-BlWqW9c7I-vj9jujx5TjftgPo"
 - "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjYWZldGVybyIsImF1ZCI6Ik9wZW5DR0EgdXNlcnMiLCJpYXQiOjE1MzcyODEzNzAsImV4cCI6MjUzNzI4NDk3MH0.8OfajGwcEHuAAgzY6-BlWqW9c7I-vj9jujx5TjftgPo"
+
