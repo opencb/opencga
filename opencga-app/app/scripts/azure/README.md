@@ -73,9 +73,9 @@ sudo systemctl enable mongod.service # start on boot
 Install Solr
 
 ```
-wget https://www-eu.apache.org/dist/lucene/solr/7.5.0/solr-7.5.0.tgz
-tar xvfz solr-7.5.0.tgz
-sudo ./solr-7.5.0/bin/install_solr_service.sh ./solr-7.5.0.tgz
+wget https://www-eu.apache.org/dist/lucene/solr/6.6.5/solr-6.6.5.tgz
+tar xvfz solr-6.6.5.tgz
+sudo ./solr-6.6.5/bin/install_solr_service.sh ./solr-6.6.5.tgz
 ```
 
 Clone OpenCGA
