@@ -54,8 +54,10 @@ public class Individual extends Annotable {
     private String modificationDate;
     private Status status;
     private LifeStatus lifeStatus;
+    @Deprecated
     private AffectationStatus affectationStatus;
     private List<Phenotype> phenotypes;
+    private List<Disorder> disorders;
     private List<Sample> samples;
     private boolean parentalConsanguinity;
 
@@ -70,22 +72,23 @@ public class Individual extends Annotable {
                       List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this(id, name, new Individual(), new Individual(), new Multiples(), new Location(), sex, null,
                 ethnicity, population, "", release, 1, TimeUtils.getTime(), new Status(), LifeStatus.UNKNOWN,
-                AffectationStatus.UNKNOWN, Collections.emptyList(), Collections.emptyList(), false, annotationSets, attributes);
+                AffectationStatus.UNKNOWN, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), false, annotationSets,
+                attributes);
     }
 
     public Individual(String id, String name, Individual father, Individual mother, Multiples multiples, Location location, Sex sex,
                       KaryotypicSex karyotypicSex, String ethnicity, Population population, LifeStatus lifeStatus,
                       AffectationStatus affectationStatus, String dateOfBirth, List<Sample> samples, boolean parentalConsanguinity,
-                      int release, List<AnnotationSet> annotationSets, List<Phenotype> phenotypeList) {
+                      int release, List<AnnotationSet> annotationSets, List<Phenotype> phenotypeList, List<Disorder> disorders) {
         this(id, name, father, mother, multiples, location, sex, karyotypicSex, ethnicity, population,
-                dateOfBirth, release, 1, TimeUtils.getTime(), new Status(), lifeStatus, affectationStatus, phenotypeList, samples,
-                parentalConsanguinity, annotationSets, Collections.emptyMap());
+                dateOfBirth, release, 1, TimeUtils.getTime(), new Status(), lifeStatus, affectationStatus, phenotypeList, disorders,
+                samples, parentalConsanguinity, annotationSets, Collections.emptyMap());
     }
 
     public Individual(String id, String name, Individual father, Individual mother, Multiples multiples, Location location, Sex sex,
                       KaryotypicSex karyotypicSex, String ethnicity, Population population, String dateOfBirth, int release, int version,
                       String creationDate, Status status, LifeStatus lifeStatus, AffectationStatus affectationStatus,
-                      List<Phenotype> phenotypes, List<Sample> samples, boolean parentalConsanguinity,
+                      List<Phenotype> phenotypes, List<Disorder> disorders, List<Sample> samples, boolean parentalConsanguinity,
                       List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -105,6 +108,7 @@ public class Individual extends Annotable {
         this.lifeStatus = lifeStatus;
         this.affectationStatus = affectationStatus;
         this.phenotypes = defaultObject(phenotypes, ArrayList::new);
+        this.disorders = defaultObject(disorders, ArrayList::new);
         this.samples = defaultObject(samples, ArrayList::new);
         this.parentalConsanguinity = parentalConsanguinity;
         this.annotationSets = annotationSets;
@@ -189,6 +193,7 @@ public class Individual extends Annotable {
         sb.append(", lifeStatus=").append(lifeStatus);
         sb.append(", affectationStatus=").append(affectationStatus);
         sb.append(", phenotypes=").append(phenotypes);
+        sb.append(", disorders=").append(disorders);
         sb.append(", samples=").append(samples);
         sb.append(", parentalConsanguinity=").append(parentalConsanguinity);
         sb.append(", attributes=").append(attributes);
@@ -409,10 +414,12 @@ public class Individual extends Annotable {
         return this;
     }
 
+    @Deprecated
     public AffectationStatus getAffectationStatus() {
         return affectationStatus;
     }
 
+    @Deprecated
     public Individual setAffectationStatus(AffectationStatus affectationStatus) {
         this.affectationStatus = affectationStatus;
         return this;
@@ -424,6 +431,15 @@ public class Individual extends Annotable {
 
     public Individual setPhenotypes(List<Phenotype> phenotypes) {
         this.phenotypes = phenotypes;
+        return this;
+    }
+
+    public List<Disorder> getDisorders() {
+        return disorders;
+    }
+
+    public Individual setDisorders(List<Disorder> disorders) {
+        this.disorders = disorders;
         return this;
     }
 

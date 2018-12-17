@@ -139,7 +139,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             throws CatalogException {
         Individual individual = new Individual(name, name, null, null, null, null, sex, karyotypicSex,
                 ethnicity, new Individual.Population(populationName, populationSubpopulation, populationDescription), dateOfBirth, -1, 1,
-                null, null, lifeStatus, affectationStatus, null, null, false, null, null);
+                null, null, lifeStatus, affectationStatus, null, null, null, false, null, null);
         return create(String.valueOf(studyId), individual, options, sessionId);
     }
 

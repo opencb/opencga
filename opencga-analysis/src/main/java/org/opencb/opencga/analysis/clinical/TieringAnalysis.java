@@ -147,7 +147,7 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
         // Check sample and proband exists
 
         Pedigree pedigree = FamilyManager.getPedigreeFromFamily(clinicalAnalysis.getFamily());
-        OntologyTerm disease = clinicalAnalysis.getDisease();
+        OntologyTerm disease = clinicalAnalysis.getDisorder();
         Phenotype phenotype = new Phenotype(disease.getId(), disease.getName(), disease.getSource(), Phenotype.Status.UNKNOWN);
 
         // Query with the filters: genotypes, popFreq < 0.01, biotype = protein_coding, genes

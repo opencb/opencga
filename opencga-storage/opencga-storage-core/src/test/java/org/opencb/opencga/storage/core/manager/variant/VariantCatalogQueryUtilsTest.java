@@ -71,7 +71,7 @@ public class VariantCatalogQueryUtilsTest {
         individuals.add(catalog.getIndividualManager().create("s1", new Individual("individual2", "individual2", IndividualProperty.Sex.FEMALE, null, null, 0, Collections.emptyList(), Collections.emptyMap()), null, sessionId).first());
         individuals.add(catalog.getIndividualManager().create("s1", new Individual("individual3", "individual3", IndividualProperty.Sex.MALE, null, null, 0, Collections.emptyList(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)).setPhenotypes(Collections.singletonList(phenotype)), null, sessionId).first());
         individuals.add(catalog.getIndividualManager().create("s1", new Individual("individual4", "individual4", IndividualProperty.Sex.FEMALE, null, null, 0, Collections.emptyList(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)), null, sessionId).first());
-        catalog.getFamilyManager().create("s1", new Family("f1", "f1", Collections.singletonList(phenotype), individuals, null, 3, null, null), null, sessionId);
+        catalog.getFamilyManager().create("s1", new Family("f1", "f1", Collections.singletonList(phenotype), null, individuals, null, 3, null, null), null, sessionId);
 
 
         createSample("sample1", "individual1");
