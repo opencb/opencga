@@ -16,32 +16,16 @@
 
 package org.opencb.opencga.analysis.old.execution.plugins.ibs;
 
-import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.tools.variant.algorithm.IdentityByState;
-import org.opencb.biodata.tools.variant.algorithm.IdentityByStateClustering;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.old.execution.plugins.OpenCGAAnalysis;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
-import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.catalog.old.models.tool.Execution;
 import org.opencb.opencga.catalog.old.models.tool.Manifest;
 import org.opencb.opencga.catalog.old.models.tool.Option;
-import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
-import java.io.FileOutputStream;
-import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.zip.GZIPOutputStream;
 
 /**
  * Created on 26/11/15
