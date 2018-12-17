@@ -8,8 +8,8 @@ ENV HD_INSIGHTS_SSH_USER=""
 
 ENV HD_INSIGHTS_SSH_USER=""
 
-# copy conf, will be copied into mount location
-COPY ./conf /opt/opencga/conf
+# copy conf to temp location
+COPY ./conf /tmp/conf
 
 VOLUME /opt/opencga/conf
 
