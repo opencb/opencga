@@ -500,27 +500,28 @@ public class FileManagerTest extends AbstractManagerTest {
 
         fileName = "item." + TimeUtils.getTimeMillis() + ".txt";
         fileTest = createDebugFile();
-        catalogManager.getFileManager().upload(studyFqn, new FileInputStream(fileTest),
+        catalogManager.getFileManager().upload(studyFqn, fileTest.toURI(),
                 new File().setPath("data/deletable/folder/" + fileName), false, true, sessionIdUser);
 
         fileName = "item." + TimeUtils.getTimeMillis() + ".txt";
         fileTest = createDebugFile();
-        QueryResult<File> fileQueryResult = catalogManager.getFileManager().upload(studyFqn2, new FileInputStream(fileTest),
-                new File().setPath("data/deletable/" + fileName), false, true, sessionIdUser);
+        QueryResult<File> fileQueryResult = catalogManager.getFileManager().upload(studyFqn2, fileTest.toURI(),
+                new File().setPath("data/deletable/" + fileName), false, true, false, false, sessionIdUser);
         assertTrue(fileTest.delete());
         assertEquals(1, fileQueryResult.getNumResults());
 
         fileName = "item." + TimeUtils.getTimeMillis() + ".txt";
         fileTest = createDebugFile();
-        fileQueryResult = catalogManager.getFileManager().upload(studyFqn2, new FileInputStream(fileTest),
-                new File().setPath(fileName), false, true, sessionIdUser);
+        fileQueryResult = catalogManager.getFileManager().upload(studyFqn2, fileTest.toURI(),
+                new File().setPath(fileName).setDescription("file at root"), false, true, false, false, sessionIdUser);
         assertEquals(1, fileQueryResult.getNumResults());
         assertTrue(fileTest.delete());
 
         fileName = "item." + TimeUtils.getTimeMillis() + ".txt";
         fileTest = createDebugFile();
         long size = Files.size(fileTest.toPath());
-        catalogManager.getFileManager().upload(studyFqn2, new FileInputStream(fileTest), new File().setPath(fileName), false, true, sessionIdUser);
+        catalogManager.getFileManager().upload(studyFqn2, fileTest.toURI(),
+                new File().setPath(fileName).setDescription("file at root"), false, true, sessionIdUser);
 
         fileQueryResult = catalogManager.getFileManager().get(studyFqn2, fileName, null, sessionIdUser);
         assertEquals(size, fileQueryResult.first().getSize());
