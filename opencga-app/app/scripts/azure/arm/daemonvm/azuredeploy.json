@@ -63,15 +63,16 @@
     "variables": {
         "vnetId": "[parameters('virtualNetworkId')]",
         "subnetRef": "[concat(variables('vnetId'), '/subnets/', parameters('subnetName'))]",
+        "getMountScript": "[concat(' - [ wget,', parameters('_artifactsLocation'), '/avere/mount.py, -O, /tmp/mount.py ]')]",
+        "runInitContainer": "[concat(' - [ sh, -c, docker, run, -e, HD_INSIGHTS_SSH_DNS=', parameters('hdInsightSshDns'), ', -e, HD_INSIGHTS_SSH_USER=', parameters('hdInsightSshUsername'), ', -e, HD_INSIGHTS_SSH_PASS=', parameters('hdInsightSshPassword'),' ', parameters('initContainerImage'))]",
         "cloud-init": [
-
             "#cloud-config",
             "bootcmd:",
-            " - [ wget, [parameters('_artifactsLocation')]/opencga-app/app/scripts/azure/arm/avere/mount.py, -O, /tmp/mount.py ]",
+            "[variables('getMountScript')]",
             "",
             "runcmd:",
             " - [ sh, -c, /tmp/mount.py ]",
-            " - [ sh, -c, docker, run, -e, HD_INSIGHTS_SSH_DNS=[parameters('hdInsightSshDns')], -e, HD_INSIGHTS_SSH_USER=[parameters('hdInsightSshUsername')], -e, HD_INSIGHTS_SSH_PASS=[parameters('hdInsightSshPassword')], [parameters('initContainerImage')]",
+            "[variables('runInitContainer')]",
             "",
             "package_upgrade: true",
             "package_reboot_if_required: true",
@@ -90,7 +91,7 @@
             "    After=docker.service",
             "    [Service]",
             "    Restart=always",
-            "[concat('    ExecStart=/usr/bin/docker run --name=opencga-daemon -e OPENCGA_PASS=',[parameters('adminPassword'),' ',[parameters('daemonContainerImage')])]",
+            "[concat('    ExecStart=/usr/bin/docker run --name=opencga-daemon -e OPENCGA_PASS=',parameters('adminPassword'),' ',parameters('daemonContainerImage'))]",
             "    ExecStop=/usr/bin/docker stop opencga-daemon",
             ""
         ],

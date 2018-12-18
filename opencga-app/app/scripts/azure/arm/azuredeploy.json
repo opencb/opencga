@@ -248,7 +248,13 @@
                         "value": "[reference('hdinsight').outputs.clusterSshUsername.value]"
                     },
                     "hdInsightSshPassword": {
-                        "value": "[reference('hdinsight').outputs.clusterSshPassword.value]"
+                        "value":  "[reference('hdinsight').outputs.clusterSshPassword.value]"
+                    },
+                    "daemonContainerImage": {
+                        "value": "[parameters('daemonContainerImage')]"
+                    },
+                    "initContainerImage": {
+                        "value": "[parameters('initContainerImage')]"
                     }
                 }
             }

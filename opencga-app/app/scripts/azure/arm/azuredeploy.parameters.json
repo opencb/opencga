@@ -47,7 +47,7 @@
         "initContainerImage": {
             "value": ""
         },
-        "deamonContainerImage": {
+        "daemonContainerImage": {
             "value": ""
         }
     }
