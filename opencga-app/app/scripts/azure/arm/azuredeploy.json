@@ -260,6 +260,7 @@
             }
         },
         {
+            "condition": "[parameters('deployAvere')]",
             "type": "Microsoft.Resources/resourceGroups",
             "apiVersion": "2018-05-01",
             "location": "[parameters('rgLocation')]",
