@@ -25,6 +25,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.benchmark.BenchmarkRunner;
 import org.opencb.opencga.storage.benchmark.variant.generators.FixedQueryGenerator;
 import org.opencb.opencga.storage.benchmark.variant.generators.MultiQueryGenerator;
+import org.opencb.opencga.storage.benchmark.variant.generators.QueryGenerator;
 import org.opencb.opencga.storage.benchmark.variant.queries.FixedQueries;
 import org.opencb.opencga.storage.benchmark.variant.queries.FixedQuery;
 import org.opencb.opencga.storage.benchmark.variant.samplers.VariantStorageEngineDirectSampler;
@@ -37,10 +38,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Created on 06/04/17.
@@ -53,7 +51,7 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
         super(storageConfiguration, jmeterHome, outdir);
     }
 
-    public void addThreadGroup(ConnectionType type, ExecutionMode mode, Path dataDir, String queryFile,
+    public void addThreadGroup(ConnectionType type, ExecutionMode mode, Path dataDir, Map<String, String> baseQuery, String queryFile,
                                String queries, QueryOptions queryOptions) {
 
         List<String> queriesList = new ArrayList<>();
@@ -83,6 +81,7 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
             variantStorageSampler.setCount(queryOptions.getBoolean(QueryOptions.COUNT, false));
             variantStorageSampler.setQueryGeneratorConfig(FixedQueryGenerator.FILE, queryFile);
             variantStorageSampler.setQueryGeneratorConfig(FixedQueryGenerator.OUT_DIR, outdir.toString());
+            setBaseQueryFromCommandLine(variantStorageSampler, baseQuery);
 
             if (mode.equals(ExecutionMode.FIXED)) {
                 variantStorageSampler.setQueryGenerator(FixedQueryGenerator.class);
@@ -105,11 +104,7 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
         switch (type) {
             case REST:
                 URI rest = storageConfiguration.getBenchmark().getRest();
-                if (Objects.nonNull(rest)) {
-                    return new VariantStorageEngineRestSampler(rest.getHost(), rest.getPath(), rest.getPort());
-                } else {
-                    return new VariantStorageEngineRestSampler("localhost", storageConfiguration.getServer().getRest());
-                }
+                return new VariantStorageEngineRestSampler(rest.getHost(), rest.getPath(), rest.getPort());
             case DIRECT:
                 return new VariantStorageEngineDirectSampler();
             case GRPC:
@@ -142,5 +137,13 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
         }
 
         return queryList;
+    }
+
+    private void setBaseQueryFromCommandLine(VariantStorageEngineSampler variantStorageEngineSampler, Map<String, String> baseQuery) {
+        if (Objects.nonNull(baseQuery)) {
+            for (String key : baseQuery.keySet()) {
+                variantStorageEngineSampler.setQueryGeneratorConfig(QueryGenerator.BASE_QUERY_REFIX + key, baseQuery.get(key));
+            }
+        }
     }
 }

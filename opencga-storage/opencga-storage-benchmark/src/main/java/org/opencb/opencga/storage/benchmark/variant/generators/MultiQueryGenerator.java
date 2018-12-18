@@ -41,6 +41,7 @@ public class MultiQueryGenerator extends QueryGenerator {
     public static final String RANDOM_QUERIES_FILE = "randomQueries.yml";
     private List<QueryGenerator> generators;
     private RandomQueries randomQueries;
+    private Map<String, String> baseQueriesFromCLI;
     private Pattern pattern = Pattern.compile("(?<param>[^(]+)(\\((?<extraParam>[^)]+)\\))?");
     private Logger logger = LoggerFactory.getLogger(getClass());
     private String query;
@@ -60,6 +61,7 @@ public class MultiQueryGenerator extends QueryGenerator {
 
         generators = new ArrayList<>();
         randomQueries = readYmlFile(queryFilePath, RandomQueries.class);
+        baseQueriesFromCLI = getBaseQueryFromCLI(params);
 
         for (String param : query.split(",")) {
             String extraParam = null;
@@ -171,6 +173,7 @@ public class MultiQueryGenerator extends QueryGenerator {
         }
         appendbaseQuery(randomQueries, query);
         appendRandomSessionId(randomQueries.getSessionIds(), query);
+        query.putAll(baseQueriesFromCLI);
         return query;
     }
 }
