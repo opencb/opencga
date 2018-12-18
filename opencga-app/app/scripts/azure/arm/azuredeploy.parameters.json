@@ -40,6 +40,9 @@
         },
         "avereAdminPassword": {
             "value": ""
+        },
+        "solrClusterLoginPassword": {
+            "value": ""
         }
     }
 }
