@@ -59,22 +59,6 @@ queries :
     includeFile : all
   tolerationThreshold : 1500
 
-- id : "FileNegated"
-  description : ""
-  query :
-    file : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz;!platinum-genomes-vcf-NA12878_S1.genome.vcf.gz"
-    includeFile : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"
-  tolerationThreshold : 1500
-
-- id : "FileNegatedAndGenotypeAndFilter"
-  description : ""
-  query :
-    includeStudy : "platinum"
-    file : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz;!platinum-genomes-vcf-NA12878_S1.genome.vcf.gz"
-    genotype : "NA12879:0/1,1/1,NA12880:0/1,1/1"
-    filter : "LowGQX;LowMQ"
-  tolerationThreshold : 1500
-
 - id : "TwoFiles"
   description : ""
   query :
