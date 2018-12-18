@@ -86,7 +86,7 @@
     "variables": {
         "sshKeyPath": "[concat('/home/',parameters('adminUsername'),'/.ssh/authorized_keys')]",
         "vmssName": "webservers",
-        "namingInfix": "[toLower(substring(concat(variables('vmssName'), uniqueString(resourceGroup().id)), 0, 10))]",
+        "namingInfix": "[toLower(substring(concat(variables('vmssName'), uniqueString(resourceGroup().id)), 0, 16))]",
         "longNamingInfix": "[toLower(variables('vmssName'))]",
         "publicIPAddressName": "[concat(variables('namingInfix'), '-pip')]",
         "loadBalancerName": "[concat(variables('namingInfix'), '-lb')]",
