@@ -2,6 +2,24 @@
     "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json",
     "contentVersion": "1.0.0.0",
     "parameters": {
+        "_artifactsLocation": {
+            "type": "string",
+            "metadata": {
+                "description": ""
+            }
+        },
+        "_artifactsLocationSasToken": {
+            "type": "string",
+            "metadata": {
+                "description": ""
+            }
+        },
+        "avereVServers": {
+            "type": "string",
+            "metadata": {
+                "description": "The ip range for the avere NFS servers i.e '10.0.1.15-10.0.1.17'"
+            }
+        },
         "virtualNetworkSubnetId": {
             "type": "string",
             "metadata": {
@@ -46,7 +64,19 @@
                 "description": "Admin username on all VMs."
             }
         },
-        "adminPassword": {
+        "tomcatDockerImage" : {
+            "type": "string",
+            "metadata": {
+                "description": "The docker image and tag for running the tomcat service."
+            }
+        },
+        "ivaDockerImage" : {
+            "type": "string",
+            "metadata": {
+                "description": "The docker image and tag for running the IVA service."
+            }
+        },
+        "SSHKeyData": {
             "type": "securestring",
             "metadata": {
                 "description": "Admin password on all VMs."
@@ -54,12 +84,12 @@
         }
     },
     "variables": {
-        "vmssName": "opencga-webfarm",
-        "namingInfix": "[toLower(substring(concat(variables('vmssName'), uniqueString(resourceGroup().id)), 0, 9))]",
+        "sshKeyPath": "[concat('/home/',parameters('adminUsername'),'/.ssh/authorized_keys')]",
+        "vmssName": "webservers",
+        "namingInfix": "[toLower(substring(concat(variables('vmssName'), uniqueString(resourceGroup().id)), 0, 10))]",
         "longNamingInfix": "[toLower(variables('vmssName'))]",
-        "virtualNetworkName": "[concat(variables('namingInfix'), 'vnet')]",
-        "publicIPAddressName": "[concat(variables('namingInfix'), 'pip')]",
-        "loadBalancerName": "[concat(variables('namingInfix'), 'lb')]",
+        "publicIPAddressName": "[concat(variables('namingInfix'), '-pip')]",
+        "loadBalancerName": "[concat(variables('namingInfix'), '-lb')]",
         "publicIPAddressID": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName'))]",
         "lbID": "[resourceId('Microsoft.Network/loadBalancers',variables('loadBalancerName'))]",
         "natPoolName": "[concat(variables('namingInfix'), 'natpool')]",
@@ -75,6 +105,7 @@
             "sku": "18.04-LTS",
             "version": "latest"
         },
+        "_comment": "The cloud init below is used to install docker then run the Avere mounting scripts located in ./arm/avere/mount.py",
         "cloud-init": [
             "#cloud-config",
             "package_upgrade: true",
@@ -83,13 +114,16 @@
             "- apt-get update",
             "- curl -fsSL https://get.docker.com/ | sh",
             "- curl -fsSL https://get.docker.com/gpg | sudo apt-key add -",
-            ""
+            "[concat('- curl -fsSL ', concat(parameters('_artifactsLocation'), '/avere/mount.py', parameters('_artifactsLocationSasToken')), ' | python3 - avere ', parameters('avereVServers') )]",
+            "[concat('- docker run -d -p 8080:8080 -p 8443:8443 --restart=always -v /media/primarynfs:/nfs ', parameters('tomcatDockerImage'))]",
+            "[concat('- docker run -d -p 80:80 -p 443:443 --network=host --restart=always -v /media/primarynfs:/nfs ', parameters('ivaDockerImage'))]"
         ],
         "cloud-init-string": "[replace(replace(replace(string(variables('cloud-init')),'\",\"','\n'),'[\"',''),'\"]','')]",
         "customData": "[base64(variables('cloud-init-string'))]"
     },
     "resources": [
         {
+            "comments": "The Public IP used by the loadbalancer, this will be the IP used to access the rest/web services of OpenCGA",
             "type": "Microsoft.Network/publicIPAddresses",
             "name": "[variables('publicIPAddressName')]",
             "location": "[resourceGroup().location]",
@@ -102,6 +136,7 @@
             }
         },
         {
+            "comments": "The LB configured to send traffic to the web nodes in the VMSS. It monitors the health endpoint of OpenCGA removing unhealthy nodes from the LB",
             "type": "Microsoft.Network/loadBalancers",
             "name": "[variables('loadBalancerName')]",
             "location": "[resourceGroup().location]",
@@ -112,7 +147,7 @@
             "properties": {
                 "loadBalancingRules": [
                     {
-                        "name": "LBRule",
+                        "name": "ivaHttp",
                         "properties": {
                             "frontendIPConfiguration": {
                                 "id": "[variables('frontEndIPConfigID')]"
@@ -120,23 +155,90 @@
                             "backendAddressPool": {
                                 "id":  "[concat(variables('lbID'),'/backendAddressPools/VMSSBackendPool')]"
                             },
-                            "protocol": "tcp",
+                            "protocol": "Tcp",
                             "frontendPort": 80,
                             "backendPort": 80,
                             "enableFloatingIP": false,
                             "idleTimeoutInMinutes": 5,
                             "probe": {
-                                "id": "[concat(variables('lbID'),'/probes/httpProbe')]"
+                                "id": "[concat(variables('lbID'),'/probes/ivaHttp')]"
+                            }
+                        }
+                    },
+                    {
+                        "name": "ivaHttps",
+                        "properties": {
+                            "frontendIPConfiguration": {
+                                "id": "[variables('frontEndIPConfigID')]"
+                            },
+                            "backendAddressPool": {
+                                "id":  "[concat(variables('lbID'),'/backendAddressPools/VMSSBackendPool')]"
+                            },
+                            "protocol": "Tcp",
+                            "frontendPort": 443,
+                            "backendPort": 443,
+                            "enableFloatingIP": false,
+                            "idleTimeoutInMinutes": 5,
+                            "probe": {
+                                "id": "[concat(variables('lbID'),'/probes/ivaHttps')]"
+                            }
+                        }
+                    },
+                    {
+                        "name": "tomcatHttp",
+                        "properties": {
+                            "frontendIPConfiguration": {
+                                "id": "[variables('frontEndIPConfigID')]"
+                            },
+                            "backendAddressPool": {
+                                "id":  "[concat(variables('lbID'),'/backendAddressPools/VMSSBackendPool')]"
+                            },
+                            "protocol": "Tcp",
+                            "frontendPort": 8080,
+                            "backendPort": 8080,
+                            "enableFloatingIP": false,
+                            "idleTimeoutInMinutes": 5,
+                            "probe": {
+                                "id": "[concat(variables('lbID'),'/probes/tomcatHttp')]"
+                            }
+                        }
+                    },
+                    {
+                        "name": "tomcatHttps",
+                        "properties": {
+                            "frontendIPConfiguration": {
+                                "id": "[variables('frontEndIPConfigID')]"
+                            },
+                            "backendAddressPool": {
+                                "id":  "[concat(variables('lbID'),'/backendAddressPools/VMSSBackendPool')]"
+                            },
+                            "protocol": "Tcp",
+                            "frontendPort": 8443,
+                            "backendPort": 8443,
+                            "enableFloatingIP": false,
+                            "idleTimeoutInMinutes": 5,
+                            "probe": {
+                                "id": "[concat(variables('lbID'),'/probes/tomcatHttps')]"
                             }
                         }
                     }
                 ],
                 "probes": [
                     {
-                        "name": "httpProbe",
+                        "name": "ivaHttpProbe",
                         "properties": {
                             "protocol": "Http",
                             "port": 80,
+                            "requestPath": "/",
+                            "intervalInSeconds": 5,
+                            "numberOfProbes": 2
+                        }
+                    },
+                    {
+                        "name": "tomcatHttpProbe",
+                        "properties": {
+                            "protocol": "Http",
+                            "port": 8080,
                             "requestPath": "/webservices/rest/v1/meta/status",
                             "intervalInSeconds": 5,
                             "numberOfProbes": 2
@@ -175,6 +277,7 @@
             }
         },
         {
+            "comments": "This VMSS creates machines used to host the web components of OpenCGA, they are configured using the CloudInit found in the variables section of this ARM template",
             "type": "Microsoft.Compute/virtualMachineScaleSets",
             "name": "[variables('namingInfix')]",
             "location": "[resourceGroup().location]",
@@ -206,12 +309,22 @@
                     "osProfile": {
                         "computerNamePrefix": "[variables('namingInfix')]",
                         "adminUsername": "[parameters('adminUsername')]",
-                        "adminPassword": "[parameters('adminPassword')]",
+                        "linuxConfiguration": {
+                          "disablePasswordAuthentication": true,
+                          "ssh": {
+                            "publicKeys": [
+                              {
+                                "path": "[variables('sshKeyPath')]",
+                                "keyData": "[parameters('SSHKeyData')]"
+                              }
+                            ]
+                          }
+                        },
                         "customData": "[variables('customData')]"
                     },
                     "networkProfile": {
                         "healthProbe": {
-                            "id": "[concat(variables('lbId'), '/probes/httpProbe')]"
+                            "id": "[concat(variables('lbId'), '/probes/tomcatHttp')]"
                         },
                         "networkInterfaceConfigurations": [
                             {
@@ -246,6 +359,7 @@
             }
         },
         {
+            "comments": "This Autoscale rule scales up the VMSS when servers have a CPU usage higher than 60%",
             "type": "Microsoft.Insights/autoscaleSettings",
             "apiVersion": "2015-04-01",
             "name": "autoscalewad",

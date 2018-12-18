@@ -85,6 +85,12 @@
             "metadata": {
                 "description": "The password for the 'admin' user on the Avere cluster configuration portal."
             }
+        },
+        "webserversSSHKeyData": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The RSA data for the SSH Public Key used to authenticate to Avere nodes."
+            }
         }
     },
     "resources": [
@@ -241,6 +247,48 @@
                     },
                     "adminPassword": {
                         "value": "[parameters('avereAdminPassword')]"
+                    }
+                }
+            }
+        },
+        {
+            "comments": "This deploys a VMSS which hosts the tomcat and IVA services behind a LB with healthchecking, autoscaling and rolling update", 
+            "type": "Microsoft.Resources/deployments",
+            "resourceGroup": "[parameters('rgPrefix')]",
+            "apiVersion": "2017-05-10",
+            "name": "webservers",
+            "dependsOn": [
+                "vnet",
+                "avere",
+                "[parameters('rgPrefix')]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/webservers/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "_artifactsLocation": {
+                        "value": "[parameters('_artifactsLocation')]"
+                    },
+                    "_artifactsLocationSasToken": {
+                        "value": "[parameters('_artifactsLocationSasToken')]"
+                    },
+                    "virtualNetworkSubnetId": {
+                        "value": "[reference('vnet').outputs.avereClusterSubnetId.value]"
+                    },
+                    "avereVServers": {
+                        "value": "[reference('avere').outputs.VSERVER_IPS.value]"
+                    },
+                    "SSHKeyData": {
+                        "value": "[parameters('avereSSHKeyData')]"
+                    },
+                    "tomcatDockerImage": {
+                        "value": "ricc/http-devnull"
+                    },
+                    "ivaDockerImage": {
+                        "value": "ricc/http-devnull"
                     }
                 }
             }
