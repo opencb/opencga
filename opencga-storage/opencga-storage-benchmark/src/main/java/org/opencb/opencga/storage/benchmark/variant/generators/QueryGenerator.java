@@ -19,7 +19,6 @@ package org.opencb.opencga.storage.benchmark.variant.generators;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.base.Throwables;
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.benchmark.variant.queries.RandomQueries;
 import org.slf4j.Logger;
@@ -92,11 +91,13 @@ public abstract class QueryGenerator {
 
     protected Map<String, String> getBaseQueryFromCLI(Map<String, String> params) {
         Map<String, String> baseQueryFromCLI = new HashMap<>();
-        String baseQueryPairs = params.get(BASE_QUERY_REFIX);
-        if (StringUtils.isNotEmpty(baseQueryPairs)) {
-            baseQueryFromCLI = Arrays.stream(baseQueryPairs.split(";"))
-                    .map(s -> s.split(","))
-                    .collect(Collectors.toMap(a -> a[0], a -> a[1]));
+        Set<String> set = params.keySet()
+                .stream()
+                .filter(s -> s.startsWith(BASE_QUERY_REFIX))
+                .collect(Collectors.toSet());
+
+        for (String key : set) {
+            baseQueryFromCLI.put(key.replaceFirst(BASE_QUERY_REFIX, ""), params.get(key));
         }
         return baseQueryFromCLI;
     }

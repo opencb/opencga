@@ -28,13 +28,6 @@ queries :
     filter : "PASS"
   tolerationThreshold : 1500
 
-- id : "FileAndFilter-MaxDepth"
-  description : ""
-  query :
-    file : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"
-    filter : MaxDepth
-  tolerationThreshold : 1500
-
 - id : "SixFilters"
   description : ""
   query :
@@ -50,6 +43,14 @@ queries :
     includeFile : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,platinum-genomes-vcf-NA12878_S1.genome.vcf.gz,platinum-genomes-vcf-NA12879_S1.genome.vcf.gz,platinum-genomes-vcf-NA12880_S1.genome.vcf.gz,platinum-genomes-vcf-NA12881_S1.genome.vcf.gz,platinum-genomes-vcf-NA12882_S1.genome.vcf.gz,platinum-genomes-vcf-NA12883_S1.genome.vcf.gz,platinum-genomes-vcf-NA12884_S1.genome.vcf.gz"
   tolerationThreshold : 1500
 
+- id : "EmptyQuery"
+  description : ""
+  query :
+    includeStudy : ""
+    includeSample : ""
+    includeFile : ""
+  tolerationThreshold : 1500
+
 - id : "AllIncludeStudySampleAndFile"
   description : ""
   query :
@@ -63,14 +64,6 @@ queries :
   query :
     file : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz;!platinum-genomes-vcf-NA12878_S1.genome.vcf.gz"
     includeFile : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"
-  tolerationThreshold : 1500
-
-- id : "FileNegatedAndGenotypes"
-  description : ""
-  query :
-    includeSample : all
-    file : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz;!platinum-genomes-vcf-NA12878_S1.genome.vcf.gz"
-    genotype : "NA12879:0/1,1/1,NA12880:0/1,1/1"
   tolerationThreshold : 1500
 
 - id : "FileNegatedAndGenotypeAndFilter"
@@ -175,14 +168,6 @@ queries :
     qual : "<50"
     filter : "LowGQX,LowMQ"
     file : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"
-  tolerationThreshold : 1500
-
-- id : "NeglectedStudy"
-  description : ""
-  query :
-    study : "platinum;!GNOMAD_EXOMES"
-    includeSample : "NA12877,NA12878,NA12879,NA12880"
-    includeFile : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,platinum-genomes-vcf-NA12878_S1.genome.vcf.gz,platinum-genomes-vcf-NA12879_S1.genome.vcf.gz,platinum-genomes-vcf-NA12880_S1.genome.vcf.gz"
   tolerationThreshold : 1500
 
 - id : "Genotype-NA12877:1/1"
