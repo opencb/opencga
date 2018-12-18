@@ -35,7 +35,7 @@
         },
         "virtualMachineSize": {
             "type": "string",
-            "defaultvalue": "Standard_D2s_v3"
+            "defaultvalue": "Standard_L8s"
         },
         "adminUsername": {
             "type": "string",
@@ -84,7 +84,7 @@
         ],
         "cloud-init-string": "[replace(replace(replace(string(variables('cloud-init')),'\",\"','\n'),'[\"',''),'\"]','')]",
         "customData": "[base64(variables('cloud-init-string'))]"
-        
+
     },
     "resources": [
         {
@@ -110,11 +110,11 @@
                         }
                     }
                 ]
-              
+
             },
             "tags": {}
         },
-     
+
         {
             "name": "daemonvm-ip",
             "type": "Microsoft.Network/publicIpAddresses",
@@ -175,11 +175,11 @@
         "adminUsername": {
             "type": "string",
             "value": "[parameters('adminUsername')]"
-        },  
+        },
         "cloud-config-string": {
             "type": "string",
             "value": "[variables('cloud-init-string')]"
         }
-       
+
     }
 }
