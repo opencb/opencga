@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.core.models;
 
+import org.opencb.biodata.models.clinical.interpretation.Comment;
+
 import java.util.List;
 import java.util.Map;
 
@@ -47,6 +49,8 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     private String dueDate;
     private Status status;
     private int release;
+
+    private List<Comment> comments;
     private Map<String, Object> attributes;
 
     public enum Priority {
@@ -70,7 +74,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, Map<String, List<File>> files,
                             Individual proband, Family family, List<Interpretation> interpretations, Priority priority, String creationDate,
-                            String dueDate, Status status, int release, Map<String, Object> attributes) {
+                            String dueDate, List<Comment> comments, Status status, int release, Map<String, Object> attributes) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -82,6 +86,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         this.priority = priority;
         this.creationDate = creationDate;
         this.dueDate = dueDate;
+        this.comments = comments;
         this.status = status;
         this.release = release;
         this.attributes = attributes;
@@ -104,6 +109,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", dueDate='").append(dueDate).append('\'');
         sb.append(", status=").append(status);
+        sb.append(", comments=").append(comments);
         sb.append(", release=").append(release);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
@@ -245,6 +251,15 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     public ClinicalAnalysis setModificationDate(String modificationDate) {
         this.modificationDate = modificationDate;
+        return this;
+    }
+
+    public List<Comment> getComments() {
+        return comments;
+    }
+
+    public ClinicalAnalysis setComments(List<Comment> comments) {
+        this.comments = comments;
         return this;
     }
 

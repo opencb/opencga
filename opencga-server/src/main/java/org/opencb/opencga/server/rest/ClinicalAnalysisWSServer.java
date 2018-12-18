@@ -336,6 +336,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
         public List<ClinicalInterpretationParameters> interpretations;
 
         public String dueDate;
+        public List<Comment> comments;
         public ClinicalAnalysis.Priority priority;
 
         public Map<String, Object> attributes;
@@ -385,7 +386,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
                             : new ArrayList<>();
             String clinicalId = StringUtils.isEmpty(id) ? name : id;
             return new ClinicalAnalysis(clinicalId, description, type, disorder, fileMap, individual, f,
-                    interpretationList, priority, null, dueDate, null, 1, attributes).setName(name);
+                    interpretationList, priority, null, dueDate, comments, null, 1, attributes).setName(name);
         }
     }
 
