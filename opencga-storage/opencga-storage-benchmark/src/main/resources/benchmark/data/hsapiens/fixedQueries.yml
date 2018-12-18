@@ -21,6 +21,13 @@ queries :
     filter : "LowGQX;LowMQ;LowQD"
   tolerationThreshold : 1500
 
+- id : "FileAndFilter-PASS"
+  description : ""
+  query :
+    file : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"
+    filter : "PASS"
+  tolerationThreshold : 1500
+
 - id : "FileAndFilter-MaxDepth"
   description : ""
   query :
@@ -32,7 +39,7 @@ queries :
   description : ""
   query :
     file : "platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,platinum-genomes-vcf-NA12878_S1.genome.vcf.gz"
-    filter : "LowGQX;LowMQ;LowQD;LowGQX;LowQD;SiteConflict"
+    filter : "LowGQX,LowMQ,LowQD,LowGQX,LowQD,SiteConflict"
   tolerationThreshold : 1500
 
 - id : "MultipleIncludeFilesAndSamples"
@@ -219,17 +226,24 @@ queries :
     gene : "DDX11L1,WASH7P"
   tolerationThreshold : 1500
 
-- id : "TwoGenesAndFourCT"
+- id : "ThreeGenes"
   description : ""
   query :
-    gene : "DDX11L1,WASH7P"
+    gene : "DDX11L1,WASH7P,CDH13"
+  tolerationThreshold : 1500
+
+- id : "ThreeGenesAndFourCT"
+  description : ""
+  query :
+    gene : "DDX11L1,WASH7P,CTNNA3"
     ct : "missense_variant,start_lost,stop_lost,frameshift_variant"
   tolerationThreshold : 1500
 
-- id : "FourCT"
+- id : "ThreeGeneAndLOF"
   description : ""
   query :
-    ct : "inframe_deletion,inframe_insertion,stop_gained,splice_donor_variant"
+    gene : "DDX11L1,WASH7P,CTNNA3"
+    ct : "frameshift_variant,inframe_deletion,inframe_insertion,start_lost,stop_gained,stop_lost,splice_acceptor_variant,splice_donor_variant,transcript_ablation,transcript_amplification"
   tolerationThreshold : 1500
 
 - id : "Biotype"
@@ -241,7 +255,7 @@ queries :
 - id : "PopulationFrequencyMaf"
   description : ""
   query :
-    populationFrequencyMaf : "1kG_phase3:ALL<0.01"
+    populationFrequencyMaf : "GNOMAD_GENOMES:ALL<0.01"
   tolerationThreshold : 1500
 
 - id : "ProteinSubstitution"
@@ -250,14 +264,10 @@ queries :
     proteinSubstitution : "polyphen>0.1,sift=tolerant"
   tolerationThreshold : 1500
 
-- id : "BiotypeAndLOF"
+- id : "BiotypeAndLOFAndPFMAF"
   description : ""
   query :
     biotype : "protein_coding"
-    populationFrequencyMaf : "1kG_phase3:ALL<0.01"
+    ct : "frameshift_variant,inframe_deletion,inframe_insertion,start_lost,stop_gained,stop_lost,splice_acceptor_variant,splice_donor_variant,transcript_ablation,transcript_amplification"
+    populationFrequencyMaf : "GNOMAD_GENOMES:ALL<0.01;1kG_phase3:ALL<0.01"
   tolerationThreshold : 1500
-
-sessionIds :
-- "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjYWZldGVybyIsImF1ZCI6Ik9wZW5DR0EgdXNlcnMiLCJpYXQiOjE1MzcyODEzNzAsImV4cCI6MjUzNzI4NDk3MH0.8OfajGwcEHuAAgzY6-BlWqW9c7I-vj9jujx5TjftgPo"
-- "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjYWZldGVybyIsImF1ZCI6Ik9wZW5DR0EgdXNlcnMiLCJpYXQiOjE1MzcyODEzNzAsImV4cCI6MjUzNzI4NDk3MH0.8OfajGwcEHuAAgzY6-BlWqW9c7I-vj9jujx5TjftgPo"
-
