@@ -1,6 +1,8 @@
 #!/bin/bash
 
-cp -r /tmp/conf/ /opt/opencga/conf
+# Copies the config files from our local directory into a
+# persistent volume to be shared by the other containers.
+cp -r /opt/opencga/conf/* /opt/volume
 
 # TODO
 # Change hbase.client.keyvalue.maxsize to 0 in /etc/hbase/conf/hbase-site.xml on hadoop cluster to avoid 'KeyValue size too large' error
