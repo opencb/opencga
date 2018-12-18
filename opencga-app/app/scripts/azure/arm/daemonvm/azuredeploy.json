@@ -52,8 +52,13 @@
         },
         "hdInsightSshPassword": {
             "type": "securestring"
+        },
+        "initContainerImage": {
+            "type": "string"
+        },
+        "daemonContainerImage": {
+            "type": "string"
         }
-
     },
     "variables": {
         "vnetId": "[parameters('virtualNetworkId')]",
@@ -61,6 +66,13 @@
         "cloud-init": [
 
             "#cloud-config",
+            "bootcmd:",
+            " - [ wget, [parameters('_artifactsLocation')]/opencga-app/app/scripts/azure/arm/avere/mount.py, -O, /tmp/mount.py ]",
+            "",
+            "runcmd:",
+            " - [ sh, -c, /tmp/mount.py ]",
+            " - [ sh, -c, docker, run, -e, HD_INSIGHTS_SSH_DNS=[parameters('hdInsightSshDns')], -e, HD_INSIGHTS_SSH_USER=[parameters('hdInsightSshUsername')], -e, HD_INSIGHTS_SSH_PASS=[parameters('hdInsightSshPassword')], [parameters('initContainerImage')]",
+            "",
             "package_upgrade: true",
             "package_reboot_if_required: true",
             "",
@@ -78,7 +90,7 @@
             "    After=docker.service",
             "    [Service]",
             "    Restart=always",
-            "[concat('    ExecStart=/usr/bin/docker run --name=opencga-daemon -e HD_INSIGHTS_SSH_DNS=',parameters('hdInsightSshDns'),' -e HD_INSIGHTS_SSH_USER=',parameters('hdInsightSshUsername'),' -e HD_INSIGHTS_SSH_PASS=',parameters('hdInsightSshPassword'),' marrobi/opencga-daemon')]",
+            "[concat('    ExecStart=/usr/bin/docker run --name=opencga-daemon -e OPENCGA_PASS=',[parameters('adminPassword'),' ',[parameters('daemonContainerImage')])]",
             "    ExecStop=/usr/bin/docker stop opencga-daemon",
             ""
         ],

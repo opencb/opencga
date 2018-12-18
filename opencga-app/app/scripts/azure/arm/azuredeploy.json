@@ -147,6 +147,20 @@
             "metadata": {
                 "description": "SSH Password (maybe change to key)"
             }
+        },
+        "initContainerImage": {
+            "type": "string",
+            "defaultValue": "dotjson/opencga-init",
+            "metadata": {
+                "description": "The init container image to run"
+            }
+        },
+        "daemonContainerImage": {
+            "type": "string",
+            "defaultValue": "dotjson/opencga-daemon",
+            "metadata": {
+                "description": "The daemon container image to run"
+            }
         }
     },
     "resources": [

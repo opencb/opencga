@@ -43,6 +43,12 @@
         },
         "solrClusterLoginPassword": {
             "value": ""
+        },
+        "initContainerImage": {
+            "value": ""
+        },
+        "deamonContainerImage": {
+            "value": ""
         }
     }
 }
