@@ -18,9 +18,12 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import org.bson.Document;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
+import org.opencb.commons.utils.ListUtils;
+import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.Interpretation;
-import org.opencb.opencga.core.models.Sample;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -36,36 +39,12 @@ public class ClinicalAnalysisConverter extends GenericDocumentComplexConverter<C
     }
 
     @Override
-    public Document convertToStorageType(ClinicalAnalysis object) {
-        Document document = super.convertToStorageType(object);
-        document.put("uid", object.getUid());
-        document.put("studyUid", object.getStudyUid());
+    public Document convertToStorageType(ClinicalAnalysis clinicalAnalysis) {
+        Document document = super.convertToStorageType(clinicalAnalysis);
+        document.put("uid", clinicalAnalysis.getUid());
+        document.put("studyUid", clinicalAnalysis.getStudyUid());
 
-        long familyId = object.getFamily() != null ? (object.getFamily().getUid() == 0 ? -1L : object.getFamily().getUid()) : -1L;
-        document.put("family", new Document("uid", familyId));
-
-        long somaticId = object.getSomatic() != null ? (object.getSomatic().getUid() == 0 ? -1L : object.getSomatic().getUid()) : -1L;
-        document.put("somatic", new Document("uid", somaticId));
-
-        long germlineId = object.getGermline() != null ? (object.getGermline().getUid() == 0 ? -1L : object.getGermline().getUid()) : -1L;
-        document.put("germline", new Document("uid", germlineId));
-
-        if (object.getProband() != null) {
-            long probandId = object.getProband().getUid() <= 0 ? -1L : object.getProband().getUid();
-            List<Document> sampleList = new ArrayList<>();
-            if (object.getProband().getSamples() != null) {
-                for (Sample sample : object.getProband().getSamples()) {
-                    sampleList.add(new Document("uid", sample.getUid()));
-                }
-            }
-
-            document.put("proband", new Document()
-                    .append("uid", probandId)
-                    .append("samples", sampleList)
-            );
-        }
-
-        document.put("interpretations", convertInterpretations(object.getInterpretations()));
+        document.put("interpretations", convertInterpretations(clinicalAnalysis.getInterpretations()));
 
         validateDocumentToUpdate(document);
 
@@ -75,39 +54,51 @@ public class ClinicalAnalysisConverter extends GenericDocumentComplexConverter<C
     public void validateDocumentToUpdate(Document document) {
         validateInterpretationToUpdate(document);
         validateFamilyToUpdate(document);
-        validateSubjectsToUpdate(document);
+        validateProbandToUpdate(document);
     }
 
     public void validateFamilyToUpdate(Document document) {
-        Document family = (Document) document.get("family");
+        Document family = (Document) document.get(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key());
         if (family != null) {
-            long familyId = getLongValue(family, "uid");
-            familyId = familyId <= 0 ? -1L : familyId;
-            document.put("family", new Document("uid", familyId));
+            // Store the uid as a long value
+            family.put("uid", getLongValue(family, "uid"));
+            family.remove("studyUid");
+
+            // Check if family contains members
+            List<Document> members = (List<Document>) family.get(FamilyDBAdaptor.QueryParams.MEMBERS.key());
+            if (ListUtils.isNotEmpty(members)) {
+                for (Document member : members) {
+                   validateProbandToUpdate(member);
+                }
+            }
         }
     }
 
-    public void validateSubjectsToUpdate(Document document) {
-        Document proband = (Document) document.get("proband");
-        if (proband != null && !proband.isEmpty()) {
+    public void validateProbandToUpdate(Document document) {
+        Document member = (Document) document.get(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key());
+        if (member != null) {
+            member.put("uid", getLongValue(member, "uid"));
+            member.remove("studyUid");
 
-            long probandId = getLongValue(proband, "uid");
-            probandId = probandId <= 0 ? -1L : probandId;
-
-            List<Document> sampleDocList = (List) proband.get("samples");
-            List<Document> sampleList = new ArrayList<>(sampleDocList.size());
-            if (sampleDocList != null) {
-                for (Document sampleDocument : sampleDocList) {
-                    long sampleId = getLongValue(sampleDocument, "uid");
-                    sampleId = sampleId <= 0 ? -1L : sampleId;
-                    sampleList.add(new Document("uid", sampleId));
-                }
+            Document father = (Document) member.get(IndividualDBAdaptor.QueryParams.FATHER.key());
+            if (father != null) {
+                father.put("uid", getLongValue(father, "uid"));
+                father.remove("studyUid");
             }
 
-            document.put("proband", new Document()
-                    .append("uid", probandId)
-                    .append("samples", sampleList)
-            );
+            Document mother = (Document) member.get(IndividualDBAdaptor.QueryParams.MOTHER.key());
+            if (mother != null) {
+                mother.put("uid", getLongValue(mother, "uid"));
+                mother.remove("studyUid");
+            }
+
+            List<Document> samples = (List<Document>) member.get(IndividualDBAdaptor.QueryParams.SAMPLES.key());
+            if (ListUtils.isNotEmpty(samples)) {
+                for (Document sample : samples) {
+                    sample.put("uid", getLongValue(sample, "uid"));
+                    sample.remove("studyUid");
+                }
+            }
         }
     }
 

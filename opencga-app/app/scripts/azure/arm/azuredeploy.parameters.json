@@ -46,6 +46,9 @@
         },
         "ivaDockerImage": {
             "value": ""
+        },
+        "solrClusterLoginPassword": {
+            "value": ""
         }
     }
 }

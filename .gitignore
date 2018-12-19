@@ -90,3 +90,6 @@ opencga-test/fitnesse/FitNesseRoot/RecentChanges.wiki
 # Python
 *.pyc
 venv
+
+# Java annotation processor (APT)
+.factorypath

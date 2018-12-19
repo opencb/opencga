@@ -144,7 +144,7 @@ public class FileMetadataReaderTest {
 
     @Test
     public void testGetMetadataFromVcf() throws CatalogException, FileNotFoundException {
-        File file = catalogManager.getFileManager().upload(study.getFqn(), new FileInputStream(Paths.get(vcfFileUri).toFile()),
+        File file = catalogManager.getFileManager().upload(study.getFqn(), vcfFileUri,
                 new File().setPath(folder.getPath() + VCF_FILE_NAME), false, false, sessionIdUser).first();
 
         assertTrue(file.getSize() > 0);
@@ -202,7 +202,7 @@ public class FileMetadataReaderTest {
 
     @Test
     public void testDoNotOverwriteSampleIds() throws CatalogException, FileNotFoundException {
-        File file = catalogManager.getFileManager().upload(study.getFqn(), new FileInputStream(Paths.get(vcfFileUri).toFile()),
+        File file = catalogManager.getFileManager().upload(study.getFqn(), vcfFileUri,
                 new File().setPath(folder.getPath() + VCF_FILE_NAME), false, false, sessionIdUser).first();
         assertEquals(File.FileStatus.READY, file.getStatus().getName());
         assertEquals(File.Format.VCF, file.getFormat());
@@ -225,7 +225,7 @@ public class FileMetadataReaderTest {
     public void testGetMetadataFromBam()
             throws CatalogException, FileNotFoundException {
 
-        File file = catalogManager.getFileManager().upload(study.getFqn(), new FileInputStream(Paths.get(bamFileUri).toFile()),
+        File file = catalogManager.getFileManager().upload(study.getFqn(), bamFileUri,
                 new File().setPath(folder.getPath() + BAM_FILE_NAME), false, false, sessionIdUser).first();
 
         assertTrue(file.getSize() > 0);

@@ -63,10 +63,10 @@
             }
         },
         "avereEnabled": {
-          "type": "bool",
-          "metadata": {
-              "description": "Basic toggle to disable Avere"
-          }
+            "type": "bool",
+            "metadata": {
+                "description": "Basic toggle to disable Avere"
+            }
         },
         "avereServicePrincipalAppId": {
             "type": "string",
@@ -98,16 +98,68 @@
                 "description": "The RSA data for the SSH Public Key used to authenticate to Avere nodes."
             }
         },
-        "tomcatDockerImage" : {
+        "tomcatDockerImage": {
             "type": "string",
             "metadata": {
                 "description": "The docker image and tag for running the tomcat service."
             }
         },
-        "ivaDockerImage" : {
+        "ivaDockerImage": {
             "type": "string",
             "metadata": {
                 "description": "The docker image and tag for running the IVA service."
+            }
+        },
+        "solrClusterLoginUserName": {
+            "type": "string",
+            "defaultValue": "opencgaadmin",
+            "metadata": {
+                "description": "Admin username"
+            }
+        },
+        "solrClusterLoginPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
+            }
+        },
+        "solrHighAvailability": {
+            "type": "bool",
+            "defaultValue": true,
+            "metadata": {
+                "description": ""
+            }
+        },
+        "solrDiskSizeGB": {
+            "type": "int",
+            "defaultValue": 512,
+            "metadata": {
+                "description": "Size of the data disk for Solr."
+            }
+        },
+        "solrVMSize": {
+            "type": "string",
+            "defaultValue": "Standard_E8_v3",
+            "metadata": {
+                "description": "Size of the VM"
+            }
+        },
+        "zookeeperVMSize": {
+            "type": "string",
+            "defaultValue": "Standard_D2_v2",
+            "metadata": {
+                "description": "Size of the zookeeper VM"
+            }
+        },
+        "solrDiskType": {
+            "type": "string",
+            "defaultValue": "Standard_LRS",
+            "allowedValues": [
+                "Standard_LRS",
+                "Premium_LRS"
+            ],
+            "metadata": {
+                "description": "Storage Account type"
             }
         }
     },
@@ -122,7 +174,7 @@
         {
             "resourceGroup": "[parameters('rgPrefix')]",
             "type": "Microsoft.Resources/deployments",
-            "apiVersion": "2017-05-10",
+            "apiVersion": "2018-05-01",
             "name": "vnet",
             "dependsOn": [
                 "[parameters('rgPrefix')]"
@@ -138,7 +190,7 @@
         {
             "resourceGroup": "[parameters('rgPrefix')]",
             "type": "Microsoft.Resources/deployments",
-            "apiVersion": "2017-05-10",
+            "apiVersion": "2018-05-01",
             "name": "azurefiles",
             "dependsOn": [
                 "[parameters('rgPrefix')]"
@@ -154,7 +206,7 @@
         {
             "resourceGroup": "[parameters('rgPrefix')]",
             "type": "Microsoft.Resources/deployments",
-            "apiVersion": "2017-05-10",
+            "apiVersion": "2018-05-01",
             "name": "hdinsight-storage",
             "dependsOn": [
                 "vnet",
@@ -186,7 +238,7 @@
         {
             "resourceGroup": "[concat(parameters('rgPrefix'),'-hdinsight')]",
             "type": "Microsoft.Resources/deployments",
-            "apiVersion": "2017-05-10",
+            "apiVersion": "2018-05-01",
             "name": "hdinsight",
             "dependsOn": [
                 "hdinsight-storage",
@@ -239,7 +291,7 @@
         {
             "type": "Microsoft.Resources/deployments",
             "resourceGroup": "[concat(parameters('rgPrefix'),'-avere')]",
-            "apiVersion": "2017-05-10",
+            "apiVersion": "2018-05-01",
             "condition": "[equals(parameters('avereEnabled'), 'True')]",
             "name": "avere",
             "dependsOn": [
@@ -287,7 +339,7 @@
             }
         },
         {
-            "comments": "This deploys a VMSS which hosts the tomcat and IVA services behind a LB with healthchecking, autoscaling and rolling update", 
+            "comments": "This deploys a VMSS which hosts the tomcat and IVA services behind a LB with healthchecking, autoscaling and rolling update",
             "type": "Microsoft.Resources/deployments",
             "resourceGroup": "[parameters('rgPrefix')]",
             "apiVersion": "2017-05-10",
@@ -323,13 +375,72 @@
                         "value": "[parameters('tomcatDockerImage')]"
                     },
                     "ivaDockerImage": {
-                        "value": "parameters('ivaDockerImage')]"
+                        "value": "[parameters('ivaDockerImage')]"
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Resources/resourceGroups",
+            "apiVersion": "2018-05-01",
+            "location": "[parameters('rgLocation')]",
+            "name": "[concat(parameters('rgPrefix'),'-solr')]",
+            "properties": {}
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "resourceGroup": "[concat(parameters('rgPrefix'),'-solr')]",
+            "apiVersion": "2017-05-10",
+            "name": "solr",
+            "dependsOn": [
+                "vnet"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/solr/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "clusterName": {
+                        "value": "opencga"
+                    },
+                    "subnetId": {
+                        "value": "[reference('vnet').outputs.solrSubnetId.value]"
+                    },
+                    "_artifactsLocation": {
+                        "value": "[parameters('_artifactsLocation')]"
+                    },
+                    "_artifactsLocationSasToken": {
+                        "value": "[parameters('_artifactsLocationSasToken')]"
+                    },
+                    "location": {
+                        "value": "[parameters('rgLocation')]"
+                    },
+                    "clusterLoginUserName": {
+                        "value": "[parameters('solrClusterLoginUserName')]"
+                    },
+                    "clusterLoginPassword": {
+                        "value": "[parameters('solrClusterLoginPassword')]"
+                    },
+                    "highAvailability": {
+                        "value": "[parameters('solrHighAvailability')]"
+                    },
+                    "solrDiskSizeGB": {
+                        "value": "[parameters('solrDiskSizeGB')]"
+                    },
+                    "solrVMSize": {
+                        "value": "[parameters('solrVMSize')]"
+                    },
+                    "zookeeperVMSize": {
+                        "value": "[parameters('zookeeperVMSize')]"
+                    },
+                    "diskType": {
+                        "value": "[parameters('solrDiskType')]"
                     }
                 }
             }
         }
     ],
-    "outputs": {
-       
-    }
+    "outputs": {}
 }
