@@ -6,13 +6,16 @@
 
 # copy conf files from hdinsight cluster (from /etc/hadoop/conf & /etc/hbase/conf) to opencga VM
 # place these files in /opt/opencga/conf/hadoop, by e.g.: (todo: change connection strings)
+echo "Fetching HDInsight configuration"
 sshpass -p $HD_INSIGHTS_SSH_PASS scp -o StrictHostKeyChecking=no -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r $HD_INSIGHTS_SSH_USER@$HD_INSIGHTS_SSH_DNS:/etc/hadoop/conf/* /opt/opencga/conf/hadoop
 # same with /etc/hbase/conf, e.g.
 sshpass -p $HD_INSIGHTS_SSH_PASS scp -o StrictHostKeyChecking=no  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r $HD_INSIGHTS_SSH_USER@$HD_INSIGHTS_SSH_DNS:/etc/hbase/conf/* /opt/opencga/conf/hadoop
 
 # Copies the config files from our local directory into a
 # persistent volume to be shared by the other containers.
-mkdir -p /opt/volume/conf && cp -r /opt/opencga/conf/* /opt/volume/conf
-mkdir -p /opt/volume/sessions
+echo "Initialising volume"
+mkdir -p /opt/volume/conf /opt/volume/sessions
+cp -r /opt/opencga/conf/* /opt/volume/conf
 
+echo "Installing catalog"
 /opt/opencga/bin/opencga-admin.sh catalog install --secret-key ${1}
