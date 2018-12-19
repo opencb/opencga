@@ -17,11 +17,16 @@ rm -rf /opt/tomcat/webapps/ROOT
 RUN cp  /opt/opencga/opencga-${OPENCGA_VERSION}.war /opt/tomcat/webapps/opencga-${OPENCGA_VERSION}.war &&  chmod 777 /opt/opencga/
 
 # copy tomcat config
-COPY ./opencga.xml /var/lib/tomcat8/conf/Catalina/localhost/opencga-${OPENCGA_VERSION}.xml 
+COPY ./opencga.xml /var/lib/tomcat8/conf/Catalina/localhost/opencga-${OPENCGA_VERSION}.xml
 
-VOLUME /opt/opencga/conf
+# Mount the volume at arbitary location and then
+# symlink expected location to the shared volume.
+VOLUME /opt/volume
+RUN mkdir -p /opt/opencga/ && \
+    ln -sf /opt/volume/conf /opt/opencga/conf && \
+    ln -sf /opt/volume/sessions /opt/opencga/sessions
 
 # Launch Tomcat
-CMD ["sh", "-c", "/tmp/config.sh && /opt/tomcat/bin/catalina.sh run"] 
+CMD ["sh", "-c", "/tmp/config.sh && /opt/tomcat/bin/catalina.sh run"]
 
 EXPOSE 8080

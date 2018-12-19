@@ -12,6 +12,7 @@ sshpass -p $HD_INSIGHTS_SSH_PASS scp -o StrictHostKeyChecking=no  -o StrictHostK
 
 # Copies the config files from our local directory into a
 # persistent volume to be shared by the other containers.
-mkdir -p /opt/volume/conf && cp -r /opt/opencga/conf/* /opt/volume/
+mkdir -p /opt/volume/conf && cp -r /opt/opencga/conf /opt/volume/conf
+mkdir -p /opt/volume/sessions
 
 /opt/opencga/bin/opencga-admin.sh catalog install --secret-key ${1}

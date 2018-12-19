@@ -12,4 +12,4 @@ RUN wget --quiet "https://github.com/opencb/iva/releases/download/v${IVA_VERSION
 # symlink expected location to the shared volume.
 VOLUME /opt/volume
 RUN mkdir -p usr/local/apache2/htdocs/ && \
-    ln -sf /opt/volume usr/local/apache2/htdocs/conf
+    ln -sf /opt/volume/conf usr/local/apache2/htdocs/conf
