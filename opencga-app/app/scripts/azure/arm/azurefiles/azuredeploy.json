@@ -103,7 +103,7 @@
         },
         "accountKey": {
             "type": "string",
-            "value": "[variables('storageAccountName')]"
+            "value": "[listKeys(variables('storageAccountName'),'2017-10-01').keys[0].value]"
           },
 
         "shareName": {

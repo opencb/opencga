@@ -293,6 +293,7 @@
             "apiVersion": "2017-05-10",
             "name": "webservers",
             "dependsOn": [
+                "azurefiles",
                 "vnet",
                 "[parameters('rgPrefix')]"
             ],
@@ -312,8 +313,8 @@
                     "virtualNetworkSubnetId": {
                         "value": "[reference('vnet').outputs.avereClusterSubnetId.value]"
                     },
-                    "avereVServers": {
-                        "value": "missing"
+                    "mountArgs": {
+                        "value": "[concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value, ',' , reference('azurefiles').outputs.accountKey.value)]"
                     },
                     "SSHKeyData": {
                         "value": "[parameters('webserversSSHKeyData')]"
