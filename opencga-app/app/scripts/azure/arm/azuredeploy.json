@@ -364,7 +364,7 @@
                         "value": "[parameters('_artifactsLocationSasToken')]"
                     },
                     "virtualNetworkSubnetId": {
-                        "value": "[reference('vnet').outputs.avereClusterSubnetId.value]"
+                        "value": "[reference('vnet').outputs.hdinsightSubnetId.value]"
                     },
                     "mountArgs": {
                         "value": "[concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value, ',' , reference('azurefiles').outputs.accountKey.value)]"
