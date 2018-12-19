@@ -8,5 +8,8 @@ ARG IVA_VERSION="1.0.0-beta"
 
 RUN wget --quiet "https://github.com/opencb/iva/releases/download/v${IVA_VERSION}/iva-${IVA_VERSION}.tar.gz" && tar xvf iva-${IVA_VERSION}.tar.gz --strip-components=1 -C /usr/local/apache2/htdocs/  && rm ./iva-${IVA_VERSION}.tar.gz
 
-# config needs to be mounted into
-VOLUME /usr/local/apache2/htdocs/conf
+# Mount the volume at arbitary location and then
+# symlink expected location to the shared volume.
+VOLUME /opt/volume
+RUN mkdir -p usr/local/apache2/htdocs/ && \
+    ln -sf /opt/volume usr/local/apache2/htdocs/conf
