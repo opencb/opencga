@@ -1,0 +1,248 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "type": "string",
+            "defaultValue": "[resourceGroup().location]",
+            "metadata": {
+                "description": "Location for all resources."
+            }
+        },
+        "vmSize": {
+            "type": "string",
+            "metadata": {
+                "description": "Size of vm"
+            },
+            "defaultValue": "Standard_D2_v2"
+        },
+        "dnsLabelPrefix": {
+            "type": "string",
+            "metadata": {
+                "description": "Unique DNS Name for the Public IP used to access the Virtual Machine."
+            }
+        },
+        "adminUsername": {
+            "type": "string"
+        },
+        "adminPassword": {
+            "type": "secureString"
+        }
+    },
+    "variables": {
+        "vmName": "mongo-vm",
+        "nsgName": "mongo-nsg",
+        "nicName": "mongo-nic",
+        "publicIPAddressName": "mongo-publicip",
+        "publicIPAddressType": "Dynamic",
+        "virtualNetworkName": "net",
+        "vnetAddressPrefix": "10.0.0.0/16",
+        "subnetName": "mong-subnet",
+        "subnetPrefix": "10.0.0.0/24",
+        "dnsPrefix": "[concat(parameters('dnsLabelPrefix'), uniquestring(resourceGroup().id))]"
+    },
+    "resources": [
+        {
+            "apiVersion": "2017-10-01",
+            "type": "Microsoft.Network/virtualNetworks",
+            "name": "[variables('virtualNetworkName')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/networkSecurityGroups/', variables('nsgName'))]"
+            ],
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[variables('vnetAddressPrefix')]"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "[variables('subnetName')]",
+                        "properties": {
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgName'))]"
+                            },
+                            "addressPrefix": "[variables('subnetPrefix')]"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "2017-10-01",
+            "type": "Microsoft.Network/networkInterfaces",
+            "name": "[variables('nicName')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))]",
+                "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName'))]"
+                            },
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets/', variables('virtualNetworkName'), variables('subnetName'))]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "[variables('nsgName')]",
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2018-08-01",
+            "location": "[parameters('location')]",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "Port_27017",
+                        "properties": {
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "27017",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 1020,
+                            "direction": "Inbound",
+                            "sourcePortRanges": [],
+                            "destinationPortRanges": [],
+                            "sourceAddressPrefixes": [],
+                            "destinationAddressPrefixes": []
+                        }
+                    },
+                    {
+                        "name": "default-allow-ssh",
+                        "properties": {
+                            "protocol": "TCP",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "22",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 1000,
+                            "direction": "Inbound",
+                            "sourcePortRanges": [],
+                            "destinationPortRanges": [],
+                            "sourceAddressPrefixes": [],
+                            "destinationAddressPrefixes": []
+                        }
+                    },
+                    {
+                        "name": "Port_80",
+                        "properties": {
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "80",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 1010,
+                            "direction": "Inbound",
+                            "sourcePortRanges": [],
+                            "destinationPortRanges": [],
+                            "sourceAddressPrefixes": [],
+                            "destinationAddressPrefixes": []
+                        }
+                    }
+                ]
+            },
+            "tags": {}
+        },
+        {
+            "apiVersion": "2017-10-01",
+            "type": "Microsoft.Network/publicIPAddresses",
+            "name": "[variables('publicIPAddressName')]",
+            "location": "[parameters('location')]",
+            "properties": {
+                "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
+                "dnsSettings": {
+                    "domainNameLabel": "[variables('dnsPrefix')]"
+                }
+            }
+        },
+        {
+            "name": "[variables('vmName')]",
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2018-06-01",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'))]"
+            ],
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[parameters('vmSize')]"
+                },
+                "storageProfile": {
+                    "osDisk": {
+                        "osType": "Linux",
+                        "createOption": "FromImage",
+                        "managedDisk": {
+                            "storageAccountType": "Standard_LRS"
+                        }
+                    },
+                    "imageReference": {
+                        "publisher": "Canonical",
+                        "offer": "UbuntuServer",
+                        "sku": "16.04-LTS",
+                        "version": "latest"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nicName'))]"
+                        }
+                    ]
+                },
+                "osProfile": {
+                    "computerName": "[variables('vmName')]",
+                    "customData": "[base64('#cloud-config\n\nwrite_files:\n -  encoding: gzip\n    content: !!binary |\n        H4sIAF8gGlwAA51U207cMBB95yumW9SVKhwvyy6XSK0aYJGqFoTEQx+6FXLsYWOR2K7tLERt/712HNqFSr0pUi4zZ87cjvP8GS2loiVz1RbySsN2cXl5fXpxdX1RnC+2XCs0MOPJCj20RjCPT20rywQC6R7bpXKe1TU4fePvmEVirDZovURHuG4arR6F3GIHTKyBxDeHdo0WqluTU/rjO2vLVvk2C9H54SQgLfI1TI/2JsVpsTg8Kc7mk/nRYnGwd3w8O54fHuxOi+n0aPesmBWn89TcSGAJH4FZXr1ijdif7TDb7M/gE1TeGxfSWTQ6C9WttCgzbVc0VEdTZrhHJVlNBy+J3r1sH5q29jIU6HAEX6FvySMCRc/7aKdby9FltXQ+E5vhJIT35j/P+WGepIMNgoRxnfPYcF8DKlbWOCCyODfJH4iEIJEsNuik17aLXK1Klf8OYwzLeVhdqT0dnv9Ur1pJdQ9DJJjOV1qR4ZP0zi1XIxrYnU8SyQOWJDcQAdtfNnX5DUgThuz8m3iLkghYtrKIxGsH5PMwmAoIh/FA4uHFi6EY4sBirZkYbwJHnPm0thq9Q8VtF9ZXhwnRJ+mpsXIdlJkZbP4yIvbUw1+nAOcGJUXj6D/L4BWTKrFu0HK2yYkCiASCMI4nXbw1FBzNIXsZbnm+M8n6a6kAQmwenxAEJDCHsD99d3X1PtkuF+fvsDuTdfAsY65lTLb82USChXP4CyQVlPw96YlWCrmXWrkPMuih9Sfx33AjQ+vocvC2DQdonFoa1My1unmqdxu2z6wfBJ+8FksdFPodqDe0XdkEAAA=\n    path: /opt/installmongodb.sh\n    permissions: \"0744\"\n\n')]",
+                    "linuxConfiguration": {
+                        "disablePasswordAuthentication": false,
+                        "provisionVMAgent": true
+                    },
+                    "adminUsername": "[parameters('adminUsername')]",
+                    "adminPassword": "[parameters('adminPassword')]",
+                    "allowExtensionOperations": true
+                }
+            },
+            "tags": {}
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "name": "[concat(variables('vmName'), '/configureagent')]",
+            "apiVersion": "2017-12-01",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[concat('Microsoft.Compute/virtualMachines/', variables('vmName'))]"
+            ],
+            "properties": {
+                "publisher": "Microsoft.Azure.Extensions",
+                "type": "CustomScript",
+                "typeHandlerVersion": "2.0",
+                "autoUpgradeMinorVersion": true,
+                "settings": {
+                    "timestamp": 4
+                },
+                "protectedSettings": {
+                    "commandToExecute": "[concat(' APP_DNS_NAME=', reference(resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName')),'2017-10-01').dnsSettings.fqdn, ' /bin/bash /opt/installmongodb.sh')]"
+                }
+            }
+        }
+    ],
+    "outputs": {
+        "fqdn": {
+            "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName')),'2017-10-01').dnsSettings.fqdn]",
+            "type": "string"
+        }
+    }
+}
