@@ -64,6 +64,7 @@
         },
         "avereEnabled": {
             "type": "bool",
+            "defaultValue": false,
             "metadata": {
                 "description": "Basic toggle to disable Avere"
             }
@@ -101,13 +102,13 @@
         "tomcatDockerImage": {
             "type": "string",
             "metadata": {
-                "description": "The docker image and tag for running the tomcat service."
+                "description": "The docker image and tag for running the tomcat service. For examples: 'repo/image:tag'"
             }
         },
         "ivaDockerImage": {
             "type": "string",
             "metadata": {
-                "description": "The docker image and tag for running the IVA service."
+                "description": "The docker image and tag for running the IVA service. For examples: 'repo/image:tag'"
             }
         },
         "solrClusterLoginUserName": {
