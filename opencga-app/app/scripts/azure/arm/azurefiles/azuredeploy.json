@@ -35,7 +35,7 @@
       "memoryInGb": "1.5",
       "containerGroupName": "createshare-containerinstance",
       "containerName": "createshare",
-      "storageAccountName": "[concat('azurefiles-',uniquestring(resourceGroup().id))]",
+      "storageAccountName": "[concat('azurefiles',uniquestring(resourceGroup().id))]",
       "fileShareName": "opencgashare"
     },
     "resources": [
