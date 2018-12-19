@@ -24,7 +24,6 @@ import java.util.List;
  */
 public class BenchmarkConfiguration {
 
-    private String storageEngine;
     private int numRepetitions;
     private boolean load;
     private List<String> queries;
@@ -42,7 +41,6 @@ public class BenchmarkConfiguration {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("BenchmarkConfiguration{");
-        sb.append("storageEngine='").append(storageEngine).append('\'');
         sb.append(", numRepetitions=").append(numRepetitions);
         sb.append(", load=").append(load);
         sb.append(", queries=").append(queries);
@@ -65,14 +63,6 @@ public class BenchmarkConfiguration {
     public BenchmarkConfiguration setConnectionType(String connectionType) {
         this.connectionType = connectionType;
         return this;
-    }
-
-    public String getStorageEngine() {
-        return storageEngine;
-    }
-
-    public void setStorageEngine(String storageEngine) {
-        this.storageEngine = storageEngine;
     }
 
     public int getNumRepetitions() {
