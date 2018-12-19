@@ -23,4 +23,6 @@ VOLUME /opt/volume
 
 COPY ./setup.sh /tmp/
 
+RUN chmod +x /tmp/setup.sh
+
 CMD ["sh", "-c", "/tmp/setup.sh"]
