@@ -41,6 +41,12 @@
         "avereAdminPassword": {
             "value": ""
         },
+        "tomcatDockerImage": {
+            "value": ""
+        },
+        "ivaDockerImage": {
+            "value": ""
+        },
         "solrClusterLoginPassword": {
             "value": ""
         }
