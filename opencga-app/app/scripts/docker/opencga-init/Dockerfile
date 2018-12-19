@@ -4,7 +4,7 @@ RUN apt-get update && apt-get install sshpass -y
 
 ENV HD_INSIGHTS_SSH_DNS=""
 
-ENV HD_INSIGHTS_SSH_USER=""
+ENV HD_INSIGHTS_SSH_PASS=""
 
 ENV HD_INSIGHTS_SSH_USER=""
 
