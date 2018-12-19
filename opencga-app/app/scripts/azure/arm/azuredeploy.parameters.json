@@ -47,6 +47,9 @@
         "ivaDockerImage": {
             "value": ""
         },
+        "webserversSSHKeyData": {
+            "value": ""
+        },
         "solrClusterLoginPassword": {
             "value": ""
         },

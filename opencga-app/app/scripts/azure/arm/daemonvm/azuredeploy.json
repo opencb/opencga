@@ -59,47 +59,31 @@
         "daemonContainerImage": {
             "type": "string"
         },
-        "storageOption": {
-            "type": "string",
-            "defaultValue": "azurefiles"
-        },
-        "avereClusterIpRange": {
-            "type": "string"
-        },
-        "azureFilesAccountName": {
-            "type": "string"
-        },
-        "azureFilesAccountKey": {
-            "type": "securestring"
-        },
-        "azureFilesShareName": {
+        "mountArgs": {
             "type": "string"
         }
     },
     "variables": {
         "vnetId": "[parameters('virtualNetworkId')]",
         "subnetRef": "[concat(variables('vnetId'), '/subnets/', parameters('subnetName'))]",
-        "singleQuote": "'",
         "getScriptCmd": "[concat('wget ',parameters('_artifactsLocation'),'/avere/mount.py -O /tmp/mount.py')]",
-        "avereArgs": "[concat('avere ', parameters('avereClusterIpRange'))]",
-        "azureFileArgs": "[concat('azurefiles ', parameters('azureFilesAccountName'),' ', parameters('azureFilesShareName'),' ', parameters('azureFilesAccountKey'))]",
-        "mountArgs": "[if(equals(toLower(parameters('storageOption')), 'avere'), variables('avereArgs'), variables('azureFileArgs'))]",
-        "mountCmd": "[concat('python3 /tmp/mount.py ', variables('mountArgs'))]",
+        "mountCmd": "[concat('python3 /tmp/mount.py ', parameters('mountArgs'))]",
         "initCmd": "[concat('docker run -e HD_INSIGHTS_SSH_DNS=',parameters('hdInsightSshDns'),' -e HD_INSIGHTS_SSH_USER=',parameters('hdInsightSshUsername'),' -e HD_INSIGHTS_SSH_PASS=',parameters('hdInsightSshPassword'),' ',parameters('initContainerImage'))]",
+        "execStart": "[concat('/usr/bin/docker run --name=opencga-daemon -e OPENCGA_PASS=',parameters('adminPassword'),' ',parameters('daemonContainerImage'))]",
         "cloud-init": [
             "#cloud-config",
             "package_upgrade: true",
             "package_reboot_if_required: true",
             "",
             "bootcmd:",
-            "[concat(' - ',variables('singleQuote'),variables('getScriptCmd'),variables('singleQuote'))]",
+            "[concat(' - ', variables('getScriptCmd'))]",
             "",
             "runcmd:",
             " - 'apt-get update'",
             " - 'curl -fsSL https://get.docker.com/ | sh'",
             " - 'curl -fsSL https://get.docker.com/gpg | sudo apt-key add -'",
-            "[concat(' - ',variables('singleQuote'),variables('mountCmd'),variables('singleQuote'))]",
-            "[concat(' - ',variables('singleQuote'),variables('initCmd'),variables('singleQuote'))]",
+            "[concat(' - ', variables('mountCmd'))]",
+            "[concat(' - ', variables('initCmd'))]",
             "",
             "write_files:",
             "- path: /etc/systemd/system/opencga.service",
@@ -112,7 +96,7 @@
             "    After=docker.service",
             "    [Service]",
             "    Restart=always",
-            "[concat('    ExecStart=/usr/bin/docker run --name=opencga-daemon -e OPENCGA_PASS=',parameters('adminPassword'),' ',parameters('daemonContainerImage'))]",
+            "[concat('    ExecStart=',variables('execStart'))]",
             "    ExecStop=/usr/bin/docker stop opencga-daemon",
             ""
         ],

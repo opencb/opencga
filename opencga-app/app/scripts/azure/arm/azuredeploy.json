@@ -250,14 +250,15 @@
             }
         },
         {
+            "comments": "This deploys a VM to run the OpenCGA daemon",
             "resourceGroup": "[parameters('rgPrefix')]",
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2018-05-01",
             "name": "daemonvm",
             "dependsOn": [
+                "azurefiles",
                 "vnet",
-                "[parameters('rgPrefix')]",
-                "avere"
+                "[parameters('rgPrefix')]"
             ],
             "properties": {
                 "mode": "Incremental",
@@ -294,20 +295,8 @@
                     "initContainerImage": {
                         "value": "[parameters('initContainerImage')]"
                     },
-                    "storageOption": {
-                        "value": "avere"
-                    },
-                    "avereClusterIpRange": {
-                        "value": "[reference('avere').outputs.VSERVER_IPS.value]"
-                    },
-                    "azureFilesAccountName": {
-                        "value": ""
-                    },
-                    "azureFilesAccountKey": {
-                        "value": "securestring"
-                    },
-                    "azureFilesShareName": {
-                        "value": "string"
+                    "mountArgs": {
+                        "value": "[concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value, ',' , reference('azurefiles').outputs.accountKey.value)]"
                     }
                 }
             }
