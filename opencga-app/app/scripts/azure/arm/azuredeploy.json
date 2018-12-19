@@ -62,9 +62,12 @@
                 "description": "The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
             }
         },
-        "deployAvere": {
+        "avereEnabled": {
+            "type": "bool",
             "defaultValue": false,
-            "type": "bool"
+            "metadata": {
+                "description": "Basic toggle to disable Avere"
+            }
         },
         "avereServicePrincipalAppId": {
             "type": "string",
@@ -79,7 +82,7 @@
             }
         },
         "avereSSHKeyData": {
-            "type": "string",
+            "type": "securestring",
             "metadata": {
                 "description": "The RSA data for the SSH Public Key used to authenticate to Avere nodes."
             }
@@ -88,6 +91,24 @@
             "type": "securestring",
             "metadata": {
                 "description": "The password for the 'admin' user on the Avere cluster configuration portal."
+            }
+        },
+        "webserversSSHKeyData": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The RSA data for the SSH Public Key used to authenticate to Avere nodes."
+            }
+        },
+        "tomcatDockerImage": {
+            "type": "string",
+            "metadata": {
+                "description": "The docker image and tag for running the tomcat service. For examples: 'repo/image:tag'"
+            }
+        },
+        "ivaDockerImage": {
+            "type": "string",
+            "metadata": {
+                "description": "The docker image and tag for running the IVA service. For examples: 'repo/image:tag'"
             }
         },
         "solrClusterLoginUserName": {
@@ -183,6 +204,22 @@
                 "mode": "Incremental",
                 "templateLink": {
                     "uri": "[concat(parameters('_artifactsLocation'), '/vnet/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                }
+            }
+        },
+        {
+            "resourceGroup": "[parameters('rgPrefix')]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
+            "name": "azurefiles",
+            "dependsOn": [
+                "[parameters('rgPrefix')]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/azurefiles/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
                     "contentVersion": "1.0.0.0"
                 }
             }
@@ -329,7 +366,7 @@
             }
         },
         {
-            "condition": "[parameters('deployAvere')]",
+            "condition": "[equals(parameters('avereEnabled'), 'True')]",
             "type": "Microsoft.Resources/resourceGroups",
             "apiVersion": "2018-05-01",
             "location": "[parameters('rgLocation')]",
@@ -337,7 +374,7 @@
             "properties": {}
         },
         {
-            "condition": "[parameters('deployAvere')]",
+            "condition": "[equals(parameters('avereEnabled'), 'True')]",
             "type": "Microsoft.Resources/deployments",
             "resourceGroup": "[concat(parameters('rgPrefix'),'-avere')]",
             "apiVersion": "2018-05-01",
@@ -382,6 +419,48 @@
                     },
                     "adminPassword": {
                         "value": "[parameters('avereAdminPassword')]"
+                    }
+                }
+            }
+        },
+        {
+            "comments": "This deploys a VMSS which hosts the tomcat and IVA services behind a LB with healthchecking, autoscaling and rolling update",
+            "type": "Microsoft.Resources/deployments",
+            "resourceGroup": "[parameters('rgPrefix')]",
+            "apiVersion": "2017-05-10",
+            "name": "webservers",
+            "dependsOn": [
+                "azurefiles",
+                "vnet",
+                "[parameters('rgPrefix')]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/webservers/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "_artifactsLocation": {
+                        "value": "[parameters('_artifactsLocation')]"
+                    },
+                    "_artifactsLocationSasToken": {
+                        "value": "[parameters('_artifactsLocationSasToken')]"
+                    },
+                    "virtualNetworkSubnetId": {
+                        "value": "[reference('vnet').outputs.avereClusterSubnetId.value]"
+                    },
+                    "mountArgs": {
+                        "value": "[concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value, ',' , reference('azurefiles').outputs.accountKey.value)]"
+                    },
+                    "SSHKeyData": {
+                        "value": "[parameters('webserversSSHKeyData')]"
+                    },
+                    "tomcatDockerImage": {
+                        "value": "[parameters('tomcatDockerImage')]"
+                    },
+                    "ivaDockerImage": {
+                        "value": "[parameters('ivaDockerImage')]"
                     }
                 }
             }
@@ -448,10 +527,5 @@
             }
         }
     ],
-    "outputs": {
-        "avere_controller_ssh": {
-            "type": "string",
-            "value": "[if(parameters('deployAvere'),reference('avere','2018-05-01').outputs.SSH_STRING.value,'')]"
-        }
-    }
+    "outputs": {}
 }

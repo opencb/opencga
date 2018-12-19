@@ -309,7 +309,7 @@ public class VariantBenchmarkRunnerTest extends VariantStorageBaseTest implement
 
         List<Integer> totalQueryExecutions = setTestConfig(connectionType, mode);
         variantBenchmarkRunner.addThreadGroup(connectionType, mode,
-                Paths.get("src/test/resources/hsapiens"), "", query, new QueryOptions(QueryOptions.LIMIT, "2"));
+                Paths.get("src/test/resources/hsapiens"), new HashMap<>(), "", query, new QueryOptions(QueryOptions.LIMIT, "2"));
         variantBenchmarkRunner.run();
 
         assertEquals(executedQueries(), numberOfQueries * totalQueryExecutions.get(0) * totalQueryExecutions.get(1));

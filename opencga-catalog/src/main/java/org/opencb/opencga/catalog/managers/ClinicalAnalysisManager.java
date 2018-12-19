@@ -154,7 +154,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
         clinicalAnalysis.setCreationDate(TimeUtils.getTime());
         clinicalAnalysis.setDescription(ParamUtils.defaultString(clinicalAnalysis.getDescription(), ""));
-        clinicalAnalysis.setStatus(new Status());
+        clinicalAnalysis.setStatus(new ClinicalAnalysis.ClinicalStatus());
         clinicalAnalysis.setRelease(catalogManager.getStudyManager().getCurrentRelease(study, userId));
         clinicalAnalysis.setAttributes(ParamUtils.defaultObject(clinicalAnalysis.getAttributes(), Collections.emptyMap()));
         clinicalAnalysis.setInterpretations(ParamUtils.defaultObject(clinicalAnalysis.getInterpretations(), ArrayList::new));
@@ -414,9 +414,11 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                     }
                     break;
                 case FILES:
+                case STATUS:
                 case DISORDER:
                 case FAMILY:
                 case PROBAND:
+                case COMMENTS:
                     break;
                 default:
                     throw new CatalogException("Cannot update " + queryParam);
@@ -450,6 +452,14 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         validateClinicalAnalysisFields(clinicalAnalysis, resource.getStudy(), sessionId);
         if (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.FILES.key())) {
             parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.FILES.key(), clinicalAnalysis.getFiles());
+        }
+
+        if (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.STATUS.key())) {
+            Map<String, Object> status = (Map<String, Object>) parameters.get(ClinicalAnalysisDBAdaptor.QueryParams.STATUS.key());
+            if (!(status instanceof Map) || StringUtils.isEmpty(String.valueOf(status.get("name")))
+                    || !ClinicalAnalysis.ClinicalStatus.isValid(String.valueOf(status.get("name")))) {
+                throw new CatalogException("Missing or invalid status");
+            }
         }
 
         return clinicalDBAdaptor.update(resource.getResource().getUid(), parameters, QueryOptions.empty());

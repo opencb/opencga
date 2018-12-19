@@ -172,6 +172,7 @@
       }
     },
     {
+      "comments": "This creates a controller VM which is responsible for provisioning the Avere cluster nodes. The binary provided in the cloud init is the boostrap script from here: https://github.com/Azure/Avere/tree/a2e28b5cbc2ca467d10acbf12abfd6f8bf5edcba",
       "apiVersion": "2017-12-01",
       "tags": {
         "averevfxt": "server"

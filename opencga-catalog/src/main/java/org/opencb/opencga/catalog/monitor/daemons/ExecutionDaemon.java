@@ -49,6 +49,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     private Path tempJobFolder;
 
     private CatalogIOManager catalogIOManager;
+    // FIXME: This should not be used directly! All the queries MUST go through the CatalogManager
+    @Deprecated
     private JobDBAdaptor jobDBAdaptor;
 
     public ExecutionDaemon(int interval, String sessionId, CatalogManager catalogManager, String appHome)

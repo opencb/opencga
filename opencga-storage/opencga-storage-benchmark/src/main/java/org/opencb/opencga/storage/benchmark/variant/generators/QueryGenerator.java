@@ -27,10 +27,8 @@ import org.slf4j.LoggerFactory;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Random;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created on 06/04/17.
@@ -42,6 +40,7 @@ public abstract class QueryGenerator {
     public static final String ARITY = "arity";
     public static final String FILE = "file";
     public static final String OUT_DIR = "outDir";
+    public static final String BASE_QUERY_REFIX = "baseQuery.prefix";
     public static final String USER_PROPERTIES_FILE = "user.properties";
     protected Random random;
 
@@ -89,4 +88,18 @@ public abstract class QueryGenerator {
             query.putAll(randomQueries.getBaseQuery());
         }
     }
+
+    protected Map<String, String> getBaseQueryFromCLI(Map<String, String> params) {
+        Map<String, String> baseQueryFromCLI = new HashMap<>();
+        Set<String> set = params.keySet()
+                .stream()
+                .filter(s -> s.startsWith(BASE_QUERY_REFIX))
+                .collect(Collectors.toSet());
+
+        for (String key : set) {
+            baseQueryFromCLI.put(key.replaceFirst(BASE_QUERY_REFIX, ""), params.get(key));
+        }
+        return baseQueryFromCLI;
+    }
 }
+
