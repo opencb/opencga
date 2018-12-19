@@ -23,8 +23,9 @@ COPY ./opencga.xml /var/lib/tomcat8/conf/Catalina/localhost/opencga-${OPENCGA_VE
 # symlink expected location to the shared volume.
 VOLUME /opt/volume
 RUN mkdir -p /opt/opencga/ && \
-    ln -sf /opt/volume/conf /opt/opencga/conf && \
-    ln -sf /opt/volume/sessions /opt/opencga/sessions
+    rm -r /opt/opencga/conf  && \
+    ln -sfn /opt/volume/conf /opt/opencga/conf && \
+    ln -sfn /opt/volume/sessions /opt/opencga/sessions
 
 # Launch Tomcat
 CMD ["sh", "-c", "/tmp/config.sh && /opt/tomcat/bin/catalina.sh run"]
