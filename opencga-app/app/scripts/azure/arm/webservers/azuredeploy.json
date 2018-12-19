@@ -115,8 +115,8 @@
             "- curl -fsSL https://get.docker.com/ | sh",
             "- curl -fsSL https://get.docker.com/gpg | sudo apt-key add -",
             "[concat('- curl -fsSL ', concat(parameters('_artifactsLocation'), '/avere/mount.py', parameters('_artifactsLocationSasToken')), ' | python3 - avere ', parameters('avereVServers') )]",
-            "[concat('- docker run -d -p 8080:8080 -p 8443:8443 --restart=always -v /media/primarynfs:/nfs ', parameters('tomcatDockerImage'))]",
-            "[concat('- docker run -d -p 80:80 -p 443:443 --network=host --restart=always -v /media/primarynfs:/nfs ', parameters('ivaDockerImage'))]"
+            "[concat('- docker run -d -p 8080:80 -p 8443:443 --restart=always -v /media/primarynfs:/nfs ', parameters('tomcatDockerImage'))]",
+            "[concat('- docker run -d -p 80:80 -p 443:443 --restart=always -v /media/primarynfs:/nfs ', parameters('ivaDockerImage'))]"
         ],
         "cloud-init-string": "[replace(replace(replace(string(variables('cloud-init')),'\",\"','\n'),'[\"',''),'\"]','')]",
         "customData": "[base64(variables('cloud-init-string'))]"
@@ -161,7 +161,7 @@
                             "enableFloatingIP": false,
                             "idleTimeoutInMinutes": 5,
                             "probe": {
-                                "id": "[concat(variables('lbID'),'/probes/ivaHttp')]"
+                                "id": "[concat(variables('lbID'),'/probes/ivaHttpProbe')]"
                             }
                         }
                     },
@@ -180,7 +180,7 @@
                             "enableFloatingIP": false,
                             "idleTimeoutInMinutes": 5,
                             "probe": {
-                                "id": "[concat(variables('lbID'),'/probes/ivaHttps')]"
+                                "id": "[concat(variables('lbID'),'/probes/ivaHttpProbe')]"
                             }
                         }
                     },
@@ -199,7 +199,7 @@
                             "enableFloatingIP": false,
                             "idleTimeoutInMinutes": 5,
                             "probe": {
-                                "id": "[concat(variables('lbID'),'/probes/tomcatHttp')]"
+                                "id": "[concat(variables('lbID'),'/probes/tomcatHttpProbe')]"
                             }
                         }
                     },
@@ -218,7 +218,7 @@
                             "enableFloatingIP": false,
                             "idleTimeoutInMinutes": 5,
                             "probe": {
-                                "id": "[concat(variables('lbID'),'/probes/tomcatHttps')]"
+                                "id": "[concat(variables('lbID'),'/probes/tomcatHttpProbe')]"
                             }
                         }
                     }
@@ -324,7 +324,7 @@
                     },
                     "networkProfile": {
                         "healthProbe": {
-                            "id": "[concat(variables('lbId'), '/probes/tomcatHttp')]"
+                            "id": "[concat(variables('lbId'), '/probes/tomcatHttpProbe')]"
                         },
                         "networkInterfaceConfigurations": [
                             {

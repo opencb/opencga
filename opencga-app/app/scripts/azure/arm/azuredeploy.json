@@ -62,6 +62,12 @@
                 "description": "The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
             }
         },
+        "avereEnabled": {
+          "type": "bool",
+          "metadata": {
+              "description": "Basic toggle to disable Avere"
+          }
+        },
         "avereServicePrincipalAppId": {
             "type": "string",
             "metadata": {
@@ -75,7 +81,7 @@
             }
         },
         "avereSSHKeyData": {
-            "type": "string",
+            "type": "securestring",
             "metadata": {
                 "description": "The RSA data for the SSH Public Key used to authenticate to Avere nodes."
             }
@@ -90,6 +96,18 @@
             "type": "securestring",
             "metadata": {
                 "description": "The RSA data for the SSH Public Key used to authenticate to Avere nodes."
+            }
+        },
+        "tomcatDockerImage" : {
+            "type": "string",
+            "metadata": {
+                "description": "The docker image and tag for running the tomcat service."
+            }
+        },
+        "ivaDockerImage" : {
+            "type": "string",
+            "metadata": {
+                "description": "The docker image and tag for running the IVA service."
             }
         }
     },
@@ -113,6 +131,22 @@
                 "mode": "Incremental",
                 "templateLink": {
                     "uri": "[concat(parameters('_artifactsLocation'), '/vnet/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                }
+            }
+        },
+        {
+            "resourceGroup": "[parameters('rgPrefix')]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2017-05-10",
+            "name": "azurefiles",
+            "dependsOn": [
+                "[parameters('rgPrefix')]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/azurefiles/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
                     "contentVersion": "1.0.0.0"
                 }
             }
@@ -206,6 +240,7 @@
             "type": "Microsoft.Resources/deployments",
             "resourceGroup": "[concat(parameters('rgPrefix'),'-avere')]",
             "apiVersion": "2017-05-10",
+            "condition": "[equals(parameters('avereEnabled'), 'True')]",
             "name": "avere",
             "dependsOn": [
                 "vnet",
@@ -259,7 +294,6 @@
             "name": "webservers",
             "dependsOn": [
                 "vnet",
-                "avere",
                 "[parameters('rgPrefix')]"
             ],
             "properties": {
@@ -279,25 +313,22 @@
                         "value": "[reference('vnet').outputs.avereClusterSubnetId.value]"
                     },
                     "avereVServers": {
-                        "value": "[reference('avere').outputs.VSERVER_IPS.value]"
+                        "value": "missing"
                     },
                     "SSHKeyData": {
-                        "value": "[parameters('avereSSHKeyData')]"
+                        "value": "[parameters('webserversSSHKeyData')]"
                     },
                     "tomcatDockerImage": {
-                        "value": "ricc/http-devnull"
+                        "value": "[parameters('tomcatDockerImage')]"
                     },
                     "ivaDockerImage": {
-                        "value": "ricc/http-devnull"
+                        "value": "parameters('ivaDockerImage')]"
                     }
                 }
             }
         }
     ],
     "outputs": {
-        "avere_controller_ssh": {
-            "type": "string",
-            "value": "[reference('avere').outputs.SSH_STRING.value]"
-        }
+       
     }
 }

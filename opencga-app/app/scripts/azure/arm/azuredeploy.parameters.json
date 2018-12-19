@@ -40,6 +40,12 @@
         },
         "avereAdminPassword": {
             "value": ""
+        },
+        "tomcatDockerImage": {
+            "value": ""
+        },
+        "ivaDockerImage": {
+            "value": ""
         }
     }
 }
