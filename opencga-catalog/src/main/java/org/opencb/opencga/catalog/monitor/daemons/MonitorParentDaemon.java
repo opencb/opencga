@@ -16,18 +16,15 @@
 
 package org.opencb.opencga.catalog.monitor.daemons;
 
-import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
+import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
-import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.catalog.db.DBAdaptorFactory;
-import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.monitor.executors.AbstractExecutor;
 import org.opencb.opencga.catalog.monitor.executors.ExecutorManager;
@@ -36,8 +33,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -48,6 +43,8 @@ public abstract class MonitorParentDaemon implements Runnable {
 
     protected int interval;
     protected CatalogManager catalogManager;
+    // FIXME: This should not be used directly! All the queries MUST go through the CatalogManager
+    @Deprecated
     protected DBAdaptorFactory dbAdaptorFactory;
     protected AbstractExecutor executorManager;
 
@@ -63,7 +60,7 @@ public abstract class MonitorParentDaemon implements Runnable {
         this.sessionId = sessionId;
         logger = LoggerFactory.getLogger(this.getClass());
 
-        configureDBAdaptor(catalogManager.getConfiguration());
+        dbAdaptorFactory = new MongoDBAdaptorFactory(catalogManager.getConfiguration());
         ExecutorManager executorFactory = new ExecutorManager(catalogManager.getConfiguration());
         this.executorManager = executorFactory.getExecutor();
 
@@ -74,28 +71,6 @@ public abstract class MonitorParentDaemon implements Runnable {
 //            this.executorManager = new SgeExecutorManager(catalogManager, sessionId);
 //            logger.info("Jobs will be launched to SGE");
 //        }
-    }
-
-    private void configureDBAdaptor(Configuration configuration) throws CatalogDBException {
-
-        MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
-                .add("username", configuration.getCatalog().getDatabase().getUser())
-                .add("password", configuration.getCatalog().getDatabase().getPassword())
-                .add("authenticationDatabase", configuration.getCatalog().getDatabase().getOptions().get("authenticationDatabase"))
-                .build();
-
-        List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
-        for (String hostPort : configuration.getCatalog().getDatabase().getHosts()) {
-            if (hostPort.contains(":")) {
-                String[] split = hostPort.split(":");
-                Integer port = Integer.valueOf(split[1]);
-                dataStoreServerAddresses.add(new DataStoreServerAddress(split[0], port));
-            } else {
-                dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort, 27017));
-            }
-        }
-        dbAdaptorFactory = new MongoDBAdaptorFactory(dataStoreServerAddresses, mongoDBConfiguration,
-                catalogManager.getCatalogDatabase()) {};
     }
 
     public boolean isExit() {
