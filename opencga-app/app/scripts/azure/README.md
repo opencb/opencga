@@ -100,6 +100,20 @@ sudo mkdir /opt/opencga
 sudo cp -r ~/opencga/build/* /opt/opencga
 ```
 
+Create OpenCGA user and group to run Tomcat server
+```
+sudo service tomcat8 stop #stop tomcat to make changes
+sudo addgroup opencga
+sudo adduser -ingroup opencga --disabled-password --gecos "" opencga #create user opencga
+sudo sed -i 's/=tomcat8/=opencga/' /etc/default/tomcat8 # change both user and group
+sudo chown -R opencga:adm /var/log/tomcat8
+sudo chown -R opencga:opencga /var/lib/tomcat8/webapps
+sudo chown opencga:adm /var/cache/tomcat8
+sudo chown -R opencga:opencga /var/cache/tomcat8/Catalina
+sudo usermod -a -G tomcat8 opencga
+sudo service tomcat8 start #start tomcat
+```
+
 Copy OpenCGA build to Tomcat server
 ```
 sudo cp /opt/opencga/opencga*.war /var/lib/tomcat8/webapps
