@@ -219,7 +219,8 @@
             "name": "daemonvm",
             "dependsOn": [
                 "vnet",
-                "[parameters('rgPrefix')]"
+                "[parameters('rgPrefix')]",
+                "avere"
             ],
             "properties": {
                 "mode": "Incremental",
@@ -255,6 +256,21 @@
                     },
                     "initContainerImage": {
                         "value": "[parameters('initContainerImage')]"
+                    },
+                    "storageOption": {
+                        "value": "avere"
+                    },
+                    "avereClusterIpRange": {
+                        "value": "[reference('avere').outputs.VSERVER_IPS.value]"
+                    },
+                    "azureFilesAccountName": {
+                        "value": ""
+                    },
+                    "azureFilesAccountKey": {
+                        "value": "securestring"
+                    },
+                    "azureFilesShareName": {
+                        "value": "string"
                     }
                 }
             }
