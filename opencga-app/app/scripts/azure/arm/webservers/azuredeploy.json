@@ -130,7 +130,7 @@
             "location": "[resourceGroup().location]",
             "apiVersion": "2017-06-01",
             "properties": {
-                "publicIPAllocationMethod": "Dynamic",
+                "publicIPAllocationMethod": "Static",
                 "dnsSettings": {
                     "domainNameLabel": "[variables('longNamingInfix')]"
                 }
@@ -425,5 +425,11 @@
                 ]
             }
         }
-    ]
+    ],
+    "outputs": {
+        "lbPublicIP": {
+            "type":"string",
+            "value": "[reference(variables('publicIPAddressName')).IpAddress]"
+        }
+    }
 }
