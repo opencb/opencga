@@ -291,6 +291,7 @@
             }
         },
         {
+            "condition": "[variables('avereEnabled')]",
             "type": "Microsoft.Resources/resourceGroups",
             "apiVersion": "2018-05-01",
             "location": "[parameters('rgLocation')]",
