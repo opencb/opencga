@@ -72,7 +72,7 @@ public class CatalogSolrManager {
     public CatalogSolrManager(CatalogManager catalogManager) {
         this.catalogManager = catalogManager;
         SearchConfiguration searchConfiguration = catalogManager.getConfiguration().getCatalog().getSearch();
-        this.solrManager = new SolrManager(searchConfiguration.getHost(), searchConfiguration.getMode(), searchConfiguration.getTimeout());
+        this.solrManager = new SolrManager(searchConfiguration.getHosts(), searchConfiguration.getMode(), searchConfiguration.getTimeout());
         insertBatchSize = searchConfiguration.getInsertBatchSize() > 0
                 ? searchConfiguration.getInsertBatchSize() : DEFAULT_INSERT_BATCH_SIZE;
 
