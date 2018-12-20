@@ -86,18 +86,17 @@
     "variables": {
         "sshKeyPath": "[concat('/home/',parameters('adminUsername'),'/.ssh/authorized_keys')]",
         "vmssName": "webservers",
-        "namingInfix": "[toLower(substring(concat(variables('vmssName'), uniqueString(resourceGroup().id)), 0, 16))]",
-        "longNamingInfix": "[toLower(variables('vmssName'))]",
-        "publicIPAddressName": "[concat(variables('namingInfix'), '-pip')]",
-        "loadBalancerName": "[concat(variables('namingInfix'), '-lb')]",
+        "namingPrefix": "[toLower(substring(concat(variables('vmssName'), uniqueString(resourceGroup().id)), 0, 16))]",
+        "publicIPAddressName": "[concat(variables('namingPrefix'), '-pip')]",
+        "loadBalancerName": "[concat(variables('namingPrefix'), '-lb')]",
         "publicIPAddressID": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName'))]",
         "lbID": "[resourceId('Microsoft.Network/loadBalancers',variables('loadBalancerName'))]",
-        "natPoolName": "[concat(variables('namingInfix'), 'natpool')]",
+        "natPoolName": "[concat(variables('namingPrefix'), 'natpool')]",
         "natStartPort": 50000,
         "natEndPort": 50119,
         "natBackendPort": 22,
-        "nicName": "[concat(variables('namingInfix'), 'nic')]",
-        "ipConfigName": "[concat(variables('namingInfix'), 'ipconfig')]",
+        "nicName": "[concat(variables('namingPrefix'), 'nic')]",
+        "ipConfigName": "[concat(variables('namingPrefix'), 'ipconfig')]",
         "frontEndIPConfigID": "[concat(variables('lbID'),'/frontendIPConfigurations/loadBalancerFrontEnd')]",
         "imageReference": {
             "publisher": "Canonical",
@@ -130,9 +129,9 @@
             "location": "[resourceGroup().location]",
             "apiVersion": "2017-06-01",
             "properties": {
-                "publicIPAllocationMethod": "Dynamic",
+                "publicIPAllocationMethod": "Static",
                 "dnsSettings": {
-                    "domainNameLabel": "[variables('longNamingInfix')]"
+                    "domainNameLabel": "[variables('namingPrefix')]"
                 }
             }
         },
@@ -280,7 +279,7 @@
         {
             "comments": "This VMSS creates machines used to host the web components of OpenCGA, they are configured using the CloudInit found in the variables section of this ARM template",
             "type": "Microsoft.Compute/virtualMachineScaleSets",
-            "name": "[variables('namingInfix')]",
+            "name": "[variables('namingPrefix')]",
             "location": "[resourceGroup().location]",
             "apiVersion": "2017-03-30",
             "dependsOn": [
@@ -308,7 +307,7 @@
                         "imageReference": "[variables('imageReference')]"
                     },
                     "osProfile": {
-                        "computerNamePrefix": "[variables('namingInfix')]",
+                        "computerNamePrefix": "[variables('namingPrefix')]",
                         "adminUsername": "[parameters('adminUsername')]",
                         "linuxConfiguration": {
                           "disablePasswordAuthentication": true,
@@ -366,11 +365,11 @@
             "name": "autoscalewad",
             "location": "[resourceGroup().location]",
             "dependsOn": [
-                "[concat('Microsoft.Compute/virtualMachineScaleSets/', variables('namingInfix'))]"
+                "[concat('Microsoft.Compute/virtualMachineScaleSets/', variables('namingPrefix'))]"
             ],
             "properties": {
                 "name": "autoscalewad",
-                "targetResourceUri": "[concat('/subscriptions/',subscription().subscriptionId, '/resourceGroups/',  resourceGroup().name, '/providers/Microsoft.Compute/virtualMachineScaleSets/', variables('namingInfix'))]",
+                "targetResourceUri": "[concat('/subscriptions/',subscription().subscriptionId, '/resourceGroups/',  resourceGroup().name, '/providers/Microsoft.Compute/virtualMachineScaleSets/', variables('namingPrefix'))]",
                 "enabled": true,
                 "mode": "Incremental",
                 "profiles": [
@@ -386,7 +385,7 @@
                                 "metricTrigger": {
                                     "metricName": "Percentage CPU",
                                     "metricNamespace": "",
-                                    "metricResourceUri": "[concat('/subscriptions/',subscription().subscriptionId, '/resourceGroups/',  resourceGroup().name, '/providers/Microsoft.Compute/virtualMachineScaleSets/', variables('namingInfix'))]",
+                                    "metricResourceUri": "[concat('/subscriptions/',subscription().subscriptionId, '/resourceGroups/',  resourceGroup().name, '/providers/Microsoft.Compute/virtualMachineScaleSets/', variables('namingPrefix'))]",
                                     "timeGrain": "PT1M",
                                     "statistic": "Average",
                                     "timeWindow": "PT5M",
@@ -405,7 +404,7 @@
                                 "metricTrigger": {
                                     "metricName": "Percentage CPU",
                                     "metricNamespace": "",
-                                    "metricResourceUri": "[concat('/subscriptions/',subscription().subscriptionId, '/resourceGroups/',  resourceGroup().name, '/providers/Microsoft.Compute/virtualMachineScaleSets/', variables('namingInfix'))]",
+                                    "metricResourceUri": "[concat('/subscriptions/',subscription().subscriptionId, '/resourceGroups/',  resourceGroup().name, '/providers/Microsoft.Compute/virtualMachineScaleSets/', variables('namingPrefix'))]",
                                     "timeGrain": "PT1M",
                                     "statistic": "Average",
                                     "timeWindow": "PT5M",
@@ -425,5 +424,11 @@
                 ]
             }
         }
-    ]
+    ],
+    "outputs": {
+        "lbPublicIP": {
+            "type":"string",
+            "value": "[reference(variables('publicIPAddressName')).IpAddress]"
+        }
+    }
 }
