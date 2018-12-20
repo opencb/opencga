@@ -58,6 +58,18 @@
         },
         "daemonContainerImage": {
             "value": ""
+        },
+        "catalogSecretKey": {
+            "value": ""
+        },
+        "mongoDbHost": {
+            "value": ""
+        },
+        "mongoDbUser": {
+            "value": ""
+        },
+        "mongoDbPassword": {
+            "value": ""
         }
     }
 }

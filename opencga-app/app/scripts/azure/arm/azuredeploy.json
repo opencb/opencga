@@ -182,6 +182,30 @@
             "metadata": {
                 "description": "The daemon container image to run"
             }
+        },
+        "catalogSecretKey": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Secret key used when initializing the catalog"
+            }
+        },
+        "mongoDbHost": {
+            "type": "string",
+            "metadata": {
+                "description": "The host address for the MongoDB endpoint"
+            }
+        },
+        "mongoDbUser": {
+            "type": "string",
+            "metadata": {
+                "description": "The MongoDB login username"
+            }
+        },
+        "mongoDbPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The MongoDB login password"
+            }
         }
     },
     "resources": [
@@ -297,6 +321,30 @@
                     },
                     "mountArgs": {
                         "value": "[concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value, ',' , reference('azurefiles').outputs.accountKey.value)]"
+                    },
+                    "loadBalancerIp": {
+                        "value": "todo"
+                    },
+                    "solrHost": {
+                        "value": "todo"
+                    },
+                    "solrUser": {
+                        "value": "todo"
+                    },
+                    "solrPassword": {
+                        "value": "todo"
+                    },
+                    "mongoDbHost": {
+                        "value": "[parameters('mongoDbHost')]"
+                    },
+                    "mongoDbUser": {
+                        "value": "[parameters('mongoDbUser')]"
+                    },
+                    "mongoDbPassword": {
+                        "value": "[parameters('mongoDbPassword')]"
+                    },
+                    "catalogSecretKey": {
+                        "value": "[parameters('catalogSecretKey')]"
                     }
                 }
             }
