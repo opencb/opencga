@@ -32,4 +32,4 @@ mkdir -p /opt/volume/conf /opt/volume/sessions
 cp -r /opt/opencga/conf/* /opt/volume/conf
 
 echo "Installing catalog"
-/opt/opencga/bin/opencga-admin.sh catalog install --secret-key ${1}
+echo "${OPENCGA_PASS}" | /opt/opencga/bin/opencga-admin.sh catalog install --secret-key ${1}
