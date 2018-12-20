@@ -565,7 +565,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        String[] acceptedObjectParams = {QueryParams.PHENOTYPES.key(), QueryParams.MULTIPLES.key(), QueryParams.LOCATION.key()};
+        String[] acceptedObjectParams = {UpdateParams.PHENOTYPES.key(), UpdateParams.DISORDERS.key(), UpdateParams.MULTIPLES.key(),
+                UpdateParams.LOCATION.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
 
         if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
@@ -996,6 +997,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                         addAutoOrQuery(mongoKey, entry.getKey(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case PHENOTYPES:
+                    case DISORDERS:
                         addOntologyQueryFilter(queryParam.key(), queryParam.key(), queryCopy, andBsonList);
                         break;
                     case ANNOTATION:

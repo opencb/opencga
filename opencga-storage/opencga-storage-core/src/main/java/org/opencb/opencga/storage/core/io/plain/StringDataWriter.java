@@ -27,6 +27,7 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
 import java.util.zip.GZIPOutputStream;
 
 /**
@@ -38,17 +39,26 @@ public class StringDataWriter implements DataWriter<String> {
     protected final Path path;
     protected final boolean endLine;
     protected long writtenLines = 0L;
+    protected final boolean closeOutputStream;
 
     protected static Logger logger = LoggerFactory.getLogger(StringDataWriter.class);
 
     public StringDataWriter(Path path) {
-        this.path = path;
-        this.endLine = false;
+        this(path, false);
     }
 
     public StringDataWriter(Path path, boolean endLine) {
-        this.path = path;
+        this.path = Objects.requireNonNull(path);
+        this.os = null;
         this.endLine = endLine;
+        this.closeOutputStream = true;
+    }
+
+    public StringDataWriter(OutputStream os, boolean endLine) {
+        this.path = null;
+        this.os = Objects.requireNonNull(os);
+        this.endLine = endLine;
+        this.closeOutputStream = false;
     }
 
     public static void write(Path path, List<String> batch) {
@@ -64,6 +74,10 @@ public class StringDataWriter implements DataWriter<String> {
 
     @Override
     public boolean open() {
+        if (os != null) {
+            // Nothing to do!
+            return true;
+        }
         try {
             String fileName = path.toFile().getName();
             if (fileName.endsWith(".gz")) {
@@ -86,7 +100,10 @@ public class StringDataWriter implements DataWriter<String> {
     @Override
     public boolean close() {
         try {
-            os.close();
+            os.flush();
+            if (closeOutputStream) {
+                os.close();
+            }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

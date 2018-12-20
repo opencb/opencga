@@ -61,7 +61,7 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
         thrown.expect(CatalogDBException.class);
         catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "in1", new Individual().setId("father").setUid(10), null, null,
                 null, null, null, "", null, null, null, "", Collections.emptyList(), false, 1, Collections.emptyList(),
-                Collections.emptyList()), null);
+                Collections.emptyList(), null), null);
     }
 
     @Test
@@ -109,7 +109,7 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 .FEMALE, "", new Individual.Population(), 1, Collections.emptyList(), null), null).first();
         catalogIndividualDBAdaptor.insert(studyId, new Individual("ind_5", "ind_5", father, mother, null, null, IndividualProperty.Sex.MALE,
                 IndividualProperty.KaryotypicSex.XY, "", new Individual.Population(), null, null, null, null, true, 1, Collections.emptyList(),
-                null), null);
+                null, null), null);
         catalogIndividualDBAdaptor.insert(studyId, new Individual("ind_6", "ind_6", IndividualProperty.Sex.FEMALE, "",
                 new Individual.Population(), 1, Collections.emptyList(), null), null);
 

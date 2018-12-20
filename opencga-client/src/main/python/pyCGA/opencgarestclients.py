@@ -559,6 +559,26 @@ class Jobs(_ParentBasicCRUDClient, _ParentAclRestClient):
         raise NotImplemented('Update method is not implemented for jobs')
 
 
+class Clinical(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSetRestClient):
+    """
+    This class contains method for Individuals ws (i.e, update, create)
+    """
+
+    def __init__(self, configuration, session_id=None, login_handler=None, *args, **kwargs):
+        _category = "clinical"
+        super(Clinical, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
+
+    def search(self, study, **options):
+        """
+
+        Method to search Clinical Analysis based in a dictionary "options"
+
+        :param study: study id
+        :param options: Kargs where the keys are the name of the Individuals properties used to search.
+        """
+        return self._get('search', study=study, **options)
+
+
 class Individuals(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSetRestClient):
     """
     This class contains method for Individuals ws (i.e, update, create)
@@ -878,6 +898,7 @@ class OpenCGAClient(object):
         self.families = Families(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
         self.jobs = Jobs(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
         self.individuals = Individuals(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
+        self.clinical = Clinical(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
         self.variable_sets = VariableSets(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
         self.analysis_alignment = AnalysisAlignment(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
         self.analysis_variant = AnalysisVariant(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
@@ -886,7 +907,7 @@ class OpenCGAClient(object):
 
         self.clients = [self.users, self.projects, self.studies, self.files,
                         self.samples, self.cohorts, self.families, self.jobs,
-                        self.individuals, self.variable_sets,
+                        self.individuals, self.variable_sets, self.clinical,
                         self.analysis_alignment, self.analysis_variant,
                         self.ga4gh, self.meta]
 

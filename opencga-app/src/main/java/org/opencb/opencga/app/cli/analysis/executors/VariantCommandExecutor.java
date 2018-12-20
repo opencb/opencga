@@ -272,6 +272,8 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(LOAD, cliOptions.genericVariantIndexOptions.load);
         queryOptions.put(TRANSFORM, cliOptions.genericVariantIndexOptions.transform);
+        queryOptions.put(VariantStorageEngine.Options.STDIN.key(), cliOptions.genericVariantIndexOptions.stdin);
+        queryOptions.put(VariantStorageEngine.Options.STDOUT.key(), cliOptions.genericVariantIndexOptions.stdout);
         queryOptions.put(VariantStorageEngine.Options.MERGE_MODE.key(), cliOptions.genericVariantIndexOptions.merge);
 
         queryOptions.put(VariantStorageEngine.Options.CALCULATE_STATS.key(), cliOptions.genericVariantIndexOptions.calculateStats);

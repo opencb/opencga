@@ -118,13 +118,19 @@ public class ExecutionOutputRecorder {
         String outputDir = (String) job.getAttributes().get(Job.OPENCGA_OUTPUT_DIR);
 //        String userToken = (String) job.getAttributes().get(Job.OPENCGA_USER_TOKEN);
         File outDir;
-        try {
-             outDir = catalogManager.getFileManager().createFolder(studyStr, outputDir, new File.FileStatus(), true, "",
-                     QueryOptions.empty(), userToken).first();
-             parameters.append(JobDBAdaptor.QueryParams.OUT_DIR.key(), outDir);
-        } catch (CatalogException e) {
-            logger.error("Cannot find file {}. Error: {}", job.getOutDir().getUid(), e.getMessage());
-            throw e;
+
+        // If outputDir is the root
+        if ("/".equals(outputDir)) {
+            outDir = catalogManager.getFileManager().get(studyStr, outputDir, QueryOptions.empty(), userToken).first();
+        } else {
+            try {
+                outDir = catalogManager.getFileManager().createFolder(studyStr, outputDir, new File.FileStatus(), true, "",
+                        QueryOptions.empty(), userToken).first();
+                parameters.append(JobDBAdaptor.QueryParams.OUT_DIR.key(), outDir);
+            } catch (CatalogException e) {
+                logger.error("Cannot find file {}. Error: {}", job.getOutDir().getPath(), e.getMessage());
+                throw e;
+            }
         }
 
         FileScanner fileScanner = new FileScanner(catalogManager);

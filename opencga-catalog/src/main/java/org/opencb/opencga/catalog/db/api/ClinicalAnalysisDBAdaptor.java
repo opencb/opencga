@@ -42,6 +42,7 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         DUE_DATE("dueDate", TEXT, ""),
         CREATION_DATE("creationDate", DATE, ""),
         MODIFICATION_DATE("modificationDate", DATE, ""),
+        DISORDER("disorder", TEXT_ARRAY, ""),
         TYPE("type", TEXT, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
@@ -55,6 +56,8 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
 
         FAMILY("family", TEXT_ARRAY, ""),
         FAMILY_UID("family.uid", INTEGER, ""),
+        FILES("files", TEXT_ARRAY, ""),
+        COMMENTS("comments", TEXT_ARRAY, ""),
         SOMATIC("somatic", TEXT_ARRAY, ""),
         SOMATIC_UID("somatic.uid", INTEGER, ""),
         GERMLINE("germline", TEXT_ARRAY, ""),

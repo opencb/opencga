@@ -17,6 +17,8 @@
 package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import org.bson.Document;
+import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.core.models.Family;
 import org.opencb.opencga.core.models.Individual;
@@ -74,6 +76,23 @@ public class FamilyConverter extends AnnotableConverter<Family> {
                                     .append("uid", entry.getValue().getUid())
                                     .append("version", entry.getValue().getVersion()))
                             .collect(Collectors.toList()));
+        }
+
+        List<Document> disorderList = (List) document.get("disorders");
+        if (disorderList != null) {
+            for (Document disorder : disorderList) {
+                fixPhenotypeFields((List) disorder.get("evidences"));
+            }
+        }
+        fixPhenotypeFields((List) document.get("phenotypes"));
+    }
+
+    private void fixPhenotypeFields(List<Document> phenotypeList) {
+        if (ListUtils.isNotEmpty(phenotypeList)) {
+            for (Document phenotype : phenotypeList) {
+                phenotype.put("status", Phenotype.Status.UNKNOWN.name());
+                phenotype.put("ageOfOnset", "-1");
+            }
         }
     }
 }

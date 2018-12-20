@@ -59,6 +59,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
 
 import static org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.STDIN;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.*;
 
 /**
@@ -237,7 +238,9 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
 
     protected void loadFromAvro(Path input, String table, ArchiveTableHelper helper, ProgressLogger progressLogger)
             throws StorageEngineException {
-        VariantReader variantReader = VariantReaderUtils.getVariantReader(input, helper.getStudyMetadata());
+        boolean stdin = options.getBoolean(STDIN.key(), STDIN.defaultValue());
+
+        VariantReader variantReader = VariantReaderUtils.getVariantReader(input, helper.getStudyMetadata(), stdin);
         int studyId = helper.getStudyId();
         int fileId = Integer.valueOf(helper.getFileMetadata().getId());
 

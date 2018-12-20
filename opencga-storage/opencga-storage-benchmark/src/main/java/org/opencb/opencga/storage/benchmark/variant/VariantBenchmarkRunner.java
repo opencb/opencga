@@ -16,19 +16,29 @@
 
 package org.opencb.opencga.storage.benchmark.variant;
 
+import com.beust.jcommander.MissingCommandException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.google.common.base.Throwables;
+import org.apache.commons.lang.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.benchmark.BenchmarkRunner;
+import org.opencb.opencga.storage.benchmark.variant.generators.FixedQueryGenerator;
 import org.opencb.opencga.storage.benchmark.variant.generators.MultiQueryGenerator;
 import org.opencb.opencga.storage.benchmark.variant.generators.QueryGenerator;
+import org.opencb.opencga.storage.benchmark.variant.queries.FixedQueries;
+import org.opencb.opencga.storage.benchmark.variant.queries.FixedQuery;
 import org.opencb.opencga.storage.benchmark.variant.samplers.VariantStorageEngineDirectSampler;
 import org.opencb.opencga.storage.benchmark.variant.samplers.VariantStorageEngineRestSampler;
 import org.opencb.opencga.storage.benchmark.variant.samplers.VariantStorageEngineSampler;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
+import java.nio.file.Paths;
+import java.util.*;
 
 /**
  * Created on 06/04/17.
@@ -41,60 +51,99 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
         super(storageConfiguration, jmeterHome, outdir);
     }
 
-    public void addThreadGroup(ConnectionType type, Path dataDir, String queries, QueryOptions queryOptions) {
+    public void addThreadGroup(ConnectionType type, ExecutionMode mode, Path dataDir, Map<String, String> baseQuery, String queryFile,
+                               String queries, QueryOptions queryOptions) {
 
-        // gene,ct;region,phylop
+        List<String> queriesList = new ArrayList<>();
+        if (mode.equals(ExecutionMode.FIXED)) {
+            if (StringUtils.isEmpty(queries)) {
+                queriesList = readFixedQueriesIdsFromFile(dataDir, queryFile);
+            } else {
+                queriesList = Arrays.asList(queries.replaceAll(";", ",").split(","));
+                if (!readFixedQueriesIdsFromFile(dataDir, queryFile).containsAll(queriesList)) {
+                    throw new IllegalArgumentException("Query id(s) does not exist in config file : " + queriesList);
+                }
+            }
+        } else if (mode.equals(ExecutionMode.RANDOM)) {
+            if (StringUtils.isEmpty(queries)) {
+                throw new MissingCommandException("Please provide execution queries for dynamic mode.");
+            }
+            queriesList = Arrays.asList(queries.split(";"));
+        }
 
         List<VariantStorageEngineSampler> samplers = new ArrayList<>();
-        for (String query : queries.split(";")) {
+        for (String query : queriesList) {
             VariantStorageEngineSampler variantStorageSampler = newVariantStorageEngineSampler(type);
 
             variantStorageSampler.setStorageEngine(storageEngine);
             variantStorageSampler.setDBName(dbName);
             variantStorageSampler.setLimit(queryOptions.getInt(QueryOptions.LIMIT, -1));
             variantStorageSampler.setCount(queryOptions.getBoolean(QueryOptions.COUNT, false));
-            variantStorageSampler.setQueryGenerator(MultiQueryGenerator.class);
-            variantStorageSampler.setQueryGeneratorConfig(MultiQueryGenerator.DATA_DIR, dataDir.toString());
-            variantStorageSampler.setQueryGeneratorConfig(MultiQueryGenerator.MULTI_QUERY, query);
+            variantStorageSampler.setQueryGeneratorConfig(FixedQueryGenerator.FILE, queryFile);
+            variantStorageSampler.setQueryGeneratorConfig(FixedQueryGenerator.OUT_DIR, outdir.toString());
+            setBaseQueryFromCommandLine(variantStorageSampler, baseQuery);
+
+            if (mode.equals(ExecutionMode.FIXED)) {
+                variantStorageSampler.setQueryGenerator(FixedQueryGenerator.class);
+                variantStorageSampler.setQueryGeneratorConfig(FixedQueryGenerator.DATA_DIR, dataDir.toString());
+                variantStorageSampler.setQueryGeneratorConfig(FixedQueryGenerator.FIXED_QUERY, query);
+            } else if (mode.equals(ExecutionMode.RANDOM)) {
+                variantStorageSampler.setQueryGenerator(MultiQueryGenerator.class);
+                variantStorageSampler.setQueryGeneratorConfig(MultiQueryGenerator.DATA_DIR, dataDir.toString());
+                variantStorageSampler.setQueryGeneratorConfig(MultiQueryGenerator.MULTI_QUERY, query);
+            }
+            variantStorageSampler.setName(query);
 
             samplers.add(variantStorageSampler);
         }
 
         addThreadGroup(samplers);
-
-
-    }
-
-    public void addThreadGroup(ConnectionType type, Path dataDir, List<Class<? extends QueryGenerator>> queryGenerators,
-                               QueryOptions queryOptions) {
-        List<VariantStorageEngineSampler> samplers = new ArrayList<>(queryGenerators.size());
-        for (Class<? extends QueryGenerator> clazz : queryGenerators) {
-            VariantStorageEngineSampler variantStorageSampler = newVariantStorageEngineSampler(type);
-
-            variantStorageSampler.setStorageEngine(storageEngine);
-            variantStorageSampler.setDBName(dbName);
-            variantStorageSampler.setLimit(queryOptions.getInt(QueryOptions.LIMIT, -1));
-            variantStorageSampler.setCount(queryOptions.getBoolean(QueryOptions.COUNT, false));
-            variantStorageSampler.setQueryGenerator(clazz);
-            variantStorageSampler.setQueryGeneratorConfig(QueryGenerator.DATA_DIR, dataDir.toString());
-
-            samplers.add(variantStorageSampler);
-        }
-
-        addThreadGroup(samplers);
-
     }
 
     public VariantStorageEngineSampler newVariantStorageEngineSampler(ConnectionType type) {
         switch (type) {
             case REST:
-                return new VariantStorageEngineRestSampler("localhost", storageConfiguration.getServer().getRest());
+                URI rest = storageConfiguration.getBenchmark().getRest();
+                return new VariantStorageEngineRestSampler(rest.getHost(), rest.getPath(), rest.getPort());
             case DIRECT:
                 return new VariantStorageEngineDirectSampler();
             case GRPC:
                 throw new UnsupportedOperationException("Unsupported type " + ConnectionType.GRPC);
             default:
                 throw new IllegalArgumentException("Unknown type " + type);
+        }
+    }
+
+    private List<String> readFixedQueriesIdsFromFile(Path dataDir, String queryFile) {
+
+        Path queryFilePath;
+        FixedQueries fixedQueries;
+        List<String> queryList = new ArrayList<>();
+
+        if (StringUtils.isEmpty(queryFile)) {
+            queryFilePath = Paths.get(dataDir.toString(), FixedQueryGenerator.FIXED_QUERIES_FILE);
+        } else {
+            queryFilePath = Paths.get(queryFile);
+        }
+        try (FileInputStream inputStream = new FileInputStream(queryFilePath.toFile())) {
+            ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+            fixedQueries = objectMapper.readValue(inputStream, FixedQueries.class);
+        } catch (IOException e) {
+            throw Throwables.propagate(e);
+        }
+
+        for (FixedQuery fixedQuery : fixedQueries.getQueries()) {
+            queryList.add(fixedQuery.getId());
+        }
+
+        return queryList;
+    }
+
+    private void setBaseQueryFromCommandLine(VariantStorageEngineSampler variantStorageEngineSampler, Map<String, String> baseQuery) {
+        if (Objects.nonNull(baseQuery)) {
+            for (String key : baseQuery.keySet()) {
+                variantStorageEngineSampler.setQueryGeneratorConfig(QueryGenerator.BASE_QUERY_REFIX + key, baseQuery.get(key));
+            }
         }
     }
 }

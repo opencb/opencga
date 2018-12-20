@@ -22,7 +22,7 @@
 
     <groupId>org.opencb.opencga</groupId>
     <artifactId>opencga</artifactId>
-    <version>1.4.0-rc2-dev</version>
+    <version>1.4.0-rc3-dev</version>
     <packaging>pom</packaging>
     <name>OpenCGA</name>
     
@@ -37,11 +37,11 @@
     </modules>
 
     <properties>
-        <opencga.version>1.4.0-rc2-dev</opencga.version>
+        <opencga.version>1.4.0-rc3-dev</opencga.version>
         <java.version>1.8</java.version>
-        <java-common-libs.version>3.7.1</java-common-libs.version>
-        <biodata.version>1.4.2-SNAPSHOT</biodata.version>
-        <cellbase.version>4.6.1</cellbase.version>
+        <java-common-libs.version>3.7.3-SNAPSHOT</java-common-libs.version>
+        <biodata.version>1.4.3-SNAPSHOT</biodata.version>
+        <cellbase.version>4.6.2-SNAPSHOT</cellbase.version>
         <hpg-bigdata.version>1.0.0-beta4</hpg-bigdata.version>
         <jackson.version>2.6.6</jackson.version>
         <jersey.version>2.23</jersey.version>
@@ -51,6 +51,7 @@
         <slf4j.version>1.7.21</slf4j.version>
         <junit.version>4.12</junit.version>
         <solr.version>6.4.2</solr.version>
+        <jetty.version>9.3.14.v20161028</jetty.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <opencga.war.name>opencga</opencga.war.name>
@@ -301,6 +302,10 @@
                         <groupId>org.apache.parquet</groupId>
                         <artifactId>parquet-hadoop</artifactId>
                     </exclusion>
+                    <exclusion>
+                        <groupId>com.google.protobuf</groupId>
+                        <artifactId>protobuf-java</artifactId>
+                    </exclusion>
                 </exclusions>
             </dependency>
             <dependency>
@@ -392,12 +397,17 @@
                 <artifactId>solr-test-framework</artifactId>
                 <version>${solr.version}</version>
                 <scope>test</scope>
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.google.protobuf</groupId>
+                        <artifactId>protobuf-java</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
                 <version>18.0</version>
-                <!--DO NOT UPGRADE! HBase requires this guava version-->
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
@@ -437,12 +447,12 @@
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-server</artifactId>
-                <version>9.3.6.v20151106</version>
+                <version>${jetty.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-webapp</artifactId>
-                <version>9.3.6.v20151106</version>
+                <version>${jetty.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.avro</groupId>

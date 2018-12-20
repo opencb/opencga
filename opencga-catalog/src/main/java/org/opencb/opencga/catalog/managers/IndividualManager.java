@@ -139,7 +139,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             throws CatalogException {
         Individual individual = new Individual(name, name, null, null, null, null, sex, karyotypicSex,
                 ethnicity, new Individual.Population(populationName, populationSubpopulation, populationDescription), dateOfBirth, -1, 1,
-                null, null, lifeStatus, affectationStatus, null, null, false, null, null);
+                null, null, lifeStatus, affectationStatus, null, null, null, false, null, null);
         return create(String.valueOf(studyId), individual, options, sessionId);
     }
 
@@ -222,6 +222,16 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             }
         }
         individual.setSamples(sampleList);
+
+        if (individual.getFather() != null && StringUtils.isNotEmpty(individual.getFather().getId())) {
+            MyResource<Individual> fatherResource = getUid(individual.getFather().getId(), study.getFqn(), sessionId);
+            individual.setFather(fatherResource.getResource());
+        }
+
+        if (individual.getMother() != null && StringUtils.isNotEmpty(individual.getMother().getId())) {
+            MyResource<Individual> motherResource = getUid(individual.getMother().getId(), study.getFqn(), sessionId);
+            individual.setMother(motherResource.getResource());
+        }
 
         // Create the individual
         individual.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.INDIVIDUAL));

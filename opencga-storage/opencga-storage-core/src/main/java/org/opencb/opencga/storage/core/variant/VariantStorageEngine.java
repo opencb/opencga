@@ -162,6 +162,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         @Deprecated
         DB_NAME("database.name", "opencga"),
 
+        STDIN("stdin", false),
+        STDOUT("stdout", false),
         TRANSFORM_BATCH_SIZE("transform.batch.size", 200),
         TRANSFORM_THREADS("transform.threads", 4),
         TRANSFORM_FORMAT("transform.format", "avro"),

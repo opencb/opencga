@@ -75,6 +75,7 @@ import static org.opencb.opencga.storage.core.metadata.StudyConfigurationManager
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.LOADED_GENOTYPES;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.POST_LOAD_CHECK_SKIP;
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.STDIN;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.*;
 
 /**
@@ -284,6 +285,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         final int numReaders = 1;
         boolean resume = isResume(options);
         StudyConfiguration studyConfiguration = getStudyConfiguration();
+        boolean stdin = options.getBoolean(STDIN.key(), STDIN.defaultValue());
 
         try {
             //Dedup task
@@ -294,7 +296,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             Task<Variant, Variant> remapIdsTask = new RemapVariantIdsTask(studyConfiguration.getStudyId(), fileId);
 
             // File reader
-            DataReader<Variant> variantReader = VariantReaderUtils.getVariantReader(Paths.get(inputUri), metadata)
+            DataReader<Variant> variantReader = VariantReaderUtils.getVariantReader(Paths.get(inputUri), metadata, stdin)
                     .then(duplicatedVariantsDetector)
                     .then(remapIdsTask);
 
@@ -386,6 +388,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         int loadThreads = options.getInt(Options.LOAD_THREADS.key(), Options.LOAD_THREADS.defaultValue());
         final int numReaders = 1;
 //        final int numTasks = loadThreads == 1 ? 1 : loadThreads - numReaders; //Subtract the reader thread
+        boolean stdin = options.getBoolean(STDIN.key(), STDIN.defaultValue());
 
 
         try {
@@ -393,8 +396,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             MongoDBCollection stageCollection = dbAdaptor.getStageCollection(studyConfiguration.getStudyId());
 
             //Reader
-            VariantReader variantReader;
-            variantReader = VariantReaderUtils.getVariantReader(input, metadata);
+            VariantReader variantReader = VariantReaderUtils.getVariantReader(input, metadata, stdin);
 
             //Remapping ids task
             Task<Variant, Variant> remapIdsTask = new RemapVariantIdsTask(studyConfiguration.getStudyId(), fileId);
