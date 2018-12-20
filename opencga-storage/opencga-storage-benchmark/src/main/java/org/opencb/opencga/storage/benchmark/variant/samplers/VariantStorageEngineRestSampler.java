@@ -37,11 +37,13 @@ import java.util.Objects;
  */
 public class VariantStorageEngineRestSampler extends HTTPSampler implements VariantStorageEngineSampler {
 
+    public static final String REST_PATH = "/webservices/rest/v1/analysis/variant/query";
+    public static final String STORAGE_REST_PATH = "/webservices/rest/variants/query";
     private Logger logger = LoggerFactory.getLogger(getClass());
     private QueryGenerator queryGenerator;
 
     public VariantStorageEngineRestSampler() {
-        setPath("opencga/webservices/rest/variants/query");
+        setPath(STORAGE_REST_PATH);
         setMethod("GET");
     }
 
