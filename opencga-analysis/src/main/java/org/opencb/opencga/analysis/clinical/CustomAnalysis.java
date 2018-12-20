@@ -108,7 +108,7 @@ public class CustomAnalysis extends OpenCgaAnalysis<Interpretation> {
 
             // If disease is not provided, then take it from clinical analysis
             if (diseaseName == null) {
-                OntologyTerm disease = clinicalAnalysis.getDisease();
+                OntologyTerm disease = clinicalAnalysis.getDisorder();
                 phenotype = new Phenotype(disease.getId(), disease.getName(), disease.getSource(), Phenotype.Status.UNKNOWN);
             }
         }
