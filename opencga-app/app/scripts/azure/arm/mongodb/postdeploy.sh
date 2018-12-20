@@ -4,6 +4,8 @@
 #just here for reference
 
 echo $APP_DNS_NAME
+echo $MONGODB_USERNAME
+echo $MONGODB_PASSWORD
 sudo apt-get update
 sudo apt-get upgrade -y
 sudo apt-get install software-properties-common -y
@@ -16,11 +18,14 @@ sudo add-apt-repository -y universe
 sudo add-apt-repository -y ppa:certbot/certbot
 sudo apt-get update
 sudo apt-get install -y nginx certbot python-certbot-nginx
-sleep 150
-sudo certbot --nginx -d ${APP_DNS_NAME} -m test@test.com --agree-tos -q
+sleep 30
+sudo certbot --nginx -d ${APP_DNS_NAME} -m opencga@test.com --agree-tos -q
 sudo sh -c 'nginx -t && nginx -s reload'
 sudo sh -c "cat /etc/letsencrypt/live/${APP_DNS_NAME}/privkey.pem /etc/letsencrypt/live/${APP_DNS_NAME}/cert.pem > /etc/ssl/mongo.pem"
 sudo sh -c "cat /etc/letsencrypt/live/${APP_DNS_NAME}/chain.pem >> /etc/ssl/ca.pem"
+sudo systemctl restart mongod
+sleep 10
+sudo mongo admin --eval 'db.createUser({user: "'${MONGODB_USERNAME}'",pwd: "'${MONGODB_PASSWORD}'",roles: ["root"]})'
+sudo sed -i '/#security/csecurity:\n  authorization: "enabled"\n' /etc/mongod.conf
 sudo sed -i -e '/bindIp/ s/: .*/: ::,0.0.0.0\n  ssl:\n    mode: allowSSL\n    PEMKeyFile: \/etc\/ssl\/mongo.pem\n    CAFile: \/etc\/ssl\/ca.pem\n    allowConnectionsWithoutCertificates: true /' /etc/mongod.conf
 sudo systemctl restart mongod
-sudo reboot

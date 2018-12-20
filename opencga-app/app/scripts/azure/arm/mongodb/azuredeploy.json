@@ -39,7 +39,9 @@
         "vnetAddressPrefix": "10.0.0.0/16",
         "subnetName": "mong-subnet",
         "subnetPrefix": "10.0.0.0/24",
-        "dnsPrefix": "[concat(parameters('dnsLabelPrefix'), uniquestring(resourceGroup().id))]"
+        "dnsPrefix": "[concat(parameters('dnsLabelPrefix'), uniquestring(resourceGroup().id))]",
+        "mongoDBUser": "opencga",
+        "mongoDBPassword": "[concat('P', uniqueString(resourceGroup().id, '224F5A8B-51DB-46A3-A7C8-59B0DD584A41'), 'x', '!')]"
     },
     "resources": [
         {
@@ -205,7 +207,7 @@
                 },
                 "osProfile": {
                     "computerName": "[variables('vmName')]",
-                    "customData": "[base64('#cloud-config\n\nwrite_files:\n -  encoding: gzip\n    content: !!binary |\n        H4sIAF8gGlwAA51U207cMBB95yumW9SVKhwvyy6XSK0aYJGqFoTEQx+6FXLsYWOR2K7tLERt/712HNqFSr0pUi4zZ87cjvP8GS2loiVz1RbySsN2cXl5fXpxdX1RnC+2XCs0MOPJCj20RjCPT20rywQC6R7bpXKe1TU4fePvmEVirDZovURHuG4arR6F3GIHTKyBxDeHdo0WqluTU/rjO2vLVvk2C9H54SQgLfI1TI/2JsVpsTg8Kc7mk/nRYnGwd3w8O54fHuxOi+n0aPesmBWn89TcSGAJH4FZXr1ijdif7TDb7M/gE1TeGxfSWTQ6C9WttCgzbVc0VEdTZrhHJVlNBy+J3r1sH5q29jIU6HAEX6FvySMCRc/7aKdby9FltXQ+E5vhJIT35j/P+WGepIMNgoRxnfPYcF8DKlbWOCCyODfJH4iEIJEsNuik17aLXK1Klf8OYwzLeVhdqT0dnv9Ur1pJdQ9DJJjOV1qR4ZP0zi1XIxrYnU8SyQOWJDcQAdtfNnX5DUgThuz8m3iLkghYtrKIxGsH5PMwmAoIh/FA4uHFi6EY4sBirZkYbwJHnPm0thq9Q8VtF9ZXhwnRJ+mpsXIdlJkZbP4yIvbUw1+nAOcGJUXj6D/L4BWTKrFu0HK2yYkCiASCMI4nXbw1FBzNIXsZbnm+M8n6a6kAQmwenxAEJDCHsD99d3X1PtkuF+fvsDuTdfAsY65lTLb82USChXP4CyQVlPw96YlWCrmXWrkPMuih9Sfx33AjQ+vocvC2DQdonFoa1My1unmqdxu2z6wfBJ+8FksdFPodqDe0XdkEAAA=\n    path: /opt/installmongodb.sh\n    permissions: \"0744\"\n\n')]",
+                    "customData": "[base64('#cloud-config\n\nwrite_files:\n -  encoding: gzip\n    content: !!binary |\n        H4sIAASsG1wAA51UbW/TMBD+vl9xhIkCmpPulS0SiGztEIK9aNXEB4om1761FokdbKdbGPvvnJMUuvGOKrnJvTy+e+7JPXyQTJROJtzNVlDMDKxmp6cXg+PRxXF2NOxMRyfHr04G+xfno+HZT8yn2Wj07uRssOIqaYCXnk3RQ1VK7vG+bWq5RGD1XbvSzvM8B2cu/RW3yEprSrReoWPCFIXRd1I+Yg1czoGFJ4d2jhZmH8s0Sb69x9Wk0r6KKTvd7VOkRTGHjb3NfjbIhrsH2eF2f3tvOHy2ub+/tb+9+2x9I9vY2Fs/zLaywXbbYCRxAu+BWzF7zgu5s7XGbbGzBR9g5n3p6DqLpYmpuqmRk9jYaULVJe3NcI1a8TzpvCx4N+MdKKrcKyrQYQRfoGnJI0KCXjTZzlRWoItz5Xwsl9MZpTfmP/O84JPVsATQxrjaeSyEzwE1n+TYRcSBNyUWQFKyABYadMobWwesSreV/y6mLHkqaHQT45Pu/5/q1VOlr6HLhLL2M6NZ98oa54rLEUvY7LcYi1DWeoFJWL1ZFvEtsII4dv5lOIIiKJZPLSLzxgH71PEyAyag14F4ePSoq4U5sJgbLnvLgZHgvp1ajt6hFram6eVEUHLv+qS0ak7CjEss/jIj9NSEv2gTnOuEFIzRf5YhZlzpFnUJVvBlzG/asEQVt74TR0f5ekd5Y6T5F4q+S4ZznkOPPgBhkSZ7TkJ6fFPRmULUW725vzxue9FaeSXvOhcrJDitydGl8D6yxvjow+2T3kpXHUpgCnrJQ4eissrXiVg8pWMNwCtSi1WfuVdG0wWtwGU01r224U7qwujLO5AMCZX2oHxdJuCSFOKndKTpWj9ufgGcyGouAWpfYgqkV3M1Gr1tbafDozdYH6qcPONw1ziwO/4+tTaM9s4PIe0EWn8DemC0RhF6cO8UdVT5g7ALLxXNOjDjbUUL45ct/WKGXwFwnrgU6gUAAA==\n    path: /opt/installmongodb.sh\n    permissions: \"0744\"\n\n')]",
                     "linuxConfiguration": {
                         "disablePasswordAuthentication": false,
                         "provisionVMAgent": true
@@ -234,12 +236,20 @@
                     "timestamp": 4
                 },
                 "protectedSettings": {
-                    "commandToExecute": "[concat(' APP_DNS_NAME=', reference(resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName')),'2017-10-01').dnsSettings.fqdn, ' /bin/bash /opt/installmongodb.sh')]"
+                    "commandToExecute": "[concat(' MONGODB_USERNAME=', variables('mongoDBUser'),' MONGODB_PASSWORD=', variables('mongoDBPassword'),' APP_DNS_NAME=', reference(resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName')),'2017-10-01').dnsSettings.fqdn, ' /bin/bash /opt/installmongodb.sh')]"
                 }
             }
         }
     ],
     "outputs": {
+        "mongDBUser": {
+            "value": "[variables('mongoDBUser')]",
+            "type": "string"
+        },
+        "mongDBPassword": {
+            "value": "[variables('mongoDBPassword')]",
+            "type": "string"
+        },
         "fqdn": {
             "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName')),'2017-10-01').dnsSettings.fqdn]",
             "type": "string"
