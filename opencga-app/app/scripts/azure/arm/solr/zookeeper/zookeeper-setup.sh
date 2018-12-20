@@ -2,6 +2,9 @@
 
 set -x
 set -e
+export DEBIAN_FRONTEND='noninteractive'
+# Wait for network
+sleep 5
 
 ## Install Docker following: https://docs.docker.com/install/linux/docker-ce/ubuntu/#extra-steps-for-aufs
 ## Set up Docker repository for Ubuntu
