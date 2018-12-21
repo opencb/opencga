@@ -25,11 +25,11 @@ RUN wget "https://github.com/opencb/iva/releases/download/v${IVA_VERSION}/iva-${
     cp -r iva/conf/* /opt/opencga/conf/iva
 
 VOLUME /opt/volume
-RUN pip install oyaml
+RUN pip3 install oyaml
 COPY . /tmp/
 RUN chmod +x /tmp/setup.sh
 
 # It is the responsibility of the setup.sh
 # script to initialise the volume correctly
 # and apply any runtime config transforms.
-CMD ["sh", "-c", "/tmp/setup.sh"]
+ENTRYPOINT ["sh", "-c", "/tmp/setup.sh"]

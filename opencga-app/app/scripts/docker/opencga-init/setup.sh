@@ -12,7 +12,7 @@ sshpass -p $HD_INSIGHTS_SSH_PASS scp -o StrictHostKeyChecking=no -o StrictHostKe
 sshpass -p $HD_INSIGHTS_SSH_PASS scp -o StrictHostKeyChecking=no  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r $HD_INSIGHTS_SSH_USER@$HD_INSIGHTS_SSH_DNS:/etc/hbase/conf/* /opt/opencga/conf/hadoop
 
 echo "Initialising config"
-OUT=$(python3 ../init-config.py \
+OUT=$(python3 /tmp/init-config.py \
 --search-host "$SEARCH_HOST" \
 --clinical-host "$CLINICAL_HOST" \
 --catalog-database-host "$CATALOG_DATABASE_HOST" \
@@ -30,6 +30,8 @@ OUT=$(python3 ../init-config.py \
 echo "Initialising volume"
 mkdir -p /opt/volume/conf /opt/volume/sessions
 cp -r /opt/opencga/conf/* /opt/volume/conf
+
+chown -R opencga /opt/volume/
 
 echo "Installing catalog"
 echo "${OPENCGA_PASS}" | /opt/opencga/bin/opencga-admin.sh catalog install --secret-key ${1}
