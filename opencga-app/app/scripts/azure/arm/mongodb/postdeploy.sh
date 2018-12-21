@@ -5,9 +5,10 @@
 
 set -e
 
-echo $APP_DNS_NAME
-echo $MONGODB_USERNAME
-echo $MONGODB_PASSWORD
+# echo $APP_DNS_NAME
+# echo $MONGODB_USERNAME
+# echo $MONGODB_PASSWORD
+# echo $CERT_EMAIL
 apt-get update
 apt-get upgrade -y
 apt-get install software-properties-common -y
@@ -22,7 +23,7 @@ apt-get update
 apt-get install -y nginx certbot python-certbot-nginx
 sleep 30
 sed -i -e 's/# server_names_hash_bucket_size 64/server_names_hash_bucket_size 128/g' /etc/nginx/nginx.conf
-certbot --nginx -d ${APP_DNS_NAME} -m opencga@test.com --agree-tos -q
+certbot --nginx -d ${APP_DNS_NAME} -m ${CERT_EMAIL} --agree-tos -q
 nginx -t && nginx -s reload
 cat /etc/letsencrypt/live/${APP_DNS_NAME}/privkey.pem /etc/letsencrypt/live/${APP_DNS_NAME}/cert.pem > /etc/ssl/mongo.pem
 cat /etc/letsencrypt/live/${APP_DNS_NAME}/chain.pem >> /etc/ssl/ca.pem

@@ -22,6 +22,12 @@
                 "description": "Unique DNS Name for the Public IP used to access the Virtual Machine."
             }
         },
+        "certificateEmail": {
+            "type": "string",
+            "metadata": {
+                "description": "Email address used for letsencrypt certificate "
+            }
+        },
         "adminUsername": {
             "type": "string"
         },
@@ -212,7 +218,7 @@
                 },
                 "osProfile": {
                     "computerName": "[variables('vmName')]",
-                    "customData": "[base64('#cloud-config\n\nwrite_files:\n -  encoding: gzip\n    content: !!binary |\n        H4sIACvQHFwAA5VUbW8TORD+vr9iSCvCnep1mqalXQnEtklPp6MvIkJ8IChyvNPE6q69Z3tTltL/znh3AzmgiFMkZz0vz7w9np0nfKE0Xwi3ihx6YBhFKFcGdtPr6/n4cjq/TC8mneji6vKvq/Hp/O108uYn4ut0On139WYcidKzJYFVZSY8bl2XVmQIrP4qUtp5kefgzI2/ExZZaU2J1it0TJqiMHpjfYs1iGwNLHw5tGu0sLotE86/3uNqUWlfxeSYHA/I0qJcw/DkYJCO08nxWXp+ODg8mUyeH5yejk4Pj5/vD9Ph8GT/PB2l48O2mF6GC3gPwsrVC1FkR6M9YYujEXyAlfelo3AWSxNTYkuTLWJjl5yy421k+IhaiZx3Wha0B/ERFFXuFSXosAefwSMCRy8bR2cqK9HFuXI+zrY9GXk24sfauekdq2HLLXK181hInwNqscixU8ahR0qSe5axABHqcMobWweESrcJPqIuS5FImsvCeN79/0Zaeqn0R+jsoaz9ymjWXVmjjFyOWMLBgMiXAVPEP+g7vgPtROdaFOjmK2LnfFHJW/Rzpz4hHI34rw32h8d82W/b3ARqT6KGvoFokxFrkwCWwe79Nt8fgBVARNRyKV55pNEQp8hcLC0i88YB+zfqfD08fdpVyhxYzI3IIil8GzxH7wjG1jTrnFrMvwvES6vWxOC4xOI3PUL2jfnL1sG5jnFB+D8iy5VQugXaQpKigfnGIkvlC+s7GnUD2x9EzZ2eZKHojTJcixz69CKkRWLDWxrPs/uKzgR6/d377zfHQ7+3V95l/1Vu9kdQWpOjS+B9zxrjex8e/uhvGNLnOw5lZZWvudx8JTMNICoimFWfhFdGE3TL/6w30x0TupcQSLDNt7ABs79LDo4nEP9JR5LsDeLmF3CpLQ0+UA8yTIDYbe6m09et7Hpy8Q/W5yonzSyEmYU+zr6NpDWj7fODSdvrVt+AnhmtUYb03TtFxVT+LCzDG0VTDe3wtqLd8bNqHhnXFwPEwDnfBQAA\n    path: /opt/installmongodb.sh\n    permissions: \"0744\"\n\n')]",
+                    "customData": "[base64('#cloud-config\n\nwrite_files:\n -  encoding: gzip\n    content: !!binary |\n        H4sIAHbgHFwAA5VUbW/bNhD+rl9xc4K6G0LRcZw0EbABSuwMxZoXxCv6oS4MmrrYRCRSIymnapb/3qMkJ17XDB0M0OI998a7527nJ75Qmi+EW0UOPTCMoh1AuTKwm15fz8eX0/llejF5El5cXf5+NT6dv59Obr4LXKfT6Yerm/ETcDa5+XM+uUjfvotE6dmSolRlJjxuXZdWZAisfhIp7bzIc3Dm1t8Li6y0pkTrFTomTVEYvdG+wxpEtgYWvhzaNVpY3ZUJ50/3uFpU2lcxGSbHA9K0KNcwPDkYpON0cnyWnh8ODk8mkzcHp6ej08PjN/vDdDg82T9PR+n4MGqe0ctwAR9BWLn6VRTZ0WhP2OJoBJ9g5X3pKJzF0sSU2NJki9jYJafseBsZPqNWIucdygJ6EB9BUeVeUYIOe/A3eETg6GVj6ExlJbo4V87H2bYlI8tG/FI5N7VjNWyZRa52Hgvpc0AtFjl2YBxqpCSZZxkLLsI7nPLG1sFDpdsEX4DLUiSS+rIwnnf/P5CWXir9GTp9KGu/Mpp1V9aAkcsRSzgYECszYIqICX3Hd6Dt6FyLAt18RbSdLyp5h37u1BeEoxH/b4X94TFf9tsyN4Hak6ihbyHaZMTaJIBlsPuwPQaPwAoSPVOaBEwsLSLzxgH7K+oMPbx61T2TObCYG5FFUvg2co7eoZa2pkbnVF/+TRReWrUm+sYlFj9oEVJv1H9rDZzr6BaE/yOyXAmlW0dbnqRo3DxTyCI10/qOQ1239gdRc6d5LBQNKMO1yKFP4yAtEhXeU29eP1R0JtDr7z58u0se+7298j77J7jZJwG0JkeXwMeeNcb3Pj3+3N/Qo893HMrKKl9zuflKZhpAVMQuq74Ir4wm1y35s95MdzToxiAwYJtsYS9mb0sOjicQ/0JHkuwN4uYX/FJZGv9ANcgwAaK2uZ9O37Wy68nFH1ifq5yQWQgzC3WcPbekVaPV8y+VttYt3jg9M1qjDOm7D4oeU/mzsAlvFXU1lMPbihbH917zQru+AslHj6j1BQAA\n    path: /opt/installmongodb.sh\n    permissions: \"0744\"\n\n')]",
                     "linuxConfiguration": {
                         "disablePasswordAuthentication": false,
                         "provisionVMAgent": true
@@ -241,7 +247,7 @@
                     "timestamp": 4
                 },
                 "protectedSettings": {
-                    "commandToExecute": "[concat(' MONGODB_USERNAME=', parameters('mongoDBUsername'),' MONGODB_PASSWORD=', parameters('mongoDBPassword'),' APP_DNS_NAME=', reference(resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName')),'2017-10-01').dnsSettings.fqdn, ' /bin/bash /opt/installmongodb.sh')]"
+                    "commandToExecute": "[concat(' CERT_EMAIL=', parameters('certificateEmail'),' MONGODB_USERNAME=', parameters('mongoDBUsername'),' MONGODB_PASSWORD=', parameters('mongoDBPassword'),' APP_DNS_NAME=', reference(resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName')),'2017-10-01').dnsSettings.fqdn, ' /bin/bash /opt/installmongodb.sh')]"
                 }
             }
         }
