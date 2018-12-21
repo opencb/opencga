@@ -26,7 +26,14 @@
             "type": "string"
         },
         "adminPassword": {
-            "type": "secureString"
+            "type": "securestring"
+        },
+        "mongoDBUsername": {
+            "type": "string",
+            "defaultValue": "opencga"
+        },
+        "mongoDBPassword": {
+            "type": "securestring"
         }
     },
     "variables": {
@@ -34,14 +41,12 @@
         "nsgName": "mongo-nsg",
         "nicName": "mongo-nic",
         "publicIPAddressName": "mongo-publicip",
-        "publicIPAddressType": "Dynamic",
+        "publicIPAddressType": "Static",
         "virtualNetworkName": "net",
         "vnetAddressPrefix": "10.0.0.0/16",
         "subnetName": "mong-subnet",
         "subnetPrefix": "10.0.0.0/24",
-        "dnsPrefix": "[concat(parameters('dnsLabelPrefix'), uniquestring(resourceGroup().id))]",
-        "mongoDBUser": "opencga",
-        "mongoDBPassword": "[concat('P', uniqueString(resourceGroup().id, '224F5A8B-51DB-46A3-A7C8-59B0DD584A41'), 'x', '!')]"
+        "dnsPrefix": "[concat(parameters('dnsLabelPrefix'), uniquestring(resourceGroup().id))]"
     },
     "resources": [
         {
@@ -207,7 +212,7 @@
                 },
                 "osProfile": {
                     "computerName": "[variables('vmName')]",
-                    "customData": "[base64('#cloud-config\n\nwrite_files:\n -  encoding: gzip\n    content: !!binary |\n        H4sIAASsG1wAA51UbW/TMBD+vl9xhIkCmpPulS0SiGztEIK9aNXEB4om1761FokdbKdbGPvvnJMUuvGOKrnJvTy+e+7JPXyQTJROJtzNVlDMDKxmp6cXg+PRxXF2NOxMRyfHr04G+xfno+HZT8yn2Wj07uRssOIqaYCXnk3RQ1VK7vG+bWq5RGD1XbvSzvM8B2cu/RW3yEprSrReoWPCFIXRd1I+Yg1czoGFJ4d2jhZmH8s0Sb69x9Wk0r6KKTvd7VOkRTGHjb3NfjbIhrsH2eF2f3tvOHy2ub+/tb+9+2x9I9vY2Fs/zLaywXbbYCRxAu+BWzF7zgu5s7XGbbGzBR9g5n3p6DqLpYmpuqmRk9jYaULVJe3NcI1a8TzpvCx4N+MdKKrcKyrQYQRfoGnJI0KCXjTZzlRWoItz5Xwsl9MZpTfmP/O84JPVsATQxrjaeSyEzwE1n+TYRcSBNyUWQFKyABYadMobWwesSreV/y6mLHkqaHQT45Pu/5/q1VOlr6HLhLL2M6NZ98oa54rLEUvY7LcYi1DWeoFJWL1ZFvEtsII4dv5lOIIiKJZPLSLzxgH71PEyAyag14F4ePSoq4U5sJgbLnvLgZHgvp1ajt6hFram6eVEUHLv+qS0ak7CjEss/jIj9NSEv2gTnOuEFIzRf5YhZlzpFnUJVvBlzG/asEQVt74TR0f5ekd5Y6T5F4q+S4ZznkOPPgBhkSZ7TkJ6fFPRmULUW725vzxue9FaeSXvOhcrJDitydGl8D6yxvjow+2T3kpXHUpgCnrJQ4eissrXiVg8pWMNwCtSi1WfuVdG0wWtwGU01r224U7qwujLO5AMCZX2oHxdJuCSFOKndKTpWj9ufgGcyGouAWpfYgqkV3M1Gr1tbafDozdYH6qcPONw1ziwO/4+tTaM9s4PIe0EWn8DemC0RhF6cO8UdVT5g7ALLxXNOjDjbUUL45ct/WKGXwFwnrgU6gUAAA==\n    path: /opt/installmongodb.sh\n    permissions: \"0744\"\n\n')]",
+                    "customData": "[base64('#cloud-config\n\nwrite_files:\n -  encoding: gzip\n    content: !!binary |\n        H4sIACvQHFwAA5VUbW8TORD+vr9iSCvCnep1mqalXQnEtklPp6MvIkJ8IChyvNPE6q69Z3tTltL/znh3AzmgiFMkZz0vz7w9np0nfKE0Xwi3ihx6YBhFKFcGdtPr6/n4cjq/TC8mneji6vKvq/Hp/O108uYn4ut0On139WYcidKzJYFVZSY8bl2XVmQIrP4qUtp5kefgzI2/ExZZaU2J1it0TJqiMHpjfYs1iGwNLHw5tGu0sLotE86/3uNqUWlfxeSYHA/I0qJcw/DkYJCO08nxWXp+ODg8mUyeH5yejk4Pj5/vD9Ph8GT/PB2l48O2mF6GC3gPwsrVC1FkR6M9YYujEXyAlfelo3AWSxNTYkuTLWJjl5yy421k+IhaiZx3Wha0B/ERFFXuFSXosAefwSMCRy8bR2cqK9HFuXI+zrY9GXk24sfauekdq2HLLXK181hInwNqscixU8ahR0qSe5axABHqcMobWweESrcJPqIuS5FImsvCeN79/0Zaeqn0R+jsoaz9ymjWXVmjjFyOWMLBgMiXAVPEP+g7vgPtROdaFOjmK2LnfFHJW/Rzpz4hHI34rw32h8d82W/b3ARqT6KGvoFokxFrkwCWwe79Nt8fgBVARNRyKV55pNEQp8hcLC0i88YB+zfqfD08fdpVyhxYzI3IIil8GzxH7wjG1jTrnFrMvwvES6vWxOC4xOI3PUL2jfnL1sG5jnFB+D8iy5VQugXaQpKigfnGIkvlC+s7GnUD2x9EzZ2eZKHojTJcixz69CKkRWLDWxrPs/uKzgR6/d377zfHQ7+3V95l/1Vu9kdQWpOjS+B9zxrjex8e/uhvGNLnOw5lZZWvudx8JTMNICoimFWfhFdGE3TL/6w30x0TupcQSLDNt7ABs79LDo4nEP9JR5LsDeLmF3CpLQ0+UA8yTIDYbe6m09et7Hpy8Q/W5yonzSyEmYU+zr6NpDWj7fODSdvrVt+AnhmtUYb03TtFxVT+LCzDG0VTDe3wtqLd8bNqHhnXFwPEwDnfBQAA\n    path: /opt/installmongodb.sh\n    permissions: \"0744\"\n\n')]",
                     "linuxConfiguration": {
                         "disablePasswordAuthentication": false,
                         "provisionVMAgent": true
@@ -236,21 +241,21 @@
                     "timestamp": 4
                 },
                 "protectedSettings": {
-                    "commandToExecute": "[concat(' MONGODB_USERNAME=', variables('mongoDBUser'),' MONGODB_PASSWORD=', variables('mongoDBPassword'),' APP_DNS_NAME=', reference(resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName')),'2017-10-01').dnsSettings.fqdn, ' /bin/bash /opt/installmongodb.sh')]"
+                    "commandToExecute": "[concat(' MONGODB_USERNAME=', parameters('mongoDBUsername'),' MONGODB_PASSWORD=', parameters('mongoDBPassword'),' APP_DNS_NAME=', reference(resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName')),'2017-10-01').dnsSettings.fqdn, ' /bin/bash /opt/installmongodb.sh')]"
                 }
             }
         }
     ],
     "outputs": {
         "mongDBUser": {
-            "value": "[variables('mongoDBUser')]",
+            "value": "[parameters('mongoDBUsername')]",
             "type": "string"
         },
         "mongDBPassword": {
-            "value": "[variables('mongoDBPassword')]",
+            "value": "[parameters('mongoDBPassword')]",
             "type": "string"
         },
-        "fqdn": {
+        "mongoFqdn": {
             "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName')),'2017-10-01').dnsSettings.fqdn]",
             "type": "string"
         }

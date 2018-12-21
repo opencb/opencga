@@ -3,29 +3,32 @@
 #this script is wrapped into the mongodb template in base64
 #just here for reference
 
+set -e
+
 echo $APP_DNS_NAME
 echo $MONGODB_USERNAME
 echo $MONGODB_PASSWORD
-sudo apt-get update
-sudo apt-get upgrade -y
-sudo apt-get install software-properties-common -y
-sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 2930ADAE8CAF5059EE73BB4B58712A2291FA4AD5
-echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/3.6 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-3.6.list
-sudo apt-get update
-sudo apt-get install -y mongodb-org
-sudo systemctl enable mongod.service
-sudo add-apt-repository -y universe
-sudo add-apt-repository -y ppa:certbot/certbot
-sudo apt-get update
-sudo apt-get install -y nginx certbot python-certbot-nginx
+apt-get update
+apt-get upgrade -y
+apt-get install software-properties-common -y
+apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 2930ADAE8CAF5059EE73BB4B58712A2291FA4AD5
+echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/3.6 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-3.6.list
+apt-get update
+apt-get install -y mongodb-org
+systemctl enable mongod.service
+add-apt-repository -y universe
+add-apt-repository -y ppa:certbot/certbot
+apt-get update
+apt-get install -y nginx certbot python-certbot-nginx
 sleep 30
-sudo certbot --nginx -d ${APP_DNS_NAME} -m opencga@test.com --agree-tos -q
-sudo sh -c 'nginx -t && nginx -s reload'
-sudo sh -c "cat /etc/letsencrypt/live/${APP_DNS_NAME}/privkey.pem /etc/letsencrypt/live/${APP_DNS_NAME}/cert.pem > /etc/ssl/mongo.pem"
-sudo sh -c "cat /etc/letsencrypt/live/${APP_DNS_NAME}/chain.pem >> /etc/ssl/ca.pem"
-sudo systemctl restart mongod
+sed -i -e 's/# server_names_hash_bucket_size 64/server_names_hash_bucket_size 128/g' /etc/nginx/nginx.conf
+certbot --nginx -d ${APP_DNS_NAME} -m opencga@test.com --agree-tos -q
+nginx -t && nginx -s reload
+cat /etc/letsencrypt/live/${APP_DNS_NAME}/privkey.pem /etc/letsencrypt/live/${APP_DNS_NAME}/cert.pem > /etc/ssl/mongo.pem
+cat /etc/letsencrypt/live/${APP_DNS_NAME}/chain.pem >> /etc/ssl/ca.pem
+systemctl restart mongod
 sleep 10
-sudo mongo admin --eval 'db.createUser({user: "'${MONGODB_USERNAME}'",pwd: "'${MONGODB_PASSWORD}'",roles: ["root"]})'
-sudo sed -i '/#security/csecurity:\n  authorization: "enabled"\n' /etc/mongod.conf
-sudo sed -i -e '/bindIp/ s/: .*/: ::,0.0.0.0\n  ssl:\n    mode: allowSSL\n    PEMKeyFile: \/etc\/ssl\/mongo.pem\n    CAFile: \/etc\/ssl\/ca.pem\n    allowConnectionsWithoutCertificates: true /' /etc/mongod.conf
-sudo systemctl restart mongod
+mongo admin --eval 'db.createUser({user: "'${MONGODB_USERNAME}'",pwd: "'${MONGODB_PASSWORD}'",roles: ["root"]})'
+sed -i '/#security/csecurity:\n  authorization: "enabled"\n' /etc/mongod.conf
+sed -i -e '/bindIp/ s/: .*/: ::,0.0.0.0\n  ssl:\n    mode: allowSSL\n    PEMKeyFile: \/etc\/ssl\/mongo.pem\n    CAFile: \/etc\/ssl\/ca.pem\n    allowConnectionsWithoutCertificates: true /' /etc/mongod.conf
+systemctl restart mongod
