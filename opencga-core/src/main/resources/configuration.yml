@@ -62,8 +62,13 @@ catalog:
     options:
       authenticationDatabase: ${OPENCGA.CATALOG.DB.AUTHENTICATION_DATABASE}
       connectionsPerHost: ${OPENCGA.CATALOG.DB.CONNECTIONS_PER_HOST}
-  search:   ## Solr configuration, by default is the same than storage
-    host: ${OPENCGA.CATALOG.SEARCH.HOST}
+  ## Solr configuration, by default is the same than storage
+  search:
+    # List of hosts pointing either to the Solr nodes directly using a complete URL or to the zookeper nodes with HOST:PORT
+    #    Example for Solr connection:       http://opencga-solr-01.zone:8983/solr
+    #    Example for Zookeeper connection:  opencga-zookeeper-01:2181               <-- Recommended for replicated installations
+    hosts:
+    - ${OPENCGA.CATALOG.SEARCH.HOST}
     mode: "cloud"
     user: ""
     password: ""
