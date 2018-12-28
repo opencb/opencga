@@ -320,7 +320,7 @@
                         "value": "[parameters('initContainerImage')]"
                     },
                     "mountArgs": {
-                        "value": "[concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value, ',' , reference('azurefiles').outputs.accountKey.value)]"
+                        "value": "[if(equals(parameters('nfsStorageOption'), 'AzureFiles'), concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value,',',reference('azurefiles').outputs.accountKey.value),concat('avere ', reference('avere').outputs.VSERVER_IPS.value))]"
                     },
                     "loadBalancerIp": {
                         "value": "todo"
