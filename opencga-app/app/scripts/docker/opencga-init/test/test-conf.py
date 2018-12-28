@@ -1,6 +1,10 @@
 import subprocess
 import yaml
 from io import StringIO
+import sys
+import os
+
+os.chdir(sys.path[0])
 
 res = subprocess.run(["python3", "../init-config.py",
                "--config-path", "./test-conf.yml",
@@ -32,7 +36,7 @@ client_config = configs[2]
 
 assert(storage_config["search"]["host"] == "test-search-host")
 assert(storage_config["clinical"]["host"] == "test-clinical-host")
-assert(storage_config["cellbase"]["hosts"][0] == "test-cellbase-host")
+assert(storage_config["cellbase"]["database"]["hosts"][0] == "test-cellbase-host")
 assert(config["catalog"]["database"]["hosts"][0] == "test-catalog-database-host")
 assert(config["catalog"]["database"]["user"] == "test-catalog-database-user")
 assert(config["catalog"]["database"]["password"] == "test-catalog-database-password")

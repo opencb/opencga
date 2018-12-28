@@ -34,3 +34,6 @@ cp -r /opt/opencga/conf/* /opt/volume/conf
 
 echo "Installing catalog"
 echo "${OPENCGA_PASS}" | /opt/opencga/bin/opencga-admin.sh catalog install --secret-key ${1}
+
+# Catalog install will create a jobs folder in sessions.
+cp -r /opt/opencga/sessions/* /opt/volume/sessions

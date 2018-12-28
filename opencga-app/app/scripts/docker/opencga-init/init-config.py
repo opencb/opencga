@@ -29,7 +29,7 @@ storage_config["search"]["host"] = args.search_host
 storage_config["clinical"]["host"] = args.clinical_host
 
 # Inject cellbase database
-storage_config["cellbase"]["hosts"][0] = args.cellbase_host
+storage_config["cellbase"]["database"]["hosts"][0] = args.cellbase_host
 
 # Load configuration yaml
 with open(args.config_path) as f:
@@ -40,6 +40,7 @@ config["catalog"]["database"]["hosts"][0] = args.catalog_database_host
 config["catalog"]["database"]["user"] = args.catalog_database_user
 config["catalog"]["database"]["password"] = args.catalog_database_password
 config["catalog"]["database"]["options"]["enableSSL"] = True
+config["catalog"]["database"]["options"]["authenticationDatabase"] = "admin"
 
 # Inject search database
 config["catalog"]["search"]["host"] = args.catalog_search_host
