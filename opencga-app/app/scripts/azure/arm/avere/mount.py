@@ -12,7 +12,7 @@ import ipaddress
 # Run `python3 -m unittest discover` in this dir to execute tests
 
 default_mount_options_nfs = "nfs hard,nointr,proto=tcp,mountproto=tcp,retry=30 0 0"
-default_mount_options_cifs = "dir_mode=0777,file_mode=0777,serverino,nofail,vers=3.0"
+default_mount_options_cifs = "dir_mode=0777,file_mode=0777,serverino,nofail,uid=1001,gid=1001,vers=3.0"
 
 
 def get_avere_ips(vserver_string):
@@ -149,6 +149,7 @@ def main():
         if i == 100:
             print("Failed to mount after max 100 retries")
             exit(3)
+
         try:
             print("Attempt #{}".format(str(i)))
             subprocess.check_call(["mount", "-a"])
@@ -159,8 +160,6 @@ def main():
             time.sleep(retry_in)
             continue
         else:
-            # Once mounted, change mount ownership
-            os.chown(primary_mount_folder, mount_point_owner, mount_point_group)
             break
 
 
