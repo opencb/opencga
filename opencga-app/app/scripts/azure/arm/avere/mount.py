@@ -107,6 +107,8 @@ def main():
     print("Mounting type: {}".format(sys.argv[1]))
     print("Mounting data: {}".format(sys.argv[2]))
 
+    mount_point_owner = 1000
+    mount_point_group = 1000
     mount_point_permissions = 0o0777  # Todo: What permissions does this really need?
     primary_mount_folder = "/media/primarynfs"
     seconday_mount_folder_prefix = "/media/secondarynfs"
@@ -157,6 +159,8 @@ def main():
             time.sleep(retry_in)
             continue
         else:
+            # Once mounted, change mount ownership
+            os.chown(primary_mount_folder, mount_point_owner, mount_point_group)
             break
 
 

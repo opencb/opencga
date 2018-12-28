@@ -41,6 +41,6 @@ apt-get update
 apt-get install -y docker-ce
 
 ## Create docker container
-docker run --user 1005 --name ${DOCKER_NAME} --restart always -d \
+docker run --name ${DOCKER_NAME} --restart always -d \
         -e ZOO_MY_ID=$ZOO_MY_ID -e "ZOO_SERVERS=$ZOO_SERVERS" -e ZOO_LOG4J_PROP="INFO,ROLLINGFILE" \
         -p 2888:2888 -p 2181:2181 -p 3888:3888 zookeeper:${ZOOKEEPER_VERSION}
