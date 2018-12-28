@@ -22,7 +22,7 @@ COPY ./opencga.xml /var/lib/tomcat8/conf/Catalina/localhost/opencga-${OPENCGA_VE
 VOLUME /opt/opencga/conf
 VOLUME /opt/opencga/sessions
 
-USER 1000:1000
+USER 1001:1001
 
 # Launch Tomcat
 CMD ["sh", "-c", "/tmp/config.sh && /opt/tomcat/bin/catalina.sh run"]

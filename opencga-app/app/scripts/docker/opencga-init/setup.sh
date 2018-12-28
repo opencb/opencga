@@ -12,7 +12,7 @@ sshpass -p $HD_INSIGHTS_SSH_PASS scp -o StrictHostKeyChecking=no -o StrictHostKe
 sshpass -p $HD_INSIGHTS_SSH_PASS scp -o StrictHostKeyChecking=no  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r $HD_INSIGHTS_SSH_USER@$HD_INSIGHTS_SSH_DNS:/etc/hbase/conf/* /opt/opencga/conf/hadoop
 
 echo "Initialising config"
-OUT=$(python3 /tmp/init-config.py \
+python3 /tmp/init-config.py \
 --search-host "$SEARCH_HOST" \
 --clinical-host "$CLINICAL_HOST" \
 --catalog-database-host "$CATALOG_DATABASE_HOST" \
@@ -23,15 +23,13 @@ OUT=$(python3 /tmp/init-config.py \
 --catalog-search-password "$CATALOG_SEARCH_PASSWORD" \
 --rest-host "$REST_HOST" \
 --grpc-host "$GRPC_HOST" \
---save)
+--save
 
 # Copies the config files from our local directory into a
 # persistent volume to be shared by the other containers.
 echo "Initialising volume"
 mkdir -p /opt/volume/conf /opt/volume/sessions
 cp -r /opt/opencga/conf/* /opt/volume/conf
-
-chown -R opencga /opt/volume/
 
 echo "Installing catalog"
 echo "${OPENCGA_PASS}" | /opt/opencga/bin/opencga-admin.sh catalog install --secret-key ${1}
