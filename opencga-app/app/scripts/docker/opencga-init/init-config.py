@@ -8,6 +8,7 @@ parser.add_argument("--client-config-path", help="path to the client-configurati
 parser.add_argument("--storage-config-path", help="path to the storage-configuration.yml file", default="/opt/opencga/conf/storage-configuration.yml")
 parser.add_argument("--search-host", required=True)
 parser.add_argument("--clinical-host", required=True)
+parser.add_argument("--cellbase-host", required=True)
 parser.add_argument("--catalog-database-host", required=True)
 parser.add_argument("--catalog-database-user", required=True)
 parser.add_argument("--catalog-database-password", required=True)
@@ -27,6 +28,9 @@ with open(args.storage_config_path) as f:
 storage_config["search"]["host"] = args.search_host
 storage_config["clinical"]["host"] = args.clinical_host
 
+# Inject cellbase database
+storage_config["cellbase"]["hosts"][0] = args.cellbase_host
+
 # Load configuration yaml
 with open(args.config_path) as f:
     config = yaml.load(f)
@@ -35,7 +39,7 @@ with open(args.config_path) as f:
 config["catalog"]["database"]["hosts"][0] = args.catalog_database_host
 config["catalog"]["database"]["user"] = args.catalog_database_user
 config["catalog"]["database"]["password"] = args.catalog_database_password
-config["catalog"]["database"]["options"]["enableSSL"] = "true"
+config["catalog"]["database"]["options"]["enableSSL"] = True
 
 # Inject search database
 config["catalog"]["search"]["host"] = args.catalog_search_host

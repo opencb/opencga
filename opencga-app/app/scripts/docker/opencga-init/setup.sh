@@ -15,6 +15,7 @@ echo "Initialising config"
 python3 /tmp/init-config.py \
 --search-host "$SEARCH_HOST" \
 --clinical-host "$CLINICAL_HOST" \
+--cellbase-host "$CELLBASE_HOST" \
 --catalog-database-host "$CATALOG_DATABASE_HOST" \
 --catalog-database-user "$CATALOG_DATABASE_USER" \
 --catalog-database-password "$CATALOG_DATABASE_PASSWORD" \
