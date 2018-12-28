@@ -5,8 +5,6 @@ ARG OPENCGA_VERSION="1.4.0-rc3-dev"
 # Get Tomcat
 ARG TOMCAT_VERSION="8.5.35"
 
-user 1000:1000
-
 RUN wget --quiet --no-cookies http://www-eu.apache.org/dist/tomcat/tomcat-8/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz -O /tmp/tomcat.tgz && \
 tar xzvf /tmp/tomcat.tgz -C /opt && \
 mv /opt/apache-tomcat-${TOMCAT_VERSION} /opt/tomcat && \
@@ -23,6 +21,8 @@ COPY ./opencga.xml /var/lib/tomcat8/conf/Catalina/localhost/opencga-${OPENCGA_VE
 
 VOLUME /opt/opencga/conf
 VOLUME /opt/opencga/sessions
+
+USER 1000:1000
 
 # Launch Tomcat
 CMD ["sh", "-c", "/tmp/config.sh && /opt/tomcat/bin/catalina.sh run"]

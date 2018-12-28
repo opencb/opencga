@@ -15,6 +15,7 @@ ENV CATALOG_SEARCH_USER=""
 ENV CATALOG_SEARCH_PASSWORD=""
 ENV REST_HOST=""
 ENV GRPC_HOST=""
+ENV OPENCGA_PASS=""
 
 ARG IVA_VERSION="1.0.0-beta"
 
@@ -32,4 +33,4 @@ RUN chmod +x /tmp/setup.sh
 # It is the responsibility of the setup.sh
 # script to initialise the volume correctly
 # and apply any runtime config transforms.
-ENTRYPOINT ["sh", "-c", "/tmp/setup.sh"]
+ENTRYPOINT ["/tmp/setup.sh"]

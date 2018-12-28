@@ -1,7 +1,5 @@
 FROM opencga
 
-user 1000:1000
-
 VOLUME /opt/opencga/conf
 VOLUME /opt/opencga/sessions
 
