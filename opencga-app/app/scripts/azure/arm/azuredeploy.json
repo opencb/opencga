@@ -62,11 +62,14 @@
                 "description": "The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
             }
         },
-        "avereEnabled": {
-            "type": "bool",
-            "defaultValue": false,
+        "nfsStorageOption": {
+            "type": "string",
+            "allowedValues": [
+                "AvereCluster",
+                "AzureFiles"
+            ],
             "metadata": {
-                "description": "Basic toggle to disable Avere"
+                "description": "What type of NFS storage do you want to use? Avere offers a high throughput SSD cache cluster over Azure Blob, AzureFiles offers modest read/write performance for smaller installations"
             }
         },
         "avereServicePrincipalAppId": {
@@ -208,6 +211,10 @@
             }
         }
     },
+    "variables": {
+        "avereEnabled": "[equals(parameters('nfsStorageOption'), 'AvereCluster')]",
+        "azureFilesEnabled": "[equals(parameters('nfsStorageOption'), 'AzureFiles')]"
+    },
     "resources": [
         {
             "type": "Microsoft.Resources/resourceGroups",
@@ -233,6 +240,7 @@
             }
         },
         {
+            "condition": "[variables('azureFilesEnabled')]",
             "resourceGroup": "[parameters('rgPrefix')]",
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2018-05-01",
@@ -403,7 +411,7 @@
             }
         },
         {
-            "condition": "[equals(parameters('avereEnabled'), 'True')]",
+            "condition": "[variables('avereEnabled')]",
             "type": "Microsoft.Resources/resourceGroups",
             "apiVersion": "2018-05-01",
             "location": "[parameters('rgLocation')]",
@@ -411,7 +419,7 @@
             "properties": {}
         },
         {
-            "condition": "[equals(parameters('avereEnabled'), 'True')]",
+            "condition": "[variables('avereEnabled')]",
             "type": "Microsoft.Resources/deployments",
             "resourceGroup": "[concat(parameters('rgPrefix'),'-avere')]",
             "apiVersion": "2018-05-01",
@@ -485,10 +493,10 @@
                         "value": "[parameters('_artifactsLocationSasToken')]"
                     },
                     "virtualNetworkSubnetId": {
-                        "value": "[reference('vnet').outputs.avereClusterSubnetId.value]"
+                        "value": "[reference('vnet').outputs.hdinsightSubnetId.value]"
                     },
                     "mountArgs": {
-                        "value": "[concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value, ',' , reference('azurefiles').outputs.accountKey.value)]"
+                        "value": "[if(equals(parameters('nfsStorageOption'), 'AzureFiles'), concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value, ',' , reference('azurefiles').outputs.accountKey.value),concat('avere ', reference('avere').outputs.VSERVER_IPS.value))]"
                     },
                     "SSHKeyData": {
                         "value": "[parameters('webserversSSHKeyData')]"
