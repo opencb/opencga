@@ -11,5 +11,6 @@ tar xvf iva-${IVA_VERSION}.tar.gz --strip-components=1 -C /usr/local/apache2/htd
 rm ./iva-${IVA_VERSION}.tar.gz
 
 EXPOSE 80
+EXPOSE 443
 
 VOLUME usr/local/apache2/htdocs/conf

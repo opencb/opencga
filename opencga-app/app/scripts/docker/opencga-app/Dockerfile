@@ -26,6 +26,7 @@ VOLUME /opt/opencga/sessions
 USER 1001:1001
 
 EXPOSE 8080
+EXPOSE 8443
 
 # Launch Tomcat
 CMD ["/opt/tomcat/bin/catalina.sh", "run"]
