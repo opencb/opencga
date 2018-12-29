@@ -13,13 +13,13 @@ sshpass -p $HD_INSIGHTS_SSH_PASS scp -o StrictHostKeyChecking=no  -o StrictHostK
 
 echo "Initialising config"
 python3 /tmp/init-config.py \
---search-host "$SEARCH_HOST" \
---clinical-host "$CLINICAL_HOST" \
+--search-hosts "$SEARCH_HOSTS" \
+--clinical-hosts "$CLINICAL_HOSTS" \
 --cellbase-hosts "$CELLBASE_HOSTS" \
 --catalog-database-hosts "$CATALOG_DATABASE_HOSTS" \
 --catalog-database-user "$CATALOG_DATABASE_USER" \
 --catalog-database-password "$CATALOG_DATABASE_PASSWORD" \
---catalog-search-host "$CATALOG_SEARCH_HOST" \
+--catalog-search-hosts "$CATALOG_SEARCH_HOSTS" \
 --catalog-search-user "$CATALOG_SEARCH_USER" \
 --catalog-search-password "$CATALOG_SEARCH_PASSWORD" \
 --rest-host "$REST_HOST" \
