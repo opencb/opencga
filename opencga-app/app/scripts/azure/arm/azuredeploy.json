@@ -334,8 +334,8 @@
                     "webserverNamingPrefix": {
                         "value": "[variables('webserverNamingPrefix')]"
                     },
-                    "solrHost": {
-                        "value": "todo"
+                    "solrHosts": {
+                        "value": "[reference('solr').outputs.solrConnectionDetails.value]"
                     },
                     "solrUser": {
                         "value": "todo"
