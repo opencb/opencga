@@ -213,7 +213,8 @@
     },
     "variables": {
         "avereEnabled": "[equals(parameters('nfsStorageOption'), 'AvereCluster')]",
-        "azureFilesEnabled": "[equals(parameters('nfsStorageOption'), 'AzureFiles')]"
+        "azureFilesEnabled": "[equals(parameters('nfsStorageOption'), 'AzureFiles')]",
+        "webserverNamingPrefix": "[toLower(substring(concat('webservers', uniqueString(parameters('rgPrefix'))), 0, 16))]"
     },
     "resources": [
         {
@@ -330,8 +331,8 @@
                     "mountArgs": {
                         "value": "[if(equals(parameters('nfsStorageOption'), 'AzureFiles'), concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value,',',reference('azurefiles').outputs.accountKey.value),concat('avere ', reference('avere').outputs.VSERVER_IPS.value))]"
                     },
-                    "loadBalancerIp": {
-                        "value": "[reference('webservers').outputs.lbPublicIP.value]"
+                    "webserverNamingPrefix": {
+                        "value": "[variables('webserverNamingPrefix')]"
                     },
                     "solrHost": {
                         "value": "todo"
@@ -477,6 +478,7 @@
             "dependsOn": [
                 "azurefiles",
                 "vnet",
+                "daemonvm",
                 "[parameters('rgPrefix')]"
             ],
             "properties": {
@@ -506,6 +508,9 @@
                     },
                     "ivaDockerImage": {
                         "value": "[parameters('ivaDockerImage')]"
+                    },
+                    "namingPrefix": {
+                        "value": "[variables('webserverNamingPrefix')]"
                     }
                 }
             }

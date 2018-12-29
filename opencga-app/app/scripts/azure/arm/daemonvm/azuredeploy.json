@@ -62,7 +62,7 @@
         "mountArgs": {
             "type": "string"
         },
-        "loadBalancerIp": {
+        "webserverNamingPrefix": {
             "type": "string"
         },
         "solrHost": {
@@ -90,8 +90,9 @@
     "variables": {
         "vnetId": "[parameters('virtualNetworkId')]",
         "subnetRef": "[concat(variables('vnetId'), '/subnets/', parameters('subnetName'))]",
-        "restHost": "[concat('https://', parameters('loadBalancerIp'), ':8443')]",
-        "grpcHost": "[concat('https://', parameters('loadBalancerIp'), ':9999')]",
+        "webserverHost": "[concat('https://', parameters('webserverNamingPrefix'), '.', resourceGroup().location,'.cloudapp.azure.com')]",
+        "restHost": "[concat(variables('webserverHost'), ':8443')]",
+        "grpcHost": "[concat(variables('webserverHost'), ':9999')]",
         "getScriptCmd": "[concat('wget ',parameters('_artifactsLocation'),'/avere/mount.py -O /tmp/mount.py')]",
         "mountCmd": "[concat('python3 /tmp/mount.py ', parameters('mountArgs'))]",
         "initCmd": "[concat('docker run --mount type=bind,src=/media/primarynfs,dst=/opt/volume -e OPENCGA_PASS=',parameters('adminPassword'),' -e HD_INSIGHTS_SSH_DNS=',parameters('hdInsightSshDns'),' -e HD_INSIGHTS_SSH_USER=',parameters('hdInsightSshUsername'),' -e HD_INSIGHTS_SSH_PASS=',parameters('hdInsightSshPassword'),' -e SEARCH_HOST=',parameters('solrHost'),' -e CELLBASE_HOSTS=',parameters('mongoDbHosts'),' -e CLINICAL_HOST=',parameters('solrHost'),' -e CATALOG_DATABASE_HOSTS=',parameters('mongoDbHosts'),' -e CATALOG_DATABASE_USER=',parameters('mongoDbUser'),' -e CATALOG_DATABASE_PASSWORD=',parameters('mongoDbPassword'),' -e CATALOG_SEARCH_HOST=',parameters('solrHost'),' -e CATALOG_SEARCH_USER=',parameters('solrUser'),' -e CATALOG_SEARCH_PASSWORD=',parameters('solrPassword'),' -e REST_HOST=',variables('restHost'),' -e GRPC_HOST=',variables('grpcHost'),' ',parameters('initContainerImage'),' ',parameters('catalogSecretKey'))]",
