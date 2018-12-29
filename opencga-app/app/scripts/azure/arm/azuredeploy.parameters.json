@@ -62,7 +62,7 @@
         "catalogSecretKey": {
             "value": ""
         },
-        "mongoDbHost": {
+        "mongoDbHosts": {
             "value": ""
         },
         "mongoDbUser": {

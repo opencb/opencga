@@ -192,10 +192,10 @@
                 "description": "Secret key used when initializing the catalog"
             }
         },
-        "mongoDbHost": {
+        "mongoDbHosts": {
             "type": "string",
             "metadata": {
-                "description": "The host address for the MongoDB endpoint"
+                "description": "Comma separated list of MongoDB hosts or singluar MongoDB host"
             }
         },
         "mongoDbUser": {
@@ -342,8 +342,8 @@
                     "solrPassword": {
                         "value": "todo"
                     },
-                    "mongoDbHost": {
-                        "value": "[parameters('mongoDbHost')]"
+                    "mongoDbHosts": {
+                        "value": "[parameters('mongoDbHosts')]"
                     },
                     "mongoDbUser": {
                         "value": "[parameters('mongoDbUser')]"
