@@ -11,20 +11,21 @@ mv /opt/apache-tomcat-${TOMCAT_VERSION} /opt/tomcat && \
 rm /tmp/tomcat.tgz && \
 rm -rf /opt/tomcat/webapps/examples && \
 rm -rf /opt/tomcat/webapps/docs && \
-rm -rf /opt/tomcat/webapps/ROOT
+rm -rf /opt/tomcat/webapps/ROOT && \
+chown -R 1001:1001 /opt/tomcat/
 
 # copy opencga build to tomcat server  - permissions??
-RUN cp  /opt/opencga/opencga-${OPENCGA_VERSION}.war /opt/tomcat/webapps/opencga-${OPENCGA_VERSION}.war &&  chmod 777 /opt/opencga/
+RUN cp /opt/opencga/opencga-${OPENCGA_VERSION}.war /opt/tomcat/webapps/opencga-${OPENCGA_VERSION}.war &&  chmod 777 /opt/opencga/
 
 # copy tomcat config
-COPY ./opencga.xml /var/lib/tomcat8/conf/Catalina/localhost/opencga-${OPENCGA_VERSION}.xml
+COPY ./opencga.xml /opt/tomcat/conf/Catalina/localhost/opencga-${OPENCGA_VERSION}.xml
 
 VOLUME /opt/opencga/conf
 VOLUME /opt/opencga/sessions
 
 USER 1001:1001
 
-# Launch Tomcat
-CMD ["sh", "-c", "/tmp/config.sh && /opt/tomcat/bin/catalina.sh run"]
-
 EXPOSE 8080
+
+# Launch Tomcat
+CMD ["/opt/tomcat/bin/catalina.sh", "run"]
