@@ -12,8 +12,8 @@ res = subprocess.run(["python3", "../init-config.py",
                "--storage-config-path", "./test-storage-conf.yml",
                "--search-host", "test-search-host",
                "--clinical-host", "test-clinical-host",
-               "--cellbase-host", "test-cellbase-host",
-               "--catalog-database-host", "test-catalog-database-host",
+               "--cellbase-hosts", "test-cellbase-host",
+               "--catalog-database-hosts", "test-catalog-database-host1,test-catalog-database-host2,test-catalog-database-host3",
                "--catalog-database-user", "test-catalog-database-user",
                "--catalog-database-password", "test-catalog-database-password",
                "--catalog-search-host", "test-catalog-search-host",
@@ -37,7 +37,9 @@ client_config = configs[2]
 assert(storage_config["search"]["host"] == "test-search-host")
 assert(storage_config["clinical"]["host"] == "test-clinical-host")
 assert(storage_config["cellbase"]["database"]["hosts"][0] == "test-cellbase-host")
-assert(config["catalog"]["database"]["hosts"][0] == "test-catalog-database-host")
+assert(config["catalog"]["database"]["hosts"][0] == "test-catalog-database-host1")
+assert(config["catalog"]["database"]["hosts"][1] == "test-catalog-database-host2")
+assert(config["catalog"]["database"]["hosts"][2] == "test-catalog-database-host3")
 assert(config["catalog"]["database"]["user"] == "test-catalog-database-user")
 assert(config["catalog"]["database"]["password"] == "test-catalog-database-password")
 assert(config["catalog"]["database"]["options"]["enableSSL"] == True)

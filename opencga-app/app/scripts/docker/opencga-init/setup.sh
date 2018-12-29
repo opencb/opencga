@@ -15,8 +15,8 @@ echo "Initialising config"
 python3 /tmp/init-config.py \
 --search-host "$SEARCH_HOST" \
 --clinical-host "$CLINICAL_HOST" \
---cellbase-host "$CELLBASE_HOST" \
---catalog-database-host "$CATALOG_DATABASE_HOST" \
+--cellbase-hosts "$CELLBASE_HOSTS" \
+--catalog-database-hosts "$CATALOG_DATABASE_HOSTS" \
 --catalog-database-user "$CATALOG_DATABASE_USER" \
 --catalog-database-password "$CATALOG_DATABASE_PASSWORD" \
 --catalog-search-host "$CATALOG_SEARCH_HOST" \
@@ -35,5 +35,6 @@ cp -r /opt/opencga/conf/* /opt/volume/conf
 echo "Installing catalog"
 echo "${OPENCGA_PASS}" | /opt/opencga/bin/opencga-admin.sh catalog install --secret-key ${1}
 
-# Catalog install will create a jobs folder in sessions.
+# Catalog install will create a sub-folders in sessions
+# that need copying to the volume.
 cp -r /opt/opencga/sessions/* /opt/volume/sessions

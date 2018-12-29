@@ -8,8 +8,8 @@ parser.add_argument("--client-config-path", help="path to the client-configurati
 parser.add_argument("--storage-config-path", help="path to the storage-configuration.yml file", default="/opt/opencga/conf/storage-configuration.yml")
 parser.add_argument("--search-host", required=True)
 parser.add_argument("--clinical-host", required=True)
-parser.add_argument("--cellbase-host", required=True)
-parser.add_argument("--catalog-database-host", required=True)
+parser.add_argument("--cellbase-hosts", required=True)
+parser.add_argument("--catalog-database-hosts", required=True)
 parser.add_argument("--catalog-database-user", required=True)
 parser.add_argument("--catalog-database-password", required=True)
 parser.add_argument("--catalog-search-host", required=True)
@@ -29,14 +29,27 @@ storage_config["search"]["host"] = args.search_host
 storage_config["clinical"]["host"] = args.clinical_host
 
 # Inject cellbase database
-storage_config["cellbase"]["database"]["hosts"][0] = args.cellbase_host
+cellbase_hosts = args.cellbase_hosts.split(",")
+for i, cellbase_host in enumerate(cellbase_hosts):
+    if i == 0:
+        # If we are overriding the default hosts,
+        # clear them only on the first iteration
+        storage_config["cellbase"]["database"]["hosts"].clear()
+    storage_config["cellbase"]["database"]["hosts"].insert(i, cellbase_host)
 
 # Load configuration yaml
 with open(args.config_path) as f:
     config = yaml.load(f)
 
 # Inject catalog database
-config["catalog"]["database"]["hosts"][0] = args.catalog_database_host
+catalog_hosts = args.catalog_database_hosts.split(",")
+for i, catalog_host in enumerate(catalog_hosts):
+    if i == 0:
+        # If we are overriding the default hosts,
+        # clear them only on the first iteration
+        config["catalog"]["database"]["hosts"].clear()
+    config["catalog"]["database"]["hosts"].insert(i, catalog_host)
+
 config["catalog"]["database"]["user"] = args.catalog_database_user
 config["catalog"]["database"]["password"] = args.catalog_database_password
 config["catalog"]["database"]["options"]["enableSSL"] = True
