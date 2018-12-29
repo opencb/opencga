@@ -1,7 +1,5 @@
 FROM opencga
 
-ARG OPENCGA_VERSION="1.4.0-rc3-dev"
-
 # Get Tomcat
 ARG TOMCAT_VERSION="8.5.35"
 
@@ -15,10 +13,10 @@ rm -rf /opt/tomcat/webapps/ROOT && \
 chown -R 1001:1001 /opt/tomcat/
 
 # copy opencga build to tomcat server  - permissions??
-RUN cp /opt/opencga/opencga-${OPENCGA_VERSION}.war /opt/tomcat/webapps/opencga-${OPENCGA_VERSION}.war &&  chmod 777 /opt/opencga/
+RUN cp /opt/opencga/opencga.war /opt/tomcat/webapps/opencga.war &&  chmod 777 /opt/opencga/
 
 # copy tomcat config
-COPY ./opencga.xml /opt/tomcat/conf/Catalina/localhost/opencga-${OPENCGA_VERSION}.xml
+COPY ./opencga.xml /opt/tomcat/conf/Catalina/localhost/opencga.xml
 
 VOLUME /opt/opencga/conf
 VOLUME /opt/opencga/sessions

@@ -13,7 +13,7 @@ COPY settings.xml .
 
 #RUN mvn dependency:go-offline -fn  --settings settings.xml -Dstorage-hadoop -Popencga-storage-hadoop-deps -Phdp-2.6.0 -DOPENCGA.STORAGE.DEFAULT_ENGINE=hadoop
 
-# compile  - wanted this to run offline as takes an age. 
-RUN mvn clean install --settings settings.xml -DskipTests -Dstorage-hadoop -Popencga-storage-hadoop-deps -Phdp-2.6.0 -DOPENCGA.STORAGE.DEFAULT_ENGINE=hadoop
+# compile  - wanted this to run offline as takes an age.
+RUN mvn clean install --settings settings.xml -DskipTests -Dstorage-hadoop -Popencga-storage-hadoop-deps -Phdp-2.6.0 -DOPENCGA.STORAGE.DEFAULT_ENGINE=hadoop -Dopencga.war.name=opencga
 
 RUN rm -fr ~/.m2
