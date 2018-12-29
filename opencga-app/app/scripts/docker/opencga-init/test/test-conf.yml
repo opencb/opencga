@@ -63,7 +63,8 @@ catalog:
       authenticationDatabase:
       connectionsPerHost: 20
   search:   ## Solr configuration, by default is the same than storage
-    host: http://localhost:8983/solr/
+    hosts:
+      - http://localhost:8983/solr/
     mode: "cloud"
     user: ""
     password: ""

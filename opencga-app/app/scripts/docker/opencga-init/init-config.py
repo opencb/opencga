@@ -6,13 +6,13 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--config-path", help="path to the configuration.yml file", default="/opt/opencga/conf/configuration.yml")
 parser.add_argument("--client-config-path", help="path to the client-configuration.yml file", default="/opt/opencga/conf/client-configuration.yml")
 parser.add_argument("--storage-config-path", help="path to the storage-configuration.yml file", default="/opt/opencga/conf/storage-configuration.yml")
-parser.add_argument("--search-host", required=True)
-parser.add_argument("--clinical-host", required=True)
+parser.add_argument("--search-hosts", required=True)
+parser.add_argument("--clinical-hosts", required=True)
 parser.add_argument("--cellbase-hosts", required=True)
 parser.add_argument("--catalog-database-hosts", required=True)
 parser.add_argument("--catalog-database-user", required=True)
 parser.add_argument("--catalog-database-password", required=True)
-parser.add_argument("--catalog-search-host", required=True)
+parser.add_argument("--catalog-search-hosts", required=True)
 parser.add_argument("--catalog-search-user", required=True)
 parser.add_argument("--catalog-search-password", required=True)
 parser.add_argument("--rest-host", required=True)
@@ -24,9 +24,23 @@ args = parser.parse_args()
 with open(args.storage_config_path) as f:
     storage_config = yaml.load(f)
 
-# Inject search and clinical hosts
-storage_config["search"]["host"] = args.search_host
-storage_config["clinical"]["host"] = args.clinical_host
+# Inject search hosts
+search_hosts = args.search_hosts.split(",")
+for i, search_host in enumerate(search_hosts):
+    if i == 0:
+        # If we are overriding the default hosts,
+        # clear them only on the first iteration
+        storage_config["search"]["hosts"].clear()
+    storage_config["search"]["hosts"].insert(i, search_host)
+
+# Inject clinical hosts
+clinical_hosts = args.clinical_hosts.split(",")
+for i, clinical_host in enumerate(clinical_hosts):
+    if i == 0:
+        # If we are overriding the default hosts,
+        # clear them only on the first iteration
+        storage_config["clinical"]["hosts"].clear()
+    storage_config["clinical"]["hosts"].insert(i, clinical_host)
 
 # Inject cellbase database
 cellbase_hosts = args.cellbase_hosts.split(",")
@@ -56,7 +70,13 @@ config["catalog"]["database"]["options"]["enableSSL"] = True
 config["catalog"]["database"]["options"]["authenticationDatabase"] = "admin"
 
 # Inject search database
-config["catalog"]["search"]["host"] = args.catalog_search_host
+catalog_search_hosts = args.catalog_search_hosts.split(",")
+for i, catalog_search_host in enumerate(catalog_search_hosts):
+    if i == 0:
+        # If we are overriding the default hosts,
+        # clear them only on the first iteration
+        config["catalog"]["search"]["hosts"].clear()
+    config["catalog"]["search"]["hosts"].insert(i, catalog_search_host)
 config["catalog"]["search"]["user"] = args.catalog_search_user
 config["catalog"]["search"]["password"] = args.catalog_search_password
 
