@@ -193,7 +193,7 @@
             }
         },
         "mongoDbHosts": {
-            "type": "string",
+            "type": "array",
             "metadata": {
                 "description": "Comma separated list of MongoDB hosts or singluar MongoDB host"
             }

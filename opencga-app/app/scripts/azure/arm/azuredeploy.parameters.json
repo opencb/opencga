@@ -69,7 +69,7 @@
             "value": ""
         },
         "mongoDbHosts": {
-            "value": ""
+            "value": []
         },
         "mongoDbUser": {
             "value": ""
