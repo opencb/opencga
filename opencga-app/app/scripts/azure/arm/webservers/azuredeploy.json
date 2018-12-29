@@ -244,7 +244,7 @@
                         "properties": {
                             "protocol": "Http",
                             "port": 8080,
-                            "requestPath": "/webservices/rest/v1/meta/status",
+                            "requestPath": "/opencga",
                             "intervalInSeconds": 5,
                             "numberOfProbes": 2
                         }
