@@ -20,7 +20,7 @@
                 "description": "Arguments passed to the mount.py script."
             }
         },
-        "subnetId": {
+        "virtualNetworkSubnetId": {
             "type": "string",
             "metadata": {
                 "description": "The subnet in which Batch will be deployed. Requires the following ports to be enabled via NSG: https://docs.microsoft.com/en-us/azure/batch/batch-virtual-network#network-security-groups-1."
@@ -29,6 +29,10 @@
         "maxTasksPerNode": {
             "type": "int",
             "defaultValue": 1
+        },
+        "maxNodeCount": {
+            "type": "int",
+            "defaultValue": 3
         },
         "virtualMachineSize": {
             "type": "string",
@@ -39,7 +43,7 @@
         },
         "storageAccountsku": {
             "type": "string",
-            "defaultValue": "Premium_LRS",
+            "defaultValue": "Standard_LRS",
             "allowedValues": [
                 "Standard_LRS",
                 "Standard_GRS",
@@ -63,8 +67,8 @@
         }
     },
     "variables": {
-        "storageAccountName": "[concat('batchstorage', uniqueString(resourceGroup().id))]",
-        "batchAccountName": "[concat('batchaccount', uniqueString(resourceGroup().id))]"
+        "storageAccountName": "[concat('batch', uniqueString(resourceGroup().id))]",
+        "batchAccountName": "[concat('batch', uniqueString(resourceGroup().id))]"
     },
     "resources": [
         {
@@ -108,14 +112,14 @@
             "properties": {
                 "vmSize": "[parameters('virtualMachineSize')]",
                 "networkConfiguration": {
-                    "subnetId": "[parameters('subnetId')]"
+                    "subnetId": "[parameters('virtualNetworkSubnetId')]"
                 },
                 "maxTasksPerNode": "[parameters('maxTasksPerNode')]",
                 "taskSchedulingPolicy": {
                     "nodeFillType": "Spread"
                 },
                 "startTask": {
-                    "commandLine": "[concat('- curl -fsSL ', parameters('_artifactsLocation'), '/avere/mount.py', parameters('_artifactsLocationSasToken'), ' | python3 - ', parameters('mountArgs'))]",
+                    "commandLine": "[concat('/bin/bash -c \"curl -fsSL ', parameters('_artifactsLocation'), '/avere/mount.py', parameters('_artifactsLocationSasToken'), ' | python3 - ', parameters('mountArgs'), '\"')]",
                     "userIdentity": {
                         "autoUser": {
                             "elevationLevel": "Admin",
@@ -127,6 +131,11 @@
                 },
                 "deploymentConfiguration": {
                     "virtualMachineConfiguration": {
+                        "containerConfiguration": {
+                            "containerImageNames": [
+                                "ubuntu", "python"
+                            ]
+                        },
                         "imageReference": {
                             "publisher": "microsoft-azure-batch",
                             "offer": "ubuntu-server-container",
@@ -138,8 +147,8 @@
                 },
                 "scaleSettings": {
                     "autoScale": {
-                        "evaluationInterval": "PT15M",
-                        "formula": ""
+                        "evaluationInterval": "PT5M",
+                        "formula": "[concat('startingNumberOfVMs = 0;maxNumberofVMs = ', parameters('maxNodeCount'), ';pendingTaskSamplePercent = $PendingTasks.GetSamplePercent(160 * TimeInterval_Second);pendingTaskSamples = pendingTaskSamplePercent < 70 ? startingNumberOfVMs : avg($PendingTasks.GetSample(160 * TimeInterval_Second));$TargetDedicatedNodes=min(maxNumberofVMs, pendingTaskSamples);')]"
                     }
                 }
             },
