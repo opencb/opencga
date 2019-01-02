@@ -28,6 +28,14 @@
                 "description": "Email address used for letsencrypt certificate "
             }
         },
+        "clusterSize": {
+            "type": "int",
+            "defaultValue": 3,
+            "allowedValues": [3, 5, 7, 9, 11],
+            "metadata": {
+                "description": "Amount of VMs to deploy for the mongodb replica set"
+            }
+        },
         "adminUsername": {
             "type": "string"
         },
@@ -89,7 +97,7 @@
             "location": "[parameters('location')]",
             "copy": {
                 "name": "mongo-ip",
-                "count": 3
+                "count": "[parameters('clusterSize')]"
             },
             "dependsOn": [
                 "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'), copyIndex())]",
@@ -181,7 +189,7 @@
             "location": "[parameters('location')]",
             "copy": {
                 "name": "mongo-ip",
-                "count": 3
+                "count": "[parameters('clusterSize')]"
             },
             "properties": {
                 "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
@@ -200,7 +208,7 @@
             ],
             "copy": {
                 "name": "mongo-rs",
-                "count": 3
+                "count": "[parameters('clusterSize')]"
             },
             "properties": {
                 "hardwareProfile": {
@@ -252,7 +260,7 @@
             ],
             "copy": {
                 "name": "mongo-rs-ca",
-                "count": 3
+                "count": "[parameters('clusterSize')]"
             },
             "properties": {
                 "publisher": "Microsoft.Azure.Extensions",
