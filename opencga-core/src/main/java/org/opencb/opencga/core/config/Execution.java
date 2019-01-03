@@ -26,6 +26,12 @@ public class Execution {
     private String mode;
     private String defaultQueue;
     private String availableQueues;
+    private String batchAccount;
+    private String batchKey;
+    private String batchUri;
+    private String batchServicePoolId;
+    private String imageName;
+
     private Map<String, String> toolsPerQueue;
 
     public Execution() {
@@ -37,6 +43,11 @@ public class Execution {
         sb.append("mode='").append(mode).append('\'');
         sb.append(", defaultQueue='").append(defaultQueue).append('\'');
         sb.append(", availableQueues='").append(availableQueues).append('\'');
+        sb.append(", batchAccount='").append(batchAccount).append('\'');
+        sb.append(", batchKey='").append(batchKey).append('\'');
+        sb.append(", batchUri='").append(batchUri).append('\'');
+        sb.append(", batchServicePoolId='").append(batchServicePoolId).append('\'');
+        sb.append(", imageName='").append(imageName).append('\'');
         sb.append(", toolsPerQueue=").append(toolsPerQueue);
         sb.append('}');
         return sb.toString();
@@ -77,4 +88,51 @@ public class Execution {
         this.toolsPerQueue = toolsPerQueue;
         return this;
     }
+
+    public String getBatchAccount() {
+        return batchAccount;
+    }
+
+    public Execution setBatchAccount(String batchAccount) {
+        this.batchAccount = batchAccount;
+        return this;
+    }
+
+    public String getBatchKey() {
+        return batchKey;
+    }
+
+    public Execution setBatchKey(String batchKey) {
+        this.batchKey = batchKey;
+        return this;
+    }
+
+    public String getBatchUri() {
+        return batchUri;
+    }
+
+    public String getImageName() {
+        return imageName;
+    }
+
+    public Execution setImageName(String imageName) {
+        this.imageName = imageName;
+        return this;
+    }
+
+    public Execution setBatchUri(String batchUri) {
+        this.batchUri = batchUri;
+
+        return this;
+    }
+
+    public String getBatchServicePoolId() {
+        return batchServicePoolId;
+    }
+
+    public Execution setBatchServicePoolId(String batchServicePoolId) {
+        this.batchServicePoolId = batchServicePoolId;
+        return this;
+    }
+
 }

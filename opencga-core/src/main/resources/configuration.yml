@@ -32,6 +32,14 @@ execution:
   availableQueues: ""
   toolsPerQueue: {}
 
+#Azure Batch Service information
+
+  batchAccount : "batchAccount"
+  batchKey : "batchKey"
+  batchUri : "https://batchservice.uksouth.batch.azure.com"
+  batchServicePoolId : "poolId"
+  imageName : "openCGADockerImageName"
+
 email:
   host: ${OPENCGA.MAIL.HOST}
   port: ${OPENCGA.MAIL.PORT}

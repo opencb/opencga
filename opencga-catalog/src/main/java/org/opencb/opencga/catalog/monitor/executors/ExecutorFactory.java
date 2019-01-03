@@ -21,29 +21,27 @@ import org.opencb.opencga.core.config.Configuration;
 /**
  * Created by pfurio on 22/08/16.
  */
-public class ExecutorManager {
+public class ExecutorFactory {
 
     // TODO: Change for a map
-    private AbstractExecutor executor;
+    private BatchExecutor executor;
 
-    public ExecutorManager(Configuration configuration) {
+    public ExecutorFactory(Configuration configuration) {
+        this.executor = new LocalExecutor();
+
         if (configuration != null) {
             if (configuration.getExecution().getMode().equalsIgnoreCase("local")) {
                 this.executor = new LocalExecutor();
             } else if (configuration.getExecution().getMode().equalsIgnoreCase("sge")) {
-                // init sge executor
                 this.executor = new SGEExecutor(configuration);
                 System.out.println("SGE not ready");
+            } else if (configuration.getExecution().getMode().equalsIgnoreCase("azure")) {
+                this.executor = new AzureBatchExecutor(configuration);
             }
-        }
-
-        if (executor == null) {
-            // Load default executor
-            this.executor = new LocalExecutor();
         }
     }
 
-    public AbstractExecutor getExecutor() {
+    public BatchExecutor getExecutor() {
         return this.executor;
     }
 
