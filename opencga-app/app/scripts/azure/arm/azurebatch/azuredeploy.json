@@ -67,12 +67,55 @@
         }
     },
     "variables": {
+        "identityName": "opencga-batchpoolcreator",
         "storageAccountName": "[concat('batch', uniqueString(resourceGroup().id))]",
         "batchAccountName": "[concat('batch', uniqueString(resourceGroup().id))]",
-        "batchEndpoint": "[concat('https://', variables('batchAccountName'), '.' , parameters('location'), '.batch.azure.com')]"
+        "batchEndpoint": "[concat('https://', variables('batchAccountName'), '.' , parameters('location'), '.batch.azure.com')]",
+
+        "_comment": "The role assignment ID is required to be a guid, we use this to generate a repeatable guid",
+        "roleAssignmentId": "[guid(concat(resourceGroup().id, 'contributor'))]",
+
+        "_comment": "This is the ID used to set the contributor permission on a role.",
+        "contributorRoleDefinitionId": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'b24988ac-6180-42a0-ab88-20f7382dd24c')]"
     },
     "resources": [
         {
+            "comments": "Create an identity to use for creating the Azure Batch pool with container support (will be assigned to ACI instance)",
+            "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+            "name": "[variables('identityName')]",
+            "apiVersion": "2015-08-31-preview",
+            "location": "[resourceGroup().location]"
+        },
+        {
+            "comments": "Assign the idenity contributor rights to the resource group",
+            "type": "Microsoft.Authorization/roleAssignments",
+            "apiVersion": "2017-05-01",
+            "name": "[variables('roleAssignmentId')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName'))]"
+            ],
+            "properties": {
+                "roleDefinitionId": "[variables('contributorRoleDefinitionId')]",
+                "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), '2015-08-31-preview').principalId]",
+                "scope": "[resourceGroup().id]"
+            }
+        },
+        {
+            "comments": "Assign the idenity contributor rights to the virtual network",
+            "type": "Microsoft.Authorization/roleAssignments",
+            "apiVersion": "2017-05-01",
+            "name": "[variables('roleAssignmentId')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName'))]"
+            ],
+            "properties": {
+                "roleDefinitionId": "[variables('contributorRoleDefinitionId')]",
+                "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), '2015-08-31-preview').principalId]",
+                "scope": "[parameters('virtualNetworkSubnetId')]"
+            }
+        },
+        {
+            "comments": "This is the storage account used by Azure Batch for file processing/storage",
             "type": "Microsoft.Storage/storageAccounts",
             "name": "[variables('storageAccountname')]",
             "apiVersion": "2016-01-01",
@@ -105,70 +148,45 @@
             ]
         },
         {
-            "comments": "This creates a pool of VMs in Azure Batch which support container workloads.It runs a startup task to mount the shared storage before accepting tasks. It also uses an autoscaling feature to reduce to 0 nodes when no jobs are in the queue and scale up to the maxNode number as the queue grows. Due to a limitation in the ARM API the container configuration for the pool is run as a Startup task, this sets the correct fields on the pool via the az cli",
-            "type": "Microsoft.Batch/batchAccounts/pools",
-            "name": "[concat(variables('batchAccountName'), '/', parameters('poolID'))]",
-            "apiVersion": "2017-09-01",
-            "scale": null,
-            "properties": {
-                "vmSize": "[parameters('virtualMachineSize')]",
-                "networkConfiguration": {
-                    "subnetId": "[parameters('virtualNetworkSubnetId')]"
-                },
-                "maxTasksPerNode": "[parameters('maxTasksPerNode')]",
-                "taskSchedulingPolicy": {
-                    "nodeFillType": "Spread"
-                },
-                "startTask": {
-                    "commandLine": "[concat('/usr/bin/python3', variables('batchAccountName'), ' ', listKeys(resourceId('Microsoft.Batch/batchAccounts', variables('batchAccountName')), '2017-09-01').primary, ' ', variables('batchEndpoint'), ' ', parameters('poolId'), ' ',  parameters('mountArgs'))]",
-                    "userIdentity": {
-                        "autoUser": {
-                            "elevationLevel": "Admin",
-                            "scope": "Pool"
-                        }
-                    },
-                    "waitForSuccess": true,
-                    "maxTaskRetryCount": 0,
-                    "resourceFiles": [
-                        {
-                            "blobSource": "[concat(parameters('_artifactsLocation'), '/azurebatch/configurepool.py', parameters('_artifactsLocationSasToken'))]",
-                            "fileMode": "777",
-                            "filePath": "./configurepool.py"
-                        },
-                        {
-                            "blobSource": "[concat(parameters('_artifactsLocation'), '/avere/mount.py', parameters('_artifactsLocationSasToken'))]",
-                            "fileMode": "777",
-                            "filePath": "./mount.py"
-                        },
-                        {
-                            "blobSource": "[concat(parameters('_artifactsLocation'), '/azurebatch/pool.json', parameters('_artifactsLocationSasToken'))]",
-                            "fileMode": "777",
-                            "filePath": "./pool.json"
-                        }
-                    ]
-                },
-                "deploymentConfiguration": {
-                    "virtualMachineConfiguration": {
-                        "imageReference": {
-                            "publisher": "microsoft-azure-batch",
-                            "offer": "ubuntu-server-container",
-                            "sku": "16-04-lts",
-                            "version": "1.0.6"
-                        },
-                        "nodeAgentSkuId": "batch.node.ubuntu 16.04"
-                    }
-                },
-                "scaleSettings": {
-                    "autoScale": {
-                        "evaluationInterval": "PT5M",
-                        "formula": "[concat('startingNumberOfVMs = 1;maxNumberofVMs = ', parameters('maxNodeCount'), ';pendingTaskSamplePercent = $PendingTasks.GetSamplePercent(160 * TimeInterval_Second);pendingTaskSamples = pendingTaskSamplePercent < 70 ? startingNumberOfVMs : avg($PendingTasks.GetSample(160 * TimeInterval_Second));$TargetDedicatedNodes=min(maxNumberofVMs, pendingTaskSamples);')]"
-                    }
-                }
-            },
+            "type": "Microsoft.ContainerInstance/containerGroups",
+            "apiVersion": "2018-10-01",
+            "name": "[substring(concat('batchpool', uniqueString(resourceGroup().id)), 0, 20)]",
+            "location": "[resourceGroup().location]",
             "dependsOn": [
-                "[resourceId('Microsoft.Batch/batchAccounts', variables('batchAccountName'))]"
-            ]
-        }
+              "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName'))]",
+              "[resourceId('Microsoft.Authorization/roleAssignments', variables('roleAssignmentId'))]",
+              "[resourceId('Microsoft.Batch/batchAccounts', variables('batchAccountName'))]"
+            ],
+            "identity": {
+              "type": "UserAssigned",
+              "userAssignedIdentities": {
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName'))]": {}
+              }
+            },
+            "properties": {
+              "osType": "Linux",
+              "restartPolicy": "OnFailure",
+              "containers": [
+                {
+                  "name": "azure-cli",
+                  "properties": {
+                    "image": "microsoft/azure-cli",
+                    "command": [
+                      "/bin/sh",
+                      "-c",
+                      "[concat('az login --identity -u ', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), ' && az batch account login --name ', variables('batchAccountName'), ' -g ', resourceGroup().name, '&& curl -fsSL ', parameters('_artifactsLocation'), '/avere/mount.py', parameters('_artifactsLocationSasToken'), ' | python3 ', parameters('poolId'), ' ', parameters('virtualMachineSize'),  ' ', parameters('mountArgs'),  ' ', parameters('_artifactsLocation'),  ' ', parameters('_artifactsLocationSasToken'),  ' ', parameters('virtualNetworkSubnetId'))]"
+                    ],
+                    "resources": {
+                      "requests": {
+                        "cpu": 1,
+                        "memoryInGB": 1
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+      }
     ],
     "outputs": {
         "storageAccountName": {

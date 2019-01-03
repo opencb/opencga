@@ -1,35 +1,48 @@
 import subprocess
 import sys
-from mount import mount_share
+import urllib.request
 
 
-def run_az_command(account_name, account_key, account_endpoint, pool_id):
+def run_az_command():
     try:
         print("Attempt set config on pool {}".format(pool_id))
-        command = "-v $PWD:/localdir microsoft/azure-cli:2.0.54 az batch pool set --account-endpoint={0} --account-key={1} --account-name={2} --pool-id={3} --json-file=/localdir/pool.json".format(
-            account_endpoint, account_key, account_name, pool_id
+        subprocess.check_call(
+            ["az", "batch", "pool", "create", "--json-file", "pool.complete.json"]
         )
-        subprocess.check_call(["docker", "run", command])
         print("Install completed successfully")
     except subprocess.CalledProcessError as e:
         print("Failed config set on pool: {} error: {}".format(pool_id, e))
         exit(4)
 
-
-if len(sys.argv) < 7:
+if len(sys.argv) != 7:
     print(
-        "Expected 'batchAccountName', 'batchAccountKey', 'accountEndpoint', 'poolId', 'mountType', 'mountArgs'"
+        "Expected 'poolid', 'vm_size', 'mount_args', 'artifact_location', 'artifact_sas', 'subnet_id'"
     )
     exit(1)
 
-account_name = str(sys.argv[1])
-account_key = str(sys.argv[2])
-account_endpoint = str(sys.argv[3])
-pool_id = str(sys.argv[4])
+pool_id = str(sys.argv[1])
+vm_size = str(sys.argv[2])
+mount_args = str(sys.argv[3])
+artifact_location = str(sys.argv[4])
+artifact_sas = str(sys.argv[5])
+subnet_id = str(sys.argv[6])
 
-run_az_command(account_name, account_key, account_endpoint, pool_id)
+url = "{0}/azurebatch/pool.json{1}".format(artifact_location, artifact_sas)
+response = urllib.request.urlopen(url)
+data = response.read()  # a `bytes` object
+text = data.decode("utf-8")  #
 
-mount_type = str(sys.argv[5])
-mount_data = str(sys.argv[6])
+# Replace the target string
+text = text.replace("ID_HERE", pool_id)
+text = text.replace("VM_SIZE_HERE", vm_size)
+text = text.replace("MOUNT_ARGS_HERE", mount_args)
+text = text.replace("ARTIFACT_LOCATION_HERE", artifact_location)
+text = text.replace("ARTIFACT_SAS_HERE", artifact_sas)
+text = text.replace("SUBNET_ID_HERE", subnet_id)
 
-mount_share(mount_type, mount_data)
+# Write the file out again
+with open("pool.complete.json", "w") as file:
+    file.write(text)
+
+run_az_command()
+
