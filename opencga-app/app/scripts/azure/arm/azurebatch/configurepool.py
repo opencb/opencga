@@ -33,7 +33,7 @@ data = response.read()  # a `bytes` object
 text = data.decode("utf-8")  #
 
 # Replace the target string
-text = text.replace("ID_HERE", pool_id)
+text = text.replace("POOL_ID_HERE", pool_id)
 text = text.replace("VM_SIZE_HERE", vm_size)
 text = text.replace("MOUNT_ARGS_HERE", mount_args)
 text = text.replace("ARTIFACT_LOCATION_HERE", artifact_location)

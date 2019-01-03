@@ -73,7 +73,7 @@
         "batchEndpoint": "[concat('https://', variables('batchAccountName'), '.' , parameters('location'), '.batch.azure.com')]",
 
         "_comment": "The role assignment ID is required to be a guid, we use this to generate a repeatable guid",
-        "roleAssignmentId": "[guid(concat(resourceGroup().id, 'contributor'))]",
+        "roleAssignmentIdRg": "[guid(concat(resourceGroup().id, 'contributorRG'))]",
 
         "_comment": "This is the ID used to set the contributor permission on a role.",
         "contributorRoleDefinitionId": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'b24988ac-6180-42a0-ab88-20f7382dd24c')]"
@@ -90,7 +90,7 @@
             "comments": "Assign the idenity contributor rights to the resource group",
             "type": "Microsoft.Authorization/roleAssignments",
             "apiVersion": "2017-05-01",
-            "name": "[variables('roleAssignmentId')]",
+            "name": "[variables('roleAssignmentIdRg')]",
             "dependsOn": [
                 "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName'))]"
             ],
@@ -98,20 +98,6 @@
                 "roleDefinitionId": "[variables('contributorRoleDefinitionId')]",
                 "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), '2015-08-31-preview').principalId]",
                 "scope": "[resourceGroup().id]"
-            }
-        },
-        {
-            "comments": "Assign the idenity contributor rights to the virtual network",
-            "type": "Microsoft.Authorization/roleAssignments",
-            "apiVersion": "2017-05-01",
-            "name": "[variables('roleAssignmentId')]",
-            "dependsOn": [
-                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName'))]"
-            ],
-            "properties": {
-                "roleDefinitionId": "[variables('contributorRoleDefinitionId')]",
-                "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), '2015-08-31-preview').principalId]",
-                "scope": "[parameters('virtualNetworkSubnetId')]"
             }
         },
         {
@@ -154,7 +140,7 @@
             "location": "[resourceGroup().location]",
             "dependsOn": [
               "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName'))]",
-              "[resourceId('Microsoft.Authorization/roleAssignments', variables('roleAssignmentId'))]",
+              "[resourceId('Microsoft.Authorization/roleAssignments', variables('roleAssignmentIdRg'))]",
               "[resourceId('Microsoft.Batch/batchAccounts', variables('batchAccountName'))]"
             ],
             "identity": {
@@ -174,7 +160,7 @@
                     "command": [
                       "/bin/sh",
                       "-c",
-                      "[concat('az login --identity -u ', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), ' && az batch account login --name ', variables('batchAccountName'), ' -g ', resourceGroup().name, '&& curl -fsSL ', parameters('_artifactsLocation'), '/avere/mount.py', parameters('_artifactsLocationSasToken'), ' | python3 ', parameters('poolId'), ' ', parameters('virtualMachineSize'),  ' ', parameters('mountArgs'),  ' ', parameters('_artifactsLocation'),  ' ', parameters('_artifactsLocationSasToken'),  ' ', parameters('virtualNetworkSubnetId'))]"
+                      "[concat('az login --identity -u ', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), ' && az batch account login --name ', variables('batchAccountName'), ' -g ', resourceGroup().name, ' && curl -fsSL ', parameters('_artifactsLocation'), '/azurebatch/configurepool.py', parameters('_artifactsLocationSasToken'), ' | python3 ', parameters('poolId'), ' ', parameters('virtualMachineSize'),  ' \"', parameters('mountArgs'),  '\" ', parameters('_artifactsLocation'),  ' ', parameters('_artifactsLocationSasToken'),  ' ', parameters('virtualNetworkSubnetId'))]"
                     ],
                     "resources": {
                       "requests": {

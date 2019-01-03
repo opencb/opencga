@@ -1,5 +1,5 @@
 {
-    "id": "ID_HERE",
+    "id": "POOL_ID_HERE",
     "vmSize": "VM_SIZE_HERE",
     "enableAutoScale": true,
     "autoScaleFormula": "startingNumberOfVMs = 1;maxNumberofVMs = 3;pendingTaskSamplePercent = $PendingTasks.GetSamplePercent(160 * TimeInterval_Second);pendingTaskSamples = pendingTaskSamplePercent < 70 ? startingNumberOfVMs : avg($PendingTasks.GetSample(160 * TimeInterval_Second));$TargetDedicatedNodes=min(maxNumberofVMs, pendingTaskSamples);",
