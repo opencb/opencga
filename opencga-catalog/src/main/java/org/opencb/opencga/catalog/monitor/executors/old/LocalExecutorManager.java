@@ -38,7 +38,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
 
-import static org.opencb.opencga.catalog.monitor.executors.AbstractExecutor.JOB_STATUS_FILE;
+import static org.opencb.opencga.catalog.monitor.executors.BatchExecutor.JOB_STATUS_FILE;
 import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
 /*

@@ -27,7 +27,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.monitor.ExecutionOutputRecorder;
-import org.opencb.opencga.catalog.monitor.executors.AbstractExecutor;
+import org.opencb.opencga.catalog.monitor.executors.BatchExecutor;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.Job;
@@ -172,7 +172,7 @@ public class IndexDaemon extends MonitorParentDaemon {
                 closeSessionId(job);
             }
         } else {
-            String status = executorManager.status(tmpOutdirPath, job);
+            String status = batchExecutor.status(tmpOutdirPath, job);
             if (!status.equalsIgnoreCase(Job.JobStatus.UNKNOWN) && !status.equalsIgnoreCase(Job.JobStatus.RUNNING)) {
                 ObjectMap parameters = new ObjectMap(JobDBAdaptor.QueryParams.END_TIME.key(), System.currentTimeMillis());
 //                variantIndexOutputRecorder.registerStorageETLResults(job, tmpOutdirPath);
@@ -233,7 +233,7 @@ public class IndexDaemon extends MonitorParentDaemon {
 //            } else {
 //                // TODO: Call the executor status
 //                logger.debug("Call executor status not yet implemented.");
-////                    executorManager.status(job).equalsIgnoreCase()
+////                    batchExecutor.status(job).equalsIgnoreCase()
 //            }
         }
     }
@@ -310,9 +310,9 @@ public class IndexDaemon extends MonitorParentDaemon {
             updateObjectMap.put(JobDBAdaptor.QueryParams.START_TIME.key(), System.currentTimeMillis());
             updateObjectMap.put(JobDBAdaptor.QueryParams.ATTRIBUTES.key(), job.getAttributes());
 
-            job.getResourceManagerAttributes().put(AbstractExecutor.STDOUT, stdout);
-            job.getResourceManagerAttributes().put(AbstractExecutor.STDERR, stderr);
-            job.getResourceManagerAttributes().put(AbstractExecutor.OUTDIR, path.toString());
+            job.getResourceManagerAttributes().put(BatchExecutor.STDOUT, stdout);
+            job.getResourceManagerAttributes().put(BatchExecutor.STDERR, stderr);
+            job.getResourceManagerAttributes().put(BatchExecutor.OUTDIR, path.toString());
             updateObjectMap.put(JobDBAdaptor.QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key(), job.getResourceManagerAttributes());
 
             QueryResult<Job> update = jobDBAdaptor.update(job.getUid(), updateObjectMap, QueryOptions.empty());

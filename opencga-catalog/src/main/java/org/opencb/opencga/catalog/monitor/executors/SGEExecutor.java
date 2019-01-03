@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.monitor.executors;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.SgeManager;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Objects;
@@ -26,9 +27,10 @@ import java.util.Objects;
 /**
  * Created by pfurio on 24/08/16.
  */
-public class SGEExecutor extends AbstractExecutor {
+public class SGEExecutor implements BatchExecutor {
 
     private SGEManager sgeManager;
+    private static Logger logger;
 
     public SGEExecutor(Configuration configuration) {
         logger = LoggerFactory.getLogger(SGEExecutor.class);
@@ -37,13 +39,13 @@ public class SGEExecutor extends AbstractExecutor {
 
     @Override
     public void execute(Job job, String token) throws Exception {
-        ExecutorConfig executorConfig = getExecutorConfig(job);
+        ExecutorConfig executorConfig = ExecutorConfig.getExecutorConfig(job);
         // TODO: Check job name below !
-        sgeManager.queueJob(job.getToolId(), "", -1, getCommandLine(job, token), executorConfig);
+        sgeManager.queueJob(job.getToolId(), "", -1, job.getCommandLine() + " --session-id " + token, executorConfig);
     }
 
     @Override
-    protected String getStatus(Job job) {
+    public String getStatus(Job job) {
         String status;
         try {
             status = SgeManager.status(Objects.toString(job.getResourceManagerAttributes().get(Job.JOB_SCHEDULER_NAME)));
