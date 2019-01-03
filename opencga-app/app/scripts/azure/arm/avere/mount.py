@@ -83,6 +83,7 @@ def install_apt_package(package):
         exit(4)
 
 
+# main allows the the mount script to be executable
 def main():
     if len(sys.argv) < 3:
         print("Expected arg1: 'mount_type' and arg2 'mount_data'")
@@ -91,6 +92,11 @@ def main():
 
     mount_type = str(sys.argv[1])
     mount_data = str(sys.argv[2])
+
+    mount_share(mount_type, mount_data)
+
+# mount_share allows it to be invoked from other python scripts
+def mount_share(mount_type, mount_data):
 
     if mount_type.lower() != "avere" and mount_type.lower() != "azurefiles":
         print("Expected first arg to be either 'avere' or 'azurefiles'")

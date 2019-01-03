@@ -68,7 +68,8 @@
     },
     "variables": {
         "storageAccountName": "[concat('batch', uniqueString(resourceGroup().id))]",
-        "batchAccountName": "[concat('batch', uniqueString(resourceGroup().id))]"
+        "batchAccountName": "[concat('batch', uniqueString(resourceGroup().id))]",
+        "batchEndpoint": "[concat('https://', variables('batchAccountName'), '.' , parameters('location'), '.batch.azure.com')]"
     },
     "resources": [
         {
@@ -104,7 +105,7 @@
             ]
         },
         {
-            "comments": "This creates a pool of VMs in Azure Batch which support container workloads. It runs a startup task to mount the shared storage before accepting tasks.",
+            "comments": "This creates a pool of VMs in Azure Batch which support container workloads.It runs a startup task to mount the shared storage before accepting tasks. It also uses an autoscaling feature to reduce to 0 nodes when no jobs are in the queue and scale up to the maxNode number as the queue grows. Due to a limitation in the ARM API the container configuration for the pool is run as a Startup task, this sets the correct fields on the pool via the az cli",
             "type": "Microsoft.Batch/batchAccounts/pools",
             "name": "[concat(variables('batchAccountName'), '/', parameters('poolID'))]",
             "apiVersion": "2017-09-01",
@@ -119,7 +120,7 @@
                     "nodeFillType": "Spread"
                 },
                 "startTask": {
-                    "commandLine": "[concat('/bin/bash -c \"curl -fsSL ', parameters('_artifactsLocation'), '/avere/mount.py', parameters('_artifactsLocationSasToken'), ' | python3 - ', parameters('mountArgs'), '\"')]",
+                    "commandLine": "[concat('/usr/bin/python3', variables('batchAccountName'), ' ', listKeys(resourceId('Microsoft.Batch/batchAccounts', variables('batchAccountName')), '2017-09-01').primary, ' ', variables('batchEndpoint'), ' ', parameters('poolId'), ' ',  parameters('mountArgs'))]",
                     "userIdentity": {
                         "autoUser": {
                             "elevationLevel": "Admin",
@@ -127,15 +128,27 @@
                         }
                     },
                     "waitForSuccess": true,
-                    "maxTaskRetryCount": 0
+                    "maxTaskRetryCount": 0,
+                    "resourceFiles": [
+                        {
+                            "blobSource": "[concat(parameters('_artifactsLocation'), '/azurebatch/configurepool.py', parameters('_artifactsLocationSasToken'))]",
+                            "fileMode": "777",
+                            "filePath": "./configurepool.py"
+                        },
+                        {
+                            "blobSource": "[concat(parameters('_artifactsLocation'), '/avere/mount.py', parameters('_artifactsLocationSasToken'))]",
+                            "fileMode": "777",
+                            "filePath": "./mount.py"
+                        },
+                        {
+                            "blobSource": "[concat(parameters('_artifactsLocation'), '/azurebatch/pool.json', parameters('_artifactsLocationSasToken'))]",
+                            "fileMode": "777",
+                            "filePath": "./pool.json"
+                        }
+                    ]
                 },
                 "deploymentConfiguration": {
                     "virtualMachineConfiguration": {
-                        "containerConfiguration": {
-                            "containerImageNames": [
-                                "ubuntu", "python"
-                            ]
-                        },
                         "imageReference": {
                             "publisher": "microsoft-azure-batch",
                             "offer": "ubuntu-server-container",
@@ -148,7 +161,7 @@
                 "scaleSettings": {
                     "autoScale": {
                         "evaluationInterval": "PT5M",
-                        "formula": "[concat('startingNumberOfVMs = 0;maxNumberofVMs = ', parameters('maxNodeCount'), ';pendingTaskSamplePercent = $PendingTasks.GetSamplePercent(160 * TimeInterval_Second);pendingTaskSamples = pendingTaskSamplePercent < 70 ? startingNumberOfVMs : avg($PendingTasks.GetSample(160 * TimeInterval_Second));$TargetDedicatedNodes=min(maxNumberofVMs, pendingTaskSamples);')]"
+                        "formula": "[concat('startingNumberOfVMs = 1;maxNumberofVMs = ', parameters('maxNodeCount'), ';pendingTaskSamplePercent = $PendingTasks.GetSamplePercent(160 * TimeInterval_Second);pendingTaskSamples = pendingTaskSamplePercent < 70 ? startingNumberOfVMs : avg($PendingTasks.GetSample(160 * TimeInterval_Second));$TargetDedicatedNodes=min(maxNumberofVMs, pendingTaskSamples);')]"
                     }
                 }
             },
@@ -165,6 +178,18 @@
         "batchAccountName": {
             "type": "string",
             "value": "[variables('batchAccountName')]"
+        },
+        "batchEndpoint": {
+            "type": "string",
+            "value": "[variables('batchEndpoint')]"
+        },
+        "batchAccountKey": {
+            "type": "securestring",
+            "value": "[listKeys(resourceId('Microsoft.Batch/batchAccounts', variables('batchAccountName')), '2017-09-01').primary]"
+        },
+        "batchPoolId": {
+            "type": "string",
+            "value": "[parameters('poolId')]"
         }
     }
 }

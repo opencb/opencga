@@ -1,0 +1,18 @@
+{
+    "deploymentConfiguration": {
+        "virtualMachineConfiguration": {
+            "containerConfiguration": {
+                "containerImageNames": [
+                    "ubuntu", "python"
+                ]
+            },
+            "imageReference": {
+                "publisher": "microsoft-azure-batch",
+                "offer": "ubuntu-server-container",
+                "sku": "16-04-lts",
+                "version": "1.0.6"
+            },
+            "nodeAgentSkuId": "batch.node.ubuntu 16.04"
+        }
+    },
+  }
