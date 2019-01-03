@@ -151,16 +151,16 @@
             },
             "properties": {
               "osType": "Linux",
-              "restartPolicy": "OnFailure",
+              "restartPolicy": "Never",
               "containers": [
                 {
                   "name": "azure-cli",
                   "properties": {
                     "image": "microsoft/azure-cli",
                     "command": [
-                      "/bin/sh",
+                      "/bin/bash",
                       "-c",
-                      "[concat('az login --identity -u ', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), ' && az batch account login --name ', variables('batchAccountName'), ' -g ', resourceGroup().name, ' && curl -fsSL ', parameters('_artifactsLocation'), '/azurebatch/configurepool.py', parameters('_artifactsLocationSasToken'), ' | python3 ', parameters('poolId'), ' ', parameters('virtualMachineSize'),  ' \"', parameters('mountArgs'),  '\" ', parameters('_artifactsLocation'),  ' ', parameters('_artifactsLocationSasToken'),  ' ', parameters('virtualNetworkSubnetId'))]"
+                      "[concat('az login --identity -u ', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), ' && az batch account login --name ', variables('batchAccountName'), ' -g ', resourceGroup().name, ' && curl -fsSL ', parameters('_artifactsLocation'), '/azurebatch/configurepool.py', parameters('_artifactsLocationSasToken'), ' > configurepool.py && python3 ./configurepool.py \"', parameters('poolId'), '\" ', parameters('virtualMachineSize'),  ' \"', parameters('mountArgs'),  '\" ', parameters('_artifactsLocation'),  ' ', parameters('_artifactsLocationSasToken'),  ' ', parameters('virtualNetworkSubnetId'))]"
                     ],
                     "resources": {
                       "requests": {
