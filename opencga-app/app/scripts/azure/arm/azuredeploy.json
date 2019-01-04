@@ -261,14 +261,11 @@
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
-                    "_artifactsLocation": {
-                        "value": "[parameters('_artifactsLocation')]"
+                    "networkAclsVirtualNetworkRule": {
+                        "value": "[reference('vnet').outputs.hdinsightSubnetId.value]"
                     },
-                    "_artifactsLocationSasToken": {
-                        "value": "[parameters('_artifactsLocationSasToken')]"
-                    },
-                    "virtualNetworkSubnetId": {
-                        "value": "[reference('vnet').outputs.defaultSubnetId.value]"
+                    "isHnsEnabled": {
+                        "value": "[if(equals(parameters('HDInsightstorageOption'), 'DataLake'), json('true'), json('false'))]"
                     }
                 }
             }
@@ -296,7 +293,7 @@
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
-                    "clusterName": {
+                    "clusterNamePrefix": {
                         "value": "[parameters('HDInsightClusterName')]"
                     },
                     "clusterLoginUserName": {

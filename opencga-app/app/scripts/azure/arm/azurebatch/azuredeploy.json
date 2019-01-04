@@ -83,12 +83,13 @@
             "location": "[resourceGroup().location]"
         },
         {
-            "comments": "Assign the idenity contributor rights to the resource group",
+            "comments": "Assign the idenity contributor rights to the resource group. Note that this can intermittently fail with an error of 'PrincipalNotFound' due to what looks to be a replication lag when creating the identity. To workaround this issue the role assignment depends on the AzureBatch account creation too in order to slow things down.",
             "type": "Microsoft.Authorization/roleAssignments",
             "apiVersion": "2017-05-01",
             "name": "[variables('roleAssignmentIdRg')]",
             "dependsOn": [
-                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName'))]"
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName'))]",
+                "[resourceId('Microsoft.Batch/batchAccounts', variables('batchAccountName'))]"
             ],
             "properties": {
                 "roleDefinitionId": "[variables('contributorRoleDefinitionId')]",
