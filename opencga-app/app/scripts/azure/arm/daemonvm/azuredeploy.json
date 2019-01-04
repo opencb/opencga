@@ -90,8 +90,8 @@
     "variables": {
         "vnetId": "[parameters('virtualNetworkId')]",
         "subnetRef": "[concat(variables('vnetId'), '/subnets/', parameters('subnetName'))]",
-        "solrHostsCSV": "[replace(replace(replace(string(parameters('solrHosts')), '[{\"host\":\"', ''), '},{\"host\":\"', ','), '\"}]', '')]",
-        "mongoDbHostsCSV": "[replace(replace(replace(string(parameters('mongoDbHosts')), '[{\"fqdn\":\"', ''), '},{\"fqdn\":\"', ','), '\"}]', '')]",
+        "solrHostsCSV": "[replace(replace(replace(string(parameters('solrHosts')), '[{\"host\":\"', ''), '\"},{\"host\":\"', ','), '\"}]', '')]",
+        "mongoDbHostsCSV": "[replace(replace(replace(string(parameters('mongoDbHosts')), '[{\"fqdn\":\"', ''), '\"},{\"fqdn\":\"', ','), '\"}]', '')]",
         "webserverHost": "[concat('https://', parameters('webserverNamingPrefix'), '.', resourceGroup().location,'.cloudapp.azure.com')]",
         "restHost": "[concat(variables('webserverHost'), ':8443')]",
         "grpcHost": "[concat(variables('webserverHost'), ':9999')]",
