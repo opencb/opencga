@@ -17,14 +17,14 @@ import java.io.IOException;
 public class AzureBatchExecutor implements BatchExecutor {
     public static final String VARIANT_INDEX_JOB = "variant-index-job";
     public static final String VARIANT_ANALYSIS_JOB = "variant-analysis-job";
-    private BatchClient batchClient;
-    private String dockerImageName;
-    private PoolInformation poolInformation;
     private static Logger logger;
+    private Configuration configuration;
+    private BatchClient batchClient;
+    private PoolInformation poolInformation;
 
     public AzureBatchExecutor(Configuration configuration) {
         logger = LoggerFactory.getLogger(AzureBatchExecutor.class);
-        this.dockerImageName = configuration.getExecution().getImageName();
+        this.configuration = configuration;
         this.batchClient = createBatchClient(configuration);
         this.poolInformation = new PoolInformation().withPoolId(configuration.getExecution().getBatchServicePoolId());
     }
@@ -32,8 +32,9 @@ public class AzureBatchExecutor implements BatchExecutor {
     public void submitAzureTask(Job job) throws IOException {
         String jobId = getOrCreateAzureJob(job.getType());
         TaskAddParameter taskToAdd = new TaskAddParameter();
-        taskToAdd.withId(job.getId()).withCommandLine(job.getCommandLine())
-                .withContainerSettings(new TaskContainerSettings().withImageName(dockerImageName));
+        taskToAdd.withId(job.getId()).withCommandLine(job.getCommandLine()).withContainerSettings(
+                new TaskContainerSettings().withImageName(configuration.getExecution().getDockerImageName())
+                        .withContainerRunOptions(configuration.getExecution().getDockerArgs()));
         taskToAdd.withId(job.getId()).withCommandLine(job.getCommandLine());
         batchClient.taskOperations().createTask(jobId, taskToAdd);
     }

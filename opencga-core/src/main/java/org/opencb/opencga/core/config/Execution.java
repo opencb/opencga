@@ -30,7 +30,8 @@ public class Execution {
     private String batchKey;
     private String batchUri;
     private String batchServicePoolId;
-    private String imageName;
+    private String dockerImageName;
+    private String dockerArgs;
 
     private Map<String, String> toolsPerQueue;
 
@@ -47,7 +48,8 @@ public class Execution {
         sb.append(", batchKey='").append(batchKey).append('\'');
         sb.append(", batchUri='").append(batchUri).append('\'');
         sb.append(", batchServicePoolId='").append(batchServicePoolId).append('\'');
-        sb.append(", imageName='").append(imageName).append('\'');
+        sb.append(", dockerImageName='").append(dockerImageName).append('\'');
+        sb.append(", dockerArgs='").append(dockerArgs).append('\'');
         sb.append(", toolsPerQueue=").append(toolsPerQueue);
         sb.append('}');
         return sb.toString();
@@ -111,12 +113,12 @@ public class Execution {
         return batchUri;
     }
 
-    public String getImageName() {
-        return imageName;
+    public String getDockerImageName() {
+        return dockerImageName;
     }
 
-    public Execution setImageName(String imageName) {
-        this.imageName = imageName;
+    public Execution setDockerImageName(String dockerImageName) {
+        this.dockerImageName = dockerImageName;
         return this;
     }
 
@@ -135,4 +137,12 @@ public class Execution {
         return this;
     }
 
+    public String getDockerArgs() {
+        return dockerArgs;
+    }
+
+    public Execution setDockerArgs(String dockerArgs) {
+        this.dockerArgs = dockerArgs;
+        return this;
+    }
 }
