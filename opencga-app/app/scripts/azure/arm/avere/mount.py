@@ -80,7 +80,7 @@ def install_apt_package(package):
         print("Install completed successfully")
     except subprocess.CalledProcessError as e:
         print("Failed install {} error: {}".format(package, e))
-        exit(4)
+        raise
 
 
 # main allows the the mount script to be executable
