@@ -216,6 +216,35 @@
             "resourceGroup": "[parameters('rgPrefix')]",
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2018-05-01",
+            "name": "azureBatch",
+            "dependsOn": [
+                "[parameters('rgPrefix')]",
+                "avere",
+                "azurefiles"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/azurebatch/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "_artifactsLocation": {
+                        "value": "[parameters('_artifactsLocation')]"
+                    },
+                    "_artifactsLocationSasToken": {
+                        "value": "[parameters('_artifactsLocationSasToken')]"
+                    },
+                    "virtualNetworkSubnetId": {
+                        "value": "[reference('vnet').outputs.defaultSubnetId.value]"
+                    }
+                }
+            }
+        },
+        {
+            "resourceGroup": "[parameters('rgPrefix')]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
             "name": "hdinsight-storage",
             "dependsOn": [
                 "vnet",
@@ -228,11 +257,14 @@
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
-                    "networkAclsVirtualNetworkRule": {
-                        "value": "[reference('vnet').outputs.hdinsightSubnetId.value]"
+                    "_artifactsLocation": {
+                        "value": "[parameters('_artifactsLocation')]"
                     },
-                    "isHnsEnabled": {
-                        "value": "[if(equals(parameters('HDInsightstorageOption'), 'DataLake'), json('true'), json('false'))]"
+                    "_artifactsLocationSasToken": {
+                        "value": "[parameters('_artifactsLocationSasToken')]"
+                    },
+                    "virtualNetworkSubnetId": {
+                        "value": "[reference('vnet').outputs.defaultSubnetId.value]"
                     }
                 }
             }
