@@ -40,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
@@ -971,19 +972,24 @@ public class StudyConfigurationManager implements AutoCloseable {
      * fileId was already in the studyConfiguration.indexedFiles
      *
      * @param studyConfiguration Study Configuration
-     * @param fileName  File name
+     * @param filePath  File path
      * @return fileId related to that file.
      * @throws StorageEngineException if the file is not valid for being loaded
      */
-    public int registerFile(StudyConfiguration studyConfiguration, String fileName) throws StorageEngineException {
+    public int registerFile(StudyConfiguration studyConfiguration, String filePath) throws StorageEngineException {
+        String fileName = Paths.get(filePath).getFileName().toString();
         Map<Integer, String> idFiles = studyConfiguration.getFileIds().inverse();
         int fileId;
 
         if (studyConfiguration.getFileIds().containsKey(fileName)) {
             fileId = studyConfiguration.getFileIds().get(fileName);
+            if (!studyConfiguration.getFilePaths().inverse().get(fileId).equals(filePath)) {
+                throw StorageEngineException.unableToExecute("Already registered with a different path", fileId, fileName);
+            }
         } else {
             fileId = newFileId(studyConfiguration);
             studyConfiguration.getFileIds().put(fileName, fileId);
+            studyConfiguration.getFilePaths().put(filePath, fileId);
         }
 
         if (studyConfiguration.getFileIds().containsKey(fileName)) {

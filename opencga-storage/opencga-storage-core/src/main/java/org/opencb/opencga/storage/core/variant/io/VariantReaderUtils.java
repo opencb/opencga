@@ -294,8 +294,8 @@ public class VariantReaderUtils {
         return Pair.of(vcfHeader, version);
     }
 
-    private static VariantFileMetadata createEmptyVariantFileMetadata(Path input) {
-        return new VariantFileMetadata(input.getFileName().toString(), input.getFileName().toString());
+    public static VariantFileMetadata createEmptyVariantFileMetadata(Path input) {
+        return new VariantFileMetadata(input.getFileName().toString(), input.toAbsolutePath().toString());
     }
 
     public static boolean isAvro(String fileName) {
