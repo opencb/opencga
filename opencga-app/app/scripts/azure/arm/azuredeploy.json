@@ -220,7 +220,8 @@
             "dependsOn": [
                 "[parameters('rgPrefix')]",
                 "avere",
-                "azurefiles"
+                "azurefiles",
+                "vnet"
             ],
             "properties": {
                 "mode": "Incremental",
@@ -237,6 +238,9 @@
                     },
                     "virtualNetworkSubnetId": {
                         "value": "[reference('vnet').outputs.defaultSubnetId.value]"
+                    },
+                    "mountArgs": {
+                        "value": "[if(equals(parameters('nfsStorageOption'), 'AzureFiles'), concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value, ',' , reference('azurefiles').outputs.accountKey.value),concat('avere ', reference('avere').outputs.VSERVER_IPS.value))]"
                     }
                 }
             }
@@ -387,6 +391,7 @@
             "apiVersion": "2017-05-10",
             "name": "webservers",
             "dependsOn": [
+                "avere",
                 "azurefiles",
                 "vnet",
                 "[parameters('rgPrefix')]"
