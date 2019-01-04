@@ -60,7 +60,16 @@
         "vnetAddressPrefix": "10.0.0.0/16",
         "subnetName": "mong-subnet",
         "subnetPrefix": "10.0.0.0/24",
-        "dnsPrefix": "[concat(parameters('dnsLabelPrefix'), uniquestring(resourceGroup().id))]"
+        "dnsPrefix": "[concat(parameters('dnsLabelPrefix'), uniquestring(resourceGroup().id))]",
+        "copy": [
+            {
+                "name": "dnsNames",
+                "count": "[parameters('clusterSize')]",
+                "input": {
+                   "fqdn": "[concat(variables('dnsPrefix'),copyIndex('dnsNames',1),'.',parameters('location'),'.cloudapp.azure.com')]"
+                }
+            }
+        ]
     },
     "resources": [
         {
@@ -289,9 +298,9 @@
             "value": "[parameters('clusterSize')]",
             "type": "int"
         },
-        "mongoFqdn0": {
-            "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses',concat(variables('publicIPAddressName'),'0')),'2017-10-01').dnsSettings.fqdn]",
-            "type": "string"
+        "dnsNames": {
+            "value": "[variables('dnsNames')]",
+            "type": "array"
         }
     }
 }
