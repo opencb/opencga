@@ -102,7 +102,7 @@
     "vmExtensionName": "solrExtension",
     "scaleNumber": "[if(parameters('highAvailability'), 2, 1)]",
     "zookeeperScaleNumber": "[if(parameters('highAvailability'), 3, 0)]",
-    "customScriptFilePath": "[concat(parameters('_artifactsLocation'), 'solr/solr-setup.sh')]",
+    "customScriptFilePath": "[concat(parameters('_artifactsLocation'), '/solr/solr-setup.sh', parameters('_artifactsLocationSasToken'))]",
     "customScriptCommandToExecute": "bash solr-setup.sh",
     "configSetLocation": "http://docs.opencb.org/download/attachments/9240577/OpenCGAConfSet_1.4.x.tar.gz",
     "imagePublisher": "Canonical",
