@@ -53,7 +53,7 @@ configureMongoDB() {
 generateMongoKeyFile() {
     echo "generating keyfile on primary node"
     openssl rand -base64 741 > /opt/mongodb.key
-    gpg --yes --batch --passphrase=lalala -c /opt/mongodb.key
+    gpg --yes --batch --passphrase=${MONGODB_PASSWORD} -c /opt/mongodb.key
     cp /opt/mongodb.key.gpg /var/www/html/mongodb.key.gpg
     chmod 600 /opt/mongodb.key
     chown mongodb /opt/mongodb.key
@@ -73,7 +73,7 @@ configureSlaveNodes() {
         wget -T 15 ${VM_DNS}/mongodb.key.gpg -O /opt/mongodb.key.gpg && break
     done
 
-    gpg --yes --batch --passphrase=lalala /opt/mongodb.key.gpg
+    gpg --yes --batch --passphrase=${MONGODB_PASSWORD} /opt/mongodb.key.gpg
     chmod 600 /opt/mongodb.key
     chown mongodb /opt/mongodb.key
     systemctl restart mongod
