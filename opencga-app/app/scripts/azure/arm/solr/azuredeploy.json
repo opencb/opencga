@@ -117,6 +117,20 @@
           "nicName": "[concat(parameters('clusterName'), '-solr', padLeft(add(1, copyIndex('vmNames')), 2, '0'), '-nic')]",
           "diskName": "[concat(parameters('clusterName'), '-solr', padLeft(add(1, copyIndex('vmNames')), 2, '0'), '-disk')]"
         }
+      },
+      {
+        "name" : "solrURLs",
+        "count": "[variables('scaleNumber')]",
+        "input" : {
+          "host" : "[concat('http://', variables('subnetPrefix'), copyIndex('solrURLs', variables('privateIPFirst')), ':8983/solr')]"
+        }
+      },
+      {
+        "name" : "zookeeperHosts",
+        "count" : "[if(equals(0, variables('zookeeperScaleNumber')), 1, variables('zookeeperScaleNumber'))]",
+        "input" : {
+          "host" : "[concat(variables('subnetPrefix'), copyIndex('zookeeperHosts', variables('zookeeperPrivateIPFirst')), ':2181')]"
+        }
       }
     ]
   },
@@ -280,5 +294,15 @@
         }
       }
     }
-  ]
+  ],
+  "outputs" : {
+    "solrConnectionDetails" : {
+      "value": "[if(equals(0, variables('zookeeperScaleNumber')), variables('solrURLs'), variables('zookeeperHosts'))]",
+      "type": "array"
+    },
+    "solrURLs" : {
+      "value": "[variables('solrURLs')]",
+      "type": "array"
+    }
+  }
 }
