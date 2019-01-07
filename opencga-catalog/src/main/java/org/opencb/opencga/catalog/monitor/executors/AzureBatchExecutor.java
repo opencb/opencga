@@ -18,23 +18,28 @@ public class AzureBatchExecutor implements BatchExecutor {
     public static final String VARIANT_INDEX_JOB = "variant-index-job";
     public static final String VARIANT_ANALYSIS_JOB = "variant-analysis-job";
     private static Logger logger;
-    private Configuration configuration;
+    private String batchAccount;
+    private String batchKey;
+    private String batchUri;
+    private String batchServicePoolId;
+    private String dockerImageName;
+    private String dockerArgs;
     private BatchClient batchClient;
     private PoolInformation poolInformation;
 
     public AzureBatchExecutor(Configuration configuration) {
         logger = LoggerFactory.getLogger(AzureBatchExecutor.class);
-        this.configuration = configuration;
-        this.batchClient = createBatchClient(configuration);
-        this.poolInformation = new PoolInformation().withPoolId(configuration.getExecution().getBatchServicePoolId());
+        populateOptions(configuration);
+        this.batchClient = createBatchClient();
+        this.poolInformation = new PoolInformation().withPoolId(batchServicePoolId);
     }
 
     public void submitAzureTask(Job job) throws IOException {
         String jobId = getOrCreateAzureJob(job.getType());
         TaskAddParameter taskToAdd = new TaskAddParameter();
         taskToAdd.withId(job.getId()).withCommandLine(job.getCommandLine()).withContainerSettings(
-                new TaskContainerSettings().withImageName(configuration.getExecution().getDockerImageName())
-                        .withContainerRunOptions(configuration.getExecution().getDockerArgs()));
+                new TaskContainerSettings().withImageName(dockerImageName)
+                        .withContainerRunOptions(dockerArgs));
         taskToAdd.withId(job.getId()).withCommandLine(job.getCommandLine());
         batchClient.taskOperations().createTask(jobId, taskToAdd);
     }
@@ -55,9 +60,9 @@ public class AzureBatchExecutor implements BatchExecutor {
         return jobType == Job.Type.ANALYSIS ? VARIANT_ANALYSIS_JOB : VARIANT_INDEX_JOB;
     }
 
-    private BatchClient createBatchClient(Configuration configuration) {
-        BatchSharedKeyCredentials cred = new BatchSharedKeyCredentials(configuration.getExecution().getBatchUri(),
-                configuration.getExecution().getBatchAccount(), configuration.getExecution().getBatchKey());
+    private BatchClient createBatchClient() {
+        BatchSharedKeyCredentials cred = new BatchSharedKeyCredentials(batchUri,
+                batchAccount, batchKey);
         return BatchClient.open(cred);
     }
 
@@ -104,5 +109,14 @@ public class AzureBatchExecutor implements BatchExecutor {
     @Override
     public boolean isExecutorAlive() {
         return false;
+    }
+
+    private void populateOptions(Configuration configuration) {
+        batchAccount = configuration.getExecution().getOptions().get("batchAccount");
+        batchKey = configuration.getExecution().getOptions().get("batchKey");
+        batchUri = configuration.getExecution().getOptions().get("batchUri");
+        batchServicePoolId = configuration.getExecution().getOptions().get("batchServicePoolId");
+        dockerImageName = configuration.getExecution().getOptions().get("dockerImageName");
+        dockerArgs = configuration.getExecution().getOptions().get("dockerArgs");
     }
 }

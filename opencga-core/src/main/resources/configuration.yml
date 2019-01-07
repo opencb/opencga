@@ -31,15 +31,14 @@ execution:
   defaultQueue: ""
   availableQueues: ""
   toolsPerQueue: {}
-
-#Azure Batch Service information
-
-  batchAccount : "batchAccount"
-  batchKey : "batchKey"
-  batchUri : "https://batchservice.uksouth.batch.azure.com"
-  batchServicePoolId : "poolId"
-  dockerImageName : "openCGADockerImageName"
-  dockerArgs : "--mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions,--mount type=bind,src=/media/primarynfs/variants,dst=/opt/opencga/variants"
+  options:
+    #Azure Batch Service information
+    batchAccount : "batchAccount"
+    batchKey : "batchKey"
+    batchUri : "https://batchservice.uksouth.batch.azure.com"
+    batchServicePoolId : "poolId"
+    dockerImageName : "openCGADockerImageName"
+    dockerArgs : "--mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions,--mount type=bind,src=/media/primarynfs/variants,dst=/opt/opencga/variants"
 
 email:
   host: ${OPENCGA.MAIL.HOST}
