@@ -23,11 +23,15 @@ res = subprocess.run(["python3", "../override-yaml.py",
                "--catalog-search-password", "test-catalog-search-password",
                "--rest-host", "test-rest-host",
                "--grpc-host", "test-grpc-host",
+               "--batch-execution-mode", "test-batch-execution-mode",
                "--batch-account-name", "test-batch-account-name",
                "--batch-account-key", "test-batch-account-key",
                "--batch-endpoint", "test-batch-endpoint",
                "--batch-pool-id", "test-batch-pool-id",
-               "--batch-docker-args", "test-batch-docker-args"],
+               "--batch-docker-args", "test-batch-docker-args",
+               "--batch-docker-image", "test-batch-docker-image",
+               "--batch-max-concurrent-jobs", "25"
+               ],
                stdout=subprocess.PIPE,
                stderr=subprocess.STDOUT, check=True)
 configs = []
@@ -57,11 +61,14 @@ assert(config["catalog"]["search"]["hosts"][0] == "test-catalog-search-host1")
 assert(config["catalog"]["search"]["hosts"][1] == "test-catalog-search-host2")
 assert(config["catalog"]["search"]["user"] == "test-catalog-search-user")
 assert(config["catalog"]["search"]["password"] == "test-catalog-search-password")
-assert(config["execution"]["batchAccount"] == "test-batch-account-name")
-assert(config["execution"]["batchKey"] == "test-batch-account-key")
-assert(config["execution"]["batchUri"] == "test-batch-endpoint")
-assert(config["execution"]["batchServicePoolId"] == "test-batch-pool-id")
-assert(config["execution"]["dockerArgs"] == "test-batch-docker-args")
+assert(config["execution"]["mode"] == "test-batch-execution-mode")
+assert(config["execution"]["maxConcurrentIndexJobs"] == 25)
+assert(config["execution"]["options"]["batchAccount"] == "test-batch-account-name")
+assert(config["execution"]["options"]["batchKey"] == "test-batch-account-key")
+assert(config["execution"]["options"]["batchUri"] == "test-batch-endpoint")
+assert(config["execution"]["options"]["batchPoolId"] == "test-batch-pool-id")
+assert(config["execution"]["options"]["dockerImageName"] == "test-batch-docker-image")
+assert(config["execution"]["options"]["dockerArgs"] == "test-batch-docker-args")
 assert(client_config["rest"]["host"] == "test-rest-host")
 assert(client_config["grpc"]["host"] == "test-grpc-host")
 

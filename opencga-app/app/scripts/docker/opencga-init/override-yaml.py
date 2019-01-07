@@ -17,11 +17,14 @@ parser.add_argument("--catalog-search-user", required=True)
 parser.add_argument("--catalog-search-password", required=True)
 parser.add_argument("--rest-host", required=True)
 parser.add_argument("--grpc-host", required=True)
+parser.add_argument("--batch-execution-mode", required=True)
 parser.add_argument("--batch-account-name", required=True)
 parser.add_argument("--batch-account-key", required=True)
 parser.add_argument("--batch-endpoint", required=True)
 parser.add_argument("--batch-pool-id", required=True)
 parser.add_argument("--batch-docker-args", required=True)
+parser.add_argument("--batch-docker-image", required=True)
+parser.add_argument("--batch-max-concurrent-jobs", required=True)
 parser.add_argument("--save", help="save update to source configuration files (default: false)", default=False, action='store_true')
 args = parser.parse_args()
 
@@ -85,13 +88,16 @@ for i, catalog_search_host in enumerate(catalog_search_hosts):
 config["catalog"]["search"]["user"] = args.catalog_search_user
 config["catalog"]["search"]["password"] = args.catalog_search_password
 
-# Inject batch settings
-config["execution"]["mode"] = "AZURE"
-config["execution"]["batchAccount"] = args.batch_account_name
-config["execution"]["batchKey"] = args.batch_account_key
-config["execution"]["batchUri"] = args.batch_endpoint
-config["execution"]["batchServicePoolId"] = args.batch_pool_id
-config["execution"]["dockerArgs"] = args.batch_docker_args
+# Inject execution settings
+config["execution"]["mode"] = args.batch_execution_mode
+config["execution"]["maxConcurrentIndexJobs"] = int(args.batch_max_concurrent_jobs)
+config["execution"]["options"] = {}
+config["execution"]["options"]["batchAccount"] = args.batch_account_name
+config["execution"]["options"]["batchKey"] = args.batch_account_key
+config["execution"]["options"]["batchUri"] = args.batch_endpoint
+config["execution"]["options"]["batchPoolId"] = args.batch_pool_id
+config["execution"]["options"]["dockerImageName"] = args.batch_docker_image
+config["execution"]["options"]["dockerArgs"] = args.batch_docker_args
 
 # Load client configuration yaml
 with open(args.client_config_path) as f:
