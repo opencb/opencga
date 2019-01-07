@@ -1,0 +1,236 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "type": "string",
+            "defaultValue": "[resourceGroup().location]",
+            "metadata": {
+                "description": "Location for all resources."
+            }
+        },
+        "vmSize": {
+            "type": "string",
+            "metadata": {
+                "description": "Size of vm (e.g. Standard_D1_v2)"
+            },
+            "defaultValue": "Standard_D1_v2"
+        },
+        "dnsLabelPrefix": {
+            "type": "string",
+            "metadata": {
+                "description": "Unique DNS Name for the Public IP used to access the Virtual Machine."
+            }
+        },
+        "certificateEmail": {
+            "type": "string",
+            "metadata": {
+                "description": "Email address used for mongoDB letsencrypt certificates"
+            }
+        },
+        "clusterSize": {
+            "type": "int",
+            "defaultValue": 3,
+            "allowedValues": [1, 3, 5, 7, 9, 11],
+            "metadata": {
+                "description": "Amount of VMs to deploy for the mongodb replica set"
+            }
+        },
+        "adminUsername": {
+            "type": "string",
+            "metadata": {
+                "description": "The username for all mongoDB VMs (also used for connecting oer SSH)"
+            }
+        },
+        "adminSSHKeyData": {
+            "type": "string",
+            "metadata": {
+                "description": "The mongoDB VM public SSH key"
+            }
+        },
+        "mongoDBUsername": {
+            "type": "string",
+            "defaultValue": "opencga",
+            "metadata": {
+                "description": "The username for connecting to mongoDB"
+            }
+        },
+        "mongoDBPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The password for connecting to mongoDB"
+            }
+        },
+        "subnetId": {
+            "type": "string",
+            "metadata": {
+                "description": "Subnet ID"
+            }
+        }
+    },
+    "variables": {
+        "vmName": "mongo-vm",
+        "nicName": "mongo-nic",
+        "publicIPAddressName": "mongo-publicip",
+        "publicIPAddressType": "Static",
+        "dnsPrefix": "[concat(parameters('dnsLabelPrefix'), uniquestring(resourceGroup().id))]",
+        "sshKeyPath": "[concat('/home/',parameters('adminUsername'),'/.ssh/authorized_keys')]",
+        "copy": [
+            {
+                "name": "dnsNames",
+                "count": "[parameters('clusterSize')]",
+                "input": {
+                   "fqdn": "[concat(variables('dnsPrefix'),copyIndex('dnsNames'),'.',parameters('location'),'.cloudapp.azure.com')]"
+                }
+            }
+        ]
+    },
+    "resources": [
+        {
+            "apiVersion": "2017-10-01",
+            "type": "Microsoft.Network/networkInterfaces",
+            "name": "[concat(variables('nicName'), copyIndex())]",
+            "location": "[parameters('location')]",
+            "copy": {
+                "name": "mongo-ip",
+                "count": "[parameters('clusterSize')]"
+            },
+            "dependsOn": [
+                "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'), copyIndex())]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', concat(variables('publicIPAddressName'), copyIndex()))]"
+                            },
+                            "subnet": {
+                                "id": "[parameters('subnetId')]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "2017-10-01",
+            "type": "Microsoft.Network/publicIPAddresses",
+            "name": "[concat(variables('publicIPAddressName'), copyIndex())]",
+            "location": "[parameters('location')]",
+            "copy": {
+                "name": "mongo-ip",
+                "count": "[parameters('clusterSize')]"
+            },
+            "properties": {
+                "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
+                "dnsSettings": {
+                    "domainNameLabel": "[concat(variables('dnsPrefix'), copyIndex())]"
+                }
+            }
+        },
+        {
+            "name": "[concat(variables('vmName'), copyIndex())]",
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2018-06-01",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'), copyIndex())]"
+            ],
+            "copy": {
+                "name": "mongo-rs",
+                "count": "[parameters('clusterSize')]"
+            },
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[parameters('vmSize')]"
+                },
+                "storageProfile": {
+                    "osDisk": {
+                        "osType": "Linux",
+                        "createOption": "FromImage",
+                        "managedDisk": {
+                            "storageAccountType": "Standard_LRS"
+                        }
+                    },
+                    "imageReference": {
+                        "publisher": "Canonical",
+                        "offer": "UbuntuServer",
+                        "sku": "16.04-LTS",
+                        "version": "latest"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('nicName'), copyIndex()))]"
+                        }
+                    ]
+                },
+                "osProfile": {
+                    "computerName": "[concat(variables('vmName'), copyIndex())]",
+                    "customData": "[base64('#cloud-config\n\nwrite_files:\n -  encoding: gzip\n    content: !!binary |\n        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\n    path: /opt/installmongodb.sh\n    permissions: \"0744\"\n -  encoding: gzip\n    content: !!binary |\n        H4sIAG6sIFwAA5WRz0oDMRDG73mKcbsHFWvaiwehB6EIHvzzCkk62wSzyZKMW4r67iZmS6Oo4CWBmfl+38fM7IRL47gUUTM2gzV2xiGMIhghLUa2fry/uXtYtcvcDehwBwoDsfxIT6WUe8r3MkutIIwEFimiU2E/EHQmkaDzAXrvtj5PJ5fNYbR7sVZpYdz55YA9S7xUvU3FVXtqI8xH4EiKV0QugtJmRN60JV/Dv0LgDUgYC3MHyzOGSnto2iO4+R5hCGZ8xn0d4CmV/hOgRvxhn7FNvS/yZSuf1koQvFZBLyrVe6YiliwxWn6UJVzEdAuz1VQtuiB17zdwtVj8JEzJdq4Mb+T19P/iEFIOEWi6YcQwGoWT9tBkH9+uPZhPAgAA\n    path: /opt/renew_mongo_cert.sh\n    permissions: \"0744\"\n\n')]",
+                    "linuxConfiguration": {
+                        "disablePasswordAuthentication": true,
+                        "ssh": {
+                            "publicKeys": [
+                                {
+                                    "path": "[variables('sshKeyPath')]",
+                                    "keyData": "[parameters('adminSSHKeyData')]"
+                                }
+                            ]
+                        }
+                    },
+                    "adminUsername": "[parameters('adminUsername')]",
+                    "allowExtensionOperations": true
+                }
+            },
+            "tags": {}
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "name": "[concat(variables('vmName'), copyIndex(), '/configureagent')]",
+            "apiVersion": "2017-12-01",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[concat('Microsoft.Compute/virtualMachines/', variables('vmName'), copyIndex())]"
+            ],
+            "copy": {
+                "name": "mongo-rs-ca",
+                "count": "[parameters('clusterSize')]"
+            },
+            "properties": {
+                "publisher": "Microsoft.Azure.Extensions",
+                "type": "CustomScript",
+                "typeHandlerVersion": "2.0",
+                "autoUpgradeMinorVersion": true,
+                "settings": {
+                    "timestamp": 4
+                },
+                "protectedSettings": {
+                    "commandToExecute": "[concat(' VM_INDEX=', copyIndex(), ' CLUSTER_SIZE=', parameters('clusterSize'), ' CERT_EMAIL=', parameters('certificateEmail'),' MONGODB_USERNAME=', parameters('mongoDBUsername'),' MONGODB_PASSWORD=', parameters('mongoDBPassword'),' APP_DNS_NAME=', reference(resourceId('Microsoft.Network/publicIPAddresses',concat(variables('publicIPAddressName'),copyIndex())),'2017-10-01').dnsSettings.fqdn, ' /bin/bash /opt/installmongodb.sh')]"
+                }
+            }
+        }
+    ],
+    "outputs": {
+        "mongoDBUser": {
+            "value": "[parameters('mongoDBUsername')]",
+            "type": "string"
+        },
+        "mongoDBPassword": {
+            "value": "[parameters('mongoDBPassword')]",
+            "type": "string"
+        },
+        "mongoClusterSize": {
+            "value": "[parameters('clusterSize')]",
+            "type": "int"
+        },
+        "dnsNames": {
+            "value": "[variables('dnsNames')]",
+            "type": "array"
+        }
+    }
+}

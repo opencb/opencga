@@ -192,22 +192,62 @@
                 "description": "Secret key used when initializing the catalog"
             }
         },
-        "mongoDbHosts": {
-            "type": "array",
-            "metadata": {
-                "description": "Comma separated list of MongoDB hosts or singluar MongoDB host"
-            }
-        },
-        "mongoDbUser": {
+        "mongoVmSize": {
             "type": "string",
             "metadata": {
-                "description": "The MongoDB login username"
+                "description": "Size of vm (e.g. Standard_D1_v2)"
+            },
+            "defaultValue": "Standard_D1_v2"
+        },
+        "mongoDnsLabelPrefix": {
+            "type": "string",
+            "metadata": {
+                "description": "Unique DNS Name for the Public IP used to access the Virtual Machine."
             }
         },
-        "mongoDbPassword": {
+        "mongoCertificateEmail": {
+            "type": "string",
+            "metadata": {
+                "description": "Email address used for mongoDB letsencrypt certificates"
+            }
+        },
+        "mongoClusterSize": {
+            "type": "int",
+            "defaultValue": 3,
+            "allowedValues": [
+                3,
+                5,
+                7,
+                9,
+                11
+            ],
+            "metadata": {
+                "description": "Amount of VMs to deploy for the mongodb replica set"
+            }
+        },
+        "mongoAdminUsername": {
+            "type": "string",
+            "metadata": {
+                "description": "The username for all mongoDB VMs (also used for connecting oer SSH)"
+            }
+        },
+        "mongoAdminSSHKeyData": {
+            "type": "string",
+            "metadata": {
+                "description": "The mongoDB VM public SSH key"
+            }
+        },
+        "mongoDBUsername": {
+            "type": "string",
+            "defaultValue": "opencga",
+            "metadata": {
+                "description": "The username for connecting to mongoDB"
+            }
+        },
+        "mongoDBPassword": {
             "type": "securestring",
             "metadata": {
-                "description": "The MongoDB login password"
+                "description": "The password for connecting to mongoDB"
             }
         }
     },
@@ -378,13 +418,13 @@
                         "value": "todo"
                     },
                     "mongoDbHosts": {
-                        "value": "[parameters('mongoDbHosts')]"
+                        "value": "[reference('mongodb').outputs.dnsNames.value]"
                     },
                     "mongoDbUser": {
-                        "value": "[parameters('mongoDbUser')]"
+                        "value": "[reference('mongodb').outputs.mongoDBUser.value]"
                     },
                     "mongoDbPassword": {
-                        "value": "[parameters('mongoDbPassword')]"
+                        "value": "[reference('mongodb').outputs.mongoDBPassword.value]"
                     },
                     "catalogSecretKey": {
                         "value": "[parameters('catalogSecretKey')]"
@@ -622,6 +662,62 @@
                     },
                     "diskType": {
                         "value": "[parameters('solrDiskType')]"
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Resources/resourceGroups",
+            "apiVersion": "2018-05-01",
+            "location": "[parameters('rgLocation')]",
+            "name": "[concat(parameters('rgPrefix'),'-mongodb')]",
+            "properties": {}
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "resourceGroup": "[concat(parameters('rgPrefix'),'-mongodb')]",
+            "apiVersion": "2017-05-10",
+            "name": "mongodb",
+            "dependsOn": [
+                "vnet",
+                "[parameters('rgPrefix')]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/mongodb/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "subnetId": {
+                        "value": "[reference('vnet').outputs.mongoSubnetId.value]"
+                    },
+                    "location": {
+                        "value": "[parameters('rgLocation')]"
+                    },
+                    "vmSize": {
+                        "value": "[parameters('mongoVmSize')]"
+                    },
+                    "dnsLabelPrefix": {
+                        "value": "[parameters('mongoDnsLabelPrefix')]"
+                    },
+                    "certificateEmail": {
+                        "value": "[parameters('mongoCertificateEmail')]"
+                    },
+                    "clusterSize": {
+                        "value": "[parameters('mongoClusterSize')]"
+                    },
+                    "adminUsername": {
+                        "value": "[parameters('mongoAdminUsername')]"
+                    },
+                    "adminSSHKeyData": {
+                        "value": "[parameters('mongoAdminSSHKeyData')]"
+                    },
+                    "mongoDBUsername": {
+                        "value": "[parameters('mongoDBUsername')]"
+                    },
+                    "mongoDBPassword": {
+                        "value": "[parameters('mongoDBPassword')]"
                     }
                 }
             }
