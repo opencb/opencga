@@ -18,6 +18,7 @@ package org.opencb.opencga.core.models;
 
 import org.opencb.biodata.models.clinical.interpretation.Comment;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -47,7 +48,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     private String creationDate;
     private String modificationDate;
     private String dueDate;
-    private Status status;
+    private ClinicalStatus status;
     private int release;
 
     private List<Comment> comments;
@@ -69,12 +70,56 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         REMOVE
     }
 
+    public static class ClinicalStatus extends Status {
+
+        public static final String WAIT = "WAIT";
+        public static final String REJECTED = "REJECTED";
+        public static final String READY_FOR_INTERPRETATION = "READY_FOR_INTERPRETATION";
+        public static final String INTERPRETATION_IN_PROGRESS = "INTERPRETATION_IN_PROGRESS";
+        public static final String INTERPRETED = "INTERPRETED";
+        public static final String PENDING_REVIEW = "PENDING_REVIEW";
+        public static final String READY_FOR_REPORT = "READY_FOR_REPORT";
+        public static final String REPORT_IN_PROGRESS = "REPORT_IN_PROGRESS";
+        public static final String DONE = "DONE";
+        public static final String REVIEW = "REVIEW";
+        public static final String CLOSED = "CLOSED";
+
+        public static final List<String> STATUS_LIST = Arrays.asList(READY, DELETED, WAIT, REJECTED, READY_FOR_INTERPRETATION,
+                INTERPRETATION_IN_PROGRESS, INTERPRETED, PENDING_REVIEW, READY_FOR_REPORT, REPORT_IN_PROGRESS, DONE, REVIEW, CLOSED);
+
+        public ClinicalStatus(String status, String message) {
+            if (isValid(status)) {
+                init(status, message);
+            } else {
+                throw new IllegalArgumentException("Unknown status " + status);
+            }
+        }
+
+        public ClinicalStatus(String status) {
+            this(status, "");
+        }
+
+        public ClinicalStatus() {
+            this(WAIT, "");
+        }
+
+        public static boolean isValid(String status) {
+            if (Status.isValid(status)) {
+                return true;
+            }
+            if (STATUS_LIST.contains(status)) {
+                return true;
+            }
+            return false;
+        }
+    }
+
     public ClinicalAnalysis() {
     }
 
     public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, Map<String, List<File>> files,
                             Individual proband, Family family, List<Interpretation> interpretations, Priority priority, String creationDate,
-                            String dueDate, List<Comment> comments, Status status, int release, Map<String, Object> attributes) {
+                            String dueDate, List<Comment> comments, ClinicalStatus status, int release, Map<String, Object> attributes) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -263,11 +308,11 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
-    public Status getStatus() {
+    public ClinicalStatus getStatus() {
         return status;
     }
 
-    public ClinicalAnalysis setStatus(Status status) {
+    public ClinicalAnalysis setStatus(ClinicalStatus status) {
         this.status = status;
         return this;
     }

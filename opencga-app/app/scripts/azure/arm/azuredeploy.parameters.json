@@ -1,0 +1,54 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "_artifactsLocation": {
+            "value": ""
+        },
+        "_artifactsLocationSasToken": {
+            "value": ""
+        },
+        "HDInsightClusterName": {
+            "value": ""
+        },
+        "HDInsightClusterLoginUserName": {
+            "value": "admin"
+        },
+        "HDInsightClusterLoginPassword": {
+            "value": ""
+        },
+        "HDInsightSshPassword": {
+            "value": ""
+        },
+        "HDInsightStorageOption": {
+            "value": "DataLake"
+        },
+        "rgPrefix":{
+            "value": "opencga"
+        },
+        "rgLocation":{
+            "value": "uksouth"
+        },
+        "avereServicePrincipalAppId": {
+            "value": ""
+        },
+        "avereServicePrincipalPassword": {
+            "value": ""
+        },
+        "avereSSHKeyData": {
+            "value": ""
+        },
+        "avereAdminPassword": {
+            "value": ""
+        },
+        "tomcatDockerImage": {
+            "value": ""
+        },
+        "ivaDockerImage": {
+            "value": ""
+        },
+        "solrClusterLoginPassword": {
+            "value": ""
+        }
+    }
+}

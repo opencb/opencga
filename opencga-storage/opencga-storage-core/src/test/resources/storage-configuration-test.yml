@@ -28,14 +28,13 @@ server:
   options: {}
 
 benchmark:
-  storageEngine: "mongodb"
   numRepetitions: 20
   databaseName: "opencga"
   concurrency: 5
   delay: 100
   connectionType: REST
   mode: FIXED
-  rest: "http://localhost:8080/opencga-1.4.0-rc3-dev/webservices/rest/v1/analysis/variant/query"
+  rest: "http://localhost:8080/opencga-1.4.0-rc2-dev"
   database:   ## 'local' connection to CellBase MongoDB
       hosts:
       - "localhost:27017"

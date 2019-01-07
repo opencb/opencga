@@ -120,20 +120,17 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
     public MongoDBAdaptorFactory(Configuration catalogConfiguration) throws CatalogDBException {
         MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
-                .add("username", catalogConfiguration.getCatalog().getDatabase().getUser())
-                .add("password", catalogConfiguration.getCatalog().getDatabase().getPassword())
-                .add("authenticationDatabase", catalogConfiguration.getCatalog().getDatabase().getOptions().get("authenticationDatabase"))
-                .setConnectionsPerHost(Integer.parseInt(catalogConfiguration.getCatalog().getDatabase().getOptions()
-                        .getOrDefault(MongoDBConfiguration.CONNECTIONS_PER_HOST, "20")))
-                .setSslEnabled(Boolean.parseBoolean(catalogConfiguration.getCatalog().getDatabase().getOptions()
-                        .getOrDefault(MongoDBConfiguration.SSL_ENABLED, Boolean.toString(MongoDBConfiguration.SSL_ENABLED_DEFAULT))))
+                .setUserPassword(
+                        catalogConfiguration.getCatalog().getDatabase().getUser(),
+                        catalogConfiguration.getCatalog().getDatabase().getPassword())
+                .load(catalogConfiguration.getCatalog().getDatabase().getOptions())
                 .build();
 
         List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
         for (String hostPort : catalogConfiguration.getCatalog().getDatabase().getHosts()) {
             if (hostPort.contains(":")) {
                 String[] split = hostPort.split(":");
-                Integer port = Integer.valueOf(split[1]);
+                int port = Integer.valueOf(split[1]);
                 dataStoreServerAddresses.add(new DataStoreServerAddress(split[0], port));
             } else {
                 dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort, 27017));
@@ -148,7 +145,8 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         connect();
     }
 
-    public MongoDBAdaptorFactory(List<DataStoreServerAddress> dataStoreServerAddressList, MongoDBConfiguration configuration,
+    @Deprecated
+    protected MongoDBAdaptorFactory(List<DataStoreServerAddress> dataStoreServerAddressList, MongoDBConfiguration configuration,
                                  String database) throws CatalogDBException {
 //        super(LoggerFactory.getLogger(CatalogMongoDBAdaptor.class));
         this.mongoManager = new MongoDataStoreManager(dataStoreServerAddressList);

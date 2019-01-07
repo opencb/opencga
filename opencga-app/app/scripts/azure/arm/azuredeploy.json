@@ -1,0 +1,490 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "_artifactsLocation": {
+            "type": "string",
+            "metadata": {
+                "description": ""
+            }
+        },
+        "_artifactsLocationSasToken": {
+            "type": "string",
+            "metadata": {
+                "description": ""
+            }
+        },
+        "rgPrefix": {
+            "type": "string",
+            "metadata": {
+                "description": "The resource group prefix"
+            }
+        },
+        "rgLocation": {
+            "type": "string",
+            "defaultValue": "UK South",
+            "metadata": {
+                "description": "Location for deployment"
+            }
+        },
+        "HDInsightStorageOption": {
+            "type": "string",
+            "allowedValues": [
+                "DataLake",
+                "Blob"
+            ],
+            "metadata": {
+                "description": "What type of storage will be used"
+            }
+        },
+        "HDInsightClusterName": {
+            "type": "string",
+            "metadata": {
+                "description": "The name of the HDInsight cluster to create."
+            }
+        },
+        "HDInsightClusterLoginUserName": {
+            "type": "string",
+            "defaultValue": "admin",
+            "metadata": {
+                "description": "These credentials can be used to submit jobs to the cluster and to log into cluster dashboards."
+            }
+        },
+        "HDInsightClusterLoginPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
+            }
+        },
+        "HDInsightSshPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
+            }
+        },
+        "nfsStorageOption": {
+            "type": "string",
+            "allowedValues": [
+                "AvereCluster",
+                "AzureFiles"
+            ],
+            "metadata": {
+                "description": "What type of NFS storage do you want to use? Avere offers a high throughput SSD cache cluster over Azure Blob, AzureFiles offers modest read/write performance for smaller installations"
+            }
+        },
+        "avereServicePrincipalAppId": {
+            "type": "string",
+            "metadata": {
+                "description": "The ServicePrincipal which Avere will use to provision the storage cluster. This SP needs to have 'Owner' rights to the ResourceGroup."
+            }
+        },
+        "avereServicePrincipalPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The ServicePrincipal's Password."
+            }
+        },
+        "avereSSHKeyData": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The RSA data for the SSH Public Key used to authenticate to Avere nodes."
+            }
+        },
+        "avereAdminPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The password for the 'admin' user on the Avere cluster configuration portal."
+            }
+        },
+        "webserversSSHKeyData": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The RSA data for the SSH Public Key used to authenticate to Avere nodes."
+            }
+        },
+        "tomcatDockerImage": {
+            "type": "string",
+            "metadata": {
+                "description": "The docker image and tag for running the tomcat service. For examples: 'repo/image:tag'"
+            }
+        },
+        "ivaDockerImage": {
+            "type": "string",
+            "metadata": {
+                "description": "The docker image and tag for running the IVA service. For examples: 'repo/image:tag'"
+            }
+        },
+        "solrClusterLoginUserName": {
+            "type": "string",
+            "defaultValue": "opencgaadmin",
+            "metadata": {
+                "description": "Admin username"
+            }
+        },
+        "solrClusterLoginPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
+            }
+        },
+        "solrHighAvailability": {
+            "type": "bool",
+            "defaultValue": true,
+            "metadata": {
+                "description": ""
+            }
+        },
+        "solrDiskSizeGB": {
+            "type": "int",
+            "defaultValue": 512,
+            "metadata": {
+                "description": "Size of the data disk for Solr."
+            }
+        },
+        "solrVMSize": {
+            "type": "string",
+            "defaultValue": "Standard_E8_v3",
+            "metadata": {
+                "description": "Size of the VM"
+            }
+        },
+        "zookeeperVMSize": {
+            "type": "string",
+            "defaultValue": "Standard_D2_v2",
+            "metadata": {
+                "description": "Size of the zookeeper VM"
+            }
+        },
+        "solrDiskType": {
+            "type": "string",
+            "defaultValue": "Standard_LRS",
+            "allowedValues": [
+                "Standard_LRS",
+                "Premium_LRS"
+            ],
+            "metadata": {
+                "description": "Storage Account type"
+            }
+        }
+    },
+    "variables": {
+        "avereEnabled": "[equals(parameters('nfsStorageOption'), 'AvereCluster')]",
+        "azureFilesEnabled": "[equals(parameters('nfsStorageOption'), 'AzureFiles')]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Resources/resourceGroups",
+            "apiVersion": "2018-05-01",
+            "location": "[parameters('rgLocation')]",
+            "name": "[parameters('rgPrefix')]",
+            "properties": {}
+        },
+        {
+            "resourceGroup": "[parameters('rgPrefix')]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
+            "name": "vnet",
+            "dependsOn": [
+                "[parameters('rgPrefix')]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/vnet/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                }
+            }
+        },
+        {
+            "condition": "[variables('azureFilesEnabled')]",
+            "resourceGroup": "[parameters('rgPrefix')]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
+            "name": "azurefiles",
+            "dependsOn": [
+                "[parameters('rgPrefix')]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/azurefiles/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                }
+            }
+        },
+        {
+            "resourceGroup": "[parameters('rgPrefix')]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
+            "name": "azureBatch",
+            "dependsOn": [
+                "[parameters('rgPrefix')]",
+                "avere",
+                "azurefiles",
+                "vnet"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/azurebatch/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "_artifactsLocation": {
+                        "value": "[parameters('_artifactsLocation')]"
+                    },
+                    "_artifactsLocationSasToken": {
+                        "value": "[parameters('_artifactsLocationSasToken')]"
+                    },
+                    "virtualNetworkSubnetId": {
+                        "value": "[reference('vnet').outputs.defaultSubnetId.value]"
+                    },
+                    "mountArgs": {
+                        "value": "[if(equals(parameters('nfsStorageOption'), 'AzureFiles'), concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value, ',' , reference('azurefiles').outputs.accountKey.value),concat('avere ', reference('avere').outputs.VSERVER_IPS.value))]"
+                    }
+                }
+            }
+        },
+        {
+            "resourceGroup": "[parameters('rgPrefix')]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
+            "name": "hdinsight-storage",
+            "dependsOn": [
+                "vnet",
+                "[parameters('rgPrefix')]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/hdinsight-storage/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "networkAclsVirtualNetworkRule": {
+                        "value": "[reference('vnet').outputs.hdinsightSubnetId.value]"
+                    },
+                    "isHnsEnabled": {
+                        "value": "[if(equals(parameters('HDInsightstorageOption'), 'DataLake'), json('true'), json('false'))]"
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Resources/resourceGroups",
+            "apiVersion": "2018-05-01",
+            "location": "[parameters('rgLocation')]",
+            "name": "[concat(parameters('rgPrefix'),'-hdinsight')]",
+            "properties": {}
+        },
+        {
+            "resourceGroup": "[concat(parameters('rgPrefix'),'-hdinsight')]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
+            "name": "hdinsight",
+            "dependsOn": [
+                "hdinsight-storage",
+                "[concat(parameters('rgPrefix'),'-hdinsight')]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/hdinsight/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "clusterNamePrefix": {
+                        "value": "[parameters('HDInsightClusterName')]"
+                    },
+                    "clusterLoginUserName": {
+                        "value": "[parameters('HDInsightClusterLoginUserName')]"
+                    },
+                    "clusterLoginPassword": {
+                        "value": "[parameters('HDInsightClusterLoginPassword')]"
+                    },
+                    "sshPassword": {
+                        "value": "[parameters('HDInsightSshPassword')]"
+                    },
+                    "storageAccountName": {
+                        "value": "[reference('hdinsight-storage').outputs.storageAccountName.value]"
+                    },
+                    "storageAccountKey": {
+                        "value": "[reference('hdinsight-storage').outputs.storageAccountKey.value]"
+                    },
+                    "vnetId": {
+                        "value": "[reference('vnet').outputs.vnetId.value]"
+                    },
+                    "subnetId": {
+                        "value": "[reference('vnet').outputs.hdinsightSubnetId.value]"
+                    },
+                    "storageOption": {
+                        "value": "[parameters('HDInsightstorageOption')]"
+                    }
+                }
+            }
+        },
+        {
+            "condition": "[variables('avereEnabled')]",
+            "type": "Microsoft.Resources/resourceGroups",
+            "apiVersion": "2018-05-01",
+            "location": "[parameters('rgLocation')]",
+            "name": "[concat(parameters('rgPrefix'),'-avere')]",
+            "properties": {}
+        },
+        {
+            "condition": "[variables('avereEnabled')]",
+            "type": "Microsoft.Resources/deployments",
+            "resourceGroup": "[concat(parameters('rgPrefix'),'-avere')]",
+            "apiVersion": "2018-05-01",
+            "name": "avere",
+            "dependsOn": [
+                "vnet",
+                "[concat(parameters('rgPrefix'),'-avere')]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/avere/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "servicePrincipalTenant": {
+                        "value": "[subscription().tenantId]"
+                    },
+                    "servicePrincipalAppId": {
+                        "value": "[parameters('avereServicePrincipalAppId')]"
+                    },
+                    "servicePrincipalPassword": {
+                        "value": "[parameters('avereServicePrincipalPassword')]"
+                    },
+                    "virtualNetworkName": {
+                        "value": "[reference('vnet').outputs.virtualNetworkName.value]"
+                    },
+                    "virtualNetworkResourceGroup": {
+                        "value": "[parameters('rgPrefix')]"
+                    },
+                    "virtualNetworkSubnetName": {
+                        "value": "[reference('vnet').outputs.avereSubnetName.value]"
+                    },
+                    "virtualNetworkSubnetId": {
+                        "value": "[reference('vnet').outputs.avereClusterSubnetId.value]"
+                    },
+                    "controllerAdminUsername": {
+                        "value": "avere"
+                    },
+                    "controllerSSHKeyData": {
+                        "value": "[parameters('avereSSHKeyData')]"
+                    },
+                    "adminPassword": {
+                        "value": "[parameters('avereAdminPassword')]"
+                    }
+                }
+            }
+        },
+        {
+            "comments": "This deploys a VMSS which hosts the tomcat and IVA services behind a LB with healthchecking, autoscaling and rolling update",
+            "type": "Microsoft.Resources/deployments",
+            "resourceGroup": "[parameters('rgPrefix')]",
+            "apiVersion": "2017-05-10",
+            "name": "webservers",
+            "dependsOn": [
+                "avere",
+                "azurefiles",
+                "vnet",
+                "[parameters('rgPrefix')]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/webservers/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "_artifactsLocation": {
+                        "value": "[parameters('_artifactsLocation')]"
+                    },
+                    "_artifactsLocationSasToken": {
+                        "value": "[parameters('_artifactsLocationSasToken')]"
+                    },
+                    "virtualNetworkSubnetId": {
+                        "value": "[reference('vnet').outputs.hdinsightSubnetId.value]"
+                    },
+                    "mountArgs": {
+                        "value": "[if(equals(parameters('nfsStorageOption'), 'AzureFiles'), concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value, ',' , reference('azurefiles').outputs.accountKey.value),concat('avere ', reference('avere').outputs.VSERVER_IPS.value))]"
+                    },
+                    "SSHKeyData": {
+                        "value": "[parameters('webserversSSHKeyData')]"
+                    },
+                    "tomcatDockerImage": {
+                        "value": "[parameters('tomcatDockerImage')]"
+                    },
+                    "ivaDockerImage": {
+                        "value": "[parameters('ivaDockerImage')]"
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Resources/resourceGroups",
+            "apiVersion": "2018-05-01",
+            "location": "[parameters('rgLocation')]",
+            "name": "[concat(parameters('rgPrefix'),'-solr')]",
+            "properties": {}
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "resourceGroup": "[concat(parameters('rgPrefix'),'-solr')]",
+            "apiVersion": "2017-05-10",
+            "name": "solr",
+            "dependsOn": [
+                "vnet"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/solr/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "clusterName": {
+                        "value": "opencga"
+                    },
+                    "subnetId": {
+                        "value": "[reference('vnet').outputs.solrSubnetId.value]"
+                    },
+                    "_artifactsLocation": {
+                        "value": "[parameters('_artifactsLocation')]"
+                    },
+                    "_artifactsLocationSasToken": {
+                        "value": "[parameters('_artifactsLocationSasToken')]"
+                    },
+                    "location": {
+                        "value": "[parameters('rgLocation')]"
+                    },
+                    "clusterLoginUserName": {
+                        "value": "[parameters('solrClusterLoginUserName')]"
+                    },
+                    "clusterLoginPassword": {
+                        "value": "[parameters('solrClusterLoginPassword')]"
+                    },
+                    "highAvailability": {
+                        "value": "[parameters('solrHighAvailability')]"
+                    },
+                    "solrDiskSizeGB": {
+                        "value": "[parameters('solrDiskSizeGB')]"
+                    },
+                    "solrVMSize": {
+                        "value": "[parameters('solrVMSize')]"
+                    },
+                    "zookeeperVMSize": {
+                        "value": "[parameters('zookeeperVMSize')]"
+                    },
+                    "diskType": {
+                        "value": "[parameters('solrDiskType')]"
+                    }
+                }
+            }
+        }
+    ],
+    "outputs": {}
+}
