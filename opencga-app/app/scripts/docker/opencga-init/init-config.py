@@ -6,6 +6,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--config-path", help="path to the configuration.yml file", default="/opt/opencga/conf/configuration.yml")
 parser.add_argument("--client-config-path", help="path to the client-configuration.yml file", default="/opt/opencga/conf/client-configuration.yml")
 parser.add_argument("--storage-config-path", help="path to the storage-configuration.yml file", default="/opt/opencga/conf/storage-configuration.yml")
+parser.add_argument("--iva-config-path", help="path to iva config.js file", default="/opt/opencga/conf/iva/config.js")
 parser.add_argument("--search-hosts", required=True)
 parser.add_argument("--clinical-hosts", required=True)
 parser.add_argument("--cellbase-hosts", required=True)
@@ -17,12 +18,17 @@ parser.add_argument("--catalog-search-user", required=True)
 parser.add_argument("--catalog-search-password", required=True)
 parser.add_argument("--rest-host", required=True)
 parser.add_argument("--grpc-host", required=True)
+parser.add_argument("--batch-account-name", required=True)
+parser.add_argument("--batch-account-key", required=True)
+parser.add_argument("--batch-endpoint", required=True)
+parser.add_argument("--batch-pool-id", required=True)
+parser.add_argument("--batch-docker-args", required=True)
 parser.add_argument("--save", help="save update to source configuration files (default: false)", default=False, action='store_true')
 args = parser.parse_args()
 
 # Load storage configuration yaml
 with open(args.storage_config_path) as f:
-    storage_config = yaml.load(f)
+    storage_config = yaml.safe_load(f)
 
 # Inject search hosts
 search_hosts = args.search_hosts.split(",")
@@ -53,7 +59,7 @@ for i, cellbase_host in enumerate(cellbase_hosts):
 
 # Load configuration yaml
 with open(args.config_path) as f:
-    config = yaml.load(f)
+    config = yaml.safe_load(f)
 
 # Inject catalog database
 catalog_hosts = args.catalog_database_hosts.split(",")
@@ -80,9 +86,17 @@ for i, catalog_search_host in enumerate(catalog_search_hosts):
 config["catalog"]["search"]["user"] = args.catalog_search_user
 config["catalog"]["search"]["password"] = args.catalog_search_password
 
+# Inject batch settings
+config["execution"]["mode"] = "AZURE"
+config["execution"]["batchAccount"] = args.batch_account_name
+config["execution"]["batchKey"] = args.batch_account_key
+config["execution"]["batchUri"] = args.batch_endpoint
+config["execution"]["batchServicePoolId"] = args.batch_pool_id
+config["execution"]["dockerArgs"] = args.batch_docker_args
+
 # Load client configuration yaml
 with open(args.client_config_path) as f:
-    client_config = yaml.load(f)
+    client_config = yaml.safe_load(f)
 
 # Inject grpc and rest host
 client_config["rest"]["host"] = args.rest_host

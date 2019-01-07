@@ -24,6 +24,11 @@ python3 /tmp/init-config.py \
 --catalog-search-password "$CATALOG_SEARCH_PASSWORD" \
 --rest-host "$REST_HOST" \
 --grpc-host "$GRPC_HOST" \
+--batch-account-name "$BATCH_ACCOUNT_NAME" \
+--batch-account-key "$BATCH_ACCOUNT_KEY" \
+--batch-endpoint "$BATCH_ENDPOINT" \
+--batch-pool-id "$BATCH_POOL_ID" \
+--batch-docker-args "$BATCH_DOCKER_ARGS" \
 --save
 
 # Copies the config files from our local directory into a

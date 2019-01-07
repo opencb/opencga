@@ -20,7 +20,12 @@ res = subprocess.run(["python3", "../init-config.py",
                "--catalog-search-user", "test-catalog-search-user",
                "--catalog-search-password", "test-catalog-search-password",
                "--rest-host", "test-rest-host",
-               "--grpc-host", "test-grpc-host"],
+               "--grpc-host", "test-grpc-host",
+               "--batch-account-name", "test-batch-account-name",
+               "--batch-account-key", "test-batch-account-key",
+               "--batch-endpoint", "test-batch-endpoint",
+               "--batch-pool-id", "test-batch-pool-id",
+               "--batch-docker-args", "test-batch-docker-args"],
                stdout=subprocess.PIPE,
                stderr=subprocess.STDOUT, check=True)
 configs = []
@@ -48,6 +53,11 @@ assert(config["catalog"]["search"]["hosts"][0] == "test-catalog-search-host1")
 assert(config["catalog"]["search"]["hosts"][1] == "test-catalog-search-host2")
 assert(config["catalog"]["search"]["user"] == "test-catalog-search-user")
 assert(config["catalog"]["search"]["password"] == "test-catalog-search-password")
+assert(config["execution"]["batchAccount"] == "test-batch-account-name")
+assert(config["execution"]["batchKey"] == "test-batch-account-key")
+assert(config["execution"]["batchUri"] == "test-batch-endpoint")
+assert(config["execution"]["batchServicePoolId"] == "test-batch-pool-id")
+assert(config["execution"]["dockerArgs"] == "test-batch-docker-args")
 assert(client_config["rest"]["host"] == "test-rest-host")
 assert(client_config["grpc"]["host"] == "test-grpc-host")
 
