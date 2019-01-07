@@ -1,13 +1,13 @@
 #!/bin/bash
 
-sudo sed -i '/<name>hbase.client.keyvalue.maxsize<\/name>/!b;n;c<value>0</value>' /etc/hbase/conf/hbase-site.xml
+sshpass -p "$HD_INSIGHTS_SSH_PASS" ssh -o StrictHostKeyChecking=no -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$HD_INSIGHTS_SSH_USER@$HD_INSIGHTS_SSH_DNS" "sudo sed -i '/<name>hbase.client.keyvalue.maxsize<\/name>/!b;n;c<value>0</value>' /etc/hbase/conf/hbase-site.xml"
 
 # copy conf files from hdinsight cluster (from /etc/hadoop/conf & /etc/hbase/conf) to opencga VM
 # place these files in /opt/opencga/conf/hadoop, by e.g.: (todo: change connection strings)
 echo "Fetching HDInsight configuration"
-sshpass -p $HD_INSIGHTS_SSH_PASS scp -o StrictHostKeyChecking=no -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r $HD_INSIGHTS_SSH_USER@$HD_INSIGHTS_SSH_DNS:/etc/hadoop/conf/* /opt/opencga/conf/hadoop
+sshpass -p "$HD_INSIGHTS_SSH_PASS" scp -o StrictHostKeyChecking=no -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r "$HD_INSIGHTS_SSH_USER@$HD_INSIGHTS_SSH_DNS":/etc/hadoop/conf/* /opt/opencga/conf/hadoop
 # same with /etc/hbase/conf, e.g.
-sshpass -p $HD_INSIGHTS_SSH_PASS scp -o StrictHostKeyChecking=no  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r $HD_INSIGHTS_SSH_USER@$HD_INSIGHTS_SSH_DNS:/etc/hbase/conf/* /opt/opencga/conf/hadoop
+sshpass -p "$HD_INSIGHTS_SSH_PASS" scp -o StrictHostKeyChecking=no  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r "$HD_INSIGHTS_SSH_USER@$HD_INSIGHTS_SSH_DNS":/etc/hbase/conf/* /opt/opencga/conf/hadoop
 
 echo "Initialising configs"
 # Override Yaml configs
@@ -23,11 +23,14 @@ python3 /tmp/override-yaml.py \
 --catalog-search-password "$CATALOG_SEARCH_PASSWORD" \
 --rest-host "$REST_HOST" \
 --grpc-host "$GRPC_HOST" \
+--batch-execution-mode "$BATCH_EXEC_MODE" \
 --batch-account-name "$BATCH_ACCOUNT_NAME" \
 --batch-account-key "$BATCH_ACCOUNT_KEY" \
 --batch-endpoint "$BATCH_ENDPOINT" \
 --batch-pool-id "$BATCH_POOL_ID" \
 --batch-docker-args "$BATCH_DOCKER_ARGS" \
+--batch-docker-image "$BATCH_DOCKER_IMAGE" \
+--batch-max-concurrent-jobs "$BATCH_MAX_CONCURRENT_JOBS" \
 --save
 # Override Js configs
 python3 /tmp/override-js.py \
