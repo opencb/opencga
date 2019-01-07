@@ -12,7 +12,7 @@
         "vmSize": {
             "type": "string",
             "metadata": {
-                "description": "Size of vm"
+                "description": "Size of vm (e.g. Standard_D1_v2)"
             },
             "defaultValue": "Standard_D1_v2"
         },
@@ -25,7 +25,7 @@
         "certificateEmail": {
             "type": "string",
             "metadata": {
-                "description": "Email address used for letsencrypt certificate "
+                "description": "Email address used for mongoDB letsencrypt certificates"
             }
         },
         "clusterSize": {
@@ -37,20 +37,35 @@
             }
         },
         "adminUsername": {
-            "type": "string"
+            "type": "string",
+            "metadata": {
+                "description": "The username for all mongoDB VMs (also used for connecting oer SSH)"
+            }
         },
         "adminSSHKeyData": {
             "type": "string",
             "metadata": {
-                "description": "The mongoDB VM public SSH key."
+                "description": "The mongoDB VM public SSH key"
             }
         },
         "mongoDBUsername": {
             "type": "string",
-            "defaultValue": "opencga"
+            "defaultValue": "opencga",
+            "metadata": {
+                "description": "The username for connecting to mongoDB"
+            }
         },
         "mongoDBPassword": {
-            "type": "securestring"
+            "type": "securestring",
+            "metadata": {
+                "description": "The password for connecting to mongoDB"
+            }
+        },
+        "subnetId": {
+            "type": "string",
+            "metadata": {
+                "description": "Subnet ID."
+            }
         }
     },
     "variables": {
@@ -59,10 +74,6 @@
         "nicName": "mongo-nic",
         "publicIPAddressName": "mongo-publicip",
         "publicIPAddressType": "Static",
-        "virtualNetworkName": "net",
-        "vnetAddressPrefix": "10.0.0.0/16",
-        "subnetName": "mong-subnet",
-        "subnetPrefix": "10.0.0.0/24",
         "dnsPrefix": "[concat(parameters('dnsLabelPrefix'), uniquestring(resourceGroup().id))]",
         "sshKeyPath": "[concat('/home/',parameters('adminUsername'),'/.ssh/authorized_keys')]",
         "copy": [
@@ -78,33 +89,6 @@
     "resources": [
         {
             "apiVersion": "2017-10-01",
-            "type": "Microsoft.Network/virtualNetworks",
-            "name": "[variables('virtualNetworkName')]",
-            "location": "[parameters('location')]",
-            "dependsOn": [
-                "[concat('Microsoft.Network/networkSecurityGroups/', variables('nsgName'))]"
-            ],
-            "properties": {
-                "addressSpace": {
-                    "addressPrefixes": [
-                        "[variables('vnetAddressPrefix')]"
-                    ]
-                },
-                "subnets": [
-                    {
-                        "name": "[variables('subnetName')]",
-                        "properties": {
-                            "networkSecurityGroup": {
-                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgName'))]"
-                            },
-                            "addressPrefix": "[variables('subnetPrefix')]"
-                        }
-                    }
-                ]
-            }
-        },
-        {
-            "apiVersion": "2017-10-01",
             "type": "Microsoft.Network/networkInterfaces",
             "name": "[concat(variables('nicName'), copyIndex())]",
             "location": "[parameters('location')]",
@@ -113,8 +97,7 @@
                 "count": "[parameters('clusterSize')]"
             },
             "dependsOn": [
-                "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'), copyIndex())]",
-                "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]"
+                "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'), copyIndex())]"
             ],
             "properties": {
                 "ipConfigurations": [
@@ -126,74 +109,12 @@
                                 "id": "[resourceId('Microsoft.Network/publicIPAddresses', concat(variables('publicIPAddressName'), copyIndex()))]"
                             },
                             "subnet": {
-                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets/', variables('virtualNetworkName'), variables('subnetName'))]"
+                                "id": "[parameters('subnetId')]"
                             }
                         }
                     }
                 ]
             }
-        },
-        {
-            "name": "[variables('nsgName')]",
-            "type": "Microsoft.Network/networkSecurityGroups",
-            "apiVersion": "2018-08-01",
-            "location": "[parameters('location')]",
-            "properties": {
-                "securityRules": [
-                    {
-                        "name": "Port_27017",
-                        "properties": {
-                            "protocol": "*",
-                            "sourcePortRange": "*",
-                            "destinationPortRange": "27017",
-                            "sourceAddressPrefix": "*",
-                            "destinationAddressPrefix": "*",
-                            "access": "Allow",
-                            "priority": 1020,
-                            "direction": "Inbound",
-                            "sourcePortRanges": [],
-                            "destinationPortRanges": [],
-                            "sourceAddressPrefixes": [],
-                            "destinationAddressPrefixes": []
-                        }
-                    },
-                    {
-                        "name": "default-allow-ssh",
-                        "properties": {
-                            "protocol": "TCP",
-                            "sourcePortRange": "*",
-                            "destinationPortRange": "22",
-                            "sourceAddressPrefix": "*",
-                            "destinationAddressPrefix": "*",
-                            "access": "Allow",
-                            "priority": 1000,
-                            "direction": "Inbound",
-                            "sourcePortRanges": [],
-                            "destinationPortRanges": [],
-                            "sourceAddressPrefixes": [],
-                            "destinationAddressPrefixes": []
-                        }
-                    },
-                    {
-                        "name": "Port_80",
-                        "properties": {
-                            "protocol": "*",
-                            "sourcePortRange": "*",
-                            "destinationPortRange": "80",
-                            "sourceAddressPrefix": "*",
-                            "destinationAddressPrefix": "*",
-                            "access": "Allow",
-                            "priority": 1010,
-                            "direction": "Inbound",
-                            "sourcePortRanges": [],
-                            "destinationPortRanges": [],
-                            "sourceAddressPrefixes": [],
-                            "destinationAddressPrefixes": []
-                        }
-                    }
-                ]
-            },
-            "tags": {}
         },
         {
             "apiVersion": "2017-10-01",
@@ -296,11 +217,11 @@
         }
     ],
     "outputs": {
-        "mongDBUser": {
+        "mongoDBUser": {
             "value": "[parameters('mongoDBUsername')]",
             "type": "string"
         },
-        "mongDBPassword": {
+        "mongoDBPassword": {
             "value": "[parameters('mongoDBPassword')]",
             "type": "string"
         },
