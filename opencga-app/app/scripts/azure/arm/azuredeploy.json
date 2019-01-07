@@ -261,6 +261,39 @@
             "resourceGroup": "[parameters('rgPrefix')]",
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2018-05-01",
+            "name": "azureBatch",
+            "dependsOn": [
+                "[parameters('rgPrefix')]",
+                "avere",
+                "azurefiles",
+                "vnet"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/azurebatch/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "_artifactsLocation": {
+                        "value": "[parameters('_artifactsLocation')]"
+                    },
+                    "_artifactsLocationSasToken": {
+                        "value": "[parameters('_artifactsLocationSasToken')]"
+                    },
+                    "virtualNetworkSubnetId": {
+                        "value": "[reference('vnet').outputs.defaultSubnetId.value]"
+                    },
+                    "mountArgs": {
+                        "value": "[if(equals(parameters('nfsStorageOption'), 'AzureFiles'), concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value, ',' , reference('azurefiles').outputs.accountKey.value),concat('avere ', reference('avere').outputs.VSERVER_IPS.value))]"
+                    }
+                }
+            }
+        },
+        {
+            "resourceGroup": "[parameters('rgPrefix')]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
             "name": "hdinsight-storage",
             "dependsOn": [
                 "vnet",
@@ -381,7 +414,7 @@
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
-                    "clusterName": {
+                    "clusterNamePrefix": {
                         "value": "[parameters('HDInsightClusterName')]"
                     },
                     "clusterLoginUserName": {
@@ -476,6 +509,7 @@
             "apiVersion": "2017-05-10",
             "name": "webservers",
             "dependsOn": [
+                "avere",
                 "azurefiles",
                 "vnet",
                 "daemonvm",

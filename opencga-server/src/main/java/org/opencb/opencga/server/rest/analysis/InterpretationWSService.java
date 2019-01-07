@@ -15,6 +15,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
+import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.catalog.managers.InterpretationManager;
@@ -409,13 +410,62 @@ public class InterpretationWSService extends AnalysisWSService {
     public Response update(
             @ApiParam(value = "[[user@]project:]study id") @QueryParam("study") String studyStr,
             @ApiParam(value = "Interpretation id") @PathParam("interpretation") String interpretationId,
-            @ApiParam(value = "Create a new version of clinical interpretation", defaultValue = "false")
-                @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
+//            @ApiParam(value = "Create a new version of clinical interpretation", defaultValue = "false")
+//                @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(name = "params", value = "JSON containing clinical interpretation information", required = true)
                     ClinicalInterpretationParameters params) {
         try {
             return createOkResponse(catalogInterpretationManager.update(studyStr, interpretationId, params.toInterpretationObjectMap(),
                     queryOptions, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/interpretation/{interpretation}/comments/update")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Update comments of an interpretation", position = 1,
+            response = org.opencb.biodata.models.clinical.interpretation.Interpretation.class)
+    public Response commentsUpdate(
+            @ApiParam(value = "[[user@]project:]study id") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Interpretation id") @PathParam("interpretation") String interpretationId,
+            // TODO: Think about having an action in this web service. Are we ever going to allow people to set or remove comments?
+            @ApiParam(value = "Action to be performed.", defaultValue = "ADD") @QueryParam("action") ParamUtils.UpdateAction action,
+            @ApiParam(name = "params", value = "JSON containing a list of comments", required = true)
+                    List<Comment> comments) {
+        try {
+            ObjectMap params = new ObjectMap(InterpretationDBAdaptor.UpdateParams.COMMENTS.key(), comments);
+
+            Map<String, Object> actionMap = new HashMap<>();
+            actionMap.put(InterpretationDBAdaptor.UpdateParams.COMMENTS.key(), action.name());
+            queryOptions.put(Constants.ACTIONS, actionMap);
+
+            return createOkResponse(catalogInterpretationManager.update(studyStr, interpretationId, params, queryOptions, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/interpretation/{interpretation}/reportedVariants/update")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Update reported variants of an interpretation", position = 1,
+            response = org.opencb.biodata.models.clinical.interpretation.Interpretation.class)
+    public Response reportedVariantUpdate(
+            @ApiParam(value = "[[user@]project:]study id") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Interpretation id") @PathParam("interpretation") String interpretationId,
+            @ApiParam(value = "Action to be performed.", defaultValue = "ADD") @QueryParam("action") ParamUtils.UpdateAction action,
+            @ApiParam(name = "params", value = "JSON containing a list of reported variants", required = true)
+                    List<ReportedVariant> reportedVariants) {
+        try {
+            ObjectMap params = new ObjectMap(InterpretationDBAdaptor.UpdateParams.REPORTED_VARIANTS.key(), Arrays.asList(reportedVariants));
+
+            Map<String, Object> actionMap = new HashMap<>();
+            actionMap.put(InterpretationDBAdaptor.UpdateParams.REPORTED_VARIANTS.key(), action.name());
+            queryOptions.put(Constants.ACTIONS, actionMap);
+
+            return createOkResponse(catalogInterpretationManager.update(studyStr, interpretationId, params, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
