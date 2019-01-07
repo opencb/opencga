@@ -81,7 +81,7 @@
   },
   "variables": {
     "availabilitySetName": "[concat(parameters('clusterName'), '-zookeeper-as')]",
-    "customScriptFilePath": "[concat(parameters('_artifactsLocation'), 'solr/zookeeper/zookeeper-setup.sh')]",
+    "customScriptFilePath": "[concat(parameters('_artifactsLocation'), '/solr/zookeeper/zookeeper-setup.sh', parameters('_artifactsLocationSasToken'))]",
     "customScriptCommandToExecute": "bash zookeeper-setup.sh",
     "vmExtensionName": "zookeeperExtension",
     "subnetPrefix": "10.0.2.",

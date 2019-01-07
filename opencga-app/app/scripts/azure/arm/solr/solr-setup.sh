@@ -2,19 +2,22 @@
 
 set -x
 set -e
+export DEBIAN_FRONTEND='noninteractive'
+# Wait for network
+sleep 5
 
 ## Nacho (6/12/2018)
 ## Install Docker following: https://docs.docker.com/install/linux/docker-ce/ubuntu/#extra-steps-for-aufs
 
 ## Set up Docker repository for Ubuntu
-apt-get update
+apt-get update -y
 apt-get install -y apt-transport-https ca-certificates curl software-properties-common
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
 apt-key fingerprint 0EBFCD88
 add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
 
 ## Install Docker CE
-apt-get update
+apt-get update -y
 apt-get install -y docker-ce
 
 

@@ -17,23 +17,27 @@
 package org.opencb.opencga.core.config;
 
 
+import org.apache.solr.common.StringUtils;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Created by wasim on 09/11/16.
  */
 public class SearchConfiguration {
 
-    private String host;
+    private List<String> hosts;
     private String mode;
     private String user;
     private String password;
     private String manager;
     private boolean active;
     private int timeout;
-    @Deprecated
-    private int rows;
     private int insertBatchSize;
 
-    private static final String DEFAULT_HOST = "localhost:8983/solr/";
+    private static final String DEFAULT_HOST = "http://localhost:8983/solr/";
     private static final String DEFAULT_MODE = "cloud";
     private static final String DEFAULT_USER = "";
     private static final String DEFAULT_PASSWORD = "";
@@ -44,57 +48,53 @@ public class SearchConfiguration {
 
 
     public SearchConfiguration() {
-        this(DEFAULT_HOST, DEFAULT_MODE, DEFAULT_USER, DEFAULT_PASSWORD, DEFAULT_MANAGER, DEFAULT_ACTIVE, DEFAULT_TIMEOUT,
-                DEFAULT_INSERT_BATCH_SIZE);
+        this(Collections.singletonList(DEFAULT_HOST), DEFAULT_MODE, DEFAULT_USER, DEFAULT_PASSWORD, DEFAULT_MANAGER, DEFAULT_ACTIVE,
+                DEFAULT_TIMEOUT, DEFAULT_INSERT_BATCH_SIZE);
     }
 
-    @Deprecated
-    public SearchConfiguration(String host, String mode, String user, String password, boolean active, int timeout, int insertBatchSize) {
-        this.host = host;
-        this.mode = mode;
-        this.user = user;
-        this.password = password;
-        this.active = active;
-        this.timeout = timeout;
-        this.insertBatchSize = insertBatchSize;
-        this.rows = insertBatchSize;
-    }
-
-    public SearchConfiguration(String host, String mode, String user, String password, String manager, boolean active, int timeout,
+    public SearchConfiguration(List<String> hosts, String mode, String user, String password, String manager, boolean active, int timeout,
                                int insertBatchSize) {
-        this.host = host;
+        this.hosts = hosts;
         this.mode = mode;
         this.user = user;
         this.password = password;
         this.manager = manager;
         this.active = active;
         this.timeout = timeout;
-        this.rows = insertBatchSize;
         this.insertBatchSize = insertBatchSize;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("SearchConfiguration{");
-        sb.append("host='").append(host).append('\'');
+        sb.append("hosts='").append(hosts).append('\'');
         sb.append(", mode='").append(mode).append('\'');
         sb.append(", user='").append(user).append('\'');
         sb.append(", password='").append(password).append('\'');
         sb.append(", manager='").append(manager).append('\'');
         sb.append(", active=").append(active);
         sb.append(", timeout=").append(timeout);
-        sb.append(", rows=").append(rows);
         sb.append(", insertBatchSize=").append(insertBatchSize);
         sb.append('}');
         return sb.toString();
     }
 
+    @Deprecated
     public String getHost() {
-        return host;
+        return String.join(",", getHosts());
     }
 
+    @Deprecated
     public SearchConfiguration setHost(String host) {
-        this.host = host;
+        return setHosts(StringUtils.isEmpty(host) ? Collections.emptyList() : Arrays.asList(host.split(",")));
+    }
+
+    public List<String> getHosts() {
+        return hosts;
+    }
+
+    public SearchConfiguration setHosts(List<String> hosts) {
+        this.hosts = hosts;
         return this;
     }
 
@@ -154,12 +154,12 @@ public class SearchConfiguration {
 
     @Deprecated
     public int getRows() {
-        return rows;
+        return insertBatchSize;
     }
 
     @Deprecated
     public SearchConfiguration setRows(int rows) {
-        this.rows = rows;
+        this.insertBatchSize = rows;
         return this;
     }
 

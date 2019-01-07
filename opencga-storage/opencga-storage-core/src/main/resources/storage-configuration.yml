@@ -42,17 +42,24 @@ cache:
 
 ## Solr Search Configuration
 search:
-  host: ${OPENCGA.STORAGE.SEARCH.HOST}    # URL containing host and port, e.g. http://localhost:8983/solr/
+  # List of hosts pointing either to the Solr nodes directly using a complete URL or to the zookeper nodes with HOST:PORT
+  #    Example for Solr connection:       http://opencga-solr-01.zone:8983/solr
+  #    Example for Zookeeper connection:  opencga-zookeeper-01:2181               <-- Recommended for replicated installations
+  hosts:
+  - ${OPENCGA.STORAGE.SEARCH.HOST}
   mode: "cloud"
   user: ""
   password: ""
   timeout: ${OPENCGA.STORAGE.SEARCH.TIMEOUT}
   insertBatchSize: 10000
-  rows: 10000     # This variable is deprecated in favor of 'insertBatchSize' and will be removed in version 2.0
 
 ## Clinical database for indexing the pathogenic variants reported.
 clinical:
-  host: ${OPENCGA.STORAGE.CLINICAL.HOST}    # URL containing host and port, e.g. http://localhost:8983/solr/
+  # List of hosts pointing either to the Solr nodes directly using a complete URL or to the zookeper nodes with HOST:PORT
+  #    Example for Solr connection:       http://opencga-solr-01.zone:8983/solr
+  #    Example for Zookeeper connection:  opencga-zookeeper-01:2181               <-- Recommended for replicated installations
+  hosts:
+  - ${OPENCGA.STORAGE.CLINICAL.HOST}    # URL containing host and port, e.g. http://localhost:8983/solr/
   mode: "cloud"
   user: ""
   password: ""
@@ -61,14 +68,13 @@ clinical:
   insertBatchSize: 1000
 
 benchmark:
-  storageEngine: "mongodb"
   numRepetitions: 20
   databaseName: "opencga"
   concurrency: 5
   delay: 100
   connectionType: REST
   mode: FIXED
-  rest: "http://localhost:8080/opencga-1.4.0-rc3-dev/webservices/rest/v1/analysis/variant/query"
+  rest: "http://localhost:8080/opencga-1.4.0-rc2-dev"
   database:   ## 'local' connection to CellBase MongoDB
       hosts:
       - "localhost:27017"

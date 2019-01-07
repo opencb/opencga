@@ -71,6 +71,8 @@ public class IndexDaemon extends MonitorParentDaemon {
             .append(QueryOptions.LIMIT, 1);
 
     private CatalogIOManager catalogIOManager;
+    // FIXME: This should not be used directly! All the queries MUST go through the CatalogManager
+    @Deprecated
     private JobDBAdaptor jobDBAdaptor;
 
     private String binHome;
