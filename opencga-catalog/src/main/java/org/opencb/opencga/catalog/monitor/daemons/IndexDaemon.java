@@ -77,6 +77,7 @@ public class IndexDaemon extends MonitorParentDaemon {
 
     private String binHome;
     private Path tempJobFolder;
+    private int maxConcurrentIndexJobs;
 //    private VariantIndexOutputRecorder variantIndexOutputRecorder;
 
     public IndexDaemon(int interval, String sessionId, CatalogManager catalogManager, String appHome)
@@ -87,13 +88,12 @@ public class IndexDaemon extends MonitorParentDaemon {
         this.tempJobFolder = Paths.get(uri.getPath());
         this.catalogIOManager = catalogManager.getCatalogIOManagerFactory().get("file");
         this.jobDBAdaptor = dbAdaptorFactory.getCatalogJobDBAdaptor();
+        this.maxConcurrentIndexJobs = catalogManager.getConfiguration().getExecution().getMaxConcurrentIndexJobs();
 //        this.variantIndexOutputRecorder = new VariantIndexOutputRecorder(catalogManager, catalogIOManager, sessionId);
     }
 
     @Override
     public void run() {
-
-        int maxConcurrentIndexJobs = 1; // TODO: Read from configuration?
 
         while (!exit) {
             try {

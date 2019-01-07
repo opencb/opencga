@@ -28,6 +28,7 @@ monitor:
 
 execution:
   mode: ${OPENCGA.EXECUTION.MODE}
+  maxConcurrentIndexJobs : 10
   defaultQueue: ""
   availableQueues: ""
   toolsPerQueue: {}

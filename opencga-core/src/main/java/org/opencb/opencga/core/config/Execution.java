@@ -26,6 +26,7 @@ public class Execution {
     private String mode;
     private String defaultQueue;
     private String availableQueues;
+    private int maxConcurrentIndexJobs;
     private Map<String, String> toolsPerQueue;
     private Map<String, String> options;
 
@@ -38,6 +39,7 @@ public class Execution {
         sb.append("mode='").append(mode).append('\'');
         sb.append(", defaultQueue='").append(defaultQueue).append('\'');
         sb.append(", availableQueues='").append(availableQueues).append('\'');
+        sb.append(", maxConcurrentIndexJobs=").append(maxConcurrentIndexJobs);
         sb.append(", toolsPerQueue=").append(toolsPerQueue);
         sb.append(", options=").append(options);
         sb.append('}');
@@ -68,6 +70,15 @@ public class Execution {
 
     public Execution setAvailableQueues(String availableQueues) {
         this.availableQueues = availableQueues;
+        return this;
+    }
+
+    public int getMaxConcurrentIndexJobs() {
+        return maxConcurrentIndexJobs;
+    }
+
+    public Execution setMaxConcurrentIndexJobs(int maxConcurrentIndexJobs) {
+        this.maxConcurrentIndexJobs = maxConcurrentIndexJobs;
         return this;
     }
 
