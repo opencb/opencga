@@ -7,75 +7,10 @@
     },
     "resources": [
         {
-            "name": "nsg-mongodb",
-            "type": "Microsoft.Network/networkSecurityGroups",
-            "apiVersion": "2018-08-01",
-            "location": "[resourceGroup().location]",
-            "properties": {
-                "securityRules": [
-                    {
-                        "name": "Port_27017",
-                        "properties": {
-                            "protocol": "*",
-                            "sourcePortRange": "*",
-                            "destinationPortRange": "27017",
-                            "sourceAddressPrefix": "*",
-                            "destinationAddressPrefix": "*",
-                            "access": "Allow",
-                            "priority": 1020,
-                            "direction": "Inbound",
-                            "sourcePortRanges": [],
-                            "destinationPortRanges": [],
-                            "sourceAddressPrefixes": [],
-                            "destinationAddressPrefixes": []
-                        }
-                    },
-                    {
-                        "name": "default-allow-ssh",
-                        "properties": {
-                            "protocol": "TCP",
-                            "sourcePortRange": "*",
-                            "destinationPortRange": "22",
-                            "sourceAddressPrefix": "*",
-                            "destinationAddressPrefix": "*",
-                            "access": "Allow",
-                            "priority": 1000,
-                            "direction": "Inbound",
-                            "sourcePortRanges": [],
-                            "destinationPortRanges": [],
-                            "sourceAddressPrefixes": [],
-                            "destinationAddressPrefixes": []
-                        }
-                    },
-                    {
-                        "name": "Port_80",
-                        "properties": {
-                            "protocol": "*",
-                            "sourcePortRange": "*",
-                            "destinationPortRange": "80",
-                            "sourceAddressPrefix": "*",
-                            "destinationAddressPrefix": "*",
-                            "access": "Allow",
-                            "priority": 1010,
-                            "direction": "Inbound",
-                            "sourcePortRanges": [],
-                            "destinationPortRanges": [],
-                            "sourceAddressPrefixes": [],
-                            "destinationAddressPrefixes": []
-                        }
-                    }
-                ]
-            },
-            "tags": {}
-        },
-        {
             "apiVersion": "2018-08-01",
             "name": "vnet",
             "type": "Microsoft.Network/virtualNetworks",
             "location": "[resourceGroup().location]",
-            "dependsOn": [
-                "nsg-mongodb"
-            ],
             "properties": {
                 "addressSpace": {
                     "addressPrefixes": [
@@ -127,10 +62,7 @@
                             "addressPrefix": "10.0.3.0/24",
                             "ipConfigurations": [],
                             "delegations": [],
-                            "serviceEndpoints": [],
-                            "networkSecurityGroup": {
-                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', 'nsg-mongodb')]"
-                            }
+                            "serviceEndpoints": []
                         },
                         "type": "Microsoft.Network/virtualNetworks/subnets"
                     }
@@ -157,6 +89,10 @@
         "avereSubnetName": {
             "type": "string",
             "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', 'vnet')).subnets[1].name]"
+        },
+        "mongoSubnetName": {
+            "type": "string",
+            "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', 'vnet')).subnets[3].name]"
         },
         "hdinsightSubnetId": {
             "type": "string",
