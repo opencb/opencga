@@ -1,12 +1,12 @@
 # up version?
-FROM ubuntu:16.04
+FROM ubuntu:18.04
 
 # Take from: https://launchpad.net/~webupd8team/+archive/ubuntu/java
 ARG JAVA_VERSION="8u191-1~webupd8~1"
 
 # Install dependencies
 RUN apt-get update && \
-apt-get install -y software-properties-common 
+apt-get install -y software-properties-common
 
 # Install JDK 8
 RUN \

@@ -6,7 +6,9 @@ import os
 
 os.chdir(sys.path[0])
 
-res = subprocess.run(["python3", "../init-config.py",
+print("> Running Yaml overrides")
+
+res = subprocess.run(["python3", "../override-yaml.py",
                "--config-path", "./test-conf.yml",
                "--client-config-path", "./test-client-conf.yml",
                "--storage-config-path", "./test-storage-conf.yml",
@@ -39,6 +41,8 @@ storage_config = configs[0]
 config = configs[1]
 client_config = configs[2]
 
+print("> Testing results")
+
 assert(storage_config["search"]["hosts"][0] == "test-search-host1")
 assert(storage_config["search"]["hosts"][1] == "test-search-host2")
 assert(storage_config["clinical"]["hosts"][0] == "test-clinical-host")
@@ -61,4 +65,4 @@ assert(config["execution"]["dockerArgs"] == "test-batch-docker-args")
 assert(client_config["rest"]["host"] == "test-rest-host")
 assert(client_config["grpc"]["host"] == "test-grpc-host")
 
-print("Successfully tested configuration update")
+print("PASS: Yaml configuration overrides successful")
