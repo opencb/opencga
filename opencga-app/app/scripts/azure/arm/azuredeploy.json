@@ -569,12 +569,6 @@
                     "subnetId": {
                         "value": "[reference('vnet').outputs.mongoSubnetId.value]"
                     },
-                    "subnetName": {
-                        "value": "[reference('vnet').outputs.mongoSubnetName.value]"
-                    },
-                    "virtualNetworkName": {
-                        "value": "[reference('vnet').outputs.virtualNetworkName.value]"
-                    },
                     "location": {
                         "value": "[parameters('rgLocation')]"
                     },

@@ -90,10 +90,6 @@
             "type": "string",
             "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', 'vnet')).subnets[1].name]"
         },
-        "mongoSubnetName": {
-            "type": "string",
-            "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', 'vnet')).subnets[3].name]"
-        },
         "hdinsightSubnetId": {
             "type": "string",
             "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', 'vnet')).subnets[0].id]"
