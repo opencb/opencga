@@ -983,8 +983,25 @@ public class StudyConfigurationManager implements AutoCloseable {
 
         if (studyConfiguration.getFileIds().containsKey(fileName)) {
             fileId = studyConfiguration.getFileIds().get(fileName);
+            if (studyConfiguration.getIndexedFiles().contains(fileId)) {
+                throw StorageEngineException.alreadyLoaded(fileId, fileName);
+            }
+            // The file is not loaded. Check if it's being loaded.
             if (!studyConfiguration.getFilePaths().inverse().get(fileId).equals(filePath)) {
-                throw StorageEngineException.unableToExecute("Already registered with a different path", fileId, fileName);
+                // Only register if the file is being loaded. Otherwise, replace the filePath
+                for (int i = studyConfiguration.getBatches().size() - 1; i >= 0; i--) {
+                    BatchFileOperation batch = studyConfiguration.getBatches().get(i);
+                    if (batch.getFileIds().contains(fileId)) {
+                        if (batch.getType().equals(BatchFileOperation.Type.REMOVE)) {
+                            // If the file was removed. Can be replaced.
+                            break;
+                        } else {
+                            throw StorageEngineException.unableToExecute("Already registered with a different path", fileId, fileName);
+                        }
+                    }
+                }
+                // Replace filePath
+                studyConfiguration.getFilePaths().forcePut(filePath, fileId);
             }
         } else {
             fileId = newFileId(studyConfiguration);
@@ -1008,9 +1025,6 @@ public class StudyConfigurationManager implements AutoCloseable {
             }
         }
 
-        if (studyConfiguration.getIndexedFiles().contains(fileId)) {
-            throw StorageEngineException.alreadyLoaded(fileId, fileName);
-        }
         return fileId;
     }
 

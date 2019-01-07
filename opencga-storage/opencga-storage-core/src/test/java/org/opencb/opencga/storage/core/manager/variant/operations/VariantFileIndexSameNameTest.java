@@ -8,11 +8,15 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.FileIndex;
+import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.manager.variant.AbstractVariantStorageOperationTest;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStoragePipeline;
 
 import java.util.Arrays;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.junit.internal.matchers.ThrowableCauseMatcher.hasCause;
 import static org.junit.internal.matchers.ThrowableMessageMatcher.hasMessage;
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
@@ -78,6 +82,19 @@ public class VariantFileIndexSameNameTest extends AbstractVariantStorageOperatio
     @Test
     public void testIndexBoth() throws Exception {
         indexFile(inputFile1, new QueryOptions(), outputId);
+        thrown.expect(hasMessage(containsString("Exception executing transform")));
+        thrown.expect(hasCause(hasMessage(containsString("Already loaded"))));
+        indexFile(inputFile2, new QueryOptions(), outputId);
+    }
+
+    @Test
+    public void testIndexBothAfterFailure() throws Exception {
+        try {
+            indexFile(inputFile1, new QueryOptions(DummyVariantStoragePipeline.VARIANTS_LOAD_FAIL, true), outputId);
+            fail("Expected exception");
+        } catch (StoragePipelineException e) {
+            assertThat(e, hasMessage(containsString("Exception executing load")));
+        }
         thrown.expect(hasMessage(containsString("Exception executing transform")));
         thrown.expect(hasCause(hasMessage(containsString("Already registered with a different path"))));
         indexFile(inputFile2, new QueryOptions(), outputId);
