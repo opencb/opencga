@@ -324,7 +324,8 @@
             "dependsOn": [
                 "azurefiles",
                 "vnet",
-                "[parameters('rgPrefix')]"
+                "[parameters('rgPrefix')]",
+                "azureBatch"
             ],
             "properties": {
                 "mode": "Incremental",
@@ -387,6 +388,21 @@
                     },
                     "catalogSecretKey": {
                         "value": "[parameters('catalogSecretKey')]"
+                    },
+                    "batchAccountName": {
+                        "value": "[reference('azureBatch').outputs.batchAccountName.value]"
+                    },
+                    "batchEndpoint": {
+                        "value": "[reference('azureBatch').outputs.batchEndpoint.value]"
+                    },
+                    "batchAccountKey": {
+                        "value": "[reference('azureBatch').outputs.batchAccountKey.value]"
+                    },
+                    "batchPoolId": {
+                        "value": "[reference('azureBatch').outputs.batchPoolId.value]"
+                    },
+                    "batchDockerArgs": {
+                        "value": "--mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions --mount type=bind,src=/media/primarynfs/variants,dst=/opt/opencga/variants --rm"
                     }
                 }
             }
