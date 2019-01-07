@@ -80,9 +80,10 @@ def install_apt_package(package):
         print("Install completed successfully")
     except subprocess.CalledProcessError as e:
         print("Failed install {} error: {}".format(package, e))
-        exit(4)
+        raise
 
 
+# main allows the the mount script to be executable
 def main():
     if len(sys.argv) < 3:
         print("Expected arg1: 'mount_type' and arg2 'mount_data'")
@@ -91,6 +92,11 @@ def main():
 
     mount_type = str(sys.argv[1])
     mount_data = str(sys.argv[2])
+
+    mount_share(mount_type, mount_data)
+
+# mount_share allows it to be invoked from other python scripts
+def mount_share(mount_type, mount_data):
 
     if mount_type.lower() != "avere" and mount_type.lower() != "azurefiles":
         print("Expected first arg to be either 'avere' or 'azurefiles'")
@@ -136,32 +142,44 @@ def main():
     except:
         print("Unexpected error:{0}".format, sys.exc_info())
         raise
-        exit(1)
 
     print("Done editing fstab ... attempting mount")
 
+    def mount_all():
+        subprocess.check_call(["mount", "-a"])
+
+    retryFunc("mount shares", mount_all, 100)
+
+def retryFunc(desc, funcToRetry, maxRetries):
     # Retry mounting for a while to handle race where VM exists before storage
     # or temporary issue with storage
+    print("Attempting, with retries, to: {}".format(desc))
     retryExponentialFactor = 3
-    for i in range(1, 100):
-        if i == 100:
-            print("Failed to mount after max 100 retries")
+    for i in range(1, maxRetries):
+        if i == maxRetries:
+            print("Failed after max retries")
             exit(3)
         try:
             print("Attempt #{}".format(str(i)))
-            subprocess.check_call(["mount", "-a"])
+            funcToRetry()
         except subprocess.CalledProcessError as e:
-            print("Failed to mount:{0}".format(e))
+            print("Failed:{0}".format(e))
             retry_in = i * retryExponentialFactor
             print("retrying in {0}secs".format(retry_in))
             time.sleep(retry_in)
             continue
         else:
+            print("Succeeded to: {0} after {1} retries".format(desc, i))
             break
 
 
 def mount_avere(mount_data, primary_mount_folder, mount_point_permissions):
-    install_apt_package("nfs-common")
+    # Other apt instances on the machine may be doing an install 
+    # this means ours will fail so we retry to ensure success
+    def install_nfs():
+        install_apt_package("nfs-common")
+
+    retryFunc("install nfs-common", install_nfs, 20)
 
     ips = get_avere_ips(mount_data)
     print("Found ips:{}".format(",".join(ips)))
@@ -206,7 +224,12 @@ def mount_avere(mount_data, primary_mount_folder, mount_point_permissions):
 
 
 def mount_azurefiles(mount_data, primary_mount_folder):
-    install_apt_package("cifs-utils")
+    # Other apt instances on the machine may be doing an install 
+    # this means ours will fail so we retry to ensure success
+    def install_cifs():
+         install_apt_package("cifs-utils")
+
+    retryFunc("install cifs-utils", install_cifs, 20)
 
     params = mount_data.split(",")
     if len(params) != 3:

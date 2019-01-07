@@ -72,6 +72,10 @@
             "type": "string",
             "value": "vnet"
         },
+        "defaultSubnetId": {
+            "type": "string",
+            "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', 'vnet')).subnets[0].id]"
+        },
         "avereSubnetName": {
             "type": "string",
             "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', 'vnet')).subnets[1].name]"
