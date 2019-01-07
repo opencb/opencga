@@ -209,6 +209,12 @@
             "metadata": {
                 "description": "The MongoDB login password"
             }
+        },
+        "batchDockerImage": {
+            "type": "string",
+            "metadata": {
+                "description": "The batch container image to run"
+            }
         }
     },
     "variables": {
@@ -403,6 +409,12 @@
                     },
                     "batchDockerArgs": {
                         "value": "--mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions --mount type=bind,src=/media/primarynfs/variants,dst=/opt/opencga/variants --rm"
+                    },
+                    "batchDockerImage": {
+                        "value": "[parameters('batchDockerImage')]"
+                    },
+                    "batchMaxConcurrentJobs": {
+                        "value": "[reference('azureBatch').outputs.maxNodeCount.value]"
                     }
                 }
             }

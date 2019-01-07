@@ -76,6 +76,9 @@
         },
         "mongoDbPassword": {
             "value": ""
+        },
+        "batchDockerImage": {
+            "value": ""
         }
     }
 }

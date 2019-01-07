@@ -190,6 +190,10 @@
         "batchPoolId": {
             "type": "string",
             "value": "[parameters('poolId')]"
+        },
+        "maxNodeCount": {
+            "type": "string",
+            "value": "[parameters('maxNodeCount')]"
         }
     }
 }
