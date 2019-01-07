@@ -31,7 +31,7 @@
         "clusterSize": {
             "type": "int",
             "defaultValue": 3,
-            "allowedValues": [3, 5, 7, 9, 11],
+            "allowedValues": [1, 3, 5, 7, 9, 11],
             "metadata": {
                 "description": "Amount of VMs to deploy for the mongodb replica set"
             }
