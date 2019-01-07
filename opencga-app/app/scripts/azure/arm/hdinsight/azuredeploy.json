@@ -145,7 +145,7 @@
             "key": "[parameters('storageAccountKey')]"
 
         }, 
-        "clusterName": "[uniqueString(parameters('clusterNamePrefix'), resourceGroup().id)]"
+        "clusterName": "[concat(parameters('clusterNamePrefix'), uniqueString(resourceGroup().id))]"
 
     },
     "resources": [
