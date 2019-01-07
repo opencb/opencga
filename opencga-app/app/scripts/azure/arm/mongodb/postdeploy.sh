@@ -81,7 +81,7 @@ configureSlaveNodes() {
 
 createReplicaSet() {
     echo "initiating replicaset"
-    mongo admin -u ${MONGODB_USERNAME} -p ${MONGODB_PASSWORD} --eval 'rs.initiate()'
+    mongo admin -u ${MONGODB_USERNAME} -p ${MONGODB_PASSWORD} --eval 'rs.initiate({_id: "rs0",members: [{_id: 0,host:"'${APP_DNS_NAME}':27017"}]})'
 
     sleep 10
 
