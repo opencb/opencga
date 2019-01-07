@@ -37,7 +37,7 @@ execution:
     batchAccount : "batchAccount"
     batchKey : "batchKey"
     batchUri : "https://batchservice.uksouth.batch.azure.com"
-    batchServicePoolId : "poolId"
+    batchPoolId : "poolId"
     dockerImageName : "openCGADockerImageName"
     dockerArgs : "--mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions,--mount type=bind,src=/media/primarynfs/variants,dst=/opt/opencga/variants"
 

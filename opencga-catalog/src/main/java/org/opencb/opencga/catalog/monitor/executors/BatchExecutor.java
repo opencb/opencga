@@ -51,6 +51,13 @@ public interface BatchExecutor {
 
     boolean isExecutorAlive();
 
+    // We do it this way to avoid writing the session id in the command line attribute of Job
+    // TODO: check with pedro
+
+    default String getCommandLine(Job job, String token) {
+        return job.getCommandLine() + " --session-id " + token;
+    }
+
     default String status(Path jobOutput, Job job) {
         ObjectReader objectReader = getDefaultObjectMapper().reader(Job.JobStatus.class);
         Path jobStatusFilePath = jobOutput.resolve(JOB_STATUS_FILE);

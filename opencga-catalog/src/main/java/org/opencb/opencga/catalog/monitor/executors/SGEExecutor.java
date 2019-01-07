@@ -41,7 +41,7 @@ public class SGEExecutor implements BatchExecutor {
     public void execute(Job job, String token) throws Exception {
         ExecutorConfig executorConfig = ExecutorConfig.getExecutorConfig(job);
         // TODO: Check job name below !
-        sgeManager.queueJob(job.getToolId(), "", -1, job.getCommandLine() + " --session-id " + token, executorConfig);
+        sgeManager.queueJob(job.getToolId(), "", -1, getCommandLine(job, token), executorConfig);
     }
 
     @Override

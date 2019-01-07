@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.monitor.executors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.core.config.Configuration;
 
 /**
@@ -27,17 +28,22 @@ public class ExecutorFactory {
     private BatchExecutor executor;
 
     public ExecutorFactory(Configuration configuration) {
-        this.executor = new LocalExecutor();
+        String mode = StringUtils.isEmpty(configuration.getExecution().getMode())
+                ? "local" : configuration.getExecution().getMode().toLowerCase();
 
-        if (configuration != null) {
-            if (configuration.getExecution().getMode().equalsIgnoreCase("local")) {
+        switch (mode) {
+            case "local":
                 this.executor = new LocalExecutor();
-            } else if (configuration.getExecution().getMode().equalsIgnoreCase("sge")) {
+                break;
+            case "sge":
                 this.executor = new SGEExecutor(configuration);
-                System.out.println("SGE not ready");
-            } else if (configuration.getExecution().getMode().equalsIgnoreCase("azure")) {
+                break;
+            case "azure":
                 this.executor = new AzureBatchExecutor(configuration);
-            }
+                break;
+            default:
+                throw new UnsupportedOperationException("nonsoupported execution mode { " + mode
+                        + " }, accepted modes are : local, sge, azure");
         }
     }
 

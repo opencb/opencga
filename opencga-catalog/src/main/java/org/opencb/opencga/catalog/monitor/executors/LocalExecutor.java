@@ -46,7 +46,7 @@ public class LocalExecutor implements BatchExecutor {
                 ExecutorConfig executorConfig = ExecutorConfig.getExecutorConfig(job);
 
                 logger.info("Ready to run {}", job.getCommandLine());
-                Command com = new Command(job.getCommandLine() + " --session-id " + token);
+                Command com = new Command(getCommandLine(job, token));
 
                 DataOutputStream dataOutputStream = new DataOutputStream(new FileOutputStream(executorConfig.getStdout()));
                 com.setOutputOutputStream(dataOutputStream);

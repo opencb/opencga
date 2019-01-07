@@ -17,11 +17,18 @@ import java.io.IOException;
 public class AzureBatchExecutor implements BatchExecutor {
     public static final String VARIANT_INDEX_JOB = "variant-index-job";
     public static final String VARIANT_ANALYSIS_JOB = "variant-analysis-job";
+    public static final String BATCH_ACCOUNT = "batchAccount";
+    public static final String BATCH_KEY = "batchKey";
+    public static final String BATCH_URI = "batchUri";
+    public static final String BATCH_POOL_ID = "batchPoolId";
+    public static final String DOCKER_IMAGE_NAME = "dockerImageName";
+    public static final String DOCKER_ARGS = "dockerArgs";
     private static Logger logger;
+
     private String batchAccount;
     private String batchKey;
     private String batchUri;
-    private String batchServicePoolId;
+    private String batchPoolId;
     private String dockerImageName;
     private String dockerArgs;
     private BatchClient batchClient;
@@ -31,7 +38,7 @@ public class AzureBatchExecutor implements BatchExecutor {
         logger = LoggerFactory.getLogger(AzureBatchExecutor.class);
         populateOptions(configuration);
         this.batchClient = createBatchClient();
-        this.poolInformation = new PoolInformation().withPoolId(batchServicePoolId);
+        this.poolInformation = new PoolInformation().withPoolId(batchPoolId);
     }
 
     public void submitAzureTask(Job job) throws IOException {
@@ -112,11 +119,11 @@ public class AzureBatchExecutor implements BatchExecutor {
     }
 
     private void populateOptions(Configuration configuration) {
-        batchAccount = configuration.getExecution().getOptions().get("batchAccount");
-        batchKey = configuration.getExecution().getOptions().get("batchKey");
-        batchUri = configuration.getExecution().getOptions().get("batchUri");
-        batchServicePoolId = configuration.getExecution().getOptions().get("batchServicePoolId");
-        dockerImageName = configuration.getExecution().getOptions().get("dockerImageName");
-        dockerArgs = configuration.getExecution().getOptions().get("dockerArgs");
+        batchAccount = configuration.getExecution().getOptions().get(BATCH_ACCOUNT);
+        batchKey = configuration.getExecution().getOptions().get(BATCH_KEY);
+        batchUri = configuration.getExecution().getOptions().get(BATCH_URI);
+        batchPoolId = configuration.getExecution().getOptions().get(BATCH_POOL_ID);
+        dockerImageName = configuration.getExecution().getOptions().get(DOCKER_IMAGE_NAME);
+        dockerArgs = configuration.getExecution().getOptions().get(DOCKER_ARGS);
     }
 }
