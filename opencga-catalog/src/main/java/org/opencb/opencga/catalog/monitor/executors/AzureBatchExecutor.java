@@ -88,14 +88,18 @@ public class AzureBatchExecutor implements BatchExecutor {
             return Job.JobStatus.UNKNOWN;
         }
 
-        if (cloudTask.state() == TaskState.RUNNING) {
-            return Job.JobStatus.RUNNING;
-        } else if (cloudTask.state() == TaskState.COMPLETED) {
-            return Job.JobStatus.DONE;
-        } else if (cloudTask.state() == TaskState.ACTIVE) {
-            return Job.JobStatus.PREPARED;
+        TaskState state = cloudTask.state();
+        switch (state) {
+            case RUNNING:
+                return Job.JobStatus.RUNNING;
+            case COMPLETED:
+                return Job.JobStatus.DONE;
+            case ACTIVE:
+            case PREPARING:
+                return Job.JobStatus.QUEUED;
+            default:
+                return Job.JobStatus.UNKNOWN;
         }
-        return Job.JobStatus.UNKNOWN;
     }
 
     @Override

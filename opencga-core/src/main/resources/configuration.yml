@@ -28,7 +28,7 @@ monitor:
 
 execution:
   mode: ${OPENCGA.EXECUTION.MODE}
-  maxConcurrentIndexJobs : 1
+  maxConcurrentIndexJobs : 1 # only applies to local executor
   defaultQueue: ""
   availableQueues: ""
   toolsPerQueue: {}
