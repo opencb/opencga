@@ -28,7 +28,7 @@ monitor:
 
 execution:
   mode: ${OPENCGA.EXECUTION.MODE}
-  maxConcurrentIndexJobs : 10
+  maxConcurrentIndexJobs : 1
   defaultQueue: ""
   availableQueues: ""
   toolsPerQueue: {}
@@ -39,7 +39,7 @@ execution:
     batchUri : "https://batchservice.uksouth.batch.azure.com"
     batchPoolId : "poolId"
     dockerImageName : "openCGADockerImageName"
-    dockerArgs : "--mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions,--mount type=bind,src=/media/primarynfs/variants,dst=/opt/opencga/variants"
+    dockerArgs : "dockerRunOptions"
 
 email:
   host: ${OPENCGA.MAIL.HOST}

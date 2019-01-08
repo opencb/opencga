@@ -28,6 +28,7 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.monitor.ExecutionOutputRecorder;
 import org.opencb.opencga.catalog.monitor.executors.BatchExecutor;
+import org.opencb.opencga.catalog.monitor.executors.LocalExecutor;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.Job;
@@ -138,7 +139,7 @@ public class IndexDaemon extends MonitorParentDaemon {
                 try {
                     QueryResult<Job> preparedJobs = jobDBAdaptor.get(PREPARED_JOBS_QUERY, QUERY_OPTIONS_LIMIT_1);
                     if (preparedJobs != null && preparedJobs.getNumResults() > 0) {
-                        if (getRunningOrQueuedJobs() < maxConcurrentIndexJobs) {
+                        if (!(batchExecutor instanceof LocalExecutor) || getRunningOrQueuedJobs() < maxConcurrentIndexJobs) {
                             queuePreparedIndex(preparedJobs.first());
                         } else {
                             logger.debug("Too many jobs indexing now, waiting for indexing new jobs");
