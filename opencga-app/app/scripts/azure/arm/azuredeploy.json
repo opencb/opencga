@@ -252,6 +252,7 @@
         },
         "batchDockerImage": {
             "type": "string",
+            "defaultValue": "dotjson/opencga-daemon:cat",
             "metadata": {
                 "description": "The batch container image to run"
             }
