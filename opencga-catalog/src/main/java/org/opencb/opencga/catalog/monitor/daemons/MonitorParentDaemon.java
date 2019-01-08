@@ -26,8 +26,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.monitor.executors.AbstractExecutor;
-import org.opencb.opencga.catalog.monitor.executors.ExecutorManager;
+import org.opencb.opencga.catalog.monitor.executors.BatchExecutor;
+import org.opencb.opencga.catalog.monitor.executors.ExecutorFactory;
 import org.opencb.opencga.core.models.Job;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +46,7 @@ public abstract class MonitorParentDaemon implements Runnable {
     // FIXME: This should not be used directly! All the queries MUST go through the CatalogManager
     @Deprecated
     protected DBAdaptorFactory dbAdaptorFactory;
-    protected AbstractExecutor executorManager;
+    protected BatchExecutor batchExecutor;
 
     protected boolean exit = false;
 
@@ -59,18 +59,9 @@ public abstract class MonitorParentDaemon implements Runnable {
         this.catalogManager = catalogManager;
         this.sessionId = sessionId;
         logger = LoggerFactory.getLogger(this.getClass());
-
         dbAdaptorFactory = new MongoDBAdaptorFactory(catalogManager.getConfiguration());
-        ExecutorManager executorFactory = new ExecutorManager(catalogManager.getConfiguration());
-        this.executorManager = executorFactory.getExecutor();
-
-//        if (catalogManager.getCatalogConfiguration().getExecution().getMode().equalsIgnoreCase("local")) {
-//            this.executorManager = new LocalExecutorManager(catalogManager, sessionId);
-//            logger.info("Jobs will be launched locally");
-//        } else {
-//            this.executorManager = new SgeExecutorManager(catalogManager, sessionId);
-//            logger.info("Jobs will be launched to SGE");
-//        }
+        ExecutorFactory executorFactory = new ExecutorFactory(catalogManager.getConfiguration());
+        this.batchExecutor = executorFactory.getExecutor();
     }
 
     public boolean isExit() {
@@ -91,7 +82,7 @@ public abstract class MonitorParentDaemon implements Runnable {
 
     void executeJob(Job job, String token) {
         try {
-            executorManager.execute(job, token);
+            batchExecutor.execute(job, token);
         } catch (Exception e) {
             logger.error("Error executing job {}.", job.getUid(), e);
         }
@@ -108,7 +99,7 @@ public abstract class MonitorParentDaemon implements Runnable {
                 logger.error("Could not create the temporal output directory to run the job");
             }
         } else {
-            String status = executorManager.status(tmpOutdirPath, job);
+            String status = batchExecutor.status(tmpOutdirPath, job);
             if (!status.equalsIgnoreCase(Job.JobStatus.UNKNOWN) && !status.equalsIgnoreCase(Job.JobStatus.QUEUED)) {
                 try {
                     logger.info("Updating job {} from {} to {}", job.getUid(), Job.JobStatus.QUEUED, Job.JobStatus.RUNNING);
