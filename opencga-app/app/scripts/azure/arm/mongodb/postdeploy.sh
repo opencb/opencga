@@ -13,6 +13,7 @@ set -e
 # echo $CLUSTER_SIZE
 
 installDeps () {
+    apt-mark hold walinuxagent
     apt-get update
     apt-get upgrade -y
     apt-get install software-properties-common -y
