@@ -192,7 +192,7 @@
             "value": "[parameters('poolId')]"
         },
         "maxNodeCount": {
-            "type": "string",
+            "type": "int",
             "value": "[parameters('maxNodeCount')]"
         }
     }
