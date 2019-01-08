@@ -184,7 +184,6 @@
             },
             "tags": {}
         },
-
         {
             "name": "daemonvm-ip",
             "type": "Microsoft.Network/publicIpAddresses",
