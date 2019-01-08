@@ -443,7 +443,7 @@
                         "value": "[reference('azureBatch').outputs.batchEndpoint.value]"
                     },
                     "batchAccountKey": {
-                        "value": "frank"
+                        "value": "[reference('azureBatch').outputs.batchAccountKey.value]"
                     },
                     "batchPoolId": {
                         "value": "[reference('azureBatch').outputs.batchPoolId.value]"
@@ -455,7 +455,7 @@
                         "value": "[parameters('batchDockerImage')]"
                     },
                     "batchMaxConcurrentJobs": {
-                        "value": "[reference('azureBatch').outputs.maxNodeCount.value]"
+                        "value": 3
                     }
                 }
             }
