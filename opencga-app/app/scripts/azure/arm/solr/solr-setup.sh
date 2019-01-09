@@ -44,6 +44,7 @@ if [[ $ZK_HOSTS_NUM -gt 0 ]]; then
     do
         ZK_HOST=${ZK_HOST},${SUBNET_PREFIX}$(($i+$IP_FIRST))
        
+       # check zookeeper node status
        while [ echo stat | (exec 3<>/dev/tcp/${SUBNET_PREFIX}$(($i+$IP_FIRST))/2181; cat >&3; cat <&3; exec 3<&-) | grep Mode > /dev/null; ]
        do
             echo "Waiting for Zookeeper node ${SUBNET_PREFIX}$(($i+$IP_FIRST))"
