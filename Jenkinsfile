@@ -16,7 +16,12 @@ pipeline {
 
         stage ('Test') {
             when {
-              changeset '**/*.java'
+                allOf {
+                    changeset '**/*.java'
+                    not {
+                        changeset 'opencga-storage/**/*.java'
+                    }
+                }
             }
             steps {
                 sh 'mvn -Dmaven.test.failure.ignore=true test -pl \'!:opencga-storage-mongodb,!:opencga-storage-hadoop,!:opencga-storage-hadoop-core\''
