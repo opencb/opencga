@@ -46,7 +46,7 @@ public class VariantBenchmarkRunnerTest extends VariantStorageBaseTest implement
     }
 
     private void loadFile() throws Exception {
-        // runDefaultETL(smallInputUri, getVariantStorageEngine(), newStudyConfiguration());
+         runDefaultETL(smallInputUri, getVariantStorageEngine(), newStudyConfiguration());
 
         Map<String, String> params = new HashMap<>();
         params.put(FixedQueryGenerator.DATA_DIR, "src/test/resources/hsapiens");
