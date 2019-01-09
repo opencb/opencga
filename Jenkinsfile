@@ -14,7 +14,7 @@ pipeline {
             }
         }
 
-        stage ('Test') {
+        stage ('Quick Test') {
             when {
                 allOf {
                     changeset '**/*.java'
@@ -33,12 +33,12 @@ pipeline {
             }
         }
 
-        stage ('TestStorage') {
+        stage ('Complete Test') {
             when {
               changeset 'opencga-storage/**/*.java'
             }
             steps {
-                sh 'mvn -Dmaven.test.failure.ignore=true test -pl \':opencga-storage-mongodb,:opencga-storage-hadoop,:opencga-storage-hadoop-core\''
+                sh 'mvn -Dmaven.test.failure.ignore=true test'
             }
             post {
                 success {
