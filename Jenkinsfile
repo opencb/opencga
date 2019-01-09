@@ -16,7 +16,8 @@ pipeline {
 
         stage ('Quick Test') {
             when {
-                    changeset '**/*.java'
+                     branch 'PR-1001'
+                     echo '${env.BRANCH_NAME}'
             }
             steps {
                 sh 'mvn -Dmaven.test.failure.ignore=true test -pl \'!:opencga-storage-mongodb,!:opencga-storage-hadoop,!:opencga-storage-hadoop-core\''
