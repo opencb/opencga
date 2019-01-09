@@ -897,7 +897,6 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     }
                     if (trans.length() > 0) {
                         other.add(trans.toString());
-                        System.out.println(trans.toString());
                     }
                 }
 
