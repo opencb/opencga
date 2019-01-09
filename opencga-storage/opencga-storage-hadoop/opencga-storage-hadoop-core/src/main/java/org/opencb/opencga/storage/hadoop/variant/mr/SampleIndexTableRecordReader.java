@@ -22,6 +22,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQuery;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
@@ -74,7 +75,7 @@ public class SampleIndexTableRecordReader extends TableRecordReader {
         sampleIndexDBAdaptor = new SampleIndexDBAdaptor(helper, hBaseManager, tableNameGenerator, scm);
 
         Query query = VariantMapReduceUtil.getQueryFromConfig(conf);
-        SampleIndexQuery sampleIndexQuery = SampleIndexQuery.extractSampleIndexQuery(query, scm);
+        SampleIndexQuery sampleIndexQuery = SampleIndexQueryParser.parseSampleIndexQuery(query, scm);
         studyConfiguration = scm.getStudyConfiguration(sampleIndexQuery.getStudy(), null).first();
         operation = sampleIndexQuery.getQueryOperation();
         samples = sampleIndexQuery.getSamplesMap();
@@ -217,7 +218,8 @@ public class SampleIndexTableRecordReader extends TableRecordReader {
                         chromosome.equals(stopChr) ? end : Integer.MAX_VALUE));
             }
         }
-        iterator = sampleIndexDBAdaptor.iterator(regions, studyConfiguration.getStudyName(), samples, operation);
+        SampleIndexQuery query = new SampleIndexQuery(regions, studyConfiguration.getStudyName(), samples, (byte) 0, operation);
+        iterator = sampleIndexDBAdaptor.iterator(query);
         loadMoreResults();
     }
 

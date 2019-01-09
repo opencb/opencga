@@ -28,7 +28,7 @@ public class SingleSampleIndexVariantDBIterator extends VariantDBIterator {
     protected int count = 0;
 
     public SingleSampleIndexVariantDBIterator(Table table, List<Region> regions, Integer studyId, String sample, List<String> gts,
-                                       SampleIndexDBAdaptor dbAdaptor) {
+                                              byte annotationMask, SampleIndexDBAdaptor dbAdaptor) {
         if (CollectionUtils.isEmpty(regions)) {
             // If no regions are defined, get a list of one null element to initialize the stream.
             regions = Collections.singletonList(null);
@@ -39,8 +39,8 @@ public class SingleSampleIndexVariantDBIterator extends VariantDBIterator {
         Iterator<Iterator<Variant>> iterators = regions.stream()
                 .map(region -> {
                     // One scan per region
-                    Scan scan = dbAdaptor.parse(region, studyId, sample, gts, false);
-                    SampleIndexConverter converter = new SampleIndexConverter(region);
+                    Scan scan = dbAdaptor.parse(region, studyId, sample, gts, annotationMask, false);
+                    SampleIndexConverter converter = new SampleIndexConverter(region, annotationMask);
                     try {
                         ResultScanner scanner = table.getScanner(scan);
                         addCloseable(scanner);

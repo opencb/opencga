@@ -10,14 +10,18 @@ import org.apache.phoenix.schema.types.PVarchar;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.Converter;
+import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
 
 import java.util.*;
 
 import static org.apache.hadoop.hbase.util.Bytes.SIZEOF_INT;
 
 /**
- * Created on 18/05/18.
+ * Converts Results to collection of variants.
+ * Applies some filtering based on region and annotation.
  *
+ * Created on 18/05/18.
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class SampleIndexConverter implements Converter<Result, Collection<Variant>> {
@@ -32,15 +36,21 @@ public class SampleIndexConverter implements Converter<Result, Collection<Varian
     private static final String PENDING_VARIANT_PREFIX = META_PREFIX + "V_";
     private static final byte[] PENDING_VARIANT_PREFIX_BYTES = Bytes.toBytes(PENDING_VARIANT_PREFIX);
     private static final String GENOTYPE_COUNT_PREFIX = META_PREFIX + "C_";
+    private static final String ANNOTATION_PREFIX = META_PREFIX + "A_";
+    private static final byte[] ANNOTATION_PREFIX_BYTES = Bytes.toBytes(ANNOTATION_PREFIX);
 
-    private final Region region;
+    // Region filter
+    private final Region regionFilter;
+    // Annotation mask filter
+    private final byte annotationMaskFilter;
 
     public SampleIndexConverter() {
-        this(null);
+        this(null, AnnotationIndexConverter.EMPTY_ANNOTATION_MASK);
     }
 
-    public SampleIndexConverter(Region region) {
-        this.region = region;
+    public SampleIndexConverter(Region regionFilter, byte annotationMaskFilter) {
+        this.regionFilter = regionFilter;
+        this.annotationMaskFilter = annotationMaskFilter;
     }
 
     public static int getExpectedSize(String chromosome) {
@@ -106,6 +116,10 @@ public class SampleIndexConverter implements Converter<Result, Collection<Varian
         return Bytes.toBytes(PENDING_VARIANT_PREFIX + variant.toString() + '_' + gt);
     }
 
+    public static byte[] toAnnotationColumn(String genotype) {
+        return Bytes.toBytes(ANNOTATION_PREFIX + genotype);
+    }
+
     public static Pair<String, String> parsePendingColumn(byte[] column) {
         if (Bytes.startsWith(column, PENDING_VARIANT_PREFIX_BYTES)) {
             int lastIndexOf = 0;
@@ -126,20 +140,47 @@ public class SampleIndexConverter implements Converter<Result, Collection<Varian
     public Collection<Variant> convert(Result result) {
         Set<Variant> variants = new TreeSet<>(INTRA_CHROMOSOME_VARIANT_COMPARATOR);
 
+        final Map<String, byte[]> annotationMaskGtMap;
+        if (annotationMaskFilter != AnnotationIndexConverter.EMPTY_ANNOTATION_MASK) {
+            annotationMaskGtMap = new HashMap<>();
+            for (Cell cell : result.rawCells()) {
+                if (columnStartsWith(cell, ANNOTATION_PREFIX_BYTES)) {
+                    String gt = Bytes.toString(
+                            cell.getQualifierArray(),
+                            cell.getQualifierOffset() + ANNOTATION_PREFIX_BYTES.length,
+                            cell.getQualifierLength() - ANNOTATION_PREFIX_BYTES.length);
+                    annotationMaskGtMap.put(gt, CellUtil.cloneValue(cell));
+                }
+            }
+        } else {
+            annotationMaskGtMap = Collections.emptyMap();
+        }
+
         for (Cell cell : result.rawCells()) {
             if (cell.getQualifierArray()[cell.getQualifierOffset()] != META_PREFIX) {
-                for (String v : Bytes.toString(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength()).split(",")) {
-                    if (!v.isEmpty()) { // Skip empty variants.
-                        Variant e = new Variant(v);
-                        if (region == null || region.contains(e.getChromosome(), e.getStart())) {
-                            variants.add(e);
+                String gt = Bytes.toString(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
+                int i = 0;
+                for (String s : Bytes.toString(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength()).split(",")) {
+                    // Filter using RegionFilter and AnnotationMaskFilter
+                    if (!s.isEmpty()) { // Skip empty variants.
+                        Variant v = new Variant(s);
+                        if (regionFilter == null || regionFilter.contains(v.getChromosome(), v.getStart())) {
+                            byte[] annotationMaskGt = annotationMaskGtMap.get(gt);
+                            if (annotationMaskGt == null || (annotationMaskGt[i] & annotationMaskFilter) == annotationMaskFilter) {
+                                variants.add(v);
+                            }
                         }
                     }
+                    i++;
                 }
             }
         }
 
         return variants;
+    }
+
+    public static boolean columnStartsWith(Cell cell, byte[] prefix) {
+        return AbstractPhoenixConverter.columnStartsWith(cell, prefix);
     }
 
     public Map<String, List<Variant>> convertToMap(Result result) {

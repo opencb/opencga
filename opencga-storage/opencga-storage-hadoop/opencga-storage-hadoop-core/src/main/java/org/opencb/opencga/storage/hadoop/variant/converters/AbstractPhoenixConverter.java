@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.hadoop.variant.converters;
 
+import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.phoenix.schema.types.*;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
@@ -97,6 +98,20 @@ public abstract class AbstractPhoenixConverter {
         }
         for (int i = 0; i < startsWith.length; i++) {
             if (startsWith[i] != bytes[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static boolean columnStartsWith(Cell cell, byte[] prefix) {
+        if (cell.getQualifierLength() < prefix.length) {
+            return false;
+        }
+        byte[] qualifierArray = cell.getQualifierArray();
+        int qualifierOffset = cell.getQualifierOffset();
+        for (int i = 0; i < prefix.length; i++) {
+            if (qualifierArray[qualifierOffset + i] != prefix[i]) {
                 return false;
             }
         }

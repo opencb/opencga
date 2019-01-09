@@ -1,7 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.annotation;
 
 import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.io.compress.Compression;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDataWriter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
@@ -10,8 +9,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.ANNOTATION_INDEX_TABLE_COMPRESSION;
 
 /**
  * Created by jacobo on 04/01/19.

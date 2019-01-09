@@ -74,10 +74,7 @@ import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromArchiveMapper;
 import org.opencb.opencga.storage.hadoop.variant.gaps.PrepareFillMissingDriver;
 import org.opencb.opencga.storage.hadoop.variant.gaps.write.FillMissingHBaseWriterDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConsolidationDrive;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQuery;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.*;
 import org.opencb.opencga.storage.hadoop.variant.io.HadoopVariantExporter;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchLoadListener;
@@ -188,6 +185,9 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     public static final String SAMPLE_INDEX_TABLE_COMPRESSION = "opencga.sample-index.table.compression";
     public static final String SAMPLE_INDEX_TABLE_PRESPLIT_SIZE = "opencga.sample-index.table.presplit.size";
     public static final int DEFAULT_SAMPLE_INDEX_TABLE_PRESPLIT_SIZE = 15;
+
+    // Annotation index table  configuration
+    public static final String ANNOTATION_INDEX_TABLE_COMPRESSION = "opencga.annotation-index.table.compression";
 
     public static final String EXTERNAL_MR_EXECUTOR = "opencga.external.mr.executor";
     public static final String STATS_LOCAL = "stats.local";
@@ -936,7 +936,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     private boolean doHBaseSampleIndexIntersect(Query query, QueryOptions options) {
         if (options.getBoolean("sample_index_intersect", true)) {
-            return SampleIndexQuery.validSampleIndexQuery(query);
+            return SampleIndexQueryParser.validSampleIndexQuery(query);
         }
         return false;
     }
@@ -960,7 +960,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         SampleIndexDBAdaptor sampleIndexDBAdaptor = getSampleIndexDBAdaptor();
 
         Query query = new Query(inputQuery);
-        SampleIndexQuery sampleIndexQuery = SampleIndexQuery.extractSampleIndexQuery(query, getStudyConfigurationManager());
+        SampleIndexQuery sampleIndexQuery = SampleIndexQueryParser.parseSampleIndexQuery(query, getStudyConfigurationManager());
 
         VariantDBIterator variants = sampleIndexDBAdaptor.iterator(sampleIndexQuery);
 
@@ -984,7 +984,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                     if (sampleIndexQuery.getSamplesMap().size() == 1) {
                         Map.Entry<String, List<String>> entry = sampleIndexQuery.getSamplesMap().entrySet().iterator().next();
                         totalCount = sampleIndexDBAdaptor.count(
-                                sampleIndexQuery.getRegions(), sampleIndexQuery.getStudy(), entry.getKey(), entry.getValue());
+                                sampleIndexQuery.getRegions(), sampleIndexQuery.getStudy(), entry.getKey(), entry.getValue(),
+                                sampleIndexQuery.getAnnotationMask());
                     } else {
                         Iterators.getLast(variants);
                         totalCount = variants.getCount();
