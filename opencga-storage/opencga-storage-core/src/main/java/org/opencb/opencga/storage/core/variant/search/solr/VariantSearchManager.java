@@ -164,6 +164,28 @@ public class VariantSearchManager {
     }
 
     /**
+     * Insert a list of variants into the given Solr collection.
+     *
+     * @param collection Solr collection where to insert
+     * @param variants List of variants to insert
+     * @throws IOException   IOException
+     * @throws SolrServerException SolrServerException
+     */
+    public void insert(String collection, List<Variant> variants) throws IOException, SolrServerException {
+        if (variants != null && CollectionUtils.isNotEmpty(variants)) {
+            List<VariantSearchModel> variantSearchModels = variantSearchToVariantConverter.convertListToStorageType(variants);
+
+            if (!variantSearchModels.isEmpty()) {
+                UpdateResponse updateResponse;
+                updateResponse = solrManager.getSolrClient().addBeans(collection, variantSearchModels);
+                if (updateResponse.getStatus() == 0) {
+                    solrManager.getSolrClient().commit(collection);
+                }
+            }
+        }
+    }
+
+    /**
      * Load a Solr core/collection from a Avro or JSON file.
      *
      * @param collection Collection name
@@ -521,32 +543,9 @@ public class VariantSearchManager {
         solrManager.close();
     }
 
-
-
     /*-------------------------------------
      *  P R I V A T E    M E T H O D S
      -------------------------------------*/
-
-    /**
-     * Insert a list of variants into Solr.
-     *
-     * @param variants List of variants to insert
-     * @throws IOException   IOException
-     * @throws SolrException SolrException
-     */
-    private void insert(String collection, List<Variant> variants) throws IOException, SolrServerException {
-        if (variants != null && CollectionUtils.isNotEmpty(variants)) {
-            List<VariantSearchModel> variantSearchModels = variantSearchToVariantConverter.convertListToStorageType(variants);
-
-            if (!variantSearchModels.isEmpty()) {
-                UpdateResponse updateResponse;
-                updateResponse = solrManager.getSolrClient().addBeans(collection, variantSearchModels);
-                if (updateResponse.getStatus() == 0) {
-                    solrManager.getSolrClient().commit(collection);
-                }
-            }
-        }
-    }
 
     /**
      * Load a JSON file into the Solr core/collection.
