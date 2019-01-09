@@ -3,28 +3,28 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
         "_artifactsLocation": {
-            "value": ""
+            "value": "https://raw.githubusercontent.com/bart-jansen/opencga/issue-966-cloud-init/opencga-app/app/scripts/azure/arm"
         },
         "_artifactsLocationSasToken": {
             "value": ""
         },
         "HDInsightClusterName": {
-            "value": ""
+            "value": "mr04012"
         },
         "HDInsightClusterLoginUserName": {
             "value": "admin"
         },
         "HDInsightClusterLoginPassword": {
-            "value": ""
+            "value": "0penCG@@zure"
         },
         "HDInsightSshPassword": {
-            "value": ""
+            "value": "0penCG@@zure"
         },
         "HDInsightStorageOption": {
-            "value": "DataLake"
+            "value": "Blob"
         },
         "rgPrefix":{
-            "value": "opencga"
+            "value": "tmpOpenCGA51"
         },
         "rgLocation":{
             "value": "uksouth"
@@ -42,13 +42,21 @@
             "value": ""
         },
         "tomcatDockerImage": {
-            "value": ""
+            "value": "marrobi/opencga-app"
         },
         "ivaDockerImage": {
-            "value": ""
+            "value": "marrobi/opencga-init"
+        },
+        "webserversSSHKeyData": {
+            "value": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCxnEXRHm7XCj5FdD7OD4ludxWmZCsQHmd+Th4THAPkU2d+ZFvBW+MSqVRK3me3ErV/LDKlUh2Wl5fYrbNTvZcMF3AA/XH0kSPqmU9Q2IzZMEkjSfvVlAaMpnqE2i46tpYNg4tJOfqWTvkxEOs9kjjyOnuJglLS0IGiksTTPpEIpEuiWQv+tNNjk64Go7RgsgGfvEgR4wG0L+cT5KTvV18vC7Bp6XvOpg58a2+Q863/oAJGIg9A0utFmt8fWgBtJtq32jZGlvXa8ejeoLb1i/QtIp/mZ2tJ+jGxDUAXrre44/GeJpTnI+9sCTWnQ6eQnRLSG4y1L8EFnGFZ6mXE7B39on/qdf+MC2wGShaIn0ZaMx5XG4AM+3LoeD0YDZFO7POeMMUIepBs5VFGX6TfPrdgL4yzEoJBu1vx94KAX2lsDs94KCWrHOR0mQWTBVWxrkKJzVYx3RKCa4ve5+v1G0zjSPsyO0ORbK9ENTVZS1bTC0iwlgkx4rI1SbFitsCutSEyIsAyk+iasRSDNwWH/hOYis3ufTK7v23JjAhW6Y5XPULghHl90i/1B6xEm+VylddGWitdPSTbVjwH1uYcSExWoT2W6oKBrYxWuq3dIF2mZkaXEh9ZTMG+M4KmjQv4IZ38fHT0+TxO67QJefBM9qJ1UtJ2Bf0M6DKE8199JP+00Q== marrobi@microsoft.com"
         },
         "solrClusterLoginPassword": {
-            "value": ""
+            "value": "0penCG@@zure"
+        },
+        "nfsStorageOption": {
+            "value": "AzureFiles"
         }
+       
+       
     }
 }

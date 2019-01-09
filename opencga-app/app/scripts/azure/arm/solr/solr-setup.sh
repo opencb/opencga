@@ -17,15 +17,23 @@ SOLR_VERSION=$5
 DOCKER_NAME=opencga-solr-${SOLR_VERSION}
 
 # Create docker
-docker create --name ${DOCKER_NAME} --restart always -p 8983:8983 -t solr:${SOLR_VERSION}
 
 # Add OpenCGA Configuration Set 
 tar zxfv OpenCGAConfSet_1.4.x.tar.gz
 
-docker cp OpenCGAConfSet ${DOCKER_NAME}:/opt/solr/server/solr/configsets/OpenCGAConfSet-1.4.x
+# create a directory to store the server/solr directory
+mkdir /opt/solr-volume
 
-# Configure solr.in.sh
-docker cp ${DOCKER_NAME}:/opt/solr/bin/solr.in.sh .
+# make sure its host owner matches the container's solr user
+sudo chown 8983:8983 /opt/solr-volume
+
+# copy the solr directory from a temporary container to the volume
+docker run -it --rm -v /opt/solr-volume:/target solr:${SOLR_VERSION} cp -r server/solr /target/
+
+cp -r OpenCGAConfSet /opt/solr-volume/solr/configsets/OpenCGAConfSet-1.4.x
+
+docker run  solr:${SOLR_VERSION}  cat /opt/solr/bin/solr.in.sh > /opt/solr.in.sh
+
 ZK_CLI=
 if [[ $ZK_HOSTS_NUM -gt 0 ]]; then
 
@@ -47,15 +55,4 @@ fi
 ## Ensure always using cloud mode, even for the single server configurations.
 echo 'SOLR_MODE="solrcloud"' >> solr.in.sh
 
-docker cp solr.in.sh ${DOCKER_NAME}:/opt/solr/bin/solr.in.sh
-
-docker start ${DOCKER_NAME}
-
-# Wait solr to be started
-# FIXME: Improve this wait
-sleep 60
-
-# Register opencga configuration set
-docker exec ${DOCKER_NAME} /opt/solr/bin/solr zk upconfig -n OpenCGAConfSet-1.4.x -d /opt/solr/server/solr/configsets/OpenCGAConfSet-1.4.x $ZK_CLI
-
-
+docker run --name ${DOCKER_NAME} --restart always -p 8983:8983 -t -v /opt/solr-volume/solr:/opt/solr/server/solr -v /opt/solr.in.sh:/opt/solr/bin/solr.in.sh   solr:${SOLR_VERSION} docker-entrypoint.sh solr-foreground && /opt/solr/bin/solr zk upconfig -n OpenCGAConfSet-1.4.x -d /opt/solr/server/solr/configsets/OpenCGAConfSet-1.4.x $ZK_CLI
