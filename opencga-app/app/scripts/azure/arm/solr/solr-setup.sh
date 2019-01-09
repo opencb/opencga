@@ -47,18 +47,12 @@ if [[ $ZK_HOSTS_NUM -gt 0 ]]; then
        
        
        # check zookeeper node status
-        echo stat | (exec 3<>/dev/tcp/${SUBNET_PREFIX}$(($i+$IP_FIRST))/2181; cat >&3; cat <&3; exec 3<&-) | grep Mode
-        exit_status=$?
 
-       while [  $exit_status != 0  ]
-       do 
-           
-           echo stat | (exec 3<>/dev/tcp/${SUBNET_PREFIX}$(($i+$IP_FIRST))/2181; cat >&3; cat <&3; exec 3<&-) | grep Mode
-           exit_status=$?
-
-            echo "Waiting for Zookeeper node ${SUBNET_PREFIX}$(($i+$IP_FIRST))"
+        until ( echo stat | (exec 3<>/dev/tcp/${SUBNET_PREFIX}$(($i+$IP_FIRST))/2181; cat >&3; cat <&3;) > /dev/null);
+        do 
+            echo "Waiting for Zookeeper node ${SUBNET_PREFIX}$(($i+$IP_FIRST)) /n"
             sleep 10
-       done     
+        done     
        
        
         i=$(($i+1))
@@ -77,6 +71,13 @@ fi
 ## Ensure always using cloud mode, even for the single server configurations.
 echo 'SOLR_MODE="solrcloud"' >> /opt/solr.in.sh
 
-## need to wait for zookeeper
 
-docker run --name ${DOCKER_NAME} --restart always -p 8983:8983 -t -v /opt/solr-volume/solr:/opt/solr/server/solr -v /opt/solr.in.sh:/opt/solr/bin/solr.in.sh   solr:${SOLR_VERSION} docker-entrypoint.sh solr-foreground && /opt/solr/bin/solr zk upconfig -n OpenCGAConfSet-1.4.x -d /opt/solr/server/solr/configsets/OpenCGAConfSet-1.4.x $ZK_CLI
+docker run --name ${DOCKER_NAME} --restart always -p 8983:8983 -d -v /opt/solr-volume/solr:/opt/solr/server/solr -v /opt/solr.in.sh:/opt/solr/bin/solr.in.sh   solr:${SOLR_VERSION} docker-entrypoint.sh solr-foreground -h $(hostname) 
+
+
+until $(curl --output /dev/null --silent --head --fail  "http://$(hostname):8983/solr/#/offers"); do
+    printf 'waiting for solr...\n'
+    sleep 5
+done
+
+docker exec ${DOCKER_NAME} /opt/solr/bin/solr zk upconfig -n OpenCGAConfSet-1.4.x -d /opt/solr/server/solr/configsets/OpenCGAConfSet-1.4.x $ZK_CLI
