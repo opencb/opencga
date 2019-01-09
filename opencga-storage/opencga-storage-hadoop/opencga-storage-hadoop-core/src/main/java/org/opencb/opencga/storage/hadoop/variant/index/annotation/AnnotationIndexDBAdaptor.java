@@ -3,12 +3,15 @@ package org.opencb.opencga.storage.hadoop.variant.index.annotation;
 import com.google.common.collect.Iterators;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.io.compress.Compression;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 
 import java.io.IOException;
 import java.util.*;
+
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.ANNOTATION_INDEX_TABLE_COMPRESSION;
 
 /**
  * Created by jacobo on 04/01/19.
@@ -44,4 +47,9 @@ public class AnnotationIndexDBAdaptor {
         });
     }
 
+    public static void createTableIfNeeded(HBaseManager hBaseManager, String tableName) throws IOException {
+        hBaseManager.createTableIfNeeded(tableName, AnnotationIndexConverter.COLUMN_FMAILY,
+                Compression.getCompressionAlgorithmByName(
+                        hBaseManager.getConf().get(ANNOTATION_INDEX_TABLE_COMPRESSION, Compression.Algorithm.SNAPPY.getName())));
+    }
 }

@@ -30,9 +30,7 @@ public class AnnotationIndexDBLoader extends AbstractHBaseDataWriter<VariantAnno
         super.open();
 
         try {
-            hBaseManager.createTableIfNeeded(tableName, AnnotationIndexConverter.COLUMN_FMAILY,
-                    Compression.getCompressionAlgorithmByName(
-                            hBaseManager.getConf().get(ANNOTATION_INDEX_TABLE_COMPRESSION, Compression.Algorithm.SNAPPY.getName())));
+            AnnotationIndexDBAdaptor.createTableIfNeeded(hBaseManager, tableName);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
