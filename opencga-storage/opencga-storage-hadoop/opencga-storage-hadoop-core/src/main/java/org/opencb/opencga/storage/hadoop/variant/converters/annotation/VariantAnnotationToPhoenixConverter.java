@@ -19,7 +19,6 @@ package org.opencb.opencga.storage.hadoop.variant.converters.annotation;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.client.Put;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantBuilder;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.tools.Converter;
@@ -27,15 +26,12 @@ import org.opencb.opencga.storage.core.variant.annotation.converters.VariantTrai
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.VARIANT_ID;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.parseConsequenceType;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.VariantColumn.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory.generateVariantRowKey;
@@ -265,23 +261,7 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
     Put buildPut(VariantAnnotation variantAnnotation) {
         Map<PhoenixHelper.Column, ?> map = convert(variantAnnotation);
 
-        byte[] bytesRowKey = null;
-        if (variantAnnotation.getAdditionalAttributes() != null) {
-            AdditionalAttribute additionalAttribute = variantAnnotation.getAdditionalAttributes().get(GROUP_NAME.key());
-            if (additionalAttribute != null) {
-                String variantString = additionalAttribute
-                        .getAttribute()
-                        .get(VARIANT_ID.key());
-                if (StringUtils.isNotEmpty(variantString)) {
-                    bytesRowKey = generateVariantRowKey(new Variant(variantString));
-                }
-            }
-        }
-        if (bytesRowKey == null) {
-            bytesRowKey = VariantPhoenixKeyFactory.generateSimpleVariantRowKey(
-                    variantAnnotation.getChromosome(), variantAnnotation.getStart(),
-                    variantAnnotation.getReference(), variantAnnotation.getAlternate());
-        }
+        byte[] bytesRowKey = generateVariantRowKey(variantAnnotation);
         Put put = new Put(bytesRowKey);
 
         for (PhoenixHelper.Column column : VariantPhoenixHelper.PRIMARY_KEY) {

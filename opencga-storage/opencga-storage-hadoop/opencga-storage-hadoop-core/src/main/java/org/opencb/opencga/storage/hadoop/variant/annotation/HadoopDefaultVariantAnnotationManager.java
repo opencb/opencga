@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.hadoop.variant.annotation;
 
+import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.PTableType;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
@@ -25,6 +26,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataReader;
 import org.opencb.commons.run.ParallelTaskRunner;
+import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -38,6 +40,7 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexDBLoader;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 
 import java.util.Collections;
@@ -70,8 +73,12 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
                 || params.getBoolean(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, false)) {
             int currentAnnotationId = dbAdaptor.getStudyConfigurationManager().getProjectMetadata().first()
                     .getAnnotation().getCurrent().getId();
-            VariantAnnotationToHBaseConverter task =
+            VariantAnnotationToHBaseConverter hBaseConverter =
                     new VariantAnnotationToHBaseConverter(dbAdaptor.getGenomeHelper(), progressLogger, currentAnnotationId);
+            AnnotationIndexDBLoader annotationIndexDBLoader = new AnnotationIndexDBLoader(
+                    dbAdaptor.getHBaseManager(), dbAdaptor.getTableNameGenerator().getAnnotationIndexTableName());
+
+            Task<VariantAnnotation, Put> task = Task.join(hBaseConverter, annotationIndexDBLoader.asTask(true));
 
             VariantAnnotationHadoopDBWriter writer = new VariantAnnotationHadoopDBWriter(
                     dbAdaptor.getHBaseManager(),

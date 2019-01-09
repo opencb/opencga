@@ -54,6 +54,8 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParse
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
@@ -380,9 +382,23 @@ public class VariantHbaseTestUtils {
         }
         printMetaTable(dbAdaptor, outDir);
         printSamplesIndexTable(dbAdaptor, outDir);
+        printAnnotationIndexTable(dbAdaptor, outDir);
         printVariantsFromVariantsTable(dbAdaptor, outDir);
         printVariantsFromDBAdaptor(dbAdaptor, outDir);
         HBaseToVariantConverter.setFailOnWrongVariants(old);
+    }
+
+    private static void printAnnotationIndexTable(VariantHadoopDBAdaptor dbAdaptor, Path outDir) throws IOException {
+        String tableName = dbAdaptor.getTableNameGenerator().getAnnotationIndexTableName();
+        if (dbAdaptor.getHBaseManager().tableExists(tableName)) {
+            AnnotationIndexDBAdaptor annotationIndexDBAdaptor = new AnnotationIndexDBAdaptor(dbAdaptor.getHBaseManager(), tableName);
+
+            try (PrintStream out = new PrintStream(new FileOutputStream(outDir.resolve("annotation_index.txt").toFile()))) {
+                annotationIndexDBAdaptor.iterator().forEachRemaining(pair -> {
+                    out.println(pair.getKey() + " -> " + AnnotationIndexConverter.maskToString(pair.getValue()));
+                });
+            }
+        }
     }
 
     private static void printVcf(StudyConfiguration studyConfiguration, VariantHadoopDBAdaptor dbAdaptor, Path outDir) throws IOException {
@@ -421,6 +437,13 @@ public class VariantHbaseTestUtils {
                             byte[] value = CellUtil.cloneValue(cell);
                             if (s.startsWith("_C_")) {
                                 map.put(s, String.valueOf(Bytes.toInt(value)));
+                            } else if (s.startsWith("_A_")) {
+                                StringBuilder sb = new StringBuilder();
+                                for (byte b : value) {
+                                    sb.append(AnnotationIndexConverter.maskToString(b));
+                                    sb.append(" - ");
+                                }
+                                map.put(s, sb.toString());
                             } else {
                                 map.put(s, Bytes.toString(value));
                             }

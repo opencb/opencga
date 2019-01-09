@@ -25,12 +25,13 @@ import org.apache.phoenix.schema.types.PVarchar;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantBuilder;
-import org.opencb.biodata.models.variant.avro.StructuralVariantType;
-import org.opencb.biodata.models.variant.avro.StructuralVariation;
-import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.avro.*;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.VARIANT_ID;
 
 /**
  * Created on 25/04/17.
@@ -49,6 +50,27 @@ public class VariantPhoenixKeyFactory {
     public static byte[] generateVariantRowKey(Variant var) {
         return generateVariantRowKey(var.getChromosome(), var.getStart(), var.getEnd(), var.getReference(), var.getAlternate(),
                 var.getSv());
+    }
+
+    public static byte[] generateVariantRowKey(VariantAnnotation variantAnnotation) {
+        byte[] bytesRowKey = null;
+        if (variantAnnotation.getAdditionalAttributes() != null) {
+            AdditionalAttribute additionalAttribute = variantAnnotation.getAdditionalAttributes().get(GROUP_NAME.key());
+            if (additionalAttribute != null) {
+                String variantString = additionalAttribute
+                        .getAttribute()
+                        .get(VARIANT_ID.key());
+                if (StringUtils.isNotEmpty(variantString)) {
+                    bytesRowKey = generateVariantRowKey(new Variant(variantString));
+                }
+            }
+        }
+        if (bytesRowKey == null) {
+            bytesRowKey = VariantPhoenixKeyFactory.generateSimpleVariantRowKey(
+                    variantAnnotation.getChromosome(), variantAnnotation.getStart(),
+                    variantAnnotation.getReference(), variantAnnotation.getAlternate());
+        }
+        return bytesRowKey;
     }
 
     /**

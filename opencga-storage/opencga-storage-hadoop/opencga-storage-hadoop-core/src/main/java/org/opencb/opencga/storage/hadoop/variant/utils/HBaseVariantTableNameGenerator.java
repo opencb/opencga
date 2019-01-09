@@ -17,12 +17,14 @@ public class HBaseVariantTableNameGenerator {
     private static final String META_SUFIX = "_meta";
     private static final String ARCHIVE_SUFIX = "_archive_";
     private static final String SAMPLE_SUFIX = "_sample_index_";
+    private static final String ANNOTATION_SUFIX = "_annotation";
     private static final int MINIMUM_DB_NAME_SIZE = 1;
 
     private final String namespace;
     private final String dbName;
     private final String variantTableName;
     private final String metaTableName;
+    private final String annotationIndexTableName;
 
 
     public HBaseVariantTableNameGenerator(String dbName, ObjectMap options) {
@@ -33,6 +35,7 @@ public class HBaseVariantTableNameGenerator {
         namespace = options.getString(HadoopVariantStorageEngine.HBASE_NAMESPACE, "");
         variantTableName = getVariantTableName(this.dbName, options);
         metaTableName = getMetaTableName(this.dbName, options);
+        annotationIndexTableName = getAnnotationIndexTableName(namespace, this.dbName);
     }
 
     public HBaseVariantTableNameGenerator(String dbName, Configuration conf) {
@@ -43,6 +46,7 @@ public class HBaseVariantTableNameGenerator {
         namespace = conf.get(HadoopVariantStorageEngine.HBASE_NAMESPACE, "");
         variantTableName = getVariantTableName(this.dbName, conf);
         metaTableName = getMetaTableName(this.dbName, conf);
+        annotationIndexTableName = getAnnotationIndexTableName(namespace, this.dbName);
     }
 
     public String getVariantTableName() {
@@ -55,6 +59,10 @@ public class HBaseVariantTableNameGenerator {
 
     public String getSampleIndexTableName(int studyId) {
         return getSampleIndexTableName(namespace, dbName, studyId);
+    }
+
+    public String getAnnotationIndexTableName() {
+        return annotationIndexTableName;
     }
 
     public String getMetaTableName() {
@@ -167,6 +175,10 @@ public class HBaseVariantTableNameGenerator {
 
     public static String getVariantTableName(String dbName, Configuration conf) {
         return buildTableName(conf.get(HadoopVariantStorageEngine.HBASE_NAMESPACE, ""), dbName, VARIANTS_SUFIX);
+    }
+
+    public static String getAnnotationIndexTableName(String namespace, String dbName) {
+        return buildTableName(namespace, dbName, ANNOTATION_SUFIX);
     }
 
     public static String getMetaTableName(String dbName, ObjectMap options) {
