@@ -3,10 +3,8 @@ package org.opencb.opencga.storage.hadoop.variant.index.sample;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.core.Region;
-import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
@@ -15,6 +13,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
@@ -133,7 +132,6 @@ public class SampleIndexQueryParser {
         String study = defaultStudyConfiguration.getStudyName();
 
         byte annotationMask = parseAnnotationMask(query);
-        System.out.println("maskToString(annotationMask) = " + maskToString(annotationMask));
 
         return new SampleIndexQuery(regions, study, samplesMap, annotationMask, queryOperation);
     }
@@ -143,24 +141,27 @@ public class SampleIndexQueryParser {
         // TODO: Allow skip using annotation mask
 
         byte b = 0;
-        List<String> types = query.getAsStringList(VariantQueryParam.TYPE.key());
-        if (!types.isEmpty() && !types.contains(VariantType.SNV.toString()) && !types.contains(VariantType.SNP.toString())) {
-            b |= NON_SNV_MASK;
+        if (isValidParam(query, TYPE)) {
+            List<String> types = query.getAsStringList(VariantQueryParam.TYPE.key());
+            if (!types.isEmpty() && !types.contains(VariantType.SNV.toString()) && !types.contains(VariantType.SNP.toString())) {
+                b |= NON_SNV_MASK;
+            }
         }
 
-        for (String ct : VariantQueryUtils.splitValue(query.getString(ANNOT_CONSEQUENCE_TYPE.key())).getValue()) {
-            ct = ConsequenceTypeMappings.accessionToTerm.get(VariantQueryUtils.parseConsequenceType(ct));
-            if (ct.equals(VariantAnnotationUtils.MISSENSE_VARIANT)) {
-                b |= MISSENSE_VARIANT_MASK;
-            } else if (LOF_SET.contains(ct)) {
+        if (isValidParam(query, ANNOT_CONSEQUENCE_TYPE)) {
+            List<String> cts = query.getAsStringList(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key());
+            cts = cts.stream()
+                    .map(ct -> ConsequenceTypeMappings.accessionToTerm.get(VariantQueryUtils.parseConsequenceType(ct)))
+                    .collect(Collectors.toList());
+            if (LOF_SET.containsAll(cts)) {
                 b |= LOF_MASK;
             }
         }
 
-        for (String biotype : query.getAsStringList(VariantQueryParam.ANNOT_BIOTYPE.key())) {
-            if (biotype.equals(PROTEIN_CODING)) {
+        if (isValidParam(query, ANNOT_BIOTYPE)) {
+            List<String> biotypes = query.getAsStringList(VariantQueryParam.ANNOT_BIOTYPE.key());
+            if (PROTEIN_CODING_BIOTYPE_SET.containsAll(biotypes)) {
                 b |= PROTEIN_CODING_MASK;
-                break;
             }
         }
 
@@ -169,27 +170,52 @@ public class SampleIndexQueryParser {
         if (StringUtils.isNotEmpty(proteinSubstitution)
                 && !proteinSubstitution.contains("<<")
                 && !proteinSubstitution.contains(">>")) {
-            b |= MISSENSE_VARIANT_MASK;
+            b |= LOF_MASK;
         }
 
         // TODO: This will skip filters ANNOT_POPULATION_REFERENCE_FREQUENCY and ANNOT_POPULATION_MINNOR_ALLELE_FREQUENCY
-        String value = query.getString(VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key());
-        Pair<QueryOperation, List<String>> pair = VariantQueryUtils.splitValue(value);
-        if (pair.getKey() == null || pair.getKey().equals(VariantQueryUtils.QueryOperation.AND)) {
+        if (isValidParam(query, ANNOT_POPULATION_ALTERNATE_FREQUENCY)) {
+            String value = query.getString(VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key());
+            Pair<QueryOperation, List<String>> pair = VariantQueryUtils.splitValue(value);
+            QueryOperation op = pair.getKey();
+
+            Set<String> popFreqLessThan01 = new HashSet<>();
+            Set<String> popFreqLessThan001 = new HashSet<>();
+
             for (String popFreq : pair.getValue()) {
                 String[] keyOpValue = VariantQueryUtils.splitOperator(popFreq);
-                if (keyOpValue[1].equals("<")) {
-                    if (popFreq.startsWith(GNOMAD_GENOMES + IS + StudyEntry.DEFAULT_COHORT)
-                            || popFreq.startsWith(K_GENOMES + IS + StudyEntry.DEFAULT_COHORT)) {
-                        Double freqFilter = Double.valueOf(keyOpValue[2]);
-//                        if (freqFilter <= POP_FREQ_THRESHOLD_005) {
-//                            b |= POP_FREQ_005_MASK;
-//                        }
-                        if (freqFilter < POP_FREQ_THRESHOLD_001) {
-                            b |= POP_FREQ_001_MASK;
+                String studyPop = keyOpValue[0];
+                Double freqFilter = Double.valueOf(keyOpValue[2]);
+                if (keyOpValue[1].equals("<") || keyOpValue[1].equals("<<")) {
+                    if (freqFilter <= POP_FREQ_THRESHOLD_01) {
+                        popFreqLessThan01.add(studyPop);
+                    }
+                    if (freqFilter <= POP_FREQ_THRESHOLD_001) {
+                        popFreqLessThan001.add(studyPop);
+                    }
+                }
+
+                if (QueryOperation.AND.equals(op)) {
+                    // Use this filter if filtering by popFreq with, at least, all the
+                    if (popFreqLessThan01.containsAll(POP_FREQ_ALL_01_SET)) {
+                        b |= POP_FREQ_ALL_01_MASK;
+                    }
+                }
+
+                if (QueryOperation.OR.equals(op)) {
+                    // With OR, the query MUST contain ALL popFreq
+                    if (popFreqLessThan001.containsAll(POP_FREQ_ANY_001_SET)) {
+                        b |= POP_FREQ_ANY_001_MASK;
+                    }
+                } else {
+                    // With AND, the query MUST contain ANY popFreq
+                    for (String s : POP_FREQ_ANY_001_SET) {
+                        if (popFreqLessThan001.contains(s)) {
+                            b |= POP_FREQ_ANY_001_MASK;
                         }
                     }
                 }
+
             }
         }
 
