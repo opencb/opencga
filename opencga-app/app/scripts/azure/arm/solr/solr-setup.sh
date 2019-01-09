@@ -28,11 +28,11 @@ mkdir /opt/solr-volume
 sudo chown 8983:8983 /opt/solr-volume
 
 # copy the solr directory from a temporary container to the volume
-docker run -it --rm -v /opt/solr-volume:/target solr:${SOLR_VERSION} cp -r server/solr /target/
+docker run --rm -v /opt/solr-volume:/target solr:${SOLR_VERSION} cp -r server/solr /target/
 
 cp -r OpenCGAConfSet /opt/solr-volume/solr/configsets/OpenCGAConfSet-1.4.x
 
-docker run  solr:${SOLR_VERSION}  cat /opt/solr/bin/solr.in.sh > /opt/solr.in.sh
+docker run  --rm  solr:${SOLR_VERSION}  cat /opt/solr/bin/solr.in.sh > /opt/solr.in.sh
 
 ZK_CLI=
 if [[ $ZK_HOSTS_NUM -gt 0 ]]; then
