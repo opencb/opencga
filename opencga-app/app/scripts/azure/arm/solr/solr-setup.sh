@@ -1,7 +1,8 @@
 #!/bin/bash
 
 set -x
-set -e
+# removed so while does not exit on fail
+#set -e
 export DEBIAN_FRONTEND='noninteractive'
 # Wait for network
 sleep 5
