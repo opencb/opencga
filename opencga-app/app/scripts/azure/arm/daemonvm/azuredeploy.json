@@ -93,7 +93,7 @@
             "type": "string"
         },
         "batchAccountKey": {
-            "type": "securestring"
+            "type": "string"
         },
         "batchPoolId": {
             "type": "string"

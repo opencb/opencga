@@ -184,7 +184,7 @@
             "value": "[variables('batchEndpoint')]"
         },
         "batchAccountKey": {
-            "type": "securestring",
+            "type": "string",
             "value": "[listKeys(resourceId('Microsoft.Batch/batchAccounts', variables('batchAccountName')), '2017-09-01').primary]"
         },
         "batchPoolId": {
