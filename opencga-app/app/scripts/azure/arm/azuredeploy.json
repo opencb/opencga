@@ -443,7 +443,7 @@
                         "value": "[reference('azureBatch').outputs.batchEndpoint.value]"
                     },
                     "batchAccountKey": {
-                        "value": "[reference('azureBatch').outputs.batchAccountKey.value]"
+                        "value": "[reference('azureBatch').outputs.batchAccountKey]"
                     },
                     "batchPoolId": {
                         "value": "[reference('azureBatch').outputs.batchPoolId.value]"
