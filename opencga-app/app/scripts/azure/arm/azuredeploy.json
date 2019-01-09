@@ -455,7 +455,7 @@
                         "value": "[parameters('batchDockerImage')]"
                     },
                     "batchMaxConcurrentJobs": {
-                        "value": 3
+                        "value": "[reference('azureBatch').outputs.maxNodeCount.value]"
                     }
                 }
             }
