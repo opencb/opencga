@@ -34,20 +34,20 @@ public class AnnotationIndexConverter {
     public static final String GNOMAD_GENOMES = "GNOMAD_GENOMES";
     public static final double POP_FREQ_THRESHOLD_001 = 0.001;
 //    public static final double POP_FREQ_THRESHOLD_005 = 0.005;
-    public static Set<String> LOF_SET = new HashSet<>();
+    public static final Set<String> LOF_SET = new HashSet<>();
     public static final String K_GENOMES = "1kG_phase3";
 
-    public static byte PROTEIN_CODING_MASK      = (byte) (1 << 0);
-    public static byte POP_FREQ_001_MASK        = (byte) (1 << 1);
-    public static byte UNUSED_2_MASK            = (byte) (1 << 2);
-    public static byte MISSENSE_VARIANT_MASK    = (byte) (1 << 3);
-    public static byte LOF_MASK                 = (byte) (1 << 4);
-    public static byte CLINICAL_MASK            = (byte) (1 << 5);
-    public static byte NON_SNV_MASK             = (byte) (1 << 6);
-    public static byte UNUSED_7_MASK            = (byte) (1 << 7);
+    public static final byte PROTEIN_CODING_MASK      = (byte) (1 << 0);
+    public static final byte POP_FREQ_001_MASK        = (byte) (1 << 1);
+    public static final byte UNUSED_2_MASK            = (byte) (1 << 2);
+    public static final byte MISSENSE_VARIANT_MASK    = (byte) (1 << 3);
+    public static final byte LOF_MASK                 = (byte) (1 << 4);
+    public static final byte CLINICAL_MASK            = (byte) (1 << 5);
+    public static final byte NON_SNV_MASK             = (byte) (1 << 6);
+    public static final byte UNUSED_7_MASK            = (byte) (1 << 7);
 
-    protected static byte[] COLUMN_FMAILY = Bytes.toBytes("0");
-    protected static byte[] VALUE_COLUMN = Bytes.toBytes("v");
+    protected static final byte[] COLUMN_FMAILY = Bytes.toBytes("0");
+    protected static final byte[] VALUE_COLUMN = Bytes.toBytes("v");
 
     static {
         LOF_SET.add(VariantAnnotationUtils.FRAMESHIFT_VARIANT);

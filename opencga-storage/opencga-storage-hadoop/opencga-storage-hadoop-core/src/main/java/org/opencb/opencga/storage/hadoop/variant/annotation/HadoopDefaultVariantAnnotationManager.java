@@ -29,6 +29,8 @@ import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
@@ -42,9 +44,15 @@ import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAn
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexDBLoader;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexAnnotationLoader;
 
+import java.io.IOException;
+import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Created on 23/11/16.
@@ -90,6 +98,32 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
                     () -> dbAdaptor.newAnnotationLoader(new QueryOptions(params))
                             .setProgressLogger(progressLogger), null, config);
         }
+    }
+
+    @Override
+    public void loadVariantAnnotation(URI uri, ObjectMap params) throws IOException, StorageEngineException {
+        super.loadVariantAnnotation(uri, params);
+
+        StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
+        SampleIndexAnnotationLoader indexAnnotationLoader = new SampleIndexAnnotationLoader(
+                dbAdaptor.getGenomeHelper(),
+                dbAdaptor.getHBaseManager(),
+                dbAdaptor.getTableNameGenerator(),
+                scm);
+
+        // TODO: Do not update all samples
+        for (Integer studyId : scm.getStudyIds(null)) {
+            StudyConfiguration sc = scm.getStudyConfiguration(studyId, null).first();
+
+            Set<Integer> indexedSamples = sc.getIndexedFiles()
+                    .stream()
+                    .flatMap(fileId -> sc.getSamplesInFiles().get(fileId).stream())
+                    .collect(Collectors.toSet());
+            if (!indexedSamples.isEmpty()) {
+                indexAnnotationLoader.updateSampleAnnotation(studyId, new ArrayList<>(indexedSamples));
+            }
+        }
+
     }
 
     @Override
