@@ -37,6 +37,9 @@ cp -r OpenCGAConfSet /opt/solr-volume/solr/configsets/OpenCGAConfSet-1.4.x
 # get script
 docker run  --rm  solr:${SOLR_VERSION}  cat /opt/solr/bin/solr.in.sh > /opt/solr.in.sh
 
+# botch - give networking a chance!
+sleep 60 
+
 ZK_CLI=
 if [[ $ZK_HOSTS_NUM -gt 0 ]]; then
 
@@ -50,7 +53,7 @@ if [[ $ZK_HOSTS_NUM -gt 0 ]]; then
 
         until ( echo stat | (exec 3<>/dev/tcp/${SUBNET_PREFIX}$(($i+$IP_FIRST))/2181; cat >&3; cat <&3;) > /dev/null);
         do 
-            echo "Waiting for Zookeeper node ${SUBNET_PREFIX}$(($i+$IP_FIRST)) /n"
+            echo "Waiting for Zookeeper node ${SUBNET_PREFIX}$(($i+$IP_FIRST)) \n"
             sleep 10
         done     
        
