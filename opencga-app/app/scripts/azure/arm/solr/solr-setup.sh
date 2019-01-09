@@ -47,12 +47,12 @@ if [[ $ZK_HOSTS_NUM -gt 0 ]]; then
     # Remove leading comma
     ZK_HOST=`echo $ZK_HOST | cut -c 2-`
 
-    sed -i -e 's/#ZK_HOST=.*/ZK_HOST='$ZK_HOST'/' solr.in.sh
+    sed -i -e 's/#ZK_HOST=.*/ZK_HOST='$ZK_HOST'/' /opt/solr.in.sh
 else
     ZK_CLI="-z localhost:9983"
 fi
 
 ## Ensure always using cloud mode, even for the single server configurations.
-echo 'SOLR_MODE="solrcloud"' >> solr.in.sh
+echo 'SOLR_MODE="solrcloud"' >> /opt/solr.in.sh
 
 docker run --name ${DOCKER_NAME} --restart always -p 8983:8983 -t -v /opt/solr-volume/solr:/opt/solr/server/solr -v /opt/solr.in.sh:/opt/solr/bin/solr.in.sh   solr:${SOLR_VERSION} docker-entrypoint.sh solr-foreground && /opt/solr/bin/solr zk upconfig -n OpenCGAConfSet-1.4.x -d /opt/solr/server/solr/configsets/OpenCGAConfSet-1.4.x $ZK_CLI
