@@ -81,9 +81,7 @@
   },
   "variables": {
     "availabilitySetName": "[concat(parameters('clusterName'), '-zookeeper-as')]",
-    "customScriptFilePath": "[concat(parameters('_artifactsLocation'), '/solr/zookeeper/zookeeper-setup.sh', parameters('_artifactsLocationSasToken'))]",
-    "customScriptCommandToExecute": "bash zookeeper-setup.sh",
-    "vmExtensionName": "zookeeperExtension",
+    "customScriptFilePath": "[concat(parameters('_artifactsLocation'), '/solr/zookeeper/zookeeper-setup.sh')]",
     "subnetPrefix": "10.0.2.",
     "imagePublisher": "Canonical",
     "imageOffer": "UbuntuServer",
@@ -99,6 +97,18 @@
           "diskName": "[concat(parameters('clusterName'), '-zookeeper', padLeft(add(1, copyIndex('vmNames')), 2, '0'), '-disk')]"
         }
       }
+    ],     
+    "cloudInit": [
+        "#cloud-config",
+        "",
+        "package_upgrade: true",
+        "package_reboot_if_required: true",
+        "",
+        "runcmd:",
+        " - export DEBIAN_FRONTEND='noninteractive'",
+        " - curl -fsSL https://get.docker.com/ | sh",
+        " - curl -fsSL https://get.docker.com/gpg | sudo apt-key add -",
+        "[concat(' - curl -fsSL ',variables('customScriptFilePath'),' | bash -s -- #VM_INDEX# ', variables('subnetPrefix'), ' ', parameters('privateIPFirst'), ' ', parameters('scaleNumber'), ' ',variables('zookeeperVersion'))]"      
     ]
   },
   "resources": [
@@ -163,7 +173,9 @@
         "osProfile": {
           "computerName": "[variables('vmNames')[copyIndex()].vmName]",
           "adminUsername": "[parameters('clusterLoginUserName')]",
-          "adminPassword": "[parameters('clusterLoginPassword')]"
+          "adminPassword": "[parameters('clusterLoginPassword')]",
+          "customData": "[base64(replace(replace(replace(replace(string(variables('cloudInit')),'#VM_INDEX#',string(copyIndex())),'\",\"','\n'),'[\"',''),'\"]',''))]"
+                 
         },
         "storageProfile": {
           "imageReference": {
@@ -188,31 +200,6 @@
               "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('vmNames')[copyIndex()].nicName)]"
             }
           ]
-        }
-      }
-    },
-    {
-      "type": "Microsoft.Compute/virtualMachines/extensions",
-      "name": "[concat(variables('vmNames')[copyIndex()].vmName,'/', variables('vmExtensionName'))]",
-      "apiVersion": "2018-06-01",
-      "location": "[parameters('location')]",
-      "copy": {
-        "name": "foo",
-        "count": "[parameters('scaleNumber')]"
-      },
-      "dependsOn": [
-        "[concat('Microsoft.Compute/virtualMachines/', variables('vmNames')[copyIndex()].vmName)]"
-      ],
-      "properties": {
-        "publisher": "Microsoft.Azure.Extensions",
-        "type": "CustomScript",
-        "typeHandlerVersion": "2.0",
-        "autoUpgradeMinorVersion": true,
-        "settings": {
-          "fileUris": [
-            "[variables('customScriptFilePath')]"
-          ],
-          "commandToExecute": "[concat(variables('customScriptCommandToExecute'), ' ', copyIndex(), ' ', variables('subnetPrefix'), ' ', parameters('privateIPFirst'), ' ', parameters('scaleNumber'), ' ', variables('zookeeperVersion'))]"
         }
       }
     }

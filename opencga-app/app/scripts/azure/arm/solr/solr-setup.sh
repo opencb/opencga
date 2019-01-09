@@ -7,19 +7,6 @@ export DEBIAN_FRONTEND='noninteractive'
 sleep 5
 
 ## Nacho (6/12/2018)
-## Install Docker following: https://docs.docker.com/install/linux/docker-ce/ubuntu/#extra-steps-for-aufs
-
-## Set up Docker repository for Ubuntu
-apt-get update -y
-apt-get install -y apt-transport-https ca-certificates curl software-properties-common
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-apt-key fingerprint 0EBFCD88
-add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-
-## Install Docker CE
-apt-get update -y
-apt-get install -y docker-ce
-
 
 MY_ID=$(($1+1))
 SUBNET_PREFIX=$2
@@ -28,9 +15,6 @@ ZK_HOSTS_NUM=$4
 SOLR_VERSION=$5
 
 DOCKER_NAME=opencga-solr-${SOLR_VERSION}
-
-## Install Solr in Docker
-docker pull solr:${SOLR_VERSION}
 
 # Create docker
 docker create --name ${DOCKER_NAME} --restart always -p 8983:8983 -t solr:${SOLR_VERSION}

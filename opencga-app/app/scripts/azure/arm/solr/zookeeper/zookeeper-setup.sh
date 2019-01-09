@@ -3,19 +3,6 @@
 set -x
 set -e
 export DEBIAN_FRONTEND='noninteractive'
-# Wait for network
-sleep 5
-
-## Install Docker following: https://docs.docker.com/install/linux/docker-ce/ubuntu/#extra-steps-for-aufs
-## Set up Docker repository for Ubuntu
-apt-get update
-apt-get install -y apt-transport-https ca-certificates curl software-properties-common
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-apt-key fingerprint 0EBFCD88
-add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-
-## Configure zookeeper docker container
-## See https://hub.docker.com/_/zookeeper/
 
 # Zookeeper IDs should have a value between 1 and 255.
 ZOO_MY_ID=$(($1+1))
@@ -38,10 +25,6 @@ do
     fi
     i=$(($i+1))
 done
-
-## Install Docker CE
-apt-get update
-apt-get install -y docker-ce
 
 ## Create docker container
 docker run --name ${DOCKER_NAME} --restart always -d \
