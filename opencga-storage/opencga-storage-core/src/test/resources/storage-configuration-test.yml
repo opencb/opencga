@@ -93,15 +93,15 @@ storageEngines:
     manager: "org.opencb.opencga.storage.hadoop.alignment.MongoDBAlignmentStorageEngine"
     options: {}
     database:
-      hosts:
-      - "who-master:60000"
-      user: "admin"
-      password: "password"
+      hosts: []
+      user: ""
+      password: ""
   variant:
-    manager: "org.opencb.opencga.storage.hadoop.variant.MongoDBVariantStorageEngine"
-    options: {}
+    manager: "org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine"
+    options:
+      species: "hsapiens"
+      assembly: "GRCh37"
     database:
-      hosts:
-      - "who-master:60000"
-      user: "admin"
-      password: "password"
+      hosts: []
+      user: ""
+      password: ""

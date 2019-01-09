@@ -80,6 +80,7 @@ import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageTest;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
@@ -378,6 +379,9 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         options.put(HadoopVariantStorageEngine.SAMPLE_INDEX_TABLE_COMPRESSION, supportedAlgorithms.contains(Compression.Algorithm.SNAPPY)
                 ? Compression.Algorithm.SNAPPY.getName()
                 : Compression.Algorithm.NONE.getName());
+        options.put(HadoopVariantStorageEngine.ANNOTATION_INDEX_TABLE_COMPRESSION, supportedAlgorithms.contains(Compression.Algorithm.SNAPPY)
+                ? Compression.Algorithm.SNAPPY.getName()
+                : Compression.Algorithm.NONE.getName());
 
         FileSystem fs = FileSystem.get(HadoopVariantStorageTest.configuration.get());
         String intermediateDirectory = fs.getHomeDirectory().toUri().resolve("opencga_test/").toString();
@@ -389,6 +393,9 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         options.put(HadoopVariantStorageEngine.VARIANT_TABLE_PRESPLIT_SIZE, 5);
         options.put(HadoopVariantStorageEngine.EXPECTED_FILES_NUMBER, 10);
         options.put(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
+
+        options.put(VariantAnnotationManager.SPECIES, "hsapiens");
+        options.put(VariantAnnotationManager.ASSEMBLY, "grch37");
 
         variantConfiguration.getDatabase().setHosts(Collections.singletonList("hbase://" + HadoopVariantStorageTest.configuration.get().get(HConstants.ZOOKEEPER_QUORUM)));
         return storageConfiguration;

@@ -210,7 +210,8 @@ public class SampleIndexDBAdaptor {
                     // Split region in countable regions
                     List<Region> subRegions = region == null ? Collections.singletonList((Region) null) : splitRegion(region);
                     for (Region subRegion : subRegions) {
-                        if (subRegion == null || startsAtBatch(subRegion) && endsAtBatch(subRegion)) {
+                        if (annotationMask == AnnotationIndexConverter.EMPTY_ANNOTATION_MASK
+                                && (subRegion == null || startsAtBatch(subRegion) && endsAtBatch(subRegion))) {
                             SampleIndexConverter converter = new SampleIndexConverter(subRegion, annotationMask);
                             Scan scan = parse(subRegion, studyId, sample, finalGts, annotationMask, true);
                             try {

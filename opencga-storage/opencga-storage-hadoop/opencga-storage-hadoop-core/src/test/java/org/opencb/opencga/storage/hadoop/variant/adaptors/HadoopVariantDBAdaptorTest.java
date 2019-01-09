@@ -26,24 +26,27 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.core.results.VariantQueryResult;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorTest;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
-import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
+import static org.junit.Assert.*;
 import static org.junit.runners.Parameterized.Parameter;
 import static org.junit.runners.Parameterized.Parameters;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED;
 
 
@@ -230,7 +233,7 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
 //            System.out.println(variant.toJson());
             count++;
         }
-        Assert.assertEquals(dbAdaptor.count(new Query()).first().intValue(), count);
+        assertEquals(dbAdaptor.count(new Query()).first().intValue(), count);
     }
 
     @Test
@@ -244,7 +247,54 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
 //            System.out.println(variant.toJson());
             count++;
         }
-        Assert.assertEquals(fileMetadata.getStats().getNumVariants(), count);
+        assertEquals(fileMetadata.getStats().getNumVariants(), count);
     }
+
+
+    @Test
+    public void testQueryAnnotationIndex() throws Exception {
+        testQueryAnnotationIndex(new Query(ANNOT_BIOTYPE.key(), "protein_coding"));
+        testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant"));
+        testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost"));
+        testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_gained"));
+        testQueryAnnotationIndex(new Query(ANNOT_PROTEIN_SUBSTITUTION.key(), "sift=tolerated"));
+        testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:ALL<0.001"));
+    }
+
+    public void testQueryAnnotationIndex(Query annotationQuery) throws Exception {
+        Query query = new Query()
+                .append(STUDY.key(), STUDY_NAME)
+                .append(SAMPLE.key(), "NA19600");
+//        System.out.println("----------------------------------------------------------");
+//        queryResult = query(query, new QueryOptions());
+//        int numResultsSample = queryResult.getNumResults();
+//        System.out.println("Sample query: " + numResultsSample);
+
+        // Query DBAdaptor
+        query.putAll(annotationQuery);
+        queryResult = query(query, new QueryOptions());
+        int onlyDBAdaptor = queryResult.getNumResults();
+
+        // Query SampleIndex
+        byte annotationMask = SampleIndexQueryParser.parseSampleIndexQuery(query, variantStorageEngine.getStudyConfigurationManager()).getAnnotationMask();
+        int onlyIndex = (int) ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor().count(null, STUDY_NAME, "NA19600", Collections.emptyList(), annotationMask);
+
+        // Query SampleIndex+DBAdaptor
+        queryResult = variantStorageEngine.get(query, new QueryOptions());
+        int indexAndDBAdaptor = queryResult.getNumResults();
+
+        System.out.println("----------------------------------------------------------");
+        System.out.println("query = " + annotationQuery.toJson());
+        System.out.println("maskToString(annotationMask) = " + AnnotationIndexConverter.maskToString(annotationMask));
+        System.out.println("Query ONLY_INDEX = " + onlyIndex);
+        System.out.println("Query NO_INDEX = " + onlyDBAdaptor);
+        System.out.println("Query INDEX = " + indexAndDBAdaptor);
+
+        assertEquals(onlyDBAdaptor, indexAndDBAdaptor);
+        assertThat(queryResult, numResults(lte(onlyIndex)));
+        assertThat(queryResult, numResults(gt(0)));
+        assertNotEquals(AnnotationIndexConverter.EMPTY_ANNOTATION_MASK, annotationMask);
+    }
+
 
 }
