@@ -30,8 +30,10 @@ sudo chown 8983:8983 /opt/solr-volume
 # copy the solr directory from a temporary container to the volume
 docker run --rm -v /opt/solr-volume:/target solr:${SOLR_VERSION} cp -r server/solr /target/
 
+# copy configset to volume ready to mount
 cp -r OpenCGAConfSet /opt/solr-volume/solr/configsets/OpenCGAConfSet-1.4.x
 
+# get script
 docker run  --rm  solr:${SOLR_VERSION}  cat /opt/solr/bin/solr.in.sh > /opt/solr.in.sh
 
 ZK_CLI=
@@ -41,7 +43,17 @@ if [[ $ZK_HOSTS_NUM -gt 0 ]]; then
     while [ $i -lt $ZK_HOSTS_NUM ]
     do
         ZK_HOST=${ZK_HOST},${SUBNET_PREFIX}$(($i+$IP_FIRST))
+       
+       while [ echo stat | (exec 3<>/dev/tcp/${SUBNET_PREFIX}$(($i+$IP_FIRST))/2181; cat >&3; cat <&3; exec 3<&-) | grep Mode > /dev/null; ]
+       do
+            echo "Waiting for Zookeeper node ${SUBNET_PREFIX}$(($i+$IP_FIRST))"
+            sleep 10
+       done     
+       
+       
         i=$(($i+1))
+
+        
     done
 
     # Remove leading comma
@@ -54,5 +66,7 @@ fi
 
 ## Ensure always using cloud mode, even for the single server configurations.
 echo 'SOLR_MODE="solrcloud"' >> /opt/solr.in.sh
+
+## need to wait for zookeeper
 
 docker run --name ${DOCKER_NAME} --restart always -p 8983:8983 -t -v /opt/solr-volume/solr:/opt/solr/server/solr -v /opt/solr.in.sh:/opt/solr/bin/solr.in.sh   solr:${SOLR_VERSION} docker-entrypoint.sh solr-foreground && /opt/solr/bin/solr zk upconfig -n OpenCGAConfSet-1.4.x -d /opt/solr/server/solr/configsets/OpenCGAConfSet-1.4.x $ZK_CLI
