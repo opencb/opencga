@@ -16,8 +16,7 @@ pipeline {
 
         stage ('Quick Test') {
             when {
-              changeset 'opencga-storage/**/*.java'
-                }
+                    changeset '**/*.java'
             }
             steps {
                 sh 'mvn -Dmaven.test.failure.ignore=true test -pl \'!:opencga-storage-mongodb,!:opencga-storage-hadoop,!:opencga-storage-hadoop-core\''
