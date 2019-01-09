@@ -16,11 +16,7 @@ pipeline {
 
         stage ('Quick Test') {
             when {
-                allOf {
-                    changeset '**/*.java'
-                    not {
-                        changeset 'opencga-storage/**/*.java'
-                    }
+              changeset 'opencga-storage/**/*.java'
                 }
             }
             steps {
