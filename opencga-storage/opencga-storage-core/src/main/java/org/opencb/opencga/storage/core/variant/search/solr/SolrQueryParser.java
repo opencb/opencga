@@ -78,9 +78,10 @@ public class SolrQueryParser {
         includeMap.put("studies", "studies,stats_*");
         includeMap.put("studies.stats", "studies,stats_*");
 
-        includeMap.put("annotation", "genes,soAcc,geneToSoAcc,biotypes,sift,siftDesc,polyphen,polyphenDesc,popFreq_*,xrefs,"
-                + "phastCons,phylop,gerp,caddRaw,caddScaled,traits");
-        includeMap.put("annotation.consequenceTypes", "genes,soAcc,geneToSoAcc,biotypes,sift,siftDesc,polyphen,polyphenDesc");
+        includeMap.put("annotation", "genes,soAcc,geneToSoAcc,biotypes,sift,siftDesc,polyphen,polyphenDesc,popFreq_*,"
+                + "xrefs,phastCons,phylop,gerp,caddRaw,caddScaled,traits,other");
+        includeMap.put("annotation.consequenceTypes", "genes,soAcc,geneToSoAcc,biotypes,sift,siftDesc,polyphen,"
+                + "polyphenDesc,other");
         includeMap.put("annotation.populationFrequencies", "popFreq_*");
         includeMap.put("annotation.xrefs", "xrefs");
         includeMap.put("annotation.conservation", "phastCons,phylop,gerp");
