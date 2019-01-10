@@ -68,9 +68,7 @@ public class AzureBatchExecutor implements BatchExecutor {
     }
 
     private BatchClient createBatchClient() {
-        BatchSharedKeyCredentials cred = new BatchSharedKeyCredentials(batchUri,
-                batchAccount, batchKey);
-        return BatchClient.open(cred);
+        return BatchClient.open(new BatchSharedKeyCredentials(batchUri, batchAccount, batchKey));
     }
 
     @Override
