@@ -35,13 +35,13 @@
             {
                 "message": "Value is not accepted. Valid values: \"2014-10-01-preview\".",
                 "jsonPath": "resources.1.apiVersion",
-                "reason": "Incorrect schema match"
+                "reason": "Incorrect schema match for AzureBatch"
 
             },
             {
                 "message": "Value is not accepted. Valid values: \"Microsoft.Network/applicationGateways\".",
                 "jsonPath": "resources.4.type",
-                "reason": "Incorrect schema match"
+                "reason": "Incorrect schema match for AzureBatch"
 
             }
         ],
@@ -49,7 +49,7 @@
             {
                 "message": ".*",
                 "jsonPath": "resources.1.*",
-                "reason": "Incorrect schema match"
+                "reason": "Incorrect schema match for ContainerGroups"
             }
         ],
         "hdinsight-storage/azuredeploy.json": [
@@ -101,12 +101,12 @@
             {
                 "message": "Value is not accepted. Valid values: \"Automatic\", \"Manual\".",
                 "jsonPath": "resources.2.properties.upgradePolicy.mode",
-                "reason": "Incorrect schema match"
+                "reason": "Incorrect schema match for VMSS"
             },
             {
                 "message": ".*",
                 "jsonPath": "resources.3",
-                "reason": "Incorrect schema match"
+                "reason": "Incorrect schema match for VMSS"
             }
         ]
     }
