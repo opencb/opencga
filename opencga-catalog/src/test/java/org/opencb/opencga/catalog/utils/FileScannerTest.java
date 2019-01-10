@@ -26,14 +26,13 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
-import org.opencb.opencga.catalog.managers.*;
+import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
+import org.opencb.opencga.catalog.managers.CatalogManagerTest;
 import org.opencb.opencga.core.common.IOUtils;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
 
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -105,7 +104,7 @@ public class FileScannerTest {
     public void testDeleteExisting() throws IOException, CatalogException {
 
         QueryResult<File> queryResult = catalogManager.getFileManager().upload(study.getFqn(),
-                new FileInputStream(CatalogManagerTest.createDebugFile()), new File().setPath(folder.getPath() + "file1.txt"), false,
+                CatalogManagerTest.createDebugFile().toURI(), new File().setPath(folder.getPath() + "file1.txt"), false,
                 false, sessionIdUser);
         File file = queryResult.first();
 
@@ -127,7 +126,7 @@ public class FileScannerTest {
     @Test
     public void testDeleteTrashed() throws IOException, CatalogException {
         QueryResult<File> queryResult = catalogManager.getFileManager().upload(study.getFqn(),
-                new FileInputStream(CatalogManagerTest.createDebugFile()), new File().setPath(folder.getPath() + "file1.txt"), false,
+                CatalogManagerTest.createDebugFile().toURI(), new File().setPath(folder.getPath() + "file1.txt"), false,
                 false, sessionIdUser);
         File file = queryResult.first();
         catalogManager.getFileManager().delete(study.getFqn(),
@@ -144,15 +143,16 @@ public class FileScannerTest {
 
     @Test
     public void testReplaceExisting() throws IOException, CatalogException {
+        // Create and register file1.txt and s/file2.txt
+        File file = catalogManager.getFileManager().upload(study.getFqn(), CatalogManagerTest.createDebugFile().toURI(),
+                new File().setPath(folder.getPath() + "file1.txt"), false, false, true, true, sessionIdUser).first();
+        catalogManager.getFileManager().upload(study.getFqn(), CatalogManagerTest.createDebugFile().toURI(),
+                new File().setPath(folder.getPath() + "s/file2.txt"), false, true, true, true, sessionIdUser).first();
+
+        // Create same file structure, and replace
         CatalogManagerTest.createDebugFile(directory.resolve("file1.txt").toString());
         Files.createDirectory(directory.resolve("s/"));
         CatalogManagerTest.createDebugFile(directory.resolve("s/file2.txt").toString());
-
-        File file = catalogManager.getFileManager().upload(study.getFqn(), new FileInputStream(CatalogManagerTest.createDebugFile()),
-                new File().setPath(folder.getPath() + "file1.txt"), false, false, sessionIdUser).first();
-
-        catalogManager.getFileManager().upload(study.getFqn(), new FileInputStream(CatalogManagerTest.createDebugFile()),
-                new File().setPath(folder.getPath() + "s/file2.txt"), false, true, sessionIdUser).first();
 
         FileScanner fileScanner = new FileScanner(catalogManager);
         fileScanner.scan(folder, directory.toUri(), FileScanner.FileScannerPolicy.REPLACE, true, true, sessionIdUser);
@@ -161,6 +161,7 @@ public class FileScannerTest {
         assertEquals(File.FileStatus.READY, replacedFile.getStatus().getName());
         assertEquals(file.getUid(), replacedFile.getUid());
         assertNotEquals(replacedFile.getChecksum(), file.getChecksum());
+        assertEquals(replacedFile.getChecksum(), catalogManager.getCatalogIOManagerFactory().getDefault().calculateChecksum(replacedFile.getUri()));
     }
 
     @Test

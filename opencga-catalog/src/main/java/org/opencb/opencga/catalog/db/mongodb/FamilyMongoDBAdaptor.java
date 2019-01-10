@@ -358,7 +358,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, familyParameters, acceptedMapParams);
 
-        final String[] acceptedObjectParams = {QueryParams.MEMBERS.key(), QueryParams.PHENOTYPES.key()};
+        final String[] acceptedObjectParams = {QueryParams.MEMBERS.key(), UpdateParams.PHENOTYPES.key(), UpdateParams.DISORDERS.key()};
         filterObjectParams(parameters, familyParameters, acceptedObjectParams);
 
         final String[] acceptedIntParams = {QueryParams.EXPECTED_SIZE.key()};
@@ -811,6 +811,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                         addAutoOrQuery(mongoKey, entry.getKey(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case PHENOTYPES:
+                    case DISORDERS:
                         addOntologyQueryFilter(queryParam.key(), queryParam.key(), queryCopy, andBsonList);
                         break;
                     case ANNOTATION:

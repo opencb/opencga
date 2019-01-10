@@ -197,7 +197,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         long startTime = startQuery();
 
         Query query = new Query(QueryParams.UID.key(), id);
-        UpdateDocument updateDocument = parseAndValidateUpdateParams(parameters, query);
+        UpdateDocument updateDocument = parseAndValidateUpdateParams(parameters, query, queryOptions);
 
         if (queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
             createNewVersion(query);
@@ -220,7 +220,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         return endQuery("Modify interpretation", startTime, get(id, queryOptions));
     }
 
-    private UpdateDocument parseAndValidateUpdateParams(ObjectMap parameters, Query query)
+    private UpdateDocument parseAndValidateUpdateParams(ObjectMap parameters, Query query, QueryOptions queryOptions)
             throws CatalogDBException {
         UpdateDocument document = new UpdateDocument();
 
@@ -258,9 +258,39 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
         String[] objectAcceptedParams = {UpdateParams.PANELS.key(), UpdateParams.SOFTWARE.key(), UpdateParams.ANALYST.key(),
-                UpdateParams.DEPENDENCIES.key(), UpdateParams.REPORTED_VARIANTS.key(), UpdateParams.REPORTED_LOW_COVERAGE.key(),
-                UpdateParams.COMMENTS.key()};
+                UpdateParams.DEPENDENCIES.key(), UpdateParams.REPORTED_VARIANTS.key(), UpdateParams.REPORTED_LOW_COVERAGE.key()};
         filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
+
+        Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
+        String operation = (String) actionMap.getOrDefault(UpdateParams.COMMENTS.key(), "ADD");
+        objectAcceptedParams = new String[]{UpdateParams.COMMENTS.key()};
+        switch (operation) {
+            case "SET":
+                filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
+                break;
+            case "REMOVE":
+                filterObjectParams(parameters, document.getPullAll(), objectAcceptedParams);
+                break;
+            case "ADD":
+            default:
+                filterObjectParams(parameters, document.getAddToSet(), objectAcceptedParams);
+                break;
+        }
+
+        operation = (String) actionMap.getOrDefault(UpdateParams.REPORTED_VARIANTS.key(), "ADD");
+        objectAcceptedParams = new String[]{UpdateParams.REPORTED_VARIANTS.key()};
+        switch (operation) {
+            case "SET":
+                filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
+                break;
+            case "REMOVE":
+                filterObjectParams(parameters, document.getPullAll(), objectAcceptedParams);
+                break;
+            case "ADD":
+            default:
+                filterObjectParams(parameters, document.getAddToSet(), objectAcceptedParams);
+                break;
+        }
 
         if (!document.toFinalUpdateDocument().isEmpty()) {
             // Update modificationDate param

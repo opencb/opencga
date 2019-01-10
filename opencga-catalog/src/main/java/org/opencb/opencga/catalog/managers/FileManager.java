@@ -596,17 +596,62 @@ public class FileManager extends AnnotationSetManager<File> {
     /**
      * Upload a file in Catalog.
      *
-     * @param studyStr study where the file will be uploaded.
+     * @param studyStr        study where the file will be uploaded.
      * @param fileInputStream Input stream of the file to be uploaded.
-     * @param file File object containing at least the basic metada necessary for a successful upload: path
-     * @param overwrite Overwrite the current file if any.
-     * @param parents boolean indicating whether unexisting parent folders should also be created automatically.
-     * @param sessionId session id of the user performing the upload.
+     * @param file            File object containing at least the basic metadata necessary for a successful upload: path
+     * @param overwrite       Overwrite the current file if any.
+     * @param parents         boolean indicating whether unexisting parent folders should also be created automatically.
+     * @param sessionId       session id of the user performing the upload.
      * @return a QueryResult with the file uploaded.
      * @throws CatalogException if the user does not have permissions or any other unexpected issue happens.
      */
     public QueryResult<File> upload(String studyStr, InputStream fileInputStream, File file, boolean overwrite, boolean parents,
                                     String sessionId) throws CatalogException {
+        ParamUtils.checkObj(fileInputStream, "file input stream");
+        return upload(studyStr, null, fileInputStream, file, overwrite, parents, true, true, sessionId);
+    }
+
+    /**
+     * Upload a file in Catalog.
+     *
+     * @param studyStr  study where the file will be uploaded.
+     * @param sourceUri URI of the file to be uploaded.
+     * @param file      File object containing at least the basic metadata necessary for a successful upload: path
+     * @param overwrite Overwrite the current file if any.
+     * @param parents   boolean indicating whether unexisting parent folders should also be created automatically.
+     * @param sessionId session id of the user performing the upload.
+     * @return a QueryResult with the file uploaded.
+     * @throws CatalogException if the user does not have permissions or any other unexpected issue happens.
+     */
+    public QueryResult<File> upload(String studyStr, URI sourceUri, File file, boolean overwrite, boolean parents, String sessionId)
+            throws CatalogException {
+        ParamUtils.checkObj(sourceUri, "source uri");
+        return upload(studyStr, sourceUri, file, overwrite, parents, true, true, sessionId);
+    }
+
+    /**
+     * Upload a file in Catalog.
+     *
+     * @param studyStr          study where the file will be uploaded.
+     * @param sourceUri         URI of the file to be uploaded.
+     * @param file              File object containing at least the basic metadata necessary for a successful upload: path
+     * @param overwrite         Overwrite the current file if any.
+     * @param parents           boolean indicating whether unexisting parent folders should also be created automatically.
+     * @param deleteSource      After moving, delete file. If false, force copy.
+     * @param calculateChecksum Calculate checksum
+     * @param sessionId         session id of the user performing the upload.
+     * @return a QueryResult with the file uploaded.
+     * @throws CatalogException if the user does not have permissions or any other unexpected issue happens.
+     */
+    public QueryResult<File> upload(String studyStr, URI sourceUri, File file, boolean overwrite, boolean parents,
+                                    boolean calculateChecksum, boolean deleteSource, String sessionId) throws CatalogException {
+        ParamUtils.checkObj(sourceUri, "source uri");
+        return upload(studyStr, sourceUri, null, file, overwrite, parents, calculateChecksum, deleteSource, sessionId);
+    }
+
+    private QueryResult<File> upload(String studyStr, URI sourceUri, InputStream fileInputStream, File file,
+                                     boolean overwrite, boolean parents, boolean calculateChecksum, boolean deleteSource, String sessionId)
+            throws CatalogException {
         // Check basic parameters
         ParamUtils.checkObj(file, "file");
         ParamUtils.checkParameter(file.getPath(), FileDBAdaptor.QueryParams.PATH.key());
@@ -614,8 +659,6 @@ public class FileManager extends AnnotationSetManager<File> {
         if (StringUtils.isEmpty(file.getName())) {
             file.setName(Paths.get(file.getPath()).toFile().getName());
         }
-
-        ParamUtils.checkObj(fileInputStream, "file input stream");
 
         QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get(studyStr,
                 new QueryOptions(QueryOptions.EXCLUDE, Arrays.asList(StudyDBAdaptor.QueryParams.VARIABLE_SET.key(),
@@ -641,55 +684,64 @@ public class FileManager extends AnnotationSetManager<File> {
 
         // We obtain the basic studyPath where we will upload the file temporarily
         java.nio.file.Path studyPath = Paths.get(study.getUri());
-        java.nio.file.Path tempFilePath = studyPath.resolve("tmp_" + file.getName()).resolve(file.getName());
-        logger.info("Uploading file... Temporal file path: {}", tempFilePath.toString());
 
         CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().getDefault();
+        URI tempDirectory = null;
+        if (fileInputStream != null) {
+            java.nio.file.Path tempFilePath = studyPath.resolve("tmp_" + file.getName()).resolve(file.getName());
+            tempDirectory = tempFilePath.getParent().toUri();
+            logger.info("Uploading file... Temporal file path: {}", tempFilePath.toString());
 
-        // Create the temporal directory and upload the file
-        try {
-            if (!Files.exists(tempFilePath.getParent())) {
-                logger.debug("Creating temporal folder: {}", tempFilePath.getParent());
-                ioManager.createDirectory(tempFilePath.getParent().toUri(), true);
+
+            // Create the temporal directory and upload the file
+            try {
+                if (!Files.exists(tempFilePath.getParent())) {
+                    logger.debug("Creating temporal folder: {}", tempFilePath.getParent());
+                    ioManager.createDirectory(tempDirectory, true);
+                }
+
+                // Start uploading the file to the temporal directory
+                // Upload the file to a temporary folder
+                Files.copy(fileInputStream, tempFilePath);
+            } catch (Exception e) {
+                logger.error("Error uploading file {}", file.getName(), e);
+
+                // Clean temporal directory
+                ioManager.deleteDirectory(tempDirectory);
+
+                throw new CatalogException("Error uploading file " + file.getName(), e);
             }
-
-            // Start uploading the file to the temporal directory
-            // Upload the file to a temporary folder
-            Files.copy(fileInputStream, tempFilePath);
-        } catch (Exception e) {
-            logger.error("Error uploading file {}", file.getName(), e);
-
-            // Clean temporal directory
-            ioManager.deleteDirectory(tempFilePath.getParent().toUri());
-
-            throw new CatalogException("Error uploading file " + file.getName(), e);
+            sourceUri = tempFilePath.toUri();
         }
 
         // Register the file in catalog
         QueryResult<File> fileQueryResult;
         try {
-            fileQueryResult = catalogManager.getFileManager().register(study, file, parents, QueryOptions.empty(), sessionId);
+            if (overwrite && checkPathExists(file.getPath(), study.getUid()).equals(CheckPath.FILE_EXISTS)) {
+                fileQueryResult = get(studyStr, file.getPath(), QueryOptions.empty(), sessionId);
+            } else {
+                fileQueryResult = register(study, file, parents, QueryOptions.empty(), sessionId);
+            }
 
             // Create the directories where the file will be placed (if they weren't created before)
             ioManager.createDirectory(Paths.get(fileQueryResult.first().getUri()).getParent().toUri(), true);
 
-            new org.opencb.opencga.catalog.managers.FileUtils(catalogManager).upload(tempFilePath.toUri(), fileQueryResult.first(),
-                null, sessionId, false, overwrite, true, true, Long.MAX_VALUE);
+            // Ignore file status only if overwriting file
+            boolean ignoreStatus = overwrite;
+            new org.opencb.opencga.catalog.managers.FileUtils(catalogManager).upload(sourceUri, fileQueryResult.first(),
+                null, sessionId, ignoreStatus, overwrite, deleteSource, calculateChecksum, Long.MAX_VALUE);
 
             File fileMetadata = new FileMetadataReader(catalogManager)
                     .setMetadataInformation(fileQueryResult.first(), null, null, sessionId, false);
             fileQueryResult.setResult(Collections.singletonList(fileMetadata));
         } catch (Exception e) {
-            logger.error("Error uploading file {}", file.getName(), e);
-
-            // Clean temporal directory
-            ioManager.deleteDirectory(tempFilePath.getParent().toUri());
-
             throw new CatalogException("Error uploading file " + file.getName(), e);
+        } finally {
+            if (tempDirectory != null) {
+                // Clean temporal directory
+                ioManager.deleteDirectory(tempDirectory);
+            }
         }
-
-        // Clean temporal directory
-        ioManager.deleteDirectory(tempFilePath.getParent().toUri());
 
         return fileQueryResult;
     }
@@ -837,6 +889,12 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     void fixQueryObject(Study study, Query query, String sessionId) throws CatalogException {
+        if (StringUtils.isNotEmpty(query.getString(FileDBAdaptor.QueryParams.ID.key()))) {
+            MyResources<File> uids = getUids(query.getAsStringList(FileDBAdaptor.QueryParams.ID.key()), study.getFqn(), sessionId);
+            query.remove(FileDBAdaptor.QueryParams.ID.key());
+            query.put(FileDBAdaptor.QueryParams.UID.key(), uids.getResourceList().stream().map(File::getUid).collect(Collectors.toList()));
+        }
+
         // The samples introduced could be either ids or names. As so, we should use the smart resolutor to do this.
         if (StringUtils.isNotEmpty(query.getString(FileDBAdaptor.QueryParams.SAMPLES.key()))) {
             MyResources<Sample> resource = catalogManager.getSampleManager().getUids(

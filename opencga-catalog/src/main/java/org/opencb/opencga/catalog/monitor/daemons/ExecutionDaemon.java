@@ -28,7 +28,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.monitor.ExecutionOutputRecorder;
-import org.opencb.opencga.catalog.monitor.executors.AbstractExecutor;
+import org.opencb.opencga.catalog.monitor.executors.BatchExecutor;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.Job;
@@ -49,6 +49,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     private Path tempJobFolder;
 
     private CatalogIOManager catalogIOManager;
+    // FIXME: This should not be used directly! All the queries MUST go through the CatalogManager
+    @Deprecated
     private JobDBAdaptor jobDBAdaptor;
 
     public ExecutionDaemon(int interval, String sessionId, CatalogManager catalogManager, String appHome)
@@ -160,7 +162,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 cleanPrivateJobInformation(job);
             }
         } else {
-            String status = executorManager.status(tmpOutdirPath, job);
+            String status = batchExecutor.status(tmpOutdirPath, job);
             if (!status.equalsIgnoreCase(Job.JobStatus.UNKNOWN) && !status.equalsIgnoreCase(Job.JobStatus.RUNNING)) {
                 logger.info("Updating job {} from {} to {}", job.getUid(), Job.JobStatus.RUNNING, status);
                 try {
@@ -218,9 +220,9 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             try {
                 job.getAttributes().put(Job.OPENCGA_TMP_DIR, path.toString());
 
-                job.getResourceManagerAttributes().put(AbstractExecutor.STDOUT, stdout);
-                job.getResourceManagerAttributes().put(AbstractExecutor.STDERR, stderr);
-                job.getResourceManagerAttributes().put(AbstractExecutor.OUTDIR, path.toString());
+                job.getResourceManagerAttributes().put(BatchExecutor.STDOUT, stdout);
+                job.getResourceManagerAttributes().put(BatchExecutor.STDERR, stderr);
+                job.getResourceManagerAttributes().put(BatchExecutor.OUTDIR, path.toString());
 
                 ObjectMap params = new ObjectMap()
                         .append(JobDBAdaptor.QueryParams.COMMAND_LINE.key(), commandLine.toString())

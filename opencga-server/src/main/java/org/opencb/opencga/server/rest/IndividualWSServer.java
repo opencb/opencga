@@ -34,10 +34,7 @@ import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.AnnotationSet;
-import org.opencb.opencga.core.models.Individual;
-import org.opencb.opencga.core.models.Location;
-import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.server.WebServiceException;
 
@@ -151,6 +148,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of sample ids or names") @QueryParam("samples") String samples,
             @ApiParam(value = "sex", required = false) @QueryParam("sex") String sex,
             @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
+            @ApiParam(value = "Comma separated list of disorder ids or names") @QueryParam("disorders") String disorders,
             @ApiParam(value = "Population name", required = false) @QueryParam("population.name")
                     String populationName,
             @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation")
@@ -729,6 +727,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
         public IndividualProperty.AffectationStatus affectationStatus;
         public List<AnnotationSet> annotationSets;
         public List<Phenotype> phenotypes;
+        public List<Disorder> disorders;
         public Map<String, Object> attributes;
 
         public Individual toIndividual(String studyStr, StudyManager studyManager, String sessionId) throws CatalogException {
@@ -745,7 +744,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             String individualName = StringUtils.isEmpty(name) ? individualId : name;
             return new Individual(individualId, individualName, new Individual().setId(father), new Individual().setId(mother), multiples,
                     location, sex, karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth,
-                    null, parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes)
+                    null, parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes, disorders)
                     .setAttributes(attributes);
         }
     }
@@ -768,7 +767,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             String individualName = StringUtils.isEmpty(name) ? individualId : name;
             return new Individual(individualId, individualName, new Individual().setId(father), new Individual().setId(mother), multiples,
                     location, sex, karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth,
-                    sampleList, parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes)
+                    sampleList, parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes, disorders)
                     .setAttributes(attributes);
         }
     }
@@ -793,6 +792,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     .setDateOfBirth(dateOfBirth)
                     .setParentalConsanguinity(parentalConsanguinity != null ? parentalConsanguinity : false)
                     .setPhenotypes(phenotypes)
+                    .setDisorders(disorders)
                     .setAttributes(attributes);
             individual.setAnnotationSets(annotationSets);
 

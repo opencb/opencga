@@ -20,6 +20,8 @@ public class AuthorizationDaemon extends MonitorParentDaemon {
 
     private final String INTERNAL_DELIMITER = "__";
 
+    // FIXME: This should not be used directly! All the queries MUST go through the CatalogManager
+    @Deprecated
     private StudyDBAdaptor studyDBAdaptor;
     private AuthorizationManager authorizationManager;
 

@@ -2,7 +2,7 @@
     "$schema": "http://schema.management.azure.com/schemas/2014-04-01-preview/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
-        "clusterName": {
+        "clusterNamePrefix": {
             "type": "string",
             "metadata": {
                 "description": "The name of the HDInsight cluster to create."
@@ -144,12 +144,14 @@
             "container": "opencga",
             "key": "[parameters('storageAccountKey')]"
 
-        }
+        }, 
+        "clusterName": "[concat(parameters('clusterNamePrefix'), uniqueString(resourceGroup().id))]"
+
     },
     "resources": [
         {
             "apiVersion": "2018-06-01-preview",
-            "name": "[parameters('clusterName')]",
+            "name": "[variables('clusterName')]",
             "type": "Microsoft.HDInsight/clusters",
             "location": "[resourceGroup().location]",
                            
@@ -251,10 +253,20 @@
     ],
     "outputs": {
 
-        "clusterDNSName":{
+        "clusterSshDNSName":{
 
             "type": "string",
-            "value": ""
+            "value": "[concat(variables('clusterName'),'-ssh.azurehdinsight.net')]"
+        },
+        "clusterSshUsername":{
+
+            "type": "string",
+            "value": "[concat(parameters('sshUserName'))]"
+        },
+        "clusterSshPassword":{
+
+            "type": "string",
+            "value": "[concat(parameters('sshPassword'))]"
         }
     }
 }

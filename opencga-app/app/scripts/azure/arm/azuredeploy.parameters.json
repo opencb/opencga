@@ -8,24 +8,47 @@
         "_artifactsLocationSasToken": {
             "value": ""
         },
+        "HDInsightClusterName": {
+            "value": ""
+        },
+        "HDInsightClusterLoginUserName": {
+            "value": "admin"
+        },
+        "HDInsightClusterLoginPassword": {
+            "value": ""
+        },
+        "HDInsightSshPassword": {
+            "value": ""
+        },
+        "HDInsightStorageOption": {
+            "value": "DataLake"
+        },
         "rgPrefix":{
             "value": "opencga"
         },
         "rgLocation":{
             "value": "uksouth"
         },
-        "clusterName": {
+        "avereServicePrincipalAppId": {
             "value": ""
         },
-        "clusterLoginUserName": {
-            "value": "admin"
-        },
-        "clusterLoginPassword": {
+        "avereServicePrincipalPassword": {
             "value": ""
         },
-        "sshPassword": {
+        "avereSSHKeyData": {
+            "value": ""
+        },
+        "avereAdminPassword": {
+            "value": ""
+        },
+        "tomcatDockerImage": {
+            "value": ""
+        },
+        "ivaDockerImage": {
+            "value": ""
+        },
+        "solrClusterLoginPassword": {
             "value": ""
         }
-       
     }
 }

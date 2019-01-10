@@ -92,7 +92,7 @@ public class VariantSearchManager {
         this.cellBaseClient = new CellBaseClient(storageConfiguration.getCellbase().toClientConfiguration());
         this.variantSearchToVariantConverter = new VariantSearchToVariantConverter();
 
-        this.solrManager = new SolrManager(storageConfiguration.getSearch().getHost(), storageConfiguration.getSearch().getMode(),
+        this.solrManager = new SolrManager(storageConfiguration.getSearch().getHosts(), storageConfiguration.getSearch().getMode(),
                 storageConfiguration.getSearch().getTimeout());
 
         // Set internal insert batch size from configuration and default value
