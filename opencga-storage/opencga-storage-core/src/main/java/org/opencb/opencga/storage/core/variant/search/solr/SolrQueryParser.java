@@ -27,7 +27,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.commons.utils.CollectionUtils;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -50,7 +50,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils
  */
 public class SolrQueryParser {
 
-    private final StudyConfigurationManager studyConfigurationManager;
+    private final VariantStorageMetadataManager variantStorageMetadataManager;
 
     private static Map<String, String> includeMap;
 
@@ -89,8 +89,8 @@ public class SolrQueryParser {
         includeMap.put("annotation.traitAssociation", "traits");
     }
 
-    public SolrQueryParser(StudyConfigurationManager studyConfigurationManager) {
-        this.studyConfigurationManager = studyConfigurationManager;
+    public SolrQueryParser(VariantStorageMetadataManager variantStorageMetadataManager) {
+        this.variantStorageMetadataManager = variantStorageMetadataManager;
         initChromosomeMap();
     }
 
@@ -239,9 +239,9 @@ public class SolrQueryParser {
         if (isValidParam(query, VariantQueryParam.STUDY)) {
             String value = query.getString(key);
             VariantQueryUtils.QueryOperation op = checkOperator(value);
-            Set<Integer> studyIds = new HashSet<>(studyConfigurationManager.getStudyIds(splitValue(value, op), queryOptions));
+            Set<Integer> studyIds = new HashSet<>(variantStorageMetadataManager.getStudyIds(splitValue(value, op), queryOptions));
             List<String> studyNames = new ArrayList<>(studyIds.size());
-            Map<String, Integer> map = studyConfigurationManager.getStudies(null);
+            Map<String, Integer> map = variantStorageMetadataManager.getStudies(null);
             if (map != null && map.size() > 1) {
                 map.forEach((name, id) -> {
                     if (studyIds.contains(id)) {

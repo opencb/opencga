@@ -45,7 +45,7 @@ import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -85,10 +85,10 @@ public class VariantSearchManager {
         throw new UnsupportedOperationException("Not supported!!");
     }
 
-    public VariantSearchManager(StudyConfigurationManager studyConfigurationManager, StorageConfiguration storageConfiguration) {
+    public VariantSearchManager(VariantStorageMetadataManager variantStorageMetadataManager, StorageConfiguration storageConfiguration) {
         this.storageConfiguration = storageConfiguration;
 
-        this.solrQueryParser = new SolrQueryParser(studyConfigurationManager);
+        this.solrQueryParser = new SolrQueryParser(variantStorageMetadataManager);
         this.cellBaseClient = new CellBaseClient(storageConfiguration.getCellbase().toClientConfiguration());
         this.variantSearchToVariantConverter = new VariantSearchToVariantConverter();
 

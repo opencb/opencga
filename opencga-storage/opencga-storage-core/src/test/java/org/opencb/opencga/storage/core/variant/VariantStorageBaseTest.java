@@ -296,7 +296,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
         StoragePipelineResult storagePipelineResult = runETL(variantStorageManager, inputUri, outputUri, newParams, true, doTransform, doLoad);
 
         try (VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor()) {
-            StudyConfiguration newStudyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyName(), null).first();
+            StudyConfiguration newStudyConfiguration = dbAdaptor.getVariantStorageMetadataManager().getStudyConfiguration(studyConfiguration.getStudyName(), null).first();
             if (newStudyConfiguration != null) {
                 studyConfiguration.copy(newStudyConfiguration);
             }

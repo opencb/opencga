@@ -27,7 +27,7 @@ import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.mongodb.variant.protobuf.VariantMongoDBProto;
@@ -56,7 +56,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
     private final Map<Integer, LinkedHashMap<String, Integer>> __samplesPosition;
     private final Map<Integer, Set<String>> studyDefaultGenotypeSet;
     private Map<Integer, LinkedHashSet<Integer>> includeSamples;
-    private StudyConfigurationManager studyConfigurationManager;
+    private VariantStorageMetadataManager variantStorageMetadataManager;
     private String unknownGenotype;
     private List<String> format;
 
@@ -113,7 +113,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         __samplesPosition = new HashMap<>();
         studyDefaultGenotypeSet = new HashMap<>();
         includeSamples = Collections.emptyMap();
-        studyConfigurationManager = null;
+        variantStorageMetadataManager = null;
         unknownGenotype = UNKNOWN_GENOTYPE;
     }
 
@@ -146,9 +146,9 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         studyDefaultGenotypeSet.put(studyId, Collections.singleton(defaultGenotype));
     }
 
-    public DocumentToSamplesConverter(StudyConfigurationManager studyConfigurationManager) {
+    public DocumentToSamplesConverter(VariantStorageMetadataManager variantStorageMetadataManager) {
         this();
-        this.studyConfigurationManager = studyConfigurationManager;
+        this.variantStorageMetadataManager = variantStorageMetadataManager;
     }
 
     public DocumentToSamplesConverter(StudyConfiguration studyConfiguration) {
@@ -172,9 +172,9 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
      */
     public List<List<String>> convertToDataModelType(Document object, StudyEntry study, int studyId) {
 
-        if (!studyConfigurations.containsKey(studyId) && studyConfigurationManager != null) { // Samples not set as constructor argument,
+        if (!studyConfigurations.containsKey(studyId) && variantStorageMetadataManager != null) { // Samples not set as constructor argument,
             // need to query
-            QueryResult<StudyConfiguration> queryResult = studyConfigurationManager.getStudyConfiguration(studyId, null);
+            QueryResult<StudyConfiguration> queryResult = variantStorageMetadataManager.getStudyConfiguration(studyId, null);
             if (queryResult.first() == null) {
                 logger.warn("DocumentToSamplesConverter.convertToDataModelType StudyConfiguration {studyId: {}} not found! Looking for "
                         + "VariantSource", studyId);

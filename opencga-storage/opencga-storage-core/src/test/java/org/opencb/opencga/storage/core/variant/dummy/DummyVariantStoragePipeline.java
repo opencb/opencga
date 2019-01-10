@@ -20,7 +20,7 @@ import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
+import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -59,8 +59,8 @@ public class DummyVariantStoragePipeline extends VariantStoragePipeline {
         super.securePreLoad(studyConfiguration, source);
 
         List<Integer> fileIds = Collections.singletonList(getFileId());
-        BatchFileOperation op = new BatchFileOperation("load", fileIds, 1, BatchFileOperation.Type.LOAD);
-        op.addStatus(BatchFileOperation.Status.RUNNING);
+        BatchFileTask op = new BatchFileTask("load", fileIds, 1, BatchFileTask.Type.LOAD);
+        op.addStatus(BatchFileTask.Status.RUNNING);
         studyConfiguration.getBatches().add(op);
     }
 
@@ -77,10 +77,10 @@ public class DummyVariantStoragePipeline extends VariantStoragePipeline {
             }
         }
         if (getOptions().getBoolean(VARIANTS_LOAD_FAIL) || getOptions().getString(VARIANTS_LOAD_FAIL).equals(Paths.get(input).getFileName().toString())) {
-            getStudyConfigurationManager().atomicSetStatus(getStudyId(), BatchFileOperation.Status.ERROR, "load", fileIds);
+            getStudyConfigurationManager().atomicSetStatus(getStudyId(), BatchFileTask.Status.ERROR, "load", fileIds);
             throw new StorageEngineException("Error loading file " + input);
         } else {
-            getStudyConfigurationManager().atomicSetStatus(getStudyId(), BatchFileOperation.Status.DONE, "load", fileIds);
+            getStudyConfigurationManager().atomicSetStatus(getStudyId(), BatchFileTask.Status.DONE, "load", fileIds);
         }
         return input;
     }
@@ -91,7 +91,7 @@ public class DummyVariantStoragePipeline extends VariantStoragePipeline {
 
         VariantFileMetadata fileMetadata = readVariantFileMetadata(input);
         fileMetadata.setId(String.valueOf(getFileId()));
-        dbAdaptor.getStudyConfigurationManager().updateVariantFileMetadata(getStudyId(), fileMetadata);
+        dbAdaptor.getVariantStorageMetadataManager().updateVariantFileMetadata(getStudyId(), fileMetadata);
 
         return super.postLoad(input, output);
     }
@@ -99,9 +99,9 @@ public class DummyVariantStoragePipeline extends VariantStoragePipeline {
     @Override
     public void securePostLoad(List<Integer> fileIds, StudyConfiguration studyConfiguration) throws StorageEngineException {
         super.securePostLoad(fileIds, studyConfiguration);
-        BatchFileOperation.Status status = dbAdaptor.getStudyConfigurationManager()
-                .setStatus(studyConfiguration, BatchFileOperation.Status.READY, "load", fileIds);
-        if (status != BatchFileOperation.Status.DONE) {
+        BatchFileTask.Status status = dbAdaptor.getVariantStorageMetadataManager()
+                .setStatus(studyConfiguration, BatchFileTask.Status.READY, "load", fileIds);
+        if (status != BatchFileTask.Status.DONE) {
             logger.warn("Unexpected status " + status);
         }
     }

@@ -21,7 +21,7 @@ import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
@@ -88,7 +88,7 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public void removeStudy(String studyName) throws StorageEngineException {
-        getStudyConfigurationManager().lockAndUpdate(studyName, studyConfiguration -> {
+        getVariantStorageMetadataManager().lockAndUpdateOld(studyName, studyConfiguration -> {
             studyConfiguration.getIndexedFiles().clear();
             studyConfiguration.getCalculatedStats().clear();
             studyConfiguration.getInvalidStats().clear();
@@ -98,7 +98,7 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public StudyConfigurationManager getStudyConfigurationManager() throws StorageEngineException {
-        return new StudyConfigurationManager(new DummyProjectMetadataAdaptor(), new DummyStudyConfigurationAdaptor(), new DummyVariantFileMetadataDBAdaptor());
+    public VariantStorageMetadataManager getVariantStorageMetadataManager() throws StorageEngineException {
+        return new VariantStorageMetadataManager(new DummyProjectMetadataAdaptor(), new DummyStudyConfigurationAdaptor(), new DummyVariantFileMetadataDBAdaptor());
     }
 }

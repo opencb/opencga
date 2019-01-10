@@ -15,7 +15,7 @@ import org.opencb.biodata.tools.variant.merge.VariantAlternateRearranger;
 import org.opencb.biodata.tools.variant.stats.VariantStatsCalculator;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
@@ -79,7 +79,7 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
             sampleIds = samples.stream().map(sc.getSampleIds()::get).collect(Collectors.toList());
             sampleIdsSet = samples.stream().map(sc.getSampleIds()::get).collect(Collectors.toSet());
 
-            fileIds = StudyConfigurationManager.getFileIdsFromSampleIds(sc, sampleIds);
+            fileIds = VariantStorageMetadataManager.getFileIdsFromSampleIds(sc, sampleIds);
             super.setSelectVariantElements(new VariantQueryUtils.SelectVariantElements(sc, sampleIds, Collections.emptyList()));
             super.setUnknownGenotype("./.");
         }

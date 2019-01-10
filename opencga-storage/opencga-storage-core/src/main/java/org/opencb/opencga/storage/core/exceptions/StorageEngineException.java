@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.storage.core.exceptions;
 
-import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
+import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 
@@ -49,17 +49,17 @@ public class StorageEngineException extends Exception {
         return unableToExecute(action, fileId, sc.getFileIds().inverse().get(fileId));
     }
 
-    public static StorageEngineException otherOperationInProgressException(BatchFileOperation opInProgress,
-                                                                           BatchFileOperation currentOperation) {
+    public static StorageEngineException otherOperationInProgressException(BatchFileTask opInProgress,
+                                                                           BatchFileTask currentOperation) {
         return otherOperationInProgressException(opInProgress, currentOperation.getOperationName(), currentOperation.getFileIds());
     }
 
-    public static StorageEngineException otherOperationInProgressException(BatchFileOperation operation, String jobOperationName,
+    public static StorageEngineException otherOperationInProgressException(BatchFileTask operation, String jobOperationName,
                                                                            List<Integer> fileIds) {
         return otherOperationInProgressException(operation, jobOperationName, fileIds, false);
     }
 
-    public static StorageEngineException otherOperationInProgressException(BatchFileOperation opInProgress, String currentOperationName,
+    public static StorageEngineException otherOperationInProgressException(BatchFileTask opInProgress, String currentOperationName,
                                                                            List<Integer> fileIds, boolean resume) {
         if (opInProgress.sameOperation(fileIds, opInProgress.getType(), currentOperationName)) {
             return currentOperationInProgressException(opInProgress);
@@ -76,7 +76,7 @@ public class StorageEngineException extends Exception {
         }
     }
 
-    public static StorageEngineException currentOperationInProgressException(BatchFileOperation opInProgress) {
+    public static StorageEngineException currentOperationInProgressException(BatchFileTask opInProgress) {
         return new StorageEngineException("Operation \"" + opInProgress.getOperationName() + "\" "
                 + "for files " + opInProgress.getFileIds() + ' '
                 + "in status \"" + opInProgress.currentStatus() + "\". "

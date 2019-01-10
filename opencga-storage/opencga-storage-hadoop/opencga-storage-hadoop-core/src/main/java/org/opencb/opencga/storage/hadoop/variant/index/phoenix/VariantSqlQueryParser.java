@@ -32,7 +32,7 @@ import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
@@ -78,7 +78,7 @@ public class VariantSqlQueryParser {
     private final GenomeHelper genomeHelper;
     private final String variantTable;
     private final Logger logger = LoggerFactory.getLogger(VariantSqlQueryParser.class);
-    private final StudyConfigurationManager studyConfigurationManager;
+    private final VariantStorageMetadataManager variantStorageMetadataManager;
     private final boolean clientSideSkip;
 
     private static final Map<String, String> SQL_OPERATOR;
@@ -108,15 +108,15 @@ public class VariantSqlQueryParser {
         }
     }
 
-    public VariantSqlQueryParser(GenomeHelper genomeHelper, String variantTable, StudyConfigurationManager studyConfigurationManager) {
-        this(genomeHelper, variantTable, studyConfigurationManager, false);
+    public VariantSqlQueryParser(GenomeHelper genomeHelper, String variantTable, VariantStorageMetadataManager variantStorageMetadataManager) {
+        this(genomeHelper, variantTable, variantStorageMetadataManager, false);
     }
 
     public VariantSqlQueryParser(GenomeHelper genomeHelper, String variantTable,
-                                 StudyConfigurationManager studyConfigurationManager, boolean clientSideSkip) {
+                                 VariantStorageMetadataManager variantStorageMetadataManager, boolean clientSideSkip) {
         this.genomeHelper = genomeHelper;
         this.variantTable = variantTable;
-        this.studyConfigurationManager = studyConfigurationManager;
+        this.variantStorageMetadataManager = variantStorageMetadataManager;
         this.clientSideSkip = clientSideSkip;
     }
 
@@ -204,7 +204,7 @@ public class VariantSqlQueryParser {
         if (options.getBoolean(COUNT)) {
             return sb.append(" COUNT(*) ");
         } else {
-            SelectVariantElements selectVariantElements = parseSelectElements(query, options, studyConfigurationManager);
+            SelectVariantElements selectVariantElements = parseSelectElements(query, options, variantStorageMetadataManager);
             phoenixSQLQuery.select = selectVariantElements;
             Set<VariantField> returnedFields = selectVariantElements.getFields();
             Map<Integer, List<Integer>> returnedSamples = selectVariantElements.getSamples();
@@ -218,7 +218,7 @@ public class VariantSqlQueryParser {
 
             if (returnedFields.contains(VariantField.STUDIES)) {
                 for (Integer studyId : studyIds) {
-                    StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, null).first();
+                    StudyConfiguration studyConfiguration = variantStorageMetadataManager.getStudyConfiguration(studyId, null).first();
                     Column studyColumn = VariantPhoenixHelper.getStudyColumn(studyId);
                     sb.append(",\"").append(studyColumn.column()).append('"');
                     sb.append(",\"").append(VariantPhoenixHelper.getFillMissingColumn(studyId).column()).append('"');
@@ -248,7 +248,7 @@ public class VariantSqlQueryParser {
                     }
                     // Check if any of the files from the included samples is not being returned.
                     // If don't, add it to the return list.
-                    Set<Integer> fileIds = StudyConfigurationManager.getFileIdsFromSampleIds(
+                    Set<Integer> fileIds = VariantStorageMetadataManager.getFileIdsFromSampleIds(
                             selectVariantElements.getStudyConfigurations().get(studyId), sampleIds);
                     List<Integer> includeFiles = selectVariantElements.getFiles().get(studyId);
                     for (Integer fileId : fileIds) {
@@ -264,7 +264,7 @@ public class VariantSqlQueryParser {
                 sb.append(',').append(VariantColumn.FULL_ANNOTATION);
                 sb.append(',').append(VariantColumn.ANNOTATION_ID);
 
-                int release = studyConfigurationManager.getProjectMetadata().first().getRelease();
+                int release = variantStorageMetadataManager.getProjectMetadata().first().getRelease();
                 for (int i = 1; i <= release; i++) {
                     sb.append(',');
                     VariantPhoenixHelper.buildReleaseColumnKey(i, sb);
@@ -555,11 +555,11 @@ public class VariantSqlQueryParser {
             List<String> values = splitValue(value, operation);
             StringBuilder sb = new StringBuilder();
             Iterator<String> iterator = values.iterator();
-            Map<String, Integer> studies = studyConfigurationManager.getStudies(options);
+            Map<String, Integer> studies = variantStorageMetadataManager.getStudies(options);
             Set<Integer> notNullStudies = new HashSet<>();
             while (iterator.hasNext()) {
                 String study = iterator.next();
-                Integer studyId = studyConfigurationManager.getStudyId(study, false, studies);
+                Integer studyId = variantStorageMetadataManager.getStudyId(study, false, studies);
                 if (isNegated(study)) {
                     sb.append("\"").append(getStudyColumn(studyId).column()).append("\" IS NULL ");
                 } else {
@@ -578,16 +578,16 @@ public class VariantSqlQueryParser {
             if (studies.values().size() != notNullStudies.size() || !notNullStudies.containsAll(studies.values())) {
                 filters.add(sb.toString());
             }
-            List<Integer> studyIds = studyConfigurationManager.getStudyIds(values, options);
+            List<Integer> studyIds = variantStorageMetadataManager.getStudyIds(values, options);
             if (studyIds.size() == 1) {
-                defaultStudyConfiguration = studyConfigurationManager.getStudyConfiguration(studyIds.get(0), options).first();
+                defaultStudyConfiguration = variantStorageMetadataManager.getStudyConfiguration(studyIds.get(0), options).first();
             } else {
                 defaultStudyConfiguration = null;
             }
         } else {
-            List<Integer> studyIds = studyConfigurationManager.getStudyIds(options);
+            List<Integer> studyIds = variantStorageMetadataManager.getStudyIds(options);
             if (studyIds.size() == 1) {
-                defaultStudyConfiguration = studyConfigurationManager.getStudyConfiguration(studyIds.get(0), options).first();
+                defaultStudyConfiguration = variantStorageMetadataManager.getStudyConfiguration(studyIds.get(0), options).first();
             } else {
                 defaultStudyConfiguration = null;
             }
@@ -653,7 +653,7 @@ public class VariantSqlQueryParser {
             StringBuilder sb = new StringBuilder();
             for (Iterator<String> iterator = files.iterator(); iterator.hasNext();) {
                 String file = iterator.next();
-                Pair<Integer, Integer> fileIdPair = studyConfigurationManager.getFileIdPair(file, false, defaultStudyConfiguration);
+                Pair<Integer, Integer> fileIdPair = variantStorageMetadataManager.getFileIdPair(file, false, defaultStudyConfiguration);
 
                 sb.append(" ( ");
                 if (isNegated(file)) {
@@ -779,14 +779,14 @@ public class VariantSqlQueryParser {
                 String[] studyCohort = splitStudyResource(cohort);
                 StudyConfiguration studyConfiguration;
                 if (studyCohort.length == 2) {
-                    studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyCohort[0], defaultStudyConfiguration, null);
+                    studyConfiguration = variantStorageMetadataManager.getStudyConfiguration(studyCohort[0], defaultStudyConfiguration, null);
                     cohort = studyCohort[1];
                 } else if (studyCohort.length == 1) {
                     studyConfiguration = defaultStudyConfiguration;
                 } else {
                     throw VariantQueryException.malformedParam(COHORT, query.getString((COHORT.key())), "Expected {study}:{cohort}");
                 }
-                int cohortId = studyConfigurationManager.getCohortId(cohort, studyConfiguration);
+                int cohortId = variantStorageMetadataManager.getCohortId(cohort, studyConfiguration);
                 Column column = getStatsColumn(studyConfiguration.getStudyId(), cohortId);
                 if (negated) {
                     filters.add("\"" + column + "\" IS NULL");
@@ -841,11 +841,11 @@ public class VariantSqlQueryParser {
             List<String> gtFilters = new ArrayList<>(genotypesMap.size());
             for (Map.Entry<Object, List<String>> entry : genotypesMap.entrySet()) {
                 if (defaultStudyConfiguration == null) {
-                    List<String> studyNames = studyConfigurationManager.getStudyNames(null);
+                    List<String> studyNames = variantStorageMetadataManager.getStudyNames(null);
                     throw VariantQueryException.missingStudyForSample(entry.getKey().toString(), studyNames);
                 }
                 int studyId = defaultStudyConfiguration.getStudyId();
-                int sampleId = studyConfigurationManager.getSampleId(entry.getKey(), defaultStudyConfiguration);
+                int sampleId = variantStorageMetadataManager.getSampleId(entry.getKey(), defaultStudyConfiguration);
 
                 List<String> genotypes = GenotypeClass.filter(entry.getValue(), loadedGenotypes);
 
@@ -926,7 +926,7 @@ public class VariantSqlQueryParser {
                 i++;
 
                 String infoValues = entry.getValue();
-                Pair<Integer, Integer> fileIdPair = studyConfigurationManager
+                Pair<Integer, Integer> fileIdPair = variantStorageMetadataManager
                         .getFileIdPair(entry.getKey(), false, defaultStudyConfiguration);
                 Pair<QueryOperation, List<String>> infoPair = splitValue(infoValues);
                 for (String infoValue : infoPair.getValue()) {
@@ -994,7 +994,7 @@ public class VariantSqlQueryParser {
                 i++;
 
                 String formatValues = entry.getValue();
-                int sampleId = studyConfigurationManager.getSampleId(entry.getKey(), defaultStudyConfiguration);
+                int sampleId = variantStorageMetadataManager.getSampleId(entry.getKey(), defaultStudyConfiguration);
                 Pair<QueryOperation, List<String>> formatPair = splitValue(formatValues);
                 for (String formatValue : formatPair.getValue()) {
 
@@ -1245,12 +1245,12 @@ public class VariantSqlQueryParser {
             if (split.length == 2) {
                 String study = split[0];
                 cohort = split[1];
-                sc = studyConfigurationManager.getStudyConfiguration(study, defaultStudyConfiguration, null);
+                sc = variantStorageMetadataManager.getStudyConfiguration(study, defaultStudyConfiguration, null);
             } else {
                 cohort = key;
                 sc = defaultStudyConfiguration;
             }
-            int cohortId = studyConfigurationManager.getCohortId(cohort, sc);
+            int cohortId = variantStorageMetadataManager.getCohortId(cohort, sc);
 
             return columnBuilder.apply(sc.getStudyId(), cohortId);
         };

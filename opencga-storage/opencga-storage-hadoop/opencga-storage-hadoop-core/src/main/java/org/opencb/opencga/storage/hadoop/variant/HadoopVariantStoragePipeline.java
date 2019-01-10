@@ -41,7 +41,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.io.proto.ProtoFileWriter;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -358,7 +358,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
 
     @Override
     public URI postLoad(URI input, URI output) throws StorageEngineException {
-        StudyConfigurationManager scm = getStudyConfigurationManager();
+        VariantStorageMetadataManager scm = getStudyConfigurationManager();
 
         try {
             int studyId = getStudyId();

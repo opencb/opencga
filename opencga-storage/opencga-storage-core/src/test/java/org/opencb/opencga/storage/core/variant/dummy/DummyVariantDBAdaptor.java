@@ -30,7 +30,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
@@ -113,7 +113,7 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
 
             Map<Integer, List<Integer>> returnedSamples = getReturnedSamples(query, options);
             returnedSamples.forEach((study, samples) -> {
-                StudyConfiguration sc = getStudyConfigurationManager().getStudyConfiguration(study, null).first();
+                StudyConfiguration sc = getVariantStorageMetadataManager().getStudyConfiguration(study, null).first();
                 if (sc.getIndexedFiles().isEmpty()) {
                     // Ignore non indexed studies
                     return; // continue
@@ -194,12 +194,12 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public StudyConfigurationManager getStudyConfigurationManager() {
-        return new StudyConfigurationManager(new DummyProjectMetadataAdaptor(), new DummyStudyConfigurationAdaptor(), new DummyVariantFileMetadataDBAdaptor());
+    public VariantStorageMetadataManager getVariantStorageMetadataManager() {
+        return new VariantStorageMetadataManager(new DummyProjectMetadataAdaptor(), new DummyStudyConfigurationAdaptor(), new DummyVariantFileMetadataDBAdaptor());
     }
 
     @Override
-    public void setStudyConfigurationManager(StudyConfigurationManager studyConfigurationManager) {
+    public void setVariantStorageMetadataManager(VariantStorageMetadataManager variantStorageMetadataManager) {
 
     }
 

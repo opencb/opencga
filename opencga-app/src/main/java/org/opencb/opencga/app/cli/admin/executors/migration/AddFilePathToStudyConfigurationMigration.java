@@ -10,7 +10,7 @@ import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +54,7 @@ public class AddFilePathToStudyConfigurationMigration {
                 if (dataStores.add(dataStore)) {
                     VariantStorageEngine engine = factory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
 
-                    StudyConfigurationManager scm = engine.getStudyConfigurationManager();
+                    VariantStorageMetadataManager scm = engine.getVariantStorageMetadataManager();
                     for (String studyName : scm.getStudyNames(null)) {
                         StudyConfiguration sc = scm.getStudyConfiguration(studyName, null).first();
                         logger.info("Migrating study " + sc.getStudyName());

@@ -30,9 +30,9 @@ import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
+import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.transform.DiscardDuplicatedVariantsResolver;
@@ -99,10 +99,10 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         boolean resume = options.getBoolean(VariantStorageEngine.Options.RESUME.key(), VariantStorageEngine.Options.RESUME.defaultValue());
         List<Integer> fileIds = Collections.singletonList(getFileId());
 
-        StudyConfigurationManager.addBatchOperation(studyConfiguration, OPERATION_NAME, fileIds, resume, BatchFileOperation.Type.LOAD,
+        VariantStorageMetadataManager.addBatchOperation(studyConfiguration, OPERATION_NAME, fileIds, resume, BatchFileTask.Type.LOAD,
                 operation -> {
                     if (operation.getOperationName().equals(OPERATION_NAME)) {
-                        if (operation.currentStatus().equals(BatchFileOperation.Status.ERROR)) {
+                        if (operation.currentStatus().equals(BatchFileTask.Status.ERROR)) {
                             Integer fileId = operation.getFileIds().get(0);
                             String fileName = studyConfiguration.getFileIds().inverse().get(fileId);
                             logger.warn("Pending load operation for file " + fileName + " (" + fileId + ')');
@@ -328,17 +328,17 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
     }
 
     private void updateLoadedGenotypes(HashSet<String> loadedGenotypes) throws StorageEngineException {
-        getStudyConfigurationManager().lockAndUpdate(getStudyId(), sc -> {
-            loadedGenotypes.addAll(sc.getAttributes().getAsStringList(VariantStorageEngine.Options.LOADED_GENOTYPES.key()));
-            sc.getAttributes().put(VariantStorageEngine.Options.LOADED_GENOTYPES.key(), loadedGenotypes);
-            return sc;
+        getStudyConfigurationManager().lockAndUpdate(getStudyId(), sm -> {
+            loadedGenotypes.addAll(sm.getAttributes().getAsStringList(VariantStorageEngine.Options.LOADED_GENOTYPES.key()));
+            sm.getAttributes().put(VariantStorageEngine.Options.LOADED_GENOTYPES.key(), loadedGenotypes);
+            return sm;
         });
     }
 
     @Override
     public void securePostLoad(List<Integer> fileIds, StudyConfiguration studyConfiguration) throws StorageEngineException {
         super.securePostLoad(fileIds, studyConfiguration);
-        StudyConfigurationManager.setStatus(studyConfiguration, BatchFileOperation.Status.READY, OPERATION_NAME, fileIds);
+        VariantStorageMetadataManager.setStatus(studyConfiguration, BatchFileTask.Status.READY, OPERATION_NAME, fileIds);
     }
 
     private VariantHadoopDBWriter newVariantHadoopDBWriter() throws StorageEngineException {

@@ -21,7 +21,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -106,7 +106,7 @@ public interface VariantStatisticsManager {
 
         Set<Integer> sampleIds = new HashSet<>();
         for (Object cohort : cohorts) {
-            Integer cohortId = StudyConfigurationManager.getCohortIdFromStudy(cohort, studyConfiguration);
+            Integer cohortId = VariantStorageMetadataManager.getCohortIdFromStudy(cohort, studyConfiguration);
             sampleIds.addAll(studyConfiguration.getCohorts().get(cohortId));
         }
 

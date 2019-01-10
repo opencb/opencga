@@ -41,7 +41,7 @@ public abstract class VariantImporter {
 
     public void importData(URI inputUri) throws StorageEngineException, IOException {
         VariantMetadataImporter metadataImporter = new VariantMetadataImporter();
-        VariantMetadata metadata = metadataImporter.importMetaData(inputUri, dbAdaptor.getStudyConfigurationManager());
+        VariantMetadata metadata = metadataImporter.importMetaData(inputUri, dbAdaptor.getVariantStorageMetadataManager());
 
         importData(inputUri, metadata);
     }

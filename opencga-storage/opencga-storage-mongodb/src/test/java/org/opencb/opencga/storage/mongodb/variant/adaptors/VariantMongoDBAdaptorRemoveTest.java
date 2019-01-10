@@ -117,7 +117,7 @@ public class VariantMongoDBAdaptorRemoveTest extends VariantStorageBaseTest impl
         studyConfiguration.getCohorts().put(10, cohort1);
         studyConfiguration.getCohorts().put(11, cohort2);
 
-        dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, QueryOptions.empty());
+        dbAdaptor.getVariantStorageMetadataManager().updateStudyConfiguration(studyConfiguration, QueryOptions.empty());
 
         variantStorageEngine.calculateStats(studyConfiguration.getStudyName(),
                 new ArrayList<>(cohortIds.keySet()), options);

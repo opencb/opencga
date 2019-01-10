@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.core.metadata;
+package org.opencb.opencga.storage.core.metadata.models;
+
+import org.apache.commons.lang3.RandomUtils;
 
 import java.util.*;
 
@@ -28,9 +30,10 @@ import java.util.*;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class BatchFileOperation {
+public class BatchFileTask {
 
     public enum Status {
+        NONE,
         RUNNING,
         DONE,       // Finished, but some work still needed (optional)
         READY,
@@ -43,23 +46,29 @@ public class BatchFileOperation {
         OTHER
     }
 
+    private int id;
     private String operationName;
     private List<Integer> fileIds;
     private long timestamp;
     private final TreeMap<Date, Status> status = new TreeMap<>(Date::compareTo);
     private Type type = Type.OTHER;
 
-    public BatchFileOperation() {
+    public BatchFileTask() {
+        // FIXME
+        id = RandomUtils.nextInt();
     }
 
-    public BatchFileOperation(String operationName, List<Integer> fileIds, long timestamp, Type type) {
+    public BatchFileTask(String operationName, List<Integer> fileIds, long timestamp, Type type) {
+        this();
         this.operationName = operationName;
         this.fileIds = fileIds;
         this.timestamp = timestamp;
         this.type = type;
     }
 
-    public BatchFileOperation(BatchFileOperation batch) {
+    public BatchFileTask(BatchFileTask batch) {
+        this();
+        this.id = batch.id;
         this.operationName = batch.operationName;
         this.fileIds = new ArrayList<>(batch.fileIds);
         this.timestamp = batch.timestamp;
@@ -82,8 +91,17 @@ public class BatchFileOperation {
         return operationName;
     }
 
-    public BatchFileOperation setOperationName(String operationName) {
+    public BatchFileTask setOperationName(String operationName) {
         this.operationName = operationName;
+        return this;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public BatchFileTask setId(int id) {
+        this.id = id;
         return this;
     }
 
@@ -91,7 +109,7 @@ public class BatchFileOperation {
         return fileIds;
     }
 
-    public BatchFileOperation setFileIds(List<Integer> fileIds) {
+    public BatchFileTask setFileIds(List<Integer> fileIds) {
         this.fileIds = fileIds;
         return this;
     }
@@ -100,7 +118,7 @@ public class BatchFileOperation {
         return timestamp;
     }
 
-    public BatchFileOperation setTimestamp(long timestamp) {
+    public BatchFileTask setTimestamp(long timestamp) {
         this.timestamp = timestamp;
         return this;
     }
@@ -109,11 +127,11 @@ public class BatchFileOperation {
         return status;
     }
 
-    public BatchFileOperation addStatus(Status status) {
+    public BatchFileTask addStatus(Status status) {
         return addStatus(Calendar.getInstance().getTime(), status);
     }
 
-    public BatchFileOperation addStatus(Date date, Status status) {
+    public BatchFileTask addStatus(Date date, Status status) {
         this.status.put(date, status);
         return this;
     }
@@ -122,7 +140,7 @@ public class BatchFileOperation {
         return type;
     }
 
-    public BatchFileOperation setType(Type type) {
+    public BatchFileTask setType(Type type) {
         this.type = type;
         return this;
     }

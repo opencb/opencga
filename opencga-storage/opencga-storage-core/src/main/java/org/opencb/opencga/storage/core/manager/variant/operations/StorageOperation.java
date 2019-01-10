@@ -33,9 +33,9 @@ import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.variant.metadata.CatalogStudyConfigurationFactory;
-import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator;
 import org.slf4j.Logger;
@@ -114,9 +114,9 @@ public abstract class StorageOperation {
             throws IOException, CatalogException, StorageEngineException {
 
         CatalogStudyConfigurationFactory studyConfigurationFactory = new CatalogStudyConfigurationFactory(catalogManager);
-        StudyConfigurationManager studyConfigurationManager = getVariantStorageEngine(dataStore).getStudyConfigurationManager();
+        VariantStorageMetadataManager variantStorageMetadataManager = getVariantStorageEngine(dataStore).getVariantStorageMetadataManager();
 
-        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(study, null).first();
+        StudyConfiguration studyConfiguration = variantStorageMetadataManager.getStudyConfiguration(study, null).first();
         if (studyConfiguration != null) {
             // Update Catalog file and cohort status.
             studyConfigurationFactory.updateCatalogFromStudyConfiguration(studyConfiguration, sessionId);
@@ -257,7 +257,7 @@ public abstract class StorageOperation {
         return prefix + userId + '_' + alias;
     }
 
-    public static void updateProjectMetadata(CatalogManager catalog, StudyConfigurationManager scm, String project, String sessionId)
+    public static void updateProjectMetadata(CatalogManager catalog, VariantStorageMetadataManager scm, String project, String sessionId)
             throws CatalogException, StorageEngineException {
         final Project p = catalog.getProjectManager().get(project,
                 new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
@@ -268,7 +268,7 @@ public abstract class StorageOperation {
         StorageOperation.updateProjectMetadata(scm, p.getOrganism(), p.getCurrentRelease());
     }
 
-    public static void updateProjectMetadata(StudyConfigurationManager scm, Project.Organism organism, int release)
+    public static void updateProjectMetadata(VariantStorageMetadataManager scm, Project.Organism organism, int release)
             throws CatalogException, StorageEngineException {
         String scientificName = AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName(organism.getScientificName());
 

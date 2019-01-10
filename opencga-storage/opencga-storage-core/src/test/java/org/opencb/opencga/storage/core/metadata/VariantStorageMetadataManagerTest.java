@@ -39,17 +39,17 @@ import static org.junit.Assert.assertTrue;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class StudyConfigurationManagerTest {
+public class VariantStorageMetadataManagerTest {
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
-    private StudyConfigurationManager scm;
+    private VariantStorageMetadataManager scm;
 
     @Before
     public void setUp() throws Exception {
         DummyProjectMetadataAdaptor.clear();
         DummyStudyConfigurationAdaptor.clear();
-        scm = new StudyConfigurationManager(new DummyProjectMetadataAdaptor(), new DummyStudyConfigurationAdaptor(), new DummyVariantFileMetadataDBAdaptor());
+        scm = new VariantStorageMetadataManager(new DummyProjectMetadataAdaptor(), new DummyStudyConfigurationAdaptor(), new DummyVariantFileMetadataDBAdaptor());
     }
 
     protected StudyConfiguration newStudyConfiguration() {

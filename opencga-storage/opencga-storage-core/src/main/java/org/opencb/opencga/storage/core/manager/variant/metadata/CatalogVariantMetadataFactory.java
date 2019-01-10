@@ -14,7 +14,7 @@ import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -51,7 +51,7 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
     private final String sessionId;
 
     public CatalogVariantMetadataFactory(CatalogManager catalogManager, VariantDBAdaptor dbAdaptor, String sessionId) {
-        super(dbAdaptor.getStudyConfigurationManager());
+        super(dbAdaptor.getVariantStorageMetadataManager());
         this.catalogManager = catalogManager;
         this.sessionId = sessionId;
     }

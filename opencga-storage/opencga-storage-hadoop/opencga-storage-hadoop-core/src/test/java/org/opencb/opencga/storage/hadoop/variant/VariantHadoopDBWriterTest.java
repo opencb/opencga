@@ -45,7 +45,7 @@ import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.run.ParallelTaskRunner;
-import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -209,10 +209,10 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
     private void loadVariantsBasic(StudyConfiguration sc, int fileId, List<Variant> variants) throws Exception {
         String archiveTableName = engine.getArchiveTableName(sc.getStudyId());
         sc.getAttributes().append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
-        dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(sc, new QueryOptions());
+        dbAdaptor.getVariantStorageMetadataManager().updateStudyConfiguration(sc, new QueryOptions());
         ArchiveTableHelper.createArchiveTableIfNeeded(dbAdaptor.getGenomeHelper(), archiveTableName);
         VariantTableHelper.createVariantTableIfNeeded(dbAdaptor.getGenomeHelper(), dbAdaptor.getVariantTable());
-        dbAdaptor.getStudyConfigurationManager().lockAndUpdateProject(projectMetadata -> {
+        dbAdaptor.getVariantStorageMetadataManager().lockAndUpdateProject(projectMetadata -> {
             if (projectMetadata == null) {
                 return new ProjectMetadata("hsapiens", "grch37", 1);
             } else {
@@ -223,7 +223,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         // Create empty VariantFileMetadata
         VariantFileMetadata fileMetadata = new VariantFileMetadata(String.valueOf(fileId), String.valueOf(fileId));
         fileMetadata.setSampleIds(variants.get(0).getStudies().get(0).getOrderedSamplesName());
-        dbAdaptor.getStudyConfigurationManager().updateVariantFileMetadata(String.valueOf(sc.getStudyId()), fileMetadata);
+        dbAdaptor.getVariantStorageMetadataManager().updateVariantFileMetadata(String.valueOf(sc.getStudyId()), fileMetadata);
 
         ArchiveTableHelper helper = new ArchiveTableHelper(dbAdaptor.getGenomeHelper(), sc.getStudyId(), fileMetadata);
 
@@ -233,7 +233,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
 
         // Writers
         VariantHBaseArchiveDataWriter archiveWriter = new VariantHBaseArchiveDataWriter(helper, archiveTableName, dbAdaptor.getHBaseManager());
-        VariantHadoopDBWriter hadoopDBWriter = new VariantHadoopDBWriter(helper, dbAdaptor.getVariantTable(), dbAdaptor.getStudyConfigurationManager().getProjectMetadata().first(), sc, dbAdaptor.getHBaseManager());
+        VariantHadoopDBWriter hadoopDBWriter = new VariantHadoopDBWriter(helper, dbAdaptor.getVariantTable(), dbAdaptor.getVariantStorageMetadataManager().getProjectMetadata().first(), sc, dbAdaptor.getHBaseManager());
 
         // Task
         HadoopLocalLoadVariantStoragePipeline.GroupedVariantsTask task = new HadoopLocalLoadVariantStoragePipeline.GroupedVariantsTask(archiveWriter, hadoopDBWriter, null, null);
@@ -245,7 +245,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
 
         // Mark files as indexed and register new samples in phoenix
         sc.getIndexedFiles().add(fileId);
-        dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(sc, QueryOptions.empty());
+        dbAdaptor.getVariantStorageMetadataManager().updateStudyConfiguration(sc, QueryOptions.empty());
         VariantPhoenixHelper phoenixHelper = new VariantPhoenixHelper(dbAdaptor.getGenomeHelper());
         phoenixHelper.registerNewStudy(dbAdaptor.getJdbcConnection(), dbAdaptor.getVariantTable(), sc.getStudyId());
         phoenixHelper.registerNewFiles(dbAdaptor.getJdbcConnection(), dbAdaptor.getVariantTable(), sc.getStudyId(), Collections.singleton(fileId), sc.getSamplesInFiles().get(fileId));
@@ -259,7 +259,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         // Create empty VariantFileMetadata
         VariantFileMetadata fileMetadata = new VariantFileMetadata(String.valueOf(fileId), String.valueOf(fileId));
         fileMetadata.setSampleIds(variants.get(0).getStudies().get(0).getOrderedSamplesName());
-        dbAdaptor.getStudyConfigurationManager().updateVariantFileMetadata(String.valueOf(study.getStudyId()), fileMetadata);
+        dbAdaptor.getVariantStorageMetadataManager().updateVariantFileMetadata(String.valueOf(study.getStudyId()), fileMetadata);
 
         // Create dummy reader
         VariantSliceReader reader = getVariantSliceReader(variants, study.getStudyId(), fileId);

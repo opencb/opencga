@@ -45,7 +45,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.plain.StringDataReader;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -140,14 +140,15 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                     Options.AGGREGATED_TYPE.defaultValue().toString()));
             options.put(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(), true);
         } else {
-            StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
+            VariantStorageMetadataManager smm = dbAdaptor.getVariantStorageMetadataManager();
             checkExistsStudyConfiguration(null);
-            studyConfiguration = scm.lockAndUpdate(study, existingStudyConfiguration -> {
+
+            studyConfiguration = smm.lockAndUpdateOld(study, existingStudyConfiguration -> {
                 if (existingStudyConfiguration.getAggregation() == null) {
                     existingStudyConfiguration.setAggregationStr(options.getString(Options.AGGREGATED_TYPE.key(),
                             Options.AGGREGATED_TYPE.defaultValue().toString()));
                 }
-                setFileId(scm.registerFile(existingStudyConfiguration, input.getPath()));
+                setFileId(smm.registerFile(existingStudyConfiguration, input.getPath()));
                 return existingStudyConfiguration;
             });
         }
@@ -468,7 +469,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
         VariantFileMetadata fileMetadata = readVariantFileMetadata(input);
         //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
-        dbAdaptor.getStudyConfigurationManager().lockAndUpdate(studyId, studyConfiguration -> {
+        dbAdaptor.getVariantStorageMetadataManager().lockAndUpdateOld(studyId, studyConfiguration -> {
             securePreLoad(studyConfiguration, fileMetadata);
             privateStudyConfiguration = studyConfiguration;
             return studyConfiguration;
@@ -481,7 +482,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
      * PreLoad step for modify the StudyConfiguration.
      * This step is executed inside a study lock.
      *
-     * @see StudyConfigurationManager#lockStudy(int)
+     * @see VariantStorageMetadataManager#lockStudy(int)
      * @param studyConfiguration    StudyConfiguration
      * @param fileMetadata          VariantFileMetadata
      * @throws StorageEngineException  If any condition is wrong
@@ -639,7 +640,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         }
 
         int studyId = getStudyId();
-        long lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId);
+        long lock = dbAdaptor.getVariantStorageMetadataManager().lockStudy(studyId);
 
         // Check loaded variants BEFORE updating the StudyConfiguration
         checkLoadedVariants(fileIds, getStudyConfiguration());
@@ -649,9 +650,9 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             //Update StudyConfiguration
             studyConfiguration = getStudyConfiguration(true);
             securePostLoad(fileIds, studyConfiguration);
-            dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, new QueryOptions());
+            dbAdaptor.getVariantStorageMetadataManager().updateStudyConfiguration(studyConfiguration, new QueryOptions());
         } finally {
-            dbAdaptor.getStudyConfigurationManager().unLockStudy(studyId, lock);
+            dbAdaptor.getVariantStorageMetadataManager().unLockStudy(studyId, lock);
         }
 
         return input;
@@ -756,13 +757,13 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         if (!forceFetch && privateStudyConfiguration != null) {
             return privateStudyConfiguration;
         } else {
-            StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
+            VariantStorageMetadataManager variantStorageMetadataManager = dbAdaptor.getVariantStorageMetadataManager();
             final StudyConfiguration studyConfiguration;
             String study = options.getString(Options.STUDY.key());
             if (!StringUtils.isEmpty(study)) {
-                studyConfiguration = studyConfigurationManager.getStudyConfiguration(study, new QueryOptions(options)).first();
+                studyConfiguration = variantStorageMetadataManager.getStudyConfiguration(study, new QueryOptions(options)).first();
             } else if (privateStudyId != null) {
-                studyConfiguration = studyConfigurationManager.getStudyConfiguration(privateStudyId, new QueryOptions(options)).first();
+                studyConfiguration = variantStorageMetadataManager.getStudyConfiguration(privateStudyId, new QueryOptions(options)).first();
             } else {
                 throw new StorageEngineException("Unable to get StudyConfiguration. Missing studyId or studyName");
             }
@@ -808,7 +809,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         return options;
     }
 
-    public StudyConfigurationManager getStudyConfigurationManager() {
-        return getDBAdaptor().getStudyConfigurationManager();
+    public VariantStorageMetadataManager getStudyConfigurationManager() {
+        return getDBAdaptor().getVariantStorageMetadataManager();
     }
 }

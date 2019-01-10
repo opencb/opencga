@@ -42,7 +42,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.json.JsonDataReader;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
@@ -136,8 +136,8 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
     public final URI createStats(VariantDBAdaptor variantDBAdaptor, URI output, String study, List<String> cohorts,
                            QueryOptions options) throws IOException, StorageEngineException {
 
-        StudyConfigurationManager studyConfigurationManager = variantDBAdaptor.getStudyConfigurationManager();
-        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(study, options).first();
+        VariantStorageMetadataManager variantStorageMetadataManager = variantDBAdaptor.getVariantStorageMetadataManager();
+        StudyConfiguration studyConfiguration = variantStorageMetadataManager.getStudyConfiguration(study, options).first();
         Map<String, Set<String>> cohortsMap = new HashMap<>(cohorts.size());
         for (String cohort : cohorts) {
             if (studyConfiguration.isAggregated()) {
@@ -223,7 +223,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
         ProgressLogger progressLogger = buildCreateStatsProgressLogger(dbAdaptor, readerQuery, readerOptions);
         for (int i = 0; i < numTasks; i++) {
             tasks.add(new VariantStatsWrapperTask(overwrite, cohorts, studyConfiguration, variantSourceStats, tagmap, progressLogger,
-                    getAggregation(studyConfiguration, options)));
+                    getAggregation(studyConfiguration.getAggregation(), options)));
         }
         StringDataWriter writer = buildVariantStatsStringDataWriter(output);
 
@@ -245,7 +245,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
             outputSourceStream.write(sourceWriter.writeValueAsBytes(variantSourceStats));
         }
 
-        variantDBAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, options);
+        variantDBAdaptor.getVariantStorageMetadataManager().updateStudyConfiguration(studyConfiguration, options);
 
         return output;
     }
@@ -253,9 +253,10 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
     protected StudyConfiguration preCalculateStats(Map<String, Set<String>> cohorts, StudyConfiguration studyConfiguration,
                                                    boolean overwrite, boolean updateStats, ObjectMap options)
             throws StorageEngineException {
-        return dbAdaptor.getStudyConfigurationManager().lockAndUpdate(studyConfiguration.getStudyName(), sc -> {
-            dbAdaptor.getStudyConfigurationManager().registerCohorts(sc, cohorts);
-            checkAndUpdateStudyConfigurationCohorts(sc, cohorts, overwrite, updateStats, getAggregation(sc, options));
+
+        dbAdaptor.getVariantStorageMetadataManager().registerCohorts(studyConfiguration.getStudyName(), cohorts);
+        return dbAdaptor.getVariantStorageMetadataManager().lockAndUpdateOld(studyConfiguration.getStudyName(), sc -> {
+            checkAndUpdateStudyConfigurationCohorts(sc, cohorts, overwrite, updateStats, getAggregation(sc.getAggregation(), options));
             return sc;
         });
     }
@@ -362,8 +363,8 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
 
     public void loadStats(VariantDBAdaptor variantDBAdaptor, URI uri, String study, QueryOptions options) throws
             IOException, StorageEngineException {
-        StudyConfigurationManager studyConfigurationManager = variantDBAdaptor.getStudyConfigurationManager();
-        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(study, options).first();
+        VariantStorageMetadataManager variantStorageMetadataManager = variantDBAdaptor.getVariantStorageMetadataManager();
+        StudyConfiguration studyConfiguration = variantStorageMetadataManager.getStudyConfiguration(study, options).first();
         loadStats(variantDBAdaptor, uri, studyConfiguration, options);
     }
 
@@ -384,7 +385,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
 
         logger.info("finishing stats loading, time: {}ms", System.currentTimeMillis() - start);
 
-        variantDBAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, options);
+        variantDBAdaptor.getVariantStorageMetadataManager().updateStudyConfiguration(studyConfiguration, options);
 
     }
 
@@ -465,8 +466,8 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
 
     public void loadSourceStats(VariantDBAdaptor variantDBAdaptor, URI uri, String study, QueryOptions options)
             throws IOException {
-        StudyConfigurationManager studyConfigurationManager = variantDBAdaptor.getStudyConfigurationManager();
-        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(study, options).first();
+        VariantStorageMetadataManager variantStorageMetadataManager = variantDBAdaptor.getVariantStorageMetadataManager();
+        StudyConfiguration studyConfiguration = variantStorageMetadataManager.getStudyConfiguration(study, options).first();
         loadSourceStats(variantDBAdaptor, uri, studyConfiguration, options);
     }
 
@@ -584,8 +585,8 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
         return cohortIdList;
     }
 
-    private static Aggregation getAggregation(StudyConfiguration studyConfiguration, ObjectMap options) {
-        return AggregationUtils.valueOf(options.getString(Options.AGGREGATED_TYPE.key(), studyConfiguration.getAggregation().toString()));
+    private static Aggregation getAggregation(Aggregation aggregation, ObjectMap options) {
+        return AggregationUtils.valueOf(options.getString(Options.AGGREGATED_TYPE.key(), aggregation.toString()));
     }
 
     void checkAndUpdateCalculatedCohorts(StudyConfiguration studyConfiguration, URI uri, boolean updateStats)

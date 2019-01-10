@@ -27,9 +27,9 @@ import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.manager.variant.metadata.CatalogStudyConfigurationFactory;
-import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
+import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.dummy.DummyProjectMetadataAdaptor;
 import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantFileMetadataDBAdaptor;
@@ -68,7 +68,7 @@ public class CatalogStudyConfigurationFactoryTest {
     static private LinkedHashSet<Integer> indexedFiles = new LinkedHashSet<>();
     private static String cohortId;
     private static long cohortUid;
-    private StudyConfigurationManager scm;
+    private VariantStorageMetadataManager scm;
     private CatalogStudyConfigurationFactory studyConfigurationFactory;
 
     @BeforeClass
@@ -111,7 +111,7 @@ public class CatalogStudyConfigurationFactoryTest {
 
     @Before
     public void setUp() throws Exception {
-        scm = new StudyConfigurationManager(new DummyProjectMetadataAdaptor(), new DummyStudyConfigurationAdaptor(), new DummyVariantFileMetadataDBAdaptor());
+        scm = new VariantStorageMetadataManager(new DummyProjectMetadataAdaptor(), new DummyStudyConfigurationAdaptor(), new DummyVariantFileMetadataDBAdaptor());
         Study study = catalogManager.getStudyManager().get(studyId, null, sessionId).first();
 
         StudyConfiguration studyConfigurationToReturn = new StudyConfiguration((int) study.getUid(), "user@p1:s1");
@@ -211,8 +211,8 @@ public class CatalogStudyConfigurationFactoryTest {
         nonIndexedFile = files.stream().filter(file -> !indexedFiles.contains(((int) file.getUid()))).findFirst().orElse(null);
         assertNotNull(nonIndexedFile);
         sc.getBatches()
-                .add(new BatchFileOperation("LOAD", Collections.singletonList(((int) nonIndexedFile.getUid())), 1L, BatchFileOperation.Type.LOAD)
-                        .addStatus(BatchFileOperation.Status.RUNNING));
+                .add(new BatchFileTask("LOAD", Collections.singletonList(((int) nonIndexedFile.getUid())), 1L, BatchFileTask.Type.LOAD)
+                        .addStatus(BatchFileTask.Status.RUNNING));
         sc.getFileIds().put(nonIndexedFile.getName(), ((int) nonIndexedFile.getUid()));
 
         scm.updateStudyConfiguration(sc, null);

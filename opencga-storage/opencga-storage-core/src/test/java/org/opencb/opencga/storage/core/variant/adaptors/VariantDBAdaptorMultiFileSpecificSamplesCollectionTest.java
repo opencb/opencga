@@ -1,6 +1,5 @@
 package org.opencb.opencga.storage.core.variant.adaptors;
 
-import org.apache.solr.common.SolrException;
 import org.hamcrest.CoreMatchers;
 import org.junit.*;
 import org.opencb.biodata.models.variant.Variant;
@@ -10,7 +9,7 @@ import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchUtils;
 import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
 
@@ -45,7 +44,7 @@ public abstract class VariantDBAdaptorMultiFileSpecificSamplesCollectionTest ext
     protected void load() throws Exception {
         super.load();
 
-        StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
+        VariantStorageMetadataManager scm = dbAdaptor.getVariantStorageMetadataManager();
         for (String studyName : scm.getStudyNames(null)) {
             StudyConfiguration sc = scm.getStudyConfiguration(studyName, null).first();
             ArrayList<String> samples = new ArrayList<>(sc.getSampleIds().keySet());
@@ -59,7 +58,7 @@ public abstract class VariantDBAdaptorMultiFileSpecificSamplesCollectionTest ext
     protected VariantQueryResult<Variant> query(Query query, QueryOptions options) {
         try {
             query = preProcessQuery(query, options);
-            StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
+            VariantStorageMetadataManager scm = dbAdaptor.getVariantStorageMetadataManager();
             String collection = VariantSearchUtils.inferSpecificSearchIndexSamplesCollection(query, options, scm, DB_NAME);
 
             // Do not execute this test if the query is not covered by the specific search index collection

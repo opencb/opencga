@@ -29,7 +29,7 @@ import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -123,7 +123,7 @@ public class VariantTableHelper extends GenomeHelper {
     }
 
     public StudyConfiguration readStudyConfiguration() throws IOException {
-        try (StudyConfigurationManager scm = new StudyConfigurationManager(new HBaseVariantStorageMetadataDBAdaptorFactory(this))) {
+        try (VariantStorageMetadataManager scm = new VariantStorageMetadataManager(new HBaseVariantStorageMetadataDBAdaptorFactory(this))) {
             QueryResult<StudyConfiguration> query = scm.getStudyConfiguration(getStudyId(), new QueryOptions());
             if (query.getResult().size() != 1) {
                 throw new IllegalStateException("Only one study configuration expected for study");

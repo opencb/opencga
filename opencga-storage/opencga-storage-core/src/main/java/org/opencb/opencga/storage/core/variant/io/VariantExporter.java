@@ -63,7 +63,7 @@ public class VariantExporter {
     private final Logger logger = LoggerFactory.getLogger(VariantExporter.class);
 
     public VariantExporter(VariantStorageEngine engine) throws StorageEngineException {
-        this(engine, new VariantMetadataFactory(engine.getStudyConfigurationManager()));
+        this(engine, new VariantMetadataFactory(engine.getVariantStorageMetadataManager()));
     }
 
     public VariantExporter(VariantStorageEngine engine, VariantMetadataFactory metadataFactory) throws StorageEngineException {

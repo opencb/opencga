@@ -26,6 +26,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -94,7 +95,7 @@ public class CatalogUtils {
     /**
      * Get the list of studies. Discards negated studies (starting with '!').
      *
-     * @see org.opencb.opencga.storage.core.metadata.StudyConfigurationManager#getStudyIds(List, QueryOptions)
+     * @see VariantStorageMetadataManager#getStudyIds(List, QueryOptions)
      * @param query     Query with the values
      * @param sessionId User's sessionId
      * @return          List of positive studies.

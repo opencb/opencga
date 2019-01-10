@@ -35,7 +35,7 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -54,7 +54,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.biodata.models.variant.VariantBuilder.REF_ONLY_ALT;
-import static org.opencb.opencga.storage.core.metadata.StudyConfigurationManager.RO_CACHED_OPTIONS;
+import static org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager.RO_CACHED_OPTIONS;
 import static org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass.UNKNOWN_GENOTYPE;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED;
 
@@ -75,7 +75,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     public static final int FILE_INFO_START_IDX = 5;
     public static final String ALTERNATE_COORDINATE_SEPARATOR = ":";
 
-    private final StudyConfigurationManager scm;
+    private final VariantStorageMetadataManager scm;
     private final HBaseToVariantStatsConverter statsConverter;
     private final Map<Integer, LinkedHashMap<String, Integer>> returnedSamplesPositionMap = new HashMap<>();
     private Map<Pair<Integer, Integer>, List<Boolean>> missingUpdatedSamplesMap = new HashMap<>();
@@ -91,7 +91,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     protected final Logger logger = LoggerFactory.getLogger(HBaseToStudyEntryConverter.class);
     private VariantQueryUtils.SelectVariantElements selectVariantElements;
 
-    public HBaseToStudyEntryConverter(byte[] columnFamily, StudyConfigurationManager scm,
+    public HBaseToStudyEntryConverter(byte[] columnFamily, VariantStorageMetadataManager scm,
                                       HBaseToVariantStatsConverter statsConverter) {
         super(columnFamily);
         this.scm = scm;

@@ -6,6 +6,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.adaptors.VariantFileMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
 import java.util.ArrayList;
@@ -23,10 +24,10 @@ import java.util.stream.Collectors;
  */
 public class VariantMetadataFactory {
 
-    protected final StudyConfigurationManager scm;
+    protected final VariantStorageMetadataManager scm;
 
-    public VariantMetadataFactory(StudyConfigurationManager studyConfigurationManager) {
-        scm = studyConfigurationManager;
+    public VariantMetadataFactory(VariantStorageMetadataManager variantStorageMetadataManager) {
+        scm = variantStorageMetadataManager;
     }
 
     public VariantMetadata makeVariantMetadata() throws StorageEngineException {

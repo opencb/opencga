@@ -3,7 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant.index.sample;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
@@ -77,7 +77,7 @@ public final class SampleIndexQuery {
      * @return              Valid SampleIndexQuery
      * @see                 SampleIndexQuery#validSampleIndexQuery(Query)
      */
-    public static SampleIndexQuery extractSampleIndexQuery(Query query, StudyConfigurationManager scm) {
+    public static SampleIndexQuery extractSampleIndexQuery(Query query, VariantStorageMetadataManager scm) {
         //
         // Extract regions
         List<Region> regions = new ArrayList<>();

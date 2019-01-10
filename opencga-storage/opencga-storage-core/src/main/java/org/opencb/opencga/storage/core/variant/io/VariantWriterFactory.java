@@ -27,7 +27,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -56,14 +56,14 @@ import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.Va
 public class VariantWriterFactory {
 
     private static Logger logger = LoggerFactory.getLogger(VariantWriterFactory.class);
-    private final StudyConfigurationManager studyConfigurationManager;
+    private final VariantStorageMetadataManager variantStorageMetadataManager;
 
     public VariantWriterFactory(VariantDBAdaptor dbAdaptor) {
-        studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
+        variantStorageMetadataManager = dbAdaptor.getVariantStorageMetadataManager();
     }
 
-    public VariantWriterFactory(StudyConfigurationManager studyConfigurationManager) {
-        this.studyConfigurationManager = studyConfigurationManager;
+    public VariantWriterFactory(VariantStorageMetadataManager variantStorageMetadataManager) {
+        this.variantStorageMetadataManager = variantStorageMetadataManager;
     }
 
     public enum VariantOutputFormat {
@@ -218,7 +218,7 @@ public class VariantWriterFactory {
         switch (outputFormat) {
             case VCF_GZ:
             case VCF:
-                VariantMetadataFactory metadataFactory = new VariantMetadataFactory(studyConfigurationManager);
+                VariantMetadataFactory metadataFactory = new VariantMetadataFactory(variantStorageMetadataManager);
                 VariantMetadata variantMetadata;
                 try {
                     variantMetadata = metadataFactory.makeVariantMetadata(query, queryOptions);
@@ -279,10 +279,10 @@ public class VariantWriterFactory {
     }
 
     protected StudyConfiguration getStudyConfiguration(Query query, boolean singleStudy) {
-        List<Integer> studyIds = VariantQueryUtils.getIncludeStudies(query, QueryOptions.empty(), studyConfigurationManager);
+        List<Integer> studyIds = VariantQueryUtils.getIncludeStudies(query, QueryOptions.empty(), variantStorageMetadataManager);
 
         if (studyIds.isEmpty()) {
-            studyIds = studyConfigurationManager.getStudyIds(null);
+            studyIds = variantStorageMetadataManager.getStudyIds(null);
             if (studyIds == null) {
                 throw new IllegalArgumentException();
             }
@@ -292,7 +292,7 @@ public class VariantWriterFactory {
                 throw new IllegalArgumentException();
             }
         }
-        return studyConfigurationManager.getStudyConfiguration(studyIds.get(0), null).first();
+        return variantStorageMetadataManager.getStudyConfiguration(studyIds.get(0), null).first();
     }
 
     /**

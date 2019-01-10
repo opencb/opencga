@@ -32,6 +32,9 @@ import org.opencb.opencga.storage.core.metadata.adaptors.ProjectMetadataAdaptor;
 import org.opencb.opencga.storage.core.metadata.adaptors.StudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.metadata.adaptors.VariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.metadata.adaptors.VariantStorageMetadataDBAdaptorFactory;
+import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -52,12 +55,12 @@ import static org.opencb.opencga.storage.core.variant.annotation.annotators.Abst
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
-public class StudyConfigurationManager implements AutoCloseable {
+public class VariantStorageMetadataManager implements AutoCloseable {
     public static final String CACHED = "cached";
     public static final String READ_ONLY = "ro";
     public static final QueryOptions RO_CACHED_OPTIONS = new QueryOptions(READ_ONLY, true)
             .append(CACHED, true);
-    protected static Logger logger = LoggerFactory.getLogger(StudyConfigurationManager.class);
+    protected static Logger logger = LoggerFactory.getLogger(VariantStorageMetadataManager.class);
 
     private final ProjectMetadataAdaptor projectDBAdaptor;
     private final StudyConfigurationAdaptor studyDBAdaptor;
@@ -66,14 +69,14 @@ public class StudyConfigurationManager implements AutoCloseable {
     private final Map<String, StudyConfiguration> stringStudyConfigurationMap = new HashMap<>();
     private final Map<Integer, StudyConfiguration> intStudyConfigurationMap = new HashMap<>();
 
-    public StudyConfigurationManager(ProjectMetadataAdaptor projectDBAdaptor, StudyConfigurationAdaptor studyDBAdaptor,
-                                     VariantFileMetadataDBAdaptor fileDBAdaptor) {
+    public VariantStorageMetadataManager(ProjectMetadataAdaptor projectDBAdaptor, StudyConfigurationAdaptor studyDBAdaptor,
+                                         VariantFileMetadataDBAdaptor fileDBAdaptor) {
         this.projectDBAdaptor = projectDBAdaptor;
         this.studyDBAdaptor = studyDBAdaptor;
         this.fileDBAdaptor = fileDBAdaptor;
     }
 
-    public StudyConfigurationManager(VariantStorageMetadataDBAdaptorFactory dbAdaptorFactory) {
+    public VariantStorageMetadataManager(VariantStorageMetadataDBAdaptorFactory dbAdaptorFactory) {
         this.projectDBAdaptor = dbAdaptorFactory.buildProjectMetadataDBAdaptor();
         this.studyDBAdaptor = dbAdaptorFactory.buildStudyConfigurationDBAdaptor();
         this.fileDBAdaptor = dbAdaptorFactory.buildVariantFileMetadataDBAdaptor();
@@ -121,13 +124,15 @@ public class StudyConfigurationManager implements AutoCloseable {
         T update(T t) throws E;
     }
 
-    public <E extends Exception> StudyConfiguration lockAndUpdate(String studyName, UpdateFunction<StudyConfiguration, E> updater)
+    @Deprecated
+    public <E extends Exception> StudyConfiguration lockAndUpdateOld(String studyName, UpdateFunction<StudyConfiguration, E> updater)
             throws StorageEngineException, E {
         Integer studyId = getStudyId(studyName, null);
-        return lockAndUpdate(studyId, updater);
+        return lockAndUpdateOld(studyId, updater);
     }
 
-    public <E extends Exception> StudyConfiguration lockAndUpdate(int studyId, UpdateFunction<StudyConfiguration, E> updater)
+    @Deprecated
+    public <E extends Exception> StudyConfiguration lockAndUpdateOld(int studyId, UpdateFunction<StudyConfiguration, E> updater)
             throws StorageEngineException, E {
         checkStudyId(studyId);
         long lock = lockStudy(studyId);
@@ -143,6 +148,43 @@ public class StudyConfigurationManager implements AutoCloseable {
         }
     }
 
+
+    public <E extends Exception> StudyMetadata lockAndUpdate(String studyName, UpdateFunction<StudyMetadata, E> updater)
+            throws StorageEngineException, E {
+        Integer studyId = getStudyId(studyName, null);
+        return lockAndUpdate(studyId, updater);
+    }
+
+
+    public <E extends Exception> StudyMetadata lockAndUpdate(int studyId, UpdateFunction<StudyMetadata, E> updater)
+            throws StorageEngineException, E {
+        checkStudyId(studyId);
+        long lock = lockStudy(studyId);
+        try {
+            StudyMetadata sm = getStudyMetadata(studyId);
+
+            sm = updater.update(sm);
+
+            updateStudyMetadata(sm);
+            return sm;
+        } finally {
+            unLockStudy(studyId, lock);
+        }
+    }
+
+    public StudyMetadata getStudyMetadata(String name) {
+        return studyDBAdaptor.getStudyMetadata(name, null);
+    }
+
+    public StudyMetadata getStudyMetadata(int id) {
+        return studyDBAdaptor.getStudyMetadata(id, null);
+    }
+
+    public void updateStudyMetadata(StudyMetadata sm) {
+        studyDBAdaptor.updateStudyMetadata(sm);
+    }
+
+    @Deprecated
     public final QueryResult<StudyConfiguration> getStudyConfiguration(String studyName, QueryOptions options) {
         if (StringUtils.isNumeric(studyName)) {
             return getStudyConfiguration(Integer.valueOf(studyName), options);
@@ -185,6 +227,7 @@ public class StudyConfigurationManager implements AutoCloseable {
 
     }
 
+    @Deprecated
     public final QueryResult<StudyConfiguration> getStudyConfiguration(int studyId, QueryOptions options) {
         QueryResult<StudyConfiguration> result;
         final boolean cached = options != null && options.getBoolean(CACHED, false);
@@ -229,7 +272,7 @@ public class StudyConfigurationManager implements AutoCloseable {
         return new Thread(() -> {
             try {
                 logger.error("Shutdown hook while '" + jobOperationName + "' !");
-                atomicSetStatus(studyId, BatchFileOperation.Status.ERROR, jobOperationName, files);
+                atomicSetStatus(studyId, BatchFileTask.Status.ERROR, jobOperationName, files);
             } catch (Exception e) {
                 logger.error("Error terminating!", e);
                 throw Throwables.propagate(e);
@@ -249,6 +292,7 @@ public class StudyConfigurationManager implements AutoCloseable {
         return HashBiMap.create(studyDBAdaptor.getStudies(options));
     }
 
+    @Deprecated
     public final QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
         long timeStamp = System.currentTimeMillis();
         logger.debug("Timestamp : {} -> {}", studyConfiguration.getTimeStamp(), timeStamp);
@@ -287,7 +331,7 @@ public class StudyConfigurationManager implements AutoCloseable {
      * Excludes those studies that starts with '!'
      *
      * @param studiesNames  List of study names or study ids
-     * @param studies       Map of available studies. See {@link StudyConfigurationManager#getStudies}
+     * @param studies       Map of available studies. See {@link VariantStorageMetadataManager#getStudies}
      * @return              List of study Ids
      */
     public List<Integer> getStudyIds(List studiesNames, Map<String, Integer> studies) {
@@ -357,6 +401,7 @@ public class StudyConfigurationManager implements AutoCloseable {
      * @return          Assiciated StudyConfiguration
      * @throws    VariantQueryException is the study does not exists
      */
+    @Deprecated
     public StudyConfiguration getStudyConfiguration(String study, StudyConfiguration defaultStudyConfiguration, QueryOptions options)
             throws VariantQueryException {
         StudyConfiguration studyConfiguration;
@@ -918,7 +963,7 @@ public class StudyConfigurationManager implements AutoCloseable {
             // All samples are already indexed, and in the same collection
             if (alreadyIndexedSamples.size() == samples.size() && searchIndexSampleSets.size() == 1) {
                 id = searchIndexSampleSets.iterator().next();
-                BatchFileOperation.Status status = studyConfiguration.getSearchIndexedSampleSetsStatus().get(id);
+                BatchFileTask.Status status = studyConfiguration.getSearchIndexedSampleSetsStatus().get(id);
                 switch (status) {
                     case DONE:
                     case READY:
@@ -944,7 +989,7 @@ public class StudyConfigurationManager implements AutoCloseable {
             for (Integer sampleId : sampleIds) {
                 studyConfiguration.getSearchIndexedSampleSets().put(sampleId, id);
             }
-            studyConfiguration.getSearchIndexedSampleSetsStatus().put(id, BatchFileOperation.Status.RUNNING);
+            studyConfiguration.getSearchIndexedSampleSetsStatus().put(id, BatchFileTask.Status.RUNNING);
         }
 
         return id;
@@ -990,9 +1035,9 @@ public class StudyConfigurationManager implements AutoCloseable {
             if (!studyConfiguration.getFilePaths().inverse().get(fileId).equals(filePath)) {
                 // Only register if the file is being loaded. Otherwise, replace the filePath
                 for (int i = studyConfiguration.getBatches().size() - 1; i >= 0; i--) {
-                    BatchFileOperation batch = studyConfiguration.getBatches().get(i);
+                    BatchFileTask batch = studyConfiguration.getBatches().get(i);
                     if (batch.getFileIds().contains(fileId)) {
-                        if (batch.getType().equals(BatchFileOperation.Type.REMOVE)) {
+                        if (batch.getType().equals(BatchFileTask.Type.REMOVE)) {
                             // If the file was removed. Can be replaced.
                             break;
                         } else {
@@ -1028,6 +1073,15 @@ public class StudyConfigurationManager implements AutoCloseable {
         return fileId;
     }
 
+    public void registerCohorts(String study, Map<String, ? extends Collection<String>> cohorts)
+            throws StorageEngineException {
+        lockAndUpdateOld(study, sc -> {
+            registerCohorts(sc, cohorts);
+            return sc;
+        });
+    }
+
+    @Deprecated
     public void registerCohorts(StudyConfiguration studyConfiguration, Map<String, ? extends Collection<String>> cohorts)
             throws StorageEngineException {
         for (Map.Entry<String, ? extends Collection<String>> entry : cohorts.entrySet()) {
@@ -1091,20 +1145,21 @@ public class StudyConfigurationManager implements AutoCloseable {
         }
     }
 
-    public BatchFileOperation.Status atomicSetStatus(int studyId, BatchFileOperation.Status status, String operationName,
-                                                     List<Integer> files)
+    public BatchFileTask.Status atomicSetStatus(int studyId, BatchFileTask.Status status, String operationName,
+                                                List<Integer> files)
             throws StorageEngineException {
-        final BatchFileOperation.Status[] previousStatus = new BatchFileOperation.Status[1];
-        lockAndUpdate(studyId, studyConfiguration -> {
+        final BatchFileTask.Status[] previousStatus = new BatchFileTask.Status[1];
+        lockAndUpdateOld(studyId, studyConfiguration -> {
             previousStatus[0] = setStatus(studyConfiguration, status, operationName, files);
             return studyConfiguration;
         });
         return previousStatus[0];
     }
 
-    public static BatchFileOperation getOperation(StudyConfiguration studyConfiguration, String operationName, List<Integer> files) {
-        List<BatchFileOperation> batches = studyConfiguration.getBatches();
-        BatchFileOperation operation = null;
+    @Deprecated
+    public static BatchFileTask getOperation(StudyConfiguration studyConfiguration, String operationName, List<Integer> files) {
+        List<BatchFileTask> batches = studyConfiguration.getBatches();
+        BatchFileTask operation = null;
         for (int i = batches.size() - 1; i >= 0; i--) {
             operation = batches.get(i);
             if (operation.getOperationName().equals(operationName) && operation.getFileIds().equals(files)) {
@@ -1115,19 +1170,20 @@ public class StudyConfigurationManager implements AutoCloseable {
         return operation;
     }
 
-    public static BatchFileOperation.Status setStatus(StudyConfiguration studyConfiguration, BatchFileOperation.Status status,
-                                               String operationName, List<Integer> files) {
-        BatchFileOperation operation = getOperation(studyConfiguration, operationName, files);
+    @Deprecated
+    public static BatchFileTask.Status setStatus(StudyConfiguration studyConfiguration, BatchFileTask.Status status,
+                                                 String operationName, List<Integer> files) {
+        BatchFileTask operation = getOperation(studyConfiguration, operationName, files);
         if (operation == null) {
             throw new IllegalStateException("Batch operation " + operationName + " for files " + files + " not found!");
         }
-        BatchFileOperation.Status previousStatus = operation.currentStatus();
+        BatchFileTask.Status previousStatus = operation.currentStatus();
         operation.addStatus(Calendar.getInstance().getTime(), status);
         return previousStatus;
     }
 
     /**
-     * Adds a new {@link BatchFileOperation} to the StudyConfiguration.
+     * Adds a new {@link BatchFileTask} to the StudyConfiguration.
      *
      * Only allow one running operation at the same time
      *  If any operation is in ERROR and is not the same operation, throw {@link StorageEngineException#otherOperationInProgressException}
@@ -1135,21 +1191,22 @@ public class StudyConfigurationManager implements AutoCloseable {
      *  If all operations are ready, continue
      *
      * @param studyConfiguration StudyConfiguration
-     * @param jobOperationName   Job operation name used to create the jobName and as {@link BatchFileOperation#operationName}
+     * @param jobOperationName   Job operation name used to create the jobName and as {@link BatchFileTask#operationName}
      * @param fileIds            Files to be processed in this batch.
      * @param resume             Resume operation. Assume that previous operation went wrong.
-     * @param type               Operation type as {@link BatchFileOperation#type}
+     * @param type               Operation type as {@link BatchFileTask#type}
      * @return                   The current batchOperation
      * @throws StorageEngineException if the operation can't be executed
      */
-    public static BatchFileOperation addBatchOperation(StudyConfiguration studyConfiguration, String jobOperationName,
-                                                       List<Integer> fileIds, boolean resume, BatchFileOperation.Type type)
+    @Deprecated
+    public static BatchFileTask addBatchOperation(StudyConfiguration studyConfiguration, String jobOperationName,
+                                                  List<Integer> fileIds, boolean resume, BatchFileTask.Type type)
             throws StorageEngineException {
         return addBatchOperation(studyConfiguration, jobOperationName, fileIds, resume, type, b -> false);
     }
 
     /**
-     * Adds a new {@link BatchFileOperation} to the StudyConfiguration.
+     * Adds a new {@link BatchFileTask} to the StudyConfiguration.
      *
      * Allow execute concurrent operations depending on the "allowConcurrent" predicate.
      *  If any operation is in ERROR, is not the same operation, and concurrency is not allowed,
@@ -1158,25 +1215,26 @@ public class StudyConfigurationManager implements AutoCloseable {
      *  If all operations are ready, continue
      *
      * @param studyConfiguration StudyConfiguration
-     * @param jobOperationName   Job operation name used to create the jobName and as {@link BatchFileOperation#operationName}
+     * @param jobOperationName   Job operation name used to create the jobName and as {@link BatchFileTask#operationName}
      * @param fileIds            Files to be processed in this batch.
      * @param resume             Resume operation. Assume that previous operation went wrong.
-     * @param type               Operation type as {@link BatchFileOperation#type}
+     * @param type               Operation type as {@link BatchFileTask#type}
      * @param allowConcurrent    Predicate to test if the new operation can be executed at the same time as a non ready operation.
      *                           If not, throws {@link StorageEngineException#otherOperationInProgressException}
      * @return                   The current batchOperation
      * @throws StorageEngineException if the operation can't be executed
      */
-    public static BatchFileOperation addBatchOperation(StudyConfiguration studyConfiguration, String jobOperationName,
-                                                       List<Integer> fileIds, boolean resume, BatchFileOperation.Type type,
-                                                       Predicate<BatchFileOperation> allowConcurrent)
+    @Deprecated
+    public static BatchFileTask addBatchOperation(StudyConfiguration studyConfiguration, String jobOperationName,
+                                                  List<Integer> fileIds, boolean resume, BatchFileTask.Type type,
+                                                  Predicate<BatchFileTask> allowConcurrent)
             throws StorageEngineException {
 
-        List<BatchFileOperation> batches = studyConfiguration.getBatches();
-        BatchFileOperation resumeOperation = null;
+        List<BatchFileTask> batches = studyConfiguration.getBatches();
+        BatchFileTask resumeOperation = null;
         boolean newOperation = false;
-        for (BatchFileOperation operation : batches) {
-            BatchFileOperation.Status currentStatus = operation.currentStatus();
+        for (BatchFileTask operation : batches) {
+            BatchFileTask.Status currentStatus = operation.currentStatus();
 
             switch (currentStatus) {
                 case READY:
@@ -1213,16 +1271,16 @@ public class StudyConfigurationManager implements AutoCloseable {
             }
         }
 
-        BatchFileOperation operation;
+        BatchFileTask operation;
         if (resumeOperation == null) {
-            operation = new BatchFileOperation(jobOperationName, fileIds, System.currentTimeMillis(), type);
+            operation = new BatchFileTask(jobOperationName, fileIds, System.currentTimeMillis(), type);
             newOperation = true;
         } else {
             operation = resumeOperation;
         }
 
-        if (!Objects.equals(operation.currentStatus(), BatchFileOperation.Status.DONE)) {
-            operation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.RUNNING);
+        if (!Objects.equals(operation.currentStatus(), BatchFileTask.Status.DONE)) {
+            operation.addStatus(Calendar.getInstance().getTime(), BatchFileTask.Status.RUNNING);
         }
         if (newOperation) {
             batches.add(operation);

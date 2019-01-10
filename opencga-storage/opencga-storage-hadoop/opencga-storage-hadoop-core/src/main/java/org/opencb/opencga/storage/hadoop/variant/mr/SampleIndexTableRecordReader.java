@@ -13,7 +13,7 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
@@ -46,7 +46,7 @@ public class SampleIndexTableRecordReader extends TableRecordReader {
     private final Map<String, List<String>> samples;
     private final VariantQueryUtils.QueryOperation operation;
     private final HBaseManager hBaseManager;
-    private final StudyConfigurationManager scm;
+    private final VariantStorageMetadataManager scm;
 
     private Table table;
     private Scan scan;
@@ -66,7 +66,7 @@ public class SampleIndexTableRecordReader extends TableRecordReader {
         String variantsTableName = VariantTableHelper.getVariantsTable(conf);
         HBaseVariantTableNameGenerator tableNameGenerator =
                 new HBaseVariantTableNameGenerator(getDBNameFromVariantsTableName(variantsTableName), conf);
-        scm = new StudyConfigurationManager(new HBaseVariantStorageMetadataDBAdaptorFactory(
+        scm = new VariantStorageMetadataManager(new HBaseVariantStorageMetadataDBAdaptorFactory(
                 hBaseManager,
                 tableNameGenerator.getMetaTableName(),
                 conf));

@@ -118,7 +118,7 @@ public class MongoDBVariantStatisticsManager extends DefaultVariantStatisticsMan
 //                outputSourceStream.write(sourceWriter.writeValueAsBytes(variantSourceStats));
 //            }
 
-            variantDBAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, options);
+            variantDBAdaptor.getVariantStorageMetadataManager().updateStudyConfiguration(studyConfiguration, options);
 
             return output;
         }

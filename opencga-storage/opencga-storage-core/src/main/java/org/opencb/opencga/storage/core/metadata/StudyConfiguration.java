@@ -30,6 +30,7 @@ import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderSimpleLine;
 import org.opencb.biodata.tools.variant.stats.AggregationUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +43,7 @@ import java.util.stream.Collectors;
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
+@Deprecated
 public class StudyConfiguration {
 
     public static final String UNKNOWN_HEADER_ATTRIBUTE = ".";
@@ -65,10 +67,10 @@ public class StudyConfiguration {
     private Set<Integer> invalidStats;
 
     private Map<Integer, Integer> searchIndexedSampleSets;
-    private Map<Integer, BatchFileOperation.Status> searchIndexedSampleSetsStatus;
+    private Map<Integer, BatchFileTask.Status> searchIndexedSampleSetsStatus;
 
 
-    private List<BatchFileOperation> batches;
+    private List<BatchFileTask> batches;
 
     private Aggregation aggregation;
 
@@ -105,8 +107,8 @@ public class StudyConfiguration {
         this.searchIndexedSampleSetsStatus = other.searchIndexedSampleSetsStatus == null
                 ? new HashMap<>() : new HashMap<>(other.searchIndexedSampleSetsStatus);
         this.batches = new ArrayList<>(other.batches.size());
-        for (BatchFileOperation batch : other.batches) {
-            this.batches.add(new BatchFileOperation(batch));
+        for (BatchFileTask batch : other.batches) {
+            this.batches.add(new BatchFileTask(batch));
         }
         this.aggregation = other.aggregation;
         this.timeStamp = other.timeStamp;
@@ -304,25 +306,25 @@ public class StudyConfiguration {
         return this;
     }
 
-    public Map<Integer, BatchFileOperation.Status> getSearchIndexedSampleSetsStatus() {
+    public Map<Integer, BatchFileTask.Status> getSearchIndexedSampleSetsStatus() {
         return searchIndexedSampleSetsStatus;
     }
 
-    public StudyConfiguration setSearchIndexedSampleSetsStatus(Map<Integer, BatchFileOperation.Status> searchIndexedSampleSetsStatus) {
+    public StudyConfiguration setSearchIndexedSampleSetsStatus(Map<Integer, BatchFileTask.Status> searchIndexedSampleSetsStatus) {
         this.searchIndexedSampleSetsStatus = searchIndexedSampleSetsStatus;
         return this;
     }
 
-    public List<BatchFileOperation> getBatches() {
+    public List<BatchFileTask> getBatches() {
         return batches;
     }
 
-    public StudyConfiguration setBatches(List<BatchFileOperation> batches) {
+    public StudyConfiguration setBatches(List<BatchFileTask> batches) {
         this.batches = batches;
         return this;
     }
 
-    public BatchFileOperation lastBatch() {
+    public BatchFileTask lastBatch() {
         return getBatches().get(getBatches().size() - 1);
     }
 

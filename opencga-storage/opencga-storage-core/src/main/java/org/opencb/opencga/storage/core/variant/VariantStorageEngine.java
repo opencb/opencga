@@ -53,6 +53,8 @@ import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.*;
 import org.opencb.opencga.storage.core.metadata.local.FileStudyConfigurationAdaptor;
+import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
@@ -84,7 +86,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.metadata.StudyConfigurationManager.addBatchOperation;
+import static org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager.addBatchOperation;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
@@ -100,7 +102,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     private final AtomicReference<VariantSearchManager> variantSearchManager = new AtomicReference<>();
     private CellBaseUtils cellBaseUtils;
 
-    public static final String REMOVE_OPERATION_NAME = BatchFileOperation.Type.REMOVE.name().toLowerCase();
+    public static final String REMOVE_OPERATION_NAME = BatchFileTask.Type.REMOVE.name().toLowerCase();
 
     private Logger logger = LoggerFactory.getLogger(VariantStorageEngine.class);
 
@@ -285,7 +287,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     public void exportData(URI outputFile, VariantOutputFormat outputFormat, Query query, QueryOptions queryOptions)
             throws IOException, StorageEngineException {
-        exportData(outputFile, outputFormat, new VariantMetadataFactory(getStudyConfigurationManager()
+        exportData(outputFile, outputFormat, new VariantMetadataFactory(getVariantStorageMetadataManager()
         ), query, queryOptions);
     }
 
@@ -374,11 +376,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             throws StoragePipelineException {
         if (files != null && !files.isEmpty() && options.getBoolean(Options.ANNOTATE.key(), Options.ANNOTATE.defaultValue())) {
             try {
-                VariantDBAdaptor dbAdaptor = getDBAdaptor();
 
                 String studyName = options.getString(Options.STUDY.key());
                 StudyConfiguration studyConfiguration =
-                        dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyName, new QueryOptions(options)).first();
+                        getVariantStorageMetadataManager().getStudyConfiguration(studyName, new QueryOptions(options)).first();
                 int studyId = studyConfiguration.getStudyId();
 
                 List<Integer> fileIds = new ArrayList<>(files.size());
@@ -420,7 +421,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     public QueryResult<ProjectMetadata.VariantAnnotationMetadata> getAnnotationMetadata(String name) throws StorageEngineException {
-        QueryResult<ProjectMetadata> queryResult = getStudyConfigurationManager().getProjectMetadata();
+        QueryResult<ProjectMetadata> queryResult = getVariantStorageMetadataManager().getProjectMetadata();
         ProjectMetadata.VariantAnnotationSets annotation = queryResult.first().getAnnotation();
         List<ProjectMetadata.VariantAnnotationMetadata> list;
         if (StringUtils.isEmpty(name) || VariantQueryUtils.ALL.equals(name)) {
@@ -454,7 +455,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     protected final VariantAnnotationManager newVariantAnnotationManager(ObjectMap params)
             throws StorageEngineException, VariantAnnotatorException {
-        ProjectMetadata projectMetadata = getStudyConfigurationManager().getProjectMetadata(getMergedOptions(params)).first();
+        ProjectMetadata projectMetadata = getVariantStorageMetadataManager().getProjectMetadata(getMergedOptions(params)).first();
         VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(
                 configuration, getStorageEngineId(), projectMetadata, params);
         return newVariantAnnotationManager(annotator);
@@ -495,11 +496,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             throws StorageEngineException, IOException {
         VariantStatisticsManager statisticsManager = newVariantStatisticsManager();
 
-        StudyConfigurationManager scm = getStudyConfigurationManager();
-        scm.lockAndUpdate(study, sc -> {
-            scm.registerCohorts(sc, cohorts);
-            return sc;
-        });
+        VariantStorageMetadataManager scm = getVariantStorageMetadataManager();
+        scm.registerCohorts(study, cohorts);
 
         statisticsManager.calculateStatistics(study, new ArrayList<>(cohorts.keySet()), options);
     }
@@ -525,7 +523,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 String studyName = options.getString(Options.STUDY.key());
                 QueryOptions statsOptions = new QueryOptions(options);
                 StudyConfiguration studyConfiguration =
-                        dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyName, new QueryOptions()).first();
+                        dbAdaptor.getVariantStorageMetadataManager().getStudyConfiguration(studyName, new QueryOptions()).first();
 
                 List<Integer> fileIds = new ArrayList<>(files.size());
                 for (URI uri : files) {
@@ -606,7 +604,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             VariantSearchLoadResult load = variantSearchManager.load(dbName, iterator, progressLogger, newVariantSearchLoadListener());
 
             long value = System.currentTimeMillis();
-            getStudyConfigurationManager().lockAndUpdateProject(projectMetadata -> {
+            getVariantStorageMetadataManager().lockAndUpdateProject(projectMetadata -> {
                 projectMetadata.getAttributes().put(SEARCH_INDEX_LAST_TIMESTAMP.key(), value);
                 return projectMetadata;
             });
@@ -648,9 +646,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         // first, create the collection it it does not exist
 
         AtomicInteger id = new AtomicInteger();
-        StudyConfiguration sc = getStudyConfigurationManager().lockAndUpdate(study, studyConfiguration -> {
+        StudyConfiguration sc = getVariantStorageMetadataManager().lockAndUpdateOld(study, studyConfiguration -> {
             boolean resume = getOptions().getBoolean(RESUME.key(), RESUME.defaultValue());
-            id.set(getStudyConfigurationManager().registerSearchIndexSamples(studyConfiguration, samples, resume));
+            id.set(getVariantStorageMetadataManager().registerSearchIndexSamples(studyConfiguration, samples, resume));
             return studyConfiguration;
         });
 
@@ -673,14 +671,14 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             }
             dbAdaptor.close();
         } catch (Exception e) {
-            getStudyConfigurationManager().lockAndUpdate(study, studyConfiguration -> {
-                studyConfiguration.getSearchIndexedSampleSetsStatus().put(id.get(), BatchFileOperation.Status.ERROR);
+            getVariantStorageMetadataManager().lockAndUpdateOld(study, studyConfiguration -> {
+                studyConfiguration.getSearchIndexedSampleSetsStatus().put(id.get(), BatchFileTask.Status.ERROR);
                 return studyConfiguration;
             });
             throw e;
         }
-        getStudyConfigurationManager().lockAndUpdate(study, studyConfiguration -> {
-            studyConfiguration.getSearchIndexedSampleSetsStatus().put(id.get(), BatchFileOperation.Status.READY);
+        getVariantStorageMetadataManager().lockAndUpdateOld(study, studyConfiguration -> {
+            studyConfiguration.getSearchIndexedSampleSetsStatus().put(id.get(), BatchFileTask.Status.READY);
             return studyConfiguration;
         });
     }
@@ -688,13 +686,13 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     public void removeSearchIndexSamples(String study, List<String> samples) throws StorageEngineException, VariantSearchException {
         VariantSearchManager variantSearchManager = getVariantSearchManager();
 
-        StudyConfiguration sc = getStudyConfigurationManager().getStudyConfiguration(study, null).first();
+        StudyConfiguration sc = getVariantStorageMetadataManager().getStudyConfiguration(study, null).first();
 
         // Check that all samples are from the same secondary index
         Set<Integer> sampleIds = new HashSet<>();
         Set<Integer> secIndexIdSet = new HashSet<>();
         for (String sample : samples) {
-            Integer sampleId = StudyConfigurationManager.getSampleIdFromStudy(sample, sc);
+            Integer sampleId = VariantStorageMetadataManager.getSampleIdFromStudy(sample, sc);
             if (sampleId == null) {
                 throw VariantQueryException.sampleNotFound(sample, study);
             }
@@ -722,8 +720,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
 
         // Invalidate secondary index
-        getStudyConfigurationManager().lockAndUpdate(study, studyConfiguration -> {
-            studyConfiguration.getSearchIndexedSampleSetsStatus().put(secIndexId, BatchFileOperation.Status.RUNNING);
+        getVariantStorageMetadataManager().lockAndUpdateOld(study, studyConfiguration -> {
+            studyConfiguration.getSearchIndexedSampleSetsStatus().put(secIndexId, BatchFileTask.Status.RUNNING);
             return studyConfiguration;
         });
 
@@ -732,7 +730,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         variantSearchManager.getSolrManager().remove(collection);
 
         // Remove secondary index metadata
-        getStudyConfigurationManager().lockAndUpdate(study, studyConfiguration -> {
+        getVariantStorageMetadataManager().lockAndUpdateOld(study, studyConfiguration -> {
             studyConfiguration.getSearchIndexedSampleSetsStatus().remove(secIndexId);
             for (Integer sampleId : sampleIds) {
                 studyConfiguration.getSearchIndexedSampleSets().remove(sampleId);
@@ -769,15 +767,15 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @return FileIds to remove
      * @throws StorageEngineException StorageEngineException
      */
-    protected BatchFileOperation preRemoveFiles(String study, List<String> files) throws StorageEngineException {
+    protected BatchFileTask preRemoveFiles(String study, List<String> files) throws StorageEngineException {
         List<Integer> fileIds = new ArrayList<>();
-        AtomicReference<BatchFileOperation> batchFileOperation = new AtomicReference<>();
-        getStudyConfigurationManager().lockAndUpdate(study, studyConfiguration -> {
-            fileIds.addAll(getStudyConfigurationManager().getFileIdsFromStudy(files, studyConfiguration));
+        AtomicReference<BatchFileTask> batchFileOperation = new AtomicReference<>();
+        getVariantStorageMetadataManager().lockAndUpdateOld(study, studyConfiguration -> {
+            fileIds.addAll(getVariantStorageMetadataManager().getFileIdsFromStudy(files, studyConfiguration));
 
             boolean resume = getOptions().getBoolean(RESUME.key(), RESUME.defaultValue());
             batchFileOperation.set(addBatchOperation(studyConfiguration, REMOVE_OPERATION_NAME, fileIds, resume,
-                    BatchFileOperation.Type.REMOVE));
+                    BatchFileTask.Type.REMOVE));
 
             if (!studyConfiguration.getIndexedFiles().containsAll(fileIds)) {
                 // Remove indexed files to get non indexed files
@@ -808,15 +806,15 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @throws StorageEngineException StorageEngineException
      */
     protected void postRemoveFiles(String study, List<Integer> fileIds, boolean error) throws StorageEngineException {
-        getStudyConfigurationManager().lockAndUpdate(study, studyConfiguration -> {
+        getVariantStorageMetadataManager().lockAndUpdateOld(study, studyConfiguration -> {
             if (error) {
-                StudyConfigurationManager.setStatus(studyConfiguration, BatchFileOperation.Status.ERROR, REMOVE_OPERATION_NAME, fileIds);
+                VariantStorageMetadataManager.setStatus(studyConfiguration, BatchFileTask.Status.ERROR, REMOVE_OPERATION_NAME, fileIds);
             } else {
                 for (Integer fileId : fileIds) {
-                    getDBAdaptor().getStudyConfigurationManager().deleteVariantFileMetadata(studyConfiguration.getStudyId(), fileId);
+                    getDBAdaptor().getVariantStorageMetadataManager().deleteVariantFileMetadata(studyConfiguration.getStudyId(), fileId);
                 }
 
-                StudyConfigurationManager.setStatus(studyConfiguration, BatchFileOperation.Status.READY, REMOVE_OPERATION_NAME, fileIds);
+                VariantStorageMetadataManager.setStatus(studyConfiguration, BatchFileTask.Status.READY, REMOVE_OPERATION_NAME, fileIds);
                 studyConfiguration.getIndexedFiles().removeAll(fileIds);
                 Set<Integer> removedSamples = new HashSet<>();
                 for (Integer fileId : fileIds) {
@@ -860,7 +858,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     public CellBaseUtils getCellBaseUtils() throws StorageEngineException {
         if (cellBaseUtils == null) {
-            final ProjectMetadata metadata = getStudyConfigurationManager().getProjectMetadata(getOptions()).first();
+            final ProjectMetadata metadata = getVariantStorageMetadataManager().getProjectMetadata(getOptions()).first();
 
             String species = metadata.getSpecies();
             String assembly = metadata.getAssembly();
@@ -897,8 +895,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @return A StudyConfigurationManager object
      * @throws StorageEngineException If object is null
      */
-    public StudyConfigurationManager getStudyConfigurationManager() throws StorageEngineException {
-        return new StudyConfigurationManager(null, new FileStudyConfigurationAdaptor(), null);
+    public VariantStorageMetadataManager getVariantStorageMetadataManager() throws StorageEngineException {
+        return new VariantStorageMetadataManager(null, new FileStudyConfigurationAdaptor(), null);
     }
 
     public VariantSearchManager getVariantSearchManager() throws StorageEngineException {
@@ -906,7 +904,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             synchronized (variantSearchManager) {
                 if (variantSearchManager.get() == null) {
                     // TODO One day we should use reflection here reading from storage-configuration.yml
-                    variantSearchManager.set(new VariantSearchManager(getStudyConfigurationManager(), configuration));
+                    variantSearchManager.set(new VariantSearchManager(getVariantStorageMetadataManager(), configuration));
                 }
             }
         }
@@ -957,7 +955,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
 
         String specificSearchIndexSamples = inferSpecificSearchIndexSamplesCollection(
-                query, options, getStudyConfigurationManager(), dbName);
+                query, options, getVariantStorageMetadataManager(), dbName);
         if (specificSearchIndexSamples != null) {
             try {
                 if (iterator) {
@@ -993,7 +991,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 Integer approxCountSamplingSize = null;
 
                 Query searchEngineQuery = getSearchEngineQuery(query);
-                Query engineQuery = getEngineQuery(query, options, getStudyConfigurationManager());
+                Query engineQuery = getEngineQuery(query, options, getVariantStorageMetadataManager());
 
                 // Do not count for iterator
                 if (!iterator) {
@@ -1140,7 +1138,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             query.remove(ANNOT_POLYPHEN);
         }
 
-        StudyConfiguration defaultStudyConfiguration = getDefaultStudyConfiguration(query, options, getStudyConfigurationManager());
+        StudyConfiguration defaultStudyConfiguration = getDefaultStudyConfiguration(query, options, getVariantStorageMetadataManager());
         QueryOperation formatOperator = null;
         if (isValidParam(query, FORMAT)) {
             extractGenotypeFromFormatFilter(query);
@@ -1151,9 +1149,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             for (Map.Entry<String, String> entry : pair.getValue().entrySet()) {
                 String sampleName = entry.getKey();
                 if (defaultStudyConfiguration == null) {
-                    throw VariantQueryException.missingStudyForSample(sampleName, getStudyConfigurationManager().getStudyNames(null));
+                    throw VariantQueryException.missingStudyForSample(sampleName, getVariantStorageMetadataManager().getStudyNames(null));
                 }
-                Integer sampleId = StudyConfigurationManager.getSampleIdFromStudy(sampleName, defaultStudyConfiguration, true);
+                Integer sampleId = VariantStorageMetadataManager.getSampleIdFromStudy(sampleName, defaultStudyConfiguration, true);
                 if (sampleId == null) {
                     throw VariantQueryException.sampleNotFound(sampleName, defaultStudyConfiguration.getStudyName());
                 }
@@ -1181,9 +1179,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             for (Map.Entry<String, String> entry : pair.getValue().entrySet()) {
                 String fileName = entry.getKey();
                 if (defaultStudyConfiguration == null) {
-                    throw VariantQueryException.missingStudyForFile(fileName, getStudyConfigurationManager().getStudyNames(null));
+                    throw VariantQueryException.missingStudyForFile(fileName, getVariantStorageMetadataManager().getStudyNames(null));
                 }
-                Integer fileId = StudyConfigurationManager.getFileIdFromStudy(fileName, defaultStudyConfiguration, true);
+                Integer fileId = VariantStorageMetadataManager.getFileIdFromStudy(fileName, defaultStudyConfiguration, true);
                 if (fileId == null) {
                     throw VariantQueryException.fileNotFound(fileName, defaultStudyConfiguration.getStudyName());
                 }
@@ -1211,7 +1209,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
             if (defaultStudyConfiguration == null) {
                 throw VariantQueryException.missingStudyForSamples(query.getAsStringList(SAMPLE.key()),
-                        getStudyConfigurationManager().getStudyNames(null));
+                        getVariantStorageMetadataManager().getStudyNames(null));
             }
             List<String> loadedGenotypes = defaultStudyConfiguration.getAttributes().getAsStringList(LOADED_GENOTYPES.key());
             if (CollectionUtils.isEmpty(loadedGenotypes)) {
@@ -1298,7 +1296,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
         if (!isValidParam(query, INCLUDE_STUDY) || !isValidParam(query, INCLUDE_SAMPLE) || !isValidParam(query, INCLUDE_FILE)) {
             VariantQueryUtils.SelectVariantElements selectVariantElements =
-                    parseSelectElements(query, options, getStudyConfigurationManager());
+                    parseSelectElements(query, options, getVariantStorageMetadataManager());
             if (!isValidParam(query, INCLUDE_STUDY)) {
                 List<String> includeStudy = new ArrayList<>();
                 for (Integer studyId : selectVariantElements.getStudies()) {
@@ -1463,7 +1461,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, VariantField.ID).append(QueryOptions.LIMIT, sampling);
 
                 Query searchEngineQuery = getSearchEngineQuery(query);
-                Query engineQuery = getEngineQuery(query, options, getStudyConfigurationManager());
+                Query engineQuery = getEngineQuery(query, options, getVariantStorageMetadataManager());
 
                 VariantQueryResult<VariantSearchModel> nativeResult = getVariantSearchManager()
                         .nativeQuery(dbName, searchEngineQuery, queryOptions);

@@ -520,7 +520,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
             assertNotEquals(0, cleanedDocuments);
         }
         studyConfiguration.getIndexedFiles().addAll(fileIds);
-        dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
+        dbAdaptor.getVariantStorageMetadataManager().updateStudyConfiguration(studyConfiguration, null);
         return variantLoader.getResult().setSkippedVariants(stageWriteResult != null ? stageWriteResult.getSkippedVariants() : 0);
     }
 

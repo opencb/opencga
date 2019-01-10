@@ -7,7 +7,7 @@ import org.junit.Test;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.dummy.DummyProjectMetadataAdaptor;
@@ -36,12 +36,12 @@ import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVa
 public class VariantMongoDBQueryParserTest {
 
     private VariantMongoDBQueryParser parser;
-    private StudyConfigurationManager scm;
+    private VariantStorageMetadataManager scm;
 
     @Before
     public void setUp() throws Exception {
         DummyStudyConfigurationAdaptor.clear();
-        scm = new StudyConfigurationManager(new DummyProjectMetadataAdaptor(), new DummyStudyConfigurationAdaptor(), new DummyVariantFileMetadataDBAdaptor());
+        scm = new VariantStorageMetadataManager(new DummyProjectMetadataAdaptor(), new DummyStudyConfigurationAdaptor(), new DummyVariantFileMetadataDBAdaptor());
         parser = new VariantMongoDBQueryParser(scm);
         scm.updateStudyConfiguration(newStudyConfiguration(1, Arrays.asList(1, 2, 3, 4), false), null);
         scm.updateStudyConfiguration(newStudyConfiguration(2, Arrays.asList(1, 2, 3, 4), true), null);

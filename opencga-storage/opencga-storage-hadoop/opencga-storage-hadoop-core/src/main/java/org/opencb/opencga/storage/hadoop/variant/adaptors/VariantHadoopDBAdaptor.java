@@ -36,9 +36,9 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -93,7 +93,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     private final String variantTable;
     private final VariantPhoenixHelper phoenixHelper;
     private final HBaseCredentials credentials;
-    private final AtomicReference<StudyConfigurationManager> studyConfigurationManager = new AtomicReference<>(null);
+    private final AtomicReference<VariantStorageMetadataManager> studyConfigurationManager = new AtomicReference<>(null);
     private final Configuration configuration;
     private final HBaseVariantTableNameGenerator tableNameGenerator;
     private final GenomeHelper genomeHelper;
@@ -122,7 +122,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         ObjectMap options = configuration.getStorageEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID).getVariant().getOptions();
         HBaseVariantStorageMetadataDBAdaptorFactory factory = new HBaseVariantStorageMetadataDBAdaptorFactory(
                 hBaseManager, tableNameGenerator.getMetaTableName(), conf);
-        this.studyConfigurationManager.set(new StudyConfigurationManager(factory));
+        this.studyConfigurationManager.set(new VariantStorageMetadataManager(factory));
         this.variantFileMetadataDBAdaptor = factory.buildVariantFileMetadataDBAdaptor();
 
         clientSideSkip = !options.getBoolean(PhoenixHelper.PHOENIX_SERVER_OFFSET_AVAILABLE, true);
@@ -193,7 +193,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     public ArchiveTableHelper getArchiveHelper(int studyId, int fileId) throws StorageEngineException, IOException {
-        VariantFileMetadata fileMetadata = getStudyConfigurationManager().getVariantFileMetadata(studyId, fileId, null).first();
+        VariantFileMetadata fileMetadata = getVariantStorageMetadataManager().getVariantFileMetadata(studyId, fileId, null).first();
         if (fileMetadata == null) {
             throw new StorageEngineException("File '" + fileId + "' not found in study '" + studyId + "'");
         }
@@ -207,13 +207,13 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public StudyConfigurationManager getStudyConfigurationManager() {
+    public VariantStorageMetadataManager getVariantStorageMetadataManager() {
         return studyConfigurationManager.get();
     }
 
     @Override
-    public void setStudyConfigurationManager(StudyConfigurationManager studyConfigurationManager) {
-        this.studyConfigurationManager.set(studyConfigurationManager);
+    public void setVariantStorageMetadataManager(VariantStorageMetadataManager variantStorageMetadataManager) {
+        this.studyConfigurationManager.set(variantStorageMetadataManager);
     }
 
     @Override
@@ -263,7 +263,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             }
         }
 
-        Map<String, List<String>> samples = getSamplesMetadataIfRequested(query, options, getStudyConfigurationManager());
+        Map<String, List<String>> samples = getSamplesMetadataIfRequested(query, options, getVariantStorageMetadataManager());
         return new VariantQueryResult<>("getVariants", ((int) iterator.getTimeFetching()), variants.size(), numTotalResults,
                 warn, error, variants, samples, HadoopVariantStorageEngine.STORAGE_ENGINE_ID);
     }
@@ -304,13 +304,13 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         if (name.equals(VariantAnnotationManager.CURRENT)) {
             annotationColumn = VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes();
         } else {
-            ProjectMetadata.VariantAnnotationMetadata saved = getStudyConfigurationManager().getProjectMetadata().first().
+            ProjectMetadata.VariantAnnotationMetadata saved = getVariantStorageMetadataManager().getProjectMetadata().first().
                     getAnnotation().getSaved(name);
 
             annotationColumn = Bytes.toBytes(VariantPhoenixHelper.getAnnotationSnapshotColumn(saved.getId()));
             query.put(ANNOT_NAME.key(), saved.getId());
         }
-        SelectVariantElements selectElements = VariantQueryUtils.parseSelectElements(query, options, getStudyConfigurationManager());
+        SelectVariantElements selectElements = VariantQueryUtils.parseSelectElements(query, options, getVariantStorageMetadataManager());
         List<Scan> scans = hbaseQueryParser.parseQueryMultiRegion(selectElements, query, options);
 
         try {
@@ -322,10 +322,10 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                     throw VariantQueryException.internalException(e);
                 }
             }).iterator();
-            long ts = getStudyConfigurationManager().getProjectMetadata().first().getAttributes()
+            long ts = getVariantStorageMetadataManager().getProjectMetadata().first().getAttributes()
                     .getLong(SEARCH_INDEX_LAST_TIMESTAMP.key());
             HBaseToVariantAnnotationConverter converter = new HBaseToVariantAnnotationConverter(genomeHelper, ts)
-                    .setAnnotationIds(getStudyConfigurationManager().getProjectMetadata().first().getAnnotation())
+                    .setAnnotationIds(getVariantStorageMetadataManager().getProjectMetadata().first().getAnnotation())
                     .setIncludeFields(selectElements.getFields());
             converter.setAnnotationColumn(annotationColumn, name);
             Iterator<Result> iterator = Iterators.concat(iterators);
@@ -385,11 +385,11 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
         if (archiveIterator) {
             String study = query.getString(STUDY.key());
-            StudyConfiguration studyConfiguration = getStudyConfigurationManager().getStudyConfiguration(study, options).first();
+            StudyConfiguration studyConfiguration = getVariantStorageMetadataManager().getStudyConfiguration(study, options).first();
             int studyId = studyConfiguration.getStudyId();
 
             String file = query.getString(FILE.key());
-            Integer fileId = StudyConfigurationManager.getFileIdFromStudy(file, studyConfiguration, true);
+            Integer fileId = VariantStorageMetadataManager.getFileIdFromStudy(file, studyConfiguration, true);
             if (fileId == null) {
                 throw VariantQueryException.fileNotFound(file, study);
             }
@@ -499,7 +499,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
 //                VariantPhoenixCursorIterator iterator = new VariantPhoenixCursorIterator(phoenixQuery, getJdbcConnection(), converter);
                 VariantHBaseResultSetIterator iterator = new VariantHBaseResultSetIterator(statement,
-                        resultSet, genomeHelper, getStudyConfigurationManager(), phoenixQuery.getSelect(),
+                        resultSet, genomeHelper, getVariantStorageMetadataManager(), phoenixQuery.getSelect(),
                         formats, unknownGenotype, options);
 
                 if (clientSideSkip) {
@@ -582,7 +582,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp,
                                    QueryOptions queryOptions) {
         return updateStats(variantStatsWrappers,
-                getStudyConfigurationManager().getStudyConfiguration(studyName, queryOptions).first(), timestamp, queryOptions);
+                getVariantStorageMetadataManager().getStudyConfiguration(studyName, queryOptions).first(), timestamp, queryOptions);
     }
 
     /**
@@ -625,7 +625,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         long start = System.currentTimeMillis();
 
         final GenomeHelper genomeHelper1 = new GenomeHelper(configuration);
-        int currentAnnotationId = getStudyConfigurationManager().getProjectMetadata().first().getAnnotation().getCurrent().getId();
+        int currentAnnotationId = getVariantStorageMetadataManager().getProjectMetadata().first().getAnnotation().getCurrent().getId();
         VariantAnnotationToPhoenixConverter converter = new VariantAnnotationToPhoenixConverter(genomeHelper1.getColumnFamily(),
                 currentAnnotationId);
         Iterable<Map<PhoenixHelper.Column, ?>> records = converter.apply(variantAnnotations);

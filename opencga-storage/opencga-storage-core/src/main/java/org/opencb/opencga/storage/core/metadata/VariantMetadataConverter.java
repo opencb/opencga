@@ -6,6 +6,7 @@ import org.opencb.biodata.models.variant.metadata.*;
 import org.opencb.biodata.tools.variant.metadata.VariantMetadataManager;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 
 import java.util.*;
 

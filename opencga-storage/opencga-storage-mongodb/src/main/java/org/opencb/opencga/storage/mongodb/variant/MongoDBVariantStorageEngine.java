@@ -35,9 +35,9 @@ import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
-import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
+import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.local.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -86,7 +86,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     private MongoDataStoreManager mongoDataStoreManager = null;
     private final AtomicReference<VariantMongoDBAdaptor> dbAdaptor = new AtomicReference<>();
     private Logger logger = LoggerFactory.getLogger(MongoDBVariantStorageEngine.class);
-    private StudyConfigurationManager studyConfigurationManager;
+    private VariantStorageMetadataManager variantStorageMetadataManager;
 
     public enum MongoDBVariantOptions {
         COLLECTION_VARIANTS("collection.variants", "variants"),
@@ -243,18 +243,18 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     @Override
     public void removeFiles(String study, List<String> files) throws StorageEngineException {
 
-        BatchFileOperation batchFileOperation = preRemoveFiles(study, files);
-        List<Integer> fileIds = batchFileOperation.getFileIds();
+        BatchFileTask batchFileTask = preRemoveFiles(study, files);
+        List<Integer> fileIds = batchFileTask.getFileIds();
 
         ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
 
-        StudyConfigurationManager scm = getStudyConfigurationManager();
+        VariantStorageMetadataManager scm = getVariantStorageMetadataManager();
         Integer studyId = scm.getStudyId(study, null);
 
         Thread hook = scm.buildShutdownHook(REMOVE_OPERATION_NAME, studyId, fileIds);
         try {
             Runtime.getRuntime().addShutdownHook(hook);
-            getDBAdaptor().removeFiles(study, files, batchFileOperation.getTimestamp(), new QueryOptions(options));
+            getDBAdaptor().removeFiles(study, files, batchFileTask.getTimestamp(), new QueryOptions(options));
             postRemoveFiles(study, fileIds, false);
         } catch (Exception e) {
             postRemoveFiles(study, fileIds, true);
@@ -266,16 +266,16 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public void removeStudy(String studyName) throws StorageEngineException {
-        StudyConfigurationManager scm = getStudyConfigurationManager();
-        AtomicReference<BatchFileOperation> batchFileOperation = new AtomicReference<>();
-        int studyId = scm.lockAndUpdate(studyName, studyConfiguration -> {
+        VariantStorageMetadataManager scm = getVariantStorageMetadataManager();
+        AtomicReference<BatchFileTask> batchFileOperation = new AtomicReference<>();
+        int studyId = scm.lockAndUpdateOld(studyName, studyConfiguration -> {
             boolean resume = getOptions().getBoolean(RESUME.key(), RESUME.defaultValue());
-            batchFileOperation.set(StudyConfigurationManager.addBatchOperation(
+            batchFileOperation.set(VariantStorageMetadataManager.addBatchOperation(
                     studyConfiguration,
                     REMOVE_OPERATION_NAME,
                     Collections.emptyList(),
                     resume,
-                    BatchFileOperation.Type.REMOVE));
+                    BatchFileTask.Type.REMOVE));
             return studyConfiguration;
         }).getStudyId();
 
@@ -285,12 +285,12 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
             ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
             getDBAdaptor().removeStudy(studyName, batchFileOperation.get().getTimestamp(), new QueryOptions(options));
 
-            scm.lockAndUpdate(studyName, studyConfiguration -> {
+            scm.lockAndUpdateOld(studyName, studyConfiguration -> {
                 for (Integer fileId : studyConfiguration.getIndexedFiles()) {
-                    getDBAdaptor().getStudyConfigurationManager().deleteVariantFileMetadata(studyId, fileId);
+                    getDBAdaptor().getVariantStorageMetadataManager().deleteVariantFileMetadata(studyId, fileId);
                 }
-                StudyConfigurationManager
-                        .setStatus(studyConfiguration, BatchFileOperation.Status.READY, REMOVE_OPERATION_NAME, Collections.emptyList());
+                VariantStorageMetadataManager
+                        .setStatus(studyConfiguration, BatchFileTask.Status.READY, REMOVE_OPERATION_NAME, Collections.emptyList());
                 studyConfiguration.getIndexedFiles().clear();
                 studyConfiguration.getCalculatedStats().clear();
                 studyConfiguration.getInvalidStats().clear();
@@ -299,11 +299,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
                 return studyConfiguration;
             });
         } catch (Exception e) {
-            scm.lockAndUpdate(studyName, studyConfiguration -> {
-                StudyConfigurationManager
-                        .setStatus(studyConfiguration, BatchFileOperation.Status.ERROR, REMOVE_OPERATION_NAME, Collections.emptyList());
-                return studyConfiguration;
-            });
+            scm.atomicSetStatus(studyId, BatchFileTask.Status.ERROR, REMOVE_OPERATION_NAME, Collections.emptyList());
             throw e;
         } finally {
             Runtime.getRuntime().removeShutdownHook(hook);
@@ -543,9 +539,9 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         String filesCollection = options.getString(COLLECTION_FILES.key(), COLLECTION_FILES.defaultValue());
         MongoDataStoreManager mongoDataStoreManager = getMongoDataStoreManager();
         try {
-            StudyConfigurationManager studyConfigurationManager = getStudyConfigurationManager();
+            VariantStorageMetadataManager variantStorageMetadataManager = getVariantStorageMetadataManager();
             variantMongoDBAdaptor = new VariantMongoDBAdaptor(mongoDataStoreManager, credentials, variantsCollection,
-                    studyConfigurationManager, configuration);
+                    variantStorageMetadataManager, configuration);
 
         } catch (UnknownHostException e) {
             throw new IllegalArgumentException(e);
@@ -571,26 +567,26 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public StudyConfigurationManager getStudyConfigurationManager() throws StorageEngineException {
+    public VariantStorageMetadataManager getVariantStorageMetadataManager() throws StorageEngineException {
         ObjectMap options = getOptions();
-        if (studyConfigurationManager != null) {
-            return studyConfigurationManager;
+        if (variantStorageMetadataManager != null) {
+            return variantStorageMetadataManager;
         } else if (!options.getString(FileStudyConfigurationAdaptor.STUDY_CONFIGURATION_PATH, "").isEmpty()) {
-            return super.getStudyConfigurationManager();
+            return super.getVariantStorageMetadataManager();
         } else {
             MongoDataStoreManager mongoDataStoreManager = getMongoDataStoreManager();
             MongoDataStore db = mongoDataStoreManager.get(
                     getMongoCredentials().getMongoDbName(),
                     getMongoCredentials().getMongoDBConfiguration());
-            studyConfigurationManager = new StudyConfigurationManager(new MongoDBVariantStorageMetadataDBAdaptorFactory(db, options));
-            return studyConfigurationManager;
+            variantStorageMetadataManager = new VariantStorageMetadataManager(new MongoDBVariantStorageMetadataDBAdaptorFactory(db, options));
+            return variantStorageMetadataManager;
         }
     }
 
     @Override
     public Query preProcessQuery(Query originalQuery, QueryOptions options) throws StorageEngineException {
         Query query = super.preProcessQuery(originalQuery, options);
-        List<String> studyNames = studyConfigurationManager.getStudyNames(QueryOptions.empty());
+        List<String> studyNames = variantStorageMetadataManager.getStudyNames(QueryOptions.empty());
         CellBaseUtils cellBaseUtils = getCellBaseUtils();
 
         if (isValidParam(query, VariantQueryParam.STUDY)
@@ -626,9 +622,9 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
             dbAdaptor.get().close();
             dbAdaptor.set(null);
         }
-        if (studyConfigurationManager != null) {
-            studyConfigurationManager.close();
-            studyConfigurationManager = null;
+        if (variantStorageMetadataManager != null) {
+            variantStorageMetadataManager.close();
+            variantStorageMetadataManager = null;
         }
         if (mongoDataStoreManager != null) {
             mongoDataStoreManager.close();

@@ -41,7 +41,7 @@ import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.local.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -352,7 +352,7 @@ public class VariantHbaseTestUtils {
     }
 
     public static void printVariants(VariantHadoopDBAdaptor dbAdaptor, URI outDir) throws Exception {
-        StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
+        VariantStorageMetadataManager scm = dbAdaptor.getVariantStorageMetadataManager();
         List<StudyConfiguration> studies = scm.getStudyNames(null).stream()
                 .map(studyName -> scm.getStudyConfiguration(studyName, null).first())
                 .collect(Collectors.toList());
@@ -399,7 +399,7 @@ public class VariantHbaseTestUtils {
     }
 
     private static void printSamplesIndexTable(VariantHadoopDBAdaptor dbAdaptor, Path outDir) throws IOException {
-        for (Integer studyId : dbAdaptor.getStudyConfigurationManager().getStudies(null).values()) {
+        for (Integer studyId : dbAdaptor.getVariantStorageMetadataManager().getStudies(null).values()) {
             String sampleGtTableName = dbAdaptor.getTableNameGenerator().getSampleIndexTableName(studyId);
             if (!dbAdaptor.getHBaseManager().tableExists(sampleGtTableName)) {
                 // Skip table
@@ -454,7 +454,7 @@ public class VariantHbaseTestUtils {
         studyConfiguration.copy(
                 variantStorageManager
                         .getDBAdaptor()
-                        .getStudyConfigurationManager()
+                        .getVariantStorageMetadataManager()
                         .getStudyConfiguration(studyConfiguration.getStudyId(), null)
                         .first());
 //        return variantStorageManager.readVariantSource(etlResult.getTransformResult(), new ObjectMap());
@@ -482,7 +482,7 @@ public class VariantHbaseTestUtils {
 //            params.append(VariantStorageEngine.Options.FILE_ID.key(), fileId);
 //        }
         StoragePipelineResult etlResult = VariantStorageBaseTest.runETL(variantStorageManager, fileInputUri, outputUri, params, doTransform, doTransform, loadArchive || loadVariant);
-        StudyConfiguration updatedStudyConfiguration = variantStorageManager.getDBAdaptor().getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+        StudyConfiguration updatedStudyConfiguration = variantStorageManager.getDBAdaptor().getVariantStorageMetadataManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
         if (updatedStudyConfiguration != null) {
             studyConfiguration.copy(updatedStudyConfiguration);
         }

@@ -20,7 +20,7 @@ import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageTest;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -43,7 +43,7 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
     public void testTranscriptInfo() throws IOException, VariantSearchException, StorageEngineException, FileFormatException, SolrServerException {
         int limit = 500;
 
-        StudyConfigurationManager scm = variantStorageEngine.getStudyConfigurationManager();
+        VariantStorageMetadataManager scm = variantStorageEngine.getVariantStorageMetadataManager();
 
         solr.configure(variantStorageEngine);
         VariantSearchManager variantSearchManager = variantStorageEngine.getVariantSearchManager();

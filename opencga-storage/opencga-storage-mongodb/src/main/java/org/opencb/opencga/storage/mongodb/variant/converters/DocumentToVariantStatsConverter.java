@@ -23,7 +23,7 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,8 +49,8 @@ public class DocumentToVariantStatsConverter {
                 .collect(Collectors.toMap(StudyConfiguration::getStudyId, Function.identity()));
     }
 
-    public DocumentToVariantStatsConverter(StudyConfigurationManager studyConfigurationManager) {
-        this.studyConfigurationManager = studyConfigurationManager;
+    public DocumentToVariantStatsConverter(VariantStorageMetadataManager variantStorageMetadataManager) {
+        this.variantStorageMetadataManager = variantStorageMetadataManager;
     }
 
     public static final String COHORT_ID = "cid";
@@ -69,14 +69,14 @@ public class DocumentToVariantStatsConverter {
 
     protected static Logger logger = LoggerFactory.getLogger(DocumentToVariantStatsConverter.class);
 
-    private StudyConfigurationManager studyConfigurationManager = null;
+    private VariantStorageMetadataManager variantStorageMetadataManager = null;
     private Map<Integer, StudyConfiguration> studyConfigurations;
     private Map<Integer, String> studyIds = new HashMap<>();
     private Map<Integer, Map<Integer, String>> studyCohortNames = new HashMap<>();
     private Map<String, Genotype> genotypeMap = new HashMap<>();
 
-    public void setStudyConfigurationManager(StudyConfigurationManager studyConfigurationManager) {
-        this.studyConfigurationManager = studyConfigurationManager;
+    public void setVariantStorageMetadataManager(VariantStorageMetadataManager variantStorageMetadataManager) {
+        this.variantStorageMetadataManager = variantStorageMetadataManager;
     }
 
     public VariantStats convertToDataModelType(Document object) {
@@ -281,10 +281,10 @@ public class DocumentToVariantStatsConverter {
 
     private String getStudyName(int studyId) {
         if (!studyIds.containsKey(studyId)) {
-            if (studyConfigurationManager == null) {
+            if (variantStorageMetadataManager == null) {
                 studyIds.put(studyId, Integer.toString(studyId));
             } else {
-                studyConfigurationManager.getStudies(null).forEach((name, id) -> studyIds.put(id, name));
+                variantStorageMetadataManager.getStudies(null).forEach((name, id) -> studyIds.put(id, name));
             }
         }
         return studyIds.get(studyId);
@@ -312,7 +312,7 @@ public class DocumentToVariantStatsConverter {
         if (studyConfigurations != null && studyConfigurations.containsKey(studyId)) {
             return studyConfigurations.get(studyId);
         } else {
-            return studyConfigurationManager.getStudyConfiguration(studyId, StudyConfigurationManager.RO_CACHED_OPTIONS).first();
+            return variantStorageMetadataManager.getStudyConfiguration(studyId, VariantStorageMetadataManager.RO_CACHED_OPTIONS).first();
         }
     }
 

@@ -25,7 +25,7 @@ import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 
 import java.io.IOException;
 import java.util.*;
@@ -61,7 +61,7 @@ public class DocumentToStudyVariantEntryConverter {
 
     //    private Integer fileId;
     private DocumentToSamplesConverter samplesConverter;
-    private StudyConfigurationManager studyConfigurationManager = null;
+    private VariantStorageMetadataManager variantStorageMetadataManager = null;
     private Map<Integer, String> studyIds = new HashMap<>();
 
     /**
@@ -113,8 +113,8 @@ public class DocumentToStudyVariantEntryConverter {
         this(includeSrc, Collections.singletonMap(studyId, Collections.singletonList(fileId)), samplesConverter);
     }
 
-    public void setStudyConfigurationManager(StudyConfigurationManager studyConfigurationManager) {
-        this.studyConfigurationManager = studyConfigurationManager;
+    public void setVariantStorageMetadataManager(VariantStorageMetadataManager variantStorageMetadataManager) {
+        this.variantStorageMetadataManager = variantStorageMetadataManager;
     }
 
     public void addStudyName(int studyId, String studyName) {
@@ -227,11 +227,11 @@ public class DocumentToStudyVariantEntryConverter {
 
     public String getStudyName(int studyId) {
         if (!studyIds.containsKey(studyId)) {
-            if (studyConfigurationManager == null) {
+            if (variantStorageMetadataManager == null) {
                 studyIds.put(studyId, Integer.toString(studyId));
             } else {
-                QueryResult<StudyConfiguration> queryResult = studyConfigurationManager.getStudyConfiguration(studyId,
-                        StudyConfigurationManager.RO_CACHED_OPTIONS);
+                QueryResult<StudyConfiguration> queryResult = variantStorageMetadataManager.getStudyConfiguration(studyId,
+                        VariantStorageMetadataManager.RO_CACHED_OPTIONS);
                 if (queryResult.getResult().isEmpty()) {
                     studyIds.put(studyId, Integer.toString(studyId));
                 } else {
@@ -244,11 +244,11 @@ public class DocumentToStudyVariantEntryConverter {
 
     public String getFileName(int studyId, int fileId) {
         if (!fileIds.containsKey(fileId)) {
-            if (studyConfigurationManager == null) {
+            if (variantStorageMetadataManager == null) {
                 fileIds.put(fileId, Integer.toString(fileId));
             } else {
-                QueryResult<StudyConfiguration> queryResult = studyConfigurationManager.getStudyConfiguration(studyId,
-                        StudyConfigurationManager.RO_CACHED_OPTIONS);
+                QueryResult<StudyConfiguration> queryResult = variantStorageMetadataManager.getStudyConfiguration(studyId,
+                        VariantStorageMetadataManager.RO_CACHED_OPTIONS);
                 fileIds.put(fileId, queryResult.first().getFileIds().inverse().get(fileId));
             }
         }

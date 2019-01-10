@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.core.metadata;
+package org.opencb.opencga.storage.core.metadata.models;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;

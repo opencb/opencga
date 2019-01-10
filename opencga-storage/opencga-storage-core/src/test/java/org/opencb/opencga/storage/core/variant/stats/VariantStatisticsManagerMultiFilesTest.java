@@ -50,7 +50,7 @@ public abstract class VariantStatisticsManagerMultiFilesTest extends VariantStor
 //        storageEngine.index(inputFiles.subList(0, inputFiles.size()/2), outputUri, true, true, true);
 //        storageEngine.index(inputFiles.subList(inputFiles.size()/2, inputFiles.size()), outputUri, true, true, true);
         storageEngine.index(inputFiles, outputUri, true, true, true);
-        studyConfiguration = storageEngine.getStudyConfigurationManager().getStudyConfiguration(STUDY_ID, null).first();
+        studyConfiguration = storageEngine.getVariantStorageMetadataManager().getStudyConfiguration(STUDY_ID, null).first();
     }
 
     @Test
