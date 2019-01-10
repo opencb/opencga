@@ -120,6 +120,7 @@ public class AzureBatchExecutor implements BatchExecutor {
         return false;
     }
 
+    // configuration values from configuration.yml file
     private void populateOptions(Configuration configuration) {
         batchAccount = configuration.getExecution().getOptions().get(BATCH_ACCOUNT);
         batchKey = configuration.getExecution().getOptions().get(BATCH_KEY);
