@@ -4,7 +4,7 @@ pipeline {
 
         stage ('Validate ARM Templates') {
             steps {
-                sh 'npm install -f armval && cd opencga/opencga-app/app/scripts/azure/arm && armval "**/azuredeploy.json"'
+                sh 'cd opencga-app/app/scripts/azure/arm && npm install armval && node node_modules/.bin/armval "**/azuredeploy.json" && rm -rf node_modules && rm -rf package-lock.json'
             }
         }
 
