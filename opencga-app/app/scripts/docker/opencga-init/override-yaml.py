@@ -33,7 +33,7 @@ with open(args.storage_config_path) as f:
     storage_config = yaml.safe_load(f)
 
 # Inject search hosts
-search_hosts = args.search_hosts.split(",")
+search_hosts = args.search_hosts.replace('\"','').split(",")
 for i, search_host in enumerate(search_hosts):
     if i == 0:
         # If we are overriding the default hosts,
@@ -42,7 +42,7 @@ for i, search_host in enumerate(search_hosts):
     storage_config["search"]["hosts"].insert(i, search_host)
 
 # Inject clinical hosts
-clinical_hosts = args.clinical_hosts.split(",")
+clinical_hosts = args.clinical_hosts.replace('\"','').split(",")
 for i, clinical_host in enumerate(clinical_hosts):
     if i == 0:
         # If we are overriding the default hosts,
@@ -64,7 +64,7 @@ with open(args.config_path) as f:
     config = yaml.safe_load(f)
 
 # Inject catalog database
-catalog_hosts = args.catalog_database_hosts.split(",")
+catalog_hosts = args.catalog_database_hosts.replace('\"','').split(",")
 for i, catalog_host in enumerate(catalog_hosts):
     if i == 0:
         # If we are overriding the default hosts,
@@ -78,7 +78,7 @@ config["catalog"]["database"]["options"]["enableSSL"] = True
 config["catalog"]["database"]["options"]["authenticationDatabase"] = "admin"
 
 # Inject search database
-catalog_search_hosts = args.catalog_search_hosts.split(",")
+catalog_search_hosts = args.catalog_search_hosts.replace('\"','').split(",")
 for i, catalog_search_host in enumerate(catalog_search_hosts):
     if i == 0:
         # If we are overriding the default hosts,
