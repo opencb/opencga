@@ -2,6 +2,13 @@ pipeline {
     agent any
     stages {
 
+        stage ('Validate ARM Templates') {
+            steps {
+                sh 'npm install -f armval && cd opencga/opencga-app/app/scripts/azure/arm && armval "**/azuredeploy.json"'
+            }
+        }
+
+
         stage ('Build') {
             steps {
                 sh 'mvn clean install -DskipTests -Popencga-storage-hadoop-deps -Dcheckstyle.skip'
