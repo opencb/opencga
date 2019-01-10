@@ -124,9 +124,6 @@
         "cloud-init": [
             "#cloud-config",
             "",
-            "bootcmd:",
-            "[concat(' - ', variables('getScriptCmd'))]",
-            "",
             "write_files:",
             "- path: /etc/systemd/system/opencga.service",
             "  permissions: 0644",
@@ -148,6 +145,7 @@
             " - 'apt-get update'",
             " - 'curl -fsSL https://get.docker.com/ | sh'",
             " - 'curl -fsSL https://get.docker.com/gpg | sudo apt-key add -'",
+            "[concat(' - ', variables('getScriptCmd'))]",
             "[concat(' - ', variables('mountCmd'))]",
             "[concat(' - ', variables('initCmd'))]",
             " - 'systemctl start --no-block opencga'",
