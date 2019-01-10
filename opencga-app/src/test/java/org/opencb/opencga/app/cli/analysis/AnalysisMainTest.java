@@ -25,7 +25,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.models.*;
@@ -35,13 +34,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 /**
  * Created on 09/05/16
@@ -327,22 +327,31 @@ public class AnalysisMainTest {
 
     @Test
     public void testAlignmentIndex() throws CatalogException, IOException {
-        Job job;
+//        Job job;
 
         File bam = opencga.createFile(studyId, "HG00096.chrom20.small.bam", sessionId);
-        File bai = opencga.createFile(studyId, "HG00096.chrom20.small.bam.bai", sessionId);
+//        File bai = opencga.createFile(studyId, "HG00096.chrom20.small.bam.bai", sessionId);
+
+        String temporalDir = opencga.createTmpOutdir(studyId, "index", sessionId);
 
         // Index file1
         execute("alignment", "index",
                 "--session-id", sessionId,
                 "--study", studyId,
                 "--file", bam.getName(),
-                "-o", opencga.createTmpOutdir(studyId, "index", sessionId));
-        assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(studyId, bam.getId(), null, sessionId).first().getIndex().getStatus().getName());
-        job = catalogManager.getJobManager().get(studyId, new Query(JobDBAdaptor.QueryParams.INPUT.key(), bam.getUid()), null, sessionId).first();
-        assertEquals(Job.JobStatus.READY, job.getStatus().getName());
+                "-o", temporalDir);
 
-        execute("alignment", "query", "--session-id", sessionId, "--file", "user@p1:s1:" + bam.getPath(), "--region", "20");
+
+//        assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(studyId, bam.getId(), null, sessionId).first().getIndex().getStatus().getName());
+//        job = catalogManager.getJobManager().get(studyId, new Query(JobDBAdaptor.QueryParams.INPUT.key(), bam.getUid()), null, sessionId).first();
+//        assertEquals(Job.JobStatus.READY, job.getStatus().getName());
+
+        assertEquals(3, Files.list(Paths.get(temporalDir)).collect(Collectors.toList()).size());
+        assertTrue(Files.exists(Paths.get(temporalDir).resolve("HG00096.chrom20.small.bam.bai")));
+        assertTrue(Files.exists(Paths.get(temporalDir).resolve("HG00096.chrom20.small.bam.bw")));
+        assertTrue(Files.exists(Paths.get(temporalDir).resolve("status.json")));
+
+//        execute("alignment", "query", "--session-id", sessionId, "--file", "user@p1:s1:" + bam.getPath(), "--region", "20");
 
     }
 
