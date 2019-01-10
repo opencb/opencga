@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 # Define all the docker images in dependecy order
 declare -a images=(opencga-java-base opencga-build opencga opencga-app opencga-daemon opencga-init iva)
 
