@@ -51,7 +51,7 @@ for i, clinical_host in enumerate(clinical_hosts):
     storage_config["clinical"]["hosts"].insert(i, clinical_host)
 
 # Inject cellbase database
-cellbase_hosts = args.cellbase_hosts.split(",")
+cellbase_hosts = args.cellbase_hosts..replace('\"','').split(",")
 for i, cellbase_host in enumerate(cellbase_hosts):
     if i == 0:
         # If we are overriding the default hosts,
