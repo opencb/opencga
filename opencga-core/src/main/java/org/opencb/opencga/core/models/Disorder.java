@@ -49,4 +49,28 @@ public class Disorder extends OntologyTerm {
         this.evidences = evidences;
         return this;
     }
+
+    @Override
+    public Disorder setId(String id) {
+        this.id = id;
+        return this;
+    }
+
+    @Override
+    public Disorder setName(String name) {
+        this.name = name;
+        return this;
+    }
+
+    @Override
+    public Disorder setSource(String source) {
+        this.source = source;
+        return this;
+    }
+
+    @Override
+    public Disorder setAttributes(Map<String, String> attributes) {
+        this.attributes = attributes;
+        return this;
+    }
 }
