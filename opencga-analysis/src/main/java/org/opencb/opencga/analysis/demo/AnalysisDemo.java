@@ -94,7 +94,7 @@ public class AnalysisDemo {
 ////                .collect(Collectors.toList());
 //
 ////        QueryOptions options = new QueryOptions()
-////                .append(ExecutorManager.EXECUTE, !queue)
+////                .append(ExecutorFactory.EXECUTE, !queue)
 ////                .append(AnalysisFileIndexer.TRANSFORM, doTransform)
 ////                .append(AnalysisFileIndexer.LOAD, doLoad)
 ////                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), calculateStats)

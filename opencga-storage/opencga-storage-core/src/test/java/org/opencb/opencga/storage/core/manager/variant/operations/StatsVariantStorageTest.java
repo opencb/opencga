@@ -155,7 +155,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
 //        cohorts.put("all", null);
         checkCalculatedStats(cohorts);
 
-//        Job job = variantStorage.calculateStats(outputId, Collections.singletonList(coh1), sessionId, new QueryOptions(ExecutorManager.EXECUTE, true)).first();
+//        Job job = variantStorage.calculateStats(outputId, Collections.singletonList(coh1), sessionId, new QueryOptions(ExecutorFactory.EXECUTE, true)).first();
 //        assertEquals(Status.READY, job.getStatus().getName());
         cohorts.put(coh[1], catalogManager.getCohortManager().get(studyId, coh[1], null, sessionId).first());
         calculateStats(coh[1]);
