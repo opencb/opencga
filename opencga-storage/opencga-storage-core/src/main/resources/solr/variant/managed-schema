@@ -63,6 +63,7 @@
     <field name="_text_" type="text_general" multiValued="true" indexed="true" stored="false"/>
     <field name="_version_" type="long" indexed="false" stored="false"/>
 
+    <!-- Comman variant and annotation fields -->
     <field name="variantId" type="string" indexed="false" stored="true" multiValued="false"/>
     <field name="chromosome" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="start" type="int" indexed="true" stored="true" multiValued="false"/>
@@ -87,24 +88,25 @@
     <field name="traits" type="text_en" indexed="true" stored="true" multiValued="true"/>
     <!--
        The field 'other' contains info about display consequence type, HGVS, cytobands, repeats and trancripts:
-            DCT sep displayConsequenceType
-            HGVS sep hgvs1
-            HGVS sep hgvs2
+            DCT - displayConsequenceType
+            HGVS - hgvs1
+            HGVS - hgvs2
             ...
-            CB sep cytobandName1 sep stain1 sep start1 sep end1
-            CB sep cytobandName2 sep stain2 sep start2 sep end2
+            CB - cytobandName1 - stain1 - start1 - end1
+            CB - cytobandName2 - stain2 - start2 - end2
             ...
-            RP sep repeatName1 sep id1 sep source1 sep copyNumber1 sep percentageMatch1 sep start1 sep end1
-            RP sep repeatName2 sep id2 sep source2 sep copyNumber2 sep percentageMatch2 sep start2 sep end2
+            RP - repeatName1 - id1 - source1 - copyNumber1 - percentageMatch1 - start1 - end1
+            RP - repeatName2 - id2 - source2 - copyNumber2 - percentageMatch2 - start2 - end2
             ...
-            TRANS sep transcriptId1 sep biotype1 sep cdnaPostion1 sep cdsPosition1 sep codon1 siftScore1 sep siftDescr1 sep poliphenScore1 sep poliphenDescr1 sep uniprotAccession1 sep uniprotAccession1 sep uniprotVariantId1 sep position1 sep aaChange1
-            TRANS sep transcriptId2 sep biotype2 sep cdnaPostion2 sep cdsPosition2 sep codon2 siftScore2 sep siftDescr2 sep poliphenScore2 sep poliphenDescr2 sep uniprotAccession2 sep uniprotAccession2 sep uniprotVariantId2 sep position2 sep aaChange2
+            TRANS - transcriptId1 - biotype1 - cdnaPostion1 - cdsPosition1 - codon1 - uniprotAccession1 - uniprotAccession1 - uniprotVariantId1 - position1 - aaChange1 - siftScore1 - siftDescr1 - poliphenScore1 - poliphenDescr1
+            TRANS - transcriptId2 - biotype2 - cdnaPostion2 - cdsPosition2 - codon2 - uniprotAccession2 - uniprotAccession2 - uniprotVariantId2 - position2 - aaChange2 - siftScore2 - siftDescr2 - poliphenScore2 - poliphenDescr2
             ...
     -->
     <field name="other" type="string" indexed="false" stored="true" multiValued="true"/>
-
     <dynamicField name="stats_*" type="float" indexed="true" stored="true" multiValued="false"/>
     <dynamicField name="popFreq_*" type="float" indexed="true" stored="true" multiValued="false"/>
+
+    <!-- These fields are only present when indexing one individual or a family -->
     <dynamicField name="gt_*" type="string" indexed="true" stored="true" multiValued="false"/>
     <dynamicField name="dp_*" type="int" indexed="true" stored="true" multiValued="false"/>
     <dynamicField name="sampleFormat_*" type="string" indexed="false" stored="true" multiValued="false"/>
