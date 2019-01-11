@@ -612,7 +612,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     case STATUS_NAME:
                         // Convert the status to a positive status
                         query.put(queryParam.key(),
-                                Status.getPositiveStatus(Status.STATUS_LIST, query.getString(queryParam.key())));
+                                Status.getPositiveStatus(ClinicalAnalysis.ClinicalStatus.STATUS_LIST, query.getString(queryParam.key())));
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     // Other parameter that can be queried.
