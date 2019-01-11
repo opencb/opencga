@@ -43,6 +43,7 @@ import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
@@ -758,6 +759,39 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         List<Member> individuals = new ArrayList<>(individualMap.values());
         return new Pedigree(family.getId(), individuals, family.getPhenotypes(), family.getAttributes());
+    }
+
+    void updatePhenotypesAndDisorders(Study study, Individual individual) throws CatalogDBException {
+
+        // We look for all the families containing the individual
+        Query query = new Query()
+                .append(FamilyDBAdaptor.QueryParams.MEMBER_UID.key(), individual.getUid())
+                .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(FamilyDBAdaptor.QueryParams.DISORDERS.key(), FamilyDBAdaptor.QueryParams.PHENOTYPES.key(),
+                        FamilyDBAdaptor.QueryParams.MEMBERS.key(), FamilyDBAdaptor.QueryParams.ID.key(),
+                        FamilyDBAdaptor.QueryParams.UID.key()));
+        QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, queryOptions);
+
+        // We get the new list of phenotypes and disorders and update the family information
+        for (Family family : familyQueryResult.getResult()) {
+            List<Disorder> disorderList = new ArrayList<>();
+            List<Phenotype> phenotypeList = new ArrayList<>();
+
+            for (Individual member : family.getMembers()) {
+                if (member.getDisorders() != null) {
+                    disorderList.addAll(member.getDisorders());
+                }
+                if (member.getPhenotypes() != null) {
+                    phenotypeList.addAll(member.getPhenotypes());
+                }
+            }
+
+            ObjectMap params = new ObjectMap()
+                    .append(FamilyDBAdaptor.UpdateParams.DISORDERS.key(), disorderList)
+                    .append(FamilyDBAdaptor.UpdateParams.PHENOTYPES.key(), phenotypeList);
+            familyDBAdaptor.update(family.getUid(), params, new QueryOptions());
+        }
     }
 
     /**
