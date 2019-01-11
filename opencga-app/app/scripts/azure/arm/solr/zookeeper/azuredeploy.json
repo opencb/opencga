@@ -176,7 +176,7 @@
             "name": "[variables('vmNames')[copyIndex()].diskName]",
             "caching": "ReadWrite",
             "createOption": "FromImage",
-            "diskSizeGB" : "50",
+            "diskSizeGB" : 50,
             "managedDisk": {
               "storageAccountType": "[parameters('diskType')]"
             }
