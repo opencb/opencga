@@ -47,7 +47,37 @@
         "ivaDockerImage": {
             "value": ""
         },
+        "webserversSSHKeyData": {
+            "value": ""
+        },
         "solrClusterLoginPassword": {
+            "value": ""
+        },
+        "initContainerImage": {
+            "value": ""
+        },
+        "daemonContainerImage": {
+            "value": ""
+        },
+        "daemonVmAdminPassword": {
+            "value": ""
+        },
+        "nfsStorageOption": {
+            "value": ""
+        },
+        "catalogSecretKey": {
+            "value": ""
+        },
+        "mongoDbHosts": {
+            "value": []
+        },
+        "mongoDbUser": {
+            "value": ""
+        },
+        "mongoDbPassword": {
+            "value": ""
+        },
+        "batchDockerImage": {
             "value": ""
         }
     }
