@@ -270,11 +270,11 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     break;
                 case "TRANS":
                     // Create consequence type from transcript info:
-                    //       1            2           3                4           5
-                    // transcriptId -- biotype -- cdnaPosition -- cdsPosition -- codon
-                    //           6                   7                 8                 9           10
+                    //       1            2             3                 4               5           6
+                    // transcriptId -- biotype -- annotationFlags -- cdnaPosition -- cdsPosition -- codon
+                    //           7                   8                 9                 10           11
                     // -- uniprotAccession -- uniprotAccession -- uniprotVariantId -- position -- aaChange
-                    //     11           12            13                14
+                    //     12           13            14                15
                     // siftScore -- siftDescr -- poliphenScore -- poliphenDescr
                     ConsequenceType consequenceType = new ConsequenceType();
                     if (fields.length > 2) {
@@ -282,36 +282,41 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         consequenceType.setBiotype(fields[2]);
                     }
                     if (fields.length > 3) {
-                        consequenceType.setCdnaPosition(Integer.parseInt(fields[3]));
-                        consequenceType.setCdsPosition(Integer.parseInt(fields[4]));
-                        if (fields.length > 5) {
-                            // Sometimes, codon (i.e., split at 5) is null, check it!
-                            consequenceType.setCodon(fields[5]);
+                        if (fields[3].length() > 0) {
+                            consequenceType.setTranscriptAnnotationFlags(Arrays.asList(fields[3].split(",")));
                         }
                     }
-                    if (fields.length > 6) {
+                    if (fields.length > 4) {
+                        consequenceType.setCdnaPosition(Integer.parseInt(fields[4]));
+                        consequenceType.setCdsPosition(Integer.parseInt(fields[5]));
+                        if (fields.length > 6) {
+                            // Sometimes, codon (i.e., split at 5) is null, check it!
+                            consequenceType.setCodon(fields[6]);
+                        }
+                    }
+                    if (fields.length > 7) {
                         // Create, init and add protein variant annotation to the consequence type
                         ProteinVariantAnnotation protVarAnnotation = new ProteinVariantAnnotation();
                         // Uniprot info
-                        protVarAnnotation.setUniprotAccession(fields[6]);
-                        protVarAnnotation.setUniprotName(fields[7]);
-                        protVarAnnotation.setUniprotVariantId(fields[8]);
-                        if (StringUtils.isNotEmpty(fields[9])) {
+                        protVarAnnotation.setUniprotAccession(fields[7]);
+                        protVarAnnotation.setUniprotName(fields[8]);
+                        protVarAnnotation.setUniprotVariantId(fields[9]);
+                        if (StringUtils.isNotEmpty(fields[10])) {
                             try {
-                                protVarAnnotation.setPosition(Integer.parseInt(fields[9]));
+                                protVarAnnotation.setPosition(Integer.parseInt(fields[10]));
                             } catch (NumberFormatException e) {
                                 logger.warn("Parsing position: " + e.getMessage());
                             }
                         }
-                        if (StringUtils.isNotEmpty(fields[10]) && fields[10].contains("/")) {
-                            String[] refAlt = fields[10].split("/");
+                        if (StringUtils.isNotEmpty(fields[11]) && fields[11].contains("/")) {
+                            String[] refAlt = fields[11].split("/");
                             protVarAnnotation.setReference(refAlt[0]);
                             protVarAnnotation.setAlternate(refAlt[1]);
                         }
                         // Sift score
                         List<Score> scores = new ArrayList(2);
-                        if (fields.length > 11
-                                && (StringUtils.isNotEmpty(fields[11]) || StringUtils.isNotEmpty(fields[12]))) {
+                        if (fields.length > 12
+                                && (StringUtils.isNotEmpty(fields[12]) || StringUtils.isNotEmpty(fields[13]))) {
                             Score score = new Score();
                             score.setSource("sift");
                             if (StringUtils.isNotEmpty(fields[11])) {
@@ -325,18 +330,18 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             scores.add(score);
                         }
                         // Polyphen score
-                        if (fields.length > 13
-                                && (StringUtils.isNotEmpty(fields[13]) || StringUtils.isNotEmpty(fields[14]))) {
+                        if (fields.length > 14
+                                && (StringUtils.isNotEmpty(fields[14]) || StringUtils.isNotEmpty(fields[15]))) {
                             Score score = new Score();
                             score.setSource("polyphen");
-                            if (StringUtils.isNotEmpty(fields[13])) {
+                            if (StringUtils.isNotEmpty(fields[14])) {
                                 try {
-                                    score.setScore(Double.parseDouble(fields[13]));
+                                    score.setScore(Double.parseDouble(fields[14]));
                                 } catch (NumberFormatException e) {
                                     logger.warn("Parsing Polyphen score: " + e.getMessage());
                                 }
                             }
-                            score.setDescription(fields[14]);
+                            score.setDescription(fields[15]);
                             scores.add(score);
                         }
                         protVarAnnotation.setSubstitutionScores(scores);
@@ -785,6 +790,10 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             trans.append("TRANS").append(FIELD_SEP).append(conseqType.getEnsemblTranscriptId());
                             trans.append(FIELD_SEP).append(StringUtils.isEmpty(conseqType.getBiotype())
                                     ? "" : conseqType.getBiotype());
+                            trans.append(FIELD_SEP);
+                            if (ListUtils.isNotEmpty(conseqType.getTranscriptAnnotationFlags())) {
+                                trans.append(StringUtils.join(conseqType.getTranscriptAnnotationFlags(), ","));
+                            }
                         }
 
                         xrefs.add(conseqType.getGeneName());
