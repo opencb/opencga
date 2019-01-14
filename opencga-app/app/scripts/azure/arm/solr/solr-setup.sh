@@ -9,11 +9,9 @@ sleep 5
 
 ## Nacho (6/12/2018)
 
-MY_ID=$(($1+1))
-SUBNET_PREFIX=$2
-IP_FIRST=$3
-ZK_HOSTS_NUM=$4
-SOLR_VERSION=$5
+VM_NAME_PREFIX=$1
+ZK_HOSTS_NUM=$2
+SOLR_VERSION=$3
 
 DOCKER_NAME=opencga-solr-${SOLR_VERSION}
 
@@ -38,7 +36,6 @@ cp -r OpenCGAConfSet /opt/solr-volume/solr/configsets/OpenCGAConfSet-1.4.x
 docker run  --rm  solr:${SOLR_VERSION}  cat /opt/solr/bin/solr.in.sh > /opt/solr.in.sh
 
 # botch - give networking a chance!
-sleep 60 
 
 ZK_CLI=
 if [[ $ZK_HOSTS_NUM -gt 0 ]]; then
@@ -46,14 +43,14 @@ if [[ $ZK_HOSTS_NUM -gt 0 ]]; then
     i=0
     while [ $i -lt $ZK_HOSTS_NUM ]
     do
-        ZK_HOST=${ZK_HOST},${SUBNET_PREFIX}$(($i+$IP_FIRST))
+        ZK_HOST=${ZK_HOST},${VM_NAME_PREFIX}${i}
        
        
        # check zookeeper node status
 
-        until ( echo stat | (exec 3<>/dev/tcp/${SUBNET_PREFIX}$(($i+$IP_FIRST))/2181; cat >&3; cat <&3;) > /dev/null);
+        until ( echo stat | (exec 3<>/dev/tcp/${VM_NAME_PREFIX}${i}/2181; cat >&3; cat <&3;) > /dev/null);
         do 
-            echo "Waiting for Zookeeper node ${SUBNET_PREFIX}$(($i+$IP_FIRST)) \n"
+            echo "Waiting for Zookeeper node ${VM_NAME_PREFIX}${i} \n"
             sleep 10
         done     
        

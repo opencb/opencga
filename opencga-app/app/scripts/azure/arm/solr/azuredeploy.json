@@ -96,10 +96,6 @@
   },
   "variables": {
     "availabilitySetName": "[concat(parameters('clusterName'), '-solr-as')]",
-    "subnetPrefix": "10.0.2.",
-    "privateIPFirst": 4,
-    "zookeeperPrivateIPFirst": "[add(1, add(variables('privateIPFirst'), variables('scaleNumber')))]",
-    "vmExtensionName": "solrExtension",
     "scaleNumber": "[if(parameters('highAvailability'), 2, 1)]",
     "zookeeperScaleNumber": "[if(parameters('highAvailability'), 3, 0)]",
     "customScriptFilePath": "[concat(parameters('_artifactsLocation'), '/solr/solr-setup.sh')]",
@@ -143,7 +139,7 @@
       " - curl -fsSL https://get.docker.com/ | sh",
       " - curl -fsSL https://get.docker.com/gpg | sudo apt-key add -",
       "[concat(' - curl -fsSL ',variables('configSetLocation'), ' -o OpenCGAConfSet_1.4.x.tar.gz')]",
-      "[concat(' - curl -fsSL ',variables('customScriptFilePath'),' | bash -s -- #VM_INDEX# ', variables('subnetPrefix'), ' ', variables('zookeeperPrivateIPFirst'), ' ', variables('zookeeperScaleNumber'), ' ', parameters('solrVersion'))]"      
+      "[concat(' - curl -fsSL ',variables('customScriptFilePath'),' | bash -s -- #VM_INDEX# ', parameters('clusterName'), '-zookeeper', ' ', variables('zookeeperScaleNumber'), ' ', parameters('solrVersion'))]"      
   ]
   },
   "resources": [
@@ -168,9 +164,6 @@
           },
           "subnetId": {
             "value": "[parameters('subnetId')]"
-          },
-          "privateIPFirst": {
-            "value": "[variables('zookeeperPrivateIPFirst')]"
           },
           "scaleNumber": {
             "value": "[variables('zookeeperScaleNumber')]"
@@ -218,8 +211,7 @@
           {
             "name": "ipconfig1",
             "properties": {
-              "privateIPAllocationMethod": "Static",
-              "privateIPAddress": "[concat(variables('subnetPrefix'), copyIndex(variables('privateIPFirst')))]",
+              "privateIPAllocationMethod": "Dynamic",
               "subnet": {
                 "id": "[parameters('subnetId')]"
               }
