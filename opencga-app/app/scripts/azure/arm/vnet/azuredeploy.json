@@ -55,6 +55,16 @@
                             "serviceEndpoints": []
                         },
                         "type": "Microsoft.Network/virtualNetworks/subnets"
+                    },
+                    {
+                        "name": "mongodb",
+                        "properties": {
+                            "addressPrefix": "10.0.3.0/24",
+                            "ipConfigurations": [],
+                            "delegations": [],
+                            "serviceEndpoints": []
+                        },
+                        "type": "Microsoft.Network/virtualNetworks/subnets"
                     }
                 ],
                 "virtualNetworkPeerings": [],
@@ -91,6 +101,10 @@
         "solrSubnetId": {
             "type": "string",
             "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', 'vnet')).subnets[2].id]"
+        },
+        "mongoSubnetId": {
+            "type": "string",
+            "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', 'vnet')).subnets[3].id]"
         }
     }
 }
