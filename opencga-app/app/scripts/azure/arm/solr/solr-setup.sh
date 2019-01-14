@@ -1,8 +1,7 @@
 #!/bin/bash
 
 set -x
-# removed so while does not exit on fail
-#set -e
+set -e
 export DEBIAN_FRONTEND='noninteractive'
 # Wait for network
 sleep 5
@@ -47,13 +46,13 @@ if [[ $ZK_HOSTS_NUM -gt 0 ]]; then
        
        
        # check zookeeper node status
-
+     
         until ( echo stat | (exec 3<>/dev/tcp/${VM_NAME_PREFIX}${i}/2181; cat >&3; cat <&3;) > /dev/null);
         do 
             echo "Waiting for Zookeeper node ${VM_NAME_PREFIX}${i} \n"
             sleep 10
         done     
-       
+    
        
         i=$(($i+1))
 
