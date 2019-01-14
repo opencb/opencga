@@ -59,12 +59,6 @@
         "description": "Subnet ID."
       }
     },
-    "privateIPFirst": {
-      "type": "int",
-      "metadata": {
-        "description": "First IP from the subnet to assign"
-      }
-    },
     "_artifactsLocation": {
       "type": "string",
       "metadata": {
@@ -81,10 +75,7 @@
   },
   "variables": {
     "availabilitySetName": "[concat(parameters('clusterName'), '-zookeeper-as')]",
-    "customScriptFilePath": "[concat(parameters('_artifactsLocation'), '/solr/zookeeper/zookeeper-setup.sh', parameters('_artifactsLocationSasToken'))]",
-    "customScriptCommandToExecute": "bash zookeeper-setup.sh",
-    "vmExtensionName": "zookeeperExtension",
-    "subnetPrefix": "10.0.2.",
+    "customScriptFilePath": "[concat(parameters('_artifactsLocation'), '/solr/zookeeper/zookeeper-setup.sh')]",
     "imagePublisher": "Canonical",
     "imageOffer": "UbuntuServer",
     "imageSKU": "18.04-LTS",
@@ -94,11 +85,23 @@
         "name": "vmNames",
         "count": "[parameters('scaleNumber')]",
         "input": {
-          "vmName": "[concat(parameters('clusterName'), '-zookeeper', padLeft(add(1, copyIndex('vmNames')), 2, '0'))]",
-          "nicName": "[concat(parameters('clusterName'), '-zookeeper', padLeft(add(1, copyIndex('vmNames')), 2, '0'), '-nic')]",
-          "diskName": "[concat(parameters('clusterName'), '-zookeeper', padLeft(add(1, copyIndex('vmNames')), 2, '0'), '-disk')]"
+          "vmName": "[concat(parameters('clusterName'), '-zookeeper', copyIndex('vmNames'))]",
+          "nicName": "[concat(parameters('clusterName'), '-zookeeper', copyIndex('vmNames'), '-nic')]",
+          "diskName": "[concat(parameters('clusterName'), '-zookeeper',copyIndex('vmNames'), '-disk')]"
         }
       }
+    ],     
+    "cloudInit": [
+        "#cloud-config",
+        "",
+        "package_upgrade: true",
+        "package_reboot_if_required: true",
+        "",
+        "runcmd:",
+        " - export DEBIAN_FRONTEND='noninteractive'",
+        " - curl -fsSL https://get.docker.com/ | sh",
+        " - curl -fsSL https://get.docker.com/gpg | sudo apt-key add -",
+        "[concat(' - curl -fsSL ',variables('customScriptFilePath'),' | bash -s -- #VM_INDEX# ', parameters('clusterName'), '-zookeeper', ' ', parameters('scaleNumber'), ' ',variables('zookeeperVersion'))]"      
     ]
   },
   "resources": [
@@ -130,9 +133,8 @@
           {
             "name": "ipconfig1",
             "properties": {
-              "privateIPAllocationMethod": "Static",
-              "privateIPAddress": "[concat(variables('subnetPrefix'), copyIndex(parameters('privateIPFirst')))]",
-              "subnet": {
+              "privateIPAllocationMethod": "Dynamic",
+                 "subnet": {
                 "id": "[parameters('subnetId')]"
               }
             }
@@ -163,7 +165,9 @@
         "osProfile": {
           "computerName": "[variables('vmNames')[copyIndex()].vmName]",
           "adminUsername": "[parameters('clusterLoginUserName')]",
-          "adminPassword": "[parameters('clusterLoginPassword')]"
+          "adminPassword": "[parameters('clusterLoginPassword')]",
+          "customData": "[base64(replace(replace(replace(replace(string(variables('cloudInit')),'#VM_INDEX#',string(copyIndex())),'\",\"','\n'),'[\"',''),'\"]',''))]"
+                 
         },
         "storageProfile": {
           "imageReference": {
@@ -188,31 +192,6 @@
               "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('vmNames')[copyIndex()].nicName)]"
             }
           ]
-        }
-      }
-    },
-    {
-      "type": "Microsoft.Compute/virtualMachines/extensions",
-      "name": "[concat(variables('vmNames')[copyIndex()].vmName,'/', variables('vmExtensionName'))]",
-      "apiVersion": "2018-06-01",
-      "location": "[parameters('location')]",
-      "copy": {
-        "name": "foo",
-        "count": "[parameters('scaleNumber')]"
-      },
-      "dependsOn": [
-        "[concat('Microsoft.Compute/virtualMachines/', variables('vmNames')[copyIndex()].vmName)]"
-      ],
-      "properties": {
-        "publisher": "Microsoft.Azure.Extensions",
-        "type": "CustomScript",
-        "typeHandlerVersion": "2.0",
-        "autoUpgradeMinorVersion": true,
-        "settings": {
-          "fileUris": [
-            "[variables('customScriptFilePath')]"
-          ],
-          "commandToExecute": "[concat(variables('customScriptCommandToExecute'), ' ', copyIndex(), ' ', variables('subnetPrefix'), ' ', parameters('privateIPFirst'), ' ', parameters('scaleNumber'), ' ', variables('zookeeperVersion'))]"
         }
       }
     }

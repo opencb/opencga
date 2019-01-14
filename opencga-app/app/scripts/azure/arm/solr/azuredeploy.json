@@ -96,14 +96,9 @@
   },
   "variables": {
     "availabilitySetName": "[concat(parameters('clusterName'), '-solr-as')]",
-    "subnetPrefix": "10.0.2.",
-    "privateIPFirst": 4,
-    "zookeeperPrivateIPFirst": "[add(1, add(variables('privateIPFirst'), variables('scaleNumber')))]",
-    "vmExtensionName": "solrExtension",
     "scaleNumber": "[if(parameters('highAvailability'), 2, 1)]",
     "zookeeperScaleNumber": "[if(parameters('highAvailability'), 3, 0)]",
-    "customScriptFilePath": "[concat(parameters('_artifactsLocation'), '/solr/solr-setup.sh', parameters('_artifactsLocationSasToken'))]",
-    "customScriptCommandToExecute": "bash solr-setup.sh",
+    "customScriptFilePath": "[concat(parameters('_artifactsLocation'), '/solr/solr-setup.sh')]",
     "configSetLocation": "http://docs.opencb.org/download/attachments/9240577/OpenCGAConfSet_1.4.x.tar.gz",
     "imagePublisher": "Canonical",
     "imageOffer": "UbuntuServer",
@@ -113,26 +108,39 @@
         "name": "vmNames",
         "count": "[variables('scaleNumber')]",
         "input": {
-          "vmName": "[concat(parameters('clusterName'), '-solr', padLeft(add(1, copyIndex('vmNames')), 2, '0'))]",
-          "nicName": "[concat(parameters('clusterName'), '-solr', padLeft(add(1, copyIndex('vmNames')), 2, '0'), '-nic')]",
-          "diskName": "[concat(parameters('clusterName'), '-solr', padLeft(add(1, copyIndex('vmNames')), 2, '0'), '-disk')]"
+          "vmName": "[concat(parameters('clusterName'), '-solr',copyIndex('vmNames'))]",
+          "nicName": "[concat(parameters('clusterName'), '-solr', copyIndex('vmNames'), '-nic')]",
+          "diskName": "[concat(parameters('clusterName'), '-solr', copyIndex('vmNames'), '-disk')]"
         }
       },
       {
         "name" : "solrURLs",
         "count": "[variables('scaleNumber')]",
         "input" : {
-          "host" : "[concat('http://', variables('subnetPrefix'), copyIndex('solrURLs', variables('privateIPFirst')), ':8983/solr')]"
+          "host" : "[concat('http://',parameters('clusterName'), '-solr',copyIndex('solrURLs'), ':8983/solr')]"
         }
       },
       {
         "name" : "zookeeperHosts",
         "count" : "[if(equals(0, variables('zookeeperScaleNumber')), 1, variables('zookeeperScaleNumber'))]",
         "input" : {
-          "host" : "[concat(variables('subnetPrefix'), copyIndex('zookeeperHosts', variables('zookeeperPrivateIPFirst')), ':2181')]"
+          "host" : "[concat(parameters('clusterName'), '-zookeeper', copyIndex('zookeeperHosts'), ':2181')]"
         }
       }
-    ]
+    ],
+    "cloudInit": [
+      "#cloud-config",
+      "",
+      "package_upgrade: true",
+      "package_reboot_if_required: true",
+      "",
+      "runcmd:",
+      " - export DEBIAN_FRONTEND='noninteractive'",
+      " - curl -fsSL https://get.docker.com/ | sh",
+      " - curl -fsSL https://get.docker.com/gpg | sudo apt-key add -",
+      "[concat(' - curl -fsSL ',variables('configSetLocation'), ' -o OpenCGAConfSet_1.4.x.tar.gz')]",
+      "[concat(' - curl -fsSL ',variables('customScriptFilePath'),' | bash -s -- ', parameters('clusterName'), '-zookeeper', ' ', variables('zookeeperScaleNumber'), ' ', parameters('solrVersion'))]"      
+  ]
   },
   "resources": [
     {
@@ -156,9 +164,6 @@
           },
           "subnetId": {
             "value": "[parameters('subnetId')]"
-          },
-          "privateIPFirst": {
-            "value": "[variables('zookeeperPrivateIPFirst')]"
           },
           "scaleNumber": {
             "value": "[variables('zookeeperScaleNumber')]"
@@ -206,8 +211,7 @@
           {
             "name": "ipconfig1",
             "properties": {
-              "privateIPAllocationMethod": "Static",
-              "privateIPAddress": "[concat(variables('subnetPrefix'), copyIndex(variables('privateIPFirst')))]",
+              "privateIPAllocationMethod": "Dynamic",
               "subnet": {
                 "id": "[parameters('subnetId')]"
               }
@@ -239,7 +243,8 @@
         "osProfile": {
           "computerName": "[variables('vmNames')[copyIndex()].vmName]",
           "adminUsername": "[parameters('clusterLoginUserName')]",
-          "adminPassword": "[parameters('clusterLoginPassword')]"
+          "adminPassword": "[parameters('clusterLoginPassword')]",
+          "customData": "[base64(replace(replace(replace(replace(string(variables('cloudInit')),'#VM_INDEX#',string(copyIndex())),'\",\"','\n'),'[\"',''),'\"]',''))]"
         },
         "storageProfile": {
           "imageReference": {
@@ -264,33 +269,6 @@
               "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('vmNames')[copyIndex()].nicName)]"
             }
           ]
-        }
-      }
-    },
-    {
-      "type": "Microsoft.Compute/virtualMachines/extensions",
-      "name": "[concat(variables('vmNames')[copyIndex()].vmName,'/', variables('vmExtensionName'))]",
-      "apiVersion": "2018-06-01",
-      "location": "[parameters('location')]",
-      "copy": {
-        "name": "foo",
-        "count": "[variables('scaleNumber')]"
-      },
-      "dependsOn": [
-        "[concat('Microsoft.Compute/virtualMachines/', variables('vmNames')[copyIndex()].vmName)]",
-        "[if(parameters('highAvailability'),'zookeeper',concat('Microsoft.Compute/availabilitySets/', variables('availabilitySetName')))]"
-      ],
-      "properties": {
-        "publisher": "Microsoft.Azure.Extensions",
-        "type": "CustomScript",
-        "typeHandlerVersion": "2.0",
-        "autoUpgradeMinorVersion": true,
-        "settings": {
-          "fileUris": [
-            "[variables('configSetLocation')]",
-            "[variables('customScriptFilePath')]"
-          ],
-          "commandToExecute": "[concat(variables('customScriptCommandToExecute'), ' ', copyIndex(), ' ', variables('subnetPrefix'), ' ', variables('zookeeperPrivateIPFirst'), ' ', variables('zookeeperScaleNumber'), ' ', parameters('solrVersion'))]"
         }
       }
     }
