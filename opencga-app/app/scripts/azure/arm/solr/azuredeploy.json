@@ -108,23 +108,23 @@
         "name": "vmNames",
         "count": "[variables('scaleNumber')]",
         "input": {
-          "vmName": "[concat(parameters('clusterName'), '-solr',copyIndex())]",
-          "nicName": "[concat(parameters('clusterName'), '-solr', copyIndex(), '-nic')]",
-          "diskName": "[concat(parameters('clusterName'), '-solr', copyIndex(), '-disk')]"
+          "vmName": "[concat(parameters('clusterName'), '-solr',copyIndex('vmNames'))]",
+          "nicName": "[concat(parameters('clusterName'), '-solr', copyIndex('vmNames'), '-nic')]",
+          "diskName": "[concat(parameters('clusterName'), '-solr', copyIndex('vmNames'), '-disk')]"
         }
       },
       {
         "name" : "solrURLs",
         "count": "[variables('scaleNumber')]",
         "input" : {
-          "host" : "[concat('http://',parameters('clusterName'), '-solr',copyIndex(), ':8983/solr')]"
+          "host" : "[concat('http://',parameters('clusterName'), '-solr',copyIndex('solrURLs'), ':8983/solr')]"
         }
       },
       {
         "name" : "zookeeperHosts",
         "count" : "[if(equals(0, variables('zookeeperScaleNumber')), 1, variables('zookeeperScaleNumber'))]",
         "input" : {
-          "host" : "[concat(parameters('clusterName'), '-zookeeper', copyIndex(), ':2181')]"
+          "host" : "[concat(parameters('clusterName'), '-zookeeper', copyIndex('zookeeperHosts'), ':2181')]"
         }
       }
     ],
