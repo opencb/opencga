@@ -204,7 +204,7 @@ public class AuthorizationMongoDBUtils {
         List<Document> groupDocumentList = study.get(StudyDBAdaptor.QueryParams.GROUPS.key(), ArrayList.class);
         if (groupDocumentList != null && !groupDocumentList.isEmpty()) {
             for (Document group : groupDocumentList) {
-                if ((MEMBERS).equals(group.getString("name"))) {
+                if ((MEMBERS).equals(group.getString("id"))) {
                     List<String> userIds = group.get("userIds", ArrayList.class);
                     for (String userId : userIds) {
                         if (userId.equals(user)) {
@@ -281,7 +281,7 @@ public class AuthorizationMongoDBUtils {
         List<Document> groupDocumentList = study.get(StudyDBAdaptor.QueryParams.GROUPS.key(), ArrayList.class);
         if (groupDocumentList != null && !groupDocumentList.isEmpty()) {
             for (Document group : groupDocumentList) {
-                if ((ADMINS).equals(group.getString("name"))) {
+                if ((ADMINS).equals(group.getString("id"))) {
                     return (List<String>) group.get("userIds", ArrayList.class);
                 }
             }
@@ -294,7 +294,7 @@ public class AuthorizationMongoDBUtils {
         List<String> groups = new ArrayList<>();
         if (groupDocumentList != null && !groupDocumentList.isEmpty()) {
             for (Document group : groupDocumentList) {
-                String groupName = group.getString("name");
+                String groupName = group.getString("id");
                 if (!groupName.equals(MEMBERS) && !groupName.equals(ADMINS)) {
                     List<String> userIds = group.get("userIds", ArrayList.class);
                     for (String userId : userIds) {

@@ -16,39 +16,49 @@
 
 package org.opencb.opencga.catalog.auth.authentication;
 
+import io.jsonwebtoken.impl.TextCodec;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.crypto.spec.SecretKeySpec;
+import java.security.Key;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public abstract class AuthenticationManager {
 
-    protected Configuration configuration;
     protected JwtManager jwtManager;
 
     protected Logger logger;
 
-    AuthenticationManager(Configuration configuration) {
-        this.configuration = configuration;
-        this.jwtManager = new JwtManager(configuration);
+    AuthenticationManager() {
+        // Any class extending this one must properly initialise JwtManager
+        this.logger = LoggerFactory.getLogger(this.getClass());
+    }
 
-        this.logger = LoggerFactory.getLogger(AuthenticationManager.class);
+    Key converStringToKeyObject(String keyString, String jcaAlgorithm) {
+        return new SecretKeySpec(TextCodec.BASE64.decode(keyString), jcaAlgorithm);
     }
 
     /**
      * Authenticate the user against the Authentication server.
      *
-     * @param userId         UserId to authenticate
-     * @param password       Users password or sessionId.
-     * @param throwException Throw exception if authentication fails
-     * @return User's authentication
-     * @throws CatalogException CatalogException
+     * @param username       User to authenticate
+     * @param password       Password.
+     * @return User's authentication JWT token.
+     * @throws CatalogAuthenticationException CatalogAuthenticationException if any of the credentials are wrong or the access is denied
+     * for any other reason.
      */
-    public abstract boolean authenticate(String userId, String password, boolean throwException) throws CatalogException;
+    public abstract String authenticate(String username, String password) throws CatalogAuthenticationException;
+
 
     /**
      * Obtains the userId corresponding to the token.
@@ -58,12 +68,18 @@ public abstract class AuthenticationManager {
      * @throws CatalogException when the token does not correspond to any user or the token has expired.
      */
     public String getUserId(String token) throws CatalogException {
-        if (token == null || token.isEmpty() || "null".equalsIgnoreCase(token)) {
+        if (StringUtils.isEmpty(token) || "null".equalsIgnoreCase(token)) {
             return "*";
         }
 
         return jwtManager.getUser(token);
     }
+
+    public abstract List<User> getUsersFromRemoteGroup(String group) throws CatalogException;
+
+    public abstract List<User> getRemoteUserInformation(List<String> userStringList) throws CatalogException;
+
+    public abstract List<String> getRemoteGroups(String token) throws CatalogException;
 
     /**
      * Change users password. Could throw "UnsupportedOperationException" depending if the implementation supports password changes.
@@ -101,19 +117,7 @@ public abstract class AuthenticationManager {
      * @param userId user.
      * @return A token.
      */
-    public String createToken(String userId) {
-        return jwtManager.createJWTToken(userId);
-    }
-
-    /**
-     * Create a token for the user with no expiration time.
-     *
-     * @param userId user.
-     * @return A token.
-     */
-    public String createNonExpiringToken(String userId) {
-        return jwtManager.createJWTToken(userId, 0L);
-    }
+    public abstract String createToken(String userId);
 
     /**
      * Create a token for the user.
@@ -123,7 +127,17 @@ public abstract class AuthenticationManager {
      * @return A token.
      */
     public String createToken(String userId, long expiration) {
-        return jwtManager.createJWTToken(userId, expiration);
+        return jwtManager.createJWTToken(userId, Collections.emptyMap(), expiration);
+    }
+
+    /**
+     * Create a token for the user with no expiration time.
+     *
+     * @param userId user.
+     * @return A token.
+     */
+    public String createNonExpiringToken(String userId) {
+        return jwtManager.createJWTToken(userId, Collections.emptyMap(), 0L);
     }
 
 }
