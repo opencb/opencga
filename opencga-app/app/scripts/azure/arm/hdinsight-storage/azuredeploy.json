@@ -3,7 +3,7 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
         "storageAccountName": {
-            "defaultValue": "[concat('opencga',uniqueString(resourceGroup().id,deployment().name))]",
+            "defaultValue": "[concat('opencga',uniqueString(resourceGroup().id))]",
             "type": "string"
         },
         "accountType": {
