@@ -46,6 +46,8 @@ import org.opencb.opencga.storage.core.io.plain.StringDataReader;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -143,14 +145,15 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             VariantStorageMetadataManager smm = dbAdaptor.getVariantStorageMetadataManager();
             checkExistsStudyConfiguration(null);
 
-            studyConfiguration = smm.lockAndUpdateOld(study, existingStudyConfiguration -> {
-                if (existingStudyConfiguration.getAggregation() == null) {
-                    existingStudyConfiguration.setAggregationStr(options.getString(Options.AGGREGATED_TYPE.key(),
+            StudyMetadata studyMetadata = smm.lockAndUpdate(study, existingStudyMetadata -> {
+                if (existingStudyMetadata.getAggregation() == null) {
+                    existingStudyMetadata.setAggregationStr(options.getString(Options.AGGREGATED_TYPE.key(),
                             Options.AGGREGATED_TYPE.defaultValue().toString()));
                 }
-                setFileId(smm.registerFile(existingStudyConfiguration, input.getPath()));
-                return existingStudyConfiguration;
+                return existingStudyMetadata;
             });
+            setFileId(smm.registerFile(studyMetadata.getId(), input.getPath()));
+            studyConfiguration = smm.getStudyConfiguration(study, null).first();
         }
         privateStudyConfiguration = studyConfiguration;
 
@@ -496,8 +499,8 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
          *     fileId was already in the studyConfiguration.indexedFiles
          */
 
-        int fileId = getStudyConfigurationManager().registerFile(studyConfiguration, fileMetadata.getPath());
-        getStudyConfigurationManager().registerFileSamples(studyConfiguration, fileId, fileMetadata, options);
+        int studyId = studyConfiguration.getStudyId();
+        int fileId = getMetadataManager().registerFile(studyId, fileMetadata);
         setFileId(fileId);
 
         final boolean excludeGenotypes;
@@ -607,12 +610,12 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             studyConfiguration.getAttributes().put(Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), extraFieldsType);
         }
 
-        int currentRelease = getStudyConfigurationManager().getProjectMetadata(options).first().getRelease();
+        int currentRelease = getMetadataManager().getProjectMetadata(options).first().getRelease();
         if (options.containsKey(Options.RELEASE.key())) {
             int release = options.getInt(Options.RELEASE.key(), Options.RELEASE.defaultValue());
             // Update current release
             if (currentRelease != release) {
-                getStudyConfigurationManager().lockAndUpdateProject(pm -> {
+                getMetadataManager().lockAndUpdateProject(pm -> {
                     if (release < pm.getRelease() || release <= 0) {
                         //ERROR, asking to use a release lower than currentRelease
                         throw StorageEngineException.invalidReleaseException(release, pm.getRelease());
@@ -659,22 +662,23 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
     }
 
     public void securePostLoad(List<Integer> fileIds, StudyConfiguration studyConfiguration) throws StorageEngineException {
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
+        int studyId = getStudyId();
+
         // Update indexed files
-        studyConfiguration.getIndexedFiles().addAll(fileIds);
+        for (Integer fileId : fileIds) {
+            metadataManager.updateFileMetadata(studyId, fileId, fileMetadata -> fileMetadata.setIndexStatus(BatchFileTask.Status.READY));
+        }
+//        studyConfiguration.getIndexedFiles().addAll(fileIds);
 
         // Update the cohort ALL. Invalidate if needed
         String defaultCohortName = StudyEntry.DEFAULT_COHORT;
-        BiMap<String, Integer> indexedSamples = StudyConfiguration.getIndexedSamples(studyConfiguration);
+        BiMap<String, Integer> indexedSamples = metadataManager.getIndexedSamples(studyId);
 
         // Register or update default cohort
-        getStudyConfigurationManager()
-                .registerCohorts(studyConfiguration, Collections.singletonMap(defaultCohortName, indexedSamples.keySet()));
-        int defaultCohortId = studyConfiguration.getCohortIds().get(defaultCohortName);
-
+        metadataManager.registerCohorts(studyId, Collections.singletonMap(defaultCohortName, indexedSamples.keySet()));
 
         logger.info("Add loaded samples to Default Cohort \"" + defaultCohortName + '"');
-        studyConfiguration.getCohorts().put(defaultCohortId, indexedSamples.values());
-
     }
 
     @Override
@@ -734,12 +738,16 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             if (studyConfiguration == null) {
                 String studyName = options.getString(Options.STUDY.key(), Options.STUDY.defaultValue());
                 logger.info("Creating a new StudyConfiguration '{}'", studyName);
-                studyConfiguration = getStudyConfigurationManager().createStudy(studyName);
+                studyConfiguration = getMetadataManager().createStudy(studyName);
             }
         }
         privateStudyConfiguration = studyConfiguration;
         setStudyId(studyConfiguration.getStudyId());
         return studyConfiguration;
+    }
+
+    public final StudyMetadata getStudyMetadata() throws StorageEngineException {
+        return getMetadataManager().getStudyMetadata(getStudyId());
     }
 
     public final StudyConfiguration getStudyConfiguration() throws StorageEngineException {
@@ -775,7 +783,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
 
     public Thread newShutdownHook(String jobOperationName, List<Integer> files) throws StorageEngineException {
-        return getStudyConfigurationManager().buildShutdownHook(jobOperationName, getStudyId(), files);
+        return getMetadataManager().buildShutdownHook(jobOperationName, getStudyId(), files);
     }
 
     public VariantDBAdaptor getDBAdaptor() {
@@ -809,7 +817,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         return options;
     }
 
-    public VariantStorageMetadataManager getStudyConfigurationManager() {
+    public VariantStorageMetadataManager getMetadataManager() {
         return getDBAdaptor().getVariantStorageMetadataManager();
     }
 }

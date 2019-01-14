@@ -75,20 +75,25 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
         URI inputUri = VariantStorageBaseTest.getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz");
 //            URI inputUri = VariantStorageManagerTestUtils.getResourceUri("variant-test-file.vcf.gz");
 
-        studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
-        etlResult = VariantStorageBaseTest.runDefaultETL(inputUri, variantStorageManager, studyConfiguration,
-                new ObjectMap(Options.TRANSFORM_FORMAT.key(), "avro")
-                        .append(Options.ANNOTATE.key(), true)
-                        .append(Options.CALCULATE_STATS.key(), false)
-        );
+        try {
+            studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
+            etlResult = VariantStorageBaseTest.runDefaultETL(inputUri, variantStorageManager, studyConfiguration,
+                    new ObjectMap(Options.TRANSFORM_FORMAT.key(), "avro")
+                            .append(Options.ANNOTATE.key(), true)
+                            .append(Options.CALCULATE_STATS.key(), false)
+            );
 
-        fileMetadata = variantStorageManager.readVariantFileMetadata(etlResult.getTransformResult());
-        VariantSetStats stats = fileMetadata.getStats();
-        Assert.assertNotNull(stats);
-
-        try (VariantHadoopDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor()) {
-            VariantHbaseTestUtils.printVariantsFromVariantsTable(dbAdaptor);
-            VariantHbaseTestUtils.printVariantsFromArchiveTable(dbAdaptor, studyConfiguration);
+            fileMetadata = variantStorageManager.readVariantFileMetadata(etlResult.getTransformResult());
+            VariantSetStats stats = fileMetadata.getStats();
+            Assert.assertNotNull(stats);
+        } finally {
+            try (VariantHadoopDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor()) {
+                VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri());
+//                VariantHbaseTestUtils.printVariantsFromVariantsTable(dbAdaptor);
+//                VariantHbaseTestUtils.printVariantsFromArchiveTable(dbAdaptor, studyConfiguration);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 

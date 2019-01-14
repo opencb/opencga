@@ -37,10 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.zip.DataFormatException;
@@ -52,17 +49,17 @@ import static org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantMet
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HBaseStudyMetadataDBDBAdaptor extends AbstractHBaseDBAdaptor implements StudyMetadataDBAdaptor {
+public class HBaseStudyMetadataDBAdaptor extends AbstractHBaseDBAdaptor implements StudyMetadataDBAdaptor {
 
-    private static Logger logger = LoggerFactory.getLogger(HBaseStudyMetadataDBDBAdaptor.class);
+    private static Logger logger = LoggerFactory.getLogger(HBaseStudyMetadataDBAdaptor.class);
 
     private final HBaseLock lock;
 
-    public HBaseStudyMetadataDBDBAdaptor(VariantTableHelper helper) {
+    public HBaseStudyMetadataDBAdaptor(VariantTableHelper helper) {
         this(null, helper.getMetaTableAsString(), helper.getConf());
     }
 
-    public HBaseStudyMetadataDBDBAdaptor(HBaseManager hBaseManager, String metaTableName, Configuration configuration) {
+    public HBaseStudyMetadataDBAdaptor(HBaseManager hBaseManager, String metaTableName, Configuration configuration) {
         super(hBaseManager, metaTableName, configuration);
         lock = new HBaseLock(this.hBaseManager, this.tableName, family, null);
     }
@@ -165,6 +162,7 @@ public class HBaseStudyMetadataDBDBAdaptor extends AbstractHBaseDBAdaptor implem
         String error = "";
         logger.info("Update StudyConfiguration {}", studyConfiguration.getStudyName());
         updateStudiesSummary(studyConfiguration.getStudyName(), studyConfiguration.getStudyId(), options);
+        updateStudyMetadata(new StudyMetadata(studyConfiguration));
 
         studyConfiguration.getHeaders().clear(); // REMOVE: stored as VariantFileMetadata
 
@@ -199,6 +197,24 @@ public class HBaseStudyMetadataDBDBAdaptor extends AbstractHBaseDBAdaptor implem
     }
 
     @Override
+    public LinkedHashSet<Integer> getIndexedFiles(int studyId) {
+        // FIXME!
+        LinkedHashSet<Integer> indexedFiles = new LinkedHashSet<>();
+        fileIterator(studyId).forEachRemaining(file -> {
+            if (file.isIndexed()) {
+                indexedFiles.add(file.getId());
+            }
+        });
+
+        return indexedFiles;
+    }
+
+    @Override
+    public Iterator<FileMetadata> fileIterator(int studyId) {
+        return iterator(getFileMetadataRowKeyPrefix(studyId), FileMetadata.class, false);
+    }
+
+    @Override
     public FileMetadata getFileMetadata(int studyId, int fileId, Long timeStamp) {
         return readValue(getFileMetadataRowKey(studyId, fileId), FileMetadata.class, timeStamp);
     }
@@ -210,7 +226,7 @@ public class HBaseStudyMetadataDBDBAdaptor extends AbstractHBaseDBAdaptor implem
     }
 
     @Override
-    public int getFileId(int studyId, String fileName) {
+    public Integer getFileId(int studyId, String fileName) {
         return readValue(getFileNameIndexRowKey(studyId, fileName), Integer.class, null);
     }
 
@@ -226,7 +242,25 @@ public class HBaseStudyMetadataDBDBAdaptor extends AbstractHBaseDBAdaptor implem
     }
 
     @Override
-    public int getSampleId(int studyId, String sampleName) {
+    public Iterator<SampleMetadata> sampleMetadataIterator(int studyId) {
+        return iterator(getSampleMetadataRowKeyPrefix(studyId), SampleMetadata.class, false);
+    }
+
+    public BiMap<String, Integer> getIndexedSamples(int studyId) {
+        // FIXME!
+        BiMap<String, Integer> map = HashBiMap.create();
+        for (Integer indexedFile : getIndexedFiles(studyId)) {
+            for (Integer sampleId : getFileMetadata(studyId, indexedFile, null).getSamples()) {
+                if (!map.containsValue(sampleId)) {
+                    map.put(getSampleMetadata(studyId, sampleId, null).getName(), sampleId);
+                }
+            }
+        }
+        return map;
+    }
+
+    @Override
+    public Integer getSampleId(int studyId, String sampleName) {
         return readValue(getSampleNameIndexRowKey(studyId, sampleName), Integer.class, null);
     }
 
@@ -242,7 +276,7 @@ public class HBaseStudyMetadataDBDBAdaptor extends AbstractHBaseDBAdaptor implem
     }
 
     @Override
-    public int getCohortId(int studyId, String cohortName) {
+    public Integer getCohortId(int studyId, String cohortName) {
         return readValue(getCohortNameIndexRowKey(studyId, cohortName), Integer.class, null);
     }
 
@@ -252,8 +286,8 @@ public class HBaseStudyMetadataDBDBAdaptor extends AbstractHBaseDBAdaptor implem
     }
 
     @Override
-    public Iterator<BatchFileTask> taskIterator(int studyId) {
-        return iterator(getTaskRowKey(studyId), BatchFileTask.class, true);
+    public Iterator<BatchFileTask> taskIterator(int studyId, boolean reversed) {
+        return iterator(getTaskRowKeyPrefix(studyId), BatchFileTask.class, reversed);
     }
 
     @Override

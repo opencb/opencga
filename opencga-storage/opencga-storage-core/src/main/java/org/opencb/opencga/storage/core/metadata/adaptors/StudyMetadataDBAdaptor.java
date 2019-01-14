@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.metadata.adaptors;
 
+import com.google.common.collect.BiMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
@@ -78,6 +79,10 @@ public interface StudyMetadataDBAdaptor extends AutoCloseable {
         return getStudyConfiguration(studyId, null, null).first().getIndexedFiles();
     }
 
+    default Iterator<FileMetadata> fileIterator(int studyId) {
+        throw new UnsupportedOperationException("TODO");
+    }
+
     default void updateIndexedFiles(int studyId, LinkedHashSet<Integer> indexedFiles) {
         StudyConfiguration sc = getStudyConfiguration(studyId, null, null).first();
         sc.setIndexedFiles(indexedFiles);
@@ -92,7 +97,7 @@ public interface StudyMetadataDBAdaptor extends AutoCloseable {
         throw new UnsupportedOperationException("TODO");
     }
 
-    default int getFileId(int studyId, String fileName) {
+    default Integer getFileId(int studyId, String fileName) {
         throw new UnsupportedOperationException("TODO");
     }
 
@@ -104,7 +109,16 @@ public interface StudyMetadataDBAdaptor extends AutoCloseable {
         throw new UnsupportedOperationException("TODO");
     }
 
-    default int getSampleId(int studyId, String sampleName) {
+    default Iterator<SampleMetadata> sampleMetadataIterator(int studyId) {
+        throw new UnsupportedOperationException("TODO");
+    }
+
+    default BiMap<String, Integer> getIndexedSamples(int studyId) {
+        StudyConfiguration sc = getStudyConfiguration(studyId, null, null).first();
+        return StudyConfiguration.getIndexedSamples(sc);
+    }
+
+    default Integer getSampleId(int studyId, String sampleName) {
         throw new UnsupportedOperationException("TODO");
     }
 
@@ -116,7 +130,7 @@ public interface StudyMetadataDBAdaptor extends AutoCloseable {
         throw new UnsupportedOperationException("TODO");
     }
 
-    default int getCohortId(int studyId, String cohortName) {
+    default Integer getCohortId(int studyId, String cohortName) {
         throw new UnsupportedOperationException("TODO");
     }
 
@@ -124,7 +138,7 @@ public interface StudyMetadataDBAdaptor extends AutoCloseable {
         throw new UnsupportedOperationException("TODO");
     }
 
-    default Iterator<BatchFileTask> taskIterator(int studyId) {
+    default Iterator<BatchFileTask> taskIterator(int studyId, boolean reversed) {
         throw new UnsupportedOperationException("TODO");
     }
 

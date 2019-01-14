@@ -30,9 +30,8 @@ import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.transform.DiscardDuplicatedVariantsResolver;
@@ -71,6 +70,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
 
     private final Logger logger = LoggerFactory.getLogger(HadoopLocalLoadVariantStoragePipeline.class);
     private static final String OPERATION_NAME = "Load";
+    private int taskId;
 
     /**
      * @param configuration      {@link StorageConfiguration}
@@ -99,7 +99,8 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         boolean resume = options.getBoolean(VariantStorageEngine.Options.RESUME.key(), VariantStorageEngine.Options.RESUME.defaultValue());
         List<Integer> fileIds = Collections.singletonList(getFileId());
 
-        VariantStorageMetadataManager.addBatchOperation(studyConfiguration, OPERATION_NAME, fileIds, resume, BatchFileTask.Type.LOAD,
+        taskId = getMetadataManager()
+                .addBatchOperation(getStudyId(), OPERATION_NAME, fileIds, resume, BatchFileTask.Type.LOAD,
                 operation -> {
                     if (operation.getOperationName().equals(OPERATION_NAME)) {
                         if (operation.currentStatus().equals(BatchFileTask.Status.ERROR)) {
@@ -113,7 +114,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                     } else {
                         return false;
                     }
-                });
+                }).getId();
 
         if (ongoingLoads.get() > 1) {
             logger.info("There are " + ongoingLoads.get() + " concurrent load operations");
@@ -260,7 +261,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         // Variants Writer
         VariantHadoopDBWriter hadoopDBWriter = newVariantHadoopDBWriter();
         // Sample Index Writer
-        List<Integer> sampleIds = new ArrayList<>(getStudyConfiguration().getSamplesInFiles().get(fileId));
+        List<Integer> sampleIds = new ArrayList<>(getMetadataManager().getFileMetadata(studyId, fileId).getSamples());
         SampleIndexDBLoader sampleIndexDBLoader;
         if (sampleIds.isEmpty() || options.getBoolean(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key())) {
             sampleIndexDBLoader = null;
@@ -328,7 +329,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
     }
 
     private void updateLoadedGenotypes(HashSet<String> loadedGenotypes) throws StorageEngineException {
-        getStudyConfigurationManager().lockAndUpdate(getStudyId(), sm -> {
+        getMetadataManager().lockAndUpdate(getStudyId(), sm -> {
             loadedGenotypes.addAll(sm.getAttributes().getAsStringList(VariantStorageEngine.Options.LOADED_GENOTYPES.key()));
             sm.getAttributes().put(VariantStorageEngine.Options.LOADED_GENOTYPES.key(), loadedGenotypes);
             return sm;
@@ -338,17 +339,16 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
     @Override
     public void securePostLoad(List<Integer> fileIds, StudyConfiguration studyConfiguration) throws StorageEngineException {
         super.securePostLoad(fileIds, studyConfiguration);
-        VariantStorageMetadataManager.setStatus(studyConfiguration, BatchFileTask.Status.READY, OPERATION_NAME, fileIds);
+        getMetadataManager().setStatus(getStudyId(), taskId, BatchFileTask.Status.READY);
     }
 
     private VariantHadoopDBWriter newVariantHadoopDBWriter() throws StorageEngineException {
-        StudyConfiguration studyConfiguration = getStudyConfiguration();
         boolean includeReferenceVariantsData = getOptions().getBoolean(VARIANT_TABLE_LOAD_REFERENCE, false);
         return new VariantHadoopDBWriter(
                 dbAdaptor.getGenomeHelper(),
                 dbAdaptor.getCredentials().getTable(),
-                getStudyConfigurationManager().getProjectMetadata().first(),
-                studyConfiguration,
+                getStudyId(),
+                getMetadataManager(),
                 dbAdaptor.getHBaseManager(), includeReferenceVariantsData);
     }
 

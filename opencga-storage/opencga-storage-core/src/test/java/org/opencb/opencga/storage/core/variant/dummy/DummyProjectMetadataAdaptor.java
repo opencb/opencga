@@ -52,9 +52,9 @@ public class DummyProjectMetadataAdaptor implements ProjectMetadataAdaptor {
     }
 
     @Override
-    public synchronized int generateId(StudyConfiguration studyConfiguration, String idType) throws StorageEngineException {
+    public synchronized int generateId(Integer studyId, String idType) throws StorageEngineException {
         ProjectMetadata projectMetadata = getProjectMetadata().first();
-        Integer id = projectMetadata.getCounters().compute(idType + (studyConfiguration == null ? "" : ('_' + studyConfiguration.getStudyId())),
+        Integer id = projectMetadata.getCounters().compute(idType + (studyId == null ? "" : ('_' + studyId)),
                 (key, value) -> value == null ? 1 : value + 1);
         updateProjectMetadata(projectMetadata, true);
         return id;

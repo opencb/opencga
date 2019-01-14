@@ -16,6 +16,7 @@ import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.tools.variant.converters.proto.VcfRecordProtoToVariantConverter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.StudyEntryToHBaseConverter;
@@ -53,7 +54,7 @@ public class FillGapsTask {
         this.skipReferenceVariants = skipReferenceVariants;
 
         this.helper = helper;
-        studyConverter = new StudyEntryToHBaseConverter(this.helper.getColumnFamily(), studyConfiguration,
+        studyConverter = new StudyEntryToHBaseConverter(this.helper.getColumnFamily(), new StudyMetadata(studyConfiguration),
                 true,
                 null, // Do not update release
                 true); // Do not skip any genotype

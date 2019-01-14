@@ -2,6 +2,8 @@ package org.opencb.opencga.storage.core.metadata.models;
 
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 
+import java.util.LinkedHashSet;
+
 /**
  * Created on 10/01/19.
  *
@@ -13,6 +15,7 @@ public class FileMetadata {
     private int id;
     private String name;
     private String path;
+    private LinkedHashSet<Integer> samples;
 
     private VariantFileMetadata variantFileMetadata;
 
@@ -55,6 +58,15 @@ public class FileMetadata {
         return this;
     }
 
+    public LinkedHashSet<Integer> getSamples() {
+        return samples;
+    }
+
+    public FileMetadata setSamples(LinkedHashSet<Integer> samples) {
+        this.samples = samples;
+        return this;
+    }
+
     public VariantFileMetadata getVariantFileMetadata() {
         return variantFileMetadata;
     }
@@ -62,6 +74,10 @@ public class FileMetadata {
     public FileMetadata setVariantFileMetadata(VariantFileMetadata variantFileMetadata) {
         this.variantFileMetadata = variantFileMetadata;
         return this;
+    }
+
+    public boolean isIndexed() {
+        return BatchFileTask.Status.READY.equals(getIndexStatus());
     }
 
     public BatchFileTask.Status getIndexStatus() {

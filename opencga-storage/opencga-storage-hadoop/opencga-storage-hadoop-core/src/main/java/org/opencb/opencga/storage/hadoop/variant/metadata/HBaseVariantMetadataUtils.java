@@ -100,22 +100,28 @@ class HBaseVariantMetadataUtils {
         return getStudyResourceRowKey(studyId, SAMPLE_METADATA_SEPARATOR, sampleId);
     }
 
+    static byte[] getSampleMetadataRowKeyPrefix(int studyId) {
+        return getStudyResourceRowKeyPrefix(studyId, SAMPLE_METADATA_SEPARATOR);
+    }
+
     static byte[] getCohortMetadataRowKey(int studyId, int cohortId) {
         return getStudyResourceRowKey(studyId, COHORT_METADATA_SEPARATOR, cohortId);
     }
 
     static byte[] getTaskRowKey(int studyId, int taskId) {
-        String separator = TASK_SEPARATOR;
-        int id = taskId;
-        return getStudyResourceRowKey(studyId, separator, id);
+        return getStudyResourceRowKey(studyId, TASK_SEPARATOR, taskId);
     }
 
-    static byte[] getTaskRowKey(int studyId) {
-        return Bytes.toBytes(STUDY_PREFIX + studyId + TASK_SEPARATOR);
+    static byte[] getTaskRowKeyPrefix(int studyId) {
+        return getStudyResourceRowKeyPrefix(studyId, TASK_SEPARATOR);
     }
 
     static byte[] getFileMetadataRowKey(int studyId, int fileId) {
         return getStudyResourceRowKey(studyId, FILE_METADATA_SEPARATOR, fileId);
+    }
+
+    static byte[] getFileMetadataRowKeyPrefix(int studyId) {
+        return getStudyResourceRowKeyPrefix(studyId, FILE_METADATA_SEPARATOR);
     }
 
     static byte[] getVariantFileMetadataRowKey(int studyId, int fileId) {
@@ -165,13 +171,17 @@ class HBaseVariantMetadataUtils {
         return STATUS_COLUMN;
     }
 
-    static byte[] getCounterColumn(StudyConfiguration studyConfiguration, String idType) {
-        String id = COUNTER_PREFIX + idType + (studyConfiguration == null ? "" : ("_" + studyConfiguration.getStudyId()));
+    static byte[] getCounterColumn(Integer studyId, String idType) {
+        String id = COUNTER_PREFIX + idType + (studyId == null ? "" : ("_" + studyId));
         return Bytes.toBytes(id);
     }
 
     static boolean createMetaTableIfNeeded(HBaseManager hBaseManager, String tableName, byte[] columnFamily) throws IOException {
         return hBaseManager.createTableIfNeeded(tableName, columnFamily, Compression.Algorithm.NONE);
+    }
+
+    private static byte[] getStudyResourceRowKeyPrefix(int studyId, String separator) {
+        return Bytes.toBytes(STUDY_PREFIX + studyId + separator);
     }
 
     private static byte[] getStudyResourceRowKey(int studyId, String separator, int id) {

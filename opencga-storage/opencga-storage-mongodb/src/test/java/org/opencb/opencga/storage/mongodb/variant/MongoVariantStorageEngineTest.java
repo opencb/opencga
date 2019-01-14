@@ -96,7 +96,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         VariantStorageMetadataManager scm = variantStorageManager.getDBAdaptor().getVariantStorageMetadataManager();
 
         StudyConfiguration studyConfiguration = newStudyConfiguration();
-        int fileId = scm.registerFile(studyConfiguration, UriUtils.fileName(smallInputUri));
+        int fileId = scm.registerFile(studyConfiguration.getStudyId(), UriUtils.fileName(smallInputUri));
         BatchFileTask operation = new BatchFileTask(MongoDBVariantOptions.STAGE.key(),
                 Collections.singletonList(fileId), System.currentTimeMillis(), BatchFileTask.Type.OTHER);
         operation.addStatus(new Date(System.currentTimeMillis() - 100), BatchFileTask.Status.RUNNING);
@@ -124,7 +124,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         VariantStorageMetadataManager scm = variantStorageManager.getDBAdaptor().getVariantStorageMetadataManager();
 
         StudyConfiguration studyConfiguration = newStudyConfiguration();
-        int fileId = scm.registerFile(studyConfiguration, UriUtils.fileName(smallInputUri));
+        int fileId = scm.registerFile(studyConfiguration.getStudyId(), UriUtils.fileName(smallInputUri));
         BatchFileTask operation = new BatchFileTask(MongoDBVariantOptions.STAGE.key(),
                 Collections.singletonList(fileId), System.currentTimeMillis(), BatchFileTask.Type.OTHER);
         operation.addStatus(new Date(System.currentTimeMillis() - 100), BatchFileTask.Status.RUNNING);
@@ -1163,8 +1163,8 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
 
         // Register file2, so internal IDs matches with the actual database
         URI file2Uri = getResourceUri("1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
-        int fileId2 = variantStorageEngineExpected.getVariantStorageMetadataManager().registerFile(studyConfiguration1, UriUtils.fileName(file2Uri));
-        variantStorageEngineExpected.getVariantStorageMetadataManager().registerFileSamples(studyConfiguration1, fileId2, variantStorageEngineExpected.getVariantReaderUtils().readVariantFileMetadata(file2Uri), null);
+        int fileId2 = variantStorageEngineExpected.getVariantStorageMetadataManager().registerFile(studyConfiguration1.getStudyId(), UriUtils.fileName(file2Uri));
+        variantStorageEngineExpected.getVariantStorageMetadataManager().registerFileSamples(studyConfiguration1, fileId2, variantStorageEngineExpected.getVariantReaderUtils().readVariantFileMetadata(file2Uri), studyConfiguration1.getStudyId());
 //        runDefaultETL(getResourceUri("1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
 //                variantStorageEngineExpected, studyConfiguration1, options.append(VariantStorageEngine.Options.FILE_ID.key(), 2));
 

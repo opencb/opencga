@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.core.metadata.models;
 
 import org.apache.commons.lang3.RandomUtils;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import java.util.*;
 
@@ -54,12 +55,15 @@ public class BatchFileTask {
     private Type type = Type.OTHER;
 
     public BatchFileTask() {
-        // FIXME
-        id = RandomUtils.nextInt();
     }
 
+    @Deprecated
     public BatchFileTask(String operationName, List<Integer> fileIds, long timestamp, Type type) {
-        this();
+        this(RandomUtils.nextInt(1, 1000), operationName, fileIds, timestamp, type);
+    }
+
+    public BatchFileTask(int id, String operationName, List<Integer> fileIds, long timestamp, Type type) {
+        this.id = id;
         this.operationName = operationName;
         this.fileIds = fileIds;
         this.timestamp = timestamp;
@@ -147,11 +151,13 @@ public class BatchFileTask {
 
     @Override
     public String toString() {
-        return "BatchFileOperation{"
-                + "operationName='" + operationName + '\''
-                + ", fileIds=" + fileIds
-                + ", timestamp=" + timestamp
-                + ", status=" + status
-                + '}';
+        return new ToStringBuilder(this)
+                .append("id", id)
+                .append("operationName", operationName)
+                .append("fileIds", fileIds)
+                .append("timestamp", timestamp)
+                .append("status", status)
+                .append("type", type)
+                .toString();
     }
 }

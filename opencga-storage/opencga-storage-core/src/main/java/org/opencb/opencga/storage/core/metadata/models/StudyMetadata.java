@@ -25,6 +25,7 @@ public class StudyMetadata {
 
     }
 
+    @Deprecated
     public StudyMetadata(StudyConfiguration sc) {
         id = sc.getStudyId();
         name = sc.getStudyName();

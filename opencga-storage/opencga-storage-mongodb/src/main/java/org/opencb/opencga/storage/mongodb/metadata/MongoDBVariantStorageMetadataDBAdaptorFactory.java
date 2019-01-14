@@ -33,7 +33,7 @@ public class MongoDBVariantStorageMetadataDBAdaptorFactory implements VariantSto
 
     @Override
     public StudyMetadataDBAdaptor buildStudyConfigurationDBAdaptor() {
-        return new MongoDBStudyMetadataDBDBAdaptor(db, options.getString(
+        return new MongoDBStudyMetadataDBAdaptor(db, options.getString(
                 MongoDBVariantStorageEngine.MongoDBVariantOptions.COLLECTION_STUDIES.key(),
                 MongoDBVariantStorageEngine.MongoDBVariantOptions.COLLECTION_STUDIES.defaultValue()
                 ));

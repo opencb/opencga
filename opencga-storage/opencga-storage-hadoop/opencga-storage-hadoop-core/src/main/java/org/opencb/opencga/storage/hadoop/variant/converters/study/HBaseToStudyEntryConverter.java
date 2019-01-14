@@ -307,7 +307,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     protected StudyEntry convert(List<Pair<Integer, List<String>>> sampleDataMap,
                                  List<Pair<String, PhoenixArray>> filesMap,
                                  Variant variant, StudyConfiguration studyConfiguration, int fillMissingColumnValue) {
-        List<String> fixedFormat = HBaseToVariantConverter.getFixedFormat(studyConfiguration);
+        List<String> fixedFormat = HBaseToVariantConverter.getFixedFormat(studyConfiguration.getAttributes());
         StudyEntry studyEntry = newStudyEntry(studyConfiguration, fixedFormat);
 
         int[] formatsMap = getFormatsMap(fixedFormat);

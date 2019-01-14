@@ -198,7 +198,8 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 }
                 return new QueryResult<>(studyConfiguration.getStudyName(), 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
             }
-            result = studyMetadataDBAdaptor.getStudyConfiguration(studyName, stringStudyConfigurationMap.get(studyName).getTimeStamp(), options);
+            Long timeStamp = stringStudyConfigurationMap.get(studyName).getTimeStamp();
+            result = studyMetadataDBAdaptor.getStudyConfiguration(studyName, timeStamp, options);
             if (result.getNumTotalResults() == 0) { //No changes. Return old value
                 StudyConfiguration studyConfiguration = stringStudyConfigurationMap.get(studyName);
                 if (!readOnly) {
@@ -531,51 +532,92 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         }
     }
 
-    public FileMetadata getFileMetadata(int studyId, int fileId, Long timeStamp) {
-        return studyMetadataDBAdaptor.getFileMetadata(studyId, fileId, timeStamp);
+    public FileMetadata getFileMetadata(int studyId, int fileId) {
+        return studyMetadataDBAdaptor.getFileMetadata(studyId, fileId, null);
     }
 
-    public void updateFileMetadata(int studyId, FileMetadata file, Long timeStamp) {
-        studyMetadataDBAdaptor.updateFileMetadata(studyId, file, timeStamp);
+    public void updateFileMetadata(int studyId, FileMetadata file) {
+        studyMetadataDBAdaptor.updateFileMetadata(studyId, file, null);
     }
 
-    public void getFileId(int studyId, String fileName) {
-        studyMetadataDBAdaptor.getFileId(studyId, fileName);
-    }
-    public SampleMetadata getSampleMetadata(int studyId, int sampleId, Long timeStamp) {
-        return studyMetadataDBAdaptor.getSampleMetadata(studyId, sampleId, timeStamp);
-    }
-
-    public void updateSampleMetadata(int studyId, SampleMetadata sample, Long timeStamp) {
-        studyMetadataDBAdaptor.updateSampleMetadata(studyId, sample, timeStamp);
+    public <E extends Exception> void updateFileMetadata(int studyId, int fileId, UpdateFunction<FileMetadata, E> update) throws E {
+        FileMetadata fileMetadata = getFileMetadata(studyId, fileId);
+        fileMetadata = update.update(fileMetadata);
+        updateFileMetadata(studyId, fileMetadata);
     }
 
-    public void getSampleId(int studyId, String sampleName) {
-        studyMetadataDBAdaptor.getSampleId(studyId, sampleName);
+    public Integer getFileId(int studyId, String fileName) {
+        return studyMetadataDBAdaptor.getFileId(studyId, fileName);
     }
 
-    public CohortMetadata getCohortMetadata(int studyId, int cohortId, Long timeStamp) {
-        return studyMetadataDBAdaptor.getCohortMetadata(studyId, cohortId, timeStamp);
+    public LinkedHashSet<Integer> getIndexedFiles(int studyId) {
+        return studyMetadataDBAdaptor.getIndexedFiles(studyId);
     }
 
-    public void updateCohortMetadata(int studyId, CohortMetadata cohort, Long timeStamp) {
-        studyMetadataDBAdaptor.updateCohortMetadata(studyId, cohort, timeStamp);
+    public SampleMetadata getSampleMetadata(int studyId, int sampleId) {
+        return studyMetadataDBAdaptor.getSampleMetadata(studyId, sampleId, null);
     }
 
-    public void getCohortId(int studyId, String cohortName) {
-        studyMetadataDBAdaptor.getCohortId(studyId, cohortName);
+    public void updateSampleMetadata(int studyId, SampleMetadata sample) {
+        studyMetadataDBAdaptor.updateSampleMetadata(studyId, sample, null);
     }
 
-    public BatchFileTask getTask(int studyId, int taskId, Long timeStamp) {
-        return studyMetadataDBAdaptor.getTask(studyId, taskId, timeStamp);
+    public Iterator<SampleMetadata> sampleMetadataIterator(int studyId) {
+        return studyMetadataDBAdaptor.sampleMetadataIterator(studyId);
+    }
+
+    public Integer getSampleId(int studyId, String sampleName) {
+        return studyMetadataDBAdaptor.getSampleId(studyId, sampleName);
+    }
+
+    public BiMap<String, Integer> getIndexedSamples(int studyId) {
+        return studyMetadataDBAdaptor.getIndexedSamples(studyId);
+    }
+
+    public CohortMetadata getCohortMetadata(int studyId, int cohortId) {
+        return studyMetadataDBAdaptor.getCohortMetadata(studyId, cohortId, null);
+    }
+
+    public void updateCohortMetadata(int studyId, CohortMetadata cohort) {
+        studyMetadataDBAdaptor.updateCohortMetadata(studyId, cohort, null);
+    }
+
+    public Integer getCohortId(int studyId, String cohortName) {
+        return studyMetadataDBAdaptor.getCohortId(studyId, cohortName);
+    }
+
+    public BatchFileTask getTask(int studyId, int taskId) {
+        return studyMetadataDBAdaptor.getTask(studyId, taskId, null);
+    }
+
+    // Use taskId to filter task!
+    @Deprecated
+    public BatchFileTask getTask(int studyId, String taskName, List<Integer> fileIds) {
+        BatchFileTask task = null;
+        Iterator<BatchFileTask> it = taskIterator(studyId, true);
+        while (it.hasNext()) {
+            BatchFileTask t = it.next();
+            if (t != null && t.getOperationName().equals(taskName) && t.getFileIds().equals(fileIds)) {
+                task = t;
+                break;
+            }
+        }
+        if (task == null) {
+            throw new IllegalStateException("Batch task " + taskName + " for files " + fileIds + " not found!");
+        }
+        return task;
     }
 
     public Iterator<BatchFileTask> taskIterator(int studyId) {
-        return studyMetadataDBAdaptor.taskIterator(studyId);
+        return taskIterator(studyId, false);
     }
 
-    public void updateTask(int studyId, BatchFileTask task, Long timeStamp) {
-        studyMetadataDBAdaptor.updateTask(studyId, task, timeStamp);
+    public Iterator<BatchFileTask> taskIterator(int studyId, boolean reversed) {
+        return studyMetadataDBAdaptor.taskIterator(studyId, reversed);
+    }
+
+    public void updateTask(int studyId, BatchFileTask task) {
+        studyMetadataDBAdaptor.updateTask(studyId, task, null);
     }
 
     /**
@@ -932,51 +974,69 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     /*
-     * Before load file, the StudyConfiguration has to be updated with the new sample names.
+     * Before load file, register the new sample names.
      * If SAMPLE_IDS is missing, will auto-generate sampleIds
-     * Will fail if:
-     * any given sampleName is not in the input file
-     * any given sampleName was already in the StudyConfiguration (so, was already loaded)
-     *
      */
-    public void registerFileSamples(StudyConfiguration studyConfiguration, int fileId, VariantFileMetadata fileMetadata, ObjectMap options)
+    public void registerFileSamples(int studyId, int fileId, VariantFileMetadata variantFileMetadata)
             throws StorageEngineException {
 
+        FileMetadata fileMetadata = getFileMetadata(studyId, fileId);
+
+
         //Assign new sampleIds
-        for (String sample : fileMetadata.getSampleIds()) {
-            registerSample(studyConfiguration, sample);
+        LinkedHashSet<Integer> samples = new LinkedHashSet<>(variantFileMetadata.getSampleIds().size());
+        for (String sample : variantFileMetadata.getSampleIds()) {
+            samples.add(registerSample(studyId, fileId, sample));
         }
 
-        if (studyConfiguration.getSamplesInFiles().containsKey(fileId)) {
-            LinkedHashSet<Integer> sampleIds = studyConfiguration.getSamplesInFiles().get(fileId);
-            List<String> missingSamples = new LinkedList<>();
-            for (String sample : fileMetadata.getSampleIds()) {
-                if (!sampleIds.contains(studyConfiguration.getSampleIds().get(sample))) {
-                    missingSamples.add(sample);
-                }
-            }
-            if (!missingSamples.isEmpty()) {
-                throw new StorageEngineException("Samples " + missingSamples.toString() + " were not in file " + fileId);
-            }
-            if (sampleIds.size() != fileMetadata.getSampleIds().size()) {
-                throw new StorageEngineException("Incorrect number of samples in file " + fileId);
-            }
-        } else {
-            LinkedHashSet<Integer> sampleIdsInFile = new LinkedHashSet<>(fileMetadata.getSampleIds().size());
-            for (String sample : fileMetadata.getSampleIds()) {
-                sampleIdsInFile.add(studyConfiguration.getSampleIds().get(sample));
-            }
-            studyConfiguration.getSamplesInFiles().put(fileId, sampleIdsInFile);
-        }
+        fileMetadata.setSamples(samples);
+
+        updateFileMetadata(studyId, fileMetadata);
+
+//        if (studyConfiguration.getSamplesInFiles().containsKey(fileId)) {
+//            LinkedHashSet<Integer> sampleIds = studyConfiguration.getSamplesInFiles().get(fileId);
+//            List<String> missingSamples = new LinkedList<>();
+//            for (String sample : variantFileMetadata.getSampleIds()) {
+//                if (!sampleIds.contains(studyConfiguration.getSampleIds().get(sample))) {
+//                    missingSamples.add(sample);
+//                }
+//            }
+//            if (!missingSamples.isEmpty()) {
+//                throw new StorageEngineException("Samples " + missingSamples.toString() + " were not in file " + fileId);
+//            }
+//            if (sampleIds.size() != variantFileMetadata.getSampleIds().size()) {
+//                throw new StorageEngineException("Incorrect number of samples in file " + fileId);
+//            }
+//        } else {
+//            LinkedHashSet<Integer> sampleIdsInFile = new LinkedHashSet<>(variantFileMetadata.getSampleIds().size());
+//            for (String sample : variantFileMetadata.getSampleIds()) {
+//                sampleIdsInFile.add(studyConfiguration.getSampleIds().get(sample));
+//            }
+//            studyConfiguration.getSamplesInFiles().put(fileId, sampleIdsInFile);
+//        }
     }
 
-    protected void registerSample(StudyConfiguration studyConfiguration, String sample) throws StorageEngineException {
-        if (!studyConfiguration.getSampleIds().containsKey(sample)) {
+    protected Integer registerSample(int studyId, Integer fileId, String sample) throws StorageEngineException {
+        Integer sampleId = getSampleId(studyId, sample);
+        SampleMetadata sampleMetadata;
+        boolean update = false;
+        if (sampleId == null) {
             //If the sample was not in the original studyId, a new SampleId is assigned.
+            sampleId = newSampleId(studyId);
 
-            int sampleId = newSampleId(studyConfiguration);
-            studyConfiguration.getSampleIds().put(sample, sampleId);
+            sampleMetadata = new SampleMetadata(studyId, sampleId, sample);
+            update = true;
+        } else {
+            sampleMetadata = getSampleMetadata(studyId, sampleId);
         }
+        if (fileId != null) {
+            sampleMetadata.getFiles().add(fileId);
+            update = true;
+        }
+        if (update) {
+            updateSampleMetadata(studyId, sampleMetadata);
+        }
+        return sampleId;
     }
 
     public int registerSearchIndexSamples(StudyConfiguration studyConfiguration, List<String> samples, boolean resume)
@@ -1053,6 +1113,12 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         checkStudyId(studyConfiguration.getStudyId());
     }
 
+    public int registerFile(int studyId, VariantFileMetadata variantFileMetadata) throws StorageEngineException {
+        int fileId = registerFile(studyId, variantFileMetadata.getPath());
+        registerFileSamples(studyId, fileId, variantFileMetadata);
+        return fileId;
+    }
+
     /**
      * Check if the file(name,id) can be added to the StudyConfiguration.
      *
@@ -1061,28 +1127,33 @@ public class VariantStorageMetadataManager implements AutoCloseable {
      * fileId was already in the studyConfiguration.fileIds with a different fileName
      * fileId was already in the studyConfiguration.indexedFiles
      *
-     * @param studyConfiguration Study Configuration
+     * @param studyId   studyId
      * @param filePath  File path
      * @return fileId related to that file.
      * @throws StorageEngineException if the file is not valid for being loaded
      */
-    public int registerFile(StudyConfiguration studyConfiguration, String filePath) throws StorageEngineException {
-        String fileName = Paths.get(filePath).getFileName().toString();
-        Map<Integer, String> idFiles = studyConfiguration.getFileIds().inverse();
-        int fileId;
+    public int registerFile(int studyId, String filePath) throws StorageEngineException {
 
-        if (studyConfiguration.getFileIds().containsKey(fileName)) {
-            fileId = studyConfiguration.getFileIds().get(fileName);
-            if (studyConfiguration.getIndexedFiles().contains(fileId)) {
+        String fileName = Paths.get(filePath).getFileName().toString();
+        Integer fileId = getFileId(studyId, fileName);
+
+
+        FileMetadata fileMetadata;
+        if (fileId != null) {
+            fileMetadata = getFileMetadata(studyId, fileId);
+
+            if (fileMetadata.isIndexed()) {
                 throw StorageEngineException.alreadyLoaded(fileId, fileName);
             }
+
             // The file is not loaded. Check if it's being loaded.
-            if (!studyConfiguration.getFilePaths().inverse().get(fileId).equals(filePath)) {
+            if (!fileMetadata.getPath().equals(filePath)) {
                 // Only register if the file is being loaded. Otherwise, replace the filePath
-                for (int i = studyConfiguration.getBatches().size() - 1; i >= 0; i--) {
-                    BatchFileTask batch = studyConfiguration.getBatches().get(i);
-                    if (batch.getFileIds().contains(fileId)) {
-                        if (batch.getType().equals(BatchFileTask.Type.REMOVE)) {
+                Iterator<BatchFileTask> iterator = taskIterator(studyId, true);
+                while (iterator.hasNext()) {
+                    BatchFileTask task = iterator.next();
+                    if (task.getFileIds().contains(fileId)) {
+                        if (task.getType().equals(BatchFileTask.Type.REMOVE)) {
                             // If the file was removed. Can be replaced.
                             break;
                         } else {
@@ -1091,28 +1162,16 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                     }
                 }
                 // Replace filePath
-                studyConfiguration.getFilePaths().forcePut(filePath, fileId);
+                fileMetadata.setPath(filePath);
+                updateFileMetadata(studyId, fileMetadata);
             }
         } else {
-            fileId = newFileId(studyConfiguration);
-            studyConfiguration.getFileIds().put(fileName, fileId);
-            studyConfiguration.getFilePaths().put(filePath, fileId);
-        }
-
-        if (studyConfiguration.getFileIds().containsKey(fileName)) {
-            if (studyConfiguration.getFileIds().get(fileName) != fileId) {
-                throw new StorageEngineException("File " + fileName + " (" + fileId + ") "
-                        + "has a different fileId in the study "
-                        + studyConfiguration.getStudyName() + " (" + studyConfiguration.getStudyId() + ") : "
-                        + fileName + " (" + studyConfiguration.getFileIds().get(fileName) + ")");
-            }
-        }
-        if (idFiles.containsKey(fileId)) {
-            if (!idFiles.get(fileId).equals(fileName)) {
-                throw new StorageEngineException("File " + fileName + " (" + fileId + ") "
-                        + "has a different fileName in the StudyConfiguration: "
-                        + idFiles.get(fileId) + " (" + fileId + ")");
-            }
+            fileId = newFileId(studyId);
+            fileMetadata = new FileMetadata()
+                    .setId(fileId)
+                    .setName(fileName)
+                    .setPath(filePath);
+            updateFileMetadata(studyId, fileMetadata);
         }
 
         return fileId;
@@ -1120,63 +1179,72 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
     public void registerCohorts(String study, Map<String, ? extends Collection<String>> cohorts)
             throws StorageEngineException {
-        lockAndUpdateOld(study, sc -> {
-            registerCohorts(sc, cohorts);
-            return sc;
-        });
+        registerCohorts(getStudyId(study, null), cohorts);
     }
 
-    @Deprecated
-    public void registerCohorts(StudyConfiguration studyConfiguration, Map<String, ? extends Collection<String>> cohorts)
+    public Map<String, Integer> registerCohorts(int studyId, Map<String, ? extends Collection<String>> cohorts)
             throws StorageEngineException {
+        Map<String, Integer> cohortIds = new HashMap<>();
         for (Map.Entry<String, ? extends Collection<String>> entry : cohorts.entrySet()) {
             String cohortName = entry.getKey();
             Collection<String> samples = entry.getValue();
 
-            Integer cohortId = studyConfiguration.getCohortIds().get(cohortName);
-            if (cohortId == null) {
-                cohortId = newCohortId(studyConfiguration);
-                studyConfiguration.getCohortIds().put(cohortName, cohortId);
-            }
-
-            Set<Integer> sampleIds = new LinkedHashSet<>(samples.size());
+            List<Integer> sampleIds = new ArrayList<>(samples.size());
             for (String sample : samples) {
-                Integer sampleId = studyConfiguration.getSampleIds().get(sample);
+                Integer sampleId = getSampleId(studyId, sample);
                 if (sampleId == null) {
-                    sampleId = newSampleId(studyConfiguration);
-                    studyConfiguration.getSampleIds().put(sample, sampleId);
+                    sampleId = registerSample(studyId, null, sample);
                 }
                 sampleIds.add(sampleId);
             }
 
-            Set<Integer> oldSamples = studyConfiguration.getCohorts().put(cohortId, sampleIds);
+            Integer cohortId = getCohortId(studyId, cohortName);
+            List<Integer> oldSamples;
+            CohortMetadata cohort;
+            if (cohortId == null) {
+                cohortId = newCohortId(studyId);
+                cohort = new CohortMetadata(studyId, cohortId, cohortName, sampleIds);
+                oldSamples = null;
+            } else {
+                cohort = getCohortMetadata(studyId, cohortId);
+                oldSamples = cohort.getSamples();
+                cohort.setSamples(sampleIds);
+            }
+            cohortIds.put(cohortName, cohortId);
+
             if (oldSamples != null && !oldSamples.equals(sampleIds)) {
                 // Cohort has been modified!
-                if (studyConfiguration.getCalculatedStats().contains(cohortId)) {
-                    studyConfiguration.getCalculatedStats().remove(cohortId);
-                    studyConfiguration.getInvalidStats().add(cohortId);
+                if (cohort.isReady()) {
+                    cohort.setStatus(BatchFileTask.Status.ERROR);
                 }
             }
+
+            updateCohortMetadata(studyId, cohort);
         }
+        return cohortIds;
     }
 
-    protected int newFileId(StudyConfiguration studyConfiguration) throws StorageEngineException {
+    protected int newFileId(int studyId) throws StorageEngineException {
 //        return studyConfiguration.getFileIds().values().stream().max(Integer::compareTo).orElse(0) + 1;
-        return projectDBAdaptor.generateId(studyConfiguration, "file");
+        return projectDBAdaptor.generateId(studyId, "file");
     }
 
-    protected int newSampleId(StudyConfiguration studyConfiguration) throws StorageEngineException {
+    protected int newSampleId(int studyId) throws StorageEngineException {
 //        return studyConfiguration.getSampleIds().values().stream().max(Integer::compareTo).orElse(0) + 1;
-        return projectDBAdaptor.generateId(studyConfiguration, "sample");
+        return projectDBAdaptor.generateId(studyId, "sample");
     }
 
-    protected int newCohortId(StudyConfiguration studyConfiguration) throws StorageEngineException {
+    protected int newCohortId(int studyId) throws StorageEngineException {
 //        return studyConfiguration.getCohortIds().values().stream().max(Integer::compareTo).orElse(0) + 1;
-        return projectDBAdaptor.generateId(studyConfiguration, "cohort");
+        return projectDBAdaptor.generateId(studyId, "cohort");
+    }
+
+    protected int newTaskId(int studyId) throws StorageEngineException {
+        return projectDBAdaptor.generateId(studyId, "task");
     }
 
     protected int newStudyId() throws StorageEngineException {
-        return projectDBAdaptor.generateId(null, "study");
+        return projectDBAdaptor.generateId((Integer) null, "study");
     }
 
     protected int newSearchIndexSamplesId(StudyConfiguration studyConfiguration) throws StorageEngineException {
@@ -1190,15 +1258,28 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         }
     }
 
+    public BatchFileTask.Status setStatus(int studyId, int taskId, BatchFileTask.Status status) {
+        return setStatus(studyId, getTask(studyId, taskId), status);
+    }
+
+    @Deprecated
+    public BatchFileTask.Status setStatus(int studyId, String taskName, List<Integer> fileIds, BatchFileTask.Status status) {
+        BatchFileTask task = getTask(studyId, taskName, fileIds);
+        return setStatus(studyId, task, status);
+    }
+
+    private BatchFileTask.Status setStatus(int studyId, BatchFileTask task, BatchFileTask.Status status) {
+        BatchFileTask.Status previousStatus = task.currentStatus();
+        task.addStatus(Calendar.getInstance().getTime(), status);
+        updateTask(studyId, task);
+
+        return previousStatus;
+    }
+
     public BatchFileTask.Status atomicSetStatus(int studyId, BatchFileTask.Status status, String operationName,
                                                 List<Integer> files)
             throws StorageEngineException {
-        final BatchFileTask.Status[] previousStatus = new BatchFileTask.Status[1];
-        lockAndUpdateOld(studyId, studyConfiguration -> {
-            previousStatus[0] = setStatus(studyConfiguration, status, operationName, files);
-            return studyConfiguration;
-        });
-        return previousStatus[0];
+        return setStatus(studyId, operationName, files, status);
     }
 
     @Deprecated
@@ -1247,7 +1328,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     public static BatchFileTask addBatchOperation(StudyConfiguration studyConfiguration, String jobOperationName,
                                                   List<Integer> fileIds, boolean resume, BatchFileTask.Type type)
             throws StorageEngineException {
-        return addBatchOperation(studyConfiguration, jobOperationName, fileIds, resume, type, b -> false);
+        throw new UnsupportedOperationException("Deprecated");
     }
 
     /**
@@ -1259,7 +1340,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
      *  If any operation is DONE, RUNNING, is same operation and resume=true, continue
      *  If all operations are ready, continue
      *
-     * @param studyConfiguration StudyConfiguration
+     * @param studyId            Study id
      * @param jobOperationName   Job operation name used to create the jobName and as {@link BatchFileTask#operationName}
      * @param fileIds            Files to be processed in this batch.
      * @param resume             Resume operation. Assume that previous operation went wrong.
@@ -1269,16 +1350,16 @@ public class VariantStorageMetadataManager implements AutoCloseable {
      * @return                   The current batchOperation
      * @throws StorageEngineException if the operation can't be executed
      */
-    @Deprecated
-    public static BatchFileTask addBatchOperation(StudyConfiguration studyConfiguration, String jobOperationName,
+    public BatchFileTask addBatchOperation(int studyId, String jobOperationName,
                                                   List<Integer> fileIds, boolean resume, BatchFileTask.Type type,
                                                   Predicate<BatchFileTask> allowConcurrent)
             throws StorageEngineException {
 
-        List<BatchFileTask> batches = studyConfiguration.getBatches();
         BatchFileTask resumeOperation = null;
-        boolean newOperation = false;
-        for (BatchFileTask operation : batches) {
+        boolean updateOperation = false;
+        Iterator<BatchFileTask> iterator = taskIterator(studyId);
+        while (iterator.hasNext()) {
+            BatchFileTask operation = iterator.next();
             BatchFileTask.Status currentStatus = operation.currentStatus();
 
             switch (currentStatus) {
@@ -1318,17 +1399,18 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
         BatchFileTask operation;
         if (resumeOperation == null) {
-            operation = new BatchFileTask(jobOperationName, fileIds, System.currentTimeMillis(), type);
-            newOperation = true;
+            operation = new BatchFileTask(newTaskId(studyId), jobOperationName, fileIds, System.currentTimeMillis(), type);
+            updateOperation = true;
         } else {
             operation = resumeOperation;
         }
 
         if (!Objects.equals(operation.currentStatus(), BatchFileTask.Status.DONE)) {
             operation.addStatus(Calendar.getInstance().getTime(), BatchFileTask.Status.RUNNING);
+            updateOperation = true;
         }
-        if (newOperation) {
-            batches.add(operation);
+        if (updateOperation) {
+            updateTask(studyId, operation);
         }
         return operation;
     }

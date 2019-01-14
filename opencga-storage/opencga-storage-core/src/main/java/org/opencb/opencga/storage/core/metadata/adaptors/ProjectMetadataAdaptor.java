@@ -28,5 +28,10 @@ public interface ProjectMetadataAdaptor extends AutoCloseable {
     default void close() throws IOException {
     }
 
-    int generateId(StudyConfiguration studyConfiguration, String idType) throws StorageEngineException;
+    @Deprecated
+    default int generateId(StudyConfiguration studyConfiguration, String idType) throws StorageEngineException {
+        return generateId(studyConfiguration == null ? null : studyConfiguration.getStudyId(), idType);
+    }
+
+    int generateId(Integer studyId, String idType) throws StorageEngineException;
 }

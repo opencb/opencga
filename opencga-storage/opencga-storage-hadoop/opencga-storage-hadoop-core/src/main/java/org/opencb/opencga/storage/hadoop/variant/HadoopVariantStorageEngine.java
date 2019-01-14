@@ -464,20 +464,16 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         List<Integer> fileIdsList = new ArrayList<>(fileIds);
         fileIdsList.sort(Integer::compareTo);
 
-        scm.lockAndUpdateOld(study, sc -> {
-            boolean resume = options.getBoolean(RESUME.key(), RESUME.defaultValue());
-            BatchFileTask operation = VariantStorageMetadataManager.addBatchOperation(
-                    sc,
-                    jobOperationName,
-                    fileIdsList,
-                    resume,
-                    BatchFileTask.Type.OTHER,
-                    // Allow concurrent operations if fillGaps.
-                    (v) -> fillGaps || v.getOperationName().equals(FILL_GAPS_OPERATION_NAME));
-
-            options.put(AbstractVariantsTableDriver.TIMESTAMP, operation.getTimestamp());
-            return sc;
-        });
+        boolean resume = options.getBoolean(RESUME.key(), RESUME.defaultValue());
+        BatchFileTask operation = scm.addBatchOperation(
+                studyId,
+                jobOperationName,
+                fileIdsList,
+                resume,
+                BatchFileTask.Type.OTHER,
+                // Allow concurrent operations if fillGaps.
+                (v) -> fillGaps || v.getOperationName().equals(FILL_GAPS_OPERATION_NAME));
+        options.put(AbstractVariantsTableDriver.TIMESTAMP, operation.getTimestamp());
 
         if (!fillGaps) {
             URI directory = URI.create(options.getString(INTERMEDIATE_HDFS_DIRECTORY));
@@ -542,14 +538,12 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             throw e;
         } finally {
             boolean fail = exception != null;
-            scm.lockAndUpdateOld(study, sc -> {
-                VariantStorageMetadataManager.setStatus(sc,
-                        fail ? BatchFileTask.Status.ERROR : BatchFileTask.Status.READY,
-                        jobOperationName, fileIdsList);
+            scm.setStatus(studyId, operation.getId(), fail ? BatchFileTask.Status.ERROR : BatchFileTask.Status.READY);
+            scm.lockAndUpdate(study, sm -> {
                 if (!fillGaps && StringUtils.isEmpty(options.getString(REGION.key()))) {
-                    sc.getAttributes().put(MISSING_GENOTYPES_UPDATED, !fail);
+                    sm.getAttributes().put(MISSING_GENOTYPES_UPDATED, !fail);
                 }
-                return sc;
+                return sm;
             });
             Runtime.getRuntime().removeShutdownHook(hook);
         }

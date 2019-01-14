@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.metadata;
 
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Iterators;
 import org.apache.avro.generic.GenericRecord;
@@ -21,9 +22,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Objects;
 
-import static org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantMetadataUtils.createMetaTableIfNeeded;
-import static org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantMetadataUtils.getTypeColumn;
-import static org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantMetadataUtils.getValueColumn;
+import static org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantMetadataUtils.*;
 
 /**
  * Created on 03/05/18.
@@ -50,6 +49,7 @@ public abstract class AbstractHBaseDBAdaptor {
         HBaseVariantTableNameGenerator.checkValidMetaTableName(metaTableName);
         family = new GenomeHelper(configuration).getColumnFamily();
         this.objectMapper = new ObjectMapper().addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
+        objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         if (hBaseManager == null) {
             this.hBaseManager = new HBaseManager(configuration);
         } else {
@@ -97,12 +97,21 @@ public abstract class AbstractHBaseDBAdaptor {
 
 //        logger.debug("Get {} {} from DB {}", clazz.getSimpleName(), id, tableName);
         Scan scan = new Scan();
-        scan.setRowPrefixFilter(rowKeyPrefix);
-        scan.addColumn(family, valueColumn);
         scan.setReversed(reversed);
+        scan.setRowPrefixFilter(rowKeyPrefix);
+        if (reversed) {
+            byte[] startRow = scan.getStartRow();
+            scan.setStartRow(scan.getStopRow());
+            scan.setStopRow(startRow);
+        }
+        scan.addColumn(family, valueColumn);
 
         try {
             return hBaseManager.act(tableName, table -> {
+//                logger.info("-------------------------------------");
+//                logger.info("##### scan = " + scan);
+//                logger.info("##### clazz = " + clazz);
+//                logger.info("##### size = " + Iterators.size(table.getScanner(scan).iterator()));
                 ResultScanner scanner = table.getScanner(scan);
                 return new IteratorWithClosable<>(Iterators.transform(scanner.iterator(), result -> {
                     try {

@@ -101,6 +101,9 @@ public class VariantHbaseTestUtils {
             throws Exception {
         GenomeHelper helper = dbAdaptor.getGenomeHelper();
         String archiveTableName = dbAdaptor.getArchiveTableName(studyConfiguration.getStudyId());
+        if (!dbAdaptor.getHBaseManager().tableExists(archiveTableName)) {
+            return dbAdaptor;
+        }
         dbAdaptor.getHBaseManager().act(archiveTableName, table -> {
             for (Result result : table.getScanner(helper.getColumnFamily())) {
                 out.println("-----------------");
@@ -262,13 +265,16 @@ public class VariantHbaseTestUtils {
 //                        .append(VariantQueryParam.FILE.key(), fileId),
 //                new QueryOptions("archive", true));
 
+        String tableName = dbAdaptor.getArchiveTableName(studyConfiguration.getStudyId());
+        if (!dbAdaptor.getHBaseManager().tableExists(tableName)) {
+            return;
+        }
+
         ArchiveTableHelper archiveHelper = dbAdaptor.getArchiveHelper(studyConfiguration.getStudyId(), fileId);
         Scan scan = new Scan();
         scan.addColumn(archiveHelper.getColumnFamily(), archiveHelper.getNonRefColumnName());
         scan.addColumn(archiveHelper.getColumnFamily(), archiveHelper.getRefColumnName());
         VariantHBaseQueryParser.addArchiveRegionFilter(scan, null, archiveHelper);
-
-        String tableName = dbAdaptor.getArchiveTableName(studyConfiguration.getStudyId());
 
         dbAdaptor.getHBaseManager().act(tableName, (table) -> {
             ResultScanner scanner = table.getScanner(scan);
@@ -376,7 +382,9 @@ public class VariantHbaseTestUtils {
             FileStudyMetadataDBAdaptor.write(studyConfiguration, outDir.resolve("study_configuration_" + studyConfiguration.getStudyName() + ".json"));
             printVariantsFromArchiveTable(dbAdaptor, studyConfiguration, outDir);
             printArchiveTable(studyConfiguration, dbAdaptor, outDir);
-            printVcf(studyConfiguration, dbAdaptor, outDir);
+            if (!studyConfiguration.getIndexedFiles().isEmpty()) {
+                printVcf(studyConfiguration, dbAdaptor, outDir);
+            }
         }
         printMetaTable(dbAdaptor, outDir);
         printSamplesIndexTable(dbAdaptor, outDir);

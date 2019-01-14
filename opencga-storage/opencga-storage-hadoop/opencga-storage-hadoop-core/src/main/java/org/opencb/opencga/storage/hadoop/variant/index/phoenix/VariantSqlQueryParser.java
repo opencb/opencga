@@ -986,7 +986,7 @@ public class VariantSqlQueryParser {
         Map<String, String> formatValuesMap = pair.getValue();
 
         if (!formatValuesMap.isEmpty()) {
-            List<String> fixedFormat = HBaseToVariantConverter.getFixedFormat(defaultStudyConfiguration);
+            List<String> fixedFormat = HBaseToVariantConverter.getFixedFormat(defaultStudyConfiguration.getAttributes());
 
             StringBuilder sb = new StringBuilder();
             int i = -1;

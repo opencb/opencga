@@ -77,10 +77,10 @@ public class DummyVariantStoragePipeline extends VariantStoragePipeline {
             }
         }
         if (getOptions().getBoolean(VARIANTS_LOAD_FAIL) || getOptions().getString(VARIANTS_LOAD_FAIL).equals(Paths.get(input).getFileName().toString())) {
-            getStudyConfigurationManager().atomicSetStatus(getStudyId(), BatchFileTask.Status.ERROR, "load", fileIds);
+            getMetadataManager().atomicSetStatus(getStudyId(), BatchFileTask.Status.ERROR, "load", fileIds);
             throw new StorageEngineException("Error loading file " + input);
         } else {
-            getStudyConfigurationManager().atomicSetStatus(getStudyId(), BatchFileTask.Status.DONE, "load", fileIds);
+            getMetadataManager().atomicSetStatus(getStudyId(), BatchFileTask.Status.DONE, "load", fileIds);
         }
         return input;
     }

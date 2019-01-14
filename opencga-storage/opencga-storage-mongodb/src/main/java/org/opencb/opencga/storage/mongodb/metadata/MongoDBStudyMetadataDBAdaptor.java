@@ -46,13 +46,13 @@ import static org.opencb.commons.datastore.mongodb.MongoDBCollection.UPSERT;
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
-public class MongoDBStudyMetadataDBDBAdaptor implements StudyMetadataDBAdaptor {
+public class MongoDBStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor {
 
     private final DocumentToStudyConfigurationConverter studyConfigurationConverter = new DocumentToStudyConfigurationConverter();
     private final MongoLock mongoLock;
     private final MongoDBCollection collection;
 
-    public MongoDBStudyMetadataDBDBAdaptor(MongoDataStore db, String collectionName) {
+    public MongoDBStudyMetadataDBAdaptor(MongoDataStore db, String collectionName) {
         collection = db.getCollection(collectionName)
                 .withReadPreference(ReadPreference.primary())
                 .withWriteConcern(WriteConcern.ACKNOWLEDGED);

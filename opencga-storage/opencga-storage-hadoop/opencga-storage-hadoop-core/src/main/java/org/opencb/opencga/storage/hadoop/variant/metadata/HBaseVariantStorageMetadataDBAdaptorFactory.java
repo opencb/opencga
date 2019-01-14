@@ -39,7 +39,7 @@ public class HBaseVariantStorageMetadataDBAdaptorFactory implements VariantStora
     }
 
     @Override
-    public HBaseStudyMetadataDBDBAdaptor buildStudyConfigurationDBAdaptor() {
-        return new HBaseStudyMetadataDBDBAdaptor(hBaseManager, metaTableName, configuration);
+    public HBaseStudyMetadataDBAdaptor buildStudyConfigurationDBAdaptor() {
+        return new HBaseStudyMetadataDBAdaptor(hBaseManager, metaTableName, configuration);
     }
 }
