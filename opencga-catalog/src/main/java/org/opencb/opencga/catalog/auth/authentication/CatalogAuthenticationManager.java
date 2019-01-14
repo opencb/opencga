@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.auth.authentication;
 
+import io.jsonwebtoken.SignatureAlgorithm;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.StringUtils;
@@ -27,32 +28,48 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.MailUtils;
-import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.Email;
 import org.opencb.opencga.core.models.User;
 import org.slf4j.LoggerFactory;
 
+import java.security.Key;
 import java.security.NoSuchAlgorithmException;
+import java.util.List;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class CatalogAuthenticationManager extends AuthenticationManager {
 
+    public static final String INTERNAL = "internal";
+    private final Email emailConfig;
+
     private final UserDBAdaptor userDBAdaptor;
     private final MetaDBAdaptor metaDBAdaptor;
 
-    private static final String ROOT = "admin";
+    private long expiration;
 
-    public CatalogAuthenticationManager(DBAdaptorFactory dbAdaptorFactory, Configuration configuration) {
-        super(configuration);
+    public CatalogAuthenticationManager(DBAdaptorFactory dbAdaptorFactory, Email emailConfig, String secretKeyString, long expiration) {
+        super();
 
+        this.emailConfig = emailConfig;
         this.userDBAdaptor = dbAdaptorFactory.getCatalogUserDBAdaptor();
         this.metaDBAdaptor = dbAdaptorFactory.getCatalogMetaDBAdaptor();
+
+        this.expiration = expiration;
+
+        Key secretKey = this.converStringToKeyObject(secretKeyString, SignatureAlgorithm.HS256.getJcaName());
+        this.jwtManager = new JwtManager(SignatureAlgorithm.HS256.getValue(), secretKey);
 
         this.logger = LoggerFactory.getLogger(CatalogAuthenticationManager.class);
     }
 
     public static String cypherPassword(String password) throws CatalogException {
+        if (password.matches("^[a-fA-F0-9]{40}$")) {
+            // Password already cyphered
+            return password;
+        }
+
         try {
             return StringUtils.sha1(password);
         } catch (NoSuchAlgorithmException e) {
@@ -61,30 +78,51 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
     }
 
     @Override
-    public boolean authenticate(String userId, String password, boolean throwException) throws CatalogException {
-        String cypherPassword = cypherPassword(password);
+    public String authenticate(String username, String password) throws CatalogAuthenticationException {
+        String cypherPassword;
+        try {
+            cypherPassword = cypherPassword(password);
+        } catch (CatalogException e) {
+            throw new CatalogAuthenticationException(e.getMessage(), e);
+        }
+
         String storedPassword;
         boolean validSessionId = false;
-        if (ROOT.equals(userId)) {
-            storedPassword = metaDBAdaptor.getAdminPassword();
+        if (username.equals("admin")) {
             try {
-                validSessionId = jwtManager.getUser(password).equals(userId);
-            } catch (CatalogAuthenticationException e) {
-                validSessionId = false;
+                storedPassword = metaDBAdaptor.getAdminPassword();
+            } catch (CatalogDBException e) {
+                throw new CatalogAuthenticationException("Could not validate 'admin' password\n" + e.getMessage(), e);
             }
+            validSessionId = storedPassword.equals(cypherPassword);
         } else {
-            storedPassword = userDBAdaptor.get(userId, new QueryOptions(QueryOptions.INCLUDE, "password"), null).first()
-                    .getPassword();
+            try {
+                storedPassword = userDBAdaptor.get(username, new QueryOptions(QueryOptions.INCLUDE, "password"), null)
+                        .first().getPassword();
+            } catch (CatalogDBException e) {
+                throw new CatalogAuthenticationException("Could not validate '" + username + "' password\n" + e.getMessage(), e);
+            }
         }
         if (storedPassword.equals(cypherPassword) || validSessionId) {
-            return true;
+            return jwtManager.createJWTToken(username, expiration);
         } else {
-            if (throwException) {
-                throw CatalogAuthenticationException.incorrectUserOrPassword();
-            } else {
-                return false;
-            }
+            throw CatalogAuthenticationException.incorrectUserOrPassword();
         }
+    }
+
+    @Override
+    public List<User> getUsersFromRemoteGroup(String group) throws CatalogException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<User> getRemoteUserInformation(List<String> userStringList) throws CatalogException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<String> getRemoteGroups(String token) throws CatalogException {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -98,6 +136,11 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
     public void newPassword(String userId, String newPassword) throws CatalogException {
         String newCryptPass = (newPassword.length() != 40) ? cypherPassword(newPassword) : newPassword;
         userDBAdaptor.changePassword(userId, "", newCryptPass);
+    }
+
+    @Override
+    public String createToken(String userId) {
+        return jwtManager.createJWTToken(userId, expiration);
     }
 
     @Override
@@ -120,10 +163,10 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
 
         QueryResult queryResult = userDBAdaptor.resetPassword(userId, email, newCryptPass);
 
-        String mailUser = this.configuration.getEmail().getFrom();
-        String mailPassword = this.configuration.getEmail().getPassword();
-        String mailHost = this.configuration.getEmail().getHost();
-        String mailPort = this.configuration.getEmail().getPort();
+        String mailUser = this.emailConfig.getFrom();
+        String mailPassword = this.emailConfig.getPassword();
+        String mailHost = this.emailConfig.getHost();
+        String mailPort = this.emailConfig.getPort();
 
         MailUtils.sendResetPasswordMail(email, newPassword, mailUser, mailPassword, mailHost, mailPort);
 

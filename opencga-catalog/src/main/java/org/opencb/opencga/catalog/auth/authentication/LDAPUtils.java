@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.auth.authentication;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 
 import javax.naming.Context;
 import javax.naming.NamingEnumeration;
@@ -76,7 +77,9 @@ public class LDAPUtils {
         }
     }
 
-    public static List<String> getUsersFromLDAPGroup(String host, String groupName, String groupBase) throws NamingException {
+    public static List<String> getUsersFromLDAPGroup(String host, String groupName, String groupBase)
+            throws NamingException, CatalogException {
+
         String groupFilter = "(cn=" + groupName + ")";
 
         String[] attributeFilter = {"uniqueMember"};
@@ -86,6 +89,9 @@ public class LDAPUtils {
         NamingEnumeration<SearchResult> search = getDirContext(host).search(groupBase, groupFilter, sc);
 
         List<String> users = new ArrayList<>();
+        if (!search.hasMore()) {
+            throw new CatalogException("Group '" + groupName + "' not found");
+        }
         while (search.hasMore()) {
             SearchResult sr = search.next();
             Attributes attrs = sr.getAttributes();
@@ -154,7 +160,11 @@ public class LDAPUtils {
     }
 
     public static String getRDN(Attributes attributes) throws NamingException {
-        return (String) attributes.get("gecos").get(0);
+        if (attributes.get("gecos") != null) {
+            return (String) attributes.get("gecos").get(0);
+        } else {
+            return "";
+        }
     }
 
     public static String getFullName(Attributes attributes) throws NamingException {

@@ -306,6 +306,7 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
         RELEASE("release", INTEGER, ""),
 
         GROUPS("groups", TEXT_ARRAY, ""),
+        GROUP_ID("groups.id", TEXT_ARRAY, ""),
         GROUP_NAME("groups.name", TEXT_ARRAY, ""),
         GROUP_USER_IDS("groups.userIds", TEXT_ARRAY, ""),
         GROUP_SYNCED_FROM("groups.syncedFrom", TEXT_ARRAY, ""),
