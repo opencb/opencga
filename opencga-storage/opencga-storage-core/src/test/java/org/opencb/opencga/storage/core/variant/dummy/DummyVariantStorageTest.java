@@ -26,7 +26,7 @@ public interface DummyVariantStorageTest extends VariantStorageTest {
     @Override
     default void clearDB(String dbName) throws Exception {
         DummyProjectMetadataAdaptor.clear();
-        DummyStudyConfigurationAdaptor.clear();
+        DummyStudyMetadataDBAdaptor.clear();
     }
 
 }

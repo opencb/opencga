@@ -19,16 +19,11 @@ package org.opencb.opencga.storage.core.metadata.adaptors;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
-import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.metadata.models.*;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -36,15 +31,15 @@ import java.util.concurrent.TimeoutException;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public interface StudyConfigurationAdaptor extends AutoCloseable {
+public interface StudyMetadataDBAdaptor extends AutoCloseable {
 
     default long lockStudy(int studyId, long lockDuration, long timeout, String lockName) throws InterruptedException, TimeoutException {
-        LoggerFactory.getLogger(StudyConfigurationAdaptor.class).warn("Ignoring lock");
+        LoggerFactory.getLogger(StudyMetadataDBAdaptor.class).warn("Ignoring lock");
         return 0;
     }
 
     default void unLockStudy(int studyId, long lockId, String lockName) {
-        LoggerFactory.getLogger(StudyConfigurationAdaptor.class).warn("Ignoring unLock");
+        LoggerFactory.getLogger(StudyMetadataDBAdaptor.class).warn("Ignoring unLock");
     }
 
     @Deprecated
@@ -87,6 +82,54 @@ public interface StudyConfigurationAdaptor extends AutoCloseable {
         StudyConfiguration sc = getStudyConfiguration(studyId, null, null).first();
         sc.setIndexedFiles(indexedFiles);
         updateStudyConfiguration(sc, null);
+    }
+
+    default FileMetadata getFileMetadata(int studyId, int fileId, Long timeStamp) {
+        throw new UnsupportedOperationException("TODO");
+    }
+
+    default void updateFileMetadata(int studyId, FileMetadata file, Long timeStamp) {
+        throw new UnsupportedOperationException("TODO");
+    }
+
+    default int getFileId(int studyId, String fileName) {
+        throw new UnsupportedOperationException("TODO");
+    }
+
+    default SampleMetadata getSampleMetadata(int studyId, int sampleId, Long timeStamp) {
+        throw new UnsupportedOperationException("TODO");
+    }
+
+    default void updateSampleMetadata(int studyId, SampleMetadata sample, Long timeStamp) {
+        throw new UnsupportedOperationException("TODO");
+    }
+
+    default int getSampleId(int studyId, String sampleName) {
+        throw new UnsupportedOperationException("TODO");
+    }
+
+    default CohortMetadata getCohortMetadata(int studyId, int cohortId, Long timeStamp) {
+        throw new UnsupportedOperationException("TODO");
+    }
+
+    default void updateCohortMetadata(int studyId, CohortMetadata cohort, Long timeStamp) {
+        throw new UnsupportedOperationException("TODO");
+    }
+
+    default int getCohortId(int studyId, String cohortName) {
+        throw new UnsupportedOperationException("TODO");
+    }
+
+    default BatchFileTask getTask(int studyId, int taskId, Long timeStamp) {
+        throw new UnsupportedOperationException("TODO");
+    }
+
+    default Iterator<BatchFileTask> taskIterator(int studyId) {
+        throw new UnsupportedOperationException("TODO");
+    }
+
+    default void updateTask(int studyId, BatchFileTask task, Long timeStamp) {
+        throw new UnsupportedOperationException("TODO");
     }
 
     Map<String, Integer> getStudies(QueryOptions options);

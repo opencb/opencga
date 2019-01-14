@@ -22,7 +22,7 @@ import org.apache.avro.generic.GenericRecord;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.adaptors.StudyConfigurationAdaptor;
+import org.opencb.opencga.storage.core.metadata.adaptors.StudyMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,9 +37,9 @@ import java.util.Map;
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
-public class FileStudyConfigurationAdaptor implements StudyConfigurationAdaptor {
+public class FileStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor {
     public static final String STUDY_CONFIGURATION_PATH = "studyConfigurationPath";
-    protected static Logger logger = LoggerFactory.getLogger(FileStudyConfigurationAdaptor.class);
+    protected static Logger logger = LoggerFactory.getLogger(FileStudyMetadataDBAdaptor.class);
 
     private static final Map<Integer, Path> FILE_PATHS = new HashMap<>();
     private static ObjectMapper objectMapper = new ObjectMapper(new JsonFactory())

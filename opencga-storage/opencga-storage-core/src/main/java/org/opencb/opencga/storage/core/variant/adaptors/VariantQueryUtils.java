@@ -522,7 +522,7 @@ public final class VariantQueryUtils {
     }
 
     public static StudyConfiguration getDefaultStudyConfiguration(Query query, QueryOptions options,
-                                                                  VariantStorageMetadataManager variantStorageMetadataManager) {
+                                                                  VariantStorageMetadataManager metadataManager) {
         final StudyConfiguration defaultStudyConfiguration;
         if (isValidParam(query, VariantQueryParam.STUDY)) {
             String value = query.getString(VariantQueryParam.STUDY.key());
@@ -530,19 +530,19 @@ public final class VariantQueryUtils {
             // Check that the study exists
             VariantQueryUtils.QueryOperation studiesOperation = checkOperator(value);
             List<String> studiesNames = splitValue(value, studiesOperation);
-            List<Integer> studyIds = variantStorageMetadataManager.getStudyIds(studiesNames, options); // Non negated studyIds
+            List<Integer> studyIds = metadataManager.getStudyIds(studiesNames, options); // Non negated studyIds
 
 
             if (studyIds.size() == 1) {
-                defaultStudyConfiguration = variantStorageMetadataManager.getStudyConfiguration(studyIds.get(0), null).first();
+                defaultStudyConfiguration = metadataManager.getStudyConfiguration(studyIds.get(0), null).first();
             } else {
                 defaultStudyConfiguration = null;
             }
 
         } else {
-            List<String> studyNames = variantStorageMetadataManager.getStudyNames(null);
+            List<String> studyNames = metadataManager.getStudyNames(null);
             if (studyNames != null && studyNames.size() == 1) {
-                defaultStudyConfiguration = variantStorageMetadataManager.getStudyConfiguration(studyNames.get(0), new QueryOptions()).first();
+                defaultStudyConfiguration = metadataManager.getStudyConfiguration(studyNames.get(0), new QueryOptions()).first();
             } else {
                 defaultStudyConfiguration = null;
             }
@@ -572,25 +572,25 @@ public final class VariantQueryUtils {
         }
     }
 
-    public static List<Integer> getIncludeStudies(Query query, QueryOptions options, VariantStorageMetadataManager variantStorageMetadataManager) {
-        return getIncludeStudies(query, options, variantStorageMetadataManager, VariantField.getIncludeFields(options));
+    public static List<Integer> getIncludeStudies(Query query, QueryOptions options, VariantStorageMetadataManager metadataManager) {
+        return getIncludeStudies(query, options, metadataManager, VariantField.getIncludeFields(options));
     }
 
-    private static List<Integer> getIncludeStudies(Query query, QueryOptions options, VariantStorageMetadataManager variantStorageMetadataManager,
+    private static List<Integer> getIncludeStudies(Query query, QueryOptions options, VariantStorageMetadataManager metadataManager,
                                                    Set<VariantField> fields) {
         List<String> studiesList = getIncludeStudiesList(query, fields);
 
         List<Integer> studyIds;
         if (studiesList == null) {
-            studyIds = variantStorageMetadataManager.getStudyIds(options);
+            studyIds = metadataManager.getStudyIds(options);
             if (studyIds.size() > 1) {
                 Map<Integer, List<Integer>> map = null;
                 if (isIncludeSamplesDefined(query, fields)) {
                     map = getIncludeSamples(query, options, studyIds,
-                            studyId -> variantStorageMetadataManager.getStudyConfiguration(studyId, null).first());
+                            studyId -> metadataManager.getStudyConfiguration(studyId, null).first());
                 } else if (isIncludeFilesDefined(query, fields)) {
                     map = getIncludeFiles(query, studyIds, fields,
-                            studyId -> variantStorageMetadataManager.getStudyConfiguration(studyId, null).first());
+                            studyId -> metadataManager.getStudyConfiguration(studyId, null).first());
                 }
                 if (map != null) {
                     List<Integer> studyIdsFromSubFields = new ArrayList<>();
@@ -605,7 +605,7 @@ public final class VariantQueryUtils {
                 }
             }
         } else {
-            studyIds = variantStorageMetadataManager.getStudyIds(studiesList, options);
+            studyIds = metadataManager.getStudyIds(studiesList, options);
         }
         return studyIds;
     }

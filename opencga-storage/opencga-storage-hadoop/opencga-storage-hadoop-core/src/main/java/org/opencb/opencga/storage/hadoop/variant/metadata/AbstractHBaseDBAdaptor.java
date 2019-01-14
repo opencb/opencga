@@ -1,8 +1,12 @@
 package org.opencb.opencga.storage.hadoop.variant.metadata;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Iterators;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.client.*;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.IteratorWithClosable;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -12,9 +16,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.Objects;
 
 import static org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantMetadataUtils.createMetaTableIfNeeded;
+import static org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantMetadataUtils.getTypeColumn;
+import static org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantMetadataUtils.getValueColumn;
 
 /**
  * Created on 03/05/18.
@@ -28,7 +37,7 @@ public abstract class AbstractHBaseDBAdaptor {
     protected final HBaseManager hBaseManager;
     protected final ObjectMapper objectMapper;
     protected final String tableName;
-    protected Boolean tableExists = null; // unknown
+    private Boolean tableExists = null; // unknown
     protected byte[] family;
 
     public AbstractHBaseDBAdaptor(VariantTableHelper helper) {
@@ -49,12 +58,133 @@ public abstract class AbstractHBaseDBAdaptor {
         }
     }
 
-    protected void ensureTableExists() throws IOException {
+    protected void ensureTableExists() {
         if (tableExists == null || !tableExists) {
-            if (createMetaTableIfNeeded(hBaseManager, tableName, family)) {
-                logger.info("Create table '{}' in hbase!", tableName);
+            try {
+                if (createMetaTableIfNeeded(hBaseManager, tableName, family)) {
+                    logger.info("Create table '{}' in hbase!", tableName);
+                }
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
             tableExists = true;
         }
     }
+
+    protected boolean tableExists() {
+        if (tableExists == null || !tableExists) {
+            try {
+                return hBaseManager.tableExists(tableName);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+        return tableExists;
+    }
+
+    protected <T> Iterator<T> iterator(byte[] rowKeyPrefix, Class<T> clazz) {
+        return iterator(rowKeyPrefix, clazz, getValueColumn(), false);
+    }
+
+    protected <T> Iterator<T> iterator(byte[] rowKeyPrefix, Class<T> clazz, boolean reversed) {
+        return iterator(rowKeyPrefix, clazz, getValueColumn(), reversed);
+    }
+
+    protected <T> Iterator<T> iterator(byte[] rowKeyPrefix, Class<T> clazz, byte[] valueColumn, boolean reversed) {
+        if (!tableExists()) {
+            return Collections.emptyIterator();
+        }
+
+//        logger.debug("Get {} {} from DB {}", clazz.getSimpleName(), id, tableName);
+        Scan scan = new Scan();
+        scan.setRowPrefixFilter(rowKeyPrefix);
+        scan.addColumn(family, valueColumn);
+        scan.setReversed(reversed);
+
+        try {
+            return hBaseManager.act(tableName, table -> {
+                ResultScanner scanner = table.getScanner(scan);
+                return new IteratorWithClosable<>(Iterators.transform(scanner.iterator(), result -> {
+                    try {
+                        return convertResult(result, clazz);
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                }), scanner);
+            });
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+
+    }
+
+    protected <T> T readValue(byte[] rowKey, Class<T> clazz) {
+        return readValue(rowKey, clazz, null);
+    }
+
+    protected <T> T readValue(byte[] rowKey, Class<T> clazz, Long timeStamp) {
+        return readValue(rowKey, clazz, timeStamp, getValueColumn());
+    }
+
+    protected <T> T readValue(byte[] rowKey, Class<T> clazz, Long timeStamp, byte[] valueColumn) {
+        if (!tableExists()) {
+            return null;
+        }
+
+//        logger.debug("Get {} {} from DB {}", clazz.getSimpleName(), id, tableName);
+        Get get = new Get(rowKey);
+        get.addColumn(family, valueColumn);
+
+        if (timeStamp != null) {
+            try {
+                get.setTimeRange(timeStamp + 1, Long.MAX_VALUE);
+            } catch (IOException e) {
+                //This should not happen ever.
+                throw new IllegalArgumentException(e);
+            }
+        }
+
+        try {
+            return hBaseManager.act(tableName, table -> {
+                return convertResult(table.get(get), clazz);
+            });
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private <T> T convertResult(Result result, Class<T> clazz) throws IOException {
+        if (result == null || result.isEmpty()) {
+            return null;
+        } else {
+            Cell cell = result.rawCells()[0];
+            return objectMapper.readValue(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength(), clazz);
+        }
+    }
+
+    protected <T> void putValue(byte[] rowKey, HBaseVariantMetadataUtils.Type type, T value) {
+        putValue(rowKey, type, value, null);
+    }
+
+    protected <T> void putValue(byte[] rowKey, HBaseVariantMetadataUtils.Type type, T value, Long timeStamp) {
+        ensureTableExists();
+
+        if (timeStamp == null) {
+            timeStamp = System.currentTimeMillis();
+        }
+
+        try {
+            Put put = new Put(rowKey);
+            put.addColumn(family, getTypeColumn(), timeStamp, type.bytes());
+            put.addColumn(family, getValueColumn(), timeStamp, objectMapper.writeValueAsBytes(value));
+
+            hBaseManager.act(tableName, table -> {
+                table.put(put);
+            });
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+
+    }
+
 }

@@ -85,7 +85,8 @@ public class VariantFileOutputFormat extends FileOutputFormat<Variant, NullWrita
 
         DataWriter<Variant> dataWriter;
         VariantTableHelper helper = new VariantTableHelper(conf);
-        try (VariantStorageMetadataManager scm = new VariantStorageMetadataManager(new HBaseVariantStorageMetadataDBAdaptorFactory(helper))) {
+        HBaseVariantStorageMetadataDBAdaptorFactory dbAdaptorFactory = new HBaseVariantStorageMetadataDBAdaptorFactory(helper);
+        try (VariantStorageMetadataManager scm = new VariantStorageMetadataManager(dbAdaptorFactory)) {
             VariantWriterFactory writerFactory = new VariantWriterFactory(scm);
             Query query = VariantMapReduceUtil.getQueryFromConfig(conf);
             QueryOptions options = VariantMapReduceUtil.getQueryOptionsFromConfig(conf);

@@ -19,9 +19,9 @@ package org.opencb.opencga.storage.core.variant.search;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -186,13 +186,13 @@ public class VariantSearchUtils {
      *
      * @param query                     Query
      * @param options                   QueryOptions
-     * @param variantStorageMetadataManager StudyConfigurationManager
+     * @param metadataManager StudyConfigurationManager
      * @param dbName                    DBName
      * @return          Name of the specific collection, or null if not found
      * @throws StorageEngineException StorageEngineException
      */
     public static String inferSpecificSearchIndexSamplesCollection(
-            Query query, QueryOptions options, VariantStorageMetadataManager variantStorageMetadataManager, String dbName)
+            Query query, QueryOptions options, VariantStorageMetadataManager metadataManager, String dbName)
             throws StorageEngineException {
         if (!VariantStorageEngine.UseSearchIndex.from(options).equals(VariantStorageEngine.UseSearchIndex.NO)) { // YES or AUTO
             if (isValidParam(query, VariantQueryParam.STUDY)) {
@@ -249,7 +249,7 @@ public class VariantSearchUtils {
                 // Check that all elements from the query are in the same search collection
 
                 VariantQueryUtils.SelectVariantElements selectVariantElements =
-                        VariantQueryUtils.parseSelectElements(query, options, variantStorageMetadataManager);
+                        VariantQueryUtils.parseSelectElements(query, options, metadataManager);
 
                 if (selectVariantElements.getStudies().size() != 1) {
                     return null;
@@ -286,7 +286,7 @@ public class VariantSearchUtils {
                 } else {
                     sampleIds = samples.stream()
                             .map(sample -> isNegated(sample) ? removeNegation(sample) : sample)
-                            .map(sample -> variantStorageMetadataManager.getSampleId(sample, studyConfiguration)).collect(Collectors.toList());
+                            .map(sample -> metadataManager.getSampleId(sample, studyConfiguration)).collect(Collectors.toList());
                 }
 
                 Integer sampleSet = null;

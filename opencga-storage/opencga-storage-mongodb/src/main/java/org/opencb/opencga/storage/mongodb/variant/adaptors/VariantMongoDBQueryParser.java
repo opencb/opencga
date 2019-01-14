@@ -66,11 +66,11 @@ public class VariantMongoDBQueryParser {
 
     public static final VariantStringIdConverter STRING_ID_CONVERTER = new VariantStringIdConverter();
     protected static Logger logger = LoggerFactory.getLogger(VariantMongoDBQueryParser.class);
-    private final VariantStorageMetadataManager variantStorageMetadataManager;
+    private final VariantStorageMetadataManager metadataManager;
     //    private final CellBaseUtils cellBaseUtils;
 
     public VariantMongoDBQueryParser(VariantStorageMetadataManager variantStorageMetadataManager) {
-        this.variantStorageMetadataManager = variantStorageMetadataManager;
+        this.metadataManager = variantStorageMetadataManager;
 
     }
 
@@ -477,7 +477,7 @@ public class VariantMongoDBQueryParser {
             }
 
             if (isValidParam(query, VARIANTS_TO_INDEX)) {
-                long ts = variantStorageMetadataManager.getProjectMetadata().first().getAttributes()
+                long ts = metadataManager.getProjectMetadata().first().getAttributes()
                         .getLong(SEARCH_INDEX_LAST_TIMESTAMP.key());
                 if (ts > 0) {
                     String key = INDEX_FIELD + '.' + DocumentToVariantConverter.INDEX_TIMESTAMP_FIELD;
@@ -492,16 +492,16 @@ public class VariantMongoDBQueryParser {
     private StudyConfiguration parseStudyQueryParams(Query query, QueryBuilder builder) {
 
         if (query != null) {
-            Map<String, Integer> studies = variantStorageMetadataManager.getStudies(null);
+            Map<String, Integer> studies = metadataManager.getStudies(null);
 
             String studyQueryPrefix = DocumentToVariantConverter.STUDIES_FIELD + '.';
-            final StudyConfiguration defaultStudyConfiguration = getDefaultStudyConfiguration(query, null, variantStorageMetadataManager);
+            final StudyConfiguration defaultStudyConfiguration = getDefaultStudyConfiguration(query, null, metadataManager);
 
             if (isValidParam(query, STUDY)) {
                 String value = query.getString(STUDY.key());
 
                 addQueryFilter(studyQueryPrefix + DocumentToStudyVariantEntryConverter.STUDYID_FIELD, value,
-                        builder, QueryOperation.AND, study -> variantStorageMetadataManager.getStudyId(study, false, studies));
+                        builder, QueryOperation.AND, study -> metadataManager.getStudyId(study, false, studies));
             }
 
             List<Integer> fileIds = Collections.emptyList();
@@ -516,7 +516,7 @@ public class VariantMongoDBQueryParser {
                         .stream()
                         .filter(value -> !isNegated(value))
                         .map(value -> {
-                            Integer fileId = variantStorageMetadataManager.getFileIdPair(value, false, defaultStudyConfiguration).getValue();
+                            Integer fileId = metadataManager.getFileIdPair(value, false, defaultStudyConfiguration).getValue();
                             if (fileId == null) {
                                 throw VariantQueryException.fileNotFound(value, defaultStudyConfiguration.getStudyName());
                             }
@@ -528,7 +528,7 @@ public class VariantMongoDBQueryParser {
                 if (files != null) {
                     fileIds = new ArrayList<>(files.size());
                     for (String file : files) {
-                        fileIds.add(variantStorageMetadataManager.getFileIdPair(file, false, defaultStudyConfiguration).getValue());
+                        fileIds.add(metadataManager.getFileIdPair(file, false, defaultStudyConfiguration).getValue());
                     }
                 }
             }
@@ -588,7 +588,7 @@ public class VariantMongoDBQueryParser {
                         if (infoInFileElemMatch && !infoMap.isEmpty()) {
                             if (defaultStudyConfiguration == null) {
                                 throw VariantQueryException.missingStudyForFile(fileId.toString(),
-                                        variantStorageMetadataManager.getStudyNames(null));
+                                        metadataManager.getStudyNames(null));
                             }
                             String fileName = defaultStudyConfiguration.getFileIds().inverse().get(fileId);
                             String infoValue = infoMap.get(fileName);
@@ -613,7 +613,7 @@ public class VariantMongoDBQueryParser {
                     int i = 0;
                     for (Map.Entry<String, String> entry : infoMap.entrySet()) {
                         if (defaultStudyConfiguration == null) {
-                            throw VariantQueryException.missingStudyForFile(entry.getKey(), variantStorageMetadataManager.getStudyNames(null));
+                            throw VariantQueryException.missingStudyForFile(entry.getKey(), metadataManager.getStudyNames(null));
                         }
                         QueryBuilder infoBuilder = new QueryBuilder();
                         Integer fileId = VariantStorageMetadataManager.getFileIdFromStudy(entry.getKey(), defaultStudyConfiguration);
@@ -672,7 +672,7 @@ public class VariantMongoDBQueryParser {
                     if (isNegated(sample)) {
                         throw VariantQueryException.malformedParam(SAMPLE, samples, "Unsupported negated samples");
                     }
-                    int sampleId = variantStorageMetadataManager.getSampleId(sample, defaultStudyConfiguration);
+                    int sampleId = metadataManager.getSampleId(sample, defaultStudyConfiguration);
                     genotypesFilter.put(sampleId, genotypes);
                 }
             }
@@ -713,7 +713,7 @@ public class VariantMongoDBQueryParser {
                         genotypes.add("x/x");
                     }
 
-                    int sampleId = variantStorageMetadataManager.getSampleId(sample, defaultStudyConfiguration);
+                    int sampleId = metadataManager.getSampleId(sample, defaultStudyConfiguration);
 
                     // We can not filter sample by file if one of the requested genotypes is the unknown genotype
                     boolean canFilterSampleByFile = !genotypes.contains(GenotypeClass.UNKNOWN_GENOTYPE);
@@ -839,7 +839,7 @@ public class VariantMongoDBQueryParser {
                     addQueryFilter(studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD
                                     + '.' + DocumentToStudyVariantEntryConverter.FILEID_FIELD,
                             fileNames, builder, QueryOperation.AND, filesOperation,
-                            f -> variantStorageMetadataManager.getFileIdPair(f, false, defaultStudyConfiguration).getValue());
+                            f -> metadataManager.getFileIdPair(f, false, defaultStudyConfiguration).getValue());
                 } else {
                     // fileIdGroupsFromSamples is not empty. gtQueryOperation is always AND at this point
                     // assert gtQueryOperation == Operation.AND || gtQueryOperation == null
@@ -854,7 +854,7 @@ public class VariantMongoDBQueryParser {
                                     .stream()
                                     .filter(VariantQueryUtils::isNegated)
                                     .map(value -> {
-                                        Integer fileId = variantStorageMetadataManager.getFileIdPair(value, false, defaultStudyConfiguration)
+                                        Integer fileId = metadataManager.getFileIdPair(value, false, defaultStudyConfiguration)
                                                 .getValue();
                                         if (fileId == null) {
                                             throw VariantQueryException.fileNotFound(value, defaultStudyConfiguration.getStudyName());
@@ -1000,8 +1000,8 @@ public class VariantMongoDBQueryParser {
                                         study = split[0];
                                         cohort = split[1];
                                         StudyConfiguration studyConfiguration =
-                                                variantStorageMetadataManager.getStudyConfiguration(study, defaultStudyConfiguration, null);
-                                        cohortId = variantStorageMetadataManager.getCohortId(cohort, studyConfiguration);
+                                                metadataManager.getStudyConfiguration(study, defaultStudyConfiguration, null);
+                                        cohortId = metadataManager.getCohortId(cohort, studyConfiguration);
                                     }
                                     return cohortId;
                                 }
@@ -1043,7 +1043,7 @@ public class VariantMongoDBQueryParser {
     }
 
     protected Document createProjection(Query query, QueryOptions options) {
-        return createProjection(query, options, VariantQueryUtils.parseSelectElements(query, options, variantStorageMetadataManager));
+        return createProjection(query, options, VariantQueryUtils.parseSelectElements(query, options, metadataManager));
     }
 
     protected Document createProjection(Query query, QueryOptions options, SelectVariantElements selectVariantElements) {
@@ -1616,15 +1616,15 @@ public class VariantMongoDBQueryParser {
                 valueStr = cohortOpValue[2];
 
                 StudyConfiguration studyConfiguration =
-                        variantStorageMetadataManager.getStudyConfiguration(study, defaultStudyConfiguration, null);
-                cohortId = variantStorageMetadataManager.getCohortId(cohort, studyConfiguration);
+                        metadataManager.getStudyConfiguration(study, defaultStudyConfiguration, null);
+                cohortId = metadataManager.getCohortId(cohort, studyConfiguration);
                 studyId = studyConfiguration.getStudyId();
             } else {
 //                String study = defaultStudyConfiguration.getStudyName();
                 studyId = defaultStudyConfiguration.getStudyId();
                 String[] cohortOpValue = VariantQueryUtils.splitOperator(filter);
                 String cohort = cohortOpValue[0];
-                cohortId = variantStorageMetadataManager.getCohortId(cohort, defaultStudyConfiguration);
+                cohortId = metadataManager.getCohortId(cohort, defaultStudyConfiguration);
                 operator = cohortOpValue[1];
                 valueStr = cohortOpValue[2];
             }

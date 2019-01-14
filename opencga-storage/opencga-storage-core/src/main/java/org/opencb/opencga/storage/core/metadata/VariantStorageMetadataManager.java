@@ -29,12 +29,10 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.adaptors.ProjectMetadataAdaptor;
-import org.opencb.opencga.storage.core.metadata.adaptors.StudyConfigurationAdaptor;
+import org.opencb.opencga.storage.core.metadata.adaptors.StudyMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.metadata.adaptors.VariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.metadata.adaptors.VariantStorageMetadataDBAdaptorFactory;
-import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
-import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
-import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.metadata.models.*;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -63,22 +61,22 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     protected static Logger logger = LoggerFactory.getLogger(VariantStorageMetadataManager.class);
 
     private final ProjectMetadataAdaptor projectDBAdaptor;
-    private final StudyConfigurationAdaptor studyDBAdaptor;
+    private final StudyMetadataDBAdaptor studyMetadataDBAdaptor;
     private VariantFileMetadataDBAdaptor fileDBAdaptor;
 
     private final Map<String, StudyConfiguration> stringStudyConfigurationMap = new HashMap<>();
     private final Map<Integer, StudyConfiguration> intStudyConfigurationMap = new HashMap<>();
 
-    public VariantStorageMetadataManager(ProjectMetadataAdaptor projectDBAdaptor, StudyConfigurationAdaptor studyDBAdaptor,
+    public VariantStorageMetadataManager(ProjectMetadataAdaptor projectDBAdaptor, StudyMetadataDBAdaptor studyMetadataDBAdaptor,
                                          VariantFileMetadataDBAdaptor fileDBAdaptor) {
         this.projectDBAdaptor = projectDBAdaptor;
-        this.studyDBAdaptor = studyDBAdaptor;
+        this.studyMetadataDBAdaptor = studyMetadataDBAdaptor;
         this.fileDBAdaptor = fileDBAdaptor;
     }
 
     public VariantStorageMetadataManager(VariantStorageMetadataDBAdaptorFactory dbAdaptorFactory) {
         this.projectDBAdaptor = dbAdaptorFactory.buildProjectMetadataDBAdaptor();
-        this.studyDBAdaptor = dbAdaptorFactory.buildStudyConfigurationDBAdaptor();
+        this.studyMetadataDBAdaptor = dbAdaptorFactory.buildStudyConfigurationDBAdaptor();
         this.fileDBAdaptor = dbAdaptorFactory.buildVariantFileMetadataDBAdaptor();
     }
 
@@ -94,19 +92,19 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     public long lockStudy(int studyId, long lockDuration, long timeout) throws InterruptedException, TimeoutException {
-        return studyDBAdaptor.lockStudy(studyId, lockDuration, timeout, null);
+        return studyMetadataDBAdaptor.lockStudy(studyId, lockDuration, timeout, null);
     }
 
     public long lockStudy(int studyId, long lockDuration, long timeout, String lockName) throws InterruptedException, TimeoutException {
-        return studyDBAdaptor.lockStudy(studyId, lockDuration, timeout, lockName);
+        return studyMetadataDBAdaptor.lockStudy(studyId, lockDuration, timeout, lockName);
     }
 
     public void unLockStudy(int studyId, long lockId) {
-        studyDBAdaptor.unLockStudy(studyId, lockId, null);
+        studyMetadataDBAdaptor.unLockStudy(studyId, lockId, null);
     }
 
     public void unLockStudy(int studyId, long lockId, String lockName) {
-        studyDBAdaptor.unLockStudy(studyId, lockId, lockName);
+        studyMetadataDBAdaptor.unLockStudy(studyId, lockId, lockName);
     }
 
     public StudyConfiguration createStudy(String studyName) throws StorageEngineException {
@@ -173,15 +171,15 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     public StudyMetadata getStudyMetadata(String name) {
-        return studyDBAdaptor.getStudyMetadata(name, null);
+        return studyMetadataDBAdaptor.getStudyMetadata(name, null);
     }
 
     public StudyMetadata getStudyMetadata(int id) {
-        return studyDBAdaptor.getStudyMetadata(id, null);
+        return studyMetadataDBAdaptor.getStudyMetadata(id, null);
     }
 
     public void updateStudyMetadata(StudyMetadata sm) {
-        studyDBAdaptor.updateStudyMetadata(sm);
+        studyMetadataDBAdaptor.updateStudyMetadata(sm);
     }
 
     @Deprecated
@@ -200,7 +198,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 }
                 return new QueryResult<>(studyConfiguration.getStudyName(), 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
             }
-            result = studyDBAdaptor.getStudyConfiguration(studyName, stringStudyConfigurationMap.get(studyName).getTimeStamp(), options);
+            result = studyMetadataDBAdaptor.getStudyConfiguration(studyName, stringStudyConfigurationMap.get(studyName).getTimeStamp(), options);
             if (result.getNumTotalResults() == 0) { //No changes. Return old value
                 StudyConfiguration studyConfiguration = stringStudyConfigurationMap.get(studyName);
                 if (!readOnly) {
@@ -209,7 +207,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 return new QueryResult<>(studyName, 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
             }
         } else {
-            result = studyDBAdaptor.getStudyConfiguration(studyName, null, options);
+            result = studyMetadataDBAdaptor.getStudyConfiguration(studyName, null, options);
         }
 
         StudyConfiguration studyConfiguration = result.first();
@@ -240,7 +238,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 }
                 return new QueryResult<>(studyConfiguration.getStudyName(), 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
             }
-            result = studyDBAdaptor.getStudyConfiguration(studyId, intStudyConfigurationMap.get(studyId).getTimeStamp(), options);
+            result = studyMetadataDBAdaptor.getStudyConfiguration(studyId, intStudyConfigurationMap.get(studyId).getTimeStamp(), options);
             if (result.getNumTotalResults() == 0) { //No changes. Return old value
                 StudyConfiguration studyConfiguration = intStudyConfigurationMap.get(studyId);
                 if (!readOnly) {
@@ -249,7 +247,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 return new QueryResult<>(studyConfiguration.getStudyName(), 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
             }
         } else {
-            result = studyDBAdaptor.getStudyConfiguration(studyId, null, options);
+            result = studyMetadataDBAdaptor.getStudyConfiguration(studyId, null, options);
         }
 
         StudyConfiguration studyConfiguration = result.first();
@@ -281,15 +279,15 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     public List<String> getStudyNames(QueryOptions options) {
-        return studyDBAdaptor.getStudyNames(options);
+        return studyMetadataDBAdaptor.getStudyNames(options);
     }
 
     public List<Integer> getStudyIds(QueryOptions options) {
-        return studyDBAdaptor.getStudyIds(options);
+        return studyMetadataDBAdaptor.getStudyIds(options);
     }
 
     public BiMap<String, Integer> getStudies(QueryOptions options) {
-        return HashBiMap.create(studyDBAdaptor.getStudies(options));
+        return HashBiMap.create(studyMetadataDBAdaptor.getStudies(options));
     }
 
     @Deprecated
@@ -309,7 +307,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         StudyConfiguration copy = studyConfiguration.newInstance();
         stringStudyConfigurationMap.put(copy.getStudyName(), copy);
         intStudyConfigurationMap.put(copy.getStudyId(), copy);
-        return studyDBAdaptor.updateStudyConfiguration(copy, options);
+        return studyMetadataDBAdaptor.updateStudyConfiguration(copy, options);
     }
 
     /**
@@ -531,6 +529,53 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         } catch (IOException e) {
             throw new StorageEngineException("Error deleting VariantFileMetadata for file " + fileId, e);
         }
+    }
+
+    public FileMetadata getFileMetadata(int studyId, int fileId, Long timeStamp) {
+        return studyMetadataDBAdaptor.getFileMetadata(studyId, fileId, timeStamp);
+    }
+
+    public void updateFileMetadata(int studyId, FileMetadata file, Long timeStamp) {
+        studyMetadataDBAdaptor.updateFileMetadata(studyId, file, timeStamp);
+    }
+
+    public void getFileId(int studyId, String fileName) {
+        studyMetadataDBAdaptor.getFileId(studyId, fileName);
+    }
+    public SampleMetadata getSampleMetadata(int studyId, int sampleId, Long timeStamp) {
+        return studyMetadataDBAdaptor.getSampleMetadata(studyId, sampleId, timeStamp);
+    }
+
+    public void updateSampleMetadata(int studyId, SampleMetadata sample, Long timeStamp) {
+        studyMetadataDBAdaptor.updateSampleMetadata(studyId, sample, timeStamp);
+    }
+
+    public void getSampleId(int studyId, String sampleName) {
+        studyMetadataDBAdaptor.getSampleId(studyId, sampleName);
+    }
+
+    public CohortMetadata getCohortMetadata(int studyId, int cohortId, Long timeStamp) {
+        return studyMetadataDBAdaptor.getCohortMetadata(studyId, cohortId, timeStamp);
+    }
+
+    public void updateCohortMetadata(int studyId, CohortMetadata cohort, Long timeStamp) {
+        studyMetadataDBAdaptor.updateCohortMetadata(studyId, cohort, timeStamp);
+    }
+
+    public void getCohortId(int studyId, String cohortName) {
+        studyMetadataDBAdaptor.getCohortId(studyId, cohortName);
+    }
+
+    public BatchFileTask getTask(int studyId, int taskId, Long timeStamp) {
+        return studyMetadataDBAdaptor.getTask(studyId, taskId, timeStamp);
+    }
+
+    public Iterator<BatchFileTask> taskIterator(int studyId) {
+        return studyMetadataDBAdaptor.taskIterator(studyId);
+    }
+
+    public void updateTask(int studyId, BatchFileTask task, Long timeStamp) {
+        studyMetadataDBAdaptor.updateTask(studyId, task, timeStamp);
     }
 
     /**
@@ -1290,6 +1335,6 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
     @Override
     public void close() throws IOException {
-        studyDBAdaptor.close();
+        studyMetadataDBAdaptor.close();
     }
 }

@@ -38,7 +38,7 @@ import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.local.FileStudyConfigurationAdaptor;
+import org.opencb.opencga.storage.core.metadata.local.FileStudyMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -86,7 +86,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     private MongoDataStoreManager mongoDataStoreManager = null;
     private final AtomicReference<VariantMongoDBAdaptor> dbAdaptor = new AtomicReference<>();
     private Logger logger = LoggerFactory.getLogger(MongoDBVariantStorageEngine.class);
-    private VariantStorageMetadataManager variantStorageMetadataManager;
+    private VariantStorageMetadataManager metadataManager;
 
     public enum MongoDBVariantOptions {
         COLLECTION_VARIANTS("collection.variants", "variants"),
@@ -569,24 +569,24 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     @Override
     public VariantStorageMetadataManager getVariantStorageMetadataManager() throws StorageEngineException {
         ObjectMap options = getOptions();
-        if (variantStorageMetadataManager != null) {
-            return variantStorageMetadataManager;
-        } else if (!options.getString(FileStudyConfigurationAdaptor.STUDY_CONFIGURATION_PATH, "").isEmpty()) {
+        if (metadataManager != null) {
+            return metadataManager;
+        } else if (!options.getString(FileStudyMetadataDBAdaptor.STUDY_CONFIGURATION_PATH, "").isEmpty()) {
             return super.getVariantStorageMetadataManager();
         } else {
             MongoDataStoreManager mongoDataStoreManager = getMongoDataStoreManager();
             MongoDataStore db = mongoDataStoreManager.get(
                     getMongoCredentials().getMongoDbName(),
                     getMongoCredentials().getMongoDBConfiguration());
-            variantStorageMetadataManager = new VariantStorageMetadataManager(new MongoDBVariantStorageMetadataDBAdaptorFactory(db, options));
-            return variantStorageMetadataManager;
+            metadataManager = new VariantStorageMetadataManager(new MongoDBVariantStorageMetadataDBAdaptorFactory(db, options));
+            return metadataManager;
         }
     }
 
     @Override
     public Query preProcessQuery(Query originalQuery, QueryOptions options) throws StorageEngineException {
         Query query = super.preProcessQuery(originalQuery, options);
-        List<String> studyNames = variantStorageMetadataManager.getStudyNames(QueryOptions.empty());
+        List<String> studyNames = metadataManager.getStudyNames(QueryOptions.empty());
         CellBaseUtils cellBaseUtils = getCellBaseUtils();
 
         if (isValidParam(query, VariantQueryParam.STUDY)
@@ -622,9 +622,9 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
             dbAdaptor.get().close();
             dbAdaptor.set(null);
         }
-        if (variantStorageMetadataManager != null) {
-            variantStorageMetadataManager.close();
-            variantStorageMetadataManager = null;
+        if (metadataManager != null) {
+            metadataManager.close();
+            metadataManager = null;
         }
         if (mongoDataStoreManager != null) {
             mongoDataStoreManager.close();

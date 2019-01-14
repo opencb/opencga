@@ -57,7 +57,9 @@ public class HBaseVariantTableInputFormat extends AbstractVariantsTableInputForm
 //            configuration.forEach(entry -> System.out.println(entry.getKey() + " = " + entry.getValue()));
         VariantTableHelper helper = new VariantTableHelper(configuration);
         VariantQueryUtils.SelectVariantElements selectVariantElements;
-        try (VariantStorageMetadataManager scm = new VariantStorageMetadataManager(new HBaseVariantStorageMetadataDBAdaptorFactory(helper))) {
+
+        HBaseVariantStorageMetadataDBAdaptorFactory dbAdaptorFactory = new HBaseVariantStorageMetadataDBAdaptorFactory(helper);
+        try (VariantStorageMetadataManager scm = new VariantStorageMetadataManager(dbAdaptorFactory)) {
             Query query = getQueryFromConfig(configuration);
             QueryOptions queryOptions = getQueryOptionsFromConfig(configuration);
             selectVariantElements = VariantQueryUtils.parseSelectElements(query, queryOptions, scm);

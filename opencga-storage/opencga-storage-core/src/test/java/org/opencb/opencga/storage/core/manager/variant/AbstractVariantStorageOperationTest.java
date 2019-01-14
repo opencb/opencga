@@ -130,7 +130,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         ));
         factory.unregisterVariantStorageEngine(DummyVariantStorageEngine.STORAGE_ENGINE_ID);
 
-        DummyStudyConfigurationAdaptor.clear();
+        DummyStudyMetadataDBAdaptor.clear();
 
         variantManager = new org.opencb.opencga.storage.core.manager.variant.VariantStorageManager(catalogManager, factory);
 
@@ -162,7 +162,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
 
     @After
     public void tearDown() throws Exception {
-        DummyStudyConfigurationAdaptor.writeAndClear(opencga.getOpencgaHome());
+        DummyStudyMetadataDBAdaptor.writeAndClear(opencga.getOpencgaHome());
         DummyVariantFileMetadataDBAdaptor.writeAndClear(opencga.getOpencgaHome());
         DummyProjectMetadataAdaptor.writeAndClear(opencga.getOpencgaHome());
     }

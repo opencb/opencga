@@ -75,7 +75,8 @@ public class AnalysisAnnotateMapper extends AbstractHBaseVariantMapper<NullWrita
         String storageEngine = "hadoop"; //
         ObjectMap options = new ObjectMap(); // empty
         ProjectMetadata projectMetadata;
-        try (VariantStorageMetadataManager scm = new VariantStorageMetadataManager(new HBaseVariantStorageMetadataDBAdaptorFactory(getHelper()))) {
+        HBaseVariantStorageMetadataDBAdaptorFactory dbAdaptorFactory = new HBaseVariantStorageMetadataDBAdaptorFactory(getHelper());
+        try (VariantStorageMetadataManager scm = new VariantStorageMetadataManager(dbAdaptorFactory)) {
             projectMetadata = scm.getProjectMetadata().first();
         }
         try {

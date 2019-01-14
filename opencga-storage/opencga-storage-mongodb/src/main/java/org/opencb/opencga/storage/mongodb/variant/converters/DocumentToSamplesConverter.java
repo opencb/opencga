@@ -172,8 +172,8 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
      */
     public List<List<String>> convertToDataModelType(Document object, StudyEntry study, int studyId) {
 
-        if (!studyConfigurations.containsKey(studyId) && variantStorageMetadataManager != null) { // Samples not set as constructor argument,
-            // need to query
+        if (!studyConfigurations.containsKey(studyId) && variantStorageMetadataManager != null) {
+            // Samples not set as constructor argument, need to query
             QueryResult<StudyConfiguration> queryResult = variantStorageMetadataManager.getStudyConfiguration(studyId, null);
             if (queryResult.first() == null) {
                 logger.warn("DocumentToSamplesConverter.convertToDataModelType StudyConfiguration {studyId: {}} not found! Looking for "

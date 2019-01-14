@@ -11,6 +11,6 @@ public interface VariantStorageMetadataDBAdaptorFactory {
 
     ProjectMetadataAdaptor buildProjectMetadataDBAdaptor();
 
-    StudyConfigurationAdaptor buildStudyConfigurationDBAdaptor();
+    StudyMetadataDBAdaptor buildStudyConfigurationDBAdaptor();
 
 }

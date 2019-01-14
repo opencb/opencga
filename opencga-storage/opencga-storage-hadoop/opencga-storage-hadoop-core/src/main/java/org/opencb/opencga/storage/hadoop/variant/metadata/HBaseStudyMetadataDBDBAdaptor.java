@@ -20,7 +20,6 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.util.StopWatch;
@@ -28,7 +27,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.adaptors.StudyConfigurationAdaptor;
+import org.opencb.opencga.storage.core.metadata.adaptors.StudyMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.metadata.models.*;
 import org.opencb.opencga.storage.hadoop.utils.HBaseLock;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -51,17 +52,17 @@ import static org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantMet
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HBaseStudyConfigurationDBAdaptor extends AbstractHBaseDBAdaptor implements StudyConfigurationAdaptor {
+public class HBaseStudyMetadataDBDBAdaptor extends AbstractHBaseDBAdaptor implements StudyMetadataDBAdaptor {
 
-    private static Logger logger = LoggerFactory.getLogger(HBaseStudyConfigurationDBAdaptor.class);
+    private static Logger logger = LoggerFactory.getLogger(HBaseStudyMetadataDBDBAdaptor.class);
 
     private final HBaseLock lock;
 
-    public HBaseStudyConfigurationDBAdaptor(VariantTableHelper helper) {
+    public HBaseStudyMetadataDBDBAdaptor(VariantTableHelper helper) {
         this(null, helper.getMetaTableAsString(), helper.getConf());
     }
 
-    public HBaseStudyConfigurationDBAdaptor(HBaseManager hBaseManager, String metaTableName, Configuration configuration) {
+    public HBaseStudyMetadataDBDBAdaptor(HBaseManager hBaseManager, String metaTableName, Configuration configuration) {
         super(hBaseManager, metaTableName, configuration);
         lock = new HBaseLock(this.hBaseManager, this.tableName, family, null);
     }
@@ -128,7 +129,7 @@ public class HBaseStudyConfigurationDBAdaptor extends AbstractHBaseDBAdaptor imp
         }
 
         try {
-            if (hBaseManager.tableExists(tableName)) {
+            if (tableExists()) {
                 studyConfigurationList = hBaseManager.act(tableName, table -> {
                     Result result = table.get(get);
                     if (result.isEmpty()) {
@@ -187,29 +188,86 @@ public class HBaseStudyConfigurationDBAdaptor extends AbstractHBaseDBAdaptor imp
     }
 
     @Override
-    public BiMap<String, Integer> getStudies(QueryOptions options) {
-        Get get = new Get(getStudiesSummaryRowKey());
-        try {
-            if (!hBaseManager.tableExists(tableName)) {
-                logger.debug("Get StudyConfiguration summary TABLE_NO_EXISTS");
-                return HashBiMap.create();
-            }
-            return hBaseManager.act(tableName, table -> {
-                Result result = table.get(get);
-                if (result.isEmpty()) {
-                    logger.debug("Get StudyConfiguration summary EMPTY");
-                    return HashBiMap.create();
-                } else {
-                    byte[] value = result.getValue(family, getValueColumn());
-                    Map<String, Integer> map = objectMapper.readValue(value, Map.class);
-                    logger.debug("Get StudyConfiguration summary {}", map);
+    public StudyMetadata getStudyMetadata(int id, Long timeStamp) {
+        return readValue(getStudyMetadataRowKey(id), StudyMetadata.class, timeStamp);
+    }
 
-                    return HashBiMap.create(map);
-                }
-            });
-        } catch (IOException e) {
-            logger.warn("Get StudyConfiguration summary ERROR", e);
-            throw new UncheckedIOException(e);
+    @Override
+    public void updateStudyMetadata(StudyMetadata sm) {
+        sm.setTimeStamp(System.currentTimeMillis());
+        putValue(getStudyMetadataRowKey(sm.getId()), Type.STUDY, sm, sm.getTimeStamp());
+    }
+
+    @Override
+    public FileMetadata getFileMetadata(int studyId, int fileId, Long timeStamp) {
+        return readValue(getFileMetadataRowKey(studyId, fileId), FileMetadata.class, timeStamp);
+    }
+
+    @Override
+    public void updateFileMetadata(int studyId, FileMetadata file, Long timeStamp) {
+        putValue(getFileNameIndexRowKey(studyId, file.getName()), Type.INDEX, file.getId(), timeStamp);
+        putValue(getFileMetadataRowKey(studyId, file.getId()), Type.FILE, file, timeStamp);
+    }
+
+    @Override
+    public int getFileId(int studyId, String fileName) {
+        return readValue(getFileNameIndexRowKey(studyId, fileName), Integer.class, null);
+    }
+
+    @Override
+    public SampleMetadata getSampleMetadata(int studyId, int sampleId, Long timeStamp) {
+        return readValue(getSampleMetadataRowKey(studyId, sampleId), SampleMetadata.class, timeStamp);
+    }
+
+    @Override
+    public void updateSampleMetadata(int studyId, SampleMetadata sample, Long timeStamp) {
+        putValue(getSampleNameIndexRowKey(studyId, sample.getName()), Type.INDEX, sample.getId(), timeStamp);
+        putValue(getSampleMetadataRowKey(studyId, sample.getId()), Type.SAMPLE, sample, timeStamp);
+    }
+
+    @Override
+    public int getSampleId(int studyId, String sampleName) {
+        return readValue(getSampleNameIndexRowKey(studyId, sampleName), Integer.class, null);
+    }
+
+    @Override
+    public CohortMetadata getCohortMetadata(int studyId, int cohortId, Long timeStamp) {
+        return readValue(getCohortMetadataRowKey(studyId, cohortId), CohortMetadata.class, timeStamp);
+    }
+
+    @Override
+    public void updateCohortMetadata(int studyId, CohortMetadata cohort, Long timeStamp) {
+        putValue(getCohortNameIndexRowKey(studyId, cohort.getName()), Type.INDEX, cohort.getId(), timeStamp);
+        putValue(getCohortMetadataRowKey(studyId, cohort.getId()), Type.COHORT, cohort, timeStamp);
+    }
+
+    @Override
+    public int getCohortId(int studyId, String cohortName) {
+        return readValue(getCohortNameIndexRowKey(studyId, cohortName), Integer.class, null);
+    }
+
+    @Override
+    public BatchFileTask getTask(int studyId, int taskId, Long timeStamp) {
+        return readValue(getTaskRowKey(studyId, taskId), BatchFileTask.class, timeStamp);
+    }
+
+    @Override
+    public Iterator<BatchFileTask> taskIterator(int studyId) {
+        return iterator(getTaskRowKey(studyId), BatchFileTask.class, true);
+    }
+
+    @Override
+    public void updateTask(int studyId, BatchFileTask task, Long timeStamp) {
+        putValue(getTaskRowKey(studyId, task.getId()), Type.TASK, task, timeStamp);
+    }
+
+    @Override
+    public BiMap<String, Integer> getStudies(QueryOptions options) {
+        Map<String, Integer> studies = readValue(getStudiesSummaryRowKey(), Map.class);
+        if (studies == null) {
+            return HashBiMap.create();
+        } else {
+            return HashBiMap.create(studies);
         }
     }
 
@@ -228,21 +286,7 @@ public class HBaseStudyConfigurationDBAdaptor extends AbstractHBaseDBAdaptor imp
     }
 
     private void updateStudiesSummary(BiMap<String, Integer> studies, QueryOptions options) {
-        try {
-            ensureTableExists();
-            Connection connection = hBaseManager.getConnection();
-            try (Table table = connection.getTable(TableName.valueOf(tableName))) {
-                byte[] bytes = objectMapper.writeValueAsBytes(studies);
-                Put put = new Put(getStudiesSummaryRowKey());
-                put.addColumn(family, getValueColumn(), bytes);
-                put.addColumn(family, getTypeColumn(), Type.STUDIES.bytes());
-                table.put(put);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        putValue(getStudiesSummaryRowKey(), Type.STUDIES, studies, null);
     }
 
     @Override

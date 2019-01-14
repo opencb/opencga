@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.metadata;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -17,8 +18,17 @@ class HBaseVariantMetadataUtils {
 
     private static final byte[] STUDIES_RK = Bytes.toBytes("studies");
     private static final byte[] PROJECT_RK = Bytes.toBytes("project");
+    private static final String STUDY_CONFIGURATION_PREFIX = "SC_";
     private static final String STUDY_PREFIX = "S_";
+    private static final String SAMPLE_METADATA_SEPARATOR = "_S_";
+    private static final String COHORT_METADATA_SEPARATOR = "_C_";
+    private static final String TASK_SEPARATOR = "_T_";
     private static final String FILE_METADATA_SEPARATOR = "_F_";
+    private static final String VARIANT_FILE_METADATA_SEPARATOR = "_VF_";
+
+    private static final String SAMPLE_ID_INDEX_SEPARATOR = "_SIDX_";
+    private static final String FILE_ID_INDEX_SEPARATOR = "_FIDX_";
+    private static final String COHORT_ID_INDEX_SEPARATOR = "_CIDX_";
 
     private static final byte[] VALUE_COLUMN = Bytes.toBytes("value");
     private static final byte[] TYPE_COLUMN = Bytes.toBytes("type");
@@ -29,7 +39,17 @@ class HBaseVariantMetadataUtils {
     static final byte[] COUNTER_PREFIX_BYTES = Bytes.toBytes(COUNTER_PREFIX);
 
     public enum Type {
-        PROJECT, STUDY_CONFIGURATION, STUDIES, VARIANT_FILE_METADATA, FILES;
+        PROJECT,
+        STUDY,
+        FILE,
+        SAMPLE,
+        COHORT,
+        TASK,
+        STUDIES,
+        FILES,
+        INDEX,
+        STUDY_CONFIGURATION,
+        VARIANT_FILE_METADATA;
 
         private final byte[] bytes;
 
@@ -69,25 +89,64 @@ class HBaseVariantMetadataUtils {
     }
 
     static byte[] getStudyConfigurationRowKey(int studyId) {
+        return Bytes.toBytes(STUDY_CONFIGURATION_PREFIX + String.valueOf(studyId));
+    }
+
+    static byte[] getStudyMetadataRowKey(int studyId) {
         return Bytes.toBytes(STUDY_PREFIX + String.valueOf(studyId));
     }
 
+    static byte[] getSampleMetadataRowKey(int studyId, int sampleId) {
+        return getStudyResourceRowKey(studyId, SAMPLE_METADATA_SEPARATOR, sampleId);
+    }
+
+    static byte[] getCohortMetadataRowKey(int studyId, int cohortId) {
+        return getStudyResourceRowKey(studyId, COHORT_METADATA_SEPARATOR, cohortId);
+    }
+
+    static byte[] getTaskRowKey(int studyId, int taskId) {
+        String separator = TASK_SEPARATOR;
+        int id = taskId;
+        return getStudyResourceRowKey(studyId, separator, id);
+    }
+
+    static byte[] getTaskRowKey(int studyId) {
+        return Bytes.toBytes(STUDY_PREFIX + studyId + TASK_SEPARATOR);
+    }
+
+    static byte[] getFileMetadataRowKey(int studyId, int fileId) {
+        return getStudyResourceRowKey(studyId, FILE_METADATA_SEPARATOR, fileId);
+    }
+
     static byte[] getVariantFileMetadataRowKey(int studyId, int fileId) {
-        return Bytes.toBytes(STUDY_PREFIX + studyId + FILE_METADATA_SEPARATOR + fileId);
+        return getStudyResourceRowKey(studyId, VARIANT_FILE_METADATA_SEPARATOR, fileId);
     }
 
     static byte[] getVariantFileMetadataRowKeyPrefix(int studyId) {
-        return Bytes.toBytes(STUDY_PREFIX + studyId + FILE_METADATA_SEPARATOR);
+        return Bytes.toBytes(STUDY_PREFIX + studyId + VARIANT_FILE_METADATA_SEPARATOR);
+    }
+
+
+    static byte[] getSampleNameIndexRowKey(int studyId, String sampleName) {
+        return getStudyResourceRowKey(studyId, SAMPLE_ID_INDEX_SEPARATOR, sampleName);
+    }
+
+    static byte[] getFileNameIndexRowKey(int studyId, String fileName) {
+        return getStudyResourceRowKey(studyId, FILE_ID_INDEX_SEPARATOR, fileName);
+    }
+
+    static byte[] getCohortNameIndexRowKey(int studyId, String cohortName) {
+        return getStudyResourceRowKey(studyId, COHORT_ID_INDEX_SEPARATOR, cohortName);
     }
 
     static Pair<Integer, Integer> parseVariantFileMetadataRowKey(byte[] rk) {
         String s = Bytes.toString(rk);
-        int idx = s.indexOf(FILE_METADATA_SEPARATOR);
+        int idx = s.indexOf(VARIANT_FILE_METADATA_SEPARATOR);
         if (idx < 0) {
             throw new IllegalArgumentException("RowKey " + s + " is not a valid VariantFileMetadata RowKey!");
         }
         return Pair.of(Integer.valueOf(s.substring(STUDY_PREFIX.length(), idx)),
-                Integer.valueOf(s.substring(idx + FILE_METADATA_SEPARATOR.length())));
+                Integer.valueOf(s.substring(idx + VARIANT_FILE_METADATA_SEPARATOR.length())));
     }
 
     static byte[] getLockColumn() {
@@ -115,4 +174,11 @@ class HBaseVariantMetadataUtils {
         return hBaseManager.createTableIfNeeded(tableName, columnFamily, Compression.Algorithm.NONE);
     }
 
+    private static byte[] getStudyResourceRowKey(int studyId, String separator, int id) {
+        return Bytes.toBytes(STUDY_PREFIX + studyId + separator + StringUtils.leftPad(String.valueOf(id), 10, '0'));
+    }
+
+    private static byte[] getStudyResourceRowKey(int studyId, String separator, String name) {
+        return Bytes.toBytes(STUDY_PREFIX + studyId + separator + name);
+    }
 }

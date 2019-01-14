@@ -22,7 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.adaptors.StudyConfigurationAdaptor;
+import org.opencb.opencga.storage.core.metadata.adaptors.StudyMetadataDBAdaptor;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class DummyStudyConfigurationAdaptor implements StudyConfigurationAdaptor {
+public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor {
 
     public static Map<String, StudyConfiguration> STUDY_CONFIGURATIONS_BY_NAME = new ConcurrentHashMap<>();
     public static Map<Integer, StudyConfiguration> STUDY_CONFIGURATIONS_BY_ID = new ConcurrentHashMap<>();
@@ -113,7 +113,7 @@ public class DummyStudyConfigurationAdaptor implements StudyConfigurationAdaptor
     public static void writeAll(Path path) {
         ObjectMapper objectMapper = new ObjectMapper(new JsonFactory()).configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         String prefix = "storage_configuration_" + NUM_PRINTS.incrementAndGet() + "_";
-        for (StudyConfiguration studyConfiguration : DummyStudyConfigurationAdaptor.STUDY_CONFIGURATIONS_BY_NAME.values()) {
+        for (StudyConfiguration studyConfiguration : DummyStudyMetadataDBAdaptor.STUDY_CONFIGURATIONS_BY_NAME.values()) {
             try (OutputStream os = new FileOutputStream(path.resolve(prefix + studyConfiguration.getStudyName() + ".json").toFile())) {
                 objectMapper.writerWithDefaultPrettyPrinter().writeValue(os, studyConfiguration);
             } catch (IOException e) {

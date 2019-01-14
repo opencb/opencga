@@ -30,7 +30,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.adaptors.StudyConfigurationAdaptor;
+import org.opencb.opencga.storage.core.metadata.adaptors.StudyMetadataDBAdaptor;
 import org.opencb.opencga.storage.mongodb.utils.MongoLock;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyConfigurationConverter;
 
@@ -46,13 +46,13 @@ import static org.opencb.commons.datastore.mongodb.MongoDBCollection.UPSERT;
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
-public class MongoDBStudyConfigurationDBAdaptor implements StudyConfigurationAdaptor {
+public class MongoDBStudyMetadataDBDBAdaptor implements StudyMetadataDBAdaptor {
 
     private final DocumentToStudyConfigurationConverter studyConfigurationConverter = new DocumentToStudyConfigurationConverter();
     private final MongoLock mongoLock;
     private final MongoDBCollection collection;
 
-    public MongoDBStudyConfigurationDBAdaptor(MongoDataStore db, String collectionName) {
+    public MongoDBStudyMetadataDBDBAdaptor(MongoDataStore db, String collectionName) {
         collection = db.getCollection(collectionName)
                 .withReadPreference(ReadPreference.primary())
                 .withWriteConcern(WriteConcern.ACKNOWLEDGED);

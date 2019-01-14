@@ -1,7 +1,5 @@
 package org.opencb.opencga.storage.core.metadata.models;
 
-import org.opencb.commons.datastore.core.ObjectMap;
-
 import java.util.List;
 
 /**

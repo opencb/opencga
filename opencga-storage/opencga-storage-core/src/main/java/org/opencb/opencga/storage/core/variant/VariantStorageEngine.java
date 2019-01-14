@@ -52,7 +52,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.*;
-import org.opencb.opencga.storage.core.metadata.local.FileStudyConfigurationAdaptor;
+import org.opencb.opencga.storage.core.metadata.local.FileStudyMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
@@ -896,7 +896,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @throws StorageEngineException If object is null
      */
     public VariantStorageMetadataManager getVariantStorageMetadataManager() throws StorageEngineException {
-        return new VariantStorageMetadataManager(null, new FileStudyConfigurationAdaptor(), null);
+        return new VariantStorageMetadataManager(null, new FileStudyMetadataDBAdaptor(), null);
     }
 
     public VariantSearchManager getVariantSearchManager() throws StorageEngineException {

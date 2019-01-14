@@ -34,7 +34,7 @@ import static org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantMet
  */
 public class HBaseProjectMetadataDBAdaptor extends AbstractHBaseDBAdaptor implements ProjectMetadataAdaptor {
 
-    private static Logger logger = LoggerFactory.getLogger(HBaseStudyConfigurationDBAdaptor.class);
+    private static Logger logger = LoggerFactory.getLogger(HBaseStudyMetadataDBDBAdaptor.class);
 
     private final HBaseLock lock;
 
