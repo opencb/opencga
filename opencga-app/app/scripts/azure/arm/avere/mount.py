@@ -12,7 +12,7 @@ import ipaddress
 # Run `python3 -m unittest discover` in this dir to execute tests
 
 default_mount_options_nfs = "nfs hard,nointr,proto=tcp,mountproto=tcp,retry=30 0 0"
-default_mount_options_cifs = "dir_mode=0777,file_mode=0777,serverino,nofail,vers=3.0"
+default_mount_options_cifs = "dir_mode=0777,file_mode=0777,serverino,nofail,uid=1001,gid=1001,vers=3.0"
 
 
 def get_avere_ips(vserver_string):
@@ -159,6 +159,7 @@ def retryFunc(desc, funcToRetry, maxRetries):
         if i == maxRetries:
             print("Failed after max retries")
             exit(3)
+
         try:
             print("Attempt #{}".format(str(i)))
             funcToRetry()

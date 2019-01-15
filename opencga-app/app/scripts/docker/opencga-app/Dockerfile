@@ -1,0 +1,45 @@
+FROM opencga
+
+# Build args
+ARG TOMCAT_VERSION="8.5.35"
+ARG VERSION=""
+ARG VCS_URL=""
+ARG VCS_REF=""
+ARG BUILD_DATE=""
+
+# Metadata
+LABEL org.label-schema.vendor="OpenCB" \
+      org.label-schema.url="http://docs.opencb.org/" \
+      org.label-schema.name="OpenCGA" \
+      org.label-schema.description="An Open Computational Genomics Analysis platform for big data processing and analysis in genomics" \
+      org.label-schema.version=${VERSION} \
+      org.label-schema.vcs-url=${VCS_URL} \
+      org.label-schema.vcs-ref=${VCS_REF} \
+      org.label-schema.build-date=${BUILD_DATE} \
+      org.label-schema.docker.schema-version="1.0"
+
+RUN wget --quiet --no-cookies http://www-eu.apache.org/dist/tomcat/tomcat-8/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz -O /tmp/tomcat.tgz && \
+tar xzvf /tmp/tomcat.tgz -C /opt && \
+mv /opt/apache-tomcat-${TOMCAT_VERSION} /opt/tomcat && \
+rm /tmp/tomcat.tgz && \
+rm -rf /opt/tomcat/webapps/examples && \
+rm -rf /opt/tomcat/webapps/docs && \
+rm -rf /opt/tomcat/webapps/ROOT && \
+chown -R 1001:1001 /opt/tomcat/
+
+# copy opencga build to tomcat server
+RUN cp /opt/opencga/opencga.war /opt/tomcat/webapps/opencga.war
+
+# copy tomcat config
+COPY ./opencga.xml /opt/tomcat/conf/Catalina/localhost/opencga.xml
+
+VOLUME /opt/opencga/conf
+VOLUME /opt/opencga/sessions
+
+USER 1001:1001
+
+EXPOSE 8080
+EXPOSE 8443
+
+# Launch Tomcat
+CMD ["/opt/tomcat/bin/catalina.sh", "run"]

@@ -160,7 +160,7 @@
             "properties": {
                 "clusterVersion": "[parameters('clusterVersion')]",
                 "osType": "Linux",
-                "tier": "standard",
+                "tier": "Standard",
                 "clusterDefinition": {
                     "kind": "[parameters('clusterKind')]",
                     "componentVersion": {

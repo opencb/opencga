@@ -1,0 +1,253 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "_artifactsLocation": {
+            "type": "string",
+            "metadata": {
+                "description": ""
+            }
+        },
+        "_artifactsLocationSasToken": {
+            "type": "string",
+            "metadata": {
+                "description": ""
+            }
+        },
+        "subnetName": {
+            "type": "string",
+            "defaultvalue": "default"
+        },
+        "virtualNetworkId": {
+            "type": "string"
+        },
+        "publicIpAddressType": {
+            "type": "string",
+            "defaultvalue": "Dynamic"
+        },
+        "publicIpAddressSku": {
+            "type": "string",
+            "defaultvalue": "Basic"
+        },
+        "osDiskType": {
+            "type": "string",
+            "defaultvalue": "Premium_LRS"
+        },
+        "virtualMachineSize": {
+            "type": "string",
+            "defaultvalue": "Standard_L8s"
+        },
+        "adminUsername": {
+            "type": "string",
+            "defaultValue": "opencgaadmin"
+        },
+        "adminPassword": {
+            "type": "securestring"
+        },
+        "hdInsightSshDns": {
+            "type": "string"
+        },
+        "hdInsightSshUsername": {
+            "type": "string"
+        },
+        "hdInsightSshPassword": {
+            "type": "securestring"
+        },
+        "initContainerImage": {
+            "type": "string"
+        },
+        "daemonContainerImage": {
+            "type": "string"
+        },
+        "mountArgs": {
+            "type": "string"
+        },
+        "webserverNamingPrefix": {
+            "type": "string"
+        },
+        "solrHosts": {
+            "type": "array"
+        },
+        "solrUser": {
+            "type": "string"
+        },
+        "solrPassword": {
+            "type": "securestring"
+        },
+        "mongoDbHosts": {
+            "type": "array"
+        },
+        "mongoDbUser": {
+            "type": "string"
+        },
+        "mongoDbPassword": {
+            "type": "securestring"
+        },
+        "catalogSecretKey": {
+            "type": "securestring"
+        },
+        "batchAccountName": {
+            "type": "string"
+        },
+        "batchEndpoint": {
+            "type": "string"
+        },
+        "batchAccountKey": {
+            "type": "string"
+        },
+        "batchPoolId": {
+            "type": "string"
+        },
+        "batchDockerArgs": {
+            "type": "string"
+        },
+        "batchDockerImage": {
+            "type": "string"
+        },
+        "batchMaxConcurrentJobs": {
+            "type": "int"
+        }
+    },
+    "variables": {
+        "vnetId": "[parameters('virtualNetworkId')]",
+        "subnetRef": "[concat(variables('vnetId'), '/subnets/', parameters('subnetName'))]",
+        "solrHostsCSV": "[concat('\"', replace(replace(replace(replace(string(parameters('solrHosts')), ' ', ''), '[{\"host\":\"', ''), '\"},{\"host\":\"', ','), '\"}]', ''),'\"')]",
+        "mongoDbHostsCSV": "[concat('\"', replace(replace(replace(replace(string(parameters('mongoDbHosts')), ' ', ''), '[{\"fqdn\":\"', ''), '\"},{\"fqdn\":\"', ','), '\"}]', ''),'\"')]",
+        "webserverHost": "[concat('http://', parameters('webserverNamingPrefix'), '.', resourceGroup().location,'.cloudapp.azure.com')]",
+        "restHost": "[concat(variables('webserverHost'), ':8080/opencga')]",
+        "grpcHost": "[concat(variables('webserverHost'), ':9999')]",
+        "singleQuote": "'",
+        "getScriptCmd": "[concat('wget ',parameters('_artifactsLocation'),'/avere/mount.py -O /tmp/mount.py')]",
+        "mountCmd": "[concat('python3 /tmp/mount.py ', parameters('mountArgs'))]",
+        "initCmd": "[concat('docker run --mount type=bind,src=/media/primarynfs,dst=/opt/volume -e OPENCGA_PASS=',parameters('adminPassword'),' -e HD_INSIGHTS_SSH_DNS=',parameters('hdInsightSshDns'),' -e HD_INSIGHTS_SSH_USER=',parameters('hdInsightSshUsername'),' -e HD_INSIGHTS_SSH_PASS=',parameters('hdInsightSshPassword'),' -e SEARCH_HOSTS=',variables('solrHostsCSV'),' -e CELLBASE_HOSTS=',variables('mongoDbHostsCSV'),' -e CLINICAL_HOSTS=',variables('solrHostsCSV'),' -e CATALOG_DATABASE_HOSTS=',variables('mongoDbHostsCSV'),' -e CATALOG_DATABASE_USER=',parameters('mongoDbUser'),' -e CATALOG_DATABASE_PASSWORD=',parameters('mongoDbPassword'),' -e CATALOG_SEARCH_HOSTS=',variables('solrHostsCSV'),' -e CATALOG_SEARCH_USER=',parameters('solrUser'),' -e CATALOG_SEARCH_PASSWORD=',parameters('solrPassword'),' -e REST_HOST=\"',variables('restHost'),'\" -e GRPC_HOST=\"',variables('grpcHost'),'\" -e BATCH_EXEC_MODE=AZURE ',' -e BATCH_ACCOUNT_NAME=',parameters('batchAccountName'),' -e BATCH_ACCOUNT_KEY=',parameters('batchAccountKey'),' -e BATCH_ENDPOINT=',parameters('batchEndpoint'),' -e BATCH_POOL_ID=',parameters('batchPoolId'),' -e BATCH_DOCKER_ARGS=',variables('singleQuote'),parameters('batchDockerArgs'),variables('singleQuote'),' -e BATCH_DOCKER_IMAGE=',parameters('batchDockerImage'),' -e BATCH_MAX_CONCURRENT_JOBS=',string(parameters('batchMaxConcurrentJobs')),' ',parameters('initContainerImage'),' ',parameters('catalogSecretKey'))]",
+        "execStart": "[concat('/usr/bin/docker run --mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions -e OPENCGA_PASS=',parameters('adminPassword'),' ',parameters('daemonContainerImage'))]",
+        "cloud-init": [
+            "#cloud-config",
+            "",
+            "write_files:",
+            "- path: /etc/systemd/system/opencga.service",
+            "  permissions: 0644",
+            "  owner: root",
+            "  content: |    ",
+            "    [Unit]",
+            "    Description=OpenCGA daemon",
+            "    Requires=docker.service",
+            "    After=docker.service",
+            "    [Service]",
+            "    Restart=always",
+            "[concat('    ExecStart=',variables('execStart'))]",
+            "    ExecStop=/usr/bin/docker stop opencga-daemon",
+            "",
+            "package_upgrade: true",
+            "package_reboot_if_required: true",
+            "",
+            "runcmd:",
+            " - 'apt-get update'",
+            " - 'curl -fsSL https://get.docker.com/ | sh'",
+            " - 'curl -fsSL https://get.docker.com/gpg | sudo apt-key add -'",
+            "[concat(' - ', variables('getScriptCmd'))]",
+            "[concat(' - ', variables('mountCmd'))]",
+            "[concat(' - ', variables('initCmd'))]",
+            " - 'systemctl start --no-block opencga'",
+            ""
+        ],
+        "cloud-init-string": "[replace(replace(replace(string(variables('cloud-init')),'\",\"','\n'),'[\"',''),'\"]','')]",
+        "customData": "[base64(variables('cloud-init-string'))]"
+
+    },
+    "resources": [
+        {
+            "name": "daemonvm-nic",
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2018-04-01",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/publicIpAddresses/', 'daemonvm-ip')]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "subnet": {
+                                "id": "[variables('subnetRef')]"
+                            },
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIpAddress": {
+                                "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIpAddresses', 'daemonvm-ip')]"
+                            }
+                        }
+                    }
+                ]
+
+            },
+            "tags": {}
+        },
+        {
+            "name": "daemonvm-ip",
+            "type": "Microsoft.Network/publicIpAddresses",
+            "apiVersion": "2018-08-01",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "publicIpAllocationMethod": "[parameters('publicIpAddressType')]"
+            },
+            "sku": {
+                "name": "[parameters('publicIpAddressSku')]"
+            },
+            "tags": {}
+        },
+        {
+            "name": "daemonvm",
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2018-06-01",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/networkInterfaces/', 'daemonvm-nic')]"
+            ],
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[parameters('virtualMachineSize')]"
+                },
+                "storageProfile": {
+                    "osDisk": {
+                        "createOption": "FromImage",
+                        "managedDisk": {
+                            "storageAccountType": "[parameters('osDiskType')]"
+                        }
+                    },
+                    "imageReference": {
+                        "publisher": "Canonical",
+                        "offer": "UbuntuServer",
+                        "sku": "18.04-LTS",
+                        "version": "latest"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', 'daemonvm-nic')]"
+                        }
+                    ]
+                },
+                "osProfile": {
+                    "computerName": "daemonvm",
+                    "adminUsername": "[parameters('adminUsername')]",
+                    "adminPassword": "[parameters('adminPassword')]",
+                    "customData": "[variables('customData')]"
+                }
+            },
+            "tags": {}
+        }
+    ],
+    "outputs": {
+        "adminUsername": {
+            "type": "string",
+            "value": "[parameters('adminUsername')]"
+        },
+        "cloud-config-string": {
+            "type": "string",
+            "value": "[variables('cloud-init-string')]"
+        }
+
+    }
+}

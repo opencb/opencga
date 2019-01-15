@@ -166,6 +166,32 @@
                 "description": "Storage Account type"
             }
         },
+        "daemonVmAdminPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "SSH Password (maybe change to key)"
+            }
+        },
+        "initContainerImage": {
+            "type": "string",
+            "defaultValue": "dotjson/opencga-init",
+            "metadata": {
+                "description": "The init container image to run"
+            }
+        },
+        "daemonContainerImage": {
+            "type": "string",
+            "defaultValue": "dotjson/opencga-daemon",
+            "metadata": {
+                "description": "The daemon container image to run"
+            }
+        },
+        "catalogSecretKey": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Secret key used when initializing the catalog"
+            }
+        },
         "mongoVmSize": {
             "type": "string",
             "metadata": {
@@ -223,11 +249,19 @@
             "metadata": {
                 "description": "The password for connecting to mongoDB"
             }
+        },
+        "batchDockerImage": {
+            "type": "string",
+            "defaultValue": "dotjson/opencga-daemon:cat",
+            "metadata": {
+                "description": "The batch container image to run"
+            }
         }
     },
     "variables": {
         "avereEnabled": "[equals(parameters('nfsStorageOption'), 'AvereCluster')]",
-        "azureFilesEnabled": "[equals(parameters('nfsStorageOption'), 'AzureFiles')]"
+        "azureFilesEnabled": "[equals(parameters('nfsStorageOption'), 'AzureFiles')]",
+        "webserverNamingPrefix": "[toLower(substring(concat('webservers', uniqueString(parameters('rgPrefix'))), 0, 16))]"
     },
     "resources": [
         {
@@ -324,6 +358,104 @@
                     },
                     "isHnsEnabled": {
                         "value": "[if(equals(parameters('HDInsightstorageOption'), 'DataLake'), json('true'), json('false'))]"
+                    }
+                }
+            }
+        },
+        {
+            "comments": "This deploys a VM to run the OpenCGA daemon",
+            "resourceGroup": "[parameters('rgPrefix')]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
+            "name": "daemonvm",
+            "dependsOn": [
+                "azurefiles",
+                "vnet",
+                "[parameters('rgPrefix')]",
+                "azureBatch"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/daemonvm/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+
+                    "_artifactsLocation": {
+                        "value": "[parameters('_artifactsLocation')]"
+                    },
+                    "_artifactsLocationSasToken": {
+                        "value": "[parameters('_artifactsLocationSasToken')]"
+                    },
+                    "virtualNetworkId": {
+                        "value": "[reference('vnet').outputs.vnetId.value]"
+                    },
+                    "adminPassword": {
+                        "value": "[parameters('daemonVmAdminPassword')]"
+                    },
+                    "hdInsightSshDns": {
+                        "value":  "[reference('hdinsight').outputs.clusterSshDnsName.value]"
+                    },
+                    "hdInsightSshUsername": {
+                        "value": "[reference('hdinsight').outputs.clusterSshUsername.value]"
+                    },
+                    "hdInsightSshPassword": {
+                        "value":  "[reference('hdinsight').outputs.clusterSshPassword.value]"
+                    },
+                    "daemonContainerImage": {
+                        "value": "[parameters('daemonContainerImage')]"
+                    },
+                    "initContainerImage": {
+                        "value": "[parameters('initContainerImage')]"
+                    },
+                    "mountArgs": {
+                        "value": "[if(equals(parameters('nfsStorageOption'), 'AzureFiles'), concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value,',',reference('azurefiles').outputs.accountKey.value),concat('avere ', reference('avere').outputs.VSERVER_IPS.value))]"
+                    },
+                    "webserverNamingPrefix": {
+                        "value": "[variables('webserverNamingPrefix')]"
+                    },
+                    "solrHosts": {
+                        "value": "[reference('solr').outputs.solrConnectionDetails.value]"
+                    },
+                    "solrUser": {
+                        "value": "todo"
+                    },
+                    "solrPassword": {
+                        "value": "todo"
+                    },
+                    "mongoDbHosts": {
+                        "value": "[reference('mongodb').outputs.dnsNames.value]"
+                    },
+                    "mongoDbUser": {
+                        "value": "[reference('mongodb').outputs.mongoDBUser.value]"
+                    },
+                    "mongoDbPassword": {
+                        "value": "[reference('mongodb').outputs.mongoDBPassword.value]"
+                    },
+                    "catalogSecretKey": {
+                        "value": "[parameters('catalogSecretKey')]"
+                    },
+                    "batchAccountName": {
+                        "value": "[reference('azureBatch').outputs.batchAccountName.value]"
+                    },
+                    "batchEndpoint": {
+                        "value": "[reference('azureBatch').outputs.batchEndpoint.value]"
+                    },
+                    "batchAccountKey": {
+                        "value": "[reference('azureBatch').outputs.batchAccountKey.value]"
+                    },
+                    "batchPoolId": {
+                        "value": "[reference('azureBatch').outputs.batchPoolId.value]"
+                    },
+                    "batchDockerArgs": {
+                        "value": "--mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions --mount type=bind,src=/media/primarynfs/variants,dst=/opt/opencga/variants --rm"
+                    },
+                    "batchDockerImage": {
+                        "value": "[parameters('batchDockerImage')]"
+                    },
+                    "batchMaxConcurrentJobs": {
+                        "value": "[reference('azureBatch').outputs.maxNodeCount.value]"
                     }
                 }
             }
@@ -449,6 +581,7 @@
                 "avere",
                 "azurefiles",
                 "vnet",
+                "daemonvm",
                 "[parameters('rgPrefix')]"
             ],
             "properties": {
@@ -478,6 +611,9 @@
                     },
                     "ivaDockerImage": {
                         "value": "[parameters('ivaDockerImage')]"
+                    },
+                    "namingPrefix": {
+                        "value": "[variables('webserverNamingPrefix')]"
                     }
                 }
             }

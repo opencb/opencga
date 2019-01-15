@@ -68,10 +68,10 @@
         "batchAccountName": "[concat('batch', uniqueString(resourceGroup().id))]",
         "batchEndpoint": "[concat('https://', variables('batchAccountName'), '.' , parameters('location'), '.batch.azure.com')]",
 
-        "_comment": "The role assignment ID is required to be a guid, we use this to generate a repeatable guid",
+        "_comment1": "The role assignment ID is required to be a guid, we use this to generate a repeatable guid",
         "roleAssignmentIdRg": "[guid(concat(resourceGroup().id, 'contributorRG'))]",
 
-        "_comment": "This is the ID used to set the contributor permission on a role.",
+        "_comment2": "This is the ID used to set the contributor permission on a role.",
         "contributorRoleDefinitionId": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'b24988ac-6180-42a0-ab88-20f7382dd24c')]"
     },
     "resources": [
@@ -184,12 +184,16 @@
             "value": "[variables('batchEndpoint')]"
         },
         "batchAccountKey": {
-            "type": "securestring",
+            "type": "string",
             "value": "[listKeys(resourceId('Microsoft.Batch/batchAccounts', variables('batchAccountName')), '2017-09-01').primary]"
         },
         "batchPoolId": {
             "type": "string",
             "value": "[parameters('poolId')]"
+        },
+        "maxNodeCount": {
+            "type": "int",
+            "value": "[parameters('maxNodeCount')]"
         }
     }
 }
