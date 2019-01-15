@@ -75,7 +75,7 @@ public class VariantSearchManager {
 
     private Logger logger;
 
-    public static final String CONF_SET = "OpenCGAConfSet-1.4.x";
+    public static final String CONF_SET = "OpenCGAConfSet-1.4.0";
     public static final String SEARCH_ENGINE_ID = "solr";
     public static final String USE_SEARCH_INDEX = "useSearchIndex";
     public static final int DEFAULT_INSERT_BATCH_SIZE = 10000;
