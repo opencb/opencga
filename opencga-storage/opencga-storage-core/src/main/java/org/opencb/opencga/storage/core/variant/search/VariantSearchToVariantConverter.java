@@ -359,20 +359,24 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         }
 
         // consequence types
-        String gene = null;
+        String geneName = null;
         String ensGene = null;
         if (ListUtils.isNotEmpty(variantSearchModel.getGenes())) {
             for (String name : variantSearchModel.getGenes()) {
                 if (!name.startsWith("ENS")) {
-                    gene = name;
+                    geneName = name;
                 } else if (name.startsWith("ENSG")) {
                     ensGene = name;
                 } else if (name.startsWith("ENST")) {
                     ConsequenceType consequenceType = consequenceTypeMap.getOrDefault(name, null);
                     if (consequenceType == null) {
-                        throw new InternalError("Transcript '" + name + "' missing in schema field name 'other'");
+                        consequenceType = new ConsequenceType();
+                        consequenceType.setEnsemblTranscriptId(name);
+                        consequenceTypeMap.put(name, consequenceType);
+                        logger.warn("No information found in Solr field 'other' for transcript '{}'", name);
+//                        throw new InternalError("Transcript '" + name + "' missing in schema field name 'other'");
                     }
-                    consequenceType.setGeneName(gene);
+                    consequenceType.setGeneName(geneName);
                     consequenceType.setEnsemblGeneId(ensGene);
                 }
             }
