@@ -150,7 +150,7 @@
                             "publisher": "microsoft-azure-batch",
                             "offer": "ubuntu-server-container",
                             "sku": "16-04-lts",
-                            "version": "1.0.6"
+                            "version": "latest"
                         },
                         "nodeAgentSkuId": "batch.node.ubuntu 16.04"
                     }
