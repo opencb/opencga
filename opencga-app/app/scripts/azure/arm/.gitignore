@@ -1,7 +1,0 @@
-# To make 'validate.sh' work we need to install 'armval'. So this doesn't mess with 
-# peoples machines it is install in this directory which means node_modules 
-# and package-lock get created... however as these
-# has nothing to do with our code ARM and only affects validation they're ignored
-
-node_modules
-package-lock.json
