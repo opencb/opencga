@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.auth.authentication;
 
-import io.jsonwebtoken.impl.TextCodec;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
@@ -45,7 +44,7 @@ public abstract class AuthenticationManager {
     }
 
     Key converStringToKeyObject(String keyString, String jcaAlgorithm) {
-        return new SecretKeySpec(TextCodec.BASE64.decode(keyString), jcaAlgorithm);
+        return new SecretKeySpec(keyString.getBytes(), jcaAlgorithm);
     }
 
     /**
