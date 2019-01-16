@@ -145,7 +145,7 @@
                                 "ubuntu",
                                 "python"
                             ],
-                            "type": "docker"
+                            "type": "DockerCompatible"
                         },
                         "imageReference": {
                             "publisher": "microsoft-azure-batch",
