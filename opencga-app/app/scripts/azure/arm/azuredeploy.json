@@ -33,21 +33,9 @@
                 "DataLake",
                 "Blob"
             ],
+            "defaultValue": "DataLake",
             "metadata": {
                 "description": "What type of storage will be used"
-            }
-        },
-        "HDInsightClusterName": {
-            "type": "string",
-            "metadata": {
-                "description": "The name of the HDInsight cluster to create."
-            }
-        },
-        "HDInsightClusterLoginUserName": {
-            "type": "string",
-            "defaultValue": "admin",
-            "metadata": {
-                "description": "These credentials can be used to submit jobs to the cluster and to log into cluster dashboards."
             }
         },
         "HDInsightClusterLoginPassword": {
@@ -186,12 +174,6 @@
                 "description": "Size of vm (e.g. Standard_D1_v2)"
             },
             "defaultValue": "Standard_D1_v2"
-        },
-        "mongoDnsLabelPrefix": {
-            "type": "string",
-            "metadata": {
-                "description": "Unique DNS Name for the Public IP used to access the Virtual Machine."
-            }
         },
         "mongoCertificateEmail": {
             "type": "string",
@@ -467,11 +449,8 @@
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
-                    "clusterNamePrefix": {
-                        "value": "[parameters('HDInsightClusterName')]"
-                    },
                     "clusterLoginUserName": {
-                        "value": "[parameters('HDInsightClusterLoginUserName')]"
+                        "value": "[parameters('adminUsername')]"
                     },
                     "clusterLoginPassword": {
                         "value": "[parameters('HDInsightClusterLoginPassword')]"
@@ -694,9 +673,6 @@
                     },
                     "vmSize": {
                         "value": "[parameters('mongoVmSize')]"
-                    },
-                    "dnsLabelPrefix": {
-                        "value": "[parameters('mongoDnsLabelPrefix')]"
                     },
                     "certificateEmail": {
                         "value": "[parameters('mongoCertificateEmail')]"
