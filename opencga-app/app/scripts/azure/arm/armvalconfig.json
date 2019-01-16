@@ -2,6 +2,11 @@
     "ignore": {
         "global": [
             {
+                "message": "The parameter '_artifactsLocationSasToken' is never used.",
+                "jsonPath": "parameters._artifactsLocationSasToken",
+                "reason": "Shortly to be removed so no need to fixup"
+            },
+            {
                 "message": "The variable 'copy' is never used.",
                 "jsonPath": ".*",
                 "reason": "ARM validation fails with 'copy' syntax"
@@ -17,7 +22,6 @@
                 "message": "Value is not accepted. Valid values: \"2015-01-01\".",
                 "jsonPath": ".*",
                 "reason": "Incorrect schema match"
-
             },
             {
                 "message": "Value is not accepted. Valid values: \"Microsoft.Network/dnsZones\".",
@@ -26,23 +30,20 @@
             },
             {
                 "message": "String does not match the pattern of \"^[-\\w\\._\\(\\)]+$\".",
-                "jsonPath": "resources.9.resourceGroup",
+                "jsonPath": "resources.10.resourceGroup",
                 "reason": "Schema matching ARM function against regex for name"
-
             }
         ],
         "azurebatch/azuredeploy.json": [
             {
-                "message": "Value is not accepted. Valid values: \"2014-10-01-preview\".",
-                "jsonPath": "resources.1.apiVersion",
-                "reason": "Incorrect schema match for AzureBatch"
-
+                "message": "Value is not accepted. Valid values: \"2017-09-01\".",
+                "jsonPath": ".*",
+                "reason":"Incorrect schema match"
             },
             {
                 "message": "Value is not accepted. Valid values: \"Microsoft.Network/applicationGateways\".",
                 "jsonPath": "resources.4.type",
                 "reason": "Incorrect schema match for AzureBatch"
-
             }
         ],
         "azurefiles/azuredeploy.json": [
@@ -107,6 +108,23 @@
                 "message": ".*",
                 "jsonPath": "resources.3",
                 "reason": "Incorrect schema match for VMSS"
+            }
+        ],
+        "daemonvm/azuredeploy.json": [
+            {
+                "message": ".*",
+                "jsonPath": "variables.cloud-init.*",
+                "reason": "Validation fails when attempting to validate inline cloudinit"
+            },
+            {
+                "message": "Value is not accepted. Valid values: \"2017-06-01\".",
+                "jsonPath": "resources.0.apiVersion",
+                "reason": "Incorrect schema"
+            },
+            {
+                "message": "Value is not accepted. Valid values: \"Microsoft.Network/expressRouteCircuits\".",
+                "jsonPath": "resources.1.type",
+                "reason": "Incorrect schema match"
             }
         ]
     }
