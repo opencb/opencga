@@ -65,7 +65,7 @@
         },
         "adminUsername": {
             "type": "string",
-            "defaultValue": "azureuser",
+            "defaultValue": "opencgaadmin",
             "metadata": {
                 "description": "Admin username on all VMs."
             }

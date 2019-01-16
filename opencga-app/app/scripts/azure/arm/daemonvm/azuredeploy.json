@@ -41,8 +41,11 @@
             "type": "string",
             "defaultValue": "opencgaadmin"
         },
-        "adminPassword": {
-            "type": "securestring"
+        "sshKeyData": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Admin password on all VMs."
+            }
         },
         "hdInsightSshDns": {
             "type": "string"
@@ -109,6 +112,7 @@
         }
     },
     "variables": {
+        "sshKeyPath": "[concat('/home/',parameters('adminUsername'),'/.ssh/authorized_keys')]",
         "vnetId": "[parameters('virtualNetworkId')]",
         "subnetRef": "[concat(variables('vnetId'), '/subnets/', parameters('subnetName'))]",
         "solrHostsCSV": "[concat('\"', replace(replace(replace(replace(string(parameters('solrHosts')), ' ', ''), '[{\"host\":\"', ''), '\"},{\"host\":\"', ','), '\"}]', ''),'\"')]",
@@ -153,7 +157,6 @@
         ],
         "cloud-init-string": "[replace(replace(replace(string(variables('cloud-init')),'\",\"','\n'),'[\"',''),'\"]','')]",
         "customData": "[base64(variables('cloud-init-string'))]"
-
     },
     "resources": [
         {
@@ -179,7 +182,6 @@
                         }
                     }
                 ]
-
             },
             "tags": {}
         },
@@ -232,7 +234,17 @@
                 "osProfile": {
                     "computerName": "daemonvm",
                     "adminUsername": "[parameters('adminUsername')]",
-                    "adminPassword": "[parameters('adminPassword')]",
+                    "linuxConfiguration": {
+                        "disablePasswordAuthentication": true,
+                        "ssh": {
+                            "publicKeys": [
+                                {
+                                    "path": "[variables('sshKeyPath')]",
+                                    "keyData": "[parameters('sshKeyData')]"
+                                }
+                            ]
+                        }
+                    },
                     "customData": "[variables('customData')]"
                 }
             },
@@ -248,6 +260,5 @@
             "type": "string",
             "value": "[variables('cloud-init-string')]"
         }
-
     }
 }

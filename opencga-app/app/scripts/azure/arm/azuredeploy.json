@@ -154,12 +154,6 @@
                 "description": "Storage Account type"
             }
         },
-        "daemonVmAdminPassword": {
-            "type": "securestring",
-            "metadata": {
-                "description": "SSH Password (maybe change to key)"
-            }
-        },
         "initContainerImage": {
             "type": "string",
             "defaultValue": "dotjson/opencga-init",
@@ -372,8 +366,8 @@
                     "virtualNetworkId": {
                         "value": "[reference('vnet').outputs.vnetId.value]"
                     },
-                    "adminPassword": {
-                        "value": "[parameters('daemonVmAdminPassword')]"
+                    "sshKeyData": {
+                        "value": "[parameters('sshAdminKeyData')]"
                     },
                     "hdInsightSshDns": {
                         "value": "[reference('hdinsight').outputs.clusterSshDnsName.value]"
