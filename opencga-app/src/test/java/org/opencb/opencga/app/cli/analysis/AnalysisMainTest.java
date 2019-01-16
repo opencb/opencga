@@ -65,6 +65,7 @@ public class AnalysisMainTest {
     private String studyId;
     private String outdirId;
     private Logger logger = LoggerFactory.getLogger(AnalysisMainTest.class);
+    private Map<File.Bioformat, DataStore> datastores;
 
 
     @Before
@@ -81,23 +82,28 @@ public class AnalysisMainTest {
         projectId = catalogManager.getProjectManager().create("p1", "p1", "Project 1", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionId).first().getId();
 
-        Map<File.Bioformat, DataStore> datastores = new HashMap<>();
+        datastores = new HashMap<>();
         datastores.put(File.Bioformat.VARIANT, new DataStore(STORAGE_ENGINE, dbNameVariants));
         datastores.put(File.Bioformat.ALIGNMENT, new DataStore(STORAGE_ENGINE, dbNameAlignments));
 
-        Study study = catalogManager.getStudyManager().create(projectId, "s1", "s1", "s1", Study.Type.CASE_CONTROL, null,
+
+    }
+
+    private void createStudy(Map<File.Bioformat, DataStore> datastores, String studyName) throws CatalogException {
+        Study study = catalogManager.getStudyManager().create(projectId, studyName, studyName, studyName, Study.Type.CASE_CONTROL, null,
                 "Study " +
                         "1", null, null, null, null, datastores, null, Collections.singletonMap(VariantStorageEngine.Options.AGGREGATED_TYPE.key(),
                         Aggregation.NONE), null, sessionId).first();
         studyId = study.getId();
         outdirId = catalogManager.getFileManager().createFolder(studyId, Paths.get("data", "index").toString(), null,
                 true, null, QueryOptions.empty(), sessionId).first().getId();
+
     }
 
     @Test
     public void testVariantIndex() throws Exception {
 //        Job job;
-
+        createStudy(datastores, "s1");
         File file1 = opencga.createFile(studyId, "1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", sessionId);
         File file2 = opencga.createFile(studyId, "1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", sessionId);
         File file3 = opencga.createFile(studyId, "1000g_batches/1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", sessionId);
@@ -232,8 +238,7 @@ public class AnalysisMainTest {
 
     @Test
     public void testVariantIndexAndQuery() throws CatalogException, IOException {
-        Job job;
-
+        createStudy(datastores, "s2");
         File file1 = opencga.createFile(studyId, "1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", sessionId);
 //        File file1 = opencga.createFile(studyId, "variant-test-file.vcf.gz", sessionId);
 //        File file1 = opencga.createFile(studyId, "100k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", sessionId);
@@ -354,6 +359,7 @@ public class AnalysisMainTest {
 //        execute("alignment", "query", "--session-id", sessionId, "--file", "user@p1:s1:" + bam.getPath(), "--region", "20");
 
     }
+
 
     public int execute(String... args) {
         int exitValue = AnalysisMain.privateMain(args);
