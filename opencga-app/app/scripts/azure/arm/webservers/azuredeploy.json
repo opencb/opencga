@@ -91,7 +91,6 @@
     },
     "variables": {
         "sshKeyPath": "[concat('/home/',parameters('adminUsername'),'/.ssh/authorized_keys')]",
-        "vmssName": "webservers",
         "publicIPAddressName": "[concat(parameters('namingPrefix'), '-pip')]",
         "loadBalancerName": "[concat(parameters('namingPrefix'), '-lb')]",
         "publicIPAddressID": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName'))]",
