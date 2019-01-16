@@ -369,9 +369,9 @@ public class SolrQueryParser {
         if (StringUtils.isNotEmpty(query.getString(key))) {
             String[] clinSig = query.getString(key).split("[,;]");
             StringBuilder sb = new StringBuilder();
-            sb.append("(").append("traits: \"cs:").append(clinSig[0]).append("\"");
+            sb.append("(").append("traits:*cs\\:").append(clinSig[0]).append("*");
             for (int i = 1; i < clinSig.length; i++) {
-                sb.append(" OR ").append("traits: \"cs:").append(clinSig[i]).append("\"");
+                sb.append(" OR ").append("traits:*cs\\:").append(clinSig[i]).append("*");
             }
             sb.append(")");
             filterList.add(sb.toString());

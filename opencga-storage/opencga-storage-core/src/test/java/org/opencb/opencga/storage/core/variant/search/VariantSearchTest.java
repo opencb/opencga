@@ -207,6 +207,7 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
 //        query.put(VariantQueryParam.SAMPLE.key(), samplePosition.keySet().toArray()[0]);
         query.put(VariantQueryParam.FILE.key(), fileId);
         query.put(VariantQueryParam.FILTER.key(), "PASS");
+        query.put(VariantQueryParam.ANNOT_CLINICAL_SIGNIFICANCE.key(), "benign");
         VariantQueryResult<Variant> results = variantSearchManager.query(collection, query,
                 new QueryOptions(QueryOptions.LIMIT, limit));
 
