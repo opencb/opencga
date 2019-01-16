@@ -90,6 +90,12 @@
                 "description": "The RSA data for the SSH Public Key used to authenticate to Avere nodes."
             }
         },
+        "openCgaAdminPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The password for the OpenCGA Admin user."
+            }
+        },
         "avereAdminPassword": {
             "type": "securestring",
             "metadata": {
@@ -362,6 +368,9 @@
                     },
                     "_artifactsLocationSasToken": {
                         "value": "[parameters('_artifactsLocationSasToken')]"
+                    },
+                    "openCgaAdminPassword":{
+                        "value": "[parameters('openCgaAdminPassword')]"
                     },
                     "virtualNetworkId": {
                         "value": "[reference('vnet').outputs.vnetId.value]"

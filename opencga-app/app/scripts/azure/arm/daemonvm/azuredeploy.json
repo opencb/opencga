@@ -41,6 +41,9 @@
             "type": "string",
             "defaultValue": "opencgaadmin"
         },
+        "openCgaAdminPassword": {
+            "type": "securestring"
+        },
         "sshKeyData": {
             "type": "securestring",
             "metadata": {
@@ -123,8 +126,8 @@
         "singleQuote": "'",
         "getScriptCmd": "[concat('wget ',parameters('_artifactsLocation'),'/avere/mount.py -O /tmp/mount.py')]",
         "mountCmd": "[concat('python3 /tmp/mount.py ', parameters('mountArgs'))]",
-        "initCmd": "[concat('docker run --mount type=bind,src=/media/primarynfs,dst=/opt/volume -e OPENCGA_PASS=',parameters('adminPassword'),' -e HD_INSIGHTS_SSH_DNS=',parameters('hdInsightSshDns'),' -e HD_INSIGHTS_SSH_USER=',parameters('hdInsightSshUsername'),' -e HD_INSIGHTS_SSH_PASS=',parameters('hdInsightSshPassword'),' -e SEARCH_HOSTS=',variables('solrHostsCSV'),' -e CELLBASE_HOSTS=',variables('mongoDbHostsCSV'),' -e CLINICAL_HOSTS=',variables('solrHostsCSV'),' -e CATALOG_DATABASE_HOSTS=',variables('mongoDbHostsCSV'),' -e CATALOG_DATABASE_USER=',parameters('mongoDbUser'),' -e CATALOG_DATABASE_PASSWORD=',parameters('mongoDbPassword'),' -e CATALOG_SEARCH_HOSTS=',variables('solrHostsCSV'),' -e CATALOG_SEARCH_USER=',parameters('solrUser'),' -e CATALOG_SEARCH_PASSWORD=',parameters('solrPassword'),' -e REST_HOST=\"',variables('restHost'),'\" -e GRPC_HOST=\"',variables('grpcHost'),'\" -e BATCH_EXEC_MODE=AZURE ',' -e BATCH_ACCOUNT_NAME=',parameters('batchAccountName'),' -e BATCH_ACCOUNT_KEY=',parameters('batchAccountKey'),' -e BATCH_ENDPOINT=',parameters('batchEndpoint'),' -e BATCH_POOL_ID=',parameters('batchPoolId'),' -e BATCH_DOCKER_ARGS=',variables('singleQuote'),parameters('batchDockerArgs'),variables('singleQuote'),' -e BATCH_DOCKER_IMAGE=',parameters('batchDockerImage'),' -e BATCH_MAX_CONCURRENT_JOBS=',string(parameters('batchMaxConcurrentJobs')),' ',parameters('initContainerImage'),' ',parameters('catalogSecretKey'))]",
-        "execStart": "[concat('/usr/bin/docker run --mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions -e OPENCGA_PASS=',parameters('adminPassword'),' ',parameters('daemonContainerImage'))]",
+        "initCmd": "[concat('docker run --mount type=bind,src=/media/primarynfs,dst=/opt/volume -e OPENCGA_PASS=',parameters('openCgaAdminPassword'),' -e HD_INSIGHTS_SSH_DNS=',parameters('hdInsightSshDns'),' -e HD_INSIGHTS_SSH_USER=',parameters('hdInsightSshUsername'),' -e HD_INSIGHTS_SSH_PASS=',parameters('hdInsightSshPassword'),' -e SEARCH_HOSTS=',variables('solrHostsCSV'),' -e CELLBASE_HOSTS=',variables('mongoDbHostsCSV'),' -e CLINICAL_HOSTS=',variables('solrHostsCSV'),' -e CATALOG_DATABASE_HOSTS=',variables('mongoDbHostsCSV'),' -e CATALOG_DATABASE_USER=',parameters('mongoDbUser'),' -e CATALOG_DATABASE_PASSWORD=',parameters('mongoDbPassword'),' -e CATALOG_SEARCH_HOSTS=',variables('solrHostsCSV'),' -e CATALOG_SEARCH_USER=',parameters('solrUser'),' -e CATALOG_SEARCH_PASSWORD=',parameters('solrPassword'),' -e REST_HOST=\"',variables('restHost'),'\" -e GRPC_HOST=\"',variables('grpcHost'),'\" -e BATCH_EXEC_MODE=AZURE ',' -e BATCH_ACCOUNT_NAME=',parameters('batchAccountName'),' -e BATCH_ACCOUNT_KEY=',parameters('batchAccountKey'),' -e BATCH_ENDPOINT=',parameters('batchEndpoint'),' -e BATCH_POOL_ID=',parameters('batchPoolId'),' -e BATCH_DOCKER_ARGS=',variables('singleQuote'),parameters('batchDockerArgs'),variables('singleQuote'),' -e BATCH_DOCKER_IMAGE=',parameters('batchDockerImage'),' -e BATCH_MAX_CONCURRENT_JOBS=',string(parameters('batchMaxConcurrentJobs')),' ',parameters('initContainerImage'),' ',parameters('catalogSecretKey'))]",
+        "execStart": "[concat('/usr/bin/docker run --mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions -e OPENCGA_PASS=',parameters('openCgaAdminPassword'),' ',parameters('daemonContainerImage'))]",
         "cloud-init": [
             "#cloud-config",
             "",
