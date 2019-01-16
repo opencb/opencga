@@ -319,14 +319,14 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                                 && (StringUtils.isNotEmpty(fields[12]) || StringUtils.isNotEmpty(fields[13]))) {
                             Score score = new Score();
                             score.setSource("sift");
-                            if (StringUtils.isNotEmpty(fields[11])) {
+                            if (StringUtils.isNotEmpty(fields[12])) {
                                 try {
-                                    score.setScore(Double.parseDouble(fields[11]));
+                                    score.setScore(Double.parseDouble(fields[12]));
                                 } catch (NumberFormatException e) {
                                     logger.warn("Parsing Sift score: " + e.getMessage());
                                 }
                             }
-                            score.setDescription(fields[12]);
+                            score.setDescription(fields[13]);
                             scores.add(score);
                         }
                         // Polyphen score
