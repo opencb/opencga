@@ -333,6 +333,12 @@
                     },
                     "mountArgs": {
                         "value": "[if(equals(parameters('nfsStorageOption'), 'AzureFiles'), concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value, ',' , reference('azurefiles').outputs.accountKey.value),concat('avere ', reference('avere').outputs.VSERVER_IPS.value))]"
+                    },
+                    "dockerImagesToCache": {
+                        "value": [
+                            "[parameters('batchDockerImage')]",
+                            "[parameters('daemonContainerImage')]"
+                        ]
                     }
                 }
             }
@@ -381,7 +387,6 @@
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
-
                     "_artifactsLocation": {
                         "value": "[parameters('_artifactsLocation')]"
                     },
@@ -395,13 +400,13 @@
                         "value": "[parameters('daemonVmAdminPassword')]"
                     },
                     "hdInsightSshDns": {
-                        "value":  "[reference('hdinsight').outputs.clusterSshDnsName.value]"
+                        "value": "[reference('hdinsight').outputs.clusterSshDnsName.value]"
                     },
                     "hdInsightSshUsername": {
                         "value": "[reference('hdinsight').outputs.clusterSshUsername.value]"
                     },
                     "hdInsightSshPassword": {
-                        "value":  "[reference('hdinsight').outputs.clusterSshPassword.value]"
+                        "value": "[reference('hdinsight').outputs.clusterSshPassword.value]"
                     },
                     "daemonContainerImage": {
                         "value": "[parameters('daemonContainerImage')]"
