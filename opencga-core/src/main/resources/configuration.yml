@@ -2,7 +2,7 @@
 logLevel: "INFO"
 logFile: null
 
-openRegister: true
+openRegister: false
 userDefaultQuota: 200000
 
 databasePrefix: ${OPENCGA.DB.PREFIX}
