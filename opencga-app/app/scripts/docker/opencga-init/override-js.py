@@ -20,8 +20,8 @@ cellbase_hosts_formatted = (', '.join('"' + cellbase_host + '"' for cellbase_hos
 
 out = ""
 for line in f:
-    line = line.replace('"http://bioinfo.hpc.cam.ac.uk/cellbase"', '{}'.format(cellbase_hosts_formatted))
-    line = line.replace('http://bioinfodev.hpc.cam.ac.uk/opencga-test', '{}'.format(rest_host))
+    line = line.replace('"CELLBASE_HOST_URL"', '{}'.format(cellbase_hosts_formatted))
+    line = line.replace('<OPENCGA_HOST_URL>', '{}'.format(rest_host))
     out += line
 
 f.close()

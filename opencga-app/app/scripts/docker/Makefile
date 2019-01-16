@@ -1,6 +1,7 @@
 #!make
 
-# Override default location by setting ENVFILE
+# Override the `make_env` file default
+# location by setting ENVFILE env var
 ENVFILE ?= make_env
 include $(ENVFILE)
 export
@@ -18,53 +19,37 @@ DOCKER_REPO ?= $(DOCKER_USERNAME)
 ifdef DOCKER_SERVER
 	DOCKER_SERVER := $(DOCKER_SERVER)/
 endif
-TAG ?= $(shell git rev-parse --verify HEAD)	# Default to git commit SHA
-SEMVER ?= 0.0.0
+TAG ?= $(shell git rev-parse --verify HEAD)
 PATH_PREFIX ?= "."
-RELEASE_BRANCH ?= "master"
+PUBLISH ?= false
 
 # Set default make target
 .DEFAULT_GOAL := build-all
 
-.PHONY: build test image publish run stop login tag version release build-all default
-
-version:
-	echo "Commit SHA: $(TAG)\nVersion: $(SEMVER)"
-
-# Invokes the build all script
+# Run a script to build all docker images
+.PHONY: build-all
 build-all:
-	./build-all.sh $(TAG) $(SEMVER) $(DOCKER_REPO) $(DOCKER_USERNAME) $(RELEASE_BRANCH) $(PUSH)
+	./build-all.sh $(TAG) $(DOCKER_REPO) $(DOCKER_USERNAME) $(PUBLISH)
 
-# Builds the container
+# Builds and tags the container
+.PHONY: build
 build:
-	docker build $(DOCKER_BUILD_ARGS) -f $(PATH_PREFIX)/Dockerfile .
-
-# Builds and locally tags the container
-image:
 	docker build $(DOCKER_BUILD_ARGS) -t $(APP_NAME) -f $(PATH_PREFIX)/Dockerfile .
 
-# Tag a docker image with git commit
-tag: image
+# Tags a docker image with git commit SHA
+.PHONY: tag
+tag:
 	docker tag $(APP_NAME) $(DOCKER_SERVER)$(DOCKER_REPO)/$(APP_NAME):$(TAG)
 
-# Tag a docker image with semantic version
-semver: tag
-	docker tag $(APP_NAME) $(DOCKER_SERVER)$(DOCKER_REPO)/$(APP_NAME):$(SEMVER)
-
-# Logs in to docker repository
+# Logs in to a docker registry
+.PHONY: login
 login:
 	echo $(DOCKER_PASSWORD) | docker login -u $(DOCKER_USERNAME) --password-stdin $(DOCKER_SERVER)
 
-# Publishes an image to docker repository
+# Publishes a docker image to docker registry
+.PHONY: publish
 publish: login tag
 	docker push $(DOCKER_SERVER)$(DOCKER_REPO)/$(APP_NAME):$(TAG)
 
-# Publishes a releasable image to docker repository
-release: semver publish
-	docker push $(DOCKER_SERVER)$(DOCKER_REPO)/$(APP_NAME):$(SEMVER)
-
-# Stops a running image
-stop:
-	docker stop $(APP_NAME); docker rm $(APP_NAME)
-
+.PHONY: default
 default: build-all;

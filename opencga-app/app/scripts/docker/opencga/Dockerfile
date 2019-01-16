@@ -1,7 +1,6 @@
-
 FROM opencga-build as build
+FROM openjdk:8
 
-# Get opencga
 WORKDIR /opt/opencga
 
 RUN useradd -u 1001 opencga

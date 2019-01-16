@@ -26,17 +26,26 @@ ENV BATCH_DOCKER_ARGS=""
 ENV BATCH_DOCKER_IMAGE=""
 ENV BATCH_MAX_CONCURRENT_JOBS=""
 
-ARG IVA_VERSION="1.0.0-beta"
+# Minimum compatible git commit, please only use later commits.
+ARG IVA_COMMIT_SHA="dce421b6933d540d9c511c72e63c0e85dff00667"
+
+# Install dependencies
+RUN apt-get update && \
+    apt-get install -y \
+    git
 
 # Download and extract the IVA configuration into our local configuration.
-RUN wget "https://github.com/opencb/iva/releases/download/v${IVA_VERSION}/iva-${IVA_VERSION}.tar.gz" && \
-    mkdir -p iva /opt/opencga/conf/iva && \
-    tar xvfz "iva-${IVA_VERSION}.tar.gz" -C iva --strip-components 1 && \
-    cp -r iva/conf/* /opt/opencga/conf/iva
+RUN git clone "https://github.com/opencb/iva.git" && \
+    cd iva && \
+    git reset "$IVA_COMMIT_SHA" --hard && \
+    mkdir -p /opt/opencga/conf/iva && \
+    cp -r src/conf/* /opt/opencga/conf/iva
 
+# Mount volume to copy config into
 VOLUME /opt/volume
+
 RUN pip3 install oyaml
-COPY . /tmp/
+COPY ./opencga-app/app/scripts/docker/opencga-init /tmp/
 RUN chmod +x /tmp/setup.sh
 
 # It is the responsibility of the setup.sh

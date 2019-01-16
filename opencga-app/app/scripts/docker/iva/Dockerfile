@@ -1,14 +1,19 @@
 FROM httpd
 
+# Minimum compatible git commit, please only use later commits.
+ARG IVA_COMMIT_SHA="dce421b6933d540d9c511c72e63c0e85dff00667"
+
 # Install dependencies
 RUN apt-get update && \
-apt-get install -y wget
+    apt-get install -y \
+    wget \
+    git
 
-ARG IVA_VERSION="1.0.0-beta"
-
-RUN wget --quiet "https://github.com/opencb/iva/releases/download/v${IVA_VERSION}/iva-${IVA_VERSION}.tar.gz" && \
-tar xvf iva-${IVA_VERSION}.tar.gz --strip-components=1 -C /usr/local/apache2/htdocs/  && \
-rm ./iva-${IVA_VERSION}.tar.gz
+# Download and extract the IVA configuration into our local configuration
+RUN cd /usr/local/apache2/htdocs/ && \
+    git clone "https://github.com/opencb/iva.git" && \
+    cd iva && \
+    git reset "$IVA_COMMIT_SHA" --hard
 
 EXPOSE 80
 
