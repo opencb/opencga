@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -62,6 +63,7 @@ public class PanelManagerTest extends GenericTest {
     }
 
     @Test
+    @Ignore
     public void importFromPanelAppTest() throws CatalogException, IOException {
         String token = catalogManager.getUserManager().login("admin", "admin");
         panelManager.importPanelApp(token, false);

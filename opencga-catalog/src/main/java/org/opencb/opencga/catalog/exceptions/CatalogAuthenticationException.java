@@ -33,5 +33,8 @@ public class CatalogAuthenticationException extends CatalogException {
         return new CatalogAuthenticationException("Incorrect user or password.");
     }
 
+    public static CatalogAuthenticationException userNotAllowed() {
+        return new CatalogAuthenticationException("User not allowed to access the system.");
+    }
 
 }

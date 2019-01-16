@@ -270,73 +270,83 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     break;
                 case "TRANS":
                     // Create consequence type from transcript info:
-                    //       1            2           3                4           5
-                    // transcriptId -- biotype -- cdnaPosition -- cdsPosition -- codon
-                    //      6           7             8                 9
-                    // siftScore -- siftDescr -- poliphenScore -- poliphenDescr
-                    //           10                   11                 12             13           14
+                    //       1            2             3                 4               5           6
+                    // transcriptId -- biotype -- annotationFlags -- cdnaPosition -- cdsPosition -- codon
+                    //           7                   8                 9                 10           11
                     // -- uniprotAccession -- uniprotAccession -- uniprotVariantId -- position -- aaChange
+                    //     12           13            14                15
+                    // siftScore -- siftDescr -- poliphenScore -- poliphenDescr
                     ConsequenceType consequenceType = new ConsequenceType();
                     if (fields.length > 2) {
                         consequenceType.setEnsemblTranscriptId(fields[1]);
                         consequenceType.setBiotype(fields[2]);
                     }
                     if (fields.length > 3) {
-                        consequenceType.setCdnaPosition(Integer.parseInt(fields[3]));
-                        consequenceType.setCdsPosition(Integer.parseInt(fields[4]));
-                        if (fields.length > 5) {
-                            // Sometimes, codon (i.e., split at 5) is null, check it!
-                            consequenceType.setCodon(fields[5]);
+                        if (fields[3].length() > 0) {
+                            consequenceType.setTranscriptAnnotationFlags(Arrays.asList(fields[3].split(",")));
                         }
                     }
-                    if (fields.length > 6) {
+                    if (fields.length > 4) {
+                        consequenceType.setCdnaPosition(Integer.parseInt(fields[4]));
+                        consequenceType.setCdsPosition(Integer.parseInt(fields[5]));
+                        if (fields.length > 6) {
+                            // Sometimes, codon (i.e., split at 5) is null, check it!
+                            consequenceType.setCodon(fields[6]);
+                        }
+                    }
+                    if (fields.length > 7) {
                         // Create, init and add protein variant annotation to the consequence type
                         ProteinVariantAnnotation protVarAnnotation = new ProteinVariantAnnotation();
-                        // Sift and polyphen scores
-                        List<Score> scores = new ArrayList();
-                        if (StringUtils.isNotEmpty(fields[6]) || StringUtils.isNotEmpty(fields[7])) {
-                            Score score = new Score();
-                            score.setSource("sift");
-                            if (StringUtils.isNotEmpty(fields[6])) {
-                                try {
-                                    score.setScore(Double.parseDouble(fields[6]));
-                                } catch (NumberFormatException e) {
-                                    logger.warn("Parsing Sift score: " + e.getMessage());
-                                }
-                            }
-                            score.setDescription(fields[7]);
-                            scores.add(score);
-                        }
-                        if (StringUtils.isNotEmpty(fields[8]) || StringUtils.isNotEmpty(fields[9])) {
-                            Score score = new Score();
-                            score.setSource("polyphen");
-                            if (StringUtils.isNotEmpty(fields[8])) {
-                                try {
-                                    score.setScore(Double.parseDouble(fields[8]));
-                                } catch (NumberFormatException e) {
-                                    logger.warn("Parsing Polyphen score: " + e.getMessage());
-                                }
-                            }
-                            score.setDescription(fields[9]);
-                            scores.add(score);
-                        }
-                        protVarAnnotation.setSubstitutionScores(scores);
                         // Uniprot info
-                        protVarAnnotation.setUniprotAccession(fields[10]);
-                        protVarAnnotation.setUniprotName(fields[11]);
-                        protVarAnnotation.setUniprotVariantId(fields[12]);
-                        if (StringUtils.isNotEmpty(fields[13])) {
+                        protVarAnnotation.setUniprotAccession(fields[7]);
+                        protVarAnnotation.setUniprotName(fields[8]);
+                        protVarAnnotation.setUniprotVariantId(fields[9]);
+                        if (StringUtils.isNotEmpty(fields[10])) {
                             try {
-                                protVarAnnotation.setPosition(Integer.parseInt(fields[13]));
+                                protVarAnnotation.setPosition(Integer.parseInt(fields[10]));
                             } catch (NumberFormatException e) {
                                 logger.warn("Parsing position: " + e.getMessage());
                             }
                         }
-                        if (StringUtils.isNotEmpty(fields[14]) && fields[14].contains("/")) {
-                            String[] refAlt = fields[14].split("/");
+                        if (StringUtils.isNotEmpty(fields[11]) && fields[11].contains("/")) {
+                            String[] refAlt = fields[11].split("/");
                             protVarAnnotation.setReference(refAlt[0]);
                             protVarAnnotation.setAlternate(refAlt[1]);
                         }
+                        // Sift score
+                        List<Score> scores = new ArrayList(2);
+                        if (fields.length > 12
+                                && (StringUtils.isNotEmpty(fields[12]) || StringUtils.isNotEmpty(fields[13]))) {
+                            Score score = new Score();
+                            score.setSource("sift");
+                            if (StringUtils.isNotEmpty(fields[12])) {
+                                try {
+                                    score.setScore(Double.parseDouble(fields[12]));
+                                } catch (NumberFormatException e) {
+                                    logger.warn("Parsing Sift score: " + e.getMessage());
+                                }
+                            }
+                            score.setDescription(fields[13]);
+                            scores.add(score);
+                        }
+                        // Polyphen score
+                        if (fields.length > 14
+                                && (StringUtils.isNotEmpty(fields[14]) || StringUtils.isNotEmpty(fields[15]))) {
+                            Score score = new Score();
+                            score.setSource("polyphen");
+                            if (StringUtils.isNotEmpty(fields[14])) {
+                                try {
+                                    score.setScore(Double.parseDouble(fields[14]));
+                                } catch (NumberFormatException e) {
+                                    logger.warn("Parsing Polyphen score: " + e.getMessage());
+                                }
+                            }
+                            score.setDescription(fields[15]);
+                            scores.add(score);
+                        }
+                        protVarAnnotation.setSubstitutionScores(scores);
+
+                        // Finally, set protein variant annotation in consequence type
                         consequenceType.setProteinVariantAnnotation(protVarAnnotation);
                     }
 
@@ -349,20 +359,24 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         }
 
         // consequence types
-        String gene = null;
+        String geneName = null;
         String ensGene = null;
         if (ListUtils.isNotEmpty(variantSearchModel.getGenes())) {
             for (String name : variantSearchModel.getGenes()) {
                 if (!name.startsWith("ENS")) {
-                    gene = name;
+                    geneName = name;
                 } else if (name.startsWith("ENSG")) {
                     ensGene = name;
                 } else if (name.startsWith("ENST")) {
                     ConsequenceType consequenceType = consequenceTypeMap.getOrDefault(name, null);
                     if (consequenceType == null) {
-                        throw new InternalError("Transcript '" + name + "' missing in schema field name 'other'");
+                        consequenceType = new ConsequenceType();
+                        consequenceType.setEnsemblTranscriptId(name);
+                        consequenceTypeMap.put(name, consequenceType);
+                        logger.warn("No information found in Solr field 'other' for transcript '{}'", name);
+//                        throw new InternalError("Transcript '" + name + "' missing in schema field name 'other'");
                     }
-                    consequenceType.setGeneName(gene);
+                    consequenceType.setGeneName(geneName);
                     consequenceType.setEnsemblGeneId(ensGene);
                 }
             }
@@ -669,7 +683,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         if (MapUtils.isNotEmpty(fileEntry.getAttributes())) {
                             fileInfoMap.putAll(fileEntry.getAttributes());
 
-                            // In additon, store QUAL and FILTER separately
+                            // In addition, store QUAL and FILTER separately
                             String qual = fileEntry.getAttributes().get(StudyEntry.QUAL);
                             if (StringUtils.isNotEmpty(qual)) {
                                 variantSearchModel.getQual().put("qual" + VariantSearchUtils.FIELD_SEPARATOR + studyId
@@ -778,6 +792,12 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
                         if (StringUtils.isNotEmpty(conseqType.getEnsemblTranscriptId())) {
                             trans.append("TRANS").append(FIELD_SEP).append(conseqType.getEnsemblTranscriptId());
+                            trans.append(FIELD_SEP).append(StringUtils.isEmpty(conseqType.getBiotype())
+                                    ? "" : conseqType.getBiotype());
+                            trans.append(FIELD_SEP);
+                            if (ListUtils.isNotEmpty(conseqType.getTranscriptAnnotationFlags())) {
+                                trans.append(StringUtils.join(conseqType.getTranscriptAnnotationFlags(), ","));
+                            }
                         }
 
                         xrefs.add(conseqType.getGeneName());
@@ -786,12 +806,6 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
                         if (StringUtils.isNotEmpty(conseqType.getBiotype())) {
                             biotypes.add(conseqType.getBiotype());
-                            // Sanity check
-                            if (trans.length() == 0) {
-                                logger.warn("Biotype without Ensembl transcript ID");
-                            } else {
-                                trans.append(FIELD_SEP).append(conseqType.getBiotype());
-                            }
                         }
                     }
 
@@ -818,61 +832,58 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             trans.append(FIELD_SEP)
                                     .append(conseqType.getCdnaPosition() == null ? 0 : conseqType.getCdnaPosition())
                                     .append(FIELD_SEP)
-                                    .append(conseqType.getCdsPosition() == null ? 0 : conseqType.getCdsPosition());
-                            if (StringUtils.isNotEmpty(conseqType.getCodon())) {
-                                trans.append(FIELD_SEP).append(conseqType.getCodon());
-                            }
+                                    .append(conseqType.getCdsPosition() == null ? 0 : conseqType.getCdsPosition())
+                                    .append(FIELD_SEP)
+                                    .append(StringUtils.isNotEmpty(conseqType.getCodon()) ? conseqType.getCodon() : "");
                         }
                     }
 
                     if (conseqType.getProteinVariantAnnotation() != null) {
                         ProteinVariantAnnotation protVarAnnotation = conseqType.getProteinVariantAnnotation();
 
-                        String aaChange = "";
+                        // Add UniProt accession, name and ID to xrefs
+                        trans.append(FIELD_SEP);
+                        if (StringUtils.isNotEmpty(protVarAnnotation.getUniprotAccession())) {
+                            trans.append(protVarAnnotation.getUniprotAccession());
+                            xrefs.add(protVarAnnotation.getUniprotAccession());
+                        }
+
+                        trans.append(FIELD_SEP);
+                        if (StringUtils.isNotEmpty(protVarAnnotation.getUniprotName())) {
+                            trans.append(protVarAnnotation.getUniprotName());
+                            xrefs.add(protVarAnnotation.getUniprotName());
+                        }
+
+                        trans.append(FIELD_SEP);
+                        if (StringUtils.isNotEmpty(protVarAnnotation.getUniprotVariantId())) {
+                            trans.append(protVarAnnotation.getUniprotVariantId());
+                            xrefs.add(protVarAnnotation.getUniprotVariantId());
+                        }
+
+                        trans.append(FIELD_SEP).append(protVarAnnotation.getPosition() == null
+                                ? 0 : protVarAnnotation.getPosition());
+
+                        trans.append(FIELD_SEP);
                         if (StringUtils.isNotEmpty(protVarAnnotation.getReference())
                                 && StringUtils.isNotEmpty(protVarAnnotation.getAlternate())) {
-                            aaChange = protVarAnnotation.getReference() + "/" + protVarAnnotation.getAlternate();
+                            trans.append(protVarAnnotation.getReference()).append("/")
+                                    .append(protVarAnnotation.getAlternate());
                         }
 
-                        // Add UniProt accession, name and ID to xrefs
-                        String uniprotAccession = "";
-                        if (StringUtils.isNotEmpty(protVarAnnotation.getUniprotAccession())) {
-                            uniprotAccession = protVarAnnotation.getUniprotAccession();
-                            xrefs.add(uniprotAccession);
-                        }
-                        String uniprotName = "";
-                        if (StringUtils.isNotEmpty(protVarAnnotation.getUniprotName())) {
-                            uniprotName = protVarAnnotation.getUniprotName();
-                            xrefs.add(uniprotName);
-                        }
-                        String uniprotVariantId = "";
-                        if (StringUtils.isNotEmpty(protVarAnnotation.getUniprotVariantId())) {
-                            uniprotVariantId = protVarAnnotation.getUniprotVariantId();
-                            xrefs.add(uniprotVariantId);
-                        }
-
-                        // Sanity check
-                        if (trans.length() == 0) {
-                            logger.warn("Transcript information without Ensembl transcript ID");
+                        // Create transcript info and add it into the other list
+                        Score sift = getScore(protVarAnnotation.getSubstitutionScores(), "sift");
+                        Score polyph = getScore(protVarAnnotation.getSubstitutionScores(), "polyphen");
+                        trans.append(FIELD_SEP);
+                        if (sift != null) {
+                            trans.append(sift.getScore()).append(FIELD_SEP).append(sift.getDescription());
                         } else {
-                            // Create transcript info and add it into the other list
-                            Score sift = getScore(protVarAnnotation.getSubstitutionScores(), "sift");
-                            Score polyph = getScore(protVarAnnotation.getSubstitutionScores(), "polyphen");
                             trans.append(FIELD_SEP);
-                            if (sift != null) {
-                                trans.append(sift.getScore()).append(FIELD_SEP).append(sift.getDescription());
-                            } else {
-                                trans.append(FIELD_SEP);
-                            }
+                        }
+                        trans.append(FIELD_SEP);
+                        if (polyph != null) {
+                            trans.append(polyph.getScore()).append(FIELD_SEP).append(polyph.getDescription());
+                        } else {
                             trans.append(FIELD_SEP);
-                            if (polyph != null) {
-                                trans.append(polyph.getScore()).append(FIELD_SEP).append(polyph.getDescription());
-                            } else {
-                                trans.append(FIELD_SEP);
-                            }
-                            trans.append(FIELD_SEP).append(uniprotAccession).append(FIELD_SEP).append(uniprotName)
-                                    .append(FIELD_SEP).append(uniprotVariantId).append(FIELD_SEP)
-                                    .append(protVarAnnotation.getPosition()).append(FIELD_SEP).append(aaChange);
                         }
 
                         // Add keywords to and Features to traits
@@ -895,7 +906,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             }
                         }
                     }
-                    if (trans.length() > 0) {
+                    if (StringUtils.isNotEmpty(conseqType.getEnsemblTranscriptId()) && trans.length() > 0) {
                         other.add(trans.toString());
                     }
                 }
