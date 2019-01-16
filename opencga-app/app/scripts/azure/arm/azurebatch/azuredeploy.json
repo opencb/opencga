@@ -60,6 +60,13 @@
         "poolId": {
             "type": "string",
             "defaultValue": "defaultpool"
+        },
+        "containerInstanceLocation": {
+            "type": "string",
+            "defaultValue": "westeurope",
+            "metadata": {
+                "description": "Container Instance Location"
+            }
         }
     },
     "variables": {
@@ -67,10 +74,8 @@
         "storageAccountName": "[concat('batch', uniqueString(resourceGroup().id))]",
         "batchAccountName": "[concat('batch', uniqueString(resourceGroup().id))]",
         "batchEndpoint": "[concat('https://', variables('batchAccountName'), '.' , parameters('location'), '.batch.azure.com')]",
-
         "_comment1": "The role assignment ID is required to be a guid, we use this to generate a repeatable guid",
         "roleAssignmentIdRg": "[guid(concat(resourceGroup().id, 'contributorRG'))]",
-
         "_comment2": "This is the ID used to set the contributor permission on a role.",
         "contributorRoleDefinitionId": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'b24988ac-6180-42a0-ab88-20f7382dd24c')]"
     },
@@ -133,42 +138,42 @@
             "type": "Microsoft.ContainerInstance/containerGroups",
             "apiVersion": "2018-10-01",
             "name": "[substring(concat('batchpool', uniqueString(resourceGroup().id)), 0, 20)]",
-            "location": "[resourceGroup().location]",
+            "location": "[parameters('containerInstanceLocation')]",
             "dependsOn": [
-              "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName'))]",
-              "[resourceId('Microsoft.Authorization/roleAssignments', variables('roleAssignmentIdRg'))]",
-              "[resourceId('Microsoft.Batch/batchAccounts', variables('batchAccountName'))]"
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName'))]",
+                "[resourceId('Microsoft.Authorization/roleAssignments', variables('roleAssignmentIdRg'))]",
+                "[resourceId('Microsoft.Batch/batchAccounts', variables('batchAccountName'))]"
             ],
             "identity": {
-              "type": "UserAssigned",
-              "userAssignedIdentities": {
-                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName'))]": {}
-              }
+                "type": "UserAssigned",
+                "userAssignedIdentities": {
+                    "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName'))]": {}
+                }
             },
             "properties": {
-              "osType": "Linux",
-              "restartPolicy": "Never",
-              "containers": [
-                {
-                  "name": "azure-cli",
-                  "properties": {
-                    "image": "microsoft/azure-cli",
-                    "command": [
-                      "/bin/bash",
-                      "-c",
-                      "[concat('curl -fsSL ', parameters('_artifactsLocation'), '/azurebatch/configurepool.py', parameters('_artifactsLocationSasToken'), ' > configurepool.py && python3 ./configurepool.py \"', parameters('poolId'), '\" ', parameters('virtualMachineSize'),  ' \"', parameters('mountArgs'),  '\" ', parameters('_artifactsLocation'),  ' ', parameters('_artifactsLocationSasToken'),  ' ', parameters('virtualNetworkSubnetId'), ' ', parameters('maxNodeCount'), ' ', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), ' ', resourceGroup().name, ' ', variables('batchAccountName'))]"
-                    ],
-                    "resources": {
-                      "requests": {
-                        "cpu": 1,
-                        "memoryInGB": 1
-                      }
+                "osType": "Linux",
+                "restartPolicy": "Never",
+                "containers": [
+                    {
+                        "name": "azure-cli",
+                        "properties": {
+                            "image": "microsoft/azure-cli",
+                            "command": [
+                                "/bin/bash",
+                                "-c",
+                                "[concat('curl -fsSL ', parameters('_artifactsLocation'), '/azurebatch/configurepool.py', parameters('_artifactsLocationSasToken'), ' > configurepool.py && python3 ./configurepool.py \"', parameters('poolId'), '\" ', parameters('virtualMachineSize'),  ' \"', parameters('mountArgs'),  '\" ', parameters('_artifactsLocation'),  ' ', parameters('_artifactsLocationSasToken'),  ' ', parameters('virtualNetworkSubnetId'), ' ', parameters('maxNodeCount'), ' ', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), ' ', resourceGroup().name, ' ', variables('batchAccountName'))]"
+                            ],
+                            "resources": {
+                                "requests": {
+                                    "cpu": 1,
+                                    "memoryInGB": 1
+                                }
+                            }
+                        }
                     }
-                  }
-                }
-              ]
+                ]
             }
-      }
+        }
     ],
     "outputs": {
         "storageAccountName": {
