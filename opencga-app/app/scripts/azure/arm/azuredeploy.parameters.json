@@ -41,10 +41,10 @@
         "avereAdminPassword": {
             "value": ""
         },
-        "tomcatDockerImage": {
+        "openCGAContainerImage": {
             "value": ""
         },
-        "ivaDockerImage": {
+        "ivaContainerImage": {
             "value": ""
         },
         "webserversSSHKeyData": {
