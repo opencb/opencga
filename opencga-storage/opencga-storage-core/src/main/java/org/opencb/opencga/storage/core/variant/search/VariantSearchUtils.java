@@ -24,6 +24,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
@@ -248,8 +249,8 @@ public class VariantSearchUtils {
             } else {
                 // Check that all elements from the query are in the same search collection
 
-                VariantQueryUtils.SelectVariantElements selectVariantElements =
-                        VariantQueryUtils.parseSelectElements(query, options, metadataManager);
+                VariantQueryFields selectVariantElements =
+                        VariantQueryUtils.parseVariantQueryFields(query, options, metadataManager);
 
                 if (selectVariantElements.getStudies().size() != 1) {
                     return null;
@@ -318,7 +319,7 @@ public class VariantSearchUtils {
 
                 for (String file : files) {
                     file = isNegated(file) ? removeNegation(file) : file;
-                    Integer fileId = VariantStorageMetadataManager.getFileIdFromStudy(file, studyConfiguration);
+                    Integer fileId = metadataManager.getFileId(studyConfiguration.getId(), file);
                     if (fileId == null) {
                         // File not found
                         return null;

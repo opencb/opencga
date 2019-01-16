@@ -7,10 +7,12 @@ import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.VariantStatsToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
 import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchIndexUtils;
 import org.slf4j.Logger;
@@ -56,10 +58,14 @@ public class VariantStatsFromResultMapper extends TableMapper<ImmutableBytesWrit
         });
 
         calculators = new HashMap<>(cohorts.size());
-        samples.forEach((cohort, samples) -> {
-            calculators.put(cohort,
-                    new HBaseVariantStatsCalculator(helper.getColumnFamily(), studyConfiguration, new ArrayList<>(samples)));
-        });
+        try (VariantStorageMetadataManager metadataManager = new VariantStorageMetadataManager(
+                new HBaseVariantStorageMetadataDBAdaptorFactory(helper))) {
+            samples.forEach((cohort, samples) -> {
+                calculators.put(cohort,
+                        new HBaseVariantStatsCalculator(
+                                helper.getColumnFamily(), metadataManager, studyConfiguration, new ArrayList<>(samples)));
+            });
+        }
     }
 
     @Override

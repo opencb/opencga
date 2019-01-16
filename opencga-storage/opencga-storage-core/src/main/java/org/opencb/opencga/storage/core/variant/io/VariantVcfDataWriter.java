@@ -18,7 +18,6 @@ package org.opencb.opencga.storage.core.variant.io;
 
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.variant.variantcontext.*;
-import htsjdk.variant.variantcontext.Genotype;
 import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
@@ -37,7 +36,6 @@ import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -362,23 +360,15 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
 //        }
 //    }
 
-    private List<String> getReturnedSamples(StudyConfiguration studyConfiguration, QueryOptions options) {
-        Map<Integer, List<Integer>> returnedSamplesMap =
-                VariantQueryUtils.getIncludeSamples(new Query(options), options, Collections.singletonList(studyConfiguration));
-        List<String> returnedSamples = returnedSamplesMap.get(studyConfiguration.getStudyId()).stream()
-                .map(sampleId -> studyConfiguration.getSampleIds().inverse().get(sampleId))
-                .collect(Collectors.toList());
-        return returnedSamples;
-    }
-
     protected List<String> getSamples() {
         if (!this.exportGenotype.get()) {
             logger.info("Do NOT export genotype -> sample list empty!!!");
             return Collections.emptyList();
         }
         // Get Sample names from query & study configuration
-        List<String> sampleNames = VariantQueryUtils.getSamplesMetadata(query, studyConfiguration)
-                .get(studyConfiguration.getStudyName());
+        // BROKEN!
+//        List<String> sampleNames = VariantQueryUtils.getSamplesMetadata(query, studyConfiguration)
+//                .get(studyConfiguration.getStudyName());
         return sampleNames;
     }
 

@@ -1164,7 +1164,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         // Register file2, so internal IDs matches with the actual database
         URI file2Uri = getResourceUri("1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
         int fileId2 = variantStorageEngineExpected.getVariantStorageMetadataManager().registerFile(studyConfiguration1.getStudyId(), UriUtils.fileName(file2Uri));
-        variantStorageEngineExpected.getVariantStorageMetadataManager().registerFileSamples(studyConfiguration1, fileId2, variantStorageEngineExpected.getVariantReaderUtils().readVariantFileMetadata(file2Uri), studyConfiguration1.getStudyId());
+        variantStorageEngineExpected.getVariantStorageMetadataManager().registerFileSamples(studyConfiguration1.getId(), fileId2, variantStorageEngineExpected.getVariantReaderUtils().readVariantFileMetadata(file2Uri));
 //        runDefaultETL(getResourceUri("1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
 //                variantStorageEngineExpected, studyConfiguration1, options.append(VariantStorageEngine.Options.FILE_ID.key(), 2));
 

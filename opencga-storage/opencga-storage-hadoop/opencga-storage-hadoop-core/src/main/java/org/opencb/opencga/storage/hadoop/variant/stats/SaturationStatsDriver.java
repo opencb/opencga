@@ -72,7 +72,7 @@ public class SaturationStatsDriver extends AbstractVariantsTableDriver {
 
     @Override
     protected Job setupJob(Job job, String archiveTable, String variantTable) throws IOException {
-        StudyConfiguration sc = getStudyConfigurationManager().getStudyConfiguration(getStudyId(), null).first();
+        StudyConfiguration sc = getMetadataManager().getStudyConfiguration(getStudyId(), null).first();
 
         Scan scan = new Scan();
         scan.setCaching(caching);

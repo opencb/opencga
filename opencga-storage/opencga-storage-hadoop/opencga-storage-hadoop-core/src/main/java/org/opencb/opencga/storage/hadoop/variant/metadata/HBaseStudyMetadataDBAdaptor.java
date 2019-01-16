@@ -246,6 +246,16 @@ public class HBaseStudyMetadataDBAdaptor extends AbstractHBaseDBAdaptor implemen
         return iterator(getSampleMetadataRowKeyPrefix(studyId), SampleMetadata.class, false);
     }
 
+    @Override
+    public List<Integer> getIndexedSamples2(int studyId) {
+        // FIXME!
+        Set<Integer> set = new LinkedHashSet<>();
+        for (Integer indexedFile : getIndexedFiles(studyId)) {
+            set.addAll(getFileMetadata(studyId, indexedFile, null).getSamples());
+        }
+        return new ArrayList<>(set);
+    }
+
     public BiMap<String, Integer> getIndexedSamples(int studyId) {
         // FIXME!
         BiMap<String, Integer> map = HashBiMap.create();
@@ -278,6 +288,11 @@ public class HBaseStudyMetadataDBAdaptor extends AbstractHBaseDBAdaptor implemen
     @Override
     public Integer getCohortId(int studyId, String cohortName) {
         return readValue(getCohortNameIndexRowKey(studyId, cohortName), Integer.class, null);
+    }
+
+    @Override
+    public Iterator<CohortMetadata> cohortIterator(int studyId) {
+        return iterator(getCohortMetadataRowKeyPrefix(studyId), CohortMetadata.class, false);
     }
 
     @Override

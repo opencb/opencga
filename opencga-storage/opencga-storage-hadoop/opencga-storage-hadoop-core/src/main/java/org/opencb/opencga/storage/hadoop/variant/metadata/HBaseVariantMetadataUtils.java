@@ -108,6 +108,10 @@ class HBaseVariantMetadataUtils {
         return getStudyResourceRowKey(studyId, COHORT_METADATA_SEPARATOR, cohortId);
     }
 
+    static byte[] getCohortMetadataRowKeyPrefix(int studyId) {
+        return getStudyResourceRowKeyPrefix(studyId, COHORT_METADATA_SEPARATOR);
+    }
+
     static byte[] getTaskRowKey(int studyId, int taskId) {
         return getStudyResourceRowKey(studyId, TASK_SEPARATOR, taskId);
     }

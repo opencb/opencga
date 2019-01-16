@@ -51,10 +51,7 @@ import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
@@ -102,7 +99,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     private final MongoCredentials credentials;
     private final VariantMongoDBQueryParser queryParser;
 
-    private VariantStorageMetadataManager variantStorageMetadataManager;
+    private VariantStorageMetadataManager metadataManager;
     private final ObjectMap configuration;
 //    private CacheManager cacheManager;
 
@@ -131,7 +128,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         db = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
         collectionName = variantsCollectionName;
         variantsCollection = db.getCollection(collectionName);
-        this.variantStorageMetadataManager = variantStorageMetadataManager;
+        this.metadataManager = variantStorageMetadataManager;
         this.storageConfiguration = storageConfiguration;
         StorageEngineConfiguration storageEngineConfiguration =
                 storageConfiguration.getStorageEngine(MongoDBVariantStorageEngine.STORAGE_ENGINE_ID);
@@ -214,9 +211,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
      * @return A QueryResult with the file deleted
      */
     public QueryResult removeFiles(String study, List<String> files, long timestamp, QueryOptions options) {
-        Integer studyId = variantStorageMetadataManager.getStudyId(study, null, false);
-        StudyConfiguration sc = variantStorageMetadataManager.getStudyConfiguration(studyId, null).first();
-        List<Integer> fileIds = VariantStorageMetadataManager.getFileIdsFromStudy(files, sc);
+        Integer studyId = metadataManager.getStudyId(study, null, false);
+        StudyConfiguration sc = metadataManager.getStudyConfiguration(studyId, null).first();
+        List<Integer> fileIds = metadataManager.getFileIds(studyId, files);
 
         ArrayList<Integer> otherIndexedFiles = new ArrayList<>(sc.getIndexedFiles());
         otherIndexedFiles.removeAll(fileIds);
@@ -354,7 +351,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             options = new QueryOptions();
         }
 
-        Integer studyId = variantStorageMetadataManager.getStudyId(studyName, null, false);
+        Integer studyId = metadataManager.getStudyId(studyName, null, false);
         Bson query = queryParser.parseQuery(new Query(STUDY.key(), studyId));
 
         boolean purge = options.getBoolean("purge", true);
@@ -489,7 +486,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             options = new QueryOptions();
         }
 
-        SelectVariantElements selectVariantElements = VariantQueryUtils.parseSelectElements(query, options, variantStorageMetadataManager);
+        VariantQueryFields selectVariantElements = VariantQueryUtils.parseVariantQueryFields(query, options, metadataManager);
         Document mongoQuery = queryParser.parseQuery(query);
         Document projection = queryParser.createProjection(query, options, selectVariantElements);
         options.putIfAbsent(QueryOptions.SKIP_COUNT, DEFAULT_SKIP_COUNT);
@@ -503,7 +500,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
 
         DocumentToVariantConverter converter = getDocumentToVariantConverter(query, selectVariantElements);
-        Map<String, List<String>> samples = getSamplesMetadataIfRequested(query, options, variantStorageMetadataManager);
+        Map<String, List<String>> samples = getSamplesMetadataIfRequested(query, options, metadataManager);
         return new VariantQueryResult<>(variantsCollection.find(mongoQuery, projection, converter, options), samples);
     }
 
@@ -561,7 +558,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     watch.stop();
                     queryResult.setDbTime(((int) watch.getTime()));
                     queryResult.setId("getPhased");
-                    queryResult.setSamples(getSamplesMetadataIfRequested(query, options, variantStorageMetadataManager));
+                    queryResult.setSamples(getSamplesMetadataIfRequested(query, options, metadataManager));
                     return queryResult;
                 }
             }
@@ -585,8 +582,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         } else {
             annotationCollection = getAnnotationCollection(name);
         }
-        SelectVariantElements selectVariantElements = VariantQueryUtils.parseSelectElements(
-                query, new QueryOptions(QueryOptions.INCLUDE, VariantField.ANNOTATION), variantStorageMetadataManager);
+        VariantQueryFields selectVariantElements = VariantQueryUtils.parseVariantQueryFields(
+                query, new QueryOptions(QueryOptions.INCLUDE, VariantField.ANNOTATION), metadataManager);
 
         DocumentToVariantConverter converter = getDocumentToVariantConverter(new Query(), selectVariantElements);
         QueryResult<Variant> result = annotationCollection.find(mongoQuery, projection, converter, options);
@@ -646,7 +643,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             options = new QueryOptions();
         }
 
-        SelectVariantElements selectVariantElements = VariantQueryUtils.parseSelectElements(query, options, variantStorageMetadataManager);
+        VariantQueryFields selectVariantElements = VariantQueryUtils.parseVariantQueryFields(query, options, metadataManager);
         Document mongoQuery = queryParser.parseQuery(query);
         Document projection = queryParser.createProjection(query, options, selectVariantElements);
         DocumentToVariantConverter converter = getDocumentToVariantConverter(query, selectVariantElements);
@@ -927,7 +924,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp, QueryOptions options) {
-        StudyConfiguration sc = variantStorageMetadataManager.getStudyConfiguration(studyName, options).first();
+        StudyConfiguration sc = metadataManager.getStudyConfiguration(studyName, options).first();
         return updateStats(variantStatsWrappers, sc, timestamp, options);
     }
 
@@ -945,7 +942,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         List<Bson> pushUpdatesBulkList = new LinkedList<>();
 
         long start = System.nanoTime();
-        DocumentToVariantStatsConverter statsConverter = new DocumentToVariantStatsConverter(variantStorageMetadataManager);
+        DocumentToVariantStatsConverter statsConverter = new DocumentToVariantStatsConverter(metadataManager);
 //        VariantSource variantSource = queryOptions.get(VariantStorageEngine.VARIANT_SOURCE, VariantSource.class);
         DocumentToVariantConverter variantConverter = getDocumentToVariantConverter(new Query(), options);
         boolean overwrite = options.getBoolean(VariantStorageEngine.Options.OVERWRITE_STATS.key(), false);
@@ -1016,7 +1013,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     public QueryResult removeStats(String studyName, String cohortName, QueryOptions options) {
-        StudyConfiguration studyConfiguration = variantStorageMetadataManager.getStudyConfiguration(studyName, options).first();
+        StudyConfiguration studyConfiguration = metadataManager.getStudyConfiguration(studyName, options).first();
         int cohortId = studyConfiguration.getCohortIds().get(cohortName);
 
         // { st : { $elemMatch : {  sid : <studyId>, cid : <cohortId> } } }
@@ -1100,18 +1097,18 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         if (closeConnection) {
             mongoManager.close();
         }
-        variantStorageMetadataManager.close();
+        metadataManager.close();
         NUMBER_INSTANCES.decrementAndGet();
     }
 
     private DocumentToVariantConverter getDocumentToVariantConverter(Query query, QueryOptions options) {
-        return getDocumentToVariantConverter(query, VariantQueryUtils.parseSelectElements(query, options, variantStorageMetadataManager));
+        return getDocumentToVariantConverter(query, VariantQueryUtils.parseVariantQueryFields(query, options, metadataManager));
     }
 
-    private DocumentToVariantConverter getDocumentToVariantConverter(Query query, SelectVariantElements selectVariantElements) {
+    private DocumentToVariantConverter getDocumentToVariantConverter(Query query, VariantQueryFields selectVariantElements) {
         List<Integer> returnedStudies = selectVariantElements.getStudies();
         DocumentToSamplesConverter samplesConverter;
-        samplesConverter = new DocumentToSamplesConverter(variantStorageMetadataManager);
+        samplesConverter = new DocumentToSamplesConverter(metadataManager);
         samplesConverter.setFormat(getIncludeFormats(query));
         // Fetch some StudyConfigurations that will be needed
         for (StudyConfiguration studyConfiguration : selectVariantElements.getStudyConfigurations().values()) {
@@ -1126,7 +1123,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         DocumentToStudyVariantEntryConverter studyEntryConverter;
 
         studyEntryConverter = new DocumentToStudyVariantEntryConverter(false, selectVariantElements.getFiles(), samplesConverter);
-        studyEntryConverter.setVariantStorageMetadataManager(variantStorageMetadataManager);
+        studyEntryConverter.setVariantStorageMetadataManager(metadataManager);
         ProjectMetadata projectMetadata = getVariantStorageMetadataManager().getProjectMetadata().first();
         Map<Integer, String> annotationIds;
         if (projectMetadata != null) {
@@ -1143,7 +1140,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             annotationIds = Collections.emptyMap();
         }
         return new DocumentToVariantConverter(studyEntryConverter,
-                new DocumentToVariantStatsConverter(variantStorageMetadataManager), returnedStudies, annotationIds);
+                new DocumentToVariantStatsConverter(metadataManager), returnedStudies, annotationIds);
     }
 
     public void createIndexes(QueryOptions options) {
@@ -1337,12 +1334,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public VariantStorageMetadataManager getVariantStorageMetadataManager() {
-        return variantStorageMetadataManager;
+        return metadataManager;
     }
 
     @Override
     public void setVariantStorageMetadataManager(VariantStorageMetadataManager variantStorageMetadataManager) {
-        this.variantStorageMetadataManager = variantStorageMetadataManager;
+        this.metadataManager = variantStorageMetadataManager;
     }
 
 }

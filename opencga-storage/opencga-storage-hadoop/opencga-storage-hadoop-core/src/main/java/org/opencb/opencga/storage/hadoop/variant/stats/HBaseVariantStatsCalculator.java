@@ -16,7 +16,7 @@ import org.opencb.biodata.tools.variant.stats.VariantStatsCalculator;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
@@ -38,11 +38,12 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
     //    private List<byte[]> rows;
     private HBaseToGenotypeCountConverter converter;
 
-    public HBaseVariantStatsCalculator(byte[] columnFamily, StudyConfiguration sc, List<String> samples) {
+    public HBaseVariantStatsCalculator(byte[] columnFamily, VariantStorageMetadataManager metadataManager, StudyConfiguration sc,
+                                       List<String> samples) {
         super(columnFamily);
         this.sc = sc;
         this.samples = samples;
-        converter = new HBaseToGenotypeCountConverter(columnFamily);
+        converter = new HBaseToGenotypeCountConverter(metadataManager, columnFamily);
     }
 
     @Override
@@ -74,13 +75,13 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
         private final Set<Integer> sampleIdsSet;
         private final Set<Integer> fileIds;
 
-        private HBaseToGenotypeCountConverter(byte[] columnFamily) {
+        private HBaseToGenotypeCountConverter(VariantStorageMetadataManager metadataManager, byte[] columnFamily) {
             super(columnFamily, null, null);
             sampleIds = samples.stream().map(sc.getSampleIds()::get).collect(Collectors.toList());
             sampleIdsSet = samples.stream().map(sc.getSampleIds()::get).collect(Collectors.toSet());
 
-            fileIds = VariantStorageMetadataManager.getFileIdsFromSampleIds(sc, sampleIds);
-            super.setSelectVariantElements(new VariantQueryUtils.SelectVariantElements(sc, sampleIds, Collections.emptyList()));
+            fileIds = metadataManager.getFileIdsFromSampleIds(sc.getId(), sampleIds);
+            super.setSelectVariantElements(new VariantQueryFields(sc, sampleIds, Collections.emptyList()));
             super.setUnknownGenotype("./.");
         }
 

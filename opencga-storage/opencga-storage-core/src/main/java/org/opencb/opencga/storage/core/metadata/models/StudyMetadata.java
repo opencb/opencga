@@ -2,9 +2,13 @@ package org.opencb.opencga.storage.core.metadata.models;
 
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
+import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.biodata.tools.variant.stats.AggregationUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Created on 10/01/19.
@@ -53,6 +57,16 @@ public class StudyMetadata {
         return this;
     }
 
+    @Deprecated
+    public int getStudyId() {
+        return id;
+    }
+
+    @Deprecated
+    public String getStudyName() {
+        return name;
+    }
+
     public Aggregation getAggregation() {
         return aggregation;
     }
@@ -91,4 +105,19 @@ public class StudyMetadata {
         this.attributes = attributes;
         return this;
     }
+
+    public Map<String, VariantFileHeaderComplexLine> getVariantHeaderLines(String key) {
+        return variantHeader.getComplexLines()
+                .stream()
+                .filter(l -> l.getKey().equalsIgnoreCase(key))
+                .collect(Collectors.toMap(VariantFileHeaderComplexLine::getId, l -> l));
+    }
+
+    public VariantFileHeaderComplexLine getVariantHeaderLine(String key, String id) {
+        return variantHeader.getComplexLines()
+                .stream()
+                .filter(l -> l.getKey().equalsIgnoreCase(key) && l.getId().equalsIgnoreCase(id))
+                .findFirst().orElse(null);
+    }
+
 }

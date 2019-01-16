@@ -118,6 +118,11 @@ public interface StudyMetadataDBAdaptor extends AutoCloseable {
         return StudyConfiguration.getIndexedSamples(sc);
     }
 
+    default List<Integer> getIndexedSamples2(int studyId) {
+        StudyConfiguration sc = getStudyConfiguration(studyId, null, null).first();
+        return new ArrayList<>(StudyConfiguration.getSortedIndexedSamplesPosition(sc).values());
+    }
+
     default Integer getSampleId(int studyId, String sampleName) {
         throw new UnsupportedOperationException("TODO");
     }
@@ -131,6 +136,10 @@ public interface StudyMetadataDBAdaptor extends AutoCloseable {
     }
 
     default Integer getCohortId(int studyId, String cohortName) {
+        throw new UnsupportedOperationException("TODO");
+    }
+
+    default Iterator<CohortMetadata> cohortIterator(int studyId) {
         throw new UnsupportedOperationException("TODO");
     }
 

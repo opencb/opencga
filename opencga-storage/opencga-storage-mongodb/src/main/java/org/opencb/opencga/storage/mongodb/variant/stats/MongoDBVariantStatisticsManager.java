@@ -65,7 +65,8 @@ public class MongoDBVariantStatisticsManager extends DefaultVariantStatisticsMan
 //        VariantSourceStats variantSourceStats = new VariantSourceStats(/*FILE_ID*/, Integer.toString(studyConfiguration.getStudyId()));
 
         // reader, tasks and writer
-        Query readerQuery = VariantStatisticsManager.buildInputQuery(studyConfiguration, cohorts.keySet(), overwrite, updateStats, options);
+        Query readerQuery = VariantStatisticsManager.buildInputQuery(variantDBAdaptor.getVariantStorageMetadataManager(),
+                studyConfiguration, cohorts.keySet(), overwrite, updateStats, options);
         logger.info("ReaderQuery: " + readerQuery.toJson());
         QueryOptions readerOptions = VariantStatisticsManager.buildIncludeExclude().append(QueryOptions.SORT, true);
         logger.info("ReaderQueryOptions: " + readerOptions.toJson());

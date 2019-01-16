@@ -44,6 +44,9 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.isNegated;
@@ -281,6 +284,10 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
     public List<String> getStudyNames(QueryOptions options) {
         return studyMetadataDBAdaptor.getStudyNames(options);
+    }
+
+    public String getStudyName(int studyId) {
+        return getStudies(null).inverse().get(studyId);
     }
 
     public List<Integer> getStudyIds(QueryOptions options) {
@@ -550,6 +557,67 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return studyMetadataDBAdaptor.getFileId(studyId, fileName);
     }
 
+    public Integer getFileId(int studyId, Object fileObj) {
+        return getFileId(studyId, fileObj, false);
+    }
+
+    public Integer getFileId(int studyId, Object fileObj, boolean onlyIndexed) {
+        Integer fileId = parseResourceId(studyId, fileObj,
+                o -> getFileId(studyId, o),
+                o -> fileIdExists(studyId, o, onlyIndexed));
+
+        if (fileId != null && onlyIndexed) {
+            if (!getFileMetadata(studyId, fileId).isIndexed()) {
+                fileId = null;
+            }
+        }
+
+        return fileId;
+    }
+
+    /**
+     * Get list of fileIds from a study.
+     *
+     * @param studyId Study id
+     * @param files   List of files
+     * @return List of file ids within this study
+     * @throws VariantQueryException if the list of files contains files from other studies
+     */
+    public List<Integer> getFileIds(int studyId, List<?> files) throws VariantQueryException {
+        Objects.requireNonNull(files);
+        List<Integer> fileIds = new ArrayList<>(files.size());
+        for (Object fileObj : files) {
+            Integer fileId = getFileId(studyId, fileObj);
+            if (fileId == null) {
+                String studyName = getStudyMetadata(studyId).getName();
+                throw VariantQueryException.fileNotFound(fileObj, studyName);
+            }
+            fileIds.add(fileId);
+        }
+        return fileIds;
+    }
+
+    public Pair<Integer, Integer> getFileIdPair(Object fileObj, boolean skipNegated, StudyMetadata defaultStudy) {
+        return getResourcePair(fileObj, skipNegated, defaultStudy, this::fileIdExists, this::getFileId, "file");
+    }
+
+    private boolean fileIdExists(int studyId, int fileId) {
+        return fileIdExists(studyId, fileId, false);
+    }
+
+    private boolean fileIdExists(int studyId, int fileId, boolean onlyIndexed) {
+        FileMetadata fileMetadata = getFileMetadata(studyId, fileId);
+        if (fileMetadata == null) {
+            return false;
+        } else {
+            if (onlyIndexed) {
+                return fileMetadata.isIndexed();
+            } else {
+                return true;
+            }
+        }
+    }
+
     public LinkedHashSet<Integer> getIndexedFiles(int studyId) {
         return studyMetadataDBAdaptor.getIndexedFiles(studyId);
     }
@@ -570,8 +638,79 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return studyMetadataDBAdaptor.getSampleId(studyId, sampleName);
     }
 
+    public Integer getSampleId(int studyId, Object sampleObj) {
+        return getSampleId(studyId, sampleObj, false);
+    }
+
+    public Integer getSampleId(int studyId, Object sampleObj, boolean indexed) {
+        Integer sampleId = parseResourceId(studyId, sampleObj,
+                o -> getSampleId(studyId, o),
+                o -> getSampleMetadata(studyId, o) != null);
+        if (sampleId != null && indexed) {
+            if (getIndexedSamples(studyId).containsValue(sampleId)) {
+                return sampleId;
+            } else {
+                return null;
+            }
+        } else {
+            return sampleId;
+        }
+    }
+
+    public String getSampleName(int studyId, int sampleId) {
+        return getSampleMetadata(studyId, sampleId).getName();
+    }
+
     public BiMap<String, Integer> getIndexedSamples(int studyId) {
         return studyMetadataDBAdaptor.getIndexedSamples(studyId);
+    }
+
+    public List<Integer> getIndexedSamples2(int studyId) {
+        return studyMetadataDBAdaptor.getIndexedSamples2(studyId);
+    }
+
+//    public BiMap<String, Integer> getIndexedSamples(int studyId, int... fileIds) {
+//        return studyMetadataDBAdaptor.getIndexedSamples(studyId);
+//    }
+
+    /**
+     * Get a list of the samples to be returned, given a study and a list of samples to be returned.
+     * The result can be used as SamplesPosition in {@link org.opencb.biodata.models.variant.StudyEntry#setSamplesPosition}
+     *
+     * @param sm                    Study metadata
+     * @param includeSamples        List of samples to be included in the result
+     * @return The samples IDs
+     */
+    public LinkedHashMap<String, Integer> getSamplesPosition(StudyMetadata sm, LinkedHashSet<?> includeSamples) {
+        return getSamplesPosition(sm, includeSamples, this::getIndexedSamples2);
+    }
+
+    public LinkedHashMap<String, Integer> getSamplesPosition(StudyMetadata sm, LinkedHashSet<?> includeSamples,
+            Function<Integer, List<Integer>> getIndexedSamplesPosition) {
+        LinkedHashMap<String, Integer> samplesPosition;
+        // If null, return ALL samples
+        if (includeSamples == null) {
+            List<Integer> orderedSamplesPosition = getIndexedSamplesPosition.apply(sm.getId());
+            samplesPosition = new LinkedHashMap<>(orderedSamplesPosition.size());
+            for (Integer sampleId : orderedSamplesPosition) {
+                samplesPosition.put(getSampleMetadata(sm.getId(), sampleId).getName(), samplesPosition.size());
+            }
+        } else {
+            samplesPosition = new LinkedHashMap<>(includeSamples.size());
+            int index = 0;
+            List<Integer> indexedSamplesId = getIndexedSamplesPosition.apply(sm.getId());
+            for (Object includeSampleObj : includeSamples) {
+                Integer sampleId = getSampleId(sm.getId(), includeSampleObj, false);
+                String includeSample = getSampleMetadata(sm.getId(), sampleId).getName();
+
+                if (!samplesPosition.containsKey(includeSample)) {
+                    if (indexedSamplesId.contains(sampleId)) {
+                        samplesPosition.put(includeSample, index++);
+                    }
+                }
+            }
+        }
+        return samplesPosition;
     }
 
     public CohortMetadata getCohortMetadata(int studyId, int cohortId) {
@@ -584,6 +723,31 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
     public Integer getCohortId(int studyId, String cohortName) {
         return studyMetadataDBAdaptor.getCohortId(studyId, cohortName);
+    }
+
+    public Integer getCohortId(int studyId, Object cohortObj) {
+        return parseResourceId(studyId, cohortObj,
+                o -> getCohortId(studyId, o),
+                o -> getCohortMetadata(studyId, o) != null);
+    }
+
+    public List<Integer> getCohortIds(int studyId, List<?> cohorts) {
+        Objects.requireNonNull(cohorts);
+        List<Integer> cohortIds = new ArrayList<>(cohorts.size());
+        for (Object cohortObj : cohorts) {
+            Integer cohortId = getCohortId(studyId, cohortObj);
+            if (cohortId == null) {
+                List<String> availableCohorts = new LinkedList<>();
+                cohortIterator(studyId).forEachRemaining(c -> availableCohorts.add(c.getName()));
+                throw VariantQueryException.cohortNotFound(cohortObj.toString(), studyId, availableCohorts);
+            }
+            cohortIds.add(cohortId);
+        }
+        return cohortIds;
+    }
+
+    public Iterator<CohortMetadata> cohortIterator(int studyId) {
+        return studyMetadataDBAdaptor.cohortIterator(studyId);
     }
 
     public BatchFileTask getTask(int studyId, int taskId) {
@@ -620,179 +784,101 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         studyMetadataDBAdaptor.updateTask(studyId, task, null);
     }
 
-    /**
-     * Get list of fileIds for each study.
-     *
-     * @param files                     List of files
-     * @param skipNegated               Do not include negated files in the list
-     * @param defaultStudyConfiguration Default study configuration. Use to relate files with a study.
-     * @return Map from studyId to list of fileIds
-     */
-    public Map<Integer, List<Integer>> getFileIdsMap(List<?> files, boolean skipNegated, StudyConfiguration defaultStudyConfiguration) {
-        if (files == null || files.isEmpty()) {
-            return Collections.emptyMap();
-        }
-        Map<Integer, List<Integer>> fileIdsMap = new HashMap<>();
-        for (Object fileObj : files) {
-            Pair<Integer, Integer> pair = getFileIdPair(fileObj, skipNegated, defaultStudyConfiguration);
-            if (pair != null) {
-                Integer studyId = pair.getKey();
-                Integer fileId = pair.getValue();
-                fileIdsMap.computeIfAbsent(studyId, k -> new ArrayList<>()).add(fileId);
-            }
-        }
-        return fileIdsMap;
-    }
-
-    public Pair<Integer, Integer> getFileIdPair(Object fileObj, boolean skipNegated, StudyConfiguration defaultStudyConfiguration) {
+    private Pair<Integer, Integer> getResourcePair(Object obj, boolean skipNegated, StudyMetadata defaultStudy,
+                                                   BiPredicate<Integer, Integer> validId,
+                                                   BiFunction<Integer, String, Integer> toId, String resourceName) {
+        Objects.requireNonNull(obj, resourceName);
         final Integer studyId;
-        final Integer fileId;
+        final Integer id;
 
-        if (fileObj instanceof Number) {
-            fileId = ((Number) fileObj).intValue();
-            if (defaultStudyConfiguration != null && (defaultStudyConfiguration.getFileIds().containsValue(fileId)
-                    || defaultStudyConfiguration.getFileIds().containsValue(-fileId))) {
-                studyId = defaultStudyConfiguration.getStudyId();
+        if (obj instanceof Number) {
+            id = ((Number) obj).intValue();
+            if (defaultStudy != null) {
+                if (getFileMetadata(defaultStudy.getId(), Math.abs(id)) != null) {
+                    studyId = defaultStudy.getStudyId();
+                } else {
+                    studyId = null;
+                }
             } else {
                 studyId = null;
             }
         } else {
-            String fileStr = String.valueOf(fileObj);
-            if (isNegated(fileStr)) { //Skip negated studies
+            String resourceStr = obj.toString();
+            if (isNegated(resourceStr)) { //Skip negated studies
                 if (skipNegated) {
                     return null;
                 } else {
-                    fileStr = removeNegation(fileStr);
+                    resourceStr = removeNegation(resourceStr);
                 }
             }
-            String[] studyFile = VariantQueryUtils.splitStudyResource(fileStr);
-            if (studyFile.length == 2) {
-                String study = studyFile[0];
-                fileStr = studyFile[1];
-                StudyConfiguration sc;
-                if (defaultStudyConfiguration != null
-                        && (study.equals(defaultStudyConfiguration.getStudyName())
-                        || NumberUtils.isParsable(study) && Integer.valueOf(study).equals(defaultStudyConfiguration.getStudyId()))) {
-                    sc = defaultStudyConfiguration;
+            String[] studyResource = VariantQueryUtils.splitStudyResource(resourceStr);
+            if (studyResource.length == 2) {
+                String study = studyResource[0];
+                resourceStr = studyResource[1];
+                StudyMetadata sm;
+                if (defaultStudy != null
+                        && (study.equals(defaultStudy.getStudyName())
+                        || NumberUtils.isParsable(study) && Integer.valueOf(study).equals(defaultStudy.getStudyId()))) {
+                    sm = defaultStudy;
                 } else {
-                    QueryResult<StudyConfiguration> queryResult = getStudyConfiguration(study, new QueryOptions());
-                    if (queryResult.getResult().isEmpty()) {
+                    sm = getStudyMetadata(study);
+                    if (sm == null) {
                         throw VariantQueryException.studyNotFound(study);
                     }
-                    sc = queryResult.first();
                 }
-                studyId = sc.getStudyId();
-                fileId = sc.getFileIds().get(fileStr);
-            } else if (defaultStudyConfiguration != null) {
-                if (NumberUtils.isParsable(fileStr)) {
-                    fileId = Integer.parseInt(fileStr);
-                    if (defaultStudyConfiguration.getFileIds().containsValue(fileId)
-                            || defaultStudyConfiguration.getFileIds().containsValue(-fileId)) {
-                        studyId = defaultStudyConfiguration.getStudyId();
+                studyId = sm.getStudyId();
+                id = toId.apply(studyId, resourceStr);
+            } else if (defaultStudy != null) {
+                if (NumberUtils.isParsable(resourceStr)) {
+                    id = Integer.parseInt(resourceStr);
+                    if (validId.test(defaultStudy.getStudyId(), Math.abs(id))) {
+                        studyId = defaultStudy.getStudyId();
                     } else {
                         studyId = null;
                     }
                 } else {
-                    fileId = defaultStudyConfiguration.getFileIds().get(fileStr);
-                    if (fileId != null) {
-                        studyId = defaultStudyConfiguration.getStudyId();
+                    id = toId.apply(defaultStudy.getStudyId(), resourceStr);
+                    if (id != null) {
+                        studyId = defaultStudy.getStudyId();
                     } else {
                         studyId = null;
                     }
                 }
-            } else if (NumberUtils.isParsable(fileStr)) {
+            } else if (NumberUtils.isParsable(resourceStr)) {
                 studyId = null;
-                fileId = Integer.parseInt(fileStr);
+                id = Integer.parseInt(resourceStr);
             } else {
                 studyId = null;
-                fileId = null;
+                id = null;
             }
         }
 
         if (studyId == null) {
-            Map<String, Integer> studies = getStudies(null);
-            Collection<Integer> studyIds = studies.values();
-            Integer fileIdFromStudy;
-            for (Integer id : studyIds) {
-                StudyConfiguration sc = getStudyConfiguration(id, RO_CACHED_OPTIONS).first();
-                fileIdFromStudy = getFileIdFromStudy(fileId != null ? fileId : fileObj, sc);
-                if (fileIdFromStudy != null) {
-                    return Pair.of(sc.getStudyId(), fileIdFromStudy);
-                }
-            }
-            throw VariantQueryException.missingStudyForFile(fileObj.toString(), studies.keySet());
+            return getResourcePair(obj, toId, resourceName);
         }
 
-        return Pair.of(studyId, fileId);
+        return Pair.of(studyId, id);
     }
 
-    /**
-     * Get list of fileIds from a study.
-     *
-     * @param files              List of files
-     * @param studyConfiguration Study configuration.
-     * @return List of file ids within this study
-     * @throws VariantQueryException if the list of files contains files from other studies
-     */
-    public static List<Integer> getFileIdsFromStudy(List<?> files, StudyConfiguration studyConfiguration) throws VariantQueryException {
-        Objects.requireNonNull(studyConfiguration);
-        List<Integer> fileIds = new ArrayList<>(files.size());
-        for (Object fileObj : files) {
-            Integer fileId = getFileIdFromStudy(fileObj, studyConfiguration);
-            if (fileId == null) {
-                throw VariantQueryException.fileNotFound(fileObj, studyConfiguration.getStudyName());
+    private Pair<Integer, Integer> getResourcePair(Object obj, BiFunction<Integer, String, Integer> toId, String resourceName) {
+        Map<String, Integer> studies = getStudies(null);
+        Collection<Integer> studyIds = studies.values();
+        Integer resourceIdFromStudy;
+        for (Integer studyId : studyIds) {
+            StudyMetadata sm = getStudyMetadata(studyId);
+            resourceIdFromStudy = toId.apply(sm.getId(), obj.toString());
+            if (resourceIdFromStudy != null) {
+                return Pair.of(sm.getId(), resourceIdFromStudy);
             }
-            fileIds.add(fileId);
         }
-        return fileIds;
+        throw VariantQueryException.missingStudyFor(resourceName, obj.toString(), studies.keySet());
     }
 
-    /**
-     * Get fileId from a given study configuration.
-     *
-     * @param fileObj            File object
-     * @param studyConfiguration Study configuration.
-     * @return File id within this study. Null if the file does not exist.
-     */
-    public static Integer getFileIdFromStudy(Object fileObj, StudyConfiguration studyConfiguration) {
-        return getFileIdFromStudy(fileObj, studyConfiguration, false);
-    }
-
-
-    /**
-     * Get fileId from a given study configuration.
-     *
-     * @param fileObj            File object
-     * @param studyConfiguration Study configuration.
-     * @param indexed            Only return indexed files
-     * @return File id within this study. Null if the file does not exist.
-     */
-    public static Integer getFileIdFromStudy(Object fileObj, StudyConfiguration studyConfiguration, boolean indexed) {
-        Integer fileId = getResourceIdFromStudy(fileObj, studyConfiguration, studyConfiguration.getFileIds());
-        if (indexed && fileId != null) {
-            if (studyConfiguration.getIndexedFiles().contains(fileId)) {
-                return fileId;
-            } else {
-                return null;
-            }
-        } else {
-            return fileId;
-        }
-    }
-
-    /**
-     * Get fileId from a given study configuration.
-     *
-     * @param obj                Object
-     * @param studyConfiguration Study configuration.
-     * @param biMap              BiMap containing Names and Ids for this resource
-     * @return File id within this study. Null if the file does not exist.
-     */
-    private static Integer getResourceIdFromStudy(Object obj, StudyConfiguration studyConfiguration, BiMap<String, Integer> biMap) {
+    private Integer parseResourceId(int studyId, Object obj, Function<String, Integer> toId, Predicate<Integer> validId) {
         final Integer id;
         if (obj instanceof Number) {
             int aux = ((Number) obj).intValue();
-            if (biMap.containsValue(aux)) {
+            if (validId.test(aux)) {
                 id = aux;
             } else {
                 id = null;
@@ -809,30 +895,31 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 if (split.length == 2) {
                     String study = split[0];
                     str = split[1];
-                    if (study.equals(studyConfiguration.getStudyName())
-                            || StringUtils.isNumeric(study) && Integer.valueOf(study).equals(studyConfiguration.getStudyId())) {
+                    String studyName = getStudyName(studyId);
+                    if (study.equals(studyName)
+                            || StringUtils.isNumeric(study) && Integer.valueOf(study).equals(studyId)) {
                         if (StringUtils.isNumeric(str)) {
                             int aux = Integer.valueOf(str);
-                            if (biMap.containsValue(aux)) {
+                            if (validId.test(aux)) {
                                 id = aux;
                             } else {
                                 id = null;
                             }
                         } else {
-                            id = biMap.get(str);
+                            id = toId.apply(str);
                         }
                     } else {
                         id = null;
                     }
                 } else if (StringUtils.isNumeric(str)) {
                     int aux = Integer.valueOf(str);
-                    if (biMap.containsValue(aux)) {
+                    if (validId.test(aux)) {
                         id = aux;
                     } else {
                         id = null;
                     }
                 } else {
-                    id = biMap.get(str);
+                    id = toId.apply(str);
                 }
             }
         }
@@ -885,26 +972,6 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return sampleId;
     }
 
-    public static Integer getSampleIdFromStudy(Object sampleObj, StudyConfiguration sc) {
-        return getSampleIdFromStudy(sampleObj, sc, false);
-    }
-
-    public static Integer getSampleIdFromStudy(Object sampleObj, StudyConfiguration sc, boolean indexed) {
-        Integer sampleId = getResourceIdFromStudy(sampleObj, sc, sc.getSampleIds());
-        if (indexed) {
-            if (sampleId != null) {
-                for (Integer indexedFile : sc.getIndexedFiles()) {
-                    if (sc.getSamplesInFiles().get(indexedFile).contains(sampleId)) {
-                        return sampleId;
-                    }
-                }
-            }
-            return null;
-        } else {
-            return sampleId;
-        }
-    }
-
     // TODO: Return cohortId and studyId as a Pair
     /**
      * Finds the cohortId from a cohort reference.
@@ -933,42 +1000,10 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return cohortId;
     }
 
-    /**
-     * Get list of fileIds from a study.
-     *
-     * @param cohorts              List of cohorts
-     * @param studyConfiguration Study configuration.
-     * @return List of file ids within this study
-     * @throws VariantQueryException if the list of cohorts contains cohorts from other studies
-     */
-    public static List<Integer> getCohortIdsFromStudy(List<?> cohorts, StudyConfiguration studyConfiguration) throws VariantQueryException {
-        Objects.requireNonNull(studyConfiguration);
-        List<Integer> fileIds = new ArrayList<>(cohorts.size());
-        for (Object cohortObj : cohorts) {
-            Integer cohortId = getCohortIdFromStudy(cohortObj, studyConfiguration);
-            if (cohortId == null) {
-                throw VariantQueryException.cohortNotFound(cohortObj.toString(), studyConfiguration.getStudyId(),
-                        studyConfiguration.getCohortIds().keySet());
-            }
-            fileIds.add(cohortId);
-        }
-        return fileIds;
-    }
-
-    public static Integer getCohortIdFromStudy(Object cohortObj, StudyConfiguration sc) {
-        return getResourceIdFromStudy(cohortObj, sc, sc.getCohortIds());
-    }
-
-    public static Set<Integer> getFileIdsFromSampleIds(StudyConfiguration studyConfiguration, Integer sampleId) {
-        return getFileIdsFromSampleIds(studyConfiguration, Collections.singleton(sampleId));
-    }
-
-    public static Set<Integer> getFileIdsFromSampleIds(StudyConfiguration studyConfiguration, Collection<Integer> sampleIds) {
+    public Set<Integer> getFileIdsFromSampleIds(int studyId, Collection<Integer> sampleIds) {
         Set<Integer> fileIds = new HashSet<>();
-        for (Map.Entry<Integer, LinkedHashSet<Integer>> entry : studyConfiguration.getSamplesInFiles().entrySet()) {
-            if (studyConfiguration.getIndexedFiles().contains(entry.getKey()) && !Collections.disjoint(entry.getValue(), sampleIds)) {
-                fileIds.add(entry.getKey());
-            }
+        for (Integer sampleId : sampleIds) {
+            fileIds.addAll(getSampleMetadata(studyId, sampleId).getFiles());
         }
         return fileIds;
     }
@@ -1051,7 +1086,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         Set<Integer> searchIndexSampleSets = new HashSet<>();
 
         for (String sample : samples) {
-            Integer sampleId = getSampleIdFromStudy(sample, studyConfiguration);
+            Integer sampleId = getSampleId(studyConfiguration.getId(), sample);
             if (sampleId == null) {
                 throw VariantQueryException.sampleNotFound(sample, studyConfiguration.getStudyName());
             }

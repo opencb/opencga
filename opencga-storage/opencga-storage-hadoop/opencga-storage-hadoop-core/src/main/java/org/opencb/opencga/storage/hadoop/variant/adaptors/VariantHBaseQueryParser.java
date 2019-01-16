@@ -30,10 +30,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
@@ -64,7 +62,7 @@ public class VariantHBaseQueryParser {
     private static Logger logger = LoggerFactory.getLogger(VariantHBaseQueryParser.class);
 
     private final GenomeHelper genomeHelper;
-    private final VariantStorageMetadataManager variantStorageMetadataManager;
+    private final VariantStorageMetadataManager metadataManager;
 
     public static final Set<VariantQueryParam> SUPPORTED_QUERY_PARAMS = Collections.unmodifiableSet(Sets.newHashSet(
 //            STUDIES, // Not fully supported
@@ -77,9 +75,9 @@ public class VariantHBaseQueryParser {
             INCLUDE_FORMAT,
             UNKNOWN_GENOTYPE));
 
-    public VariantHBaseQueryParser(GenomeHelper genomeHelper, VariantStorageMetadataManager variantStorageMetadataManager) {
+    public VariantHBaseQueryParser(GenomeHelper genomeHelper, VariantStorageMetadataManager metadataManager) {
         this.genomeHelper = genomeHelper;
-        this.variantStorageMetadataManager = variantStorageMetadataManager;
+        this.metadataManager = metadataManager;
     }
 
     public static boolean isSupportedQueryParam(Query query, QueryParam param) {
@@ -163,9 +161,10 @@ public class VariantHBaseQueryParser {
     }
 
     public List<Scan> parseQueryMultiRegion(Query query, QueryOptions options) {
-        return parseQueryMultiRegion(VariantQueryUtils.parseSelectElements(query, options, variantStorageMetadataManager), query, options);
+        return parseQueryMultiRegion(VariantQueryUtils.parseVariantQueryFields(query, options, metadataManager), query, options);
     }
-    public List<Scan> parseQueryMultiRegion(SelectVariantElements selectElements, Query query, QueryOptions options) {
+
+    public List<Scan> parseQueryMultiRegion(VariantQueryFields selectElements, Query query, QueryOptions options) {
         VariantQueryXref xrefs = VariantQueryUtils.parseXrefs(query);
         if (!xrefs.getOtherXrefs().isEmpty()) {
             throw VariantQueryException.unsupportedVariantQueryFilter(VariantQueryParam.ANNOT_XREF,
@@ -230,12 +229,12 @@ public class VariantHBaseQueryParser {
     }
 
     public Scan parseQuery(Query query, QueryOptions options) {
-        VariantQueryUtils.SelectVariantElements selectElements =
-                VariantQueryUtils.parseSelectElements(query, options, variantStorageMetadataManager);
+        VariantQueryFields selectElements =
+                VariantQueryUtils.parseVariantQueryFields(query, options, metadataManager);
         return parseQuery(selectElements, query, options);
     }
 
-    public Scan parseQuery(VariantQueryUtils.SelectVariantElements selectElements, Query query, QueryOptions options) {
+    public Scan parseQuery(VariantQueryFields selectElements, Query query, QueryOptions options) {
 
         Scan scan = new Scan();
         byte[] family = genomeHelper.getColumnFamily();
@@ -302,7 +301,7 @@ public class VariantHBaseQueryParser {
             }
         }
 
-        Map<String, Integer> studies = variantStorageMetadataManager.getStudies(null);
+        Map<String, Integer> studies = metadataManager.getStudies(null);
         Set<String> studyNames = studies.keySet();
         if (query.getBoolean(VARIANTS_TO_INDEX.key(), false)) {
 
@@ -315,7 +314,7 @@ public class VariantHBaseQueryParser {
             filters.addFilter(new FilterList(FilterList.Operator.MUST_PASS_ONE, f1, f2));
 
 
-            long ts = variantStorageMetadataManager.getProjectMetadata().first().getAttributes()
+            long ts = metadataManager.getProjectMetadata().first().getAttributes()
                     .getLong(SEARCH_INDEX_LAST_TIMESTAMP.key());
             if (ts > 0 && scan.getStartRow() == HConstants.EMPTY_START_ROW) {
                 try {
@@ -351,8 +350,7 @@ public class VariantHBaseQueryParser {
                 for (Integer sampleId : sampleIds) {
                     scan.addColumn(family, buildSampleColumnKey(studyId, sampleId));
                 }
-                Set<Integer> fileIds = VariantStorageMetadataManager.getFileIdsFromSampleIds(
-                        selectElements.getStudyConfigurations().get(studyId), sampleIds);
+                Set<Integer> fileIds = metadataManager.getFileIdsFromSampleIds(studyId, sampleIds);
                 for (Integer fileId : fileIds) {
                     scan.addColumn(family, buildFileColumnKey(studyId, fileId));
                 }
@@ -368,7 +366,7 @@ public class VariantHBaseQueryParser {
 
         // If we already add a filter that requires a sample from a certain study, we can skip latter the filter for that study
         Set<Integer> filteredStudies = new HashSet<>();
-        final StudyConfiguration defaultStudyConfiguration = getDefaultStudyConfiguration(query, options, variantStorageMetadataManager);
+        final StudyMetadata defaultStudy = getDefaultStudy(query, options, metadataManager);
         if (isValidParam(query, FILE)) {
             String value = query.getString(FILE.key());
             VariantQueryUtils.QueryOperation operation = checkOperator(value);
@@ -381,7 +379,7 @@ public class VariantHBaseQueryParser {
                 subFilters = filters;
             }
             for (String file : values) {
-                Pair<Integer, Integer> fileIdPair = variantStorageMetadataManager.getFileIdPair(file, false, defaultStudyConfiguration);
+                Pair<Integer, Integer> fileIdPair = metadataManager.getFileIdPair(file, false, defaultStudy);
                 byte[] column = buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue());
                 if (isNegated(file)) {
                     subFilters.addFilter(missingColumnFilter(column));
@@ -405,11 +403,11 @@ public class VariantHBaseQueryParser {
                 subFilters = filters;
             }
             for (Map.Entry<Object, List<String>> entry : genotypesMap.entrySet()) {
-                if (defaultStudyConfiguration == null) {
+                if (defaultStudy == null) {
                     throw VariantQueryException.missingStudyForSample(entry.getKey().toString(), studyNames);
                 }
-                int studyId = defaultStudyConfiguration.getStudyId();
-                int sampleId = variantStorageMetadataManager.getSampleId(entry.getKey(), defaultStudyConfiguration);
+                int studyId = defaultStudy.getId();
+                int sampleId = metadataManager.getSampleId(defaultStudy.getId(), entry.getKey(), true);
                 List<String> genotypes = entry.getValue();
 
                 if (genotypes.stream().allMatch(VariantQueryUtils::isNegated)) {
@@ -462,7 +460,7 @@ public class VariantHBaseQueryParser {
                 subFilters = filters;
             }
             for (String studyStr : values) {
-                Integer studyId = variantStorageMetadataManager.getStudyId(studyStr, null);
+                Integer studyId = metadataManager.getStudyId(studyStr, null);
                 byte[] column = VariantPhoenixHelper.getStudyColumn(studyId).bytes();
                 if (isNegated(studyStr)) {
                     subFilters.addFilter(missingColumnFilter(column));
@@ -484,7 +482,7 @@ public class VariantHBaseQueryParser {
                 scan.addColumn(family, FULL_ANNOTATION.bytes());
                 scan.addColumn(family, ANNOTATION_ID.bytes());
                 // Only return RELEASE when reading current annotation
-                int release = variantStorageMetadataManager.getProjectMetadata().first().getRelease();
+                int release = metadataManager.getProjectMetadata().first().getRelease();
                 for (int i = 1; i <= release; i++) {
                     scan.addColumn(family, VariantPhoenixHelper.buildReleaseColumnKey(i));
                 }

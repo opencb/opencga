@@ -31,6 +31,7 @@ import org.opencb.biodata.models.variant.metadata.VariantFileHeaderSimpleLine;
 import org.opencb.biodata.tools.variant.stats.AggregationUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +45,7 @@ import java.util.stream.Collectors;
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
 @Deprecated
-public class StudyConfiguration {
+public class StudyConfiguration extends StudyMetadata {
 
     public static final String UNKNOWN_HEADER_ATTRIBUTE = ".";
     private int studyId;
@@ -349,8 +350,9 @@ public class StudyConfiguration {
         return timeStamp;
     }
 
-    public void setTimeStamp(Long timeStamp) {
+    public StudyConfiguration setTimeStamp(Long timeStamp) {
         this.timeStamp = timeStamp;
+        return this;
     }
 
     public VariantFileHeader getVariantHeader() {
@@ -380,8 +382,9 @@ public class StudyConfiguration {
         return attributes;
     }
 
-    public void setAttributes(ObjectMap attributes) {
+    public StudyConfiguration setAttributes(ObjectMap attributes) {
         this.attributes = attributes;
+        return this;
     }
 
     @Override
@@ -494,12 +497,14 @@ public class StudyConfiguration {
      * @param includeSamples        List of samples to be included in the result
      * @return The samples IDs
      */
+    @Deprecated
     public static LinkedHashMap<String, Integer> getSamplesPosition(
             StudyConfiguration studyConfiguration,
             LinkedHashSet<?> includeSamples) {
         return getSamplesPosition(studyConfiguration, includeSamples, StudyConfiguration::getIndexedSamplesPosition);
     }
 
+    @Deprecated
     public static LinkedHashMap<String, Integer> getSamplesPosition(
             StudyConfiguration studyConfiguration,
             LinkedHashSet<?> includeSamples,

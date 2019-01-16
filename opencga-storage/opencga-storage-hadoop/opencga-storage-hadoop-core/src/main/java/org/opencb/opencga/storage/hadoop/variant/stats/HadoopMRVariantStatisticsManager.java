@@ -43,7 +43,8 @@ public class HadoopMRVariantStatisticsManager implements VariantStatisticsManage
         if (inputOptions != null) {
             options.putAll(inputOptions);
         }
-        StudyConfiguration sc = dbAdaptor.getVariantStorageMetadataManager().getStudyConfiguration(study, options).first();
+        VariantStorageMetadataManager metadataManager = dbAdaptor.getVariantStorageMetadataManager();
+        StudyConfiguration sc = metadataManager.getStudyConfiguration(study, options).first();
 
         if (sc.isAggregated()) {
             throw new StorageEngineException("Unsupported calculate aggregated statistics with map-reduce. Please, use "
@@ -58,7 +59,7 @@ public class HadoopMRVariantStatisticsManager implements VariantStatisticsManage
 
         VariantStatisticsManager.checkAndUpdateCalculatedCohorts(sc, cohorts, updateStats);
 
-        List<Integer> cohortIds = VariantStorageMetadataManager.getCohortIdsFromStudy(cohorts, sc);
+        List<Integer> cohortIds = metadataManager.getCohortIds(sc.getId(), cohorts);
 
         options.put(VariantStatsMapper.COHORTS, cohortIds);
         VariantStatsMapper.setAggregationMappingProperties(options, VariantStatisticsManager.getAggregationMappingProperties(options));
@@ -69,7 +70,7 @@ public class HadoopMRVariantStatisticsManager implements VariantStatisticsManage
                 sc.getStudyId(), Collections.emptyList(), options);
         mrExecutor.run(VariantStatsDriver.class, args, options, "Calculate stats of cohorts " + cohorts);
 
-        dbAdaptor.getVariantStorageMetadataManager().updateStudyConfiguration(sc, options);
+        metadataManager.updateStudyConfiguration(sc, options);
         try {
             dbAdaptor.updateStatsColumns(sc);
         } catch (SQLException e) {

@@ -22,6 +22,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -88,10 +90,12 @@ public interface VariantStatisticsManager {
         return new QueryOptions(QueryOptions.EXCLUDE, Arrays.asList(VariantField.ANNOTATION, VariantField.STUDIES_STATS));
     }
 
-    static Query buildInputQuery(StudyConfiguration studyConfiguration, Collection<?> cohorts, boolean overwrite, boolean updateStats,
+    static Query buildInputQuery(VariantStorageMetadataManager metadataManager, StudyMetadata study,
+                                 Collection<?> cohorts, boolean overwrite, boolean updateStats,
                                  ObjectMap options) {
-        Query readerQuery = new Query(VariantQueryParam.STUDY.key(), studyConfiguration.getStudyId())
-                .append(VariantQueryParam.INCLUDE_STUDY.key(), studyConfiguration.getStudyId());
+        int studyId = study.getId();
+        Query readerQuery = new Query(VariantQueryParam.STUDY.key(), studyId)
+                .append(VariantQueryParam.INCLUDE_STUDY.key(), studyId);
         if (options.containsKey(VariantQueryParam.REGION.key())) {
             Object region = options.get(VariantQueryParam.REGION.key());
             readerQuery.put(VariantQueryParam.REGION.key(), region);
@@ -99,31 +103,19 @@ public interface VariantStatisticsManager {
         if (updateStats && !overwrite) {
             //Get all variants that not contain any of the required cohorts
             readerQuery.append(VariantQueryParam.COHORT.key(),
-                    cohorts.stream().map((cohort) -> NOT + studyConfiguration.getStudyName() + ":" + cohort).collect(Collectors
+                    cohorts.stream().map((cohort) -> NOT + study.getStudyName() + ":" + cohort).collect(Collectors
                             .joining(AND)));
         }
 
-
         Set<Integer> sampleIds = new HashSet<>();
         for (Object cohort : cohorts) {
-            Integer cohortId = VariantStorageMetadataManager.getCohortIdFromStudy(cohort, studyConfiguration);
-            sampleIds.addAll(studyConfiguration.getCohorts().get(cohortId));
+            Integer cohortId = metadataManager.getCohortId(studyId, cohort);
+            CohortMetadata cohortMetadata = metadataManager.getCohortMetadata(studyId, cohortId);
+            sampleIds.addAll(cohortMetadata.getSamples());
         }
 
-        if (!sampleIds.isEmpty()) {
-            readerQuery.put(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleIds);
-            Set<Integer> fileIds = new HashSet<>();
-            for (Map.Entry<Integer, LinkedHashSet<Integer>> entry : studyConfiguration.getSamplesInFiles().entrySet()) {
-                if (studyConfiguration.getIndexedFiles().contains(entry.getKey()) && !Collections.disjoint(entry.getValue(), sampleIds)) {
-                    fileIds.add(entry.getKey());
-                }
-            }
-            readerQuery.put(VariantQueryParam.INCLUDE_FILE.key(), fileIds);
-        }
-
-
+        readerQuery.put(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleIds);
         readerQuery.append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true);
-
         readerQuery.append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), UNKNOWN_GENOTYPE);
         return readerQuery;
     }

@@ -105,7 +105,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
 
 
         if (allSamples) {
-            StudyConfiguration sc = getStudyConfigurationManager().getStudyConfiguration(study, null).first();
+            StudyConfiguration sc = getMetadataManager().getStudyConfiguration(study, null).first();
             for (Integer fileId : sc.getIndexedFiles()) {
                 sampleIds.addAll(sc.getSamplesInFiles().get(fileId));
             }

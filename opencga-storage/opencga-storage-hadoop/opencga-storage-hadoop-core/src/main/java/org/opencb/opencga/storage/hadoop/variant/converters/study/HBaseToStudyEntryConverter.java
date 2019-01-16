@@ -38,7 +38,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.HBaseToVariantStatsConverter;
@@ -89,7 +89,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     private List<String> expectedFormat;
 
     protected final Logger logger = LoggerFactory.getLogger(HBaseToStudyEntryConverter.class);
-    private VariantQueryUtils.SelectVariantElements selectVariantElements;
+    private VariantQueryFields selectVariantElements;
 
     public HBaseToStudyEntryConverter(byte[] columnFamily, VariantStorageMetadataManager scm,
                                       HBaseToVariantStatsConverter statsConverter) {
@@ -159,7 +159,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         return this;
     }
 
-    public void setSelectVariantElements(VariantQueryUtils.SelectVariantElements selectVariantElements) {
+    public void setSelectVariantElements(VariantQueryFields selectVariantElements) {
         this.selectVariantElements = selectVariantElements;
     }
 

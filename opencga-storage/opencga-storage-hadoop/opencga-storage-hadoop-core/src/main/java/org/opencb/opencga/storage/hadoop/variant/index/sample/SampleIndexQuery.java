@@ -2,8 +2,8 @@ package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
@@ -96,7 +96,7 @@ public final class SampleIndexQuery {
         // TODO: Accept variant IDs?
 
         // Extract study
-        StudyConfiguration defaultStudyConfiguration = VariantQueryUtils.getDefaultStudyConfiguration(query, null, scm);
+        StudyMetadata defaultStudy = VariantQueryUtils.getDefaultStudy(query, null, scm);
 
         // Extract sample and genotypes to filter
         VariantQueryUtils.QueryOperation queryOperation;
@@ -133,11 +133,11 @@ public final class SampleIndexQuery {
             throw new IllegalStateException("Unable to query SamplesIndex");
         }
 
-        if (defaultStudyConfiguration == null) {
+        if (defaultStudy == null) {
             String sample = samplesMap.keySet().iterator().next();
             throw VariantQueryException.missingStudyForSample(sample, scm.getStudyNames(null));
         }
-        String study = defaultStudyConfiguration.getStudyName();
+        String study = defaultStudy.getName();
 
         return new SampleIndexQuery(regions, study, samplesMap, queryOperation);
     }

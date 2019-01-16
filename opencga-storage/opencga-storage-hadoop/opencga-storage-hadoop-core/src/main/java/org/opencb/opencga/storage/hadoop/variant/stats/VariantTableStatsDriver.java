@@ -79,7 +79,7 @@ public class VariantTableStatsDriver extends AbstractVariantsTableDriver {
         // TODO needs to be removed after integration
 
         int studyId = getHelper().getStudyId();
-        long lock = getStudyConfigurationManager().lockStudy(studyId);
+        long lock = getMetadataManager().lockStudy(studyId);
         StudyConfiguration sc = null;
         try {
             sc = readStudyConfiguration();
@@ -100,9 +100,9 @@ public class VariantTableStatsDriver extends AbstractVariantsTableDriver {
                 throw new IllegalStateException("No default cohort found!!!");
             }
             sc.getCohorts().put(defaultCohortId, indexedSamples.values());
-            getStudyConfigurationManager().updateStudyConfiguration(sc, new QueryOptions());
+            getMetadataManager().updateStudyConfiguration(sc, new QueryOptions());
         } finally {
-            getStudyConfigurationManager().unLockStudy(studyId, lock);
+            getMetadataManager().unLockStudy(studyId, lock);
         }
         // update PHOENIX definition with statistic columns
         VariantPhoenixHelper variantPhoenixHelper = new VariantPhoenixHelper(getHelper());
@@ -119,14 +119,14 @@ public class VariantTableStatsDriver extends AbstractVariantsTableDriver {
         super.postExecution(succeed);
         if (succeed) {
             int studyId = getHelper().getStudyId();
-            long lock = getStudyConfigurationManager().lockStudy(studyId);
+            long lock = getMetadataManager().lockStudy(studyId);
             try {
                 StudyConfiguration sc = readStudyConfiguration();
                 sc.setCalculatedStats(sc.getCohortIds().values()); // update
                 sc.setInvalidStats(Collections.emptySet());
-                getStudyConfigurationManager().updateStudyConfiguration(sc, new QueryOptions());
+                getMetadataManager().updateStudyConfiguration(sc, new QueryOptions());
             } finally {
-                getStudyConfigurationManager().unLockStudy(studyId, lock);
+                getMetadataManager().unLockStudy(studyId, lock);
             }
         }
     }

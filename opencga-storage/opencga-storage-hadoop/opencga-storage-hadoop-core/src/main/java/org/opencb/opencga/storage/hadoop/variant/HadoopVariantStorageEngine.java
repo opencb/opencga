@@ -431,11 +431,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                     + FILL_GAPS_MAX_SAMPLES + " samples.");
         }
 
-        VariantStorageMetadataManager scm = getVariantStorageMetadataManager();
-        StudyConfiguration studyConfiguration = scm.getStudyConfiguration(study, null).first();
+        VariantStorageMetadataManager metadataManager = getVariantStorageMetadataManager();
+        StudyConfiguration studyConfiguration = metadataManager.getStudyConfiguration(study, null).first();
         List<Integer> sampleIds = new ArrayList<>(samples.size());
         for (String sample : samples) {
-            Integer sampleId = VariantStorageMetadataManager.getSampleIdFromStudy(sample, studyConfiguration);
+            Integer sampleId = metadataManager.getSampleId(studyConfiguration.getId(), sample);
             if (sampleId != null) {
                 sampleIds.add(sampleId);
             } else {
@@ -444,7 +444,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         }
 
         // Get files
-        Set<Integer> fileIds = VariantStorageMetadataManager.getFileIdsFromSampleIds(studyConfiguration, sampleIds);
+        Set<Integer> fileIds = metadataManager.getFileIdsFromSampleIds(studyConfiguration.getId(), sampleIds);
 
         logger.info("FillGaps: Study " + study + ", samples " + samples);
         fillGapsOrMissing(study, studyConfiguration, fileIds, sampleIds, true, false, options);

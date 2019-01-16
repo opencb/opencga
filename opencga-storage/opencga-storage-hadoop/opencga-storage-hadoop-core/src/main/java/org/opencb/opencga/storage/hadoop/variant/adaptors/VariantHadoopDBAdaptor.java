@@ -39,8 +39,10 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -310,7 +312,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             annotationColumn = Bytes.toBytes(VariantPhoenixHelper.getAnnotationSnapshotColumn(saved.getId()));
             query.put(ANNOT_NAME.key(), saved.getId());
         }
-        SelectVariantElements selectElements = VariantQueryUtils.parseSelectElements(query, options, getVariantStorageMetadataManager());
+        VariantQueryFields selectElements = VariantQueryUtils.parseVariantQueryFields(query, options, getVariantStorageMetadataManager());
         List<Scan> scans = hbaseQueryParser.parseQueryMultiRegion(selectElements, query, options);
 
         try {
@@ -383,22 +385,19 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         boolean hbaseIterator = options.getBoolean(NATIVE, false);
         // || VariantHBaseQueryParser.fullySupportedQuery(query);
 
+        VariantStorageMetadataManager metadataManager = getVariantStorageMetadataManager();
         if (archiveIterator) {
             String study = query.getString(STUDY.key());
-            StudyConfiguration studyConfiguration = getVariantStorageMetadataManager().getStudyConfiguration(study, options).first();
-            int studyId = studyConfiguration.getStudyId();
+            StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
+            int studyId = studyMetadata.getStudyId();
 
             String file = query.getString(FILE.key());
-            Integer fileId = VariantStorageMetadataManager.getFileIdFromStudy(file, studyConfiguration, true);
+            Integer fileId = metadataManager.getFileId(studyMetadata.getId(), file, true);
             if (fileId == null) {
                 throw VariantQueryException.fileNotFound(file, study);
             }
-            LinkedHashSet<Integer> samlpeIds = studyConfiguration.getSamplesInFiles().get(fileId);
-            List<String> returnedSamples = new ArrayList<>(samlpeIds.size());
-            for (Integer sampleId : samlpeIds) {
-                returnedSamples.add(studyConfiguration.getSampleIds().inverse().get(sampleId));
-            }
-            query.put(INCLUDE_SAMPLE.key(), returnedSamples);
+            LinkedHashSet<Integer> sampleIds = metadataManager.getFileMetadata(studyId, fileId).getSamples();
+            query.put(INCLUDE_SAMPLE.key(), new ArrayList<>(sampleIds));
 
             Region region = null;
             if (!StringUtils.isEmpty(query.getString(REGION.key()))) {
@@ -439,7 +438,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             }
         } else if (hbaseIterator) {
             logger.debug("Creating " + VariantHBaseScanIterator.class.getSimpleName() + " iterator");
-            SelectVariantElements selectElements = VariantQueryUtils.parseSelectElements(query, options, studyConfigurationManager.get());
+            VariantQueryFields selectElements = VariantQueryUtils.parseVariantQueryFields(query, options, studyConfigurationManager.get());
             List<Scan> scans = hbaseQueryParser.parseQueryMultiRegion(selectElements, query, options);
             try {
                 Table table = getConnection().getTable(TableName.valueOf(variantTable));
@@ -499,7 +498,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
 //                VariantPhoenixCursorIterator iterator = new VariantPhoenixCursorIterator(phoenixQuery, getJdbcConnection(), converter);
                 VariantHBaseResultSetIterator iterator = new VariantHBaseResultSetIterator(statement,
-                        resultSet, genomeHelper, getVariantStorageMetadataManager(), phoenixQuery.getSelect(),
+                        resultSet, genomeHelper, metadataManager, phoenixQuery.getSelect(),
                         formats, unknownGenotype, options);
 
                 if (clientSideSkip) {

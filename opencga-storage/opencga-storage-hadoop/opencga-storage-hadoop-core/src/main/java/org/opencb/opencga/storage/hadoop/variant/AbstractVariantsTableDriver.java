@@ -61,7 +61,7 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
 
     private final Logger logger = LoggerFactory.getLogger(AbstractVariantsTableDriver.class);
     private GenomeHelper helper;
-    private VariantStorageMetadataManager scm;
+    private VariantStorageMetadataManager metadataManager;
     private List<Integer> fileIds;
     protected HBaseVariantTableNameGenerator generator;
 
@@ -134,9 +134,9 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
     @Override
     protected void close() throws IOException, StorageEngineException {
         super.close();
-        if (scm != null) {
-            scm.close();
-            scm = null;
+        if (metadataManager != null) {
+            metadataManager.close();
+            metadataManager = null;
         }
     }
 
@@ -262,7 +262,7 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
     }
 
     protected StudyConfiguration readStudyConfiguration() throws IOException {
-        VariantStorageMetadataManager scm = getStudyConfigurationManager();
+        VariantStorageMetadataManager scm = getMetadataManager();
         int studyId = getStudyId();
         QueryResult<StudyConfiguration> res = scm.getStudyConfiguration(studyId, new QueryOptions());
         if (res.getResult().size() != 1) {
@@ -271,12 +271,12 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
         return res.first();
     }
 
-    protected VariantStorageMetadataManager getStudyConfigurationManager() throws IOException {
-        if (scm == null) {
-            scm = new VariantStorageMetadataManager(new HBaseVariantStorageMetadataDBAdaptorFactory(
+    protected VariantStorageMetadataManager getMetadataManager() throws IOException {
+        if (metadataManager == null) {
+            metadataManager = new VariantStorageMetadataManager(new HBaseVariantStorageMetadataDBAdaptorFactory(
                     null, generator.getMetaTableName(), getConf()));
         }
-        return scm;
+        return metadataManager;
     }
 
     private void checkTablesExist(HBaseManager hBaseManager, String... tables) throws IOException {
