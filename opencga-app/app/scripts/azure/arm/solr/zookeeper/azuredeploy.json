@@ -27,16 +27,17 @@
         "description": "Size of the VM"
       }
     },
-    "clusterLoginUserName": {
+    "adminUsername": {
       "type": "string",
+      "defaultValue": "azureuser",
       "metadata": {
-        "description": "Admin username"
+        "description": "Admin username on all VMs."
       }
     },
-    "clusterLoginPassword": {
+    "sshKeyData": {
       "type": "securestring",
       "metadata": {
-        "description": "Admin password"
+        "description": "Admin password on all VMs."
       }
     },
     "scaleNumber": {
@@ -74,6 +75,7 @@
     }
   },
   "variables": {
+    "sshKeyPath": "[concat('/home/',parameters('adminUsername'),'/.ssh/authorized_keys')]",
     "availabilitySetName": "[concat(parameters('clusterName'), '-zookeeper-as')]",
     "customScriptFilePath": "[concat(parameters('_artifactsLocation'), '/solr/zookeeper/zookeeper-setup.sh')]",
     "imagePublisher": "Canonical",
@@ -164,8 +166,18 @@
         },
         "osProfile": {
           "computerName": "[variables('vmNames')[copyIndex()].vmName]",
-          "adminUsername": "[parameters('clusterLoginUserName')]",
-          "adminPassword": "[parameters('clusterLoginPassword')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "linuxConfiguration": {
+            "disablePasswordAuthentication": true,
+            "ssh": {
+              "publicKeys": [
+                {
+                  "path": "[variables('sshKeyPath')]",
+                  "keyData": "[parameters('sshKeyData')]"
+                }
+              ]
+            }
+          },
           "customData": "[base64(replace(replace(replace(replace(string(variables('cloudInit')),'#VM_INDEX#',string(copyIndex())),'\",\"','\n'),'[\"',''),'\"]',''))]"
                  
         },

@@ -84,7 +84,7 @@
                 "description": "The ServicePrincipal's Password."
             }
         },
-        "avereSSHKeyData": {
+        "sshAdminKeyData": {
             "type": "securestring",
             "metadata": {
                 "description": "The RSA data for the SSH Public Key used to authenticate to Avere nodes."
@@ -94,12 +94,6 @@
             "type": "securestring",
             "metadata": {
                 "description": "The password for the 'admin' user on the Avere cluster configuration portal."
-            }
-        },
-        "webserversSSHKeyData": {
-            "type": "securestring",
-            "metadata": {
-                "description": "The RSA data for the SSH Public Key used to authenticate to Avere nodes."
             }
         },
         "tomcatDockerImage": {
@@ -114,17 +108,11 @@
                 "description": "The docker image and tag for running the IVA service. For examples: 'repo/image:tag'"
             }
         },
-        "solrClusterLoginUserName": {
+        "adminUsername": {
             "type": "string",
             "defaultValue": "opencgaadmin",
             "metadata": {
                 "description": "Admin username"
-            }
-        },
-        "solrClusterLoginPassword": {
-            "type": "securestring",
-            "metadata": {
-                "description": "The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
             }
         },
         "solrHighAvailability": {
@@ -223,18 +211,6 @@
             ],
             "metadata": {
                 "description": "Amount of VMs to deploy for the mongodb replica set"
-            }
-        },
-        "mongoAdminUsername": {
-            "type": "string",
-            "metadata": {
-                "description": "The username for all mongoDB VMs (also used for connecting oer SSH)"
-            }
-        },
-        "mongoAdminSSHKeyData": {
-            "type": "string",
-            "metadata": {
-                "description": "The mongoDB VM public SSH key"
             }
         },
         "mongoDBUsername": {
@@ -568,7 +544,7 @@
                         "value": "avere"
                     },
                     "controllerSSHKeyData": {
-                        "value": "[parameters('avereSSHKeyData')]"
+                        "value": "[parameters('sshAdminKeyData')]"
                     },
                     "adminPassword": {
                         "value": "[parameters('avereAdminPassword')]"
@@ -609,7 +585,7 @@
                         "value": "[if(equals(parameters('nfsStorageOption'), 'AzureFiles'), concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value, ',' , reference('azurefiles').outputs.accountKey.value),concat('avere ', reference('avere').outputs.VSERVER_IPS.value))]"
                     },
                     "SSHKeyData": {
-                        "value": "[parameters('webserversSSHKeyData')]"
+                        "value": "[parameters('sshAdminKeyData')]"
                     },
                     "tomcatDockerImage": {
                         "value": "[parameters('tomcatDockerImage')]"
@@ -660,11 +636,11 @@
                     "location": {
                         "value": "[parameters('rgLocation')]"
                     },
-                    "clusterLoginUserName": {
-                        "value": "[parameters('solrClusterLoginUserName')]"
+                    "adminUsername": {
+                        "value": "[parameters('adminUsername')]"
                     },
-                    "clusterLoginPassword": {
-                        "value": "[parameters('solrClusterLoginPassword')]"
+                    "sshKeyData": {
+                        "value": "[parameters('sshAdminKeyData')]"
                     },
                     "highAvailability": {
                         "value": "[parameters('solrHighAvailability')]"
@@ -726,10 +702,10 @@
                         "value": "[parameters('mongoClusterSize')]"
                     },
                     "adminUsername": {
-                        "value": "[parameters('mongoAdminUsername')]"
+                        "value": "[parameters('adminUsername')]"
                     },
                     "adminSSHKeyData": {
-                        "value": "[parameters('mongoAdminSSHKeyData')]"
+                        "value": "[parameters('sshAdminKeyData')]"
                     },
                     "mongoDBUsername": {
                         "value": "[parameters('mongoDBUsername')]"
