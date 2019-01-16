@@ -20,13 +20,13 @@ PATH_PREFIX ?= "."
 version:
 	echo "Commit SHA: $(TAG)\nVersion: $(SEMVER)"
 
-# Builds the app
+# Builds the container
 build:
-	docker build -f "${PATH_PREFIX}/Dockerfile" .
+	docker build $(DOCKER_BUILD_ARGS) -f "${PATH_PREFIX}/Dockerfile" .
 
-# Builds, tests and publishes an image
+# Builds and locally tags the container
 image:
-	docker build -t $(APP_NAME) -f "${PATH_PREFIX}/Dockerfile" .
+	docker build $(DOCKER_BUILD_ARGS) -t $(APP_NAME) -f "${PATH_PREFIX}/Dockerfile" .
 
 # Tag a docker image with git commit
 tag: image

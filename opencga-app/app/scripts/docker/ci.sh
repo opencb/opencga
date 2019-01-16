@@ -31,6 +31,11 @@
 #
 # - SEMVER : The semantic version used to tag a release
 #
+# If you want to pass additional build arguments to the docker
+# build command you can do this by overriding the following variable:
+#
+# - DOCKER_BUILD_ARGS
+#
 
 set -e
 
