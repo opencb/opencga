@@ -144,7 +144,8 @@
                             "containerImageNames": [
                                 "ubuntu",
                                 "python"
-                            ]
+                            ],
+                            "type": "docker"
                         },
                         "imageReference": {
                             "publisher": "microsoft-azure-batch",
