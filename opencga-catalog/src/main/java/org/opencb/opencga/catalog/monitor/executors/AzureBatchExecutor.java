@@ -68,9 +68,7 @@ public class AzureBatchExecutor implements BatchExecutor {
     }
 
     private BatchClient createBatchClient() {
-        BatchSharedKeyCredentials cred = new BatchSharedKeyCredentials(batchUri,
-                batchAccount, batchKey);
-        return BatchClient.open(cred);
+        return BatchClient.open(new BatchSharedKeyCredentials(batchUri, batchAccount, batchKey));
     }
 
     @Override
@@ -122,6 +120,7 @@ public class AzureBatchExecutor implements BatchExecutor {
         return false;
     }
 
+    // configuration values from configuration.yml file
     private void populateOptions(Configuration configuration) {
         batchAccount = configuration.getExecution().getOptions().get(BATCH_ACCOUNT);
         batchKey = configuration.getExecution().getOptions().get(BATCH_KEY);
