@@ -14,6 +14,16 @@
                 "description": ""
             }
         },
+        "deploymentSize": {
+            "type": "int",
+            "allowedValues": [
+                0, 1, 2
+            ],
+            "defaultValue": 0,
+            "metadata": {
+                "description": "What size of deployment do you want? 0 = For single researches testing things out. 1 = For x genomics with xgb per sec load rate. 2 = is for x/y"
+            }
+        },
         "rgPrefix": {
             "type": "string",
             "metadata": {
@@ -36,16 +46,6 @@
             "defaultValue": "DataLake",
             "metadata": {
                 "description": "What type of storage will be used"
-            }
-        },
-        "nfsStorageOption": {
-            "type": "string",
-            "allowedValues": [
-                "AvereCluster",
-                "AzureFiles"
-            ],
-            "metadata": {
-                "description": "What type of NFS storage do you want to use? Avere offers a high throughput SSD cache cluster over Azure Blob, AzureFiles offers modest read/write performance for smaller installations"
             }
         },
         "tomcatDockerImage": {
@@ -203,9 +203,25 @@
         }
     },
     "variables": {
-        "avereEnabled": "[equals(parameters('nfsStorageOption'), 'AvereCluster')]",
-        "azureFilesEnabled": "[equals(parameters('nfsStorageOption'), 'AzureFiles')]",
-        "webserverNamingPrefix": "[toLower(substring(concat('webservers', uniqueString(parameters('rgPrefix'))), 0, 16))]"
+        "webserverNamingPrefix": "[toLower(substring(concat('webservers', uniqueString(parameters('rgPrefix'))), 0, 16))]",
+        "sizingOptions": [
+            {
+                "type": "0 = Small",
+                "avereEnabled": false,
+                "azureFilesEnabled": true
+            },
+            {
+                "type": "1 = Medium",
+                "avereEnabled": false,
+                "azureFilesEnabled": true
+            },
+            {
+                "type": "2 = Large",
+                "avereEnabled": false,
+                "azureFilesEnabled": true
+            }
+        ],
+        "selectedSize": "[variables('sizingOptions')[parameters('deploymentSize')]]"
     },
     "resources": [
         {
@@ -232,7 +248,7 @@
             }
         },
         {
-            "condition": "[variables('azureFilesEnabled')]",
+            "condition": "[variables('selectedSize').azureFilesEnabled]",
             "resourceGroup": "[parameters('rgPrefix')]",
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2018-05-01",
@@ -276,7 +292,7 @@
                         "value": "[reference('vnet').outputs.defaultSubnetId.value]"
                     },
                     "mountArgs": {
-                        "value": "[if(equals(parameters('nfsStorageOption'), 'AzureFiles'), concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value, ',' , reference('azurefiles').outputs.accountKey.value),concat('avere ', reference('avere').outputs.VSERVER_IPS.value))]"
+                        "value": "[if(variables('selectedSize').azureFilesEnabled, concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value, ',' , reference('azurefiles').outputs.accountKey.value),concat('avere ', reference('avere').outputs.VSERVER_IPS.value))]"
                     },
                     "dockerImagesToCache": {
                         "value": [
@@ -361,7 +377,7 @@
                         "value": "[parameters('initContainerImage')]"
                     },
                     "mountArgs": {
-                        "value": "[if(equals(parameters('nfsStorageOption'), 'AzureFiles'), concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value,',',reference('azurefiles').outputs.accountKey.value),concat('avere ', reference('avere').outputs.VSERVER_IPS.value))]"
+                        "value": "[if(variables('selectedSize').azureFilesEnabled, concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value,',',reference('azurefiles').outputs.accountKey.value),concat('avere ', reference('avere').outputs.VSERVER_IPS.value))]"
                     },
                     "webserverNamingPrefix": {
                         "value": "[variables('webserverNamingPrefix')]"
@@ -462,7 +478,7 @@
             }
         },
         {
-            "condition": "[variables('avereEnabled')]",
+            "condition": "[variables('selectedSize').avereEnabled]",
             "type": "Microsoft.Resources/resourceGroups",
             "apiVersion": "2018-05-01",
             "location": "[parameters('rgLocation')]",
@@ -470,7 +486,7 @@
             "properties": {}
         },
         {
-            "condition": "[variables('avereEnabled')]",
+            "condition": "[variables('selectedSize').avereEnabled]",
             "type": "Microsoft.Resources/deployments",
             "resourceGroup": "[concat(parameters('rgPrefix'),'-avere')]",
             "apiVersion": "2018-05-01",
@@ -549,7 +565,7 @@
                         "value": "[reference('vnet').outputs.hdinsightSubnetId.value]"
                     },
                     "mountArgs": {
-                        "value": "[if(equals(parameters('nfsStorageOption'), 'AzureFiles'), concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value, ',' , reference('azurefiles').outputs.accountKey.value),concat('avere ', reference('avere').outputs.VSERVER_IPS.value))]"
+                        "value": "[if(variables('selectedSize').azureFilesEnabled, concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value, ',' , reference('azurefiles').outputs.accountKey.value),concat('avere ', reference('avere').outputs.VSERVER_IPS.value))]"
                     },
                     "SSHKeyData": {
                         "value": "[parameters('sshAdminKeyData')]"
