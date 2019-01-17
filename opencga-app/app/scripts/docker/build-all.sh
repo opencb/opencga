@@ -24,13 +24,13 @@
 # A number of variables can be set to configure the build process. Review the list below
 # to decide which to set for your environment.
 #
-# - DOCKER_USERNAME='' : (required) Username to login to the docker registry
-# - DOCKER_PASSWORD='' : (required) Password to login to the docker registry
-# - DOCKER_SERVER='' : (optional) Docker registry server (default: docker.io)
-# - DOCKER_REPO='' : (optional) Docker registry repository (default: docker username for docker.io)
+# - DOCKER_USERNAME=''   : (required) Username to login to the docker registry
+# - DOCKER_PASSWORD=''   : (required) Password to login to the docker registry
+# - DOCKER_SERVER=''     : (optional) Docker registry server (default: docker.io)
+# - DOCKER_REPO=''       : (optional) Docker registry repository (default: docker username for docker.io)
 # - DOCKER_BUILD_ARGS='' : (optional) Additional build arguments to pass to the docker build command
-# - PUBLISH='' : (optional) Set to 'true' to publish the docker images to a container registry
-# - TAG='' : (optional) Set to override the default Git commit SHA docker image tag
+# - PUBLISH=''           : (optional) Set to 'true' to publish the docker images to a container registry
+# - TAG=''               : (optional) Set to override the default Git commit SHA docker image tag
 #
 # When you have set your desired variables, you can simply run the Makefile with `make`.
 
@@ -45,13 +45,13 @@ cd $(git rev-parse --show-toplevel)
 function make_image {
     ENVFILE="${1}/make_env" \
     APP_NAME="${2}" \
-    make -f "${1}/Makefile" ${3}
+    make -f "${1}/Makefile" "${3}"
 }
 
 # Define all the docker images in dependecy order
 declare -a images=(opencga-build opencga opencga-app opencga-daemon opencga-init iva)
 imageCount=0
-imagesLen=${#images[@]}
+imagesLen="${#images[@]}"
 imagesLen=$((imagesLen-1))
 
 echo "---------------------"
@@ -78,14 +78,13 @@ echo "Started publishing container images"
 echo "---------------------"
 
 # Publish the container images
-if [ "$PUBLISH" = true ];
-then
-    make_image "$dockerDir" opencga-init publish
-    make_image "$dockerDir" opencga-app publish
-    make_image "$dockerDir" opencga-daemon publish
-    make_image "$dockerDir" iva publish
+if [ "$PUBLISH" = true ]; then
+    make_image "$dockerDir" "opencga-init" publish
+    make_image "$dockerDir" "opencga-app" publish
+    make_image "$dockerDir" "opencga-daemon" publish
+    make_image "$dockerDir" "iva" publish
 else
-    echo "Not publishing docker images"
+    echo "Not publishing any docker images"
 fi
 
 echo "---------------------"

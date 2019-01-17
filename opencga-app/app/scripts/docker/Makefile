@@ -16,6 +16,23 @@ ifneq ("$(wildcard $(ENVFILE))","")
     export
 endif
 
+# Make sure MAKECMDGOALS is set to default target if empty
+ifeq ($(MAKECMDGOALS),)
+MAKECMDGOALS := build-all
+endif
+
+# Check required variables are set for target build-all
+ifeq ($(MAKECMDGOALS), build-all)
+ifeq ($(PUBLISH), true)
+ifeq ($(DOCKER_USERNAME),)
+$(error DOCKER_USERNAME is not set. It is required when PUBLISH is true.)
+endif
+ifeq ($(DOCKER_PASSWORD),)
+$(error DOCKER_PASSWORD is not set. It is required when PUBLISH is true.)
+endif
+endif
+endif
+
 # Check required variables are set for target build
 ifeq ($(MAKECMDGOALS), build)
 ifeq ($(APP_NAME),)
@@ -27,6 +44,9 @@ endif
 ifeq ($(MAKECMDGOALS), tag)
 ifeq ($(APP_NAME),)
 $(error APP_NAME is not set)
+endif
+ifeq ($(DOCKER_USERNAME),)
+$(error DOCKER_USERNAME is not set)
 endif
 endif
 
@@ -42,7 +62,7 @@ endif
 
 # Check required variables are set for target publish
 ifeq ($(MAKECMDGOALS), publish)
-ifeq $((APP_NAME),)
+ifeq ($(APP_NAME),)
 $(error APP_NAME is not set)
 endif
 endif
