@@ -174,7 +174,8 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     public StudyMetadata getStudyMetadata(String name) {
-        return studyMetadataDBAdaptor.getStudyMetadata(name, null);
+        Integer studyId = getStudyId(name, null);
+        return studyMetadataDBAdaptor.getStudyMetadata(studyId, null);
     }
 
     public StudyMetadata getStudyMetadata(int id) {
@@ -557,6 +558,10 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return studyMetadataDBAdaptor.getFileId(studyId, fileName);
     }
 
+    public String getFileName(int studyId, int fileId) {
+        return getFileMetadata(studyId, fileId).getName();
+    }
+
     public Integer getFileId(int studyId, Object fileObj) {
         return getFileId(studyId, fileObj, false);
     }
@@ -647,7 +652,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 o -> getSampleId(studyId, o),
                 o -> getSampleMetadata(studyId, o) != null);
         if (sampleId != null && indexed) {
-            if (getIndexedSamples(studyId).containsValue(sampleId)) {
+            if (getIndexedSamplesMap(studyId).containsValue(sampleId)) {
                 return sampleId;
             } else {
                 return null;
@@ -661,12 +666,12 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return getSampleMetadata(studyId, sampleId).getName();
     }
 
-    public BiMap<String, Integer> getIndexedSamples(int studyId) {
-        return studyMetadataDBAdaptor.getIndexedSamples(studyId);
+    public BiMap<String, Integer> getIndexedSamplesMap(int studyId) {
+        return studyMetadataDBAdaptor.getIndexedSamplesMap(studyId);
     }
 
-    public List<Integer> getIndexedSamples2(int studyId) {
-        return studyMetadataDBAdaptor.getIndexedSamples2(studyId);
+    public List<Integer> getIndexedSamples(int studyId) {
+        return studyMetadataDBAdaptor.getIndexedSamples(studyId);
     }
 
 //    public BiMap<String, Integer> getIndexedSamples(int studyId, int... fileIds) {
@@ -682,15 +687,10 @@ public class VariantStorageMetadataManager implements AutoCloseable {
      * @return The samples IDs
      */
     public LinkedHashMap<String, Integer> getSamplesPosition(StudyMetadata sm, LinkedHashSet<?> includeSamples) {
-        return getSamplesPosition(sm, includeSamples, this::getIndexedSamples2);
-    }
-
-    public LinkedHashMap<String, Integer> getSamplesPosition(StudyMetadata sm, LinkedHashSet<?> includeSamples,
-            Function<Integer, List<Integer>> getIndexedSamplesPosition) {
         LinkedHashMap<String, Integer> samplesPosition;
         // If null, return ALL samples
         if (includeSamples == null) {
-            List<Integer> orderedSamplesPosition = getIndexedSamplesPosition.apply(sm.getId());
+            List<Integer> orderedSamplesPosition = getIndexedSamples(sm.getId());
             samplesPosition = new LinkedHashMap<>(orderedSamplesPosition.size());
             for (Integer sampleId : orderedSamplesPosition) {
                 samplesPosition.put(getSampleMetadata(sm.getId(), sampleId).getName(), samplesPosition.size());
@@ -698,7 +698,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         } else {
             samplesPosition = new LinkedHashMap<>(includeSamples.size());
             int index = 0;
-            List<Integer> indexedSamplesId = getIndexedSamplesPosition.apply(sm.getId());
+            List<Integer> indexedSamplesId = getIndexedSamples(sm.getId());
             for (Object includeSampleObj : includeSamples) {
                 Integer sampleId = getSampleId(sm.getId(), includeSampleObj, false);
                 String includeSample = getSampleMetadata(sm.getId(), sampleId).getName();
@@ -744,6 +744,10 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             cohortIds.add(cohortId);
         }
         return cohortIds;
+    }
+
+    public String getCohortName(int studyId, int cohortId) {
+        return getCohortMetadata(studyId, cohortId).getName();
     }
 
     public Iterator<CohortMetadata> cohortIterator(int studyId) {
@@ -795,7 +799,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             id = ((Number) obj).intValue();
             if (defaultStudy != null) {
                 if (getFileMetadata(defaultStudy.getId(), Math.abs(id)) != null) {
-                    studyId = defaultStudy.getStudyId();
+                    studyId = defaultStudy.getId();
                 } else {
                     studyId = null;
                 }
@@ -817,8 +821,8 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 resourceStr = studyResource[1];
                 StudyMetadata sm;
                 if (defaultStudy != null
-                        && (study.equals(defaultStudy.getStudyName())
-                        || NumberUtils.isParsable(study) && Integer.valueOf(study).equals(defaultStudy.getStudyId()))) {
+                        && (study.equals(defaultStudy.getName())
+                        || NumberUtils.isParsable(study) && Integer.valueOf(study).equals(defaultStudy.getId()))) {
                     sm = defaultStudy;
                 } else {
                     sm = getStudyMetadata(study);
@@ -826,20 +830,20 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                         throw VariantQueryException.studyNotFound(study);
                     }
                 }
-                studyId = sm.getStudyId();
+                studyId = sm.getId();
                 id = toId.apply(studyId, resourceStr);
             } else if (defaultStudy != null) {
                 if (NumberUtils.isParsable(resourceStr)) {
                     id = Integer.parseInt(resourceStr);
-                    if (validId.test(defaultStudy.getStudyId(), Math.abs(id))) {
-                        studyId = defaultStudy.getStudyId();
+                    if (validId.test(defaultStudy.getId(), Math.abs(id))) {
+                        studyId = defaultStudy.getId();
                     } else {
                         studyId = null;
                     }
                 } else {
-                    id = toId.apply(defaultStudy.getStudyId(), resourceStr);
+                    id = toId.apply(defaultStudy.getId(), resourceStr);
                     if (id != null) {
-                        studyId = defaultStudy.getStudyId();
+                        studyId = defaultStudy.getId();
                     } else {
                         studyId = null;
                     }

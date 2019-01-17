@@ -673,7 +673,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
         // Update the cohort ALL. Invalidate if needed
         String defaultCohortName = StudyEntry.DEFAULT_COHORT;
-        BiMap<String, Integer> indexedSamples = metadataManager.getIndexedSamples(studyId);
+        BiMap<String, Integer> indexedSamples = metadataManager.getIndexedSamplesMap(studyId);
 
         // Register or update default cohort
         metadataManager.registerCohorts(studyId, Collections.singletonMap(defaultCohortName, indexedSamples.keySet()));

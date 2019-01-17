@@ -48,8 +48,6 @@ import java.util.stream.Collectors;
 public class StudyConfiguration extends StudyMetadata {
 
     public static final String UNKNOWN_HEADER_ATTRIBUTE = ".";
-    private int studyId;
-    private String studyName;
 
     private BiMap<String, Integer> fileIds;
     private BiMap<String, Integer> filePaths;
@@ -79,8 +77,6 @@ public class StudyConfiguration extends StudyMetadata {
 
     private VariantFileHeader variantHeader;
 
-    private ObjectMap attributes;
-
     private Logger logger = LoggerFactory.getLogger(StudyConfiguration.class);
 
     protected StudyConfiguration() {
@@ -91,8 +87,8 @@ public class StudyConfiguration extends StudyMetadata {
     }
 
     public void copy(StudyConfiguration other) {
-        this.studyId = other.studyId;
-        this.studyName = other.studyName;
+        this.setId(other.getStudyId());
+        this.setName(other.getStudyName());
         this.fileIds = HashBiMap.create(other.fileIds == null ? Collections.emptyMap() : other.fileIds);
         this.filePaths = HashBiMap.create(other.filePaths == null ? Collections.emptyMap() : other.filePaths);
         this.sampleIds = HashBiMap.create(other.sampleIds == null ? Collections.emptyMap() : other.sampleIds);
@@ -119,7 +115,7 @@ public class StudyConfiguration extends StudyMetadata {
             this.variantHeader = VariantFileHeader.newBuilder(other.variantHeader).setVersion("").build();
         }
 
-        this.attributes = new ObjectMap(other.attributes);
+        this.setAttributes(new ObjectMap(other.getAttributes()));
     }
 
     public StudyConfiguration newInstance() {
@@ -138,8 +134,8 @@ public class StudyConfiguration extends StudyMetadata {
     public StudyConfiguration(int studyId, String studyName, Map<String, Integer> fileIds,
                               Map<String, Integer> sampleIds, Map<String, Integer> cohortIds,
                               Map<Integer, Set<Integer>> cohorts) {
-        this.studyId = studyId;
-        this.studyName = studyName;
+        this.setId(studyId);
+        this.setName(studyName);
         this.fileIds = HashBiMap.create(fileIds == null ? Collections.emptyMap() : fileIds);
         this.filePaths = HashBiMap.create();
         this.sampleIds = HashBiMap.create(sampleIds == null ? Collections.emptyMap() : sampleIds);
@@ -156,7 +152,7 @@ public class StudyConfiguration extends StudyMetadata {
         this.aggregation = Aggregation.NONE;
         this.timeStamp = 0L;
         this.variantHeader = VariantFileHeader.newBuilder().setVersion("").build();
-        this.attributes = new ObjectMap();
+        this.setAttributes(new ObjectMap());
     }
 
     @Deprecated
@@ -181,8 +177,8 @@ public class StudyConfiguration extends StudyMetadata {
 
     public String toString(ToStringStyle style) {
         return new ToStringBuilder(this, style)
-                .append("studyId", studyId)
-                .append("studyName", studyName)
+                .append("studyId", getStudyId())
+                .append("studyName", getStudyName())
                 .append("fileIds", fileIds)
                 .append("filePaths", filePaths)
                 .append("sampleIds", sampleIds)
@@ -196,24 +192,16 @@ public class StudyConfiguration extends StudyMetadata {
                 .append("batches", batches)
                 .append("aggregation", aggregation)
                 .append("timeStamp", timeStamp)
-                .append("attributes", attributes)
+                .append("attributes", getAttributes())
                 .toString();
     }
 
-    public int getStudyId() {
-        return studyId;
-    }
-
     public void setStudyId(int studyId) {
-        this.studyId = studyId;
-    }
-
-    public String getStudyName() {
-        return studyName;
+        this.setId(studyId);
     }
 
     public void setStudyName(String studyName) {
-        this.studyName = studyName;
+        this.setName(studyName);
     }
 
     public BiMap<String, Integer> getFileIds() {
@@ -378,12 +366,9 @@ public class StudyConfiguration extends StudyMetadata {
         return this;
     }
 
-    public ObjectMap getAttributes() {
-        return attributes;
-    }
 
     public StudyConfiguration setAttributes(ObjectMap attributes) {
-        this.attributes = attributes;
+        super.setAttributes(attributes);
         return this;
     }
 
@@ -397,8 +382,8 @@ public class StudyConfiguration extends StudyMetadata {
         }
 
         StudyConfiguration that = (StudyConfiguration) o;
-        return studyId == that.studyId
-                && Objects.equals(studyName, that.studyName)
+        return getStudyId() == that.getStudyId()
+                && Objects.equals(getStudyName(), that.getStudyName())
                 && Objects.equals(fileIds, that.fileIds)
                 && Objects.equals(filePaths, that.filePaths)
                 && Objects.equals(sampleIds, that.sampleIds)
@@ -412,13 +397,14 @@ public class StudyConfiguration extends StudyMetadata {
                 && Objects.equals(batches, that.batches)
                 && aggregation == that.aggregation
                 && Objects.equals(timeStamp, that.timeStamp)
-                && Objects.equals(attributes, that.attributes);
+                && Objects.equals(getAttributes(), that.getAttributes());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(studyId, studyName, fileIds, filePaths, sampleIds, cohortIds, cohorts, indexedFiles, headers, samplesInFiles,
-                calculatedStats, invalidStats, batches, aggregation, timeStamp, attributes);
+        return Objects.hash(getStudyId(), getStudyName(), fileIds, filePaths, sampleIds, cohortIds, cohorts, indexedFiles, headers,
+                samplesInFiles,
+                calculatedStats, invalidStats, batches, aggregation, timeStamp, getAttributes());
     }
 
     public static <T, R> BiMap<R, T> inverseMap(BiMap<T, R> map) {

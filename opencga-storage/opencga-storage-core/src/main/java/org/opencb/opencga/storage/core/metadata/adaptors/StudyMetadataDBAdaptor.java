@@ -52,10 +52,6 @@ public interface StudyMetadataDBAdaptor extends AutoCloseable {
     @Deprecated
     QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options);
 
-    default StudyMetadata getStudyMetadata(String name, Long timeStamp) {
-        return new StudyMetadata(getStudyConfiguration(name, timeStamp, null).first());
-    }
-
     default StudyMetadata getStudyMetadata(int id, Long timeStamp) {
         return new StudyMetadata(getStudyConfiguration(id, timeStamp, null).first());
     }
@@ -113,12 +109,12 @@ public interface StudyMetadataDBAdaptor extends AutoCloseable {
         throw new UnsupportedOperationException("TODO");
     }
 
-    default BiMap<String, Integer> getIndexedSamples(int studyId) {
+    default BiMap<String, Integer> getIndexedSamplesMap(int studyId) {
         StudyConfiguration sc = getStudyConfiguration(studyId, null, null).first();
         return StudyConfiguration.getIndexedSamples(sc);
     }
 
-    default List<Integer> getIndexedSamples2(int studyId) {
+    default List<Integer> getIndexedSamples(int studyId) {
         StudyConfiguration sc = getStudyConfiguration(studyId, null, null).first();
         return new ArrayList<>(StudyConfiguration.getSortedIndexedSamplesPosition(sc).values());
     }

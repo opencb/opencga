@@ -174,7 +174,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         VariantHBaseArchiveDataWriter archiveWriter = new VariantHBaseArchiveDataWriter(helper, table, dbAdaptor.getHBaseManager());
         VcfSliceToVariantListConverter converter = new VcfSliceToVariantListConverter(helper.getStudyMetadata());
         VariantHadoopDBWriter variantsWriter = newVariantHadoopDBWriter();
-        List<Integer> sampleIds = new ArrayList<>(getStudyConfiguration().getSamplesInFiles().get(helper.getFileId()));
+        List<Integer> sampleIds = new ArrayList<>(getMetadataManager().getFileMetadata(getStudyId(), getFileId()).getSamples());
         SampleIndexDBLoader sampleIndexDBLoader;
         if (sampleIds.isEmpty() || options.getBoolean(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key())) {
             sampleIndexDBLoader = null;

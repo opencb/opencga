@@ -42,7 +42,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.local.FileStudyMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -79,28 +79,28 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest
 public class VariantHbaseTestUtils {
 
     public static VariantHadoopDBAdaptor printVariantsFromArchiveTable(VariantHadoopDBAdaptor dbAdaptor,
-                                                                       StudyConfiguration studyConfiguration) throws Exception {
-        return printVariantsFromArchiveTable(dbAdaptor, studyConfiguration, System.out);
+                                                                       StudyMetadata studyMetadata) throws Exception {
+        return printVariantsFromArchiveTable(dbAdaptor, studyMetadata, System.out);
     }
 
     public static VariantHadoopDBAdaptor printVariantsFromArchiveTable(VariantHadoopDBAdaptor dbAdaptor,
-                                                                       StudyConfiguration studyConfiguration, Path output)
+                                                                       StudyMetadata studyMetadata, Path output)
             throws Exception {
         if (output.toFile().isDirectory()) {
-            String archiveTableName = dbAdaptor.getArchiveTableName(studyConfiguration.getStudyId());
+            String archiveTableName = dbAdaptor.getArchiveTableName(studyMetadata.getStudyId());
             output = output.resolve("archive._V." + archiveTableName + "." + TimeUtils.getTimeMillis() + ".txt");
         }
 
         try (FileOutputStream out = new FileOutputStream(output.toFile())) {
-            return printVariantsFromArchiveTable(dbAdaptor, studyConfiguration, new PrintStream(out));
+            return printVariantsFromArchiveTable(dbAdaptor, studyMetadata, new PrintStream(out));
         }
     }
 
     public static VariantHadoopDBAdaptor printVariantsFromArchiveTable(VariantHadoopDBAdaptor dbAdaptor,
-                                                                       StudyConfiguration studyConfiguration, PrintStream out)
+                                                                       StudyMetadata studyMetadata, PrintStream out)
             throws Exception {
         GenomeHelper helper = dbAdaptor.getGenomeHelper();
-        String archiveTableName = dbAdaptor.getArchiveTableName(studyConfiguration.getStudyId());
+        String archiveTableName = dbAdaptor.getArchiveTableName(studyMetadata.getStudyId());
         if (!dbAdaptor.getHBaseManager().tableExists(archiveTableName)) {
             return dbAdaptor;
         }
@@ -245,32 +245,32 @@ public class VariantHbaseTestUtils {
         }
     }
 
-    public static void printArchiveTable(StudyConfiguration studyConfiguration, VariantHadoopDBAdaptor dbAdaptor, Path outDir)
+    public static void printArchiveTable(StudyMetadata studyMetadata, VariantHadoopDBAdaptor dbAdaptor, Path outDir)
             throws Exception {
-        String archiveTableName = dbAdaptor.getArchiveTableName(studyConfiguration.getStudyId());
-        for (Integer fileId : studyConfiguration.getIndexedFiles()) {
+        String archiveTableName = dbAdaptor.getArchiveTableName(studyMetadata.getStudyId());
+        for (Integer fileId : dbAdaptor.getVariantStorageMetadataManager().getIndexedFiles(studyMetadata.getId())) {
             String fileName = "archive." + fileId + "." + archiveTableName + "." + TimeUtils.getTimeMillis() + ".txt";
             try (PrintStream os = new PrintStream(new FileOutputStream(outDir.resolve(fileName).toFile()))) {
-                printArchiveTable(dbAdaptor, studyConfiguration, fileId, os);
+                printArchiveTable(dbAdaptor, studyMetadata, fileId, os);
             }
         }
     }
 
     public static void printArchiveTable(VariantHadoopDBAdaptor dbAdaptor,
-                                                           StudyConfiguration studyConfiguration, int fileId, PrintStream os)
+                                                           StudyMetadata studyMetadata, int fileId, PrintStream os)
             throws Exception {
 //        VariantHadoopArchiveDBIterator archive = (VariantHadoopArchiveDBIterator) dbAdaptor.iterator(
 //                new Query()
-//                        .append(VariantQueryParam.STUDY.key(), studyConfiguration.getStudyId())
+//                        .append(VariantQueryParam.STUDY.key(), studyMetadata.getStudyId())
 //                        .append(VariantQueryParam.FILE.key(), fileId),
 //                new QueryOptions("archive", true));
 
-        String tableName = dbAdaptor.getArchiveTableName(studyConfiguration.getStudyId());
+        String tableName = dbAdaptor.getArchiveTableName(studyMetadata.getStudyId());
         if (!dbAdaptor.getHBaseManager().tableExists(tableName)) {
             return;
         }
 
-        ArchiveTableHelper archiveHelper = dbAdaptor.getArchiveHelper(studyConfiguration.getStudyId(), fileId);
+        ArchiveTableHelper archiveHelper = dbAdaptor.getArchiveHelper(studyMetadata.getStudyId(), fileId);
         Scan scan = new Scan();
         scan.addColumn(archiveHelper.getColumnFamily(), archiveHelper.getNonRefColumnName());
         scan.addColumn(archiveHelper.getColumnFamily(), archiveHelper.getRefColumnName());
@@ -359,31 +359,32 @@ public class VariantHbaseTestUtils {
 
     public static void printVariants(VariantHadoopDBAdaptor dbAdaptor, URI outDir) throws Exception {
         VariantStorageMetadataManager scm = dbAdaptor.getVariantStorageMetadataManager();
-        List<StudyConfiguration> studies = scm.getStudyNames(null).stream()
-                .map(studyName -> scm.getStudyConfiguration(studyName, null).first())
+        List<StudyMetadata> studies = scm.getStudyNames(null)
+                .stream()
+                .map(scm::getStudyMetadata)
                 .collect(Collectors.toList());
         printVariants(studies, dbAdaptor, Paths.get(outDir));
     }
 
-    public static void printVariants(StudyConfiguration studyConfiguration, VariantHadoopDBAdaptor dbAdaptor, URI outDir) throws Exception {
-        printVariants(studyConfiguration, dbAdaptor, Paths.get(outDir));
+    public static void printVariants(StudyMetadata studyMetadata, VariantHadoopDBAdaptor dbAdaptor, URI outDir) throws Exception {
+        printVariants(studyMetadata, dbAdaptor, Paths.get(outDir));
     }
 
-    public static void printVariants(StudyConfiguration studyConfiguration, VariantHadoopDBAdaptor dbAdaptor, Path outDir)
+    public static void printVariants(StudyMetadata studyMetadata, VariantHadoopDBAdaptor dbAdaptor, Path outDir)
             throws Exception {
-        printVariants(Collections.singleton(studyConfiguration), dbAdaptor, outDir);
+        printVariants(Collections.singleton(studyMetadata), dbAdaptor, outDir);
     }
 
-    public static void printVariants(Collection<StudyConfiguration> studyConfigurations, VariantHadoopDBAdaptor dbAdaptor, Path outDir)
+    public static void printVariants(Collection<StudyMetadata> studies, VariantHadoopDBAdaptor dbAdaptor, Path outDir)
             throws Exception {
         boolean old = HBaseToVariantConverter.isFailOnWrongVariants();
         HBaseToVariantConverter.setFailOnWrongVariants(false);
-        for (StudyConfiguration studyConfiguration : studyConfigurations) {
-            FileStudyMetadataDBAdaptor.write(studyConfiguration, outDir.resolve("study_configuration_" + studyConfiguration.getStudyName() + ".json"));
-            printVariantsFromArchiveTable(dbAdaptor, studyConfiguration, outDir);
-            printArchiveTable(studyConfiguration, dbAdaptor, outDir);
-            if (!studyConfiguration.getIndexedFiles().isEmpty()) {
-                printVcf(studyConfiguration, dbAdaptor, outDir);
+        for (StudyMetadata studyMetadata : studies) {
+//            FileStudyMetadataDBAdaptor.write(studyMetadata, outDir.resolve("study_configuration_" + studyMetadata.getStudyName() + ".json"));
+            printVariantsFromArchiveTable(dbAdaptor, studyMetadata, outDir);
+            printArchiveTable(studyMetadata, dbAdaptor, outDir);
+            if (!dbAdaptor.getVariantStorageMetadataManager().getIndexedFiles(studyMetadata.getId()).isEmpty()) {
+                printVcf(studyMetadata, dbAdaptor, outDir);
             }
         }
         printMetaTable(dbAdaptor, outDir);
@@ -393,9 +394,9 @@ public class VariantHbaseTestUtils {
         HBaseToVariantConverter.setFailOnWrongVariants(old);
     }
 
-    private static void printVcf(StudyConfiguration studyConfiguration, VariantHadoopDBAdaptor dbAdaptor, Path outDir) throws IOException {
-        try (OutputStream os = new FileOutputStream(outDir.resolve("variant." + studyConfiguration.getStudyName() + ".vcf").toFile())) {
-            Query query = new Query(VariantQueryParam.STUDY.key(), studyConfiguration.getStudyName()).append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), ".");
+    private static void printVcf(StudyMetadata studyMetadata, VariantHadoopDBAdaptor dbAdaptor, Path outDir) throws IOException {
+        try (OutputStream os = new FileOutputStream(outDir.resolve("variant." + studyMetadata.getStudyName() + ".vcf").toFile())) {
+            Query query = new Query(VariantQueryParam.STUDY.key(), studyMetadata.getStudyName()).append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), ".");
             QueryOptions queryOptions = new QueryOptions();
             DataWriter<Variant> writer = new VariantWriterFactory(dbAdaptor).newDataWriter(VariantWriterFactory.VariantOutputFormat.VCF, os, query, queryOptions);
             writer.open();
@@ -470,6 +471,16 @@ public class VariantHbaseTestUtils {
 
     public static VariantFileMetadata loadFile(
             HadoopVariantStorageEngine variantStorageManager, String dbName, URI outputUri, String resourceName,
+            StudyMetadata studyMetadata, Map<? extends String, ?> otherParams, boolean doTransform, boolean loadArchive,
+            boolean loadVariant) throws Exception {
+        StudyConfiguration studyConfiguration = new StudyConfiguration(studyMetadata.getId(), studyMetadata.getName());
+        System.out.println("studyConfiguration = " + studyConfiguration);
+        return loadFile(variantStorageManager, dbName, outputUri, resourceName, studyConfiguration, otherParams, doTransform, loadArchive, loadVariant);
+    }
+
+    @Deprecated
+    public static VariantFileMetadata loadFile(
+            HadoopVariantStorageEngine variantStorageManager, String dbName, URI outputUri, String resourceName,
             StudyConfiguration studyConfiguration, Map<? extends String, ?> otherParams, boolean doTransform, boolean loadArchive,
             boolean loadVariant) throws Exception {
         URI fileInputUri = VariantStorageBaseTest.getResourceUri(resourceName);
@@ -483,6 +494,7 @@ public class VariantHbaseTestUtils {
                 .append(HadoopVariantStorageEngine.HADOOP_LOAD_ARCHIVE, loadArchive)
                 .append(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT, loadVariant);
 
+        System.out.println("params.toJson() = " + params.toJson());
         if (otherParams != null) {
             params.putAll(otherParams);
         }

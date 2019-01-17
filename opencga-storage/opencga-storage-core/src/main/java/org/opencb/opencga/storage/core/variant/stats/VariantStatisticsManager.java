@@ -103,7 +103,7 @@ public interface VariantStatisticsManager {
         if (updateStats && !overwrite) {
             //Get all variants that not contain any of the required cohorts
             readerQuery.append(VariantQueryParam.COHORT.key(),
-                    cohorts.stream().map((cohort) -> NOT + study.getStudyName() + ":" + cohort).collect(Collectors
+                    cohorts.stream().map((cohort) -> NOT + study.getName() + ":" + cohort).collect(Collectors
                             .joining(AND)));
         }
 

@@ -31,14 +31,13 @@ import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
@@ -389,7 +388,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         if (archiveIterator) {
             String study = query.getString(STUDY.key());
             StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
-            int studyId = studyMetadata.getStudyId();
+            int studyId = studyMetadata.getId();
 
             String file = query.getString(FILE.key());
             Integer fileId = metadataManager.getFileId(studyMetadata.getId(), file, true);
@@ -592,7 +591,8 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration,
                                    long timestamp, QueryOptions options) {
 
-        VariantStatsToHBaseConverter converter = new VariantStatsToHBaseConverter(genomeHelper, studyConfiguration);
+        VariantStatsToHBaseConverter converter = new VariantStatsToHBaseConverter(genomeHelper, studyConfiguration,
+                studyConfiguration.getCohortIds());
         List<Put> puts = converter.apply(variantStatsWrappers);
         for (Put put : puts) {
             HadoopVariantSearchIndexUtils.addNotSyncStatus(put, genomeHelper.getColumnFamily());

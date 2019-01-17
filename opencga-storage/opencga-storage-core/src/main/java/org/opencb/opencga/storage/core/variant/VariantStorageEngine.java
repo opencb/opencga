@@ -1304,7 +1304,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             if (!isValidParam(query, INCLUDE_STUDY)) {
                 List<String> includeStudy = new ArrayList<>();
                 for (Integer studyId : selectVariantElements.getStudies()) {
-                    includeStudy.add(selectVariantElements.getStudyConfigurations().get(studyId).getStudyName());
+                    includeStudy.add(selectVariantElements.getStudyMetadatas().get(studyId).getName());
                 }
                 if (includeStudy.isEmpty()) {
                     query.put(INCLUDE_STUDY.key(), NONE);

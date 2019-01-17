@@ -423,7 +423,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
             }
 
             try {
-                BiMap<String, Integer> indexedSamples = metadataManager.getIndexedSamples(studyId);
+                BiMap<String, Integer> indexedSamples = metadataManager.getIndexedSamplesMap(studyId);
                 Set<Integer> previouslyIndexedSamples = indexedSamples.values();
                 Set<Integer> newSamples = new HashSet<>();
                 for (Integer fileId : fileIds) {

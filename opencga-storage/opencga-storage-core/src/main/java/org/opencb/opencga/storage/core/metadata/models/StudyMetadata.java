@@ -59,12 +59,12 @@ public class StudyMetadata {
 
     @Deprecated
     public int getStudyId() {
-        return id;
+        return getId();
     }
 
     @Deprecated
     public String getStudyName() {
-        return name;
+        return getName();
     }
 
     public Aggregation getAggregation() {

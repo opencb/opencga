@@ -1622,7 +1622,7 @@ public class VariantMongoDBQueryParser {
                 cohortId = metadataManager.getCohortId(studyId, cohort);
             } else {
 //                String study = defaultStudyMetadata.getStudyName();
-                studyId = defaultStudyMetadata.getStudyId();
+                studyId = defaultStudyMetadata.getId();
                 String[] cohortOpValue = VariantQueryUtils.splitOperator(filter);
                 String cohort = cohortOpValue[0];
                 cohortId = metadataManager.getCohortId(studyId, cohort);

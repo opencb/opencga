@@ -33,6 +33,8 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -267,15 +269,16 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
     @Test
     public void checkMeta() throws Exception {
         System.out.println("Get studies");
-        List<String> studyNames = dbAdaptor.getVariantStorageMetadataManager().getStudyNames(new QueryOptions());
+        VariantStorageMetadataManager metadataManager = dbAdaptor.getVariantStorageMetadataManager();
+        List<String> studyNames = metadataManager.getStudyNames(new QueryOptions());
         assertEquals(1, studyNames.size());
         for (String studyName : studyNames) {
             System.out.println("studyName = " + studyName);
-            StudyConfiguration sc = dbAdaptor.getVariantStorageMetadataManager().getStudyConfiguration(studyName, new QueryOptions()).first();
-            assertEquals(sc.getStudyId(), STUDY_ID);
-            assertEquals(sc.getStudyName(), STUDY_NAME);
-            assertEquals(Collections.singleton(FILE_ID), sc.getIndexedFiles());
-            System.out.println("sc = " + sc);
+            StudyMetadata sm = metadataManager.getStudyMetadata(studyName);
+            assertEquals(sm.getId(), STUDY_ID);
+            assertEquals(sm.getName(), STUDY_NAME);
+            assertEquals(Collections.singleton(FILE_ID), metadataManager.getIndexedFiles(STUDY_ID));
+            System.out.println("sm = " + sm);
         }
     }
 

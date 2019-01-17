@@ -26,6 +26,7 @@ import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsCalculator;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.VariantStatsToHBaseConverter;
@@ -59,12 +60,14 @@ public class AnalysisStatsMapper extends AbstractHBaseVariantMapper<ImmutableByt
         this.getHbaseToVariantConverter().setSimpleGenotypes(true);
         variantStatisticsCalculator = new VariantStatisticsCalculator(true);
         this.variantStatisticsCalculator.setAggregationType(Aggregation.NONE, null);
-        this.studyId = Integer.valueOf(this.getStudyConfiguration().getStudyId()).toString();
+        StudyConfiguration studyConfiguration = this.getStudyConfiguration();
+        this.studyId = Integer.valueOf(studyConfiguration.getStudyId()).toString();
         BiMap<Integer, String> sampleIds = getStudyConfiguration().getSampleIds().inverse();
-        variantStatsToHBaseConverter = new VariantStatsToHBaseConverter(this.getHelper(), this.getStudyConfiguration());
+        variantStatsToHBaseConverter
+                = new VariantStatsToHBaseConverter(this.getHelper(), studyConfiguration, studyConfiguration.getCohortIds());
         // map from cohort Id to <cohort name, <sample names>>
-        this.samples = this.getStudyConfiguration().getCohortIds().entrySet().stream()
-                .map(e -> new MutablePair<>(e.getKey(), this.getStudyConfiguration().getCohorts().get(e.getValue())))
+        this.samples = studyConfiguration.getCohortIds().entrySet().stream()
+                .map(e -> new MutablePair<>(e.getKey(), studyConfiguration.getCohorts().get(e.getValue())))
                 .map(p -> new MutablePair<>(p.getKey(),
                         p.getValue().stream().map(sampleIds::get).collect(Collectors.toSet())))
                 .collect(Collectors.toMap(Pair::getKey, Pair::getValue));

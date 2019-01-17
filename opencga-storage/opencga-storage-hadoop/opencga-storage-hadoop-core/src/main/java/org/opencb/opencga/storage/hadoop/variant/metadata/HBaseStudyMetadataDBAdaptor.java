@@ -20,7 +20,9 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.client.Get;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.util.StopWatch;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -247,7 +249,7 @@ public class HBaseStudyMetadataDBAdaptor extends AbstractHBaseDBAdaptor implemen
     }
 
     @Override
-    public List<Integer> getIndexedSamples2(int studyId) {
+    public List<Integer> getIndexedSamples(int studyId) {
         // FIXME!
         Set<Integer> set = new LinkedHashSet<>();
         for (Integer indexedFile : getIndexedFiles(studyId)) {
@@ -256,7 +258,8 @@ public class HBaseStudyMetadataDBAdaptor extends AbstractHBaseDBAdaptor implemen
         return new ArrayList<>(set);
     }
 
-    public BiMap<String, Integer> getIndexedSamples(int studyId) {
+    @Override
+    public BiMap<String, Integer> getIndexedSamplesMap(int studyId) {
         // FIXME!
         BiMap<String, Integer> map = HashBiMap.create();
         for (Integer indexedFile : getIndexedFiles(studyId)) {

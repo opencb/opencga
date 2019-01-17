@@ -241,7 +241,6 @@ public class VariantSqlQueryParser {
                 });
             }
             if (returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)) {
-                System.out.println("returnedSamples = " + returnedSamples);
                 returnedSamples.forEach((studyId, sampleIds) -> {
                     for (Integer sampleId : sampleIds) {
                         sb.append(",\"");
@@ -788,7 +787,7 @@ public class VariantSqlQueryParser {
                     throw VariantQueryException.malformedParam(COHORT, query.getString((COHORT.key())), "Expected {study}:{cohort}");
                 }
                 int cohortId = metadataManager.getCohortId(studyMetadata.getId(), cohort);
-                Column column = getStatsColumn(studyMetadata.getStudyId(), cohortId);
+                Column column = getStatsColumn(studyMetadata.getId(), cohortId);
                 if (negated) {
                     filters.add("\"" + column + "\" IS NULL");
                 } else {
@@ -845,7 +844,7 @@ public class VariantSqlQueryParser {
                     List<String> studyNames = metadataManager.getStudyNames(null);
                     throw VariantQueryException.missingStudyForSample(entry.getKey().toString(), studyNames);
                 }
-                int studyId = defaultStudyMetadata.getStudyId();
+                int studyId = defaultStudyMetadata.getId();
                 int sampleId = metadataManager.getSampleId(studyId, entry.getKey());
 
                 List<String> genotypes = GenotypeClass.filter(entry.getValue(), loadedGenotypes);
@@ -1018,7 +1017,7 @@ public class VariantSqlQueryParser {
                         sb.append("TO_NUMBER(");
                     }
                     sb.append('"');
-                    buildSampleColumnKey(defaultStudyMetadata.getStudyId(), sampleId, sb);
+                    buildSampleColumnKey(defaultStudyMetadata.getId(), sampleId, sb);
                     sb.append('"');
 
                     // Arrays in SQL are 1-based.
@@ -1031,7 +1030,7 @@ public class VariantSqlQueryParser {
 
                         if (op.startsWith(">>") || op.startsWith("<<")) {
                             sb.append(" OR \"");
-                            buildSampleColumnKey(defaultStudyMetadata.getStudyId(), sampleId, sb);
+                            buildSampleColumnKey(defaultStudyMetadata.getId(), sampleId, sb);
                             sb.append('"');
 
                             // Arrays in SQL are 1-based.
