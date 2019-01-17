@@ -1,4 +1,7 @@
-FROM maven:3.5-jdk-8
+FROM openjdk:8
+
+RUN apt-get update && \
+    apt-get install -y maven
 
 WORKDIR /build
 
@@ -31,6 +34,6 @@ RUN mvn dependency:go-offline -B --settings settings.xml
 COPY . .
 
 # Build the application
-RUN mvn -T 1C clean install --settings settings.xml -DskipTests -Dstorage-hadoop -Popencga-storage-hadoop-deps -Phdp-2.6.0 -DOPENCGA.STORAGE.DEFAULT_ENGINE=hadoop -Dopencga.war.name=opencga
+RUN mvn -T 1C clean install --settings settings.xml -DskipTests -Dstorage-hadoop -Popencga-storage-hadoop-deps -Phdp-2.6.0 -DOPENCGA.STORAGE.DEFAULT_ENGINE=hadoop
 
 RUN rm -fr ~/.m2
