@@ -27,7 +27,6 @@ Avere | use-azure | FALSE | TRUE | TRUE
   | ssd-per-node | n/a | 4 | 4
   | ssd-size | n/a | 256GB | 1TB
   | node-size | n/a | D16 | E32
-  | premium-blob | n/a | ??? | ???
   |   |   |   |  
 Solr | vm-size | E54v3 | E8v3 | E16v3
   | vm-quantity | 1 | 2 | 4
