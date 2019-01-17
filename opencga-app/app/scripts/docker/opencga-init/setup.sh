@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 sshpass -p "$HBASE_SSH_PASS" ssh -o StrictHostKeyChecking=no -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$HBASE_SSH_USER@$HBASE_SSH_DNS" "sudo sed -i '/<name>hbase.client.keyvalue.maxsize<\/name>/!b;n;c<value>0</value>' /etc/hbase/conf/hbase-site.xml"
 

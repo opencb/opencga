@@ -1,7 +1,5 @@
 FROM opencga
 
-RUN apt-get update && apt-get install sshpass python3-pip -y
-
 ENV HBASE_SSH_DNS=""
 ENV HBASE_SSH_PASS=""
 ENV HBASE_SSH_USER=""
@@ -29,9 +27,16 @@ ENV BATCH_MAX_CONCURRENT_JOBS=""
 # Minimum compatible git commit, please only use later commits.
 ARG IVA_COMMIT_SHA="dce421b6933d540d9c511c72e63c0e85dff00667"
 
-# Install dependencies
-RUN apt-get update && \
-    apt-get install -y \
+# Install local dependencies
+RUN apk add --no-cache python3 && \
+    python3 -m ensurepip && \
+    rm -r /usr/lib/python*/ensurepip && \
+    pip3 install --upgrade pip setuptools && \
+    if [ ! -e /usr/bin/pip ]; then ln -s pip3 /usr/bin/pip ; fi && \
+    if [[ ! -e /usr/bin/python ]]; then ln -sf /usr/bin/python3 /usr/bin/python; fi && \
+    rm -r /root/.cache
+RUN apk add --update --no-cache openssh \
+    sshpass \
     git
 
 # Download and extract the IVA configuration into our local configuration.

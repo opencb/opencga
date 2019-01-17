@@ -18,6 +18,9 @@ LABEL org.label-schema.vendor="OpenCB" \
       org.label-schema.build-date=${BUILD_DATE} \
       org.label-schema.docker.schema-version="1.0"
 
+# Install local dependencies
+RUN apk --no-cache add wget tar
+
 # Download and install Tomcat
 RUN wget --quiet --no-cookies http://www-eu.apache.org/dist/tomcat/tomcat-8/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz -O /tmp/tomcat.tgz && \
 tar xzvf /tmp/tomcat.tgz -C /opt && \

@@ -36,10 +36,9 @@
 
 set -e
 
-dockerDir="./opencga-app/app/scripts/docker"
-
 # Jump to the repo root dir so that we have a known working dir
 cd $(git rev-parse --show-toplevel)
+dockerDir="opencga-app/app/scripts/docker"
 
 # make_image directory, image name, make target
 function make_image {
@@ -49,7 +48,7 @@ function make_image {
 }
 
 # Define all the docker images in dependecy order
-declare -a images=(opencga-build opencga opencga-app opencga-daemon opencga-init iva)
+declare -a images=(opencga opencga-app opencga-daemon opencga-init iva)
 imageCount=0
 imagesLen="${#images[@]}"
 imagesLen=$((imagesLen-1))
@@ -58,7 +57,20 @@ echo "---------------------"
 echo "Started building container images"
 echo "---------------------"
 
-# Build all the container images
+# Build OpenCGA
+if [ ! -d "./build" ]; then
+    echo "$: No existing OpenCGA build."
+    echo "$: Starting OpenCGA build."
+    docker run -it --rm \
+    -v "$PWD":/src \
+    -v "$HOME/.m2":/root/.m2 \
+    -w /src maven:3.6-jdk-8 \
+    mvn -T 1C install \
+    -DskipTests -Dstorage-hadoop -Popencga-storage-hadoop-deps -Phdp-2.6.0 -DOPENCGA.STORAGE.DEFAULT_ENGINE=hadoop -Dopencga.war.name=opencga
+    echo "$: Finished OpenCGA build."
+fi
+
+# Build all the child container images
 for image in "${images[@]}"
 do
     echo
@@ -79,12 +91,22 @@ echo "---------------------"
 
 # Publish the container images
 if [ "$PUBLISH" = true ]; then
-    make_image "$dockerDir" "opencga-init" publish
-    make_image "$dockerDir" "opencga-app" publish
-    make_image "$dockerDir" "opencga-daemon" publish
-    make_image "$dockerDir" "iva" publish
+    imageCount=0
+    for image in "${images[@]}"
+    do
+        if [ "${image}" = "opencga" ]; then
+            continue
+        fi
+
+        echo
+        echo "--> Publishing image '${image}' : [${imageCount}/${imagesLen}]"
+        make_image "$dockerDir" "$image" publish
+        echo "--> Done Publishing image '${image}'"
+        echo
+        imageCount=$((imageCount+1))
+    done
 else
-    echo "Not publishing any docker images"
+        echo "Not publishing any docker images"
 fi
 
 echo "---------------------"

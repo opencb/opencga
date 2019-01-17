@@ -8,6 +8,7 @@
 # `make login` : Logs into the specified docker registry
 # `make APP_NAME=opencga-app tag` : will tag the specified app image should it exist
 # `make APP_NAME=opencga-app publish` : will push the specified app image should it exist
+# `make DOCKER_BUILD_ARGS=--no-cache APP_NAME=opencga-app build` : will build the docker image with additional docker args
 
 # Override the `make_env` file default location by setting ENVFILE env var
 ENVFILE ?= make_env
