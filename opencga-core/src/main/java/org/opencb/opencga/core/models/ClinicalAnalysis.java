@@ -44,6 +44,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     private List<Interpretation> interpretations;
 
     private Priority priority;
+    private List<String> tags;
 
     private String creationDate;
     private String modificationDate;
@@ -117,8 +118,8 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     public ClinicalAnalysis() {
     }
 
-    public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, Map<String, List<File>> files,
-                            Individual proband, Family family, List<Interpretation> interpretations, Priority priority, String creationDate,
+    public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, Map<String, List<File>> files, Individual proband,
+                            Family family, List<Interpretation> interpretations, Priority priority, List<String> tags, String creationDate,
                             String dueDate, List<Comment> comments, ClinicalStatus status, int release, Map<String, Object> attributes) {
         this.id = id;
         this.description = description;
@@ -129,6 +130,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         this.family = family;
         this.interpretations = interpretations;
         this.priority = priority;
+        this.tags = tags;
         this.creationDate = creationDate;
         this.dueDate = dueDate;
         this.comments = comments;
@@ -150,6 +152,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         sb.append(", family=").append(family);
         sb.append(", interpretations=").append(interpretations);
         sb.append(", priority=").append(priority);
+        sb.append(", tags=").append(tags);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", dueDate='").append(dueDate).append('\'');
@@ -269,6 +272,15 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     public ClinicalAnalysis setPriority(Priority priority) {
         this.priority = priority;
+        return this;
+    }
+
+    public List<String> getTags() {
+        return tags;
+    }
+
+    public ClinicalAnalysis setTags(List<String> tags) {
+        this.tags = tags;
         return this;
     }
 
