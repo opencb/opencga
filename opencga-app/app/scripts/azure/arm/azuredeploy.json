@@ -670,7 +670,7 @@
     ],
     "outputs": {
         "passwords": {
-            "type": "secureObject",
+            "type": "object",
             "value": "[variables('generatedPasswords')]"
         }
     }
