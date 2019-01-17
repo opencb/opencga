@@ -36,22 +36,6 @@
 
 set -e
 
-BRANCH=$(git branch | grep \* | cut -d ' ' -f2)
-COMMIT=$(git rev-parse --verify HEAD)
-
-echo
-echo "---------------------"
-echo "Running build process"
-echo "---------------------"
-echo "Branch:          ${BRANCH}"
-echo "Commit:          ${COMMIT}"
-echo "Docker Tag:      $1"
-echo "Docker Repo:     $2"
-echo "Docker Username: $3"
-echo "Publish:         $4"
-echo "---------------------"
-echo
-
 dockerDir="./opencga-app/app/scripts/docker"
 
 # Jump to the repo root dir so that we have a known working dir

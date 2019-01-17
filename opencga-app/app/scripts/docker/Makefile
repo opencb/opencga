@@ -11,59 +11,80 @@
 
 # Override the `make_env` file default location by setting ENVFILE env var
 ENVFILE ?= make_env
-ifneq ("$(wildcard $(make_env))","")
+ifneq ("$(wildcard $(ENVFILE))","")
     include $(ENVFILE)
     export
 endif
 
-
 # Check required variables are set for target build
 ifeq ($(MAKECMDGOALS), build)
-ifndef APP_NAME
+ifeq ($(APP_NAME),)
 $(error APP_NAME is not set)
 endif
 endif
 
 # Check required variables are set for target tag
 ifeq ($(MAKECMDGOALS), tag)
-ifndef APP_NAME
+ifeq ($(APP_NAME),)
 $(error APP_NAME is not set)
 endif
 endif
 
 # Check required variables are set for target login
 ifeq ($(MAKECMDGOALS), login)
-ifndef DOCKER_PASSWORD
+ifeq ($(DOCKER_PASSWORD),)
 $(error DOCKER_PASSWORD is not set)
 endif
-ifndef DOCKER_USERNAME
+ifeq ($(DOCKER_USERNAME),)
 $(error DOCKER_USERNAME is not set)
 endif
 endif
 
 # Check required variables are set for target publish
 ifeq ($(MAKECMDGOALS), publish)
-ifndef APP_NAME
+ifeq $((APP_NAME),)
 $(error APP_NAME is not set)
 endif
 endif
 
 # Set defaults for optional variables
-ifneq ($(DOCKER_SERVER),"")	# If docker server set, add trailing slash
-	DOCKER_SERVER := $(DOCKER_SERVER)/
+$(info $(DOCKER_SERVER))
+ifneq ($(DOCKER_SERVER),)
+DOCKER_SERVER := $(DOCKER_SERVER)/
 endif
+
+DOCKER_USERNAME ?= <not set>
 DOCKER_REPO ?= $(DOCKER_USERNAME)
 TAG ?= $(shell git rev-parse --verify HEAD)
 PUBLISH ?= false
 PATH_PREFIX = opencga-app/app/scripts/docker/$(APP_NAME)
+BRANCH = $(shell git branch | grep \* | cut -d ' ' -f2)
+COMMIT = $(shell git rev-parse --verify HEAD)
 
 # Set default make target
 .DEFAULT_GOAL := build-all
 
+# Print useful metadata about the build
+.PHONY: metadata
+metadata:
+	@echo
+	@echo "---------------------"
+	@echo "Build Metadata"
+	@echo "---------------------"
+	@echo "Branch:          $(BRANCH)"
+	@echo "Commit:          $(COMMIT)"
+	@echo "Docker Tag:      $(TAG)"
+	@echo "Docker Repo:     $(DOCKER_REPO)"
+	@echo "Docker Username: $(DOCKER_USERNAME)"
+	@echo "Docker Server:   $(DOCKER_SERVER)"
+	@echo "Publish:         $(PUBLISH)"
+	@echo "---------------------"
+	@echo
+
 # Run a script to build all docker images
 .PHONY: build-all
-build-all:
-	./build-all.sh $(TAG) $(DOCKER_REPO) $(DOCKER_USERNAME) $(PUBLISH)
+build-all: metadata
+	./build-all.sh
 
 # Builds and tags the container
 .PHONY: build
