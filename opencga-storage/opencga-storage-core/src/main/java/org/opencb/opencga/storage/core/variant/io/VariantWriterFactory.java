@@ -59,7 +59,7 @@ public class VariantWriterFactory {
     private final VariantStorageMetadataManager variantStorageMetadataManager;
 
     public VariantWriterFactory(VariantDBAdaptor dbAdaptor) {
-        variantStorageMetadataManager = dbAdaptor.getVariantStorageMetadataManager();
+        variantStorageMetadataManager = dbAdaptor.getMetadataManager();
     }
 
     public VariantWriterFactory(VariantStorageMetadataManager variantStorageMetadataManager) {

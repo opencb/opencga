@@ -41,9 +41,9 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.io.proto.ProtoFileWriter;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -126,6 +126,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
         switch (transVal){
             case "avro":
             case "proto":
+            case "json":
                 break;
             default:
                 throw new IllegalArgumentException("Output format " + transVal + " not supported for Hadoop!");
@@ -309,22 +310,22 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
     }
 
     @Override
-    protected void securePreLoad(StudyConfiguration studyConfiguration, VariantFileMetadata fileMetadata) throws StorageEngineException {
-        super.securePreLoad(studyConfiguration, fileMetadata);
+    protected void securePreLoad(StudyMetadata studyMetadata, VariantFileMetadata fileMetadata) throws StorageEngineException {
+        super.securePreLoad(studyMetadata, fileMetadata);
 
         MergeMode mergeMode;
-        if (!studyConfiguration.getAttributes().containsKey(Options.MERGE_MODE.key())) {
+        if (!studyMetadata.getAttributes().containsKey(Options.MERGE_MODE.key())) {
             mergeMode = MergeMode.from(options);
-            studyConfiguration.getAttributes().put(Options.MERGE_MODE.key(), mergeMode);
+            studyMetadata.getAttributes().put(Options.MERGE_MODE.key(), mergeMode);
         } else {
-            options.put(MERGE_MODE.key(), MergeMode.from(studyConfiguration.getAttributes()));
+            options.put(MERGE_MODE.key(), MergeMode.from(studyMetadata.getAttributes()));
         }
     }
 
     @Override
-    public void securePostLoad(List<Integer> fileIds, StudyConfiguration studyConfiguration) throws StorageEngineException {
-        super.securePostLoad(fileIds, studyConfiguration);
-        studyConfiguration.getAttributes().put(MISSING_GENOTYPES_UPDATED, false);
+    public void securePostLoad(List<Integer> fileIds, StudyMetadata studyMetadata) throws StorageEngineException {
+        super.securePostLoad(fileIds, studyMetadata);
+        studyMetadata.getAttributes().put(MISSING_GENOTYPES_UPDATED, false);
     }
 
     @Override
@@ -353,7 +354,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
     }
 
     @Override
-    protected void checkLoadedVariants(int fileId, StudyConfiguration studyConfiguration) throws
+    protected void checkLoadedVariants(int fileId, StudyMetadata studyMetadata) throws
             StorageEngineException {
         logger.warn("Skip check loaded variants");
     }

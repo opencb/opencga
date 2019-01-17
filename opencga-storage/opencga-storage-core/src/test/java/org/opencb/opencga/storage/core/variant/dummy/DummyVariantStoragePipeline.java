@@ -21,7 +21,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -55,13 +55,11 @@ public class DummyVariantStoragePipeline extends VariantStoragePipeline {
     }
 
     @Override
-    protected void securePreLoad(StudyConfiguration studyConfiguration, VariantFileMetadata source) throws StorageEngineException {
-        super.securePreLoad(studyConfiguration, source);
+    protected void securePreLoad(StudyMetadata studyMetadata, VariantFileMetadata source) throws StorageEngineException {
+        super.securePreLoad(studyMetadata, source);
 
         List<Integer> fileIds = Collections.singletonList(getFileId());
-        BatchFileTask op = new BatchFileTask("load", fileIds, 1, BatchFileTask.Type.LOAD);
-        op.addStatus(BatchFileTask.Status.RUNNING);
-        studyConfiguration.getBatches().add(op);
+        getMetadataManager().addRunningTask(getStudyId(), "load", fileIds, false, BatchFileTask.Type.LOAD);
     }
 
     @Override
@@ -91,23 +89,23 @@ public class DummyVariantStoragePipeline extends VariantStoragePipeline {
 
         VariantFileMetadata fileMetadata = readVariantFileMetadata(input);
         fileMetadata.setId(String.valueOf(getFileId()));
-        dbAdaptor.getVariantStorageMetadataManager().updateVariantFileMetadata(getStudyId(), fileMetadata);
+        dbAdaptor.getMetadataManager().updateVariantFileMetadata(getStudyId(), fileMetadata);
 
         return super.postLoad(input, output);
     }
 
     @Override
-    public void securePostLoad(List<Integer> fileIds, StudyConfiguration studyConfiguration) throws StorageEngineException {
-        super.securePostLoad(fileIds, studyConfiguration);
-        BatchFileTask.Status status = dbAdaptor.getVariantStorageMetadataManager()
-                .setStatus(studyConfiguration, BatchFileTask.Status.READY, "load", fileIds);
+    public void securePostLoad(List<Integer> fileIds, StudyMetadata studyMetadata) throws StorageEngineException {
+        super.securePostLoad(fileIds, studyMetadata);
+        BatchFileTask.Status status = dbAdaptor.getMetadataManager()
+                .setStatus(studyMetadata.getId(), "load", fileIds, BatchFileTask.Status.READY);
         if (status != BatchFileTask.Status.DONE) {
             logger.warn("Unexpected status " + status);
         }
     }
 
     @Override
-    protected void checkLoadedVariants(int fileId, StudyConfiguration studyConfiguration) throws StorageEngineException {
+    protected void checkLoadedVariants(int fileId, StudyMetadata studyMetadata) throws StorageEngineException {
 
     }
 }

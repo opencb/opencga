@@ -88,7 +88,7 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public void removeStudy(String studyName) throws StorageEngineException {
-        getVariantStorageMetadataManager().lockAndUpdateOld(studyName, studyConfiguration -> {
+        getMetadataManager().lockAndUpdateOld(studyName, studyConfiguration -> {
             studyConfiguration.getIndexedFiles().clear();
             studyConfiguration.getCalculatedStats().clear();
             studyConfiguration.getInvalidStats().clear();
@@ -98,7 +98,7 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public VariantStorageMetadataManager getVariantStorageMetadataManager() throws StorageEngineException {
+    public VariantStorageMetadataManager getMetadataManager() throws StorageEngineException {
         return new VariantStorageMetadataManager(new DummyProjectMetadataAdaptor(), new DummyStudyMetadataDBAdaptor(), new DummyVariantFileMetadataDBAdaptor());
     }
 }

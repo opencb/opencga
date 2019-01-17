@@ -134,7 +134,7 @@ public class VariantMapReduceUtil {
             throws IOException {
         GenomeHelper genomeHelper = dbAdaptor.getGenomeHelper();
         String variantTableName = dbAdaptor.getVariantTable();
-        VariantStorageMetadataManager scm = dbAdaptor.getVariantStorageMetadataManager();
+        VariantStorageMetadataManager scm = dbAdaptor.getMetadataManager();
         VariantSqlQueryParser variantSqlQueryParser = new VariantSqlQueryParser(genomeHelper, variantTableName, scm, false);
 
         String sql = variantSqlQueryParser.parse(query, queryOptions).getSql();

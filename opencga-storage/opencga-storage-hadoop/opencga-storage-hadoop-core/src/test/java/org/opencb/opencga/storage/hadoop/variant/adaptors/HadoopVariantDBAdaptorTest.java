@@ -107,9 +107,9 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
             try {
                 if (!fileIndexed) {
                     VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
-                    studyConfiguration = dbAdaptor.getVariantStorageMetadataManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+                    studyConfiguration = dbAdaptor.getMetadataManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
                     studyConfiguration.getAttributes().put(MISSING_GENOTYPES_UPDATED, true);
-                    dbAdaptor.getVariantStorageMetadataManager().updateStudyConfiguration(studyConfiguration, null);
+                    dbAdaptor.getMetadataManager().updateStudyConfiguration(studyConfiguration, null);
                     VariantHbaseTestUtils.printVariants(studyConfiguration, dbAdaptor, newOutputUri());
                 }
             } catch (Exception e) {

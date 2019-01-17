@@ -114,7 +114,7 @@ public abstract class StorageOperation {
             throws IOException, CatalogException, StorageEngineException {
 
         CatalogStudyConfigurationFactory studyConfigurationFactory = new CatalogStudyConfigurationFactory(catalogManager);
-        VariantStorageMetadataManager variantStorageMetadataManager = getVariantStorageEngine(dataStore).getVariantStorageMetadataManager();
+        VariantStorageMetadataManager variantStorageMetadataManager = getVariantStorageEngine(dataStore).getMetadataManager();
 
         StudyConfiguration studyConfiguration = variantStorageMetadataManager.getStudyConfiguration(study, null).first();
         if (studyConfiguration != null) {

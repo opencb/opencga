@@ -127,7 +127,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
             System.setIn(in);
         }
 
-        studyConfiguration = variantStorageEngine.getVariantStorageMetadataManager().getStudyConfiguration(STUDY_NAME, null).first();
+        studyConfiguration = variantStorageEngine.getMetadataManager().getStudyConfiguration(STUDY_NAME, null).first();
 
         assertEquals(1, studyConfiguration.getIndexedFiles().size());
         checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyConfiguration, true, false, true,
@@ -256,7 +256,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
 
         VariantStorageEngine variantStorageManager = getVariantStorageEngine();
         VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor();
-        VariantStorageMetadataManager variantStorageMetadataManager = dbAdaptor.getVariantStorageMetadataManager();
+        VariantStorageMetadataManager variantStorageMetadataManager = dbAdaptor.getMetadataManager();
         int i = 1;
         for (int fileId = 77; fileId <= 93; fileId++) {
             ObjectMap fileOptions = new ObjectMap();
@@ -444,7 +444,9 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
                 studyConfiguration, options);
 
         studyConfiguration.getFileIds().put("10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", 6);
-        StorageEngineException exception = StorageEngineException.alreadyLoadedSamples(studyConfiguration, 6);
+        StorageEngineException exception = StorageEngineException.alreadyLoadedSamples(
+                "10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
+                Arrays.asList("", ""));
         thrown.expect(exception.getClass());
         thrown.expectMessage(exception.getMessage());
         runDefaultETL(getResourceUri("10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageEngine,
@@ -470,7 +472,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
 //        params.put(VariantStorageEngine.Options.INCLUDE_SRC.key(), true);
         StoragePipelineResult etlResult = runETL(variantStorageEngine, params, true, true, true);
         VariantDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
-        studyConfiguration = dbAdaptor.getVariantStorageMetadataManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+        studyConfiguration = dbAdaptor.getMetadataManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
 
         assertTrue("Incorrect transform file extension " + etlResult.getTransformResult() + ". Expected 'variants.json.gz'",
                 Paths.get(etlResult.getTransformResult()).toFile().getName().endsWith("variants.json.gz"));
@@ -503,7 +505,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
 
         System.out.println("etlResult = " + etlResult);
         VariantDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
-        studyConfiguration = dbAdaptor.getVariantStorageMetadataManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+        studyConfiguration = dbAdaptor.getMetadataManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
 
         assertTrue("Incorrect transform file extension " + etlResult.getTransformResult() + ". Expected 'variants.avro.snappy'",
                 Paths.get(etlResult.getTransformResult()).toFile().getName().endsWith("variants.avro.snappy"));
@@ -768,7 +770,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
             }
         }
 
-        variantStorageEngine.getDBAdaptor().getVariantStorageMetadataManager().variantFileMetadataIterator(new Query(), new QueryOptions())
+        variantStorageEngine.getDBAdaptor().getMetadataManager().variantFileMetadataIterator(new Query(), new QueryOptions())
                 .forEachRemaining(vs -> assertNotEquals("2", vs.getId()));
     }
 

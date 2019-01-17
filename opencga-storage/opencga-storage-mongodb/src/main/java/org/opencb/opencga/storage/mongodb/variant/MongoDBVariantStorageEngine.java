@@ -36,9 +36,9 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.local.FileStudyMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -248,7 +248,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
 
         ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
 
-        VariantStorageMetadataManager scm = getVariantStorageMetadataManager();
+        VariantStorageMetadataManager scm = getMetadataManager();
         Integer studyId = scm.getStudyId(study, null);
 
         Thread hook = scm.buildShutdownHook(REMOVE_OPERATION_NAME, studyId, fileIds);
@@ -266,11 +266,11 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public void removeStudy(String studyName) throws StorageEngineException {
-        VariantStorageMetadataManager scm = getVariantStorageMetadataManager();
+        VariantStorageMetadataManager scm = getMetadataManager();
         AtomicReference<BatchFileTask> batchFileOperation = new AtomicReference<>();
         int studyId = scm.lockAndUpdateOld(studyName, studyConfiguration -> {
             boolean resume = getOptions().getBoolean(RESUME.key(), RESUME.defaultValue());
-            batchFileOperation.set(VariantStorageMetadataManager.addBatchOperation(
+            batchFileOperation.set(VariantStorageMetadataManager.addRunningTask(
                     studyConfiguration,
                     REMOVE_OPERATION_NAME,
                     Collections.emptyList(),
@@ -287,7 +287,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
 
             scm.lockAndUpdateOld(studyName, studyConfiguration -> {
                 for (Integer fileId : studyConfiguration.getIndexedFiles()) {
-                    getDBAdaptor().getVariantStorageMetadataManager().deleteVariantFileMetadata(studyId, fileId);
+                    getDBAdaptor().getMetadataManager().deleteVariantFileMetadata(studyId, fileId);
                 }
                 VariantStorageMetadataManager
                         .setStatus(studyConfiguration, BatchFileTask.Status.READY, REMOVE_OPERATION_NAME, Collections.emptyList());
@@ -458,9 +458,9 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
 
                 }
                 if (doMerge) {
-                    StudyConfiguration studyConfiguration = storageResultMap.get(inputFiles.get(0)).getStudyConfiguration();
+                    StudyMetadata metadata = storageResultMap.get(inputFiles.get(0)).getStudyMetadata();
                     ObjectMap options = getOptions();
-                    options.put(Options.STUDY.key(), studyConfiguration.getStudyName());
+                    options.put(Options.STUDY.key(), metadata.getName());
 
                     annotateLoadedFiles(outdirUri, inputFiles, results, options);
                     calculateStatsForLoadedFiles(outdirUri, inputFiles, results, options);
@@ -539,7 +539,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         String filesCollection = options.getString(COLLECTION_FILES.key(), COLLECTION_FILES.defaultValue());
         MongoDataStoreManager mongoDataStoreManager = getMongoDataStoreManager();
         try {
-            VariantStorageMetadataManager variantStorageMetadataManager = getVariantStorageMetadataManager();
+            VariantStorageMetadataManager variantStorageMetadataManager = getMetadataManager();
             variantMongoDBAdaptor = new VariantMongoDBAdaptor(mongoDataStoreManager, credentials, variantsCollection,
                     variantStorageMetadataManager, configuration);
 
@@ -567,12 +567,12 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public VariantStorageMetadataManager getVariantStorageMetadataManager() throws StorageEngineException {
+    public VariantStorageMetadataManager getMetadataManager() throws StorageEngineException {
         ObjectMap options = getOptions();
         if (metadataManager != null) {
             return metadataManager;
         } else if (!options.getString(FileStudyMetadataDBAdaptor.STUDY_CONFIGURATION_PATH, "").isEmpty()) {
-            return super.getVariantStorageMetadataManager();
+            return super.getMetadataManager();
         } else {
             MongoDataStoreManager mongoDataStoreManager = getMongoDataStoreManager();
             MongoDataStore db = mongoDataStoreManager.get(

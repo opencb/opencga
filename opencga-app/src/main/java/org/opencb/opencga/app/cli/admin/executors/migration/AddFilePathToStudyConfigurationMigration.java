@@ -54,7 +54,7 @@ public class AddFilePathToStudyConfigurationMigration {
                 if (dataStores.add(dataStore)) {
                     VariantStorageEngine engine = factory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
 
-                    VariantStorageMetadataManager scm = engine.getVariantStorageMetadataManager();
+                    VariantStorageMetadataManager scm = engine.getMetadataManager();
                     for (String studyName : scm.getStudyNames(null)) {
                         StudyConfiguration sc = scm.getStudyConfiguration(studyName, null).first();
                         logger.info("Migrating study " + sc.getStudyName());

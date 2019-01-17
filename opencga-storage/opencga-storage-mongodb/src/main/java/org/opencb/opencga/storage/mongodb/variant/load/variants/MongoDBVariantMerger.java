@@ -33,7 +33,9 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.run.ParallelTaskRunner;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
@@ -235,11 +237,13 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
     private boolean checkOverlappings;
     private final DocumentToVariantConverter variantConverter;
     private final DocumentToStudyVariantEntryConverter studyConverter;
-    private final StudyConfiguration studyConfiguration;
+    private final StudyMetadata studyMetadata;
     private final boolean excludeGenotypes;
 
     // Variables that must be aware of concurrent modification
     private final Map<Integer, LinkedHashMap<String, Integer>> samplesPositionMap;
+    private final Map<Integer, LinkedHashSet<String>> sampleNamesInFile;
+    private final Map<String, Integer> fileIdsMap;
     private final List<Integer> indexedSamples;
 
 
@@ -250,31 +254,34 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 
     private final int release;
 
-    public MongoDBVariantMerger(VariantDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration, List<Integer> fileIds,
+    public MongoDBVariantMerger(VariantDBAdaptor dbAdaptor, StudyMetadata studyMetadata, List<Integer> fileIds,
                                 boolean resume, boolean ignoreOverlapping, int release) {
         this.dbAdaptor = Objects.requireNonNull(dbAdaptor);
-        this.studyConfiguration = Objects.requireNonNull(studyConfiguration);
+        this.studyMetadata = Objects.requireNonNull(studyMetadata);
         this.fileIds = Objects.requireNonNull(fileIds);
 
-        excludeGenotypes = getExcludeGenotypes(studyConfiguration);
-        format = buildFormat(studyConfiguration);
-        indexedSamples = Collections.unmodifiableList(buildIndexedSamplesList(fileIds));
-        studyId = studyConfiguration.getStudyId();
+        excludeGenotypes = getExcludeGenotypes(studyMetadata);
+        format = buildFormat(studyMetadata);
+        indexedSamples = Collections.unmodifiableList(buildIndexedSamplesList(fileIds, dbAdaptor.getMetadataManager()));
+        studyId = studyMetadata.getId();
         this.release = release;
         studyIdStr = String.valueOf(studyId);
 
-        checkOverlappings = !ignoreOverlapping && (fileIds.size() > 1 || !studyConfiguration.getIndexedFiles().isEmpty());
-        DocumentToSamplesConverter samplesConverter = new DocumentToSamplesConverter(this.studyConfiguration);
+        indexedFiles = dbAdaptor.getMetadataManager().getIndexedFiles(studyMetadata.getId());
+        checkOverlappings = !ignoreOverlapping && (fileIds.size() > 1 || !indexedFiles.isEmpty());
+        DocumentToSamplesConverter samplesConverter = new DocumentToSamplesConverter(dbAdaptor.getMetadataManager(), this.studyMetadata);
         studyConverter = new DocumentToStudyVariantEntryConverter(false, samplesConverter);
         variantConverter = new DocumentToVariantConverter(studyConverter, null);
         samplesPositionMap = new HashMap<>();
+        sampleNamesInFile = new HashMap<>();
+        fileIdsMap = new HashMap<>();
+        populateInternalCaches(fileIds, dbAdaptor.getMetadataManager());
 
         variantMerger = new VariantMerger();
-        variantMerger.configure(studyConfiguration.getVariantHeader());
+        variantMerger.configure(studyMetadata.getVariantHeader());
         variantMerger.setExpectedFormats(format);
         this.resume = resume;
         ts = System.currentTimeMillis();
-        indexedFiles = studyConfiguration.getIndexedFiles();
         checkOverlappings = !ignoreOverlapping && (fileIds.size() > 1 || !indexedFiles.isEmpty());
     }
 
@@ -995,13 +1002,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
     }
 
     private int getFileId(FileEntry fileEntry) {
-        int fid;
-        try {
-            fid = Integer.parseInt(fileEntry.getFileId());
-        } catch (NumberFormatException e) {
-            fid = studyConfiguration.getFileIds().get(fileEntry.getFileId());
-        }
-        return fid;
+        return fileIdsMap.get(fileEntry.getFileId());
     }
 
     /**
@@ -1262,48 +1263,47 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         return indexedSamples;
     }
 
-    private List<Integer> buildIndexedSamplesList(List<Integer> fileIds) {
-        List<Integer> indexedSamples = new LinkedList<>(StudyConfiguration.getIndexedSamples(studyConfiguration).values());
+    private List<Integer> buildIndexedSamplesList(List<Integer> fileIds, VariantStorageMetadataManager metadataManager) {
+        List<Integer> indexedSamples = metadataManager.getIndexedSamples(studyMetadata.getId());
         for (Integer fileId : fileIds) {
-            indexedSamples.removeAll(getSamplesInFile(fileId));
+            indexedSamples.removeAll(metadataManager.getFileMetadata(studyId, fileId).getSamples());
         }
         indexedSamples.sort(Integer::compareTo);
         return indexedSamples;
     }
 
-    protected LinkedHashSet<Integer> getSamplesInFile(Integer fileId) {
-        return studyConfiguration.getSamplesInFiles().get(fileId);
+    private void populateInternalCaches(List<Integer> fileIds, VariantStorageMetadataManager metadataManager) {
+        for (Integer fileId : fileIds) {
+            FileMetadata fileMetadata = metadataManager.getFileMetadata(studyId, fileId);
+            LinkedHashSet<Integer> samplesInFile = fileMetadata.getSamples();
+            LinkedHashSet<String> sampleNames = new LinkedHashSet<>();
+            LinkedHashMap<String, Integer> samplesPosition = new LinkedHashMap<>();
+            for (Integer sampleId : samplesInFile) {
+                String sampleName = metadataManager.getSampleName(studyId, sampleId);
+                sampleNames.add(sampleName);
+                samplesPosition.put(sampleName, samplesPosition.size());
+            }
+            fileIdsMap.put(String.valueOf(fileId), fileId);
+            fileIdsMap.put(fileMetadata.getName(), fileId);
+            sampleNamesInFile.put(fileId, sampleNames);
+            samplesPositionMap.put(fileId, samplesPosition);
+        }
     }
 
     protected LinkedHashSet<String> getSampleNamesInFile(Integer fileId) {
-        LinkedHashSet<String> samples = new LinkedHashSet<>();
-        getSamplesInFile(fileId).forEach(sampleId -> {
-            samples.add(studyConfiguration.getSampleIds().inverse().get(sampleId));
-        });
-        return samples;
+        return sampleNamesInFile.get(fileId);
     }
 
     protected LinkedHashMap<String, Integer> getSamplesPosition(Integer fileId) {
-        if (!samplesPositionMap.containsKey(fileId)) {
-            synchronized (samplesPositionMap) {
-                if (!samplesPositionMap.containsKey(fileId)) {
-                    LinkedHashMap<String, Integer> samplesPosition = new LinkedHashMap<>();
-                    for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(fileId)) {
-                        samplesPosition.put(studyConfiguration.getSampleIds().inverse().get(sampleId), samplesPosition.size());
-                    }
-                    samplesPositionMap.put(fileId, samplesPosition);
-                }
-            }
-        }
         return samplesPositionMap.get(fileId);
     }
 
-    private List<String> buildFormat(StudyConfiguration studyConfiguration) {
+    private List<String> buildFormat(StudyMetadata studyMetadata) {
         List<String> format = new LinkedList<>();
         if (!excludeGenotypes) {
             format.add(VariantMerger.GT_KEY);
         }
-        format.addAll(studyConfiguration.getAttributes().getAsStringList(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key()));
+        format.addAll(studyMetadata.getAttributes().getAsStringList(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key()));
         return format;
     }
 
@@ -1311,8 +1311,8 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         return indexedFiles;
     }
 
-    public static boolean getExcludeGenotypes(StudyConfiguration studyConfiguration) {
-        return studyConfiguration.getAttributes().getBoolean(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(),
+    public static boolean getExcludeGenotypes(StudyMetadata studyMetadata) {
+        return studyMetadata.getAttributes().getBoolean(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(),
                 VariantStorageEngine.Options.EXCLUDE_GENOTYPES.defaultValue());
     }
 }

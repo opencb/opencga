@@ -207,7 +207,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         int release = projectQueryResult.first().getCurrentRelease();
 
         // Add species, assembly and release
-        updateProjectMetadata(variantStorageEngine.getVariantStorageMetadataManager(), studyInfo.getOrganism(), release);
+        updateProjectMetadata(variantStorageEngine.getMetadataManager(), studyInfo.getOrganism(), release);
 
         variantStorageEngine.getOptions().putAll(options);
         boolean calculateStats = options.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key())

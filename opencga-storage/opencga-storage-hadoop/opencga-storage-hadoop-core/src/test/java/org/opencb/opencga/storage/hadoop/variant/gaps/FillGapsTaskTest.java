@@ -132,21 +132,21 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
         List<Integer> subSamples = sampleIds.subList(0, sampleIds.size() / 2);
         System.out.println("subSamples = " + subSamples);
         fillGaps(variantStorageEngine, studyConfiguration, subSamples);
-        printVariants(dbAdaptor.getVariantStorageMetadataManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first(), dbAdaptor, newOutputUri());
+        printVariants(dbAdaptor.getMetadataManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first(), dbAdaptor, newOutputUri());
         checkFillGaps(studyConfiguration, dbAdaptor, subSamples);
         checkSampleIndexTable(dbAdaptor);
 
         subSamples = sampleIds.subList(sampleIds.size() / 2, sampleIds.size());
         System.out.println("subSamples = " + subSamples);
         fillGaps(variantStorageEngine, studyConfiguration, subSamples);
-        printVariants(dbAdaptor.getVariantStorageMetadataManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first(), dbAdaptor, newOutputUri());
+        printVariants(dbAdaptor.getMetadataManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first(), dbAdaptor, newOutputUri());
         checkFillGaps(studyConfiguration, dbAdaptor, subSamples);
         checkSampleIndexTable(dbAdaptor);
 
         subSamples = sampleIds;
         System.out.println("subSamples = " + subSamples);
         fillGaps(variantStorageEngine, studyConfiguration, subSamples);
-        printVariants(dbAdaptor.getVariantStorageMetadataManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first(), dbAdaptor, newOutputUri());
+        printVariants(dbAdaptor.getMetadataManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first(), dbAdaptor, newOutputUri());
         checkFillGaps(studyConfiguration, dbAdaptor, subSamples);
         checkSampleIndexTable(dbAdaptor);
 
@@ -235,7 +235,7 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
         sampleIds.sort(Integer::compareTo);
 
         fillGaps(variantStorageEngine, studyConfiguration, sampleIds);
-        printVariants(dbAdaptor.getVariantStorageMetadataManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first(), dbAdaptor, newOutputUri(1));
+        printVariants(dbAdaptor.getMetadataManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first(), dbAdaptor, newOutputUri(1));
         checkFillGaps(studyConfiguration, dbAdaptor, sampleIds, Collections.singleton("1:10020:A:T"));
         checkSampleIndexTable(dbAdaptor);
 
@@ -277,7 +277,7 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
         // Fill missing
         variantStorageEngine.fillMissing(studyConfiguration.getStudyName(), options, false);
         printVariants(dbAdaptor, newOutputUri());
-        studyConfiguration = dbAdaptor.getVariantStorageMetadataManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+        studyConfiguration = dbAdaptor.getMetadataManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
         assertTrue(studyConfiguration.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED));
         checkFillMissing(dbAdaptor, "NA12877", "NA12878");
         checkSampleIndexTable(dbAdaptor);
@@ -298,7 +298,7 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
         // Fill missing
         variantStorageEngine.fillMissing(studyConfiguration.getStudyName(), options, false);
         printVariants(dbAdaptor, newOutputUri());
-        studyConfiguration = dbAdaptor.getVariantStorageMetadataManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+        studyConfiguration = dbAdaptor.getMetadataManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
         assertTrue(studyConfiguration.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED));
         checkFillMissing(dbAdaptor, "NA12877", "NA12878", "NA12879", "NA12880", "NA12881");
         checkSampleIndexTable(dbAdaptor);
@@ -380,7 +380,7 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
         }
 
         URI outputUri = newOutputUri(1);
-        studyConfiguration = dbAdaptor.getVariantStorageMetadataManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+        studyConfiguration = dbAdaptor.getMetadataManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
         printVariants(studyConfiguration, dbAdaptor, outputUri);
 
         return studyConfiguration;
@@ -417,7 +417,7 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
     protected void checkFillMissing(VariantHadoopDBAdaptor dbAdaptor, List<Integer> newFiles, String... processedSamples) {
         Set<Integer> newFilesSet = new HashSet<>(newFiles);
         Set<String> samplesSet = new HashSet<>(Arrays.asList(processedSamples));
-        StudyConfiguration studyConfiguration = dbAdaptor.getVariantStorageMetadataManager().getStudyConfiguration(STUDY_ID, null).first();
+        StudyConfiguration studyConfiguration = dbAdaptor.getMetadataManager().getStudyConfiguration(STUDY_ID, null).first();
         boolean missingGenotypesUpdated = studyConfiguration.getAttributes().getBoolean(MISSING_GENOTYPES_UPDATED);
 
         for (Variant variant : dbAdaptor) {
@@ -438,7 +438,7 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
     }
 
     private void checkQueryGenotypes(VariantHadoopDBAdaptor dbAdaptor) {
-        StudyConfiguration sc = dbAdaptor.getVariantStorageMetadataManager().getStudyConfiguration(STUDY_ID, null).first();
+        StudyConfiguration sc = dbAdaptor.getMetadataManager().getStudyConfiguration(STUDY_ID, null).first();
         List<Variant> allVariants = dbAdaptor.get(new Query(), new QueryOptions()).getResult();
 
         for (String sample : StudyConfiguration.getIndexedSamples(sc).keySet()) {
@@ -453,10 +453,10 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
 
     protected void checkSampleIndexTable(VariantHadoopDBAdaptor dbAdaptor) throws IOException {
         SampleIndexDBAdaptor sampleIndexDBAdaptor = new SampleIndexDBAdaptor(dbAdaptor.getGenomeHelper(), dbAdaptor.getHBaseManager(),
-                dbAdaptor.getTableNameGenerator(), dbAdaptor.getVariantStorageMetadataManager());
+                dbAdaptor.getTableNameGenerator(), dbAdaptor.getMetadataManager());
 
-        for (String study : dbAdaptor.getVariantStorageMetadataManager().getStudies(null).keySet()) {
-            StudyConfiguration sc = dbAdaptor.getVariantStorageMetadataManager().getStudyConfiguration(study, null).first();
+        for (String study : dbAdaptor.getMetadataManager().getStudies(null).keySet()) {
+            StudyConfiguration sc = dbAdaptor.getMetadataManager().getStudyConfiguration(study, null).first();
             for (Integer fileId : sc.getIndexedFiles()) {
                 for (int sampleId : sc.getSamplesInFiles().get(fileId)) {
                     String message = "Sample '" + sc.getSampleIds().inverse().get(sampleId) + "' : " + sampleId;

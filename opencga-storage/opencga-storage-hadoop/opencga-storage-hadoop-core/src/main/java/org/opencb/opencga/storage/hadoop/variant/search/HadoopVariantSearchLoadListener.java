@@ -36,7 +36,7 @@ public class HadoopVariantSearchLoadListener extends VariantSearchLoadListener {
     private final byte[] family;
 
     public HadoopVariantSearchLoadListener(VariantHadoopDBAdaptor dbAdaptor) {
-        super(dbAdaptor.getVariantStorageMetadataManager().getStudies(null));
+        super(dbAdaptor.getMetadataManager().getStudies(null));
         family = dbAdaptor.getGenomeHelper().getColumnFamily();
         writer = new HBaseDataWriter<>(dbAdaptor.getHBaseManager(), dbAdaptor.getVariantTable());
         writer.open();

@@ -28,6 +28,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.mongodb.variant.protobuf.VariantMongoDBProto;
@@ -151,10 +152,17 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         this.variantStorageMetadataManager = variantStorageMetadataManager;
     }
 
+    public DocumentToSamplesConverter(VariantStorageMetadataManager variantStorageMetadataManager, StudyMetadata studyMetadata) {
+        this();
+        this.variantStorageMetadataManager = variantStorageMetadataManager;
+    }
+
+    @Deprecated
     public DocumentToSamplesConverter(StudyConfiguration studyConfiguration) {
         this(Collections.singletonList(studyConfiguration));
     }
 
+    @Deprecated
     public DocumentToSamplesConverter(List<StudyConfiguration> studyConfigurations) {
         this();
         studyConfigurations.forEach(this::addStudyConfiguration);

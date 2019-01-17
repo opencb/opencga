@@ -43,7 +43,7 @@ public class HadoopMRVariantStatisticsManager implements VariantStatisticsManage
         if (inputOptions != null) {
             options.putAll(inputOptions);
         }
-        VariantStorageMetadataManager metadataManager = dbAdaptor.getVariantStorageMetadataManager();
+        VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
         StudyConfiguration sc = metadataManager.getStudyConfiguration(study, options).first();
 
         if (sc.isAggregated()) {

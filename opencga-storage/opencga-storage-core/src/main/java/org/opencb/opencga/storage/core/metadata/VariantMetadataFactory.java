@@ -46,14 +46,14 @@ public class VariantMetadataFactory {
                 .toVariantMetadata(queryFields);
 
         Map<String, StudyMetadata> studyConfigurationMap = queryFields.getStudyMetadatas().values().stream()
-                .collect(Collectors.toMap(StudyMetadata::getStudyName, Function.identity()));
+                .collect(Collectors.toMap(StudyMetadata::getName, Function.identity()));
 
         for (VariantStudyMetadata variantStudyMetadata : metadata.getStudies()) {
             StudyMetadata studyMetadata = studyConfigurationMap.get(variantStudyMetadata.getId());
             List<Integer> fileIds = queryFields.getFiles().get(studyMetadata.getId());
             if (fileIds != null && !fileIds.isEmpty()) {
                 Query query = new Query()
-                        .append(VariantFileMetadataDBAdaptor.VariantFileMetadataQueryParam.STUDY_ID.key(), studyMetadata.getStudyId())
+                        .append(VariantFileMetadataDBAdaptor.VariantFileMetadataQueryParam.STUDY_ID.key(), studyMetadata.getId())
                         .append(VariantFileMetadataDBAdaptor.VariantFileMetadataQueryParam.FILE_ID.key(), fileIds);
                 scm.variantFileMetadataIterator(query, new QueryOptions()).forEachRemaining(fileMetadata -> {
                     variantStudyMetadata.getFiles().removeIf(file -> file.getId().equals(fileMetadata.getId()));

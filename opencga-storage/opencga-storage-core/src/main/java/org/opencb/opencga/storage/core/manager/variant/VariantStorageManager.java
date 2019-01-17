@@ -274,7 +274,7 @@ public class VariantStorageManager extends StorageManager {
         VariantStorageEngine variantStorageEngine =
                 storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
 
-        StorageOperation.updateProjectMetadata(catalogManager, variantStorageEngine.getVariantStorageMetadataManager(), project, sessionId);
+        StorageOperation.updateProjectMetadata(catalogManager, variantStorageEngine.getMetadataManager(), project, sessionId);
 
         variantStorageEngine.saveAnnotation(annotationName, params);
     }
@@ -287,7 +287,7 @@ public class VariantStorageManager extends StorageManager {
         VariantStorageEngine variantStorageEngine =
                 storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
 
-        StorageOperation.updateProjectMetadata(catalogManager, variantStorageEngine.getVariantStorageMetadataManager(), project, sessionId);
+        StorageOperation.updateProjectMetadata(catalogManager, variantStorageEngine.getMetadataManager(), project, sessionId);
 
         variantStorageEngine.deleteAnnotation(annotationName, params);
     }
@@ -464,7 +464,7 @@ public class VariantStorageManager extends StorageManager {
         DataStore dataStore = getDataStore(study, sessionId);
         VariantStorageEngine storageEngine = getVariantStorageEngine(dataStore);
         catalogUtils.parseQuery(query, sessionId);
-        checkSamplesPermissions(query, queryOptions, storageEngine.getVariantStorageMetadataManager(), sessionId);
+        checkSamplesPermissions(query, queryOptions, storageEngine.getMetadataManager(), sessionId);
         return storageEngine.iterator(query, queryOptions);
     }
 
@@ -509,7 +509,7 @@ public class VariantStorageManager extends StorageManager {
         DataStore dataStore = getDataStore(study, sessionId);
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
 
-        checkSamplesPermissions(query, queryOptions, variantStorageEngine.getVariantStorageMetadataManager(), sessionId);
+        checkSamplesPermissions(query, queryOptions, variantStorageEngine.getMetadataManager(), sessionId);
         return supplier.apply(variantStorageEngine);
     }
     private <R> R secure(Query facetedQuery, Query query, QueryOptions queryOptions,
@@ -523,7 +523,7 @@ public class VariantStorageManager extends StorageManager {
         String study = catalogUtils.getAnyStudy(query, sessionId);
         DataStore dataStore = getDataStore(study, sessionId);
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
-        return checkSamplesPermissions(query, queryOptions, variantStorageEngine.getVariantStorageMetadataManager(), sessionId);
+        return checkSamplesPermissions(query, queryOptions, variantStorageEngine.getMetadataManager(), sessionId);
     }
 
     // package protected for test visibility

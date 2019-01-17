@@ -68,7 +68,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
 
         if (VariantPhoenixHelper.DEFAULT_TABLE_TYPE == PTableType.VIEW
                 || params.getBoolean(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, false)) {
-            int currentAnnotationId = dbAdaptor.getVariantStorageMetadataManager().getProjectMetadata()
+            int currentAnnotationId = dbAdaptor.getMetadataManager().getProjectMetadata()
                     .getAnnotation().getCurrent().getId();
             VariantAnnotationToHBaseConverter task =
                     new VariantAnnotationToHBaseConverter(dbAdaptor.getGenomeHelper(), progressLogger, currentAnnotationId);
@@ -99,7 +99,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
     public void saveAnnotation(String name, ObjectMap inputOptions) throws StorageEngineException, VariantAnnotatorException {
         QueryOptions options = getOptions(inputOptions);
 
-        ProjectMetadata projectMetadata = dbAdaptor.getVariantStorageMetadataManager().lockAndUpdateProject(project -> {
+        ProjectMetadata projectMetadata = dbAdaptor.getMetadataManager().lockAndUpdateProject(project -> {
             registerNewAnnotationSnapshot(name, variantAnnotator, project);
             return project;
         });
@@ -123,7 +123,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
     public void deleteAnnotation(String name, ObjectMap inputOptions) throws StorageEngineException, VariantAnnotatorException {
         QueryOptions options = getOptions(inputOptions);
 
-        ProjectMetadata.VariantAnnotationMetadata saved = dbAdaptor.getVariantStorageMetadataManager().getProjectMetadata()
+        ProjectMetadata.VariantAnnotationMetadata saved = dbAdaptor.getMetadataManager().getProjectMetadata()
                 .getAnnotation().getSaved(name);
 
         String columnFamily = Bytes.toString(dbAdaptor.getGenomeHelper().getColumnFamily());
@@ -135,7 +135,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
 
         mrExecutor.run(DeleteHBaseColumnDriver.class, args, options, "Delete annotation snapshot '" + name + '\'');
 
-        dbAdaptor.getVariantStorageMetadataManager().lockAndUpdateProject(project -> {
+        dbAdaptor.getMetadataManager().lockAndUpdateProject(project -> {
             removeAnnotationSnapshot(name, project);
             return project;
         });

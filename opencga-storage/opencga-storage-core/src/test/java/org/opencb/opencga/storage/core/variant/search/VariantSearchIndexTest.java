@@ -63,7 +63,7 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
             studyConfiguration.getFileIds().put(fileName, fileId);
             studyConfiguration.getSampleIds().put("NA" + fileId, fileId);
             if (inputFiles.size() == 4) {
-                dbAdaptor.getVariantStorageMetadataManager().updateStudyConfiguration(studyConfiguration, null);
+                dbAdaptor.getMetadataManager().updateStudyConfiguration(studyConfiguration, null);
                 options.put(VariantStorageEngine.Options.STUDY.key(), studyId);
                 storageEngine.getOptions().putAll(options);
                 storageEngine.getOptions().put(VariantStorageEngine.Options.RELEASE.key(), release++);
@@ -172,7 +172,7 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
             studyConfiguration.getSampleIds().put("NA" + fileId, fileId);
         }
 
-        dbAdaptor.getVariantStorageMetadataManager().updateStudyConfiguration(studyConfiguration, null);
+        dbAdaptor.getMetadataManager().updateStudyConfiguration(studyConfiguration, null);
         options.put(VariantStorageEngine.Options.STUDY.key(), studyId);
         storageEngine.getOptions().putAll(options);
         storageEngine.index(inputFiles, outputUri, true, true, true);

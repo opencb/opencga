@@ -81,7 +81,7 @@ public class NewProjectMetadataMigration {
 
                         VariantStorageEngine variantStorageEngine = storageEngineFactory
                                 .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
-                        VariantStorageMetadataManager scm = variantStorageEngine.getVariantStorageMetadataManager();
+                        VariantStorageMetadataManager scm = variantStorageEngine.getMetadataManager();
 
                         Map<String, Integer> currentCounters = scm.lockAndUpdateProject(projectMetadata -> {
                             if (projectMetadata == null || StringUtils.isEmpty(projectMetadata.getSpecies())) {

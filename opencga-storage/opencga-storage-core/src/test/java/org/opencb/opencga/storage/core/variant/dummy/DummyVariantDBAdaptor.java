@@ -113,7 +113,7 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
 
             Map<Integer, List<Integer>> returnedSamples = getReturnedSamples(query, options);
             returnedSamples.forEach((study, samples) -> {
-                StudyConfiguration sc = getVariantStorageMetadataManager().getStudyConfiguration(study, null).first();
+                StudyConfiguration sc = getMetadataManager().getStudyConfiguration(study, null).first();
                 if (sc.getIndexedFiles().isEmpty()) {
                     // Ignore non indexed studies
                     return; // continue
@@ -194,7 +194,7 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public VariantStorageMetadataManager getVariantStorageMetadataManager() {
+    public VariantStorageMetadataManager getMetadataManager() {
         return new VariantStorageMetadataManager(new DummyProjectMetadataAdaptor(), new DummyStudyMetadataDBAdaptor(), new DummyVariantFileMetadataDBAdaptor());
     }
 

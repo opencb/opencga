@@ -161,7 +161,7 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
 //            StudyConfiguration studyConfiguration = updateStudyConfiguration(sessionId, studyId, dataStore);
             VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
 
-            updateProjectMetadata(variantStorageEngine.getVariantStorageMetadataManager(), organism, currentRelease);
+            updateProjectMetadata(variantStorageEngine.getMetadataManager(), organism, currentRelease);
 
             variantStorageEngine.annotate(annotationQuery, annotationOptions);
 

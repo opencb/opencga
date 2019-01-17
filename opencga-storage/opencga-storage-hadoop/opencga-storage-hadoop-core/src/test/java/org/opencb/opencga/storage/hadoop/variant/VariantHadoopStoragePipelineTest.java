@@ -269,7 +269,7 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
     @Test
     public void checkMeta() throws Exception {
         System.out.println("Get studies");
-        VariantStorageMetadataManager metadataManager = dbAdaptor.getVariantStorageMetadataManager();
+        VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
         List<String> studyNames = metadataManager.getStudyNames(new QueryOptions());
         assertEquals(1, studyNames.size());
         for (String studyName : studyNames) {

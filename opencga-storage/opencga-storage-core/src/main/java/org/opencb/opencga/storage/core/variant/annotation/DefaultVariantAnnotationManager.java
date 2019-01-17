@@ -110,7 +110,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
 
         URI annotationFile;
         if (doCreate) {
-            dbAdaptor.getVariantStorageMetadataManager().lockAndUpdateProject(projectMetadata -> {
+            dbAdaptor.getMetadataManager().lockAndUpdateProject(projectMetadata -> {
                 checkCurrentAnnotation(variantAnnotator, projectMetadata, overwrite);
                 return projectMetadata;
             });
@@ -138,7 +138,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
             logger.info("Finished annotation load {}ms", System.currentTimeMillis() - start);
 
             if (doCreate) {
-                dbAdaptor.getVariantStorageMetadataManager().lockAndUpdateProject(projectMetadata -> {
+                dbAdaptor.getMetadataManager().lockAndUpdateProject(projectMetadata -> {
                     updateCurrentAnnotation(variantAnnotator, projectMetadata, overwrite);
                     return projectMetadata;
                 });

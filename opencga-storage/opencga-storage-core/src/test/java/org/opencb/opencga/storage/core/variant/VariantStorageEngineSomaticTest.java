@@ -78,7 +78,7 @@ public abstract class VariantStorageEngineSomaticTest extends VariantStorageBase
                         .append(VariantStorageEngine.Options.ANNOTATE.key(), false)
         );
         VariantDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
-        studyConfiguration = dbAdaptor.getVariantStorageMetadataManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+        studyConfiguration = dbAdaptor.getMetadataManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
         assertEquals(true, studyConfiguration.getAttributes().getBoolean(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(), false));
         assertEquals(extraFields, studyConfiguration.getAttributes().getAsStringList(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key()));
 

@@ -43,7 +43,7 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
     public void testTranscriptInfo() throws IOException, VariantSearchException, StorageEngineException, FileFormatException, SolrServerException {
         int limit = 500;
 
-        VariantStorageMetadataManager scm = variantStorageEngine.getVariantStorageMetadataManager();
+        VariantStorageMetadataManager scm = variantStorageEngine.getMetadataManager();
 
         solr.configure(variantStorageEngine);
         VariantSearchManager variantSearchManager = variantStorageEngine.getVariantSearchManager();

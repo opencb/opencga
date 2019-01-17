@@ -35,8 +35,8 @@ public class VariantMetadataConverter {
         String assembly = projectMetadata.getAssembly();
         for (StudyMetadata studyMetadata : variantQueryFields.getStudyMetadatas().values()) {
             VariantStudyMetadata variantStudyMetadata = toVariantStudyMetadata(studyMetadata,
-                    variantQueryFields.getSamples().get(studyMetadata.getStudyId()),
-                    variantQueryFields.getFiles().get(studyMetadata.getStudyId()));
+                    variantQueryFields.getSamples().get(studyMetadata.getId()),
+                    variantQueryFields.getFiles().get(studyMetadata.getId()));
             studies.add(variantStudyMetadata);
         }
 
@@ -120,7 +120,7 @@ public class VariantMetadataConverter {
                 headerSimpleLines);
 
         return VariantStudyMetadata.newBuilder()
-                .setId(studyMetadata.getStudyName())
+                .setId(studyMetadata.getName())
                 .setDescription(null)
                 .setStats(null)
                 .setFiles(fileMetadata)

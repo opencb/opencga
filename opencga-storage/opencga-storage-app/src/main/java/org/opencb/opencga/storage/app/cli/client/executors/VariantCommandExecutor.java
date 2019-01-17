@@ -331,7 +331,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 
         storageConfiguration.getVariant().getOptions().putAll(variantQueryCommandOptions.commonOptions.params);
 
-        List<String> studyNames = variantStorageEngine.getVariantStorageMetadataManager().getStudyNames(new QueryOptions());
+        List<String> studyNames = variantStorageEngine.getMetadataManager().getStudyNames(new QueryOptions());
 
         Query query = VariantQueryCommandUtils.parseQuery(variantQueryCommandOptions, studyNames);
         QueryOptions options = VariantQueryCommandUtils.parseQueryOptions(variantQueryCommandOptions);
@@ -666,7 +666,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 //        storageConfiguration.getVariant().getOptions().putAll(exportVariantsCommandOptions.commonOptions.params);
 
 
-        List<String> studyNames = variantStorageEngine.getVariantStorageMetadataManager().getStudyNames(new QueryOptions());
+        List<String> studyNames = variantStorageEngine.getMetadataManager().getStudyNames(new QueryOptions());
 
 
         // TODO: JT
@@ -729,7 +729,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 //        VariantSearchManager variantSearchManager = new VariantSearchManager(solrUrl, dbName);
 //        VariantSearchManager variantSearchManager = new VariantSearchManager(variantStorageEngine.getStudyConfigurationManager(),
 //                variantStorageEngine.getCellBaseUtils(), variantStorageEngine.getConfiguration());
-        VariantSearchManager variantSearchManager = new VariantSearchManager(variantStorageEngine.getVariantStorageMetadataManager(),
+        VariantSearchManager variantSearchManager = new VariantSearchManager(variantStorageEngine.getMetadataManager(),
                 variantStorageEngine.getConfiguration());
         boolean querying = true;
         QueryOptions options = new QueryOptions();

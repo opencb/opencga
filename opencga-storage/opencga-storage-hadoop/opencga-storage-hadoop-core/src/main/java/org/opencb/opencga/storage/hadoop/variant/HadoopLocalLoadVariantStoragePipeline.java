@@ -30,8 +30,8 @@ import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.transform.DiscardDuplicatedVariantsResolver;
@@ -87,8 +87,8 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
     }
 
     @Override
-    protected void securePreLoad(StudyConfiguration studyConfiguration, VariantFileMetadata fileMetadata) throws StorageEngineException {
-        super.securePreLoad(studyConfiguration, fileMetadata);
+    protected void securePreLoad(StudyMetadata studyMetadata, VariantFileMetadata fileMetadata) throws StorageEngineException {
+        super.securePreLoad(studyMetadata, fileMetadata);
 
         if (options.getBoolean(VariantStorageEngine.Options.LOAD_SPLIT_DATA.key(),
                 VariantStorageEngine.Options.LOAD_SPLIT_DATA.defaultValue())) {
@@ -100,12 +100,12 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         List<Integer> fileIds = Collections.singletonList(getFileId());
 
         taskId = getMetadataManager()
-                .addBatchOperation(getStudyId(), OPERATION_NAME, fileIds, resume, BatchFileTask.Type.LOAD,
+                .addRunningTask(getStudyId(), OPERATION_NAME, fileIds, resume, BatchFileTask.Type.LOAD,
                 operation -> {
                     if (operation.getOperationName().equals(OPERATION_NAME)) {
                         if (operation.currentStatus().equals(BatchFileTask.Status.ERROR)) {
                             Integer fileId = operation.getFileIds().get(0);
-                            String fileName = studyConfiguration.getFileIds().inverse().get(fileId);
+                            String fileName = getMetadataManager().getFileName(studyMetadata.getId(), fileId);
                             logger.warn("Pending load operation for file " + fileName + " (" + fileId + ')');
                         } else {
                             ongoingLoads.incrementAndGet();
@@ -337,8 +337,8 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
     }
 
     @Override
-    public void securePostLoad(List<Integer> fileIds, StudyConfiguration studyConfiguration) throws StorageEngineException {
-        super.securePostLoad(fileIds, studyConfiguration);
+    public void securePostLoad(List<Integer> fileIds, StudyMetadata studyMetadata) throws StorageEngineException {
+        super.securePostLoad(fileIds, studyMetadata);
         getMetadataManager().setStatus(getStudyId(), taskId, BatchFileTask.Status.READY);
     }
 

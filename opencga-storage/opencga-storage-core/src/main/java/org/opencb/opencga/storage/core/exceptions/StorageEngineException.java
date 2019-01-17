@@ -17,10 +17,8 @@
 package org.opencb.opencga.storage.core.exceptions;
 
 import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 
-import java.util.LinkedHashSet;
 import java.util.List;
 
 /**
@@ -36,17 +34,8 @@ public class StorageEngineException extends Exception {
         super(message);
     }
 
-
-    public static StorageEngineException alreadyLoaded(int fileId, StudyConfiguration sc) {
-        return unableToExecute("Already loaded", fileId, sc);
-    }
-
     public static StorageEngineException alreadyLoaded(int fileId, String fileName) {
         return unableToExecute("Already loaded", fileId, fileName);
-    }
-
-    public static StorageEngineException unableToExecute(String action, int fileId, StudyConfiguration sc) {
-        return unableToExecute(action, fileId, sc.getFileIds().inverse().get(fileId));
     }
 
     public static StorageEngineException otherOperationInProgressException(BatchFileTask opInProgress,
@@ -92,13 +81,11 @@ public class StorageEngineException extends Exception {
                 + "when the current release is '" + currentRelease + "'.");
     }
 
-    public static StorageEngineException alreadyLoadedSamples(StudyConfiguration studyConfiguration, int fileId) {
-        LinkedHashSet<Integer> sampleIds = studyConfiguration.getSamplesInFiles().get(fileId);
-
+    public static StorageEngineException alreadyLoadedSamples(String fileName, List<String> samples) {
         StringBuilder sb = new StringBuilder();
-        sb.append("Unable to load file '").append(studyConfiguration.getFileIds().inverse().get(fileId)).append("'. ");
-        if (sampleIds != null && sampleIds.size() == 1) {
-            sb.append("Sample '").append(studyConfiguration.getSamplesInFiles().get(fileId).iterator().next()).append("' is ");
+        sb.append("Unable to load file '").append(fileName).append("'. ");
+        if (samples != null && samples.size() == 1) {
+            sb.append("Sample '").append(samples.get(0)).append("' is ");
         } else {
             sb.append("The samples from this file are ");
         }
@@ -111,9 +98,9 @@ public class StorageEngineException extends Exception {
         return new StorageEngineException(sb.toString());
     }
 
-    public static StorageEngineException alreadyLoadedSomeSamples(StudyConfiguration studyConfiguration, int fileId) {
+    public static StorageEngineException alreadyLoadedSomeSamples(String fileName) {
         return new StorageEngineException(
-                "Unable to load file '" + studyConfiguration.getFileIds().inverse().get(fileId) + "'. "
+                "Unable to load file '" + fileName + "'. "
                         + "There was some already loaded samples, but not all of them.");
     }
 }

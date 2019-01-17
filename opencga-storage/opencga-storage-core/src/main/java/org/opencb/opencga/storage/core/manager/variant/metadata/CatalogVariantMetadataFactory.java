@@ -50,7 +50,7 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
     private final String sessionId;
 
     public CatalogVariantMetadataFactory(CatalogManager catalogManager, VariantDBAdaptor dbAdaptor, String sessionId) {
-        super(dbAdaptor.getVariantStorageMetadataManager());
+        super(dbAdaptor.getMetadataManager());
         this.catalogManager = catalogManager;
         this.sessionId = sessionId;
     }

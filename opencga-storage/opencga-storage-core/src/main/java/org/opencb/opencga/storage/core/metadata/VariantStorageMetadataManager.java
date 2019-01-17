@@ -1360,12 +1360,18 @@ public class VariantStorageMetadataManager implements AutoCloseable {
      * @throws StorageEngineException if the operation can't be executed
      */
     @Deprecated
-    public static BatchFileTask addBatchOperation(StudyConfiguration studyConfiguration, String jobOperationName,
-                                                  List<Integer> fileIds, boolean resume, BatchFileTask.Type type)
+    public static BatchFileTask addRunningTask(StudyConfiguration studyConfiguration, String jobOperationName,
+                                               List<Integer> fileIds, boolean resume, BatchFileTask.Type type)
             throws StorageEngineException {
         throw new UnsupportedOperationException("Deprecated");
     }
 
+    public BatchFileTask addRunningTask(int studyId, String jobOperationName, List<Integer> fileIds, boolean resume,
+                                        BatchFileTask.Type type)
+            throws StorageEngineException {
+
+        return addRunningTask(studyId, jobOperationName, fileIds, resume, type, b -> false);
+    }
     /**
      * Adds a new {@link BatchFileTask} to the StudyConfiguration.
      *
@@ -1385,9 +1391,9 @@ public class VariantStorageMetadataManager implements AutoCloseable {
      * @return                   The current batchOperation
      * @throws StorageEngineException if the operation can't be executed
      */
-    public BatchFileTask addBatchOperation(int studyId, String jobOperationName,
-                                                  List<Integer> fileIds, boolean resume, BatchFileTask.Type type,
-                                                  Predicate<BatchFileTask> allowConcurrent)
+    public BatchFileTask addRunningTask(int studyId, String jobOperationName,
+                                        List<Integer> fileIds, boolean resume, BatchFileTask.Type type,
+                                        Predicate<BatchFileTask> allowConcurrent)
             throws StorageEngineException {
 
         BatchFileTask resumeOperation = null;

@@ -68,7 +68,7 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      */
     default VariantQueryResult<Variant> get(Iterator<?> variants, Query query, QueryOptions options) {
         return iterator(variants, query, options)
-                .toQueryResult(getSamplesMetadataIfRequested(query, options, getVariantStorageMetadataManager()));
+                .toQueryResult(getSamplesMetadataIfRequested(query, options, getMetadataManager()));
     }
 
     /**
@@ -150,7 +150,7 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
     QueryResult groupBy(Query query, List<String> fields, QueryOptions options);
 
     default List<Integer> getReturnedStudies(Query query, QueryOptions options) {
-        return VariantQueryUtils.getIncludeStudies(query, options, getVariantStorageMetadataManager());
+        return VariantQueryUtils.getIncludeStudies(query, options, getMetadataManager());
     }
     /**
      * Returns all the possible samples to be returned by an specific query.
@@ -160,7 +160,7 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      * @return  Map key: StudyId, value: list of sampleIds
      */
     default Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options) {
-        return VariantQueryUtils.getIncludeSamples(query, options, getVariantStorageMetadataManager());
+        return VariantQueryUtils.getIncludeSamples(query, options, getMetadataManager());
     }
 
     QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp, QueryOptions queryOptions);
@@ -182,7 +182,7 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      */
     QueryResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, long timeStamp, QueryOptions options);
 
-    VariantStorageMetadataManager getVariantStorageMetadataManager();
+    VariantStorageMetadataManager getMetadataManager();
 
     void setVariantStorageMetadataManager(VariantStorageMetadataManager variantStorageMetadataManager);
 

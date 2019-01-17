@@ -59,7 +59,7 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
             load();
             loaded = true;
         }
-        variantStorageEngine.getVariantStorageMetadataManager().lockAndUpdateOld(STUDY_NAME, sc -> {
+        variantStorageEngine.getMetadataManager().lockAndUpdateOld(STUDY_NAME, sc -> {
             for (Integer id : sc.getSearchIndexedSampleSetsStatus().keySet()) {
                 sc.getSearchIndexedSampleSetsStatus().put(id, BatchFileTask.Status.READY);
             }
@@ -127,7 +127,7 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
 
     @Test
     public void testResumeOnError() throws Exception {
-        variantStorageEngine.getVariantStorageMetadataManager().lockAndUpdateOld(STUDY_NAME, sc -> {
+        variantStorageEngine.getMetadataManager().lockAndUpdateOld(STUDY_NAME, sc -> {
             Integer id = sc.getSearchIndexedSampleSets().get(sc.getSampleIds().get(samples1.get(0)));
             sc.getSearchIndexedSampleSetsStatus().put(id, BatchFileTask.Status.ERROR);
             return sc;
@@ -137,7 +137,7 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
 
     @Test
     public void testResumeWhileRunning() throws Exception {
-        variantStorageEngine.getVariantStorageMetadataManager().lockAndUpdateOld(STUDY_NAME, sc -> {
+        variantStorageEngine.getMetadataManager().lockAndUpdateOld(STUDY_NAME, sc -> {
             Integer id = sc.getSearchIndexedSampleSets().get(sc.getSampleIds().get(samples1.get(0)));
             sc.getSearchIndexedSampleSetsStatus().put(id, BatchFileTask.Status.RUNNING);
             return sc;
@@ -148,7 +148,7 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
 
     @Test
     public void testResumeFail() throws Exception {
-        variantStorageEngine.getVariantStorageMetadataManager().lockAndUpdateOld(STUDY_NAME, sc -> {
+        variantStorageEngine.getMetadataManager().lockAndUpdateOld(STUDY_NAME, sc -> {
             Integer id = sc.getSearchIndexedSampleSets().get(sc.getSampleIds().get(samples1.get(0)));
             sc.getSearchIndexedSampleSetsStatus().put(id, BatchFileTask.Status.RUNNING);
             return sc;
@@ -205,7 +205,7 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
 
         check(COLLECTION_1, query, QueryOptions.empty());
 
-        variantStorageEngine.getVariantStorageMetadataManager().lockAndUpdateOld(STUDY_NAME, sc -> {
+        variantStorageEngine.getMetadataManager().lockAndUpdateOld(STUDY_NAME, sc -> {
             Integer id = sc.getSearchIndexedSampleSets().get(sc.getSampleIds().get(samples1.get(0)));
             sc.getSearchIndexedSampleSetsStatus().put(id, BatchFileTask.Status.RUNNING);
             return sc;
@@ -215,7 +215,7 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
     }
 
     protected void check(String collection, Query query, QueryOptions options) throws StorageEngineException {
-        assertEquals(query.toJson() + " " + options.toJson(), collection, VariantSearchUtils.inferSpecificSearchIndexSamplesCollection(query, options, variantStorageEngine.getVariantStorageMetadataManager(), DB_NAME));
+        assertEquals(query.toJson() + " " + options.toJson(), collection, VariantSearchUtils.inferSpecificSearchIndexSamplesCollection(query, options, variantStorageEngine.getMetadataManager(), DB_NAME));
     }
 
     @Test

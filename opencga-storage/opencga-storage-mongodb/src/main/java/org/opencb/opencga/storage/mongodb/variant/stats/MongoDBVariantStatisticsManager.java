@@ -65,7 +65,7 @@ public class MongoDBVariantStatisticsManager extends DefaultVariantStatisticsMan
 //        VariantSourceStats variantSourceStats = new VariantSourceStats(/*FILE_ID*/, Integer.toString(studyConfiguration.getStudyId()));
 
         // reader, tasks and writer
-        Query readerQuery = VariantStatisticsManager.buildInputQuery(variantDBAdaptor.getVariantStorageMetadataManager(),
+        Query readerQuery = VariantStatisticsManager.buildInputQuery(variantDBAdaptor.getMetadataManager(),
                 studyConfiguration, cohorts.keySet(), overwrite, updateStats, options);
         logger.info("ReaderQuery: " + readerQuery.toJson());
         QueryOptions readerOptions = VariantStatisticsManager.buildIncludeExclude().append(QueryOptions.SORT, true);
@@ -119,7 +119,7 @@ public class MongoDBVariantStatisticsManager extends DefaultVariantStatisticsMan
 //                outputSourceStream.write(sourceWriter.writeValueAsBytes(variantSourceStats));
 //            }
 
-            variantDBAdaptor.getVariantStorageMetadataManager().updateStudyConfiguration(studyConfiguration, options);
+            variantDBAdaptor.getMetadataManager().updateStudyConfiguration(studyConfiguration, options);
 
             return output;
         }

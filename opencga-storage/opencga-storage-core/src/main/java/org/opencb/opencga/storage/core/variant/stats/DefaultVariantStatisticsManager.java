@@ -136,7 +136,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
     public final URI createStats(VariantDBAdaptor variantDBAdaptor, URI output, String study, List<String> cohorts,
                            QueryOptions options) throws IOException, StorageEngineException {
 
-        VariantStorageMetadataManager variantStorageMetadataManager = variantDBAdaptor.getVariantStorageMetadataManager();
+        VariantStorageMetadataManager variantStorageMetadataManager = variantDBAdaptor.getMetadataManager();
         StudyConfiguration studyConfiguration = variantStorageMetadataManager.getStudyConfiguration(study, options).first();
         Map<String, Set<String>> cohortsMap = new HashMap<>(cohorts.size());
         for (String cohort : cohorts) {
@@ -213,7 +213,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
 
 
         // reader, tasks and writer
-        Query readerQuery = VariantStatisticsManager.buildInputQuery(variantDBAdaptor.getVariantStorageMetadataManager(),
+        Query readerQuery = VariantStatisticsManager.buildInputQuery(variantDBAdaptor.getMetadataManager(),
                 studyConfiguration, cohorts.keySet(), overwrite, updateStats, options);
         logger.info("ReaderQuery: " + readerQuery.toJson());
         QueryOptions readerOptions = new QueryOptions(QueryOptions.SORT, true)
@@ -246,7 +246,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
             outputSourceStream.write(sourceWriter.writeValueAsBytes(variantSourceStats));
         }
 
-        variantDBAdaptor.getVariantStorageMetadataManager().updateStudyConfiguration(studyConfiguration, options);
+        variantDBAdaptor.getMetadataManager().updateStudyConfiguration(studyConfiguration, options);
 
         return output;
     }
@@ -255,8 +255,8 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
                                                    boolean overwrite, boolean updateStats, ObjectMap options)
             throws StorageEngineException {
 
-        dbAdaptor.getVariantStorageMetadataManager().registerCohorts(studyConfiguration.getStudyName(), cohorts);
-        return dbAdaptor.getVariantStorageMetadataManager().lockAndUpdateOld(studyConfiguration.getStudyName(), sc -> {
+        dbAdaptor.getMetadataManager().registerCohorts(studyConfiguration.getStudyName(), cohorts);
+        return dbAdaptor.getMetadataManager().lockAndUpdateOld(studyConfiguration.getStudyName(), sc -> {
             checkAndUpdateStudyConfigurationCohorts(sc, cohorts, overwrite, updateStats, getAggregation(sc.getAggregation(), options));
             return sc;
         });
@@ -364,7 +364,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
 
     public void loadStats(VariantDBAdaptor variantDBAdaptor, URI uri, String study, QueryOptions options) throws
             IOException, StorageEngineException {
-        VariantStorageMetadataManager variantStorageMetadataManager = variantDBAdaptor.getVariantStorageMetadataManager();
+        VariantStorageMetadataManager variantStorageMetadataManager = variantDBAdaptor.getMetadataManager();
         StudyConfiguration studyConfiguration = variantStorageMetadataManager.getStudyConfiguration(study, options).first();
         loadStats(variantDBAdaptor, uri, studyConfiguration, options);
     }
@@ -386,7 +386,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
 
         logger.info("finishing stats loading, time: {}ms", System.currentTimeMillis() - start);
 
-        variantDBAdaptor.getVariantStorageMetadataManager().updateStudyConfiguration(studyConfiguration, options);
+        variantDBAdaptor.getMetadataManager().updateStudyConfiguration(studyConfiguration, options);
 
     }
 
@@ -467,7 +467,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
 
     public void loadSourceStats(VariantDBAdaptor variantDBAdaptor, URI uri, String study, QueryOptions options)
             throws IOException {
-        VariantStorageMetadataManager variantStorageMetadataManager = variantDBAdaptor.getVariantStorageMetadataManager();
+        VariantStorageMetadataManager variantStorageMetadataManager = variantDBAdaptor.getMetadataManager();
         StudyConfiguration studyConfiguration = variantStorageMetadataManager.getStudyConfiguration(study, options).first();
         loadSourceStats(variantDBAdaptor, uri, studyConfiguration, options);
     }
