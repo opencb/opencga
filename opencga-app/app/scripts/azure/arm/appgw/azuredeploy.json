@@ -1,0 +1,246 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "applicationGatewaySubnetId":{
+            "type": "string"
+        },
+        "skuName":{
+            "defaultValue": "Standard_Small",
+            "type": "string"
+        },
+        "skuTier":{
+            "defaultValue": "Standard",
+            "type": "string"
+        },
+        "skuCapacity":{
+            "defaultValue": 1,
+            "type": "int"
+        }      
+    },
+    "variables": {
+        "applicationGatewayName": "appgw",
+        "applicationGatewayPublicIpName": "appgwpublicip",
+        "applicationGatewayPublicIpId": "[resourceId('Microsoft.Network/publicIPAddresses',variables('applicationGatewayPublicIpName'))]",
+        "applicationGatewayId": "[resourceId('Microsoft.Network/applicationGateways', variables('applicationGatewayName'))]",
+        "skuV2": {
+                "name": "Standard_v2",
+                "tier": "Standard_v2",
+                "capacity": 1
+        }
+        
+
+    },
+    "resources": [{
+        "type": "Microsoft.Network/publicIPAddresses",
+        "name": "[variables('applicationGatewayPublicIpName')]",
+        "apiVersion": "2018-08-01",
+        "location": "[resourceGroup().location]",
+        "sku": {
+            "name": "Basic"
+        },
+        "properties": {
+            "publicIPAllocationMethod": "Dynamic"
+        }
+    },
+    {
+        "type": "Microsoft.Network/applicationGateways",
+        "name": "[variables('applicationGatewayName')]",
+        "apiVersion": "2018-08-01",
+        "location": "[resourceGroup().location]",
+        "properties": {
+            "sku": {
+                "name": "[parameters('skuName')]",
+                "tier":  "[parameters('skuTier')]",
+                "capacity": "[parameters('skuCapacity')]"
+            },
+            "enableHttp2":true,
+            "gatewayIPConfigurations": [
+                {
+                    "name": "appGatewayIpConfig",
+                    "properties": {
+                        "subnet": {
+                            "id": "[parameters('applicationGatewaySubnetId')]"
+                        }
+                    }
+                }
+            ],
+            "frontendIPConfigurations": [
+                {
+                    "name": "appGatewayFrontendIP",
+                    "properties": {
+                        "PublicIPAddress": {
+                            "id": "[variables('applicationGatewayPublicIpId')]"
+                        }
+                    }
+                }
+            ],
+            "frontendPorts": [
+                {
+                    "name": "httpPort",
+                    "properties": {
+                        "Port": 80
+                    }
+                },
+                {
+                    "name": "httpsPort",
+                    "properties": {
+                        "Port": 443
+                    }
+                }
+            ],
+            "backendAddressPools": [
+                {
+                    "name": "bepool",
+                    "properties": {
+                        "backendAddresses": []
+                    }
+                }
+            ],
+            "httpListeners": [
+                {
+                    "name": "httpListener",
+                    "properties": {
+                        "protocol": "Http",
+                        "frontendPort": {
+                            "id": "[concat(variables('applicationGatewayId'), '/frontendPorts/httpPort')]"
+                        },
+                        "frontendIPConfiguration": {
+                            "id": "[concat(variables('applicationGatewayId'), '/frontendIPConfigurations/appGatewayFrontendIP')]"
+                        }
+                    }
+                }
+            ],
+              "probes": [
+                    {
+                        "name": "ivaHttpProbe",
+                        "properties": {
+                            "pickHostNameFromBackendHttpSettings":true,
+                            "protocol": "Http",
+                              "path": "/",
+                            "interval": 5,
+                            "timeout":10
+                         
+                        }
+                    },
+                    {
+                        "name": "openCGAHttpProbe",
+                        "properties": {
+                            "pickHostNameFromBackendHttpSettings":true,
+                            "protocol": "Http",
+                            "path": "/opencga/webservices/rest/v1/meta/status",
+                            "interval": 5,
+                            "timeout":10
+                       
+                        }
+                    }
+            ],
+            "backendHttpSettingsCollection": [
+                {
+                    "name": "iva",
+                    "properties": {
+                        "pickHostNameFromBackendAddress":true,
+                        "port": 80,
+                        "protocol": "Http",
+                        "path": "",
+                        "probe":  {
+                            "id":  "[concat(variables('applicationGatewayId'), '/probes/ivaHttpProbe')]"
+                        },
+                        "probeEnabled":true
+                        
+                    }
+                },
+                {
+                    "name": "opencga",
+                    "properties": {
+                        "pickHostNameFromBackendAddress":true,
+                        "port": 8080,
+                        "protocol": "Http",
+                        "path":"",
+                        "probe": {
+                            "id": "[concat(variables('applicationGatewayId'), '/probes/openCGAHttpProbe')]"
+                        },
+                        "probeEnabled":true
+                    }
+                }
+            ],
+            "requestRoutingRules": [
+                {
+                    "name": "http",
+                  
+                    "properties": {
+                        "ruleType":"PathBasedRouting",
+                        "httpListener": {
+                          
+                            "id": "[concat(variables('applicationGatewayId'), '/httpListeners/httpListener')]"
+                        },
+
+                        "urlPathMap": {
+          
+                          "id": "[concat(variables('applicationGatewayID'), '/urlPathMaps/http')]"
+          
+                        }
+                    }
+                }
+            ],
+            "urlPathMaps": [
+                {
+                    "name": "http",
+                    "properties": {
+                        "defaultBackendAddressPool": {
+                            "id": "[concat(variables('applicationGatewayId'), '/backendAddressPools/bepool')]"
+                        },
+                        "defaultBackendHttpSettings": {
+                            "id": "[concat(variables('applicationGatewayId'), '/backendHttpSettingsCollection/iva')]"
+                        },
+                        "pathRules":[
+                           
+                            {
+                                "name": "opencga",
+                                "properties":{
+                                    "backendHttpSettings":{
+                                        "id": "[concat(variables('applicationGatewayId'), '/backendHttpSettingsCollection/opencga')]"
+                                    },
+                                    "backendAddressPool": {
+                                        "id": "[concat(variables('applicationGatewayId'), '/backendAddressPools/bepool')]"
+                                    },
+                                    "paths":[
+                                        "/opencga/*"
+                                    ]
+                                }
+                            },
+                            {
+                                "name": "iva",
+                                "properties":{
+                                    "backendHttpSettings":{
+                                        "id": "[concat(variables('applicationGatewayId'), '/backendHttpSettingsCollection/iva')]"
+                                    },
+                                    "backendAddressPool": {
+                                        "id": "[concat(variables('applicationGatewayId'), '/backendAddressPools/bepool')]"
+                                    },
+                                    "paths":[
+                                        "/*"
+                                    ]
+                                }
+                            }
+
+                        ]
+                    }
+                }
+            ]
+        },
+        "dependsOn": [
+            "[concat('Microsoft.Network/publicIPAddresses/', variables('applicationGatewayPublicIpName'))]"
+        ]
+    }],
+    "outputs": {
+        "appgwBackendAddressPoolId":{
+            "type": "string",
+            "value": "[concat(variables('applicationGatewayId'), '/backendAddressPools/bepool')]"
+        },
+        "publicIp": {
+            "type":"object",
+            "value": "[reference(variables('applicationGatewayPublicIpName'))]"
+        }
+    }
+}

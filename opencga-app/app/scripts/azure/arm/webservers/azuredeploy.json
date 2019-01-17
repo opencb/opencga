@@ -20,6 +20,12 @@
                 "description": "The ID of the subnet in which the Avere cluster should be deployed"
             }
         },
+        "appgwBackendAddressPoolId": {
+            "type": "string",
+            "metadata": {
+                "description": "The ID of the app gateway backend address pool"
+            }
+        },
         "virtualMachineSize": {
             "type": "string",
             "defaultValue": "Standard_D2s_v3",
@@ -91,17 +97,9 @@
     },
     "variables": {
         "sshKeyPath": "[concat('/home/',parameters('adminUsername'),'/.ssh/authorized_keys')]",
-        "publicIPAddressName": "[concat(parameters('namingPrefix'), '-pip')]",
-        "loadBalancerName": "[concat(parameters('namingPrefix'), '-lb')]",
-        "publicIPAddressID": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName'))]",
-        "lbID": "[resourceId('Microsoft.Network/loadBalancers',variables('loadBalancerName'))]",
-        "natPoolName": "[concat(parameters('namingPrefix'), 'natpool')]",
-        "natStartPort": 50000,
-        "natEndPort": 50119,
-        "natBackendPort": 22,
+        "vmssName": "webservers",
         "nicName": "[concat(parameters('namingPrefix'), 'nic')]",
         "ipConfigName": "[concat(parameters('namingPrefix'), 'ipconfig')]",
-        "frontEndIPConfigID": "[concat(variables('lbID'),'/frontendIPConfigurations/loadBalancerFrontEnd')]",
         "imageReference": {
             "publisher": "Canonical",
             "offer": "UbuntuServer",
@@ -287,8 +285,7 @@
             "location": "[resourceGroup().location]",
             "apiVersion": "2017-03-30",
             "dependsOn": [
-                "[concat('Microsoft.Network/loadBalancers/', variables('loadBalancerName'))]"
-            ],
+                   ],
             "sku": {
                 "name": "[parameters('virtualMachineSize')]",
                 "tier": "Standard",
@@ -297,7 +294,7 @@
             "properties": {
                 "overprovision": true,
                 "upgradePolicy": {
-                    "mode": "Rolling",
+                    "mode": "Automatic",
                     "automaticOSUpgradePolicy": {
                         "enableAutomaticOSUpgrade": true
                     }
@@ -327,9 +324,7 @@
                         "customData": "[variables('customData')]"
                     },
                     "networkProfile": {
-                        "healthProbe": {
-                            "id": "[concat(variables('lbId'), '/probes/tomcatHttpProbe')]"
-                        },
+                       
                         "networkInterfaceConfigurations": [
                             {
                                 "name": "[variables('nicName')]",
@@ -342,15 +337,14 @@
                                                 "subnet": {
                                                     "id": "[parameters('virtualNetworkSubnetId')]"
                                                 },
-                                                "loadBalancerBackendAddressPools": [
+                                                "ApplicationGatewayBackendAddressPools": [
+
                                                     {
-                                                        "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/loadBalancers/', variables('loadBalancerName'), '/backendAddressPools/VMSSBackendPool')]"
+                          
+                                                      "id": "[parameters('appgwBackendAddressPoolId')]"
+                          
                                                     }
-                                                ],
-                                                "loadBalancerInboundNatPools": [
-                                                    {
-                                                        "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/loadBalancers/', variables('loadBalancerName'), '/inboundNatPools/', variables('natPoolName'))]"
-                                                    }
+                          
                                                 ]
                                             }
                                         }
@@ -430,9 +424,6 @@
         }
     ],
     "outputs": {
-        "lbPublicIP": {
-            "type": "string",
-            "value": "[reference(variables('publicIPAddressName')).IpAddress]"
-        }
+       
     }
 }

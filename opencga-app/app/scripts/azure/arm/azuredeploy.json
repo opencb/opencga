@@ -232,6 +232,27 @@
             }
         },
         {
+            "resourceGroup": "[parameters('rgPrefix')]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
+            "name": "appgw",
+            "dependsOn": [
+                "vnet"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/appgw/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters":{  
+                    "applicationGatewaySubnetId": {
+                        "value": "[reference('vnet').outputs.appgwSubnetId.value]"
+                    }
+                }
+            }
+        },
+        {
             "condition": "[variables('azureFilesEnabled')]",
             "resourceGroup": "[parameters('rgPrefix')]",
             "type": "Microsoft.Resources/deployments",
@@ -547,6 +568,9 @@
                     },
                     "virtualNetworkSubnetId": {
                         "value": "[reference('vnet').outputs.hdinsightSubnetId.value]"
+                    },
+                   "appgwBackendAddressPoolId": {
+                    "value": "[reference('appgw').outputs.appgwBackendAddressPoolId.value]"
                     },
                     "mountArgs": {
                         "value": "[if(equals(parameters('nfsStorageOption'), 'AzureFiles'), concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value, ',' , reference('azurefiles').outputs.accountKey.value),concat('avere ', reference('avere').outputs.VSERVER_IPS.value))]"
