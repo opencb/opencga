@@ -44,7 +44,7 @@
     "sshKeyData": {
       "type": "securestring",
       "metadata": {
-        "description": "Admin password on all VMs."
+        "description": "SSH key used for all VMs."
       }
     },
     "highAvailability": {
