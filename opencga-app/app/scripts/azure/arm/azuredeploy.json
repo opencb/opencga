@@ -140,13 +140,6 @@
                 "description": "Amount of VMs to deploy for the mongodb replica set"
             }
         },
-        "batchDockerImage": {
-            "type": "string",
-            "defaultValue": "dotjson/opencga-daemon:cat",
-            "metadata": {
-                "description": "The batch container image to run"
-            }
-        },
         "avereServicePrincipalAppId": {
             "type": "string",
             "metadata": {
@@ -172,26 +165,47 @@
                 "description": "The RSA data for the SSH Public Key used to authenticate the following machines: WebServers, Avere, DaemonVM, Mongo, Solr and Zookeeper."
             }
         },
-        "passwordGenerationData": {
+        "mongoDBPassword": {
             "type": "securestring",
             "metadata": {
                 "description": "This Data is used to derive unique passwords for several different services. Select a unique and random combination of data, the longer the better, and do not disclose it."
+            }
+        },
+        "HDInsightClusterLoginPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Used to login to HDInsights cluster interface. The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
+            }
+        },
+        "HDInsightSshPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Used to login to HDInsight cluster nodes via SSH. The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
+            }
+        },
+        "avereAdminPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Used to login to the Avere cluster Portal. The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
+            }
+        },
+        "openCgaAdminPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Used to login to OpenCGA. The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
+            }
+        },
+        "catalogSecretKey": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Secret key used when initializing the catalog."
             }
         }
     },
     "variables": {
         "avereEnabled": "[equals(parameters('nfsStorageOption'), 'AvereCluster')]",
         "azureFilesEnabled": "[equals(parameters('nfsStorageOption'), 'AzureFiles')]",
-        "webserverNamingPrefix": "[toLower(substring(concat('webservers', uniqueString(parameters('rgPrefix'))), 0, 16))]",
-        "generatedPasswords": {
-            "username": "[parameters('adminUsername')]",
-            "mongoDBPassword": "[uniqueString('mongoPassword', parameters('passwordGenerationData'))]",
-            "HDInsightClusterLoginPassword": "[concat('HD1', uniqueString('hdinsightclusterlogin', parameters('passwordGenerationData')))]",
-            "HDInsightSshPassword": "[concat('HD1', uniqueString('hdinsightssh', parameters('passwordGenerationData')))]",
-            "avereAdminPassword": "[uniqueString('avereadminpassword', parameters('passwordGenerationData'))]",
-            "openCgaAdminPassword": "[uniqueString('openCgaAdminPassword', parameters('passwordGenerationData'))]",
-            "catalogSecretKey": "[uniqueString('catalogsecretkey',parameters('passwordGenerationData'))]"
-        }
+        "webserverNamingPrefix": "[toLower(substring(concat('webservers', uniqueString(parameters('rgPrefix'))), 0, 16))]"
     },
     "resources": [
         {
@@ -266,7 +280,6 @@
                     },
                     "dockerImagesToCache": {
                         "value": [
-                            "[parameters('batchDockerImage')]",
                             "[parameters('daemonContainerImage')]"
                         ]
                     }
@@ -324,7 +337,7 @@
                         "value": "[parameters('_artifactsLocationSasToken')]"
                     },
                     "openCgaAdminPassword": {
-                        "value": "[variables('generatedPasswords').openCgaAdminPassword]"
+                        "value": "[parameters('openCgaAdminPassword')]"
                     },
                     "virtualNetworkId": {
                         "value": "[reference('vnet').outputs.vnetId.value]"
@@ -372,7 +385,7 @@
                         "value": "[reference('mongodb').outputs.mongoDBPassword.value]"
                     },
                     "catalogSecretKey": {
-                        "value": "[variables('generatedPasswords').catalogSecretKey]"
+                        "value": "[parameters('catalogSecretKey')]"
                     },
                     "batchAccountName": {
                         "value": "[reference('azureBatch').outputs.batchAccountName.value]"
@@ -390,7 +403,7 @@
                         "value": "--mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions --mount type=bind,src=/media/primarynfs/variants,dst=/opt/opencga/variants --rm"
                     },
                     "batchDockerImage": {
-                        "value": "[parameters('batchDockerImage')]"
+                        "value": "[parameters('daemonContainerImage')]"
                     },
                     "batchMaxConcurrentJobs": {
                         "value": "[reference('azureBatch').outputs.maxNodeCount.value]"
@@ -425,10 +438,10 @@
                         "value": "[parameters('adminUsername')]"
                     },
                     "clusterLoginPassword": {
-                        "value": "[variables('generatedPasswords').HDInsightClusterLoginPassword]"
+                        "value": "[parameters('HDInsightClusterLoginPassword')]"
                     },
                     "sshPassword": {
-                        "value": "[variables('generatedPasswords').HDInsightSshPassword]"
+                        "value": "[parameters('HDInsightSshPassword')]"
                     },
                     "storageAccountName": {
                         "value": "[reference('hdinsight-storage').outputs.storageAccountName.value]"
@@ -501,7 +514,7 @@
                         "value": "[parameters('sshAdminKeyData')]"
                     },
                     "adminPassword": {
-                        "value": "[variables('generatedPasswords').avereAdminPassword]"
+                        "value": "[parameters('avereAdminPassword')]"
                     }
                 }
             }
@@ -662,16 +675,11 @@
                         "value": "[parameters('adminUsername')]"
                     },
                     "mongoDBPassword": {
-                        "value": "[variables('generatedPasswords').mongoDBPassword]"
+                        "value": "[parameters('mongoDBPassword')]"
                     }
                 }
             }
         }
     ],
-    "outputs": {
-        "passwords": {
-            "type": "object",
-            "value": "[variables('generatedPasswords')]"
-        }
-    }
+    "outputs": {}
 }

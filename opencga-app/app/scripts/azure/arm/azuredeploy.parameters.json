@@ -11,15 +11,6 @@
         "HDInsightClusterName": {
             "value": ""
         },
-        "HDInsightClusterLoginUserName": {
-            "value": "admin"
-        },
-        "HDInsightClusterLoginPassword": {
-            "value": ""
-        },
-        "HDInsightSshPassword": {
-            "value": ""
-        },
         "HDInsightStorageOption": {
             "value": "DataLake"
         },
@@ -33,12 +24,6 @@
             "value": ""
         },
         "avereServicePrincipalPassword": {
-            "value": ""
-        },
-        "avereSSHKeyData": {
-            "value": ""
-        },
-        "avereAdminPassword": {
             "value": ""
         },
         "tomcatDockerImage": {
@@ -59,25 +44,25 @@
         "daemonContainerImage": {
             "value": ""
         },
-        "daemonVmAdminPassword": {
-            "value": ""
-        },
         "nfsStorageOption": {
             "value": ""
         },
         "catalogSecretKey": {
             "value": ""
         },
-        "mongoDbHosts": {
-            "value": []
-        },
-        "mongoDbUser": {
+        "mongoDBPassword": {
             "value": ""
         },
-        "mongoDbPassword": {
+        "avereAdminPassword": {
             "value": ""
         },
-        "batchDockerImage": {
+        "HDInsightClusterLoginPassword": {
+            "value": ""
+        },
+        "HDInsightSshPassword": {
+            "value": ""
+        },
+        "openCgaAdminPassword": {
             "value": ""
         }
     }
