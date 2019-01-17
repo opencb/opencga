@@ -11,8 +11,11 @@
 
 # Override the `make_env` file default location by setting ENVFILE env var
 ENVFILE ?= make_env
-include $(ENVFILE)
-export
+ifneq ("$(wildcard $(make_env))","")
+    include $(ENVFILE)
+    export
+endif
+
 
 # Check required variables are set for target build
 ifeq ($(MAKECMDGOALS), build)
