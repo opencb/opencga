@@ -28,7 +28,7 @@ COPY ./opencga-test/pom.xml ./opencga-test/pom.xml
 COPY ./opencga-app/app/scripts/docker/opencga-build/settings.xml .
 
 # Build all dependencies
-RUN mvn dependency:go-offline -B --settings settings.xml
+RUN mvn dependency:go-offline -B -fn --settings settings.xml -Popencga-storage-hadoop-deps -Phdp-2.6.0 -Phdp-2.6.0
 
 # Copy the rest of the source files
 COPY . .
