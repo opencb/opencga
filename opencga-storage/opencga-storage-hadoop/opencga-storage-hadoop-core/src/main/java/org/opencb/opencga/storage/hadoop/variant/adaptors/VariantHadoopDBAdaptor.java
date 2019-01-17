@@ -305,7 +305,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         if (name.equals(VariantAnnotationManager.CURRENT)) {
             annotationColumn = VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes();
         } else {
-            ProjectMetadata.VariantAnnotationMetadata saved = getVariantStorageMetadataManager().getProjectMetadata().first().
+            ProjectMetadata.VariantAnnotationMetadata saved = getVariantStorageMetadataManager().getProjectMetadata().
                     getAnnotation().getSaved(name);
 
             annotationColumn = Bytes.toBytes(VariantPhoenixHelper.getAnnotationSnapshotColumn(saved.getId()));
@@ -323,10 +323,10 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                     throw VariantQueryException.internalException(e);
                 }
             }).iterator();
-            long ts = getVariantStorageMetadataManager().getProjectMetadata().first().getAttributes()
+            long ts = getVariantStorageMetadataManager().getProjectMetadata().getAttributes()
                     .getLong(SEARCH_INDEX_LAST_TIMESTAMP.key());
             HBaseToVariantAnnotationConverter converter = new HBaseToVariantAnnotationConverter(genomeHelper, ts)
-                    .setAnnotationIds(getVariantStorageMetadataManager().getProjectMetadata().first().getAnnotation())
+                    .setAnnotationIds(getVariantStorageMetadataManager().getProjectMetadata().getAnnotation())
                     .setIncludeFields(selectElements.getFields());
             converter.setAnnotationColumn(annotationColumn, name);
             Iterator<Result> iterator = Iterators.concat(iterators);
@@ -624,7 +624,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         long start = System.currentTimeMillis();
 
         final GenomeHelper genomeHelper1 = new GenomeHelper(configuration);
-        int currentAnnotationId = getVariantStorageMetadataManager().getProjectMetadata().first().getAnnotation().getCurrent().getId();
+        int currentAnnotationId = getVariantStorageMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getId();
         VariantAnnotationToPhoenixConverter converter = new VariantAnnotationToPhoenixConverter(genomeHelper1.getColumnFamily(),
                 currentAnnotationId);
         Iterable<Map<PhoenixHelper.Column, ?>> records = converter.apply(variantAnnotations);

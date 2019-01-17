@@ -165,7 +165,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     public String getAnnotationCollectionName(String name) {
-        ProjectMetadata.VariantAnnotationMetadata saved = getVariantStorageMetadataManager().getProjectMetadata()
+        ProjectMetadata.VariantAnnotationMetadata saved = getVariantStorageMetadataManager().getProjectMetadata().first()
                 .first().getAnnotation().getSaved(name);
 
         return configuration.getString(COLLECTION_ANNOTATION.key(), COLLECTION_ANNOTATION.defaultValue()) + "_" + saved.getId();
@@ -1057,7 +1057,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         variantAnnotation.getReference(), variantAnnotation.getAlternate());
             }
             Document find = new Document("_id", id);
-            int currentAnnotationId = getVariantStorageMetadataManager().getProjectMetadata().first().getAnnotation().getCurrent().getId();
+            int currentAnnotationId = getVariantStorageMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getId();
             DocumentToVariantAnnotationConverter converter = new DocumentToVariantAnnotationConverter(currentAnnotationId);
             Document convertedVariantAnnotation = converter.convertToStorageType(variantAnnotation);
             Bson update = combine(
@@ -1124,7 +1124,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         studyEntryConverter = new DocumentToStudyVariantEntryConverter(false, selectVariantElements.getFiles(), samplesConverter);
         studyEntryConverter.setVariantStorageMetadataManager(metadataManager);
-        ProjectMetadata projectMetadata = getVariantStorageMetadataManager().getProjectMetadata().first();
+        ProjectMetadata projectMetadata = getVariantStorageMetadataManager().getProjectMetadata();
         Map<Integer, String> annotationIds;
         if (projectMetadata != null) {
             annotationIds = projectMetadata.getAnnotation().getSaved()

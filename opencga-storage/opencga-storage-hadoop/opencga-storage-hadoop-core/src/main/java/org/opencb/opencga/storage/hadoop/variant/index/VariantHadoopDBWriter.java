@@ -60,7 +60,7 @@ public class VariantHadoopDBWriter extends AbstractHBaseDataWriter<Variant, Put>
                                  HBaseManager hBaseManager, boolean includeReferenceVariantsData) {
         super(hBaseManager, tableName);
         this.helper = helper;
-        int release = metadataManager.getProjectMetadata().first().getRelease();
+        int release = metadataManager.getProjectMetadata().getRelease();
         converter = new StudyEntryToHBaseConverter(helper.getColumnFamily(), studyId, metadataManager, true, release,
                 includeReferenceVariantsData);
     }

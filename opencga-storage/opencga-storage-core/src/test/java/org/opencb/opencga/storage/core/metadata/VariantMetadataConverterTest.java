@@ -8,8 +8,12 @@ import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
-import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
+import org.opencb.opencga.storage.core.metadata.models.*;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
+import org.opencb.opencga.storage.core.variant.dummy.DummyProjectMetadataAdaptor;
+import org.opencb.opencga.storage.core.variant.dummy.DummyStudyMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 
 import java.io.IOException;
@@ -28,39 +32,42 @@ import java.util.LinkedHashSet;
 public class VariantMetadataConverterTest {
 
 
-    private StudyConfiguration studyConfiguration;
+//    private StudyConfiguration studyConfiguration;
     private VariantMetadataConverter variantMetadataConverter;
     private ObjectWriter objectWriter;
     private ProjectMetadata projectMetadata;
+    private VariantStorageMetadataManager metadataManager;
+    private StudyMetadata studyMetadata;
 
     @Before
     public void setUp() throws Exception {
-        studyConfiguration = new StudyConfiguration(1, "study");
-        studyConfiguration.getSampleIds().put("s1", 1);
-        studyConfiguration.getSampleIds().put("s2", 2);
-        studyConfiguration.getSampleIds().put("s3", 3);
-        studyConfiguration.getSampleIds().put("s4", 4);
-        studyConfiguration.getSampleIds().put("s5", 5);
-        studyConfiguration.getSampleIds().put("s6", 6);
-        studyConfiguration.getSampleIds().put("s7", 7);
-
-        studyConfiguration.getIndexedFiles().add(10);
-        studyConfiguration.getFileIds().put("file1.vcf", 10);
-        studyConfiguration.getSamplesInFiles().put(10, new LinkedHashSet<>(Arrays.asList(1, 2, 3, 4)));
-
-        studyConfiguration.getIndexedFiles().add(11);
-        studyConfiguration.getFileIds().put("file2.vcf", 11);
-        studyConfiguration.getSamplesInFiles().put(11, new LinkedHashSet<>(Arrays.asList(4, 5, 6)));
-
-        studyConfiguration.getCalculatedStats().add(20);
-        studyConfiguration.getCohortIds().put("ALL", 20);
-        studyConfiguration.getCohorts().put(20, new HashSet<>(Arrays.asList(1, 2, 3, 4, 5, 6)));
+        metadataManager = new VariantStorageMetadataManager(new DummyProjectMetadataAdaptor(), new DummyStudyMetadataDBAdaptor(), new DummyVariantFileMetadataDBAdaptor());
 
         URI uri = VariantStorageBaseTest.getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz");
         VariantFileMetadata fileMetadata = VariantReaderUtils.readVariantFileMetadata(Paths.get(uri), null);
-        studyConfiguration.addVariantFileHeader(fileMetadata.getHeader(), null);
+        studyMetadata = new StudyMetadata(1, "study").addVariantFileHeader(fileMetadata.getHeader(), null);
 
-        variantMetadataConverter = new VariantMetadataConverter();
+        metadataManager.updateStudyMetadata(studyMetadata);
+        metadataManager.updateSampleMetadata(1, new SampleMetadata(1, 1, "s1"));
+        metadataManager.updateSampleMetadata(1, new SampleMetadata(1, 2, "s2"));
+        metadataManager.updateSampleMetadata(1, new SampleMetadata(1, 3, "s3"));
+        metadataManager.updateSampleMetadata(1, new SampleMetadata(1, 4, "s4"));
+        metadataManager.updateSampleMetadata(1, new SampleMetadata(1, 5, "s5"));
+        metadataManager.updateSampleMetadata(1, new SampleMetadata(1, 6, "s6"));
+        metadataManager.updateSampleMetadata(1, new SampleMetadata(1, 7, "s7"));
+
+        metadataManager.updateFileMetadata(1, new FileMetadata(1, 10, "file1.vcf")
+                .setSamples(new LinkedHashSet<>(Arrays.asList(1, 2, 3, 4)))
+                .setIndexStatus(BatchFileTask.Status.READY)
+        );
+        metadataManager.updateFileMetadata(1, new FileMetadata(1, 11, "file2.vcf")
+                .setSamples(new LinkedHashSet<>(Arrays.asList(4, 5, 6)))
+                .setIndexStatus(BatchFileTask.Status.READY)
+        );
+        metadataManager.updateCohortMetadata(1, new CohortMetadata(1, 20, "ALL", Arrays.asList(1, 2, 3, 4, 5, 6))
+                .setStatus(BatchFileTask.Status.READY));
+
+        variantMetadataConverter = new VariantMetadataConverter(metadataManager);
         objectWriter = new ObjectMapper()
                 .configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true)
                 .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
@@ -70,8 +77,7 @@ public class VariantMetadataConverterTest {
 
     @Test
     public void toVariantMetadataTest() throws IOException {
-
-        VariantMetadata variantMetadata = variantMetadataConverter.toVariantMetadata(Collections.singletonList(studyConfiguration), projectMetadata, null, null);
+        VariantMetadata variantMetadata = variantMetadataConverter.toVariantMetadata(new VariantQueryFields(studyMetadata, null, null));
         System.out.println("variantMetadata = " + objectWriter.writeValueAsString(variantMetadata));
 
     }

@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.core.metadata.adaptors;
 
 import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
@@ -110,13 +111,25 @@ public interface StudyMetadataDBAdaptor extends AutoCloseable {
     }
 
     default BiMap<String, Integer> getIndexedSamplesMap(int studyId) {
-        StudyConfiguration sc = getStudyConfiguration(studyId, null, null).first();
-        return StudyConfiguration.getIndexedSamples(sc);
+        // FIXME!
+        BiMap<String, Integer> map = HashBiMap.create();
+        for (Integer indexedFile : getIndexedFiles(studyId)) {
+            for (Integer sampleId : getFileMetadata(studyId, indexedFile, null).getSamples()) {
+                if (!map.containsValue(sampleId)) {
+                    map.put(getSampleMetadata(studyId, sampleId, null).getName(), sampleId);
+                }
+            }
+        }
+        return map;
     }
 
     default List<Integer> getIndexedSamples(int studyId) {
-        StudyConfiguration sc = getStudyConfiguration(studyId, null, null).first();
-        return new ArrayList<>(StudyConfiguration.getSortedIndexedSamplesPosition(sc).values());
+        // FIXME!
+        Set<Integer> set = new LinkedHashSet<>();
+        for (Integer indexedFile : getIndexedFiles(studyId)) {
+            set.addAll(getFileMetadata(studyId, indexedFile, null).getSamples());
+        }
+        return new ArrayList<>(set);
     }
 
     default Integer getSampleId(int studyId, String sampleName) {

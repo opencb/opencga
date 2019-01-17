@@ -314,7 +314,7 @@ public class VariantHBaseQueryParser {
             filters.addFilter(new FilterList(FilterList.Operator.MUST_PASS_ONE, f1, f2));
 
 
-            long ts = metadataManager.getProjectMetadata().first().getAttributes()
+            long ts = metadataManager.getProjectMetadata().getAttributes()
                     .getLong(SEARCH_INDEX_LAST_TIMESTAMP.key());
             if (ts > 0 && scan.getStartRow() == HConstants.EMPTY_START_ROW) {
                 try {
@@ -482,7 +482,7 @@ public class VariantHBaseQueryParser {
                 scan.addColumn(family, FULL_ANNOTATION.bytes());
                 scan.addColumn(family, ANNOTATION_ID.bytes());
                 // Only return RELEASE when reading current annotation
-                int release = metadataManager.getProjectMetadata().first().getRelease();
+                int release = metadataManager.getProjectMetadata().getRelease();
                 for (int i = 1; i <= release; i++) {
                     scan.addColumn(family, VariantPhoenixHelper.buildReleaseColumnKey(i));
                 }

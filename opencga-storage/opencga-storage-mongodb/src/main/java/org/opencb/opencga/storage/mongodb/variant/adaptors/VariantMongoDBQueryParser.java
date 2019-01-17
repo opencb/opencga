@@ -478,7 +478,7 @@ public class VariantMongoDBQueryParser {
             }
 
             if (isValidParam(query, VARIANTS_TO_INDEX)) {
-                long ts = metadataManager.getProjectMetadata().first().getAttributes()
+                long ts = metadataManager.getProjectMetadata().getAttributes()
                         .getLong(SEARCH_INDEX_LAST_TIMESTAMP.key());
                 if (ts > 0) {
                     String key = INDEX_FIELD + '.' + DocumentToVariantConverter.INDEX_TIMESTAMP_FIELD;

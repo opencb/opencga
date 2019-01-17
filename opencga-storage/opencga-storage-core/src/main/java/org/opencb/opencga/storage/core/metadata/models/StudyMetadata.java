@@ -3,10 +3,15 @@ package org.opencb.opencga.storage.core.metadata.models;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
+import org.opencb.biodata.models.variant.metadata.VariantFileHeaderSimpleLine;
 import org.opencb.biodata.tools.variant.stats.AggregationUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -17,6 +22,7 @@ import java.util.stream.Collectors;
  */
 public class StudyMetadata {
 
+    public static final String UNKNOWN_HEADER_ATTRIBUTE = ".";
     private int id;
     private String name;
     private Aggregation aggregation;
@@ -25,8 +31,17 @@ public class StudyMetadata {
 
     private ObjectMap attributes;
 
-    public StudyMetadata() {
+    private static Logger logger = LoggerFactory.getLogger(StudyMetadata.class);
 
+    public StudyMetadata() {
+        this(-1, null);
+    }
+
+    public StudyMetadata(int id, String name) {
+        this.id = id;
+        this.name = name;
+        this.variantHeader = VariantFileHeader.newBuilder().setVersion("").build();
+        attributes = new ObjectMap();
     }
 
     @Deprecated
@@ -120,4 +135,43 @@ public class StudyMetadata {
                 .findFirst().orElse(null);
     }
 
+    public StudyMetadata addVariantFileHeader(VariantFileHeader header, List<String> formats) {
+        Map<String, Map<String, VariantFileHeaderComplexLine>> map = new HashMap<>();
+        for (VariantFileHeaderComplexLine line : this.variantHeader.getComplexLines()) {
+            Map<String, VariantFileHeaderComplexLine> keyMap = map.computeIfAbsent(line.getKey(), key -> new HashMap<>());
+            keyMap.put(line.getId(), line);
+        }
+        for (VariantFileHeaderComplexLine line : header.getComplexLines()) {
+            if (formats == null || !line.getKey().equalsIgnoreCase("format") || formats.contains(line.getId())) {
+                Map<String, VariantFileHeaderComplexLine> keyMap = map.computeIfAbsent(line.getKey(), key -> new HashMap<>());
+                if (keyMap.containsKey(line.getId())) {
+                    VariantFileHeaderComplexLine prevLine = keyMap.get(line.getId());
+                    if (!prevLine.equals(line)) {
+                        logger.warn("Previous header line does not match with new header. previous: " + prevLine + " , new: " + line);
+//                        throw new IllegalArgumentException();
+                    }
+                } else {
+                    keyMap.put(line.getId(), line);
+                    variantHeader.getComplexLines().add(line);
+                }
+            }
+        }
+        Map<String, String> simpleLines = this.variantHeader.getSimpleLines()
+                .stream()
+                .collect(Collectors.toMap(VariantFileHeaderSimpleLine::getKey, VariantFileHeaderSimpleLine::getValue));
+        header.getSimpleLines().forEach((line) -> {
+            String oldValue = simpleLines.put(line.getKey(), line.getValue());
+            if (oldValue != null && !oldValue.equals(line.getValue())) {
+                // If the value changes among files, replace it with a dot, as it is an unknown value.
+                simpleLines.put(line.getKey(), UNKNOWN_HEADER_ATTRIBUTE);
+//                throw new IllegalArgumentException();
+            }
+        });
+        this.variantHeader.setSimpleLines(simpleLines.entrySet()
+                .stream()
+                .map(e -> new VariantFileHeaderSimpleLine(e.getKey(), e.getValue()))
+                .collect(Collectors.toList()));
+
+        return this;
+    }
 }

@@ -47,11 +47,11 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
 
         // First annotation. Should run ok.
         variantStorageEngine.annotate(new Query(), new ObjectMap(TestAnnotator.ANNOT_KEY, "v1"));
-        assertEquals("v1", variantStorageEngine.getVariantStorageMetadataManager().getProjectMetadata().first().getAnnotation().getCurrent().getAnnotator().getVersion());
+        assertEquals("v1", variantStorageEngine.getVariantStorageMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getVersion());
 
         // Second annotation. New annotator. Overwrite. Should run ok.
         variantStorageEngine.annotate(new Query(), new ObjectMap(TestAnnotator.ANNOT_KEY, "v2").append(OVERWRITE_ANNOTATIONS, true));
-        assertEquals("v2", variantStorageEngine.getVariantStorageMetadataManager().getProjectMetadata().first().getAnnotation().getCurrent().getAnnotator().getVersion());
+        assertEquals("v2", variantStorageEngine.getVariantStorageMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getVersion());
 
         // Third annotation. New annotator. Do not overwrite. Should fail.
         thrown.expect(VariantAnnotatorException.class);
@@ -80,7 +80,7 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
         } catch (VariantAnnotatorException e) {
             e.printStackTrace();
             // Annotator information does not change
-            assertEquals("v1", variantStorageEngine.getVariantStorageMetadataManager().getProjectMetadata().first().getAnnotation().getCurrent().getAnnotator().getVersion());
+            assertEquals("v1", variantStorageEngine.getVariantStorageMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getVersion());
         }
 
 
@@ -88,7 +88,7 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
         variantStorageEngine.annotate(new Query(), new ObjectMap(TestAnnotator.ANNOT_KEY, "v2")
                 .append(TestAnnotator.FAIL, false)
                 .append(OVERWRITE_ANNOTATIONS, true));
-        assertEquals("v2", variantStorageEngine.getVariantStorageMetadataManager().getProjectMetadata().first().getAnnotation().getCurrent().getAnnotator().getVersion());
+        assertEquals("v2", variantStorageEngine.getVariantStorageMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getVersion());
     }
 
     @Test

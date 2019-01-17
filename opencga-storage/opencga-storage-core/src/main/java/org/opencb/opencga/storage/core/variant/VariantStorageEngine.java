@@ -423,8 +423,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     public QueryResult<ProjectMetadata.VariantAnnotationMetadata> getAnnotationMetadata(String name) throws StorageEngineException {
-        QueryResult<ProjectMetadata> queryResult = getVariantStorageMetadataManager().getProjectMetadata();
-        ProjectMetadata.VariantAnnotationSets annotation = queryResult.first().getAnnotation();
+        StopWatch started = StopWatch.createStarted();
+        ProjectMetadata projectMetadata = getVariantStorageMetadataManager().getProjectMetadata();
+        ProjectMetadata.VariantAnnotationSets annotation = projectMetadata.getAnnotation();
         List<ProjectMetadata.VariantAnnotationMetadata> list;
         if (StringUtils.isEmpty(name) || VariantQueryUtils.ALL.equals(name)) {
             list = new ArrayList<>(annotation.getSaved().size() + 1);
@@ -444,7 +445,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 }
             }
         }
-        return new QueryResult<>(name, queryResult.getDbTime(), list.size(), list.size(), null, null, list);
+        return new QueryResult<>(name, ((int) started.getTime(TimeUnit.MILLISECONDS)), list.size(), list.size(), null, null, list);
     }
 
     /**
@@ -457,7 +458,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     protected final VariantAnnotationManager newVariantAnnotationManager(ObjectMap params)
             throws StorageEngineException, VariantAnnotatorException {
-        ProjectMetadata projectMetadata = getVariantStorageMetadataManager().getProjectMetadata(getMergedOptions(params)).first();
+        ProjectMetadata projectMetadata = getVariantStorageMetadataManager().getProjectMetadata(getMergedOptions(params));
         VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(
                 configuration, getStorageEngineId(), projectMetadata, params);
         return newVariantAnnotationManager(annotator);
@@ -861,7 +862,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     public CellBaseUtils getCellBaseUtils() throws StorageEngineException {
         if (cellBaseUtils == null) {
-            final ProjectMetadata metadata = getVariantStorageMetadataManager().getProjectMetadata(getOptions()).first();
+            final ProjectMetadata metadata = getVariantStorageMetadataManager().getProjectMetadata(getOptions());
 
             String species = metadata.getSpecies();
             String assembly = metadata.getAssembly();

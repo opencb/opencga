@@ -49,7 +49,7 @@ public class VariantMetadataImporter {
 
         // Load metadata
         VariantMetadata metadata = readMetadata(inputUri);
-        List<StudyConfiguration> studyConfigurations = new VariantMetadataConverter().toStudyConfigurations(metadata);
+        List<StudyConfiguration> studyConfigurations = new VariantMetadataConverter(scm).toStudyConfigurations(metadata);
 
         for (StudyConfiguration studyConfiguration : studyConfigurations) {
             processStudyConfiguration(studyConfiguration);

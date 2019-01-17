@@ -610,7 +610,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             studyConfiguration.getAttributes().put(Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), extraFieldsType);
         }
 
-        int currentRelease = getMetadataManager().getProjectMetadata(options).first().getRelease();
+        int currentRelease = getMetadataManager().getProjectMetadata(options).getRelease();
         if (options.containsKey(Options.RELEASE.key())) {
             int release = options.getInt(Options.RELEASE.key(), Options.RELEASE.defaultValue());
             // Update current release

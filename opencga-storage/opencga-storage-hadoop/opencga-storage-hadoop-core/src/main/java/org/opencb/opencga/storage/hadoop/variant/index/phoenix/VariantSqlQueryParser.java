@@ -264,7 +264,7 @@ public class VariantSqlQueryParser {
                 sb.append(',').append(VariantColumn.FULL_ANNOTATION);
                 sb.append(',').append(VariantColumn.ANNOTATION_ID);
 
-                int release = metadataManager.getProjectMetadata().first().getRelease();
+                int release = metadataManager.getProjectMetadata().getRelease();
                 for (int i = 1; i <= release; i++) {
                     sb.append(',');
                     VariantPhoenixHelper.buildReleaseColumnKey(i, sb);

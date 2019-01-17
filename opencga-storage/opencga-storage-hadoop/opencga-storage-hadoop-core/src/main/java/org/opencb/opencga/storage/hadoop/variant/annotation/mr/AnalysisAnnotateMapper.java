@@ -77,7 +77,7 @@ public class AnalysisAnnotateMapper extends AbstractHBaseVariantMapper<NullWrita
         ProjectMetadata projectMetadata;
         HBaseVariantStorageMetadataDBAdaptorFactory dbAdaptorFactory = new HBaseVariantStorageMetadataDBAdaptorFactory(getHelper());
         try (VariantStorageMetadataManager scm = new VariantStorageMetadataManager(dbAdaptorFactory)) {
-            projectMetadata = scm.getProjectMetadata().first();
+            projectMetadata = scm.getProjectMetadata();
         }
         try {
             // FIXME! This is WRONG. Should read StorageConfigurationFile from client

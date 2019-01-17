@@ -22,6 +22,16 @@ public class FileMetadata {
     private BatchFileTask.Status indexStatus;
     private BatchFileTask.Status annotationStatus;
 
+    public FileMetadata() {
+    }
+
+    public FileMetadata(int studyId, int id, String name) {
+        this.studyId = studyId;
+        this.id = id;
+        this.name = name;
+        this.path = name;
+    }
+
     public int getStudyId() {
         return studyId;
     }

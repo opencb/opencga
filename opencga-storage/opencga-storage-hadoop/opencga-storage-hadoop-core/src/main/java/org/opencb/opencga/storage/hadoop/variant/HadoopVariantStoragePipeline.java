@@ -391,7 +391,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
         Connection jdbcConnection = dbAdaptor.getJdbcConnection();
 
         VariantStorageMetadataManager metadataManager = getMetadataManager();
-        final String species = metadataManager.getProjectMetadata().first().getSpecies();
+        final String species = metadataManager.getProjectMetadata().getSpecies();
 
         Long lock = null;
         try {
@@ -437,7 +437,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
                 phoenixHelper.registerNewFiles(jdbcConnection, variantsTableName, studyId, fileIds,
                         newSamples);
 
-                int release = metadataManager.getProjectMetadata().first().getRelease();
+                int release = metadataManager.getProjectMetadata().getRelease();
                 phoenixHelper.registerRelease(jdbcConnection, variantsTableName, release);
 
             } catch (SQLException e) {

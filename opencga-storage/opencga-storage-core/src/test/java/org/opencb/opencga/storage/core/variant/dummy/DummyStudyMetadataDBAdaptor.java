@@ -23,16 +23,14 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.adaptors.StudyMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.metadata.models.*;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -50,6 +48,12 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor {
 
     public static Map<String, StudyConfiguration> STUDY_CONFIGURATIONS_BY_NAME = new ConcurrentHashMap<>();
     public static Map<Integer, StudyConfiguration> STUDY_CONFIGURATIONS_BY_ID = new ConcurrentHashMap<>();
+    public static Map<Integer, StudyMetadata> STUDY_METADATA_MAP = new ConcurrentHashMap<>();
+    public static Map<Integer, Map<Integer, FileMetadata>> FILE_METADATA_MAP = new ConcurrentHashMap<>();
+    public static Map<Integer, Map<Integer, SampleMetadata>> SAMPLE_METADATA_MAP = new ConcurrentHashMap<>();
+    public static Map<Integer, Map<Integer, CohortMetadata>> COHORT_METADATA_MAP = new ConcurrentHashMap<>();
+    public static Map<Integer, Map<Integer, BatchFileTask>> TASK_METADATA_MAP = new ConcurrentHashMap<>();
+
     private static Map<Integer, Lock> LOCK_STUDIES = new ConcurrentHashMap<>();
     private static AtomicInteger NUM_PRINTS = new AtomicInteger();
 
@@ -110,6 +114,128 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor {
         LOCK_STUDIES.get(studyId).unlock();
     }
 
+    @Override
+    public StudyMetadata getStudyMetadata(int id, Long timeStamp) {
+        return STUDY_METADATA_MAP.get(id);
+    }
+
+    @Override
+    public void updateStudyMetadata(StudyMetadata sm) {
+        STUDY_METADATA_MAP.put(sm.getId(), sm);
+    }
+
+    @Override
+    public LinkedHashSet<Integer> getIndexedFiles(int studyId) {
+        return new LinkedHashSet<>(FILE_METADATA_MAP.getOrDefault(studyId, Collections.emptyMap()).values()
+                .stream()
+                .filter(FileMetadata::isIndexed)
+                .map(FileMetadata::getId)
+                .collect(Collectors.toList()));
+    }
+
+    @Override
+    public Iterator<FileMetadata> fileIterator(int studyId) {
+        return FILE_METADATA_MAP.getOrDefault(studyId, Collections.emptyMap()).values().iterator();
+    }
+
+//    @Override
+//    public void updateIndexedFiles(int studyId, LinkedHashSet<Integer> indexedFiles) {
+//
+//    }
+
+    @Override
+    public FileMetadata getFileMetadata(int studyId, int fileId, Long timeStamp) {
+        return FILE_METADATA_MAP.getOrDefault(studyId, Collections.emptyMap()).get(fileId);
+    }
+
+    @Override
+    public void updateFileMetadata(int studyId, FileMetadata file, Long timeStamp) {
+        FILE_METADATA_MAP.computeIfAbsent(studyId, s -> new ConcurrentHashMap<>()).put(file.getId(), file);
+    }
+
+    @Override
+    public Integer getFileId(int studyId, String fileName) {
+        return FILE_METADATA_MAP.getOrDefault(studyId, Collections.emptyMap()).values()
+                .stream()
+                .filter(f->f.getName().equals(fileName))
+                .map(FileMetadata::getId)
+                .findFirst()
+                .orElse(null);
+    }
+
+    @Override
+    public SampleMetadata getSampleMetadata(int studyId, int sampleId, Long timeStamp) {
+        return SAMPLE_METADATA_MAP.getOrDefault(studyId, Collections.emptyMap()).get(sampleId);
+    }
+
+    @Override
+    public void updateSampleMetadata(int studyId, SampleMetadata sample, Long timeStamp) {
+        SAMPLE_METADATA_MAP.computeIfAbsent(studyId, s -> new ConcurrentHashMap<>()).put(sample.getId(), sample);
+    }
+
+    @Override
+    public Iterator<SampleMetadata> sampleMetadataIterator(int studyId) {
+        return SAMPLE_METADATA_MAP.getOrDefault(studyId, Collections.emptyMap()).values().iterator();
+    }
+
+    @Override
+    public Integer getSampleId(int studyId, String sampleName) {
+        return SAMPLE_METADATA_MAP.getOrDefault(studyId, Collections.emptyMap()).values()
+                .stream()
+                .filter(f->f.getName().equals(sampleName))
+                .map(SampleMetadata::getId)
+                .findFirst()
+                .orElse(null);
+    }
+
+    @Override
+    public CohortMetadata getCohortMetadata(int studyId, int cohortId, Long timeStamp) {
+        return COHORT_METADATA_MAP.getOrDefault(studyId, Collections.emptyMap()).get(cohortId);
+    }
+
+    @Override
+    public void updateCohortMetadata(int studyId, CohortMetadata cohort, Long timeStamp) {
+        COHORT_METADATA_MAP.computeIfAbsent(studyId, s -> new ConcurrentHashMap<>()).put(cohort.getId(), cohort);
+    }
+
+    @Override
+    public Integer getCohortId(int studyId, String cohortName) {
+        return COHORT_METADATA_MAP.getOrDefault(studyId, Collections.emptyMap()).values()
+                .stream()
+                .filter(f->f.getName().equals(cohortName))
+                .map(CohortMetadata::getId)
+                .findFirst()
+                .orElse(null);
+    }
+
+    @Override
+    public Iterator<CohortMetadata> cohortIterator(int studyId) {
+        return COHORT_METADATA_MAP.getOrDefault(studyId, Collections.emptyMap()).values().iterator();
+    }
+
+    @Override
+    public BatchFileTask getTask(int studyId, int taskId, Long timeStamp) {
+        return TASK_METADATA_MAP.getOrDefault(studyId, Collections.emptyMap()).get(taskId);
+    }
+
+    @Override
+    public Iterator<BatchFileTask> taskIterator(int studyId, boolean reversed) {
+        TreeSet<BatchFileTask> t;
+        if (reversed) {
+            t = new TreeSet<>(Comparator.comparingInt(BatchFileTask::getId).reversed());
+        } else {
+            t = new TreeSet<>(Comparator.comparingInt(BatchFileTask::getId));
+        }
+
+        t.addAll(TASK_METADATA_MAP.getOrDefault(studyId, Collections.emptyMap()).values());
+        return t.iterator();
+    }
+
+    @Override
+    public void updateTask(int studyId, BatchFileTask task, Long timeStamp) {
+        TASK_METADATA_MAP.computeIfAbsent(studyId, s -> new ConcurrentHashMap<>()).put(task.getId(), task);
+    }
+
     public static void writeAll(Path path) {
         ObjectMapper objectMapper = new ObjectMapper(new JsonFactory()).configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         String prefix = "storage_configuration_" + NUM_PRINTS.incrementAndGet() + "_";
@@ -125,6 +251,11 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor {
     public static void clear() {
         STUDY_CONFIGURATIONS_BY_NAME.clear();
         STUDY_CONFIGURATIONS_BY_ID.clear();
+        STUDY_METADATA_MAP.clear();
+        FILE_METADATA_MAP.clear();
+        SAMPLE_METADATA_MAP.clear();
+        COHORT_METADATA_MAP.clear();
+        TASK_METADATA_MAP.clear();
         LOCK_STUDIES.clear();
     }
 

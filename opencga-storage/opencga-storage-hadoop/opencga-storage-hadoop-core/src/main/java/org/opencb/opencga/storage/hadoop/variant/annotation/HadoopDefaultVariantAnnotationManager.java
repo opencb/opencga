@@ -68,7 +68,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
 
         if (VariantPhoenixHelper.DEFAULT_TABLE_TYPE == PTableType.VIEW
                 || params.getBoolean(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, false)) {
-            int currentAnnotationId = dbAdaptor.getVariantStorageMetadataManager().getProjectMetadata().first()
+            int currentAnnotationId = dbAdaptor.getVariantStorageMetadataManager().getProjectMetadata()
                     .getAnnotation().getCurrent().getId();
             VariantAnnotationToHBaseConverter task =
                     new VariantAnnotationToHBaseConverter(dbAdaptor.getGenomeHelper(), progressLogger, currentAnnotationId);
@@ -123,7 +123,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
     public void deleteAnnotation(String name, ObjectMap inputOptions) throws StorageEngineException, VariantAnnotatorException {
         QueryOptions options = getOptions(inputOptions);
 
-        ProjectMetadata.VariantAnnotationMetadata saved = dbAdaptor.getVariantStorageMetadataManager().getProjectMetadata().first()
+        ProjectMetadata.VariantAnnotationMetadata saved = dbAdaptor.getVariantStorageMetadataManager().getProjectMetadata()
                 .getAnnotation().getSaved(name);
 
         String columnFamily = Bytes.toString(dbAdaptor.getGenomeHelper().getColumnFamily());

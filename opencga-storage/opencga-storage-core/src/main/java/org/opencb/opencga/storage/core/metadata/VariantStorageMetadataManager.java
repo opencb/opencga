@@ -453,7 +453,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             throw new StorageEngineException("Unable to lock the Project", e);
         }
         try {
-            ProjectMetadata projectMetadata = getProjectMetadata().first();
+            ProjectMetadata projectMetadata = getProjectMetadata();
             int countersHash = (projectMetadata == null ? Collections.emptyMap() : projectMetadata.getCounters()).hashCode();
 
             projectMetadata = function.update(projectMetadata);
@@ -469,13 +469,12 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         }
     }
 
-    public QueryResult<ProjectMetadata> getProjectMetadata() {
-        return projectDBAdaptor.getProjectMetadata();
+    public ProjectMetadata getProjectMetadata() {
+        return projectDBAdaptor.getProjectMetadata().first();
     }
 
-    public QueryResult<ProjectMetadata> getProjectMetadata(ObjectMap options) throws StorageEngineException {
-        QueryResult<ProjectMetadata> queryResult = getProjectMetadata();
-        ProjectMetadata projectMetadata = queryResult.first();
+    public ProjectMetadata getProjectMetadata(ObjectMap options) throws StorageEngineException {
+        ProjectMetadata projectMetadata = getProjectMetadata();
         if (options != null && (projectMetadata == null
                 || StringUtils.isEmpty(projectMetadata.getSpecies()) && options.containsKey(VariantAnnotationManager.SPECIES)
                 || StringUtils.isEmpty(projectMetadata.getAssembly()) && options.containsKey(VariantAnnotationManager.ASSEMBLY))) {
@@ -497,11 +496,8 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
                 return pm;
             });
-            queryResult.setResult(Collections.singletonList(projectMetadata));
-            queryResult.setNumResults(1);
-            queryResult.setNumTotalResults(1);
         }
-        return queryResult;
+        return projectMetadata;
     }
 
 

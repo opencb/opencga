@@ -21,12 +21,12 @@ public final class VariantQueryFields {
     private final Map<Integer, List<Integer>> files;
 //        private final Map<Integer, List<Integer>> cohortIds;
 
-    public VariantQueryFields(StudyConfiguration studyConfiguration, List<Integer> samples, List<Integer> files) {
+    public VariantQueryFields(StudyMetadata studyMetadata, List<Integer> samples, List<Integer> files) {
         this.fields = VariantField.getIncludeFields(null);
-        this.studies = Collections.singletonList(studyConfiguration.getStudyId());
-        this.studyMetadatas = Collections.singletonMap(studyConfiguration.getStudyId(), studyConfiguration);
-        this.samples = Collections.singletonMap(studyConfiguration.getStudyId(), samples);
-        this.files = Collections.singletonMap(studyConfiguration.getStudyId(), files);
+        this.studies = Collections.singletonList(studyMetadata.getStudyId());
+        this.studyMetadatas = Collections.singletonMap(studyMetadata.getStudyId(), studyMetadata);
+        this.samples = Collections.singletonMap(studyMetadata.getStudyId(), samples);
+        this.files = Collections.singletonMap(studyMetadata.getStudyId(), files);
     }
 
     VariantQueryFields(Set<VariantField> fields, List<Integer> studies, Map<Integer, StudyMetadata> studyMetadatas,

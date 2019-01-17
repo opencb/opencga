@@ -474,7 +474,6 @@ public class VariantHbaseTestUtils {
             StudyMetadata studyMetadata, Map<? extends String, ?> otherParams, boolean doTransform, boolean loadArchive,
             boolean loadVariant) throws Exception {
         StudyConfiguration studyConfiguration = new StudyConfiguration(studyMetadata.getId(), studyMetadata.getName());
-        System.out.println("studyConfiguration = " + studyConfiguration);
         return loadFile(variantStorageManager, dbName, outputUri, resourceName, studyConfiguration, otherParams, doTransform, loadArchive, loadVariant);
     }
 
@@ -494,7 +493,6 @@ public class VariantHbaseTestUtils {
                 .append(HadoopVariantStorageEngine.HADOOP_LOAD_ARCHIVE, loadArchive)
                 .append(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT, loadVariant);
 
-        System.out.println("params.toJson() = " + params.toJson());
         if (otherParams != null) {
             params.putAll(otherParams);
         }

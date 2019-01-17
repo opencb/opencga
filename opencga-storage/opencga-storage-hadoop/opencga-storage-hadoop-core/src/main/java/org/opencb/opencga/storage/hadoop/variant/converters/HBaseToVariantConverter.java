@@ -82,9 +82,9 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
 
     public HBaseToVariantConverter(GenomeHelper genomeHelper, VariantStorageMetadataManager scm) {
         this.genomeHelper = genomeHelper;
-        long ts = scm.getProjectMetadata().first().getAttributes().getLong(SEARCH_INDEX_LAST_TIMESTAMP.key());
+        long ts = scm.getProjectMetadata().getAttributes().getLong(SEARCH_INDEX_LAST_TIMESTAMP.key());
         this.annotationConverter = new HBaseToVariantAnnotationConverter(genomeHelper, ts)
-                .setAnnotationIds(scm.getProjectMetadata().first().getAnnotation());
+                .setAnnotationIds(scm.getProjectMetadata().getAnnotation());
         HBaseToVariantStatsConverter statsConverter = new HBaseToVariantStatsConverter(genomeHelper);
         this.studyEntryConverter = new HBaseToStudyEntryConverter(genomeHelper.getColumnFamily(), scm, statsConverter);
     }
