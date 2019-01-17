@@ -125,7 +125,7 @@ public class ProjectCommandOptions {
         @Parameter(names = {"-n", "--name"}, description = "Project name.", arity = 1)
         public String name;
 
-        @Parameter(names = {"-a", "--alias"}, description = "Project alias.", arity = 1)
+        @Parameter(names = {"-a", "--alias"}, description = "DEPRECATED: Project alias.", arity = 1)
         public String alias;
 
         @Parameter(names = {"--organization"}, description = "Organization", arity = 1)
@@ -134,7 +134,7 @@ public class ProjectCommandOptions {
         @Parameter(names = {"--description"}, description = "Project description", arity = 1)
         public String description;
 
-        @Parameter(names = {"-s", "--study"}, description = "Study id or alias", arity = 1)
+        @Parameter(names = {"-s", "--study"}, description = "Study id", arity = 1)
         public String study;
 
         @Parameter(names = {"--creation-date"}, description = "Creation date.", arity = 1)

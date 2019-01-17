@@ -53,8 +53,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.File;
 import java.io.FileInputStream;
@@ -64,7 +64,6 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 import static org.opencb.opencga.core.common.JacksonUtils.getExternalOpencgaObjectMapper;
 
 @ApplicationPath("/")

@@ -17,8 +17,6 @@
 package org.opencb.opencga.client.rest.catalog;
 
 import org.codehaus.jackson.map.ObjectMapper;
-import org.opencb.biodata.models.alignment.Alignment;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -29,7 +27,6 @@ import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
-import org.opencb.opencga.core.models.summaries.StudySummary;
 
 import java.io.IOException;
 
@@ -54,49 +51,26 @@ public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
         return execute(STUDY_URL, "create", p, POST, Study.class);
     }
 
-    public QueryResponse<StudySummary> getSummary(String studyId, QueryOptions options) throws IOException {
-        return execute(STUDY_URL, studyId, "summary", options, GET, StudySummary.class);
+    public QueryResponse<ObjectMap> getStats(String studyId, Query query, QueryOptions options) throws IOException {
+        ObjectMap params = new ObjectMap(query);
+        params.putAll(options);
+
+        return execute(STUDY_URL, studyId, "stats", params, GET, ObjectMap.class);
     }
 
+    @Deprecated
     public QueryResponse<Sample> getSamples(String studyId, QueryOptions options) throws IOException {
         return execute(STUDY_URL, studyId, "samples", options, GET, Sample.class);
     }
 
+    @Deprecated
     public QueryResponse<File> getFiles(String studyId, QueryOptions options) throws IOException {
         return execute(STUDY_URL, studyId, "files", options, GET, File.class);
     }
 
+    @Deprecated
     public QueryResponse<Job> getJobs(String studyId, QueryOptions options) throws IOException {
         return execute(STUDY_URL, studyId, "jobs", options, GET, Job.class);
-    }
-
-    public QueryResponse<ObjectMap> getStatus(String studyId, QueryOptions options) throws IOException {
-        return execute(STUDY_URL, studyId, "status", options, GET, ObjectMap.class);
-    }
-
-    public QueryResponse<Variant> getVariants(String studyId, QueryOptions options) throws IOException {
-        return execute(STUDY_URL, studyId, "variants", options, GET, Variant.class);
-    }
-
-    public QueryResponse<Long> countVariants(String studyId, QueryOptions options) throws IOException {
-        return execute(STUDY_URL, studyId, "variants", options, GET, Long.class);
-    }
-
-    public QueryResponse<ObjectMap> getVariantsGeneric(String studyId, QueryOptions options) throws IOException {
-        return execute(STUDY_URL, studyId, "variants", options, GET, ObjectMap.class);
-    }
-
-    public QueryResponse<Alignment> getAlignments(String studyId, String sampleId, String fileId, String region, Query query,
-                                                  QueryOptions options) throws IOException {
-        ObjectMap params = new ObjectMap(query);
-        params.putAll(options);
-        params = addParamsToObjectMap(params, "sampleId", sampleId, "fileId", fileId, "region", region);
-        params.putIfAbsent("view_as_pairs", false);
-        params.putIfAbsent("include_coverage", true);
-        params.putIfAbsent("process_differences", true);
-        params.putIfAbsent("histogram", false);
-        params.putIfAbsent("interval", 200);
-        return execute(STUDY_URL, studyId, "alignments", params, GET, Alignment.class);
     }
 
     public QueryResponse scanFiles(String studyId, QueryOptions options) throws IOException {
