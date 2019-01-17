@@ -54,14 +54,13 @@ echo
 
 dockerDir="./opencga-app/app/scripts/docker"
 
-# Jump to the repo root dir so that we have a global docker context
+# Jump to the repo root dir so that we have a known working dir
 cd $(git rev-parse --show-toplevel)
 
 # make_image directory, image name, make target
 function make_image {
     ENVFILE="${1}/make_env" \
     APP_NAME="${2}" \
-    PATH_PREFIX="${1}/${2}" \
     make -f "${1}/Makefile" ${3}
 }
 

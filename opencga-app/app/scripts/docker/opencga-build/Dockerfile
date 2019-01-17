@@ -1,4 +1,4 @@
-FROM maven:3.3.9-jdk-8
+FROM maven:3.5-jdk-8
 
 WORKDIR /build
 
