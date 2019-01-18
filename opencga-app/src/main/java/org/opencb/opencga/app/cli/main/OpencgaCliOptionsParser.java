@@ -143,6 +143,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
 //        fileSubCommands.addCommand("variants", fileCommandOptions.variantsCommandOptions);
         fileSubCommands.addCommand("acl", fileCommandOptions.aclsCommandOptions);
         fileSubCommands.addCommand("acl-update", fileCommandOptions.aclsUpdateCommandOptions);
+        fileSubCommands.addCommand("annotation-sets-update", fileCommandOptions.annotationUpdateCommandOptions);
 
         jobCommandOptions = new JobCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand("jobs", jobCommandOptions);

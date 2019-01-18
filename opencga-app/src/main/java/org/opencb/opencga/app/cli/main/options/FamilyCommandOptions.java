@@ -119,6 +119,10 @@ public class FamilyCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.DataModelOptions dataModelOptions = commonDataModelOptions;
 
+        @Parameter(names = {"--flatten-annotations"}, description = "Flag indicating whether nested annotations should be returned flattened",
+                arity = 0)
+        public boolean flattenAnnotations;
+
     }
 
     @Parameters(commandNames = {"search"}, commandDescription = "Search for families")
@@ -142,8 +146,13 @@ public class FamilyCommandOptions {
         @Parameter(names = {"--parental-consanguinity"}, description = "Parental consanguinity", arity = 1)
         public Boolean parentalConsanguinity;
 
-        @Parameter(names = {"--annotation"}, description = "Annotation, e.g: key1=value(,key2=value)", arity = 1)
+        @Parameter(names = {"--annotation"}, description = "Annotation filters. Example: age>30;gender=FEMALE. For more information, " +
+                "please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0", arity = 1)
         public String annotation;
+
+        @Parameter(names = {"--flatten-annotations"}, description = "Flag indicating whether nested annotations should be returned flattened",
+                arity = 0)
+        public boolean flattenAnnotations;
     }
 
     @Parameters(commandNames = {"group-by"}, commandDescription = "Group families")

@@ -78,7 +78,7 @@ public class ProjectCommandOptions {
         @Parameter(names = {"--id"}, description = "Project id", required = true, arity = 1)
         public String id;
 
-        @Parameter(names = {"-a", "--alias"}, description = "Alias", arity = 1)
+        @Parameter(names = {"-a", "--alias"}, description = "DEPRECATED: Alias has been replaced by id", arity = 1)
         public String alias;
 
         @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)

@@ -151,6 +151,7 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotNull(SampleDBAdaptor.QueryParams.STUDY.key(), resolveStudy(samplesCommandOptions.infoCommandOptions.study));
         params.putIfNotEmpty(QueryOptions.INCLUDE, samplesCommandOptions.infoCommandOptions.dataModelOptions.include);
         params.putIfNotEmpty(QueryOptions.EXCLUDE, samplesCommandOptions.infoCommandOptions.dataModelOptions.exclude);
+        params.put("flattenAnnotations", samplesCommandOptions.searchCommandOptions.flattenAnnotations);
         if (samplesCommandOptions.infoCommandOptions.noLazy) {
             params.put("lazy", false);
         }
@@ -168,6 +169,7 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotNull(SampleDBAdaptor.QueryParams.SOMATIC.key(), samplesCommandOptions.searchCommandOptions.somatic);
         query.putIfNotEmpty(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), samplesCommandOptions.searchCommandOptions.individual);
         query.putIfNotEmpty(SampleDBAdaptor.QueryParams.ANNOTATION.key(), samplesCommandOptions.searchCommandOptions.annotation);
+        query.put("flattenAnnotations", samplesCommandOptions.searchCommandOptions.flattenAnnotations);
         query.putAll(samplesCommandOptions.searchCommandOptions.commonOptions.params);
 
         if (samplesCommandOptions.searchCommandOptions.numericOptions.count) {
@@ -193,6 +195,7 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(SampleDBAdaptor.QueryParams.TYPE.key(), samplesCommandOptions.updateCommandOptions.type);
         params.putIfNotEmpty(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), samplesCommandOptions.updateCommandOptions.individual);
         params.putIfNotNull(SampleDBAdaptor.QueryParams.SOMATIC.key(), samplesCommandOptions.updateCommandOptions.somatic);
+        params.putIfNotNull("annotationSetsAction", samplesCommandOptions.updateCommandOptions.annotationSetsAction);
         return openCGAClient.getSampleClient().update(samplesCommandOptions.updateCommandOptions.sample,
                 samplesCommandOptions.updateCommandOptions.study, params);
     }
