@@ -4,6 +4,7 @@
     "parameters": {
         "clusterNamePrefix": {
             "type": "string",
+            "defaultValue": "cgahbase",
             "metadata": {
                 "description": "The name of the HDInsight cluster to create."
             }

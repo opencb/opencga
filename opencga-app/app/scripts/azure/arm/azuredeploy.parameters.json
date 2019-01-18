@@ -8,25 +8,13 @@
         "_artifactsLocationSasToken": {
             "value": ""
         },
-        "HDInsightClusterName": {
-            "value": ""
-        },
-        "HDInsightClusterLoginUserName": {
-            "value": "admin"
-        },
-        "HDInsightClusterLoginPassword": {
-            "value": ""
-        },
-        "HDInsightSshPassword": {
-            "value": ""
-        },
         "HDInsightStorageOption": {
             "value": "DataLake"
         },
-        "rgPrefix":{
+        "rgPrefix": {
             "value": "opencga"
         },
-        "rgLocation":{
+        "rgLocation": {
             "value": "uksouth"
         },
         "avereServicePrincipalAppId": {
@@ -35,10 +23,13 @@
         "avereServicePrincipalPassword": {
             "value": ""
         },
-        "avereSSHKeyData": {
+        "sshAdminKeyData": {
             "value": ""
         },
-        "avereAdminPassword": {
+        "nfsStorageOption": {
+            "value": ""
+        },
+        "mongoDBPassword": {
             "value": ""
         },
         "openCGAContainerImage": {
@@ -47,37 +38,28 @@
         "ivaContainerImage": {
             "value": ""
         },
-        "webserversSSHKeyData": {
-            "value": ""
-        },
-        "solrClusterLoginPassword": {
-            "value": ""
-        },
         "initContainerImage": {
             "value": ""
         },
         "daemonContainerImage": {
             "value": ""
         },
-        "daemonVmAdminPassword": {
-            "value": ""
-        },
-        "nfsStorageOption": {
-            "value": ""
-        },
         "catalogSecretKey": {
             "value": ""
         },
-        "mongoDbHosts": {
-            "value": []
-        },
-        "mongoDbUser": {
+        "mongoCertificateEmail": {
             "value": ""
         },
-        "mongoDbPassword": {
+        "avereAdminPassword": {
             "value": ""
         },
-        "batchDockerImage": {
+        "HDInsightClusterLoginPassword": {
+            "value": ""
+        },
+        "HDInsightSshPassword": {
+            "value": ""
+        },
+        "openCgaAdminPassword": {
             "value": ""
         }
     }

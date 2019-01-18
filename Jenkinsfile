@@ -3,16 +3,18 @@ pipeline {
     stages {
 
         stage ('Validate ARM Templates') {
-            when {
-              changeset 'opencga-app/app/scripts/azure/arm/**/*.json'
+            options {
+                timeout(time: 5, unit: 'MINUTES')
             }
             steps {
                 sh 'cd opencga-app/app/scripts/azure/arm && npm install armval && node node_modules/.bin/armval "**/azuredeploy.json" && rm -rf node_modules && rm -rf package-lock.json'
             }
         }
 
-
         stage ('Build') {
+            options {
+                timeout(time: 30, unit: 'MINUTES')
+            }
             steps {
                 sh 'mvn clean install -DskipTests -Popencga-storage-hadoop-deps -Dcheckstyle.skip'
                 sh 'make -f opencga-app/app/scripts/docker/make'
@@ -20,12 +22,18 @@ pipeline {
         }
 
         stage ('Validate') {
+            options {
+                timeout(time: 5, unit: 'MINUTES')
+            }
             steps {
                 sh 'mvn validate'
             }
         }
 
         stage ('Quick Test') {
+            options {
+                timeout(time: 1, unit: 'HOURS')
+            }
             when {
                 allOf {
                     changeset '**/*.java'
@@ -45,6 +53,9 @@ pipeline {
         }
 
         stage ('Complete Test') {
+            options {
+                timeout(time: 4, unit: 'HOURS')
+            }
             when {
               changeset 'opencga-storage/**/*.java'
             }

@@ -34,16 +34,17 @@
         "description": "Size of the zookeeper VM"
       }
     },
-    "clusterLoginUserName": {
+    "adminUsername": {
       "type": "string",
+      "defaultValue": "azureuser",
       "metadata": {
-        "description": "Admin username"
+        "description": "Admin username on all VMs."
       }
     },
-    "clusterLoginPassword": {
+    "sshKeyData": {
       "type": "securestring",
       "metadata": {
-        "description": "Admin password"
+        "description": "SSH key used for all VMs."
       }
     },
     "highAvailability": {
@@ -95,6 +96,7 @@
     }
   },
   "variables": {
+    "sshKeyPath": "[concat('/home/',parameters('adminUsername'),'/.ssh/authorized_keys')]",
     "availabilitySetName": "[concat(parameters('clusterName'), '-solr-as')]",
     "scaleNumber": "[if(parameters('highAvailability'), 2, 1)]",
     "zookeeperScaleNumber": "[if(parameters('highAvailability'), 3, 0)]",
@@ -114,17 +116,17 @@
         }
       },
       {
-        "name" : "solrURLs",
+        "name": "solrURLs",
         "count": "[variables('scaleNumber')]",
-        "input" : {
-          "host" : "[concat('http://',parameters('clusterName'), '-solr',copyIndex('solrURLs'), ':8983/solr')]"
+        "input": {
+          "host": "[concat('http://',parameters('clusterName'), '-solr',copyIndex('solrURLs'), ':8983/solr')]"
         }
       },
       {
-        "name" : "zookeeperHosts",
-        "count" : "[if(equals(0, variables('zookeeperScaleNumber')), 1, variables('zookeeperScaleNumber'))]",
-        "input" : {
-          "host" : "[concat(parameters('clusterName'), '-zookeeper', copyIndex('zookeeperHosts'), ':2181')]"
+        "name": "zookeeperHosts",
+        "count": "[if(equals(0, variables('zookeeperScaleNumber')), 1, variables('zookeeperScaleNumber'))]",
+        "input": {
+          "host": "[concat(parameters('clusterName'), '-zookeeper', copyIndex('zookeeperHosts'), ':2181')]"
         }
       }
     ],
@@ -139,8 +141,8 @@
       " - curl -fsSL https://get.docker.com/ | sh",
       " - curl -fsSL https://get.docker.com/gpg | sudo apt-key add -",
       "[concat(' - curl -fsSL ',variables('configSetLocation'), ' -o OpenCGAConfSet_1.4.x.tar.gz')]",
-      "[concat(' - curl -fsSL ',variables('customScriptFilePath'),' | bash -s -- ', parameters('clusterName'), '-zookeeper', ' ', variables('zookeeperScaleNumber'), ' ', parameters('solrVersion'))]"      
-  ]
+      "[concat(' - curl -fsSL ',variables('customScriptFilePath'),' | bash -s -- ', parameters('clusterName'), '-zookeeper', ' ', variables('zookeeperScaleNumber'), ' ', parameters('solrVersion'))]"
+    ]
   },
   "resources": [
     {
@@ -156,11 +158,11 @@
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
-          "clusterLoginUserName": {
-            "value": "[parameters('clusterLoginUserName')]"
+          "adminUsername": {
+            "value": "[parameters('adminUsername')]"
           },
-          "clusterLoginPassword": {
-            "value": "[parameters('clusterLoginPassword')]"
+          "sshKeyData": {
+            "value": "[parameters('sshKeyData')]"
           },
           "subnetId": {
             "value": "[parameters('subnetId')]"
@@ -242,8 +244,18 @@
         },
         "osProfile": {
           "computerName": "[variables('vmNames')[copyIndex()].vmName]",
-          "adminUsername": "[parameters('clusterLoginUserName')]",
-          "adminPassword": "[parameters('clusterLoginPassword')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "linuxConfiguration": {
+            "disablePasswordAuthentication": true,
+            "ssh": {
+              "publicKeys": [
+                {
+                  "path": "[variables('sshKeyPath')]",
+                  "keyData": "[parameters('sshKeyData')]"
+                }
+              ]
+            }
+          },
           "customData": "[base64(replace(replace(replace(replace(string(variables('cloudInit')),'#VM_INDEX#',string(copyIndex())),'\",\"','\n'),'[\"',''),'\"]',''))]"
         },
         "storageProfile": {
@@ -273,12 +285,12 @@
       }
     }
   ],
-  "outputs" : {
-    "solrConnectionDetails" : {
+  "outputs": {
+    "solrConnectionDetails": {
       "value": "[if(equals(0, variables('zookeeperScaleNumber')), variables('solrURLs'), variables('zookeeperHosts'))]",
       "type": "array"
     },
-    "solrURLs" : {
+    "solrURLs": {
       "value": "[variables('solrURLs')]",
       "type": "array"
     }
