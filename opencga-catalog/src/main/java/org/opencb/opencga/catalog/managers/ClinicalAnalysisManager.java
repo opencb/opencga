@@ -159,7 +159,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         clinicalAnalysis.setAttributes(ParamUtils.defaultObject(clinicalAnalysis.getAttributes(), Collections.emptyMap()));
         clinicalAnalysis.setInterpretations(ParamUtils.defaultObject(clinicalAnalysis.getInterpretations(), ArrayList::new));
         clinicalAnalysis.setPriority(ParamUtils.defaultObject(clinicalAnalysis.getPriority(), ClinicalAnalysis.Priority.MEDIUM));
-        clinicalAnalysis.setTags(ParamUtils.defaultObject(clinicalAnalysis.getTags(), ArrayList::new));
+        clinicalAnalysis.setFlags(ParamUtils.defaultObject(clinicalAnalysis.getFlags(), ArrayList::new));
 
         clinicalAnalysis.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.CLINICAL));
         QueryResult<ClinicalAnalysis> queryResult = clinicalDBAdaptor.insert(study.getUid(), clinicalAnalysis, options);
@@ -420,7 +420,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 case FAMILY:
                 case PROBAND:
                 case COMMENTS:
-                case TAGS:
+                case FLAGS:
                     break;
                 default:
                     throw new CatalogException("Cannot update " + queryParam);

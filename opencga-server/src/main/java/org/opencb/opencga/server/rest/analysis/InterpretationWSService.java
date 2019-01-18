@@ -329,7 +329,7 @@ public class InterpretationWSService extends AnalysisWSService {
         public String dueDate;
         public List<Comment> comments;
         public ClinicalAnalysis.Priority priority;
-        public List<String> tags;
+        public List<String> flags;
 
         public Map<String, Object> attributes;
 
@@ -378,7 +378,7 @@ public class InterpretationWSService extends AnalysisWSService {
                             : new ArrayList<>();
             String clinicalId = StringUtils.isEmpty(id) ? name : id;
             return new ClinicalAnalysis(clinicalId, description, type, disorder, fileMap, individual, f,
-                    interpretationList, priority, tags, null, dueDate, comments, status, 1, attributes).setName(name);
+                    interpretationList, priority, flags, null, dueDate, comments, status, 1, attributes).setName(name);
         }
     }
     
