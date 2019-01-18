@@ -750,7 +750,9 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiImplicitParam(name = VariantField.SUMMARY, value = "Fast fetch of main variant parameters", dataType = "boolean", paramType = "query"),
 
             // Interpretation filters
-//            @ApiImplicitParam(name = "disorder", value = "Disorder ID of the Individual or the Family", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "includeLowCoverage", value = "Include low coverage regions", dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = "maxLowCoverage", value = "Max. low coverage", dataType = "integer", paramType = "query"),
+            //            @ApiImplicitParam(name = "disorder", value = "Disorder ID of the Individual or the Family", dataType = "string", paramType = "query"),
 
             // Variant filters
             @ApiImplicitParam(name = "id", value = ID_DESCR, dataType = "string", paramType = "query"),
@@ -824,12 +826,13 @@ public class InterpretationWSService extends AnalysisWSService {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             Query query = getVariantQuery(queryOptions);
+            ObjectMap customAnalysisOptions = getCustomAnalysisOptions(queryOptions);
 
             String dataDir = configuration.getDataDir();
             String opencgaHome = Paths.get(dataDir).getParent().toString();
             System.out.println("opencgaHome = " + opencgaHome);
 
-            CustomAnalysis customAnalysis = new CustomAnalysis(query, studyStr, opencgaHome, new ObjectMap(), sessionId);
+            CustomAnalysis customAnalysis = new CustomAnalysis(query, studyStr, opencgaHome, customAnalysisOptions, sessionId);
             AnalysisResult<org.opencb.biodata.models.clinical.interpretation.Interpretation> analysisResult;
             analysisResult = customAnalysis.execute();
 
@@ -837,6 +840,17 @@ public class InterpretationWSService extends AnalysisWSService {
         } catch (Exception e) {
             return createErrorResponse(e);
         }
+    }
+
+    private ObjectMap getCustomAnalysisOptions(QueryOptions queryOptions) {
+        ObjectMap options = new ObjectMap();
+        if (queryOptions.containsKey("includeLowCoverage")) {
+            options.put("includeLowCoverage", queryOptions.getBoolean("includeLowCoverage"));
+        }
+        if (queryOptions.containsKey("maxLowCoverage")) {
+            options.put("maxLowCoverage", queryOptions.getInt("maxLowCoverage"));
+        }
+        return options;
     }
 
     private static class ClinicalInterpretationParameters {
