@@ -652,9 +652,6 @@ public class VariantSqlQueryParser {
             for (Iterator<String> iterator = files.iterator(); iterator.hasNext();) {
                 String file = iterator.next();
                 Pair<Integer, Integer> fileIdPair = metadataManager.getFileIdPair(file, false, defaultStudyMetadata);
-                System.out.println("defaultStudyMetadata = " + defaultStudyMetadata);
-                System.out.println("file = " + file);
-                System.out.println("fileIdPair = " + fileIdPair);
 
                 sb.append(" ( ");
                 if (isNegated(file)) {
@@ -1254,7 +1251,10 @@ public class VariantSqlQueryParser {
                 cohort = key;
                 sm = defaultMetadata;
             }
-            int cohortId = metadataManager.getCohortId(sm.getId(), cohort);
+            Integer cohortId = metadataManager.getCohortId(sm.getId(), cohort);
+            if (cohortId == null) {
+                throw VariantQueryException.cohortNotFound(cohort, sm.getId(), metadataManager);
+            }
 
             return columnBuilder.apply(sm.getId(), cohortId);
         };

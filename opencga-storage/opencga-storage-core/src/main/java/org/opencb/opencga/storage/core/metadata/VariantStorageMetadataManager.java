@@ -885,7 +885,6 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             }
         }
 
-        System.out.println("studyId = " + studyId + " , id = " + id);
         if (studyId == null) {
             return getResourcePair(obj, toId, resourceName);
         }
@@ -901,7 +900,6 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             StudyMetadata sm = getStudyMetadata(studyId);
             resourceIdFromStudy = toId.apply(sm.getId(), obj.toString());
             if (resourceIdFromStudy != null) {
-                System.out.println("studyId = " + studyId + " , resourceIdFromStudy = " + resourceIdFromStudy);
                 return Pair.of(sm.getId(), resourceIdFromStudy);
             }
         }

@@ -102,7 +102,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     protected static int na19685;
 
     protected List<String> sampleNames = Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685");
-    protected Set<String> cohorts = new HashSet<>(Arrays.asList("cohort1", "cohort2"));
+    protected Set<String> cohorts = new HashSet<>(Arrays.asList("ALL", "cohort1", "cohort2"));
 
 
 
@@ -1807,17 +1807,11 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         int expectedCount = (int) VariantMatchers.count(allVariants.getResult(), withStudy(STUDY_NAME, withStats("cohort1", withMaf(gt(0.2)))));
         numResults = count(new Query(STATS_MAF.key(), STUDY_NAME + ":cohort1>0.2"));
         assertEquals(expectedCount, numResults);
-        numResults = count(new Query(STATS_MAF.key(), "1:10>0.2"));
-        assertEquals(expectedCount, numResults);
-        numResults = count(new Query(STATS_MAF.key(), STUDY_NAME + ":10>0.2"));
+        numResults = count(new Query(STATS_MAF.key(), STUDY_NAME + ":cohort1>0.2"));
         assertEquals(expectedCount, numResults);
         queryResult = query(new Query(STATS_MAF.key(), "1:cohort1>0.2"), null);
         assertEquals(expectedCount, queryResult.getNumResults());
         queryResult = query(new Query(STUDY.key(), STUDY_NAME).append(STATS_MAF.key(), "cohort1>0.2"), null);
-        assertEquals(expectedCount, queryResult.getNumResults());
-        queryResult = query(new Query(STUDY.key(), STUDY_NAME).append(STATS_MAF.key(), "10>0.2"), null);
-        assertEquals(expectedCount, queryResult.getNumResults());
-        queryResult = query(new Query(STUDY.key(), 1).append(STATS_MAF.key(), "10>0.2"), null);
         assertEquals(expectedCount, queryResult.getNumResults());
         assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withStats("cohort1", withMaf(gt(0.2))))));
 
@@ -1875,10 +1869,6 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
         queryResult = query(new Query(STUDY.key(), 1)
                 .append(COHORT.key(), "cohort1"), null);
-        assertEquals(allVariants.getNumResults(), queryResult.getNumResults());
-
-        queryResult = query(new Query(STUDY.key(), 1)
-                .append(COHORT.key(), 10), null);
         assertEquals(allVariants.getNumResults(), queryResult.getNumResults());
 
         queryResult = query(new Query(STUDY.key(), 1)
