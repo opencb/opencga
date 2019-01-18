@@ -38,6 +38,23 @@ pipeline {
             }
         }
 
+
+        stage ('Publish Docker Images') {
+
+             steps {
+                      script {
+
+ def images = ["opencga", "opencga-app", "opencga-daemon", "opencga-init", "iva"]
+                              def tag = sh(returnStdout: true, script: "git rev-parse --verify HEAD").trim()
+                 for(int i =0; i < images.size(); i++){
+                   withDockerRegistry([ credentialsId: "wasim-docker-hub", url: "" ]) {
+                                         sh "docker push opencb/${image}:${tag}"
+                                        }
+                   }
+                 }
+                 }
+             }
+
         stage ('Quick Test') {
             options {
                 timeout(time: 1, unit: 'HOURS')
@@ -77,17 +94,5 @@ pipeline {
             }
         }
 
-        stage ('Build Docker Images') {
-             steps {
-                   sh 'docker build -f opencga-app/app/scripts/docker/opencga/Dockerfile -t opencb/opencga:v1 .'
-                 }
-             }
-        stage ('Publish  Docker Images') {
-             steps {
-                    withDockerRegistry([ credentialsId: "wasim-docker-hub", url: "" ]) {
-                                         sh 'docker push opencb/opencga:v1'
-                    }
-                 }
-             }
     }
 }
