@@ -123,7 +123,8 @@
             ""
         ],
         "cloud-init-string": "[replace(replace(replace(string(variables('cloud-init')),'\",\"','\n'),'[\"',''),'\"]','')]",
-        "customData": "[base64(variables('cloud-init-string'))]"
+        "customData": "[base64(variables('cloud-init-string'))]",
+        "publicDnsName" : "[toLower(substring(concat(parameters('namingPrefix'), uniqueString(resourceGroup().id)), 0, 16))]"
     },
     "resources": [
         {
@@ -135,7 +136,7 @@
             "properties": {
                 "publicIPAllocationMethod": "Static",
                 "dnsSettings": {
-                    "domainNameLabel": "[parameters('namingPrefix')]"
+                    "domainNameLabel": "[parameters('publicDnsName')]"
                 }
             }
         },

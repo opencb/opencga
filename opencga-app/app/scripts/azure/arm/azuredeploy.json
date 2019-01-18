@@ -205,7 +205,7 @@
     "variables": {
         "avereEnabled": "[equals(parameters('nfsStorageOption'), 'AvereCluster')]",
         "azureFilesEnabled": "[equals(parameters('nfsStorageOption'), 'AzureFiles')]",
-        "webserverNamingPrefix": "[toLower(substring(concat('webservers', uniqueString(resourceGroup().id)), 0, 16))]"
+        "webserverNamingPrefix": "webservers"
     },
     "resources": [
         {
