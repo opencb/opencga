@@ -104,15 +104,11 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         studySubCommands.addCommand("create", studyCommandOptions.createCommandOptions);
         studySubCommands.addCommand("info", studyCommandOptions.infoCommandOptions);
         studySubCommands.addCommand("search", studyCommandOptions.searchCommandOptions);
-        studySubCommands.addCommand("summary", studyCommandOptions.summaryCommandOptions);
+        studySubCommands.addCommand("stats", studyCommandOptions.statsCommandOptions);
         studySubCommands.addCommand("delete", studyCommandOptions.deleteCommandOptions);
         studySubCommands.addCommand("update", studyCommandOptions.updateCommandOptions);
         studySubCommands.addCommand("scan-files", studyCommandOptions.scanFilesCommandOptions);
         studySubCommands.addCommand("resync-files", studyCommandOptions.resyncFilesCommandOptions);
-        studySubCommands.addCommand("files", studyCommandOptions.filesCommandOptions);
-        studySubCommands.addCommand("jobs", studyCommandOptions.jobsCommandOptions);
-        studySubCommands.addCommand("samples", studyCommandOptions.samplesCommandOptions);
-        studySubCommands.addCommand("help", studyCommandOptions.helpCommandOptions);
         studySubCommands.addCommand("groups", studyCommandOptions.groupsCommandOptions);
         studySubCommands.addCommand("groups-create", studyCommandOptions.groupsCreateCommandOptions);
         studySubCommands.addCommand("groups-delete", studyCommandOptions.groupsDeleteCommandOptions);
