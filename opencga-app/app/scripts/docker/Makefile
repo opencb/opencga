@@ -120,11 +120,11 @@ tag:
 # Logs in to a docker registry
 .PHONY: login
 login:
-	echo $(DOCKER_PASSWORD) | docker login -u $(DOCKER_USERNAME) --password-stdin $(DOCKER_SERVER)
+	@echo $(DOCKER_PASSWORD) | docker login -u $(DOCKER_USERNAME) --password-stdin $(DOCKER_SERVER)
 
 # Publishes a docker image to docker registry
 .PHONY: publish
-publish: login tag
+publish: tag login
 	docker push $(DOCKER_SERVER)$(DOCKER_REPO)/$(APP_NAME):$(TAG)
 
 .PHONY: default

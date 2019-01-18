@@ -14,19 +14,18 @@ RUN echo '{ "allow_root": true }' > /root/.bowerrc && \
     npm install -g grunt-cli
 
 # Download and extract the IVA configuration into our local configuration
-# NOTE: We do not clone directly as we cannot clone into this existing dir
-RUN cd /usr/local/apache2/htdocs/ && \
-    git init && \
-    git remote add origin "https://github.com/opencb/iva.git" && \
-    git fetch --all --prune && \
+RUN git clone -b "master" "https://github.com/opencb/iva.git" && \
+    cd iva && \
     git reset "$IVA_COMMIT_SHA" --hard && \
     git submodule update --init && \
     cd lib/jsorolla && \
     git checkout develop && \
     npm install && \
     cd ../.. && \
-    npm install
+    npm install --unsafe-perm && \
+    npm run build && \
+    cp -r build/* /usr/local/apache2/htdocs
 
 EXPOSE 80
 
-VOLUME usr/local/apache2/htdocs/conf
+VOLUME /usr/local/apache2/htdocs/conf

@@ -59,15 +59,17 @@ echo "---------------------"
 
 # Build OpenCGA
 if [ ! -d "./build" ]; then
-    echo "$: No existing OpenCGA build."
-    echo "$: Starting OpenCGA build."
+    echo "> No existing OpenCGA build."
+    echo "> Starting OpenCGA build."
     docker run -it --rm \
     -v "$PWD":/src \
     -v "$HOME/.m2":/root/.m2 \
     -w /src maven:3.6-jdk-8 \
     mvn -T 1C install \
     -DskipTests -Dstorage-hadoop -Popencga-storage-hadoop-deps -Phdp-2.6.0 -DOPENCGA.STORAGE.DEFAULT_ENGINE=hadoop -Dopencga.war.name=opencga
-    echo "$: Finished OpenCGA build."
+    echo "> Finished OpenCGA build."
+else
+    echo "> Using existing build from $PWD/build"
 fi
 
 # Build all the child container images
