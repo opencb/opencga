@@ -67,5 +67,18 @@ pipeline {
                 }
             }
         }
+
+        stage ('Build Docker Images') {
+             steps {
+                   sh 'docker build -f opencga-app/app/scripts/docker/opencga/Dockerfile -t opencb/opencga:v1 .'
+                 }
+             }
+        stage ('Publish  Docker Images') {
+             steps {
+                    withDockerRegistry([ credentialsId: "wasim-docker-hub", url: "" ]) {
+                                         sh 'docker push opencb/opencga:v1'
+                    }
+                 }
+             }
     }
 }
