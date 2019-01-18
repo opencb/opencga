@@ -10,13 +10,6 @@
 # `make APP_NAME=opencga-app publish` : will push the specified app image should it exist
 # `make DOCKER_BUILD_ARGS=--no-cache APP_NAME=opencga-app build` : will build the docker image with additional docker args
 
-# Override the `make_env` file default location by setting ENVFILE env var
-ENVFILE ?= make_env
-ifneq ("$(wildcard $(ENVFILE))","")
-    include $(ENVFILE)
-    export
-endif
-
 # Make sure MAKECMDGOALS is set to default target if empty
 ifeq ($(MAKECMDGOALS),)
 MAKECMDGOALS := build-all
@@ -71,6 +64,14 @@ $(error APP_NAME is not set)
 endif
 endif
 
+# Override the `make_env` file default location by setting ENVFILE env var
+ENVFILE ?= make_env
+ifneq ("$(wildcard $(ENVFILE))","")
+$(info Including environment file $(ENVFILE))
+include $(ENVFILE)
+export
+endif
+
 # Set defaults for optional variables
 ifneq ($(DOCKER_SERVER),)
 DOCKER_SERVER := $(DOCKER_SERVER)/
@@ -112,7 +113,7 @@ metadata:
 # Run a script to build all docker images
 .PHONY: build-all
 build-all: metadata
-	(cd $(shell git rev-parse --show-toplevel); opencga-app/app/scripts/docker/build-all.sh $(BUILD_PATH))
+	(cd $(shell git rev-parse --show-toplevel); opencga-app/app/scripts/docker/build-all.sh $(ENVFILE) $(BUILD_PATH))
 
 # Builds and tags the container
 .PHONY: build

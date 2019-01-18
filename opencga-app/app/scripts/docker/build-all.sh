@@ -7,6 +7,20 @@
 # The purpose of this script is to build all
 # Dockerfiles against the current source code.
 #
+# Usage
+# ----------------------
+#
+# This script is not intended to be run directly, rather
+# indirectly by the Makefile.
+#
+# Arguments
+# ----------------------
+# - 1: The path to an envrionment file
+# - 2: The path to an opencga build directory
+#
+# Variables
+# ----------------------
+#
 # Variables can be loaded into the build process in 2 ways:
 # - Set as environment variable
 # - Set in a `make_env` .env file
@@ -19,10 +33,7 @@
 #   KEY1=VALUE1
 #   KEY2=VALUE2
 #
-# Variables
-# ----------------------
-# A number of variables can be set to configure the build process. Review the list below
-# to decide which to set for your environment.
+# Available variables:
 #
 # - DOCKER_USERNAME=''   : (required) Username to login to the docker registry
 # - DOCKER_PASSWORD=''   : (required) Password to login to the docker registry
@@ -36,15 +47,19 @@
 
 set -e
 
+envfile=$1
+buildPath=$2
+
 # Jump to the repo root dir so that we have a known working dir
 cd $(git rev-parse --show-toplevel)
 dockerDir="opencga-app/app/scripts/docker"
 
 # make_image directory, image name, make target
 function make_image {
-    ENVFILE="${1}/make_env" \
-    APP_NAME="${2}" \
-    make -f "${1}/Makefile" "${3}"
+    ENVFILE="${envfile}" \
+    APP_NAME="${1}" \
+    MAKECMDGOALS="${2}" \
+    make -f "${dockerDir}/Makefile" "${2}"
 }
 
 # Define all the docker images in dependecy order
@@ -58,7 +73,7 @@ echo "Started building container images"
 echo "---------------------"
 
 # Build OpenCGA
-if [ ! -d $1 ]; then
+if [ ! -d "${buildPath}" ]; then
     echo "> No existing OpenCGA build."
     echo "> Starting OpenCGA build."
     docker run -it --rm \
@@ -77,7 +92,7 @@ for image in "${images[@]}"
 do
     echo
     echo "--> Building image '${image}' : [${imageCount}/${imagesLen}]"
-    make_image "$dockerDir" "$image" build
+    make_image "$image" build
     echo "--> Done building image '${image}'"
     echo
     imageCount=$((imageCount+1))
