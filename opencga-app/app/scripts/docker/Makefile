@@ -24,6 +24,9 @@ endif
 
 # Check required variables are set for target build-all
 ifeq ($(MAKECMDGOALS), build-all)
+ifneq ($(APP_NAME),)
+$(error APP_NAME cannot be not set for target: build-all.)
+endif
 ifeq ($(PUBLISH), true)
 ifeq ($(DOCKER_USERNAME),)
 $(error DOCKER_USERNAME is not set. It is required when PUBLISH is true.)
