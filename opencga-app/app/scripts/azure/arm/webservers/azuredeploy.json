@@ -136,7 +136,7 @@
             "properties": {
                 "publicIPAllocationMethod": "Static",
                 "dnsSettings": {
-                    "domainNameLabel": "[parameters('publicDnsName')]"
+                    "domainNameLabel": "[variables('publicDnsName')]"
                 }
             }
         },
