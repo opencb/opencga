@@ -1,5 +1,4 @@
 opencga-app/app/scripts/docker/opencga-init/test
-build
 .vscode
 README.md
 LICENSE
