@@ -20,6 +20,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.GroupParams;
 import org.opencb.opencga.core.models.MemberParams;
 import org.opencb.opencga.core.models.acls.AclParams;
@@ -48,6 +49,10 @@ public class StudyCommandOptions {
     public GroupsUpdateCommandOptions groupsUpdateCommandOptions;
     public MemberGroupUpdateCommandOptions memberGroupUpdateCommandOptions;
     public AdminsGroupUpdateCommandOptions adminsGroupUpdateCommandOptions;
+
+    public VariableSetsCommandOptions variableSetsCommandOptions;
+    public VariableSetsUpdateCommandOptions variableSetsUpdateCommandOptions;
+    public VariablesUpdateCommandOptions variablesUpdateCommandOptions;
 
     public AclsCommandOptions aclsCommandOptions;
     public AclsUpdateCommandOptions aclsUpdateCommandOptions;
@@ -81,6 +86,10 @@ public class StudyCommandOptions {
         this.groupsUpdateCommandOptions = new GroupsUpdateCommandOptions();
         this.memberGroupUpdateCommandOptions = new MemberGroupUpdateCommandOptions();
         this.adminsGroupUpdateCommandOptions = new AdminsGroupUpdateCommandOptions();
+
+        this.variableSetsCommandOptions = new VariableSetsCommandOptions();
+        this.variableSetsUpdateCommandOptions = new VariableSetsUpdateCommandOptions();
+        this.variablesUpdateCommandOptions = new VariablesUpdateCommandOptions();
 
         this.aclsCommandOptions = new AclsCommandOptions();
         this.aclsUpdateCommandOptions = new AclsUpdateCommandOptions();
@@ -293,6 +302,37 @@ public class StudyCommandOptions {
 
         @Parameter(names = {"--action"}, description = "Action to be performed over users (ADD, REMOVE)", required = true, arity = 1)
         public MemberParams.Action action;
+    }
+
+    @Parameters(commandNames = {"variable-sets"}, commandDescription = "Return the variable sets of a study")
+    public class VariableSetsCommandOptions extends BaseStudyCommand {
+        @Parameter(names = {"--variable-set"}, description = "Id of the variable set to be retrieved. If no id is passed, it will fetch "
+                + "all the variable sets of the study.", arity = 1)
+        public String variableSet;
+    }
+
+    @Parameters(commandNames = {"variable-sets-update"}, commandDescription = "Create or remove a variable set")
+    public class VariableSetsUpdateCommandOptions extends BaseStudyCommand {
+        @Parameter(names = {"--action"}, description = "Action to be performed: ADD or REMOVE a variable set.", arity = 1)
+        public ParamUtils.BasicUpdateAction action;
+
+        @Parameter(names = {"--variable-set"}, description = "JSON file containing the variable set to be created or removed.",
+                required = true, arity = 1)
+        public String variableSet;
+    }
+
+    @Parameters(commandNames = {"variable-sets-variables-update"}, commandDescription = "Add or remove variables to a variable set")
+    public class VariablesUpdateCommandOptions extends BaseStudyCommand {
+
+        @Parameter(names = {"--action"}, description = "Action to be performed: ADD or REMOVE a variable.", arity = 1)
+        public ParamUtils.BasicUpdateAction action;
+
+        @Parameter(names = {"--variable-set"}, description = "Variable set id", required = true, arity = 1)
+        public String variableSet;
+
+        @Parameter(names = {"--variable"}, description = "JSON file containing the variable to be added or removed to the variable set.",
+                required = true, arity = 1)
+        public String variable;
     }
 
     @Parameters(commandNames = {"acl"}, commandDescription = "Return the acls set for the resource")

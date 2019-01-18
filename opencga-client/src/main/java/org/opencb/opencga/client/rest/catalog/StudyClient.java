@@ -22,10 +22,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Job;
-import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 
 import java.io.IOException;
@@ -121,5 +118,24 @@ public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
 
     public QueryResponse<Study> delete(String studyId, ObjectMap params) throws IOException {
         return execute(STUDY_URL, studyId, "delete", params, GET, Study.class);
+    }
+
+    public QueryResponse<VariableSet> getVariableSets(String studyId, Query query) throws IOException {
+        return execute(STUDY_URL, studyId, "variableSets", query, GET, VariableSet.class);
+    }
+
+    public QueryResponse<VariableSet> updateVariableSet(String studyId, Query query, ObjectMap variableSet) throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        String json = mapper.writeValueAsString(variableSet);
+        query.append("body", json);
+        return execute(STUDY_URL, studyId, "variableSets", "", "update", query, POST, VariableSet.class);
+    }
+
+    public QueryResponse<VariableSet> updateVariableSetVariable(String studyId, String variableSet, Query query, ObjectMap variable)
+            throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        String json = mapper.writeValueAsString(variable);
+        query.append("body", json);
+        return execute(STUDY_URL, studyId, "variableSets", variableSet, "variables/update", query, POST, VariableSet.class);
     }
 }

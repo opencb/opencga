@@ -17,6 +17,8 @@
 package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -27,10 +29,15 @@ import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecu
 import org.opencb.opencga.app.cli.main.options.StudyCommandOptions;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.VariableSet;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -105,6 +112,15 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "admins-update":
                 queryResponse = adminsUpdate();
+                break;
+            case "variable-sets":
+                queryResponse = variableSets();
+                break;
+            case "variable-sets-update":
+                queryResponse = variableSetUpdate();
+                break;
+            case "variable-sets-variables-update":
+                queryResponse = variableSetVariableUpdate();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -330,6 +346,70 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotNull("users", studiesCommandOptions.adminsGroupUpdateCommandOptions.users);
 
         return openCGAClient.getStudyClient().updateGroupAdmins(studiesCommandOptions.adminsGroupUpdateCommandOptions.study, params);
+    }
+
+    /************************************************* Variable set commands *********************************************************/
+
+    private QueryResponse<VariableSet> variableSets() throws CatalogException, IOException {
+        logger.debug("Get variable sets");
+        StudyCommandOptions.VariableSetsCommandOptions commandOptions = studiesCommandOptions.variableSetsCommandOptions;
+
+        commandOptions.study = getSingleValidStudy(commandOptions.study);
+
+        Query query = new Query();
+        query.putIfNotEmpty("id", commandOptions.variableSet);
+
+        return openCGAClient.getStudyClient().getVariableSets(commandOptions.study, query);
+    }
+
+    private QueryResponse<VariableSet> variableSetUpdate() throws CatalogException, IOException {
+        logger.debug("Update variable set");
+        StudyCommandOptions.VariableSetsUpdateCommandOptions commandOptions = studiesCommandOptions.variableSetsUpdateCommandOptions;
+
+        commandOptions.study = getSingleValidStudy(commandOptions.study);
+
+        Query query = new Query();
+        query.putIfNotNull("action", commandOptions.action);
+
+        // Load the variable set
+        ObjectMap variableSet = loadFile(commandOptions.variableSet);
+
+        return openCGAClient.getStudyClient().updateVariableSet(commandOptions.study, query, variableSet);
+    }
+
+    private QueryResponse<VariableSet> variableSetVariableUpdate() throws CatalogException, IOException {
+        logger.debug("Update variable");
+        StudyCommandOptions.VariablesUpdateCommandOptions commandOptions = studiesCommandOptions.variablesUpdateCommandOptions;
+
+        commandOptions.study = getSingleValidStudy(commandOptions.study);
+
+        Query query = new Query();
+        query.putIfNotNull("action", commandOptions.action);
+
+        // Load the variable
+        ObjectMap variable = loadFile(commandOptions.variable);
+
+        return openCGAClient.getStudyClient().updateVariableSetVariable(commandOptions.study, commandOptions.variableSet, query, variable);
+    }
+
+    private ObjectMap loadFile(String filePath) throws CatalogException {
+        File file = Paths.get(filePath).toFile();
+        if (!file.exists() || file.isDirectory()) {
+            throw new CatalogException("File " + filePath + " not found");
+        }
+        FileInputStream fileInputStream;
+        try {
+            fileInputStream = FileUtils.openInputStream(file);
+        } catch (IOException e) {
+            throw new CatalogException("Could not open file " + filePath + ". " + e.getMessage(), e);
+        }
+        ObjectMapper objectMapper = JacksonUtils.getDefaultObjectMapper();
+        try {
+            return objectMapper.readValue(fileInputStream, ObjectMap.class);
+        } catch (IOException e) {
+            throw new CatalogException("Could not parse file " + filePath + ". Is it a valid JSON file?. "
+                    + e.getMessage(), e);
+        }
     }
 
     /************************************************* Acl commands *********************************************************/

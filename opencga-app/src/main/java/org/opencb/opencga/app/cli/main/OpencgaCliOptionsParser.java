@@ -117,6 +117,10 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         studySubCommands.addCommand("admins-update", studyCommandOptions.adminsGroupUpdateCommandOptions);
         studySubCommands.addCommand("acl", studyCommandOptions.aclsCommandOptions);
         studySubCommands.addCommand("acl-update", studyCommandOptions.aclsUpdateCommandOptions);
+        studySubCommands.addCommand("variable-sets", studyCommandOptions.variableSetsCommandOptions);
+        studySubCommands.addCommand("variable-sets-update", studyCommandOptions.variableSetsUpdateCommandOptions);
+        studySubCommands.addCommand("variable-sets-variables-update", studyCommandOptions.variablesUpdateCommandOptions);
+        studySubCommands.addCommand("variable-sets-variables-update", studyCommandOptions.variablesUpdateCommandOptions);
 
         fileCommandOptions = new FileCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand("files", fileCommandOptions);
@@ -238,7 +242,6 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         variableSubCommands.addCommand("info", variableCommandOptions.infoCommandOptions);
         variableSubCommands.addCommand("search", variableCommandOptions.searchCommandOptions);
         variableSubCommands.addCommand("delete", variableCommandOptions.deleteCommandOptions);
-        variableSubCommands.addCommand("update", variableCommandOptions.updateCommandOptions);
         variableSubCommands.addCommand("field-add", variableCommandOptions.fieldAddCommandOptions);
         variableSubCommands.addCommand("field-delete", variableCommandOptions.fieldDeleteCommandOptions);
         variableSubCommands.addCommand("field-rename", variableCommandOptions.fieldRenameCommandOptions);
