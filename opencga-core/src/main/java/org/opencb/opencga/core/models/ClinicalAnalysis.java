@@ -60,7 +60,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     }
 
     public enum Type {
-        SINGLE, DUO, TRIO, FAMILY, AUTO, MULTISAMPLE
+        SINGLE, FAMILY, AUTOCOMPARATIVE, COHORT, SOMATIC_CANCER
     }
 
     // Todo: Think about a better place to have this enum
