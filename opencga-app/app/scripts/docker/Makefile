@@ -69,7 +69,6 @@ endif
 endif
 
 # Set defaults for optional variables
-$(info $(DOCKER_SERVER))
 ifneq ($(DOCKER_SERVER),)
 DOCKER_SERVER := $(DOCKER_SERVER)/
 DOCKER_SERVER_REF = $(DOCKER_SERVER)
