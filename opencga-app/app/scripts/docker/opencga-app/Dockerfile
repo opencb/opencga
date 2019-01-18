@@ -3,7 +3,6 @@ FROM opencga
 # Build args
 ARG TOMCAT_VERSION="8.5.35"
 ARG VERSION=""
-ARG WAR_NAME="opencga.war"
 ARG VCS_URL=""
 ARG VCS_REF=""
 ARG BUILD_DATE=""
@@ -33,7 +32,7 @@ rm -rf /opt/tomcat/webapps/ROOT && \
 chown -R 1001:1001 /opt/tomcat/
 
 # Copy opencga build to Tomcat server
-RUN cp /opt/opencga/${WAR_NAME} /opt/tomcat/webapps/opencga.war
+RUN cp /opt/opencga/*.war /opt/tomcat/webapps/opencga.war
 
 # Copy OpenCGA config to Tomcat
 COPY ./opencga-app/app/scripts/docker/opencga-app/opencga.xml /opt/tomcat/conf/Catalina/localhost/opencga.xml
