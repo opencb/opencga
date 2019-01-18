@@ -35,6 +35,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -748,6 +749,9 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiImplicitParam(name = QueryOptions.SORT, value = "Sort the results", dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = VariantField.SUMMARY, value = "Fast fetch of main variant parameters", dataType = "boolean", paramType = "query"),
 
+            // Interpretation filters
+//            @ApiImplicitParam(name = "disorder", value = "Disorder ID of the Individual or the Family", dataType = "string", paramType = "query"),
+
             // Variant filters
             @ApiImplicitParam(name = "id", value = ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "region", value = REGION_DESCR, dataType = "string", paramType = "query"),
@@ -821,7 +825,11 @@ public class InterpretationWSService extends AnalysisWSService {
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             Query query = getVariantQuery(queryOptions);
 
-            CustomAnalysis customAnalysis = new CustomAnalysis(query, configuration.getDataDir(), studyStr, sessionId);
+            String dataDir = configuration.getDataDir();
+            String opencgaHome = Paths.get(dataDir).getParent().toString();
+            System.out.println("opencgaHome = " + opencgaHome);
+
+            CustomAnalysis customAnalysis = new CustomAnalysis(query, studyStr, opencgaHome, new ObjectMap(), sessionId);
             AnalysisResult<org.opencb.biodata.models.clinical.interpretation.Interpretation> analysisResult;
             analysisResult = customAnalysis.execute();
 
