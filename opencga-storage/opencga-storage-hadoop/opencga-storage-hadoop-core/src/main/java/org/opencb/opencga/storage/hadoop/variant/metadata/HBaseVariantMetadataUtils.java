@@ -30,7 +30,7 @@ class HBaseVariantMetadataUtils {
     private static final String SAMPLE_NAME_INDEX_SEPARATOR = "_SIDX_";
     private static final String FILE_NAME_INDEX_SEPARATOR = "_FIDX_";
     private static final String COHORT_NAME_INDEX_SEPARATOR = "_CIDX_";
-    private static final String TASK_STATUS_INDEX_SEPARATOR = "_CIDX_";
+    private static final String TASK_STATUS_INDEX_SEPARATOR = "_TIDX_";
 
     private static final byte[] VALUE_COLUMN = Bytes.toBytes("value");
     private static final byte[] TYPE_COLUMN = Bytes.toBytes("type");
@@ -151,8 +151,8 @@ class HBaseVariantMetadataUtils {
         return getStudyResourceRowKey(studyId, COHORT_NAME_INDEX_SEPARATOR, cohortName);
     }
 
-    static byte[] getTaskStatusIndexRowKey(int studyId, BatchFileTask.Status status) {
-        return getStudyResourceRowKey(studyId, TASK_STATUS_INDEX_SEPARATOR, status.name());
+    static byte[] getTaskStatusIndexRowKey(int studyId, BatchFileTask.Status status, int taskId) {
+        return getStudyResourceRowKey(studyId, TASK_STATUS_INDEX_SEPARATOR, status.name() + "_" + taskId);
     }
 
     static Pair<Integer, Integer> parseVariantFileMetadataRowKey(byte[] rk) {

@@ -115,7 +115,7 @@ storageEngines:
       annotator: cellbase_rest
       annotator.cellbase.exclude: "expression"
       annotator.cellbase.use_cache: true
-      annotator.cellbase.imprecise_variants: false # Imprecise variants supported by cellbase (REST only)
+      annotator.cellbase.imprecise_variants: true # Imprecise variants supported by cellbase (REST only)
       species: ${OPENCGA.CLIENT.ORGANISM.SCIENTIFIC_NAME}
       assembly: ${OPENCGA.CLIENT.ORGANISM.ASSEMBLY}
       transform.batch.size: 200
@@ -158,7 +158,7 @@ storageEngines:
       annotator: cellbase_rest
       annotator.cellbase.exclude: "expression"
       annotator.cellbase.use_cache: true
-      annotator.cellbase.imprecise_variants: false # Imprecise variants supported by cellbase (REST only)
+      annotator.cellbase.imprecise_variants: true # Imprecise variants supported by cellbase (REST only)
       species: ${OPENCGA.CLIENT.ORGANISM.SCIENTIFIC_NAME}
       assembly: ${OPENCGA.CLIENT.ORGANISM.ASSEMBLY}
       #Plugin specific options

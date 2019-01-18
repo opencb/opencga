@@ -31,9 +31,10 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDriver;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
@@ -261,6 +262,7 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
         return getConf().get(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME, StringUtils.EMPTY);
     }
 
+    @Deprecated
     protected StudyConfiguration readStudyConfiguration() throws IOException {
         VariantStorageMetadataManager scm = getMetadataManager();
         int studyId = getStudyId();
@@ -269,6 +271,16 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
             throw new IllegalStateException("StudyConfiguration " + studyId + " not found! " + res.getResult().size());
         }
         return res.first();
+    }
+
+    protected StudyMetadata readStudyMetadata() throws IOException {
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
+        int studyId = getStudyId();
+        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(studyId);
+        if (studyMetadata == null) {
+            throw new IllegalStateException("StudyMetadata " + studyId + " not found!");
+        }
+        return studyMetadata;
     }
 
     protected VariantStorageMetadataManager getMetadataManager() throws IOException {

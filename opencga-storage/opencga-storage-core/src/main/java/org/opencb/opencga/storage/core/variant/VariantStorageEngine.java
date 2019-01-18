@@ -56,6 +56,7 @@ import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.local.FileStudyMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
+import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
@@ -525,25 +526,26 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
                 String studyName = options.getString(Options.STUDY.key());
                 QueryOptions statsOptions = new QueryOptions(options);
-                StudyConfiguration studyConfiguration =
-                        dbAdaptor.getMetadataManager().getStudyConfiguration(studyName, new QueryOptions()).first();
+                VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
+                StudyMetadata studyMetadata = metadataManager.getStudyMetadata(studyName);
 
                 List<Integer> fileIds = new ArrayList<>(files.size());
                 for (URI uri : files) {
                     String fileName = VariantReaderUtils.getOriginalFromTransformedFile(uri);
-                    fileIds.add(studyConfiguration.getFileIds().get(fileName));
+                    fileIds.add(metadataManager.getFileId(studyMetadata.getId(), fileName));
                 }
-                Integer defaultCohortId = studyConfiguration.getCohortIds().get(StudyEntry.DEFAULT_COHORT);
-                if (studyConfiguration.getCalculatedStats().contains(defaultCohortId)) {
+                Integer defaultCohortId = metadataManager.getCohortId(studyMetadata.getId(), StudyEntry.DEFAULT_COHORT);
+                CohortMetadata defaultCohort = metadataManager.getCohortMetadata(studyMetadata.getId(), defaultCohortId);
+                if (defaultCohort.isReady()) {
                     logger.debug("Cohort '{}':{} was already calculated. Just update stats.", StudyEntry.DEFAULT_COHORT, defaultCohortId);
                     statsOptions.append(Options.UPDATE_STATS.key(), true);
                 }
                 URI statsOutputUri = output.resolve(VariantStoragePipeline
-                        .buildFilename(studyConfiguration.getStudyName(), fileIds.get(0)) + "." + TimeUtils.getTime());
+                        .buildFilename(studyMetadata.getStudyName(), fileIds.get(0)) + "." + TimeUtils.getTime());
                 statsOptions.put(DefaultVariantStatisticsManager.OUTPUT, statsOutputUri.toString());
 
                 List<String> cohorts = Collections.singletonList(StudyEntry.DEFAULT_COHORT);
-                calculateStats(studyConfiguration.getStudyName(), cohorts, statsOptions);
+                calculateStats(studyMetadata.getStudyName(), cohorts, statsOptions);
             } catch (Exception e) {
                 throw new StoragePipelineException("Can't calculate stats.", e, results);
             }
@@ -1319,7 +1321,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                         .stream()
                         .flatMap(e -> e.getValue()
                                 .stream()
-                                .map(selectVariantElements.getStudyConfigurations().get(e.getKey()).getSampleIds().inverse()::get))
+                                .map(s -> metadataManager.getSampleName(e.getKey(), s)))
                         .collect(Collectors.toList());
                 if (includeSample.isEmpty()) {
                     query.put(INCLUDE_SAMPLE.key(), NONE);
@@ -1333,7 +1335,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                         .stream()
                         .flatMap(e -> e.getValue()
                                 .stream()
-                                .map(selectVariantElements.getStudyConfigurations().get(e.getKey()).getFileIds().inverse()::get))
+                                .map(f -> metadataManager.getFileName(e.getKey(), f)))
                         .collect(Collectors.toList());
                 if (includeFile.isEmpty()) {
                     query.put(INCLUDE_FILE.key(), NONE);

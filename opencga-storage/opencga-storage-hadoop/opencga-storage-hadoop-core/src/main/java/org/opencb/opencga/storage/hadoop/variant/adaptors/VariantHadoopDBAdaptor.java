@@ -565,11 +565,18 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     /**
      * Ensure that all the annotation fields exist are defined.
      *
-     * @param studyConfiguration StudyConfiguration where the cohorts are defined
+     * @param studyMetadata StudyMetadata where the cohorts are defined
      * @throws SQLException is there is any error with Phoenix
      */
-    public void updateStatsColumns(StudyConfiguration studyConfiguration) throws SQLException {
-        phoenixHelper.updateStatsColumns(getJdbcConnection(), variantTable, studyConfiguration);
+    public void updateStatsColumns(StudyMetadata studyMetadata) throws SQLException {
+        List<Integer> cohortIds = new ArrayList<>();
+        getMetadataManager().cohortIterator(studyMetadata.getId())
+                .forEachRemaining(cohortMetadata -> {
+                    if (cohortMetadata.isReady()) {
+                        cohortIds.add(cohortMetadata.getId());
+                    }
+                });
+        phoenixHelper.updateStatsColumns(getJdbcConnection(), variantTable, studyMetadata.getId(), cohortIds);
     }
 
     /**

@@ -461,8 +461,22 @@ public final class VariantQueryUtils {
             includeFields.removeAll(VariantField.STUDIES_SAMPLES_DATA.getChildren());
         }
 
+        Map<Integer, List<Integer>> cohortIds = new HashMap<>();
+        if (includeFields.contains(VariantField.STUDIES_STATS)) {
+            for (Integer studyId : includeStudies) {
+                List<Integer> cohorts = new LinkedList<>();
+                metadataManager.cohortIterator(studyId).forEachRemaining(cohort -> {
+                    if (cohort.isReady()/* || cohort.isInvalid()*/) {
+                        cohorts.add(cohort.getId());
+                    }
+                });
+                cohortIds.put(studyId, cohorts);
+            }
+        }
 
-        return new VariantQueryFields(includeFields, includeStudies, studyMetadata, sampleIds, fileIds);
+
+
+        return new VariantQueryFields(includeFields, includeStudies, studyMetadata, sampleIds, fileIds, cohortIds);
     }
 
     public static String[] splitStudyResource(String value) {
@@ -637,8 +651,14 @@ public final class VariantQueryUtils {
             } else if (returnAllFiles) {
                 fileIds = new ArrayList<>(metadataManager.getIndexedFiles(studyId));
             } else if (includeSamplesList != null && !includeSamplesList.isEmpty()) {
-                List<Integer> sampleIds = includeSamplesList.stream()
-                        .map(sample -> metadataManager.getSampleId(studyId, sample)).collect(Collectors.toList());
+                List<Integer> sampleIds = new ArrayList<>();
+                for (String sample : includeSamplesList) {
+                    Integer sampleId = metadataManager.getSampleId(studyId, sample);
+                    if (sampleId == null) {
+                        throw VariantQueryException.sampleNotFound(sample, sm.getName());
+                    }
+                    sampleIds.add(sampleId);
+                }
                 Set<Integer> fileSet = metadataManager.getFileIdsFromSampleIds(studyId, sampleIds);
                 fileIds = new ArrayList<>(fileSet);
             } else {

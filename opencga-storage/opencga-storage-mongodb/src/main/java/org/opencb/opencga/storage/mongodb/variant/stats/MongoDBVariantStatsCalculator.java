@@ -6,7 +6,8 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.stats.VariantStatsCalculator;
 import org.opencb.commons.run.Task;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.mongodb.variant.converters.AbstractDocumentConverter;
@@ -14,6 +15,7 @@ import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVari
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.DEFAULT_GENOTYPE;
 
@@ -24,20 +26,22 @@ import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEn
  */
 public class MongoDBVariantStatsCalculator extends AbstractDocumentConverter implements Task<Document, VariantStatsWrapper> {
 
-    private StudyConfiguration studyConfiguration;
+    private StudyMetadata studyMetadata;
 
-    private Collection<Integer> cohortIds;
+    private Map<Integer, CohortMetadata> cohorts;
+    private List<Integer> cohortIds;
     private String unknownGenotype;
     private String defaultGenotype;
     private final DocumentToVariantConverter variantConverter;
 
-    public MongoDBVariantStatsCalculator(StudyConfiguration studyConfiguration, Collection<Integer> cohortIds, String unknownGenotype) {
-        this.studyConfiguration = studyConfiguration;
-        this.cohortIds = cohortIds;
+    public MongoDBVariantStatsCalculator(StudyMetadata studyMetadata, Collection<CohortMetadata> cohorts, String unknownGenotype) {
+        this.studyMetadata = studyMetadata;
+        this.cohortIds = new ArrayList<>(cohorts.size());
+        this.cohorts = cohorts.stream().collect(Collectors.toMap(CohortMetadata::getId, c -> c));
         this.unknownGenotype = unknownGenotype;
 
 
-        List<String> defaultGenotypes = studyConfiguration.getAttributes().getAsStringList(DEFAULT_GENOTYPE.key());
+        List<String> defaultGenotypes = studyMetadata.getAttributes().getAsStringList(DEFAULT_GENOTYPE.key());
 
         defaultGenotype = defaultGenotypes.isEmpty() ? null : defaultGenotypes.get(0);
         if (GenotypeClass.UNKNOWN_GENOTYPE.equals(defaultGenotype)) {
@@ -64,7 +68,7 @@ public class MongoDBVariantStatsCalculator extends AbstractDocumentConverter imp
         List<Document> studies = getList(document, DocumentToVariantConverter.STUDIES_FIELD);
         for (Document study : studies) {
             Integer sid = study.getInteger(DocumentToStudyVariantEntryConverter.STUDYID_FIELD);
-            if (studyConfiguration.getStudyId() == sid) {
+            if (studyMetadata.getStudyId() == sid) {
                 statsWrapper = calculateStats(variant, study);
                 break;
             }
@@ -86,8 +90,8 @@ public class MongoDBVariantStatsCalculator extends AbstractDocumentConverter imp
         for (Integer cohortId : cohortIds) {
             Map<String, Integer> gtStrCount = new HashMap<>();
 
-            int unknownGenotypes = studyConfiguration.getCohorts().get(cohortId).size();
-            for (Integer sampleId : studyConfiguration.getCohorts().get(cohortId)) {
+            int unknownGenotypes = cohorts.get(cohortId).getSamples().size();
+            for (Integer sampleId : cohorts.get(cohortId).getSamples()) {
                 for (Map.Entry<String, Set<Integer>> entry : gtsMap.entrySet()) {
                     String gtStr = entry.getKey();
                     // If any ?/? is present in the DB, must be read as "unknownGenotype", usually "./."
@@ -110,7 +114,7 @@ public class MongoDBVariantStatsCalculator extends AbstractDocumentConverter imp
                     (key, value) -> value == null ? count : value + count));
 
             VariantStats stats = VariantStatsCalculator.calculate(variant, gtCountMap);
-            statsWrapper.getCohortStats().put(studyConfiguration.getCohortIds().inverse().get(cohortId), stats);
+            statsWrapper.getCohortStats().put(cohorts.get(cohortId).getName(), stats);
         }
 
         return statsWrapper;

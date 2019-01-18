@@ -46,7 +46,7 @@ public class VariantExporterTest extends VariantStorageBaseTest implements Dummy
 
     @Before
     public void setUp() throws Exception {
-        runDefaultETL(inputUri, variantStorageEngine, newStudyConfiguration(),
+        runDefaultETL(inputUri, variantStorageEngine, newStudyMetadata(),
                 new QueryOptions()
 //                        .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "GL,DS")
                         .append(VariantStorageEngine.Options.ANNOTATE.key(), false));

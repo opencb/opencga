@@ -39,7 +39,8 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -83,7 +84,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     protected static Set<String> FORMAT;
     protected static boolean fileIndexed;
     protected static VariantFileMetadata fileMetadata;
-    protected static StudyConfiguration studyConfiguration;
+    protected static StudyMetadata studyMetadata;
     protected VariantDBAdaptor dbAdaptor;
     protected QueryOptions options;
     protected QueryResult<Variant> queryResult;
@@ -95,6 +96,15 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     private String het1;
     private String het2;
     protected int fileId = 1;
+    protected static int na19600;
+    protected static int na19660;
+    protected static int na19661;
+    protected static int na19685;
+
+    protected List<String> sampleNames = Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685");
+    protected Set<String> cohorts = new HashSet<>(Arrays.asList("cohort1", "cohort2"));
+
+
 
     @BeforeClass
     public static void beforeClass() throws IOException {
@@ -106,8 +116,9 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     public void before() throws Exception {
 
         dbAdaptor = getVariantStorageEngine().getDBAdaptor();
+        VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
         if (!fileIndexed) {
-            studyConfiguration = newStudyConfiguration();
+            studyMetadata = newStudyMetadata();
 //            variantSource = new VariantSource(smallInputUri.getPath(), "testAlias", "testStudy", "Study for testing purposes");
             clearDB(DB_NAME);
             ObjectMap params = new ObjectMap(VariantStorageEngine.Options.STUDY_TYPE.key(), SampleSetType.FAMILY)
@@ -123,12 +134,16 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             }
             FORMAT.addAll(params.getAsStringList(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key()));
 
-            StoragePipelineResult etlResult = runDefaultETL(smallInputUri, getVariantStorageEngine(), studyConfiguration, params);
+            StoragePipelineResult etlResult = runDefaultETL(smallInputUri, getVariantStorageEngine(), studyMetadata, params);
             fileMetadata = variantStorageEngine.getVariantReaderUtils().readVariantFileMetadata(Paths.get(etlResult.getTransformResult().getPath()).toUri());
             NUM_VARIANTS = getExpectedNumLoadedVariants(fileMetadata);
             fileIndexed = true;
-            Integer indexedFileId = studyConfiguration.getIndexedFiles().iterator().next();
+            Integer indexedFileId = metadataManager.getIndexedFiles(studyMetadata.getId()).iterator().next();
 
+            na19600 = metadataManager.getSampleId(studyMetadata.getId(), "NA19600");
+            na19660 = metadataManager.getSampleId(studyMetadata.getId(), "NA19660");
+            na19661 = metadataManager.getSampleId(studyMetadata.getId(), "NA19661");
+            na19685 = metadataManager.getSampleId(studyMetadata.getId(), "NA19685");
 
             //Calculate stats
             if (getOtherParams().getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key(), true)) {
@@ -136,29 +151,24 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
                         .append(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100)
                         .append(DefaultVariantStatisticsManager.OUTPUT, outputUri)
                         .append(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME, "cohort1.cohort2.stats");
-                Iterator<Integer> iterator = studyConfiguration.getSamplesInFiles().get(indexedFileId).iterator();
+                Iterator<Integer> iterator = metadataManager.getFileMetadata(studyMetadata.getId(), indexedFileId).getSamples().iterator();
 
                 /** Create cohorts **/
-                HashSet<Integer> cohort1 = new HashSet<>();
-                cohort1.add(iterator.next());
-                cohort1.add(iterator.next());
+                HashSet<String> cohort1 = new HashSet<>();
+                cohort1.add(metadataManager.getSampleName(studyMetadata.getId(), iterator.next()));
+                cohort1.add(metadataManager.getSampleName(studyMetadata.getId(), iterator.next()));
 
-                HashSet<Integer> cohort2 = new HashSet<>();
-                cohort2.add(iterator.next());
-                cohort2.add(iterator.next());
+                HashSet<String> cohort2 = new HashSet<>();
+                cohort2.add(metadataManager.getSampleName(studyMetadata.getId(), iterator.next()));
+                cohort2.add(metadataManager.getSampleName(studyMetadata.getId(), iterator.next()));
 
-                Map<String, Integer> cohortIds = new HashMap<>();
-                cohortIds.put("cohort1", 10);
-                cohortIds.put("cohort2", 11);
+                Map<String, Set<String>> cohorts = new HashMap<>();
+                cohorts.put("cohort1", cohort1);
+                cohorts.put("cohort2", cohort2);
+                metadataManager.registerCohorts(studyMetadata.getName(), cohorts);
 
-                studyConfiguration.getCohortIds().putAll(cohortIds);
-                studyConfiguration.getCohorts().put(10, cohort1);
-                studyConfiguration.getCohorts().put(11, cohort2);
-
-                dbAdaptor.getMetadataManager().updateStudyConfiguration(studyConfiguration, QueryOptions.empty());
-
-                variantStorageEngine.calculateStats(studyConfiguration.getStudyName(),
-                        new ArrayList<>(cohortIds.keySet()), options);
+                variantStorageEngine.calculateStats(studyMetadata.getStudyName(),
+                        new ArrayList<>(cohorts.keySet()), options);
 
             }
             if (params.getBoolean(VariantStorageEngine.Options.ANNOTATE.key())) {
@@ -1380,11 +1390,11 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     @Test
     public void testGetAllVariants_studies() {
 
-        Query query = new Query(STUDY.key(), studyConfiguration.getStudyName());
+        Query query = new Query(STUDY.key(), studyMetadata.getStudyName());
         long numResults = count(query);
         assertEquals(allVariants.getNumResults(), numResults);
 
-        query = new Query(STUDY.key(), studyConfiguration.getStudyId());
+        query = new Query(STUDY.key(), studyMetadata.getStudyId());
         numResults = count(query);
         assertEquals(allVariants.getNumResults(), numResults);
 
@@ -1396,7 +1406,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 //        numResults = count(query);
 //        assertEquals(0, numResults);
 
-        Query query = new Query(STUDY.key(), NOT + studyConfiguration.getStudyName());
+        Query query = new Query(STUDY.key(), NOT + studyMetadata.getStudyName());
         long numResults = count(query);
         assertEquals(0, numResults);
 
@@ -1409,11 +1419,11 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         long numResults = count(query);
         assertEquals(NUM_VARIANTS, numResults);
 
-        query = new Query(FILE.key(), fileId).append(STUDY.key(), studyConfiguration.getStudyId());
+        query = new Query(FILE.key(), fileId).append(STUDY.key(), studyMetadata.getStudyId());
         numResults = count(query);
         assertEquals(NUM_VARIANTS, numResults);
 
-        query = new Query().append(STUDY.key(), studyConfiguration.getStudyId());
+        query = new Query().append(STUDY.key(), studyMetadata.getStudyId());
         numResults = count(query);
         assertEquals(NUM_VARIANTS, numResults);
 
@@ -1421,7 +1431,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     @Test
     public void testGetAllVariants_fileNotFound() {
-        VariantQueryException e = VariantQueryException.missingStudyForFile("-1", Collections.singletonList(studyConfiguration.getStudyName()));
+        VariantQueryException e = VariantQueryException.missingStudyForFile("-1", Collections.singletonList(studyMetadata.getStudyName()));
         thrown.expectMessage(e.getMessage());
         thrown.expect(e.getClass());
         count(new Query(FILE.key(), -1));
@@ -1439,7 +1449,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         assertEquals(0, count(query).longValue());
 
         // FILTER+STUDY
-        query = new Query(STUDY.key(), studyConfiguration.getStudyId()).append(FILTER.key(), "PASS");
+        query = new Query(STUDY.key(), studyMetadata.getStudyId()).append(FILTER.key(), "PASS");
         numResults = count(query);
         assertEquals(NUM_VARIANTS, numResults);
 
@@ -1462,7 +1472,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         assertEquals(0, count(query).longValue());
 
         // FILTER+FILE+STUDY
-        query = new Query(FILE.key(), fileId).append(STUDY.key(), studyConfiguration.getStudyId()).append(FILTER.key(), "PASS");
+        query = new Query(FILE.key(), fileId).append(STUDY.key(), studyMetadata.getStudyId()).append(FILTER.key(), "PASS");
         numResults = count(query);
         assertEquals(NUM_VARIANTS, numResults);
 
@@ -1492,13 +1502,13 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         VariantQueryResult<Variant> queryResult = query(query, options);
         List<String> samplesName;
         if (returnedSamples == null || returnedSamples.equals(VariantQueryUtils.ALL)) {
-            samplesName = new ArrayList<>(StudyConfiguration.getSortedIndexedSamplesPosition(studyConfiguration).keySet());
+            samplesName = this.sampleNames;
         } else if (returnedSamples.equals(VariantQueryUtils.NONE)) {
             samplesName = Collections.emptyList();
         } else {
             samplesName = query.getAsStringList(VariantQueryParam.INCLUDE_SAMPLE.key());
         }
-        Map<String, List<String>> expectedSamples = Collections.singletonMap(studyConfiguration.getStudyName(), samplesName);
+        Map<String, List<String>> expectedSamples = Collections.singletonMap(studyMetadata.getStudyName(), samplesName);
 
         Iterator<Variant> it_1 = allVariants.getResult().iterator();
         Iterator<Variant> it_2 = queryResult.getResult().iterator();
@@ -1515,17 +1525,17 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             assertEquals(expectedSamples, queryResult.getSamples());
 
             if (samplesPosition1 == null) {
-                samplesPosition1 = variant1.getStudy(studyConfiguration.getStudyName()).getSamplesPosition();
+                samplesPosition1 = variant1.getStudy(studyMetadata.getStudyName()).getSamplesPosition();
             }
             if (samplesPosition2 == null) {
-                samplesPosition2 = variant2.getStudy(studyConfiguration.getStudyName()).getSamplesPosition();
+                samplesPosition2 = variant2.getStudy(studyMetadata.getStudyName()).getSamplesPosition();
                 assertEquals(samplesName, new ArrayList<>(samplesPosition2.keySet()));
             }
-            assertSame(samplesPosition1, variant1.getStudy(studyConfiguration.getStudyName()).getSamplesPosition());
-            assertSame(samplesPosition2, variant2.getStudy(studyConfiguration.getStudyName()).getSamplesPosition());
+            assertSame(samplesPosition1, variant1.getStudy(studyMetadata.getStudyName()).getSamplesPosition());
+            assertSame(samplesPosition2, variant2.getStudy(studyMetadata.getStudyName()).getSamplesPosition());
             for (String sampleName : samplesName) {
-                String gt1 = variant1.getStudy(studyConfiguration.getStudyName()).getSampleData(sampleName, "GT");
-                String gt2 = variant2.getStudy(studyConfiguration.getStudyName()).getSampleData(sampleName, "GT");
+                String gt1 = variant1.getStudy(studyMetadata.getStudyName()).getSampleData(sampleName, "GT");
+                String gt2 = variant2.getStudy(studyMetadata.getStudyName()).getSampleData(sampleName, "GT");
                 assertEquals(sampleName + " " + variant1.getChromosome() + ":" + variant1.getStart(), gt1, gt2);
             }
         }
@@ -1540,16 +1550,14 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             numVariants++;
             StudyEntry entry = variant.getStudiesMap().entrySet().iterator().next().getValue();
 //            assertEquals("6", entry.getFileId());
-            assertEquals(studyConfiguration.getStudyName(), entry.getStudyId());
-            assertEquals(studyConfiguration.getSampleIds().keySet(), entry.getSamplesName());
+            assertEquals(studyMetadata.getStudyName(), entry.getStudyId());
+            assertEquals(sampleNames, new ArrayList<>(entry.getSamplesName()));
         }
         assertEquals(NUM_VARIANTS, numVariants);
     }
 
     @Test
     public void testGetAllVariants_genotypes() {
-        Integer na19600 = studyConfiguration.getSampleIds().get("NA19600");
-        Integer na19685 = studyConfiguration.getSampleIds().get("NA19685");
 
         Query query = new Query(GENOTYPE.key(), na19600 + IS + homAlt);
         queryResult = query(query, new QueryOptions());
@@ -1616,8 +1624,6 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     @Test
     public void testGetAllVariants_negatedGenotypes() {
         Query query;
-        Integer na19600 = studyConfiguration.getSampleIds().get("NA19600");
-        Integer na19685 = studyConfiguration.getSampleIds().get("NA19685");
 
         QueryResult<Variant> allVariants = query(new Query(INCLUDE_SAMPLE.key(), "NA19600"), new QueryOptions());
         //Get all variants with not 1|1 for na19600
@@ -1648,7 +1654,6 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     @Test
     public void testGetAllVariants_negatedGenotypesMixed() {
         Query query;
-        Integer na19600 = studyConfiguration.getSampleIds().get("NA19600");
 
         query = new Query(GENOTYPE.key(), na19600 + IS + NOT + homRef + OR + het1)
                 .append(INCLUDE_SAMPLE.key(), ALL);
@@ -1671,7 +1676,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         queryResult = query(query, new QueryOptions());
         assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withSampleData("NA19685", "GT", containsString("1")))));
 
-        query = new Query(STUDY.key(), studyConfiguration.getStudyName()).append(SAMPLE.key(), "NA19685");
+        query = new Query(STUDY.key(), studyMetadata.getStudyName()).append(SAMPLE.key(), "NA19685");
         queryResult = query(query, new QueryOptions());
         assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withSampleData("NA19685", "GT", containsString("1")))));
 
@@ -1838,7 +1843,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     @Test
     public void testGetAllVariants_maf_cohortNotFound() throws Exception {
-        VariantQueryException exception = VariantQueryException.cohortNotFound("cohort3", studyConfiguration.getStudyId(), studyConfiguration.getCohortIds().keySet());
+        VariantQueryException exception = VariantQueryException.cohortNotFound("cohort3", studyMetadata.getStudyId(), cohorts);
         thrown.expect(instanceOf(exception.getClass()));
         thrown.expectCause(is(exception.getCause()));
         query(new Query(STATS_MAF.key(), STUDY_NAME + ":cohort3>0.2"), null);
@@ -1884,7 +1889,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     @Test
     public void testGetAllVariants_cohorts_fail1() throws Exception {
-        VariantQueryException expected = VariantQueryException.cohortNotFound("cohort5_dont_exists", 1, studyConfiguration.getCohortIds().keySet());
+        VariantQueryException expected = VariantQueryException.cohortNotFound("cohort5_dont_exists", 1, cohorts);
         thrown.expect(expected.getClass());
         thrown.expectMessage(expected.getMessage());
         queryResult = query(new Query(STUDY.key(), 1)

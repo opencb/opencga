@@ -107,10 +107,10 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
             try {
                 if (!fileIndexed) {
                     VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
-                    studyConfiguration = dbAdaptor.getMetadataManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
-                    studyConfiguration.getAttributes().put(MISSING_GENOTYPES_UPDATED, true);
-                    dbAdaptor.getMetadataManager().updateStudyConfiguration(studyConfiguration, null);
-                    VariantHbaseTestUtils.printVariants(studyConfiguration, dbAdaptor, newOutputUri());
+                    studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(studyMetadata.getId());
+                    studyMetadata.getAttributes().put(MISSING_GENOTYPES_UPDATED, true);
+                    dbAdaptor.getMetadataManager().updateStudyMetadata(studyMetadata);
+                    VariantHbaseTestUtils.printVariants(studyMetadata, dbAdaptor, newOutputUri());
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -232,7 +232,7 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     @Test
     public void testArchiveIterator() {
         int count = 0;
-        Query query = new Query(VariantQueryParam.STUDY.key(), studyConfiguration.getStudyId())
+        Query query = new Query(VariantQueryParam.STUDY.key(), studyMetadata.getStudyId())
                 .append(VariantQueryParam.FILE.key(), UriUtils.fileName(smallInputUri));
 
         for (VariantDBIterator iterator = dbAdaptor.iterator(query, new QueryOptions("archive", true)); iterator.hasNext(); ) {

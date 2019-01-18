@@ -81,11 +81,11 @@ public class VariantTableStatsDriver extends AbstractVariantsTableDriver {
         int studyId = getHelper().getStudyId();
         long lock = getMetadataManager().lockStudy(studyId);
         StudyConfiguration sc = null;
+        final Integer defaultCohortId;
         try {
             sc = readStudyConfiguration();
             BiMap<String, Integer> indexedSamples = StudyConfiguration.getIndexedSamples(sc);
 
-            final Integer defaultCohortId;
             if (sc.getCohortIds().containsKey(defaultCohortName)) { //Check if "defaultCohort" exists
                 defaultCohortId = sc.getCohortIds().get(defaultCohortName);
                 if (sc.getCalculatedStats().contains(defaultCohortId)) { //Check if "defaultCohort"
@@ -107,7 +107,7 @@ public class VariantTableStatsDriver extends AbstractVariantsTableDriver {
         // update PHOENIX definition with statistic columns
         VariantPhoenixHelper variantPhoenixHelper = new VariantPhoenixHelper(getHelper());
         try (Connection connection = variantPhoenixHelper.newJdbcConnection()) {
-            variantPhoenixHelper.updateStatsColumns(connection, variantTable, sc);
+            variantPhoenixHelper.updateStatsColumns(connection, variantTable, sc.getId(), Collections.singletonList(defaultCohortId));
         } catch (SQLException | ClassNotFoundException e) {
             logger.error("Problems updating PHOENIX table!!!", e);
             throw new IllegalStateException("Problems updating PHOENIX table", e);

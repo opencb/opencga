@@ -11,7 +11,8 @@ import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.json.JsonSerializerTask;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
@@ -23,7 +24,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 
 /**
  * Created on 18/04/18.
@@ -38,12 +38,12 @@ public class MongoDBVariantStatisticsManager extends DefaultVariantStatisticsMan
 
     @Override
     public URI createStats(VariantDBAdaptor variantDBAdaptor, URI output, Map<String, Set<String>> cohorts,
-                           Map<String, Integer> cohortIdsMap, StudyConfiguration studyConfiguration, QueryOptions options)
+                           Map<String, Integer> cohortIdsMap, StudyMetadata studyMetadata, QueryOptions options)
             throws IOException, StorageEngineException {
 
         // This direct stats calculator does not work for aggregated studies.
-        if (studyConfiguration.isAggregated()) {
-            return super.createStats(variantDBAdaptor, output, cohorts, cohortIdsMap, studyConfiguration, options);
+        if (studyMetadata.isAggregated()) {
+            return super.createStats(variantDBAdaptor, output, cohorts, cohortIdsMap, studyMetadata, options);
         }
         if (options == null) {
             options = new QueryOptions();
@@ -59,14 +59,14 @@ public class MongoDBVariantStatisticsManager extends DefaultVariantStatisticsMan
             cohorts = new LinkedHashMap<>();
         }
 
-        studyConfiguration = preCalculateStats(cohorts, studyConfiguration, overwrite, updateStats, options);
-        overwrite = checkOverwrite(cohorts, studyConfiguration, overwrite);
+        preCalculateStats(variantDBAdaptor.getMetadataManager(), studyMetadata, cohorts, overwrite, updateStats, options);
+        overwrite = checkOverwrite(variantDBAdaptor.getMetadataManager(), studyMetadata, cohorts, overwrite);
 
-//        VariantSourceStats variantSourceStats = new VariantSourceStats(/*FILE_ID*/, Integer.toString(studyConfiguration.getStudyId()));
+//        VariantSourceStats variantSourceStats = new VariantSourceStats(/*FILE_ID*/, Integer.toString(studyMetadata.getStudyId()));
 
         // reader, tasks and writer
         Query readerQuery = VariantStatisticsManager.buildInputQuery(variantDBAdaptor.getMetadataManager(),
-                studyConfiguration, cohorts.keySet(), overwrite, updateStats, options);
+                studyMetadata, cohorts.keySet(), overwrite, updateStats, options);
         logger.info("ReaderQuery: " + readerQuery.toJson());
         QueryOptions readerOptions = VariantStatisticsManager.buildIncludeExclude().append(QueryOptions.SORT, true);
         logger.info("ReaderQueryOptions: " + readerOptions.toJson());
@@ -82,11 +82,15 @@ public class MongoDBVariantStatisticsManager extends DefaultVariantStatisticsMan
             };
 
             // tasks
-            List<Integer> cohortIds = cohorts.keySet().stream().map(studyConfiguration.getCohortIds()::get).collect(Collectors.toList());
+            List<Integer> cohortIds = variantDBAdaptor.getMetadataManager().getCohortIds(studyMetadata.getId(), cohorts.keySet());
+            List<CohortMetadata> cohortsMetadata = new ArrayList<>(cohortIds.size());
+            for (Integer cohortId : cohortIds) {
+                cohortsMetadata.add(variantDBAdaptor.getMetadataManager().getCohortMetadata(studyMetadata.getId(), cohortId));
+            }
             List<Task<Document, String>> tasks = new ArrayList<>(numTasks);
             ProgressLogger progressLogger = buildCreateStatsProgressLogger(variantDBAdaptor, readerQuery, options);
             for (int i = 0; i < numTasks; i++) {
-                tasks.add(new MongoDBVariantStatsCalculator(studyConfiguration, cohortIds, "./.")
+                tasks.add(new MongoDBVariantStatsCalculator(studyMetadata, cohortsMetadata, "./.")
                         .then((Task<VariantStatsWrapper, VariantStatsWrapper>) batch -> {
                             progressLogger.increment(batch.size(), () -> ", up to position "
                                     + batch.get(batch.size() - 1).getChromosome()
@@ -119,7 +123,7 @@ public class MongoDBVariantStatisticsManager extends DefaultVariantStatisticsMan
 //                outputSourceStream.write(sourceWriter.writeValueAsBytes(variantSourceStats));
 //            }
 
-            variantDBAdaptor.getMetadataManager().updateStudyConfiguration(studyConfiguration, options);
+//            variantDBAdaptor.getMetadataManager().updateStudyMetadata(studyMetadata, options);
 
             return output;
         }

@@ -38,7 +38,7 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
     @Test
     public void testChangeAnnotator() throws Exception {
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
-        runDefaultETL(smallInputUri, variantStorageEngine, newStudyConfiguration(),
+        runDefaultETL(smallInputUri, variantStorageEngine, newStudyMetadata(),
                 new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), false));
 
         variantStorageEngine.getOptions()
@@ -61,7 +61,7 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
     @Test
     public void testChangeAnnotatorFail() throws Exception {
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
-        runDefaultETL(smallInputUri, variantStorageEngine, newStudyConfiguration(),
+        runDefaultETL(smallInputUri, variantStorageEngine, newStudyMetadata(),
                 new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), false));
 
         variantStorageEngine.getOptions()
@@ -95,7 +95,7 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
     public void testMultiAnnotations() throws Exception {
 
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
-        runDefaultETL(smallInputUri, variantStorageEngine, newStudyConfiguration(),
+        runDefaultETL(smallInputUri, variantStorageEngine, newStudyMetadata(),
                 new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), false));
 
         variantStorageEngine.getOptions()

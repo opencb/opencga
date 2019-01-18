@@ -568,7 +568,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         updateFileMetadata(studyId, fileMetadata);
     }
 
-    public Integer getFileId(int studyId, String fileName) {
+    private Integer getFileId(int studyId, String fileName) {
         return studyMetadataDBAdaptor.getFileId(studyId, fileName);
     }
 
@@ -653,7 +653,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return studyMetadataDBAdaptor.sampleMetadataIterator(studyId);
     }
 
-    public Integer getSampleId(int studyId, String sampleName) {
+    private Integer getSampleId(int studyId, String sampleName) {
         return studyMetadataDBAdaptor.getSampleId(studyId, sampleName);
     }
 
@@ -715,7 +715,10 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             List<Integer> indexedSamplesId = getIndexedSamples(sm.getId());
             for (Object includeSampleObj : includeSamples) {
                 Integer sampleId = getSampleId(sm.getId(), includeSampleObj, false);
-                String includeSample = getSampleMetadata(sm.getId(), sampleId).getName();
+                if (sampleId == null) {
+                    throw VariantQueryException.sampleNotFound(includeSampleObj, sm.getName());
+                }
+                String includeSample = getSampleName(sm.getId(), sampleId);
 
                 if (!samplesPosition.containsKey(includeSample)) {
                     if (indexedSamplesId.contains(sampleId)) {
@@ -727,7 +730,8 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return samplesPosition;
     }
 
-    public CohortMetadata getCohortMetadata(int studyId, int cohortId) {
+    public CohortMetadata getCohortMetadata(int studyId, Object cohort) {
+        Integer cohortId = getCohortId(studyId, cohort, false);
         return studyMetadataDBAdaptor.getCohortMetadata(studyId, cohortId, null);
     }
 
@@ -735,17 +739,27 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         studyMetadataDBAdaptor.updateCohortMetadata(studyId, cohort, null);
     }
 
+    public <E extends Exception> void updateCohortMetadata(int studyId, Object cohort, UpdateFunction<CohortMetadata, E> update) throws E {
+        CohortMetadata cohortMetadata = getCohortMetadata(studyId, cohort);
+        cohortMetadata = update.update(cohortMetadata);
+        updateCohortMetadata(studyId, cohortMetadata);
+    }
+
     public Integer getCohortId(int studyId, String cohortName) {
         return studyMetadataDBAdaptor.getCohortId(studyId, cohortName);
     }
 
     public Integer getCohortId(int studyId, Object cohortObj) {
-        return parseResourceId(studyId, cohortObj,
-                o -> getCohortId(studyId, o),
-                o -> getCohortMetadata(studyId, o) != null);
+        return getCohortId(studyId, cohortObj, true);
     }
 
-    public List<Integer> getCohortIds(int studyId, List<?> cohorts) {
+    private Integer getCohortId(int studyId, Object cohortObj, boolean validate) {
+        return parseResourceId(studyId, cohortObj,
+                o -> getCohortId(studyId, o),
+                validate ? o -> getCohortMetadata(studyId, o) != null : o -> true);
+    }
+
+    public List<Integer> getCohortIds(int studyId, Collection<?> cohorts) {
         Objects.requireNonNull(cohorts);
         List<Integer> cohortIds = new ArrayList<>(cohorts.size());
         for (Object cohortObj : cohorts) {
@@ -812,7 +826,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         if (obj instanceof Number) {
             id = ((Number) obj).intValue();
             if (defaultStudy != null) {
-                if (getFileMetadata(defaultStudy.getId(), Math.abs(id)) != null) {
+                if (validId.test(defaultStudy.getId(), id)) {
                     studyId = defaultStudy.getId();
                 } else {
                     studyId = null;
@@ -849,7 +863,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             } else if (defaultStudy != null) {
                 if (NumberUtils.isParsable(resourceStr)) {
                     id = Integer.parseInt(resourceStr);
-                    if (validId.test(defaultStudy.getId(), Math.abs(id))) {
+                    if (validId.test(defaultStudy.getId(), id)) {
                         studyId = defaultStudy.getId();
                     } else {
                         studyId = null;
@@ -871,6 +885,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             }
         }
 
+        System.out.println("studyId = " + studyId + " , id = " + id);
         if (studyId == null) {
             return getResourcePair(obj, toId, resourceName);
         }
@@ -886,6 +901,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             StudyMetadata sm = getStudyMetadata(studyId);
             resourceIdFromStudy = toId.apply(sm.getId(), obj.toString());
             if (resourceIdFromStudy != null) {
+                System.out.println("studyId = " + studyId + " , resourceIdFromStudy = " + resourceIdFromStudy);
                 return Pair.of(sm.getId(), resourceIdFromStudy);
             }
         }
@@ -1230,9 +1246,9 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return fileId;
     }
 
-    public void registerCohorts(String study, Map<String, ? extends Collection<String>> cohorts)
+    public Map<String, Integer> registerCohorts(String study, Map<String, ? extends Collection<String>> cohorts)
             throws StorageEngineException {
-        registerCohorts(getStudyId(study), cohorts);
+        return registerCohorts(getStudyId(study), cohorts);
     }
 
     public Map<String, Integer> registerCohorts(int studyId, Map<String, ? extends Collection<String>> cohorts)

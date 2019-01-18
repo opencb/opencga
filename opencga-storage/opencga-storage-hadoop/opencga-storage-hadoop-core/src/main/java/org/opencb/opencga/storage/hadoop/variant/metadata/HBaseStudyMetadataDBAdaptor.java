@@ -317,9 +317,9 @@ public class HBaseStudyMetadataDBAdaptor extends AbstractHBaseDBAdaptor implemen
         HashSet<BatchFileTask.Status> allStatus = new HashSet<>(task.getStatus().values());
         for (BatchFileTask.Status status : allStatus) {
             if (currentStatus.equals(status)) {
-                putValue(getTaskStatusIndexRowKey(studyId, currentStatus), Type.INDEX, task, timeStamp);
+                putValue(getTaskStatusIndexRowKey(studyId, currentStatus, task.getId()), Type.INDEX, task.getId(), timeStamp);
             } else {
-                deleteRow(getTaskStatusIndexRowKey(studyId, status));
+                deleteRow(getTaskStatusIndexRowKey(studyId, status, task.getId()));
             }
         }
     }

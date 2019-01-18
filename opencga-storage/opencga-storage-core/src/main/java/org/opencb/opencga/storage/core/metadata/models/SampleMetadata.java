@@ -16,11 +16,11 @@ public class SampleMetadata {
     private int id;
     private String name;
     private Set<Integer> files;
-    private Set<Integer> cohorts;
+//    private Set<Integer> cohorts;
 
     public SampleMetadata() {
         files = new HashSet<>();
-        cohorts = new HashSet<>();
+//        cohorts = new HashSet<>();
     }
 
     public SampleMetadata(int studyId, int id, String name) {
@@ -66,14 +66,14 @@ public class SampleMetadata {
         return this;
     }
 
-    public Set<Integer> getCohorts() {
-        return cohorts;
-    }
-
-    public SampleMetadata setCohorts(Set<Integer> cohorts) {
-        this.cohorts = cohorts;
-        return this;
-    }
+//    public Set<Integer> getCohorts() {
+//        return cohorts;
+//    }
+//
+//    public SampleMetadata setCohorts(Set<Integer> cohorts) {
+//        this.cohorts = cohorts;
+//        return this;
+//    }
 
     @Override
     public String toString() {
@@ -82,7 +82,7 @@ public class SampleMetadata {
                 .append("id", id)
                 .append("name", name)
                 .append("files", files)
-                .append("cohorts", cohorts)
+//                .append("cohorts", cohorts)
                 .toString();
     }
 }

@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.core.metadata.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
@@ -92,6 +93,11 @@ public class StudyMetadata {
 
     public void setAggregationStr(String aggregation) {
         this.aggregation = AggregationUtils.valueOf(aggregation);
+    }
+
+    @JsonIgnore
+    public boolean isAggregated() {
+        return AggregationUtils.isAggregated(getAggregation());
     }
 
     public Long getTimeStamp() {

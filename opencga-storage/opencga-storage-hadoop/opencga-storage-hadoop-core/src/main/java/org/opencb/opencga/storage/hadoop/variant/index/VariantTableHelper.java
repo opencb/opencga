@@ -30,6 +30,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -122,6 +123,7 @@ public class VariantTableHelper extends GenomeHelper {
         return newTable;
     }
 
+    @Deprecated
     public StudyConfiguration readStudyConfiguration() throws IOException {
         try (VariantStorageMetadataManager scm = new VariantStorageMetadataManager(new HBaseVariantStorageMetadataDBAdaptorFactory(this))) {
             QueryResult<StudyConfiguration> query = scm.getStudyConfiguration(getStudyId(), new QueryOptions());
@@ -129,6 +131,16 @@ public class VariantTableHelper extends GenomeHelper {
                 throw new IllegalStateException("Only one study configuration expected for study");
             }
             return query.first();
+        }
+    }
+
+    public StudyMetadata readStudyMetadata() throws IOException {
+        try (VariantStorageMetadataManager scm = new VariantStorageMetadataManager(new HBaseVariantStorageMetadataDBAdaptorFactory(this))) {
+            StudyMetadata studyMetadata = scm.getStudyMetadata(getStudyId());
+            if (studyMetadata == null) {
+                throw new IllegalStateException("Only one study configuration expected for study");
+            }
+            return studyMetadata;
         }
     }
 

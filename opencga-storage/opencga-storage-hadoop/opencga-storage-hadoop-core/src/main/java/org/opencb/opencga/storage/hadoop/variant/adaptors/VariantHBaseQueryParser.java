@@ -28,7 +28,6 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
@@ -332,16 +331,11 @@ public class VariantHBaseQueryParser {
                 scan.addColumn(family, VariantPhoenixHelper.getFillMissingColumn(studyId).bytes());
             }
 
-            if (selectElements.getFields().contains(VariantField.STUDIES_STATS)) {
-                for (StudyConfiguration sc : selectElements.getStudyConfigurations().values()) {
-                    for (Integer cohortId : sc.getCalculatedStats()) {
-                        scan.addColumn(family,
-                                VariantPhoenixHelper.getStatsColumn(sc.getStudyId(), cohortId).bytes());
-                    }
-                    for (Integer cohortId : sc.getInvalidStats()) {
-                        scan.addColumn(family,
-                                VariantPhoenixHelper.getStatsColumn(sc.getStudyId(), cohortId).bytes());
-                    }
+            for (Map.Entry<Integer, List<Integer>> entry : selectElements.getCohorts().entrySet()) {
+                Integer studyId = entry.getKey();
+                for (Integer cohortId : entry.getValue()) {
+                    scan.addColumn(family,
+                            VariantPhoenixHelper.getStatsColumn(studyId, cohortId).bytes());
                 }
             }
 

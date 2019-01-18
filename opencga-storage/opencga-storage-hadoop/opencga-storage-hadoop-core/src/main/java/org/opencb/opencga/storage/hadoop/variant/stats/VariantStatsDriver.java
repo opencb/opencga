@@ -58,7 +58,7 @@ public class VariantStatsDriver extends AbstractVariantsTableDriver {
                 VariantStorageEngine.Options.UPDATE_STATS.defaultValue());
         boolean overwrite = options.getBoolean(VariantStorageEngine.Options.OVERWRITE_STATS.key(),
                 VariantStorageEngine.Options.OVERWRITE_STATS.defaultValue());
-        Query query = VariantStatisticsManager.buildInputQuery(getMetadataManager(), readStudyConfiguration(),
+        Query query = VariantStatisticsManager.buildInputQuery(getMetadataManager(), readStudyMetadata(),
                 cohorts, overwrite, updateStats, options);
         QueryOptions queryOptions = VariantStatisticsManager.buildIncludeExclude();
         LOG.info("Query : " + query.toJson());

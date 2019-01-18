@@ -222,12 +222,10 @@ public class VariantSqlQueryParser {
                     sb.append(",\"").append(studyColumn.column()).append('"');
                     sb.append(",\"").append(VariantPhoenixHelper.getFillMissingColumn(studyId).column()).append('"');
                     if (returnedFields.contains(VariantField.STUDIES_STATS)) {
-                        metadataManager.cohortIterator(studyId).forEachRemaining(cohortMetadata -> {
-                            if (cohortMetadata.isReady()) {
-                                Column statsColumn = getStatsColumn(studyId, cohortMetadata.getId());
-                                sb.append(",\"").append(statsColumn.column()).append('"');
-                            }
-                        });
+                        for (Integer cohortId : selectVariantElements.getCohorts().getOrDefault(studyId, Collections.emptyList())) {
+                            Column statsColumn = getStatsColumn(studyId, cohortId);
+                            sb.append(",\"").append(statsColumn.column()).append('"');
+                        }
                     }
                 }
             }
@@ -654,6 +652,9 @@ public class VariantSqlQueryParser {
             for (Iterator<String> iterator = files.iterator(); iterator.hasNext();) {
                 String file = iterator.next();
                 Pair<Integer, Integer> fileIdPair = metadataManager.getFileIdPair(file, false, defaultStudyMetadata);
+                System.out.println("defaultStudyMetadata = " + defaultStudyMetadata);
+                System.out.println("file = " + file);
+                System.out.println("fileIdPair = " + fileIdPair);
 
                 sb.append(" ( ");
                 if (isNegated(file)) {
@@ -786,7 +787,10 @@ public class VariantSqlQueryParser {
                 } else {
                     throw VariantQueryException.malformedParam(COHORT, query.getString((COHORT.key())), "Expected {study}:{cohort}");
                 }
-                int cohortId = metadataManager.getCohortId(studyMetadata.getId(), cohort);
+                Integer cohortId = metadataManager.getCohortId(studyMetadata.getId(), cohort);
+                if (cohortId == null) {
+                    throw VariantQueryException.cohortNotFound(cohort, studyMetadata.getId(), metadataManager);
+                }
                 Column column = getStatsColumn(studyMetadata.getId(), cohortId);
                 if (negated) {
                     filters.add("\"" + column + "\" IS NULL");
