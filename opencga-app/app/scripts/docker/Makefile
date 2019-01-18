@@ -109,7 +109,7 @@ metadata:
 # Run a script to build all docker images
 .PHONY: build-all
 build-all: metadata
-	./build-all.sh $(BUILD_PATH)
+	(cd $(shell git rev-parse --show-toplevel); opencga-app/app/scripts/docker/build-all.sh $(BUILD_PATH))
 
 # Builds and tags the container
 .PHONY: build
