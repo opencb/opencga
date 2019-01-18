@@ -29,6 +29,15 @@ pipeline {
             }
         }
 
+        stage ('Docker Build') {
+            options {
+                timeout(time: 10, unit: 'MINUTES')
+            }
+            steps {
+                sh 'make -f opencga-app/app/scripts/docker/Makefile'
+            }
+        }
+
         stage ('Quick Test') {
             options {
                 timeout(time: 1, unit: 'HOURS')

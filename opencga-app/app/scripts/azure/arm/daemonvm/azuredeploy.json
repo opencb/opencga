@@ -41,8 +41,14 @@
             "type": "string",
             "defaultValue": "opencgaadmin"
         },
-        "adminPassword": {
+        "openCgaAdminPassword": {
             "type": "securestring"
+        },
+        "sshKeyData": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Admin password on all VMs."
+            }
         },
         "hdInsightSshDns": {
             "type": "string"
@@ -101,7 +107,7 @@
         "batchDockerArgs": {
             "type": "string"
         },
-        "batchDockerImage": {
+        "batchContainerImage": {
             "type": "string"
         },
         "batchMaxConcurrentJobs": {
@@ -109,6 +115,7 @@
         }
     },
     "variables": {
+        "sshKeyPath": "[concat('/home/',parameters('adminUsername'),'/.ssh/authorized_keys')]",
         "vnetId": "[parameters('virtualNetworkId')]",
         "subnetRef": "[concat(variables('vnetId'), '/subnets/', parameters('subnetName'))]",
         "solrHostsCSV": "[concat('\"', replace(replace(replace(replace(string(parameters('solrHosts')), ' ', ''), '[{\"host\":\"', ''), '\"},{\"host\":\"', ','), '\"}]', ''),'\"')]",
@@ -119,8 +126,8 @@
         "singleQuote": "'",
         "getScriptCmd": "[concat('wget ',parameters('_artifactsLocation'),'/avere/mount.py -O /tmp/mount.py')]",
         "mountCmd": "[concat('python3 /tmp/mount.py ', parameters('mountArgs'))]",
-        "initCmd": "[concat('docker run --mount type=bind,src=/media/primarynfs,dst=/opt/volume -e OPENCGA_PASS=',parameters('adminPassword'),' -e HD_INSIGHTS_SSH_DNS=',parameters('hdInsightSshDns'),' -e HD_INSIGHTS_SSH_USER=',parameters('hdInsightSshUsername'),' -e HD_INSIGHTS_SSH_PASS=',parameters('hdInsightSshPassword'),' -e SEARCH_HOSTS=',variables('solrHostsCSV'),' -e CELLBASE_HOSTS=',variables('mongoDbHostsCSV'),' -e CLINICAL_HOSTS=',variables('solrHostsCSV'),' -e CATALOG_DATABASE_HOSTS=',variables('mongoDbHostsCSV'),' -e CATALOG_DATABASE_USER=',parameters('mongoDbUser'),' -e CATALOG_DATABASE_PASSWORD=',parameters('mongoDbPassword'),' -e CATALOG_SEARCH_HOSTS=',variables('solrHostsCSV'),' -e CATALOG_SEARCH_USER=',parameters('solrUser'),' -e CATALOG_SEARCH_PASSWORD=',parameters('solrPassword'),' -e REST_HOST=\"',variables('restHost'),'\" -e GRPC_HOST=\"',variables('grpcHost'),'\" -e BATCH_EXEC_MODE=AZURE ',' -e BATCH_ACCOUNT_NAME=',parameters('batchAccountName'),' -e BATCH_ACCOUNT_KEY=',parameters('batchAccountKey'),' -e BATCH_ENDPOINT=',parameters('batchEndpoint'),' -e BATCH_POOL_ID=',parameters('batchPoolId'),' -e BATCH_DOCKER_ARGS=',variables('singleQuote'),parameters('batchDockerArgs'),variables('singleQuote'),' -e BATCH_DOCKER_IMAGE=',parameters('batchDockerImage'),' -e BATCH_MAX_CONCURRENT_JOBS=',string(parameters('batchMaxConcurrentJobs')),' ',parameters('initContainerImage'),' ',parameters('catalogSecretKey'))]",
-        "execStart": "[concat('/usr/bin/docker run --mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions -e OPENCGA_PASS=',parameters('adminPassword'),' ',parameters('daemonContainerImage'))]",
+        "initCmd": "[concat('docker run --mount type=bind,src=/media/primarynfs,dst=/opt/volume -e OPENCGA_PASS=',parameters('openCgaAdminPassword'),' -e HBASE_SSH_DNS=',parameters('hdInsightSshDns'),' -e HBASE_SSH_USER=',parameters('hdInsightSshUsername'),' -e HBASE_SSH_PASS=',parameters('hdInsightSshPassword'),' -e SEARCH_HOSTS=',variables('solrHostsCSV'),' -e CELLBASE_HOSTS=',variables('mongoDbHostsCSV'),' -e CLINICAL_HOSTS=',variables('solrHostsCSV'),' -e CATALOG_DATABASE_HOSTS=',variables('mongoDbHostsCSV'),' -e CATALOG_DATABASE_USER=',parameters('mongoDbUser'),' -e CATALOG_DATABASE_PASSWORD=',parameters('mongoDbPassword'),' -e CATALOG_SEARCH_HOSTS=',variables('solrHostsCSV'),' -e CATALOG_SEARCH_USER=',parameters('solrUser'),' -e CATALOG_SEARCH_PASSWORD=',parameters('solrPassword'),' -e REST_HOST=\"',variables('restHost'),'\" -e GRPC_HOST=\"',variables('grpcHost'),'\" -e BATCH_EXEC_MODE=AZURE ',' -e BATCH_ACCOUNT_NAME=',parameters('batchAccountName'),' -e BATCH_ACCOUNT_KEY=',parameters('batchAccountKey'),' -e BATCH_ENDPOINT=',parameters('batchEndpoint'),' -e BATCH_POOL_ID=',parameters('batchPoolId'),' -e BATCH_DOCKER_ARGS=',variables('singleQuote'),parameters('batchDockerArgs'),variables('singleQuote'),' -e BATCH_DOCKER_IMAGE=',parameters('batchContainerImage'),' -e BATCH_MAX_CONCURRENT_JOBS=',string(parameters('batchMaxConcurrentJobs')),' ',parameters('initContainerImage'),' ',parameters('catalogSecretKey'))]",
+        "execStart": "[concat('/usr/bin/docker run --mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions -e OPENCGA_PASS=',parameters('openCgaAdminPassword'),' ',parameters('daemonContainerImage'))]",
         "cloud-init": [
             "#cloud-config",
             "",
@@ -153,7 +160,6 @@
         ],
         "cloud-init-string": "[replace(replace(replace(string(variables('cloud-init')),'\",\"','\n'),'[\"',''),'\"]','')]",
         "customData": "[base64(variables('cloud-init-string'))]"
-
     },
     "resources": [
         {
@@ -179,7 +185,6 @@
                         }
                     }
                 ]
-
             },
             "tags": {}
         },
@@ -232,7 +237,17 @@
                 "osProfile": {
                     "computerName": "daemonvm",
                     "adminUsername": "[parameters('adminUsername')]",
-                    "adminPassword": "[parameters('adminPassword')]",
+                    "linuxConfiguration": {
+                        "disablePasswordAuthentication": true,
+                        "ssh": {
+                            "publicKeys": [
+                                {
+                                    "path": "[variables('sshKeyPath')]",
+                                    "keyData": "[parameters('sshKeyData')]"
+                                }
+                            ]
+                        }
+                    },
                     "customData": "[variables('customData')]"
                 }
             },
@@ -248,6 +263,5 @@
             "type": "string",
             "value": "[variables('cloud-init-string')]"
         }
-
     }
 }

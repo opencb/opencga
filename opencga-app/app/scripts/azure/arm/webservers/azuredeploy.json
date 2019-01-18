@@ -51,26 +51,26 @@
             },
             "maxValue": 100
         },
-        "adminUsername": {
-            "type": "string",
-            "defaultValue": "azureuser",
-            "metadata": {
-                "description": "Admin username on all VMs."
-            }
-        },
-        "tomcatDockerImage" : {
+        "openCGAContainerImage": {
             "type": "string",
             "metadata": {
                 "description": "The docker image and tag for running the tomcat service."
             }
         },
-        "ivaDockerImage" : {
+        "ivaContainerImage" : {
             "type": "string",
             "metadata": {
                 "description": "The docker image and tag for running the IVA service."
             }
         },
-        "SSHKeyData": {
+        "adminUsername": {
+            "type": "string",
+            "defaultValue": "opencgaadmin",
+            "metadata": {
+                "description": "Admin username on all VMs."
+            }
+        },
+        "sshKeyData": {
             "type": "securestring",
             "metadata": {
                 "description": "Admin password on all VMs."
@@ -118,8 +118,8 @@
             "- curl -fsSL https://get.docker.com/ | sh",
             "- curl -fsSL https://get.docker.com/gpg | sudo apt-key add -",
             "[concat('- curl -fsSL ', parameters('_artifactsLocation'), '/avere/mount.py', parameters('_artifactsLocationSasToken'), ' | python3 - ', parameters('mountArgs'))]",
-            "[concat('- docker run -d -p 8080:8080 -p 8443:8443 --restart=always --mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions ', parameters('tomcatDockerImage'))]",
-            "[concat('- docker run -d -p 80:80 -p 443:443 --restart=always --mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions ', parameters('ivaDockerImage'))]",
+            "[concat('- docker run -d -p 8080:8080 -p 8443:8443 --restart=always --mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions ', parameters('openCGAContainerImage'))]",
+            "[concat('- docker run -d -p 80:80 -p 443:443 --restart=always --mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions ', parameters('ivaContainerImage'))]",
             ""
         ],
         "cloud-init-string": "[replace(replace(replace(string(variables('cloud-init')),'\",\"','\n'),'[\"',''),'\"]','')]",
@@ -137,7 +137,7 @@
                 "dnsSettings": {
                     "domainNameLabel": "[parameters('namingPrefix')]"
                 }
-    }
+            }
         },
         {
             "comments": "The LB configured to send traffic to the web nodes in the VMSS. It monitors the health endpoint of OpenCGA removing unhealthy nodes from the LB",
@@ -157,7 +157,7 @@
                                 "id": "[variables('frontEndIPConfigID')]"
                             },
                             "backendAddressPool": {
-                                "id":  "[concat(variables('lbID'),'/backendAddressPools/VMSSBackendPool')]"
+                                "id": "[concat(variables('lbID'),'/backendAddressPools/VMSSBackendPool')]"
                             },
                             "protocol": "Tcp",
                             "frontendPort": 80,
@@ -176,7 +176,7 @@
                                 "id": "[variables('frontEndIPConfigID')]"
                             },
                             "backendAddressPool": {
-                                "id":  "[concat(variables('lbID'),'/backendAddressPools/VMSSBackendPool')]"
+                                "id": "[concat(variables('lbID'),'/backendAddressPools/VMSSBackendPool')]"
                             },
                             "protocol": "Tcp",
                             "frontendPort": 443,
@@ -195,7 +195,7 @@
                                 "id": "[variables('frontEndIPConfigID')]"
                             },
                             "backendAddressPool": {
-                                "id":  "[concat(variables('lbID'),'/backendAddressPools/VMSSBackendPool')]"
+                                "id": "[concat(variables('lbID'),'/backendAddressPools/VMSSBackendPool')]"
                             },
                             "protocol": "Tcp",
                             "frontendPort": 8080,
@@ -214,7 +214,7 @@
                                 "id": "[variables('frontEndIPConfigID')]"
                             },
                             "backendAddressPool": {
-                                "id":  "[concat(variables('lbID'),'/backendAddressPools/VMSSBackendPool')]"
+                                "id": "[concat(variables('lbID'),'/backendAddressPools/VMSSBackendPool')]"
                             },
                             "protocol": "Tcp",
                             "frontendPort": 8443,
@@ -314,15 +314,15 @@
                         "computerNamePrefix": "[parameters('namingPrefix')]",
                         "adminUsername": "[parameters('adminUsername')]",
                         "linuxConfiguration": {
-                          "disablePasswordAuthentication": true,
-                          "ssh": {
-                            "publicKeys": [
-                              {
-                                "path": "[variables('sshKeyPath')]",
-                                "keyData": "[parameters('SSHKeyData')]"
-                              }
-                            ]
-                          }
+                            "disablePasswordAuthentication": true,
+                            "ssh": {
+                                "publicKeys": [
+                                    {
+                                        "path": "[variables('sshKeyPath')]",
+                                        "keyData": "[parameters('sshKeyData')]"
+                                    }
+                                ]
+                            }
                         },
                         "customData": "[variables('customData')]"
                     },
@@ -431,7 +431,7 @@
     ],
     "outputs": {
         "lbPublicIP": {
-            "type":"string",
+            "type": "string",
             "value": "[reference(variables('publicIPAddressName')).IpAddress]"
         }
     }
