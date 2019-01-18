@@ -58,7 +58,7 @@ echo "Started building container images"
 echo "---------------------"
 
 # Build OpenCGA
-if [ ! -d "./build" ]; then
+if [ ! -d $1 ]; then
     echo "> No existing OpenCGA build."
     echo "> Starting OpenCGA build."
     docker run -it --rm \

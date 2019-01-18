@@ -72,6 +72,9 @@ endif
 $(info $(DOCKER_SERVER))
 ifneq ($(DOCKER_SERVER),)
 DOCKER_SERVER := $(DOCKER_SERVER)/
+DOCKER_SERVER_REF = $(DOCKER_SERVER)
+else
+DOCKER_SERVER_REF = <not set>
 endif
 
 DOCKER_USERNAME ?= <not set>
@@ -81,6 +84,7 @@ PUBLISH ?= false
 PATH_PREFIX = opencga-app/app/scripts/docker/$(APP_NAME)
 BRANCH = $(shell git branch | grep \* | cut -d ' ' -f2)
 COMMIT = $(shell git rev-parse --verify HEAD)
+BUILD_PATH ?= ./build
 
 # Set default make target
 .DEFAULT_GOAL := build-all
@@ -97,7 +101,8 @@ metadata:
 	@echo "Docker Tag:      $(TAG)"
 	@echo "Docker Repo:     $(DOCKER_REPO)"
 	@echo "Docker Username: $(DOCKER_USERNAME)"
-	@echo "Docker Server:   $(DOCKER_SERVER)"
+	@echo "Docker Server:   $(DOCKER_SERVER_REF)"
+	@echo "Build Path:      $(BUILD_PATH)"
 	@echo "Publish:         $(PUBLISH)"
 	@echo "---------------------"
 	@echo
@@ -105,7 +110,7 @@ metadata:
 # Run a script to build all docker images
 .PHONY: build-all
 build-all: metadata
-	./build-all.sh
+	./build-all.sh $(BUILD_PATH)
 
 # Builds and tags the container
 .PHONY: build

@@ -3,7 +3,7 @@ FROM opencga
 # Build args
 ARG TOMCAT_VERSION="8.5.35"
 ARG VERSION=""
-ARG WAR_NAME="opencga"
+ARG WAR_NAME="opencga.war"
 ARG VCS_URL=""
 ARG VCS_REF=""
 ARG BUILD_DATE=""

@@ -15,6 +15,7 @@ pipeline {
         stage ('Build') {
             steps {
                 sh 'mvn clean install -DskipTests -Popencga-storage-hadoop-deps -Dcheckstyle.skip'
+                sh 'make -f opencga-app/app/scripts/docker/make'
             }
         }
 
