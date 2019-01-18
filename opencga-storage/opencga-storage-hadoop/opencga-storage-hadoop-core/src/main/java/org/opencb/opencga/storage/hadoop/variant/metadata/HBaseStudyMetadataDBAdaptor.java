@@ -195,6 +195,7 @@ public class HBaseStudyMetadataDBAdaptor extends AbstractHBaseDBAdaptor implemen
     @Override
     public void updateStudyMetadata(StudyMetadata sm) {
         sm.setTimeStamp(System.currentTimeMillis());
+        updateStudiesSummary(sm.getName(), sm.getId(), null);
         putValue(getStudyMetadataRowKey(sm.getId()), Type.STUDY, sm, sm.getTimeStamp());
     }
 
@@ -311,6 +312,16 @@ public class HBaseStudyMetadataDBAdaptor extends AbstractHBaseDBAdaptor implemen
     @Override
     public void updateTask(int studyId, BatchFileTask task, Long timeStamp) {
         putValue(getTaskRowKey(studyId, task.getId()), Type.TASK, task, timeStamp);
+
+        BatchFileTask.Status currentStatus = task.currentStatus();
+        HashSet<BatchFileTask.Status> allStatus = new HashSet<>(task.getStatus().values());
+        for (BatchFileTask.Status status : allStatus) {
+            if (currentStatus.equals(status)) {
+                putValue(getTaskStatusIndexRowKey(studyId, currentStatus), Type.INDEX, task, timeStamp);
+            } else {
+                deleteRow(getTaskStatusIndexRowKey(studyId, status));
+            }
+        }
     }
 
     @Override
@@ -333,11 +344,11 @@ public class HBaseStudyMetadataDBAdaptor extends AbstractHBaseDBAdaptor implemen
             return;
         } else {
             studiesSummary.put(study, studyId);
-            updateStudiesSummary(studiesSummary, options);
+            updateStudiesSummary(studiesSummary);
         }
     }
 
-    private void updateStudiesSummary(BiMap<String, Integer> studies, QueryOptions options) {
+    private void updateStudiesSummary(BiMap<String, Integer> studies) {
         putValue(getStudiesSummaryRowKey(), Type.STUDIES, studies, null);
     }
 

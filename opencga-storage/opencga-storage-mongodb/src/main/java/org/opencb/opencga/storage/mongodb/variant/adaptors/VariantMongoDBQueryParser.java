@@ -1003,7 +1003,7 @@ public class VariantMongoDBQueryParser {
                                     } else {
                                         study = split[0];
                                         cohort = split[1];
-                                        Integer studyId = metadataManager.getStudyId(study, null);
+                                        int studyId = metadataManager.getStudyId(study);
                                         cohortId = metadataManager.getCohortId(studyId, cohort);
                                     }
                                     return cohortId;
@@ -1607,7 +1607,7 @@ public class VariantMongoDBQueryParser {
     private QueryBuilder addStatsFilter(String key, String filter, QueryBuilder builder, StudyMetadata defaultStudyMetadata) {
         String[] studyValue = VariantQueryUtils.splitStudyResource(filter);
         if (studyValue.length == 2 || defaultStudyMetadata != null) {
-            Integer studyId;
+            int studyId;
             Integer cohortId;
             String operator;
             String valueStr;
@@ -1618,7 +1618,7 @@ public class VariantMongoDBQueryParser {
                 operator = cohortOpValue[1];
                 valueStr = cohortOpValue[2];
 
-                studyId = metadataManager.getStudyId(study, null);
+                studyId = metadataManager.getStudyId(study);
                 cohortId = metadataManager.getCohortId(studyId, cohort);
             } else {
 //                String study = defaultStudyMetadata.getStudyName();

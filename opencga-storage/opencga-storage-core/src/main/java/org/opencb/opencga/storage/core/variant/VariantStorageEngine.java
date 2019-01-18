@@ -382,7 +382,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
                 String studyName = options.getString(Options.STUDY.key());
                 VariantStorageMetadataManager metadataManager = getMetadataManager();
-                int studyId = metadataManager.getStudyId(studyName, null);
+                int studyId = metadataManager.getStudyId(studyName);
 
                 List<Integer> fileIds = new ArrayList<>(files.size());
                 for (URI uri : files) {

@@ -129,6 +129,7 @@ public class HBaseProjectMetadataDBAdaptor extends AbstractHBaseDBAdaptor implem
     @Override
     public int generateId(Integer studyId, String idType) throws StorageEngineException {
         try {
+            ensureTableExists();
             return hBaseManager.act(tableName, (table) -> {
                 byte[] column = getCounterColumn(studyId, idType);
                 return (int) table.incrementColumnValue(getProjectRowKey(), family, column, 1);

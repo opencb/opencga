@@ -261,12 +261,12 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
     @Test
     public void testTwoFilesConcurrent() throws Exception {
 
-        StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
+        StudyMetadata studyMetadata = VariantStorageBaseTest.newStudyMetadata();
         HadoopVariantStorageEngine variantStorageManager = getVariantStorageEngine();
         ObjectMap options = variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
         options.put(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, true);
         options.put(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "proto");
-        options.put(VariantStorageEngine.Options.STUDY.key(), studyConfiguration.getStudyName());
+        options.put(VariantStorageEngine.Options.STUDY.key(), studyMetadata.getStudyName());
 
         List<URI> inputFiles = Arrays.asList(getResourceUri("s1.genome.vcf"), getResourceUri("s2.genome.vcf"));
         List<StoragePipelineResult> index = variantStorageManager.index(inputFiles, outputUri, true, true, true);
@@ -274,20 +274,20 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
         VariantHadoopDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor();
 
-        studyConfiguration = dbAdaptor.getMetadataManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+        studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(studyMetadata.getStudyId());
 
         for (StoragePipelineResult storagePipelineResult : index) {
             System.out.println(storagePipelineResult);
         }
 
-        printVariants(studyConfiguration, dbAdaptor, newOutputUri());
+        printVariants(studyMetadata, dbAdaptor, newOutputUri());
 
         for (Variant variant : dbAdaptor) {
             System.out.println("variant = " + variant);
         }
-        checkLoadedFilesS1S2(studyConfiguration, dbAdaptor);
+        checkLoadedFilesS1S2(studyMetadata, dbAdaptor);
 
-        assertThat(studyConfiguration.getIndexedFiles(), hasItems(1, 2));
+        assertThat(dbAdaptor.getMetadataManager().getIndexedFiles(studyMetadata.getId()), hasItems(1, 2));
     }
 
     @Test
@@ -460,7 +460,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
     }
 
-    public void checkLoadedFilesS1S2(StudyConfiguration studyConfiguration, VariantHadoopDBAdaptor dbAdaptor) throws IOException, StorageEngineException {
+    public void checkLoadedFilesS1S2(StudyMetadata studyMetadata, VariantHadoopDBAdaptor dbAdaptor) throws IOException, StorageEngineException {
 
         Path path = Paths.get(getResourceUri("s1_s2.genome.vcf"));
         VariantFileMetadata fileMetadata = VariantReaderUtils.readVariantFileMetadata(path, null);
@@ -475,7 +475,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         variantReader.post();
         variantReader.close();
 
-        System.out.println("studyConfiguration = " + studyConfiguration);
+        System.out.println("studyMetadata = " + studyMetadata);
         Map<String, Variant> variants = new HashMap<>();
         for (Variant variant : dbAdaptor) {
             String v = variant.toString();
@@ -486,7 +486,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 //            System.out.println(variant.toJson());
 //            variant.setAnnotation(a);
         }
-        String studyName = studyConfiguration.getStudyName();
+        String studyName = studyMetadata.getStudyName();
 
         // TODO: Add more asserts
         // TODO: Update with last changes!
@@ -508,7 +508,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         
         */
 
-        boolean missingUpdated = studyConfiguration.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED, false);
+        boolean missingUpdated = studyMetadata.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED, false);
         String defaultGenotype = missingUpdated ? "0/0" : "?/?";
 
         List<String> errors = new ArrayList<>();

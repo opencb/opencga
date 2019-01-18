@@ -5,6 +5,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 
 import java.io.IOException;
@@ -26,9 +27,10 @@ class HBaseVariantMetadataUtils {
     private static final String FILE_METADATA_SEPARATOR = "_F_";
     private static final String VARIANT_FILE_METADATA_SEPARATOR = "_VF_";
 
-    private static final String SAMPLE_ID_INDEX_SEPARATOR = "_SIDX_";
-    private static final String FILE_ID_INDEX_SEPARATOR = "_FIDX_";
-    private static final String COHORT_ID_INDEX_SEPARATOR = "_CIDX_";
+    private static final String SAMPLE_NAME_INDEX_SEPARATOR = "_SIDX_";
+    private static final String FILE_NAME_INDEX_SEPARATOR = "_FIDX_";
+    private static final String COHORT_NAME_INDEX_SEPARATOR = "_CIDX_";
+    private static final String TASK_STATUS_INDEX_SEPARATOR = "_CIDX_";
 
     private static final byte[] VALUE_COLUMN = Bytes.toBytes("value");
     private static final byte[] TYPE_COLUMN = Bytes.toBytes("type");
@@ -138,15 +140,19 @@ class HBaseVariantMetadataUtils {
 
 
     static byte[] getSampleNameIndexRowKey(int studyId, String sampleName) {
-        return getStudyResourceRowKey(studyId, SAMPLE_ID_INDEX_SEPARATOR, sampleName);
+        return getStudyResourceRowKey(studyId, SAMPLE_NAME_INDEX_SEPARATOR, sampleName);
     }
 
     static byte[] getFileNameIndexRowKey(int studyId, String fileName) {
-        return getStudyResourceRowKey(studyId, FILE_ID_INDEX_SEPARATOR, fileName);
+        return getStudyResourceRowKey(studyId, FILE_NAME_INDEX_SEPARATOR, fileName);
     }
 
     static byte[] getCohortNameIndexRowKey(int studyId, String cohortName) {
-        return getStudyResourceRowKey(studyId, COHORT_ID_INDEX_SEPARATOR, cohortName);
+        return getStudyResourceRowKey(studyId, COHORT_NAME_INDEX_SEPARATOR, cohortName);
+    }
+
+    static byte[] getTaskStatusIndexRowKey(int studyId, BatchFileTask.Status status) {
+        return getStudyResourceRowKey(studyId, TASK_STATUS_INDEX_SEPARATOR, status.name());
     }
 
     static Pair<Integer, Integer> parseVariantFileMetadataRowKey(byte[] rk) {

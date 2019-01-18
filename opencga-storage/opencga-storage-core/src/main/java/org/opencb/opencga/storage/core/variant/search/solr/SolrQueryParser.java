@@ -239,7 +239,7 @@ public class SolrQueryParser {
         if (isValidParam(query, VariantQueryParam.STUDY)) {
             String value = query.getString(key);
             VariantQueryUtils.QueryOperation op = checkOperator(value);
-            Set<Integer> studyIds = new HashSet<>(variantStorageMetadataManager.getStudyIds(splitValue(value, op), queryOptions));
+            Set<Integer> studyIds = new HashSet<>(variantStorageMetadataManager.getStudyIds(splitValue(value, op)));
             List<String> studyNames = new ArrayList<>(studyIds.size());
             Map<String, Integer> map = variantStorageMetadataManager.getStudies(null);
             if (map != null && map.size() > 1) {

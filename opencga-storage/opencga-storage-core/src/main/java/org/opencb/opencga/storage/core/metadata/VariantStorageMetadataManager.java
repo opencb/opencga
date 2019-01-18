@@ -110,15 +110,15 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         studyMetadataDBAdaptor.unLockStudy(studyId, lockId, lockName);
     }
 
-    public StudyConfiguration createStudy(String studyName) throws StorageEngineException {
+    public StudyMetadata createStudy(String studyName) throws StorageEngineException {
         lockAndUpdateProject(projectMetadata -> {
-            if (!getStudies(null).containsKey(studyName)) {
-                StudyConfiguration studyConfiguration = new StudyConfiguration(newStudyId(), studyName);
-                updateStudyConfiguration(studyConfiguration, null);
+            if (!getStudies().containsKey(studyName)) {
+                StudyMetadata studyMetadata = new StudyMetadata(newStudyId(), studyName);
+                updateStudyMetadata(studyMetadata);
             }
             return projectMetadata;
         });
-        return getStudyConfiguration(studyName, null).first();
+        return getStudyMetadata(studyName);
     }
 
     public interface UpdateFunction<T, E extends Exception> {
@@ -128,13 +128,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     @Deprecated
     public <E extends Exception> StudyConfiguration lockAndUpdateOld(String studyName, UpdateFunction<StudyConfiguration, E> updater)
             throws StorageEngineException, E {
-        Integer studyId = getStudyId(studyName, null);
-        return lockAndUpdateOld(studyId, updater);
-    }
-
-    @Deprecated
-    public <E extends Exception> StudyConfiguration lockAndUpdateOld(int studyId, UpdateFunction<StudyConfiguration, E> updater)
-            throws StorageEngineException, E {
+        int studyId = getStudyId(studyName);
         checkStudyId(studyId);
         long lock = lockStudy(studyId);
         try {
@@ -152,7 +146,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
     public <E extends Exception> StudyMetadata lockAndUpdate(String studyName, UpdateFunction<StudyMetadata, E> updater)
             throws StorageEngineException, E {
-        Integer studyId = getStudyId(studyName, null);
+        int studyId = getStudyId(studyName);
         return lockAndUpdate(studyId, updater);
     }
 
@@ -174,8 +168,12 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     public StudyMetadata getStudyMetadata(String name) {
-        Integer studyId = getStudyId(name, null);
-        return studyMetadataDBAdaptor.getStudyMetadata(studyId, null);
+        Integer studyId = getStudyIdOrNull(name);
+        if (studyId == null) {
+            return null;
+        } else {
+            return studyMetadataDBAdaptor.getStudyMetadata(studyId, null);
+        }
     }
 
     public StudyMetadata getStudyMetadata(int id) {
@@ -291,8 +289,12 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return getStudies(null).inverse().get(studyId);
     }
 
-    public List<Integer> getStudyIds(QueryOptions options) {
-        return studyMetadataDBAdaptor.getStudyIds(options);
+    public List<Integer> getStudyIds() {
+        return studyMetadataDBAdaptor.getStudyIds(null);
+    }
+
+    public BiMap<String, Integer> getStudies() {
+        return getStudies(null);
     }
 
     public BiMap<String, Integer> getStudies(QueryOptions options) {
@@ -319,17 +321,43 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return studyMetadataDBAdaptor.updateStudyConfiguration(copy, options);
     }
 
+    public Integer getStudyIdOrNull(Object studyObj) {
+        return getStudyIdOrNull(studyObj, getStudies(null));
+    }
+
+    public Integer getStudyIdOrNull(Object studyObj, Map<String, Integer> studies) {
+        Integer studyId;
+        if (studyObj instanceof Integer) {
+            studyId = ((Integer) studyObj);
+        } else {
+            String studyName = studyObj.toString();
+            if (isNegated(studyName)) {
+                studyName = removeNegation(studyName);
+            }
+            if (StringUtils.isNumeric(studyName)) {
+                studyId = Integer.parseInt(studyName);
+            } else {
+                studyId = studies.get(studyName);
+            }
+        }
+
+        if (!studies.containsValue(studyId)) {
+            return null;
+        } else {
+            return studyId;
+        }
+    }
+
     /**
      * Get studyIds from a list of studies.
      * Replaces studyNames for studyIds.
      * Excludes those studies that starts with '!'
      *
      * @param studiesNames  List of study names or study ids
-     * @param options       Options
      * @return              List of study Ids
      */
-    public List<Integer> getStudyIds(List studiesNames, QueryOptions options) {
-        return getStudyIds(studiesNames, getStudies(options));
+    public List<Integer> getStudyIds(List<?> studiesNames) {
+        return getStudyIds(studiesNames, getStudies(null));
     }
 
     /**
@@ -341,7 +369,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
      * @param studies       Map of available studies. See {@link VariantStorageMetadataManager#getStudies}
      * @return              List of study Ids
      */
-    public List<Integer> getStudyIds(List studiesNames, Map<String, Integer> studies) {
+    public List<Integer> getStudyIds(List<?> studiesNames, Map<String, Integer> studies) {
         List<Integer> studiesIds;
         if (studiesNames == null) {
             return Collections.emptyList();
@@ -356,18 +384,8 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return studiesIds;
     }
 
-    public Integer getStudyId(Object studyObj, QueryOptions options) {
-        return getStudyId(studyObj, options, true);
-    }
-
-    public Integer getStudyId(Object studyObj, QueryOptions options, boolean skipNegated) {
-        if (studyObj instanceof Integer) {
-            return ((Integer) studyObj);
-        } else if (studyObj instanceof String && StringUtils.isNumeric((String) studyObj)) {
-            return Integer.parseInt((String) studyObj);
-        } else {
-            return getStudyId(studyObj, skipNegated, getStudies(options));
-        }
+    public int getStudyId(Object studyObj) {
+        return getStudyId(studyObj, false, getStudies(null));
     }
 
     public Integer getStudyId(Object studyObj, boolean skipNegated, Map<String, Integer> studies) {
@@ -524,7 +542,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     public void updateVariantFileMetadata(String study, VariantFileMetadata metadata) throws StorageEngineException {
-        Integer studyId = getStudyId(study, null);
+        int studyId = getStudyId(study);
         fileDBAdaptor.updateVariantFileMetadata(studyId, metadata);
     }
 
@@ -647,7 +665,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         Integer sampleId = parseResourceId(studyId, sampleObj,
                 o -> getSampleId(studyId, o),
                 o -> getSampleMetadata(studyId, o) != null);
-        if (sampleId != null && indexed) {
+        if (indexed && sampleId != null) {
             if (getIndexedSamplesMap(studyId).containsValue(sampleId)) {
                 return sampleId;
             } else {
@@ -1214,7 +1232,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
     public void registerCohorts(String study, Map<String, ? extends Collection<String>> cohorts)
             throws StorageEngineException {
-        registerCohorts(getStudyId(study, null), cohorts);
+        registerCohorts(getStudyId(study), cohorts);
     }
 
     public Map<String, Integer> registerCohorts(int studyId, Map<String, ? extends Collection<String>> cohorts)

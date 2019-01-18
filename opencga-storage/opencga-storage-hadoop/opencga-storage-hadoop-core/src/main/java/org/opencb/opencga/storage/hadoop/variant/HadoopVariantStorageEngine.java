@@ -615,7 +615,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         VariantHadoopDBAdaptor dbAdaptor = getDBAdaptor();
         VariantStorageMetadataManager scm = dbAdaptor.getMetadataManager();
         List<Integer> fileIds = preRemoveFiles(study, files).getFileIds();
-        final int studyId = scm.getStudyId(study, null);
+        final int studyId = scm.getStudyId(study);
 
 //        // Pre delete
 //        scm.lockAndUpdate(studyId, sc -> {

@@ -28,6 +28,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.slf4j.Logger;
@@ -337,6 +338,10 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
 
     protected static StudyConfiguration newStudyConfiguration() {
         return new StudyConfiguration(STUDY_ID, STUDY_NAME);
+    }
+
+    protected static StudyMetadata newStudyMetadata() {
+        return new StudyMetadata(STUDY_ID, STUDY_NAME);
     }
 
     public boolean assertWithConflicts(Variant variant, Runnable assertCondition) {

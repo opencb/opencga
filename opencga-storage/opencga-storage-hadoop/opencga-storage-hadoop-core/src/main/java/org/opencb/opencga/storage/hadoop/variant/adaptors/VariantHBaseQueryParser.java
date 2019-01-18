@@ -460,7 +460,7 @@ public class VariantHBaseQueryParser {
                 subFilters = filters;
             }
             for (String studyStr : values) {
-                Integer studyId = metadataManager.getStudyId(studyStr, null);
+                int studyId = metadataManager.getStudyId(studyStr);
                 byte[] column = VariantPhoenixHelper.getStudyColumn(studyId).bytes();
                 if (isNegated(studyStr)) {
                     subFilters.addFilter(missingColumnFilter(column));

@@ -249,7 +249,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
 
         VariantStorageMetadataManager scm = getMetadataManager();
-        Integer studyId = scm.getStudyId(study, null);
+        int studyId = scm.getStudyId(study);
 
         Thread hook = scm.buildShutdownHook(REMOVE_OPERATION_NAME, studyId, fileIds);
         try {

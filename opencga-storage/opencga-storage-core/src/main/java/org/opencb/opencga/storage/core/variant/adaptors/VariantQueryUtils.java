@@ -483,7 +483,7 @@ public final class VariantQueryUtils {
             // Check that the study exists
             VariantQueryUtils.QueryOperation studiesOperation = checkOperator(value);
             List<String> studiesNames = splitValue(value, studiesOperation);
-            List<Integer> studyIds = metadataManager.getStudyIds(studiesNames, options); // Non negated studyIds
+            List<Integer> studyIds = metadataManager.getStudyIds(studiesNames); // Non negated studyIds
 
 
             if (studyIds.size() == 1) {
@@ -535,7 +535,7 @@ public final class VariantQueryUtils {
 
         List<Integer> studyIds;
         if (studiesList == null) {
-            studyIds = metadataManager.getStudyIds(options);
+            studyIds = metadataManager.getStudyIds();
             if (studyIds.size() > 1) {
                 Map<Integer, List<Integer>> map = null;
                 if (isIncludeSamplesDefined(query, fields)) {
@@ -557,7 +557,7 @@ public final class VariantQueryUtils {
                 }
             }
         } else {
-            studyIds = metadataManager.getStudyIds(studiesList, options);
+            studyIds = metadataManager.getStudyIds(studiesList);
         }
         return studyIds;
     }

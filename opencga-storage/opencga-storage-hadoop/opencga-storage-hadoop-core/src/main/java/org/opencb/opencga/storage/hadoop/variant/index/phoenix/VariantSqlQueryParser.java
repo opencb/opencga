@@ -578,14 +578,14 @@ public class VariantSqlQueryParser {
             if (studies.values().size() != notNullStudies.size() || !notNullStudies.containsAll(studies.values())) {
                 filters.add(sb.toString());
             }
-            List<Integer> studyIds = metadataManager.getStudyIds(values, options);
+            List<Integer> studyIds = metadataManager.getStudyIds(values);
             if (studyIds.size() == 1) {
                 defaultStudyMetadata = metadataManager.getStudyMetadata(studyIds.get(0));
             } else {
                 defaultStudyMetadata = null;
             }
         } else {
-            List<Integer> studyIds = metadataManager.getStudyIds(options);
+            List<Integer> studyIds = metadataManager.getStudyIds();
             if (studyIds.size() == 1) {
                 defaultStudyMetadata = metadataManager.getStudyMetadata(studyIds.get(0));
             } else {

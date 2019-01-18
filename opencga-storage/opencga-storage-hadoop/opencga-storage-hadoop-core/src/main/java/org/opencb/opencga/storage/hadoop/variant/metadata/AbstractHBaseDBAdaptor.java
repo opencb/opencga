@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.metadata;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Iterators;
@@ -50,6 +51,7 @@ public abstract class AbstractHBaseDBAdaptor {
         family = new GenomeHelper(configuration).getColumnFamily();
         this.objectMapper = new ObjectMapper().addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
         objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         if (hBaseManager == null) {
             this.hBaseManager = new HBaseManager(configuration);
         } else {
@@ -195,5 +197,16 @@ public abstract class AbstractHBaseDBAdaptor {
         }
 
     }
+
+    protected void deleteRow(byte[] rowKey) {
+        try {
+            hBaseManager.act(tableName, table -> {
+                table.delete(new Delete(rowKey));
+            });
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
 
 }

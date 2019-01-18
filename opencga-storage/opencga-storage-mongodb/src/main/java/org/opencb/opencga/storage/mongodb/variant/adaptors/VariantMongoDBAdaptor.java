@@ -211,8 +211,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
      * @return A QueryResult with the file deleted
      */
     public QueryResult removeFiles(String study, List<String> files, long timestamp, QueryOptions options) {
-        Integer studyId = metadataManager.getStudyId(study, null, false);
-        StudyConfiguration sc = metadataManager.getStudyConfiguration(studyId, null).first();
+        StudyConfiguration sc = metadataManager.getStudyConfiguration(study, null).first();
+        Integer studyId = sc.getStudyId();
         List<Integer> fileIds = metadataManager.getFileIds(studyId, files);
 
         ArrayList<Integer> otherIndexedFiles = new ArrayList<>(sc.getIndexedFiles());
@@ -351,7 +351,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             options = new QueryOptions();
         }
 
-        Integer studyId = metadataManager.getStudyId(studyName, null, false);
+        Integer studyId = metadataManager.getStudyId(studyName);
         Bson query = queryParser.parseQuery(new Query(STUDY.key(), studyId));
 
         boolean purge = options.getBoolean("purge", true);

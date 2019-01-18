@@ -459,7 +459,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
     @Override
     public URI preLoad(URI input, URI output) throws StorageEngineException {
-        getOrCreateStudyMetadata(false);
+        getOrCreateStudyMetadata();
         int studyId = getStudyId();
 
         VariantFileMetadata fileMetadata = readVariantFileMetadata(input);
@@ -714,7 +714,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
     /*  StudyMetadata utils methods        */
     /* --------------------------------------- */
 
-    protected StudyMetadata getOrCreateStudyMetadata(boolean forceFetch) throws StorageEngineException {
+    protected StudyMetadata getOrCreateStudyMetadata() throws StorageEngineException {
         return ensureStudyMetadataExists(getStudyMetadata());
     }
 

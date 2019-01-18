@@ -65,7 +65,7 @@ public class SampleIndexDBAdaptor {
         } else if (samples.isEmpty()) {
             throw new VariantQueryException("At least one sample expected to query SampleIndex!");
         }
-        Integer studyId = getStudyId(study);
+        int studyId = getStudyId(study);
 
         List<VariantDBIterator> iterators = new ArrayList<>(samples.size());
         List<VariantDBIterator> negatedIterators = new ArrayList<>(samples.size());
@@ -107,7 +107,7 @@ public class SampleIndexDBAdaptor {
 
     public VariantDBIterator iterator(List<Region> regions, String study, String sample, List<String> gts) {
 
-        Integer studyId = getStudyId(study);
+        int studyId = getStudyId(study);
 
         List<String> filteredGts = GenotypeClass.filter(gts, getAllLoadedGenotypes(study));
         if (!gts.isEmpty() && filteredGts.isEmpty()) {
@@ -167,7 +167,7 @@ public class SampleIndexDBAdaptor {
             regionsList = VariantQueryUtils.mergeRegions(regions);
         }
 
-        Integer studyId = getStudyId(study);
+        int studyId = getStudyId(study);
         if (CollectionUtils.isEmpty(gts)) {
             StudyConfiguration sc = scm.getStudyConfiguration(studyId, RO_CACHED_OPTIONS).first();
             gts = sc.getAttributes().getAsStringList(VariantStorageEngine.Options.LOADED_GENOTYPES.key());
@@ -218,8 +218,8 @@ public class SampleIndexDBAdaptor {
         }
     }
 
-    protected Integer getStudyId(String study) {
-        Integer studyId;
+    protected int getStudyId(String study) {
+        int studyId;
         if (StringUtils.isEmpty(study)) {
             Map<String, Integer> studies = scm.getStudies(null);
             if (studies.size() == 1) {
@@ -228,7 +228,7 @@ public class SampleIndexDBAdaptor {
                 throw VariantQueryException.studyNotFound(study, studies.keySet());
             }
         } else {
-            studyId = scm.getStudyId(study, null);
+            studyId = scm.getStudyId(study);
         }
         return studyId;
     }
