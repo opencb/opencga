@@ -92,7 +92,7 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
         this.outputStream = outputStream;
         this.query = query == null ? new Query() : query;
         this.queryOptions = queryOptions == null ? new QueryOptions() : queryOptions;
-        studyId = this.studyConfiguration.getStudyId();
+        studyId = this.studyConfiguration.getId();
     }
 
     public void setSampleNameConverter(Function<String, String> converter) {
@@ -392,7 +392,7 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
     public List<String> buildAlleles(Variant variant, Pair<Integer, Integer> adjustedRange) {
         String reference = variant.getReference();
         String alternate = variant.getAlternate();
-        List<AlternateCoordinate> secAlts = variant.getStudy(this.studyConfiguration.getStudyName()).getSecondaryAlternates();
+        List<AlternateCoordinate> secAlts = variant.getStudy(this.studyConfiguration.getName()).getSecondaryAlternates();
         List<String> alleles = new ArrayList<>(secAlts.size() + 2);
         Integer origStart = variant.getStart();
         Integer origEnd = variant.getEnd();
@@ -435,7 +435,7 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
         final String noCallAllele = String.valueOf(VCFConstants.NO_CALL_ALLELE);
         VariantContextBuilder variantContextBuilder = new VariantContextBuilder();
         VariantType type = variant.getType();
-        StudyEntry studyEntry = variant.getStudy(this.studyConfiguration.getStudyName());
+        StudyEntry studyEntry = variant.getStudy(this.studyConfiguration.getName());
         if (studyEntry == null) {
             return null;
         }
@@ -617,7 +617,7 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
         if (StringUtils.isBlank(variant.getReference()) || StringUtils.isBlank(variant.getAlternate())) {
             start = start - 1;
         }
-        for (AlternateCoordinate alternateCoordinate : variant.getStudy(this.studyConfiguration.getStudyName()).getSecondaryAlternates()) {
+        for (AlternateCoordinate alternateCoordinate : variant.getStudy(this.studyConfiguration.getName()).getSecondaryAlternates()) {
             start = Math.min(start, alternateCoordinate.getStart());
             end = Math.max(end, alternateCoordinate.getEnd());
             if (StringUtils.isBlank(alternateCoordinate.getAlternate()) || StringUtils.isBlank(alternateCoordinate.getReference())) {

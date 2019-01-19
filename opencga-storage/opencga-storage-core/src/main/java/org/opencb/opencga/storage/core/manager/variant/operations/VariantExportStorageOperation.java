@@ -260,7 +260,7 @@ public class VariantExportStorageOperation extends StorageOperation {
                     } else {
                         description = "Cohort data imported from " + source;
                     }
-                    Cohort cohort = catalogManager.getCohortManager().create(studyConfiguration.getStudyName(), cohortName, Study
+                    Cohort cohort = catalogManager.getCohortManager().create(studyConfiguration.getName(), cohortName, Study
                             .Type.COLLECTION, description, newSampleList, null, Collections.emptyMap(), sessionId).first();
                     newCohortIds.put(cohortName, (int) cohort.getUid());
                     newCohorts.put((int) cohort.getUid(), newSampleList.stream().map(Sample::getUid).map(Long::intValue)

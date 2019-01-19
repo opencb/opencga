@@ -541,11 +541,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                     statsOptions.append(Options.UPDATE_STATS.key(), true);
                 }
                 URI statsOutputUri = output.resolve(VariantStoragePipeline
-                        .buildFilename(studyMetadata.getStudyName(), fileIds.get(0)) + "." + TimeUtils.getTime());
+                        .buildFilename(studyMetadata.getName(), fileIds.get(0)) + "." + TimeUtils.getTime());
                 statsOptions.put(DefaultVariantStatisticsManager.OUTPUT, statsOutputUri.toString());
 
                 List<String> cohorts = Collections.singletonList(StudyEntry.DEFAULT_COHORT);
-                calculateStats(studyMetadata.getStudyName(), cohorts, statsOptions);
+                calculateStats(studyMetadata.getName(), cohorts, statsOptions);
             } catch (Exception e) {
                 throw new StoragePipelineException("Can't calculate stats.", e, results);
             }
@@ -817,7 +817,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 VariantStorageMetadataManager.setStatus(studyConfiguration, BatchFileTask.Status.ERROR, REMOVE_OPERATION_NAME, fileIds);
             } else {
                 for (Integer fileId : fileIds) {
-                    getDBAdaptor().getMetadataManager().deleteVariantFileMetadata(studyConfiguration.getStudyId(), fileId);
+                    getDBAdaptor().getMetadataManager().deleteVariantFileMetadata(studyConfiguration.getId(), fileId);
                 }
 
                 VariantStorageMetadataManager.setStatus(studyConfiguration, BatchFileTask.Status.READY, REMOVE_OPERATION_NAME, fileIds);

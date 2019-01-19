@@ -8,8 +8,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchUtils;
 import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
 
@@ -17,8 +17,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 import static org.hamcrest.CoreMatchers.*;
-import static org.hamcrest.CoreMatchers.anyOf;
-import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.opencb.biodata.models.variant.StudyEntry.FILTER;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
@@ -46,11 +44,11 @@ public abstract class VariantDBAdaptorMultiFileSpecificSamplesCollectionTest ext
 
         VariantStorageMetadataManager scm = dbAdaptor.getMetadataManager();
         for (String studyName : scm.getStudyNames(null)) {
-            StudyConfiguration sc = scm.getStudyConfiguration(studyName, null).first();
-            ArrayList<String> samples = new ArrayList<>(sc.getSampleIds().keySet());
+            StudyMetadata sc = scm.getStudyMetadata(studyName);
+            ArrayList<String> samples = new ArrayList<>(metadataManager.getIndexedSamplesMap(sc.getId()).keySet());
             samples.sort(String::compareTo);
-            variantStorageEngine.searchIndexSamples(sc.getStudyName(), samples.subList(0, samples.size() / 2));
-            variantStorageEngine.searchIndexSamples(sc.getStudyName(), samples.subList(samples.size() / 2, samples.size()));
+            variantStorageEngine.searchIndexSamples(sc.getName(), samples.subList(0, samples.size() / 2));
+            variantStorageEngine.searchIndexSamples(sc.getName(), samples.subList(samples.size() / 2, samples.size()));
         }
     }
 

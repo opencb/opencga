@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.mongodb.variant;
 
+import com.google.common.collect.Iterators;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Sorts;
@@ -36,9 +37,10 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
-import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngineTest;
@@ -93,24 +95,23 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
     @Test
     public void stageResumeFromErrorTest() throws Exception {
         MongoDBVariantStorageEngine variantStorageManager = getVariantStorageEngine();
-        VariantStorageMetadataManager scm = variantStorageManager.getDBAdaptor().getMetadataManager();
+        VariantStorageMetadataManager metadataManager = variantStorageManager.getDBAdaptor().getMetadataManager();
 
-        StudyConfiguration studyConfiguration = newStudyConfiguration();
-        int fileId = scm.registerFile(studyConfiguration.getStudyId(), UriUtils.fileName(smallInputUri));
+        StudyMetadata studyMetadata = newStudyMetadata();
+        int fileId = metadataManager.registerFile(studyMetadata.getId(), UriUtils.fileName(smallInputUri));
         BatchFileTask operation = new BatchFileTask(MongoDBVariantOptions.STAGE.key(),
                 Collections.singletonList(fileId), System.currentTimeMillis(), BatchFileTask.Type.OTHER);
         operation.addStatus(new Date(System.currentTimeMillis() - 100), BatchFileTask.Status.RUNNING);
         operation.addStatus(new Date(System.currentTimeMillis() - 50), BatchFileTask.Status.ERROR);
         // Last status is ERROR
 
-        studyConfiguration.getBatches().add(operation);
-        scm.updateStudyConfiguration(studyConfiguration, null);
+        metadataManager.updateTask(studyMetadata.getId(), operation);
 
         System.out.println("----------------");
         System.out.println("|   RESUME     |");
         System.out.println("----------------");
 
-        runDefaultETL(smallInputUri, variantStorageManager, studyConfiguration, new ObjectMap()
+        runDefaultETL(smallInputUri, variantStorageManager, studyMetadata, new ObjectMap()
                 .append(MongoDBVariantOptions.DIRECT_LOAD.key(), false)
                 .append(MongoDBVariantOptions.STAGE_RESUME.key(), false)
                 .append(VariantStorageEngine.Options.ANNOTATE.key(), false)
@@ -121,21 +122,20 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
     @Test
     public void stageForceResumeTest() throws Exception {
         MongoDBVariantStorageEngine variantStorageManager = getVariantStorageEngine();
-        VariantStorageMetadataManager scm = variantStorageManager.getDBAdaptor().getMetadataManager();
+        VariantStorageMetadataManager metadataManager = variantStorageManager.getDBAdaptor().getMetadataManager();
 
-        StudyConfiguration studyConfiguration = newStudyConfiguration();
-        int fileId = scm.registerFile(studyConfiguration.getStudyId(), UriUtils.fileName(smallInputUri));
+        StudyMetadata studyMetadata = newStudyMetadata();
+        int fileId = metadataManager.registerFile(studyMetadata.getId(), UriUtils.fileName(smallInputUri));
         BatchFileTask operation = new BatchFileTask(MongoDBVariantOptions.STAGE.key(),
                 Collections.singletonList(fileId), System.currentTimeMillis(), BatchFileTask.Type.OTHER);
         operation.addStatus(new Date(System.currentTimeMillis() - 100), BatchFileTask.Status.RUNNING);
         operation.addStatus(new Date(System.currentTimeMillis() - 50), BatchFileTask.Status.ERROR);
         operation.addStatus(new Date(System.currentTimeMillis()), BatchFileTask.Status.RUNNING);
         // Last status is RUNNING
-        studyConfiguration.getBatches().add(operation);
-        scm.updateStudyConfiguration(studyConfiguration, null);
+        metadataManager.updateTask(studyMetadata.getId(), operation);
 
         try {
-            runDefaultETL(smallInputUri, variantStorageManager, studyConfiguration, new ObjectMap()
+            runDefaultETL(smallInputUri, variantStorageManager, studyMetadata, new ObjectMap()
                     .append(MongoDBVariantOptions.DIRECT_LOAD.key(), false));
             fail();
         } catch (StorageEngineException e) {
@@ -151,7 +151,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         System.out.println("|   RESUME     |");
         System.out.println("----------------");
 
-        runDefaultETL(smallInputUri, variantStorageManager, studyConfiguration, new ObjectMap()
+        runDefaultETL(smallInputUri, variantStorageManager, studyMetadata, new ObjectMap()
                 .append(MongoDBVariantOptions.STAGE_RESUME.key(), true)
                 .append(VariantStorageEngine.Options.ANNOTATE.key(), false)
         );
@@ -182,17 +182,17 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         assertEquals(stageCount, count);
     }
 
-    private long simulateStageError(StudyConfiguration studyConfiguration, VariantMongoDBAdaptor dbAdaptor) throws Exception {
+    private long simulateStageError(StudyMetadata studyMetadata, VariantMongoDBAdaptor dbAdaptor) throws Exception {
         // Simulate stage error
-        // 1) Set ERROR status on the StudyConfiguration
-        VariantStorageMetadataManager scm = dbAdaptor.getMetadataManager();
-        studyConfiguration.copy(scm.getStudyConfiguration(studyConfiguration.getStudyId(), new QueryOptions()).first());
-        assertEquals(1, studyConfiguration.getBatches().size());
-        assertEquals(BatchFileTask.Status.READY, studyConfiguration.getBatches().get(0).currentStatus());
-        TreeMap<Date, BatchFileTask.Status> status = studyConfiguration.getBatches().get(0).getStatus();
+        // 1) Set ERROR status on the StudyMetadata
+
+        BatchFileTask[] tasks = Iterators.toArray(metadataManager.taskIterator(studyMetadata.getId()), BatchFileTask.class);
+        assertEquals(1, tasks.length);
+        assertEquals(BatchFileTask.Status.READY, tasks[0].currentStatus());
+        TreeMap<Date, BatchFileTask.Status> status = tasks[0].getStatus();
         status.remove(status.lastKey(), BatchFileTask.Status.READY);
-        studyConfiguration.getBatches().get(0).addStatus(BatchFileTask.Status.ERROR);
-        scm.updateStudyConfiguration(studyConfiguration, null);
+        tasks[0].addStatus(BatchFileTask.Status.ERROR);
+        metadataManager.updateTask(studyMetadata.getId(), tasks[0]);
 
         // 2) Remove from files collection
         MongoDataStore dataStore = getMongoDataStoreManager(DB_NAME).get(DB_NAME);
@@ -200,7 +200,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         System.out.println("Files delete count " + files.remove(new Document(), new QueryOptions()).first().getDeletedCount());
 
         // 3) Clean some variants from the Stage collection.
-        MongoDBCollection stage = dbAdaptor.getStageCollection(studyConfiguration.getStudyId());
+        MongoDBCollection stage = dbAdaptor.getStageCollection(studyMetadata.getId());
 
         long stageCount = stage.count().first();
         System.out.println("stage count : " + stageCount);
@@ -296,12 +296,12 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         assertEquals(expected.getMessage(), exception.getResults().get(0).getLoadError().getMessage());
     }
 
-    public StoragePipelineException loadConcurrentAndCheck(StudyConfiguration studyConfiguration, StoragePipelineResult storagePipelineResult) throws InterruptedException, StorageEngineException, ExecutionException {
+    public StoragePipelineException loadConcurrentAndCheck(StudyMetadata studyMetadata, StoragePipelineResult storagePipelineResult) throws InterruptedException, StorageEngineException, ExecutionException {
 
         AtomicReference<StoragePipelineException> exception = new AtomicReference<>(null);
         Callable<Integer> load = () -> {
             try {
-                runDefaultETL(storagePipelineResult.getTransformResult(), getVariantStorageEngine(), studyConfiguration, new ObjectMap()
+                runDefaultETL(storagePipelineResult.getTransformResult(), getVariantStorageEngine(), studyMetadata, new ObjectMap()
                         .append(VariantStorageEngine.Options.ANNOTATE.key(), false)
                         .append(MongoDBVariantOptions.DIRECT_LOAD.key(), false)
                         .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false), false, true);
@@ -321,11 +321,12 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
 
         VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
         assertTrue(dbAdaptor.count(new Query()).first() > 0);
-        assertEquals(1, studyConfiguration.getIndexedFiles().size());
-        assertEquals(BatchFileTask.Status.READY, studyConfiguration.getBatches().get(0).currentStatus());
-        assertEquals(MongoDBVariantOptions.STAGE.key(), studyConfiguration.getBatches().get(0).getOperationName());
-        assertEquals(BatchFileTask.Status.READY, studyConfiguration.getBatches().get(1).currentStatus());
-        assertEquals(MongoDBVariantOptions.MERGE.key(), studyConfiguration.getBatches().get(1).getOperationName());
+        assertEquals(1, metadataManager.getIndexedFiles(studyMetadata.getId()).size());
+        BatchFileTask[] tasks = Iterators.toArray(metadataManager.taskIterator(studyMetadata.getId()), BatchFileTask.class);
+        assertEquals(BatchFileTask.Status.READY, tasks[0].currentStatus());
+        assertEquals(MongoDBVariantOptions.STAGE.key(), tasks[0].getOperationName());
+        assertEquals(BatchFileTask.Status.READY, tasks[1].currentStatus());
+        assertEquals(MongoDBVariantOptions.MERGE.key(), tasks[1].getOperationName());
 
         assertEquals(1, loadOne.get() + loadTwo.get());
         return exception.get();
@@ -340,14 +341,14 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
      */
     @Test
     public void stageWhileMerging() throws Exception {
-        StudyConfiguration studyConfiguration = newStudyConfiguration();
-        StoragePipelineResult storagePipelineResult = runDefaultETL(inputUri, getVariantStorageEngine(), studyConfiguration, new ObjectMap()
+        StudyMetadata studyMetadata = newStudyMetadata();
+        StoragePipelineResult storagePipelineResult = runDefaultETL(inputUri, getVariantStorageEngine(), studyMetadata, new ObjectMap()
                 .append(MongoDBVariantOptions.STAGE.key(), true)
                 .append(MongoDBVariantOptions.MERGE.key(), false)
                 .append(MongoDBVariantOptions.DIRECT_LOAD.key(), false));
         Thread thread = new Thread(() -> {
             try {
-                runDefaultETL(storagePipelineResult.getTransformResult(), getVariantStorageEngine(), studyConfiguration, new ObjectMap()
+                runDefaultETL(storagePipelineResult.getTransformResult(), getVariantStorageEngine(), studyMetadata, new ObjectMap()
                                 .append(MongoDBVariantOptions.DIRECT_LOAD.key(), false),
                         false, true);
             } catch (Exception e) {
@@ -367,7 +368,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
             thrown.expectCause(instanceOf(expected.getClass()));
             thrown.expectCause(hasMessage(is(expected.getMessage())));
 
-            runDefaultETL(smallInputUri, getVariantStorageEngine(), studyConfiguration,
+            runDefaultETL(smallInputUri, getVariantStorageEngine(), studyMetadata,
                     new ObjectMap(MongoDBVariantOptions.DIRECT_LOAD.key(), false));
         } finally {
             System.out.println("Interrupt!");
@@ -376,10 +377,10 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
             thread.join();
             System.out.println("EXIT");
 
-            StudyConfiguration sc = variantStorageMetadataManager.getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+            BatchFileTask[] tasks = Iterators.toArray(metadataManager.taskIterator(studyMetadata.getId()), BatchFileTask.class);
             // Second file is not staged or merged
-//            int secondFileId = studyConfiguration.getFileIds().get(UriUtils.fileName(smallInputUri));
-            List<BatchFileTask> ops = sc.getBatches().stream().filter(op -> op.getFileIds().contains(secondFileId)).collect(Collectors.toList());
+//            int secondFileId = studyMetadata.getFileIds().get(UriUtils.fileName(smallInputUri));
+            List<BatchFileTask> ops = Arrays.stream(tasks).filter(op -> op.getFileIds().contains(secondFileId)).collect(Collectors.toList());
             assertEquals(0, ops.size());
         }
     }
@@ -389,17 +390,17 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
      */
     @Test
     public void mergeWhileMerging() throws Exception {
-        StudyConfiguration studyConfiguration = newStudyConfiguration();
-        StoragePipelineResult storagePipelineResult = runDefaultETL(inputUri, getVariantStorageEngine(), studyConfiguration, new ObjectMap()
+        StudyMetadata studyMetadata = newStudyMetadata();
+        StoragePipelineResult storagePipelineResult = runDefaultETL(inputUri, getVariantStorageEngine(), studyMetadata, new ObjectMap()
                 .append(MongoDBVariantOptions.STAGE.key(), true));
 
-        StoragePipelineResult storagePipelineResult2 = runDefaultETL(smallInputUri, getVariantStorageEngine(), studyConfiguration,
+        StoragePipelineResult storagePipelineResult2 = runDefaultETL(smallInputUri, getVariantStorageEngine(), studyMetadata,
                 new ObjectMap()
                         .append(MongoDBVariantOptions.STAGE.key(), true));
-        int secondFileId = studyConfiguration.getFileIds().get(UriUtils.fileName(smallInputUri));
+        int secondFileId = metadataManager.getFileId(studyMetadata.getId(), smallInputUri);
         Thread thread = new Thread(() -> {
             try {
-                runDefaultETL(storagePipelineResult.getTransformResult(), getVariantStorageEngine(), studyConfiguration, new ObjectMap()
+                runDefaultETL(storagePipelineResult.getTransformResult(), getVariantStorageEngine(), studyMetadata, new ObjectMap()
                             .append(MongoDBVariantOptions.DIRECT_LOAD.key(), false), false, true);
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -417,7 +418,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
             thrown.expectCause(instanceOf(expected.getClass()));
             thrown.expectCause(hasMessage(is(expected.getMessage())));
 
-            runDefaultETL(storagePipelineResult2.getTransformResult(), getVariantStorageEngine(), studyConfiguration,
+            runDefaultETL(storagePipelineResult2.getTransformResult(), getVariantStorageEngine(), studyMetadata,
                     new ObjectMap()
                             .append(MongoDBVariantOptions.MERGE.key(), true)
                             .append(MongoDBVariantOptions.STAGE.key(), false)
@@ -429,9 +430,9 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
             thread.join();
             System.out.println("EXIT");
 
-            StudyConfiguration sc = variantStorageMetadataManager.getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
             // Second file is not staged or merged
-            List<BatchFileTask> ops = sc.getBatches().stream().filter(op -> op.getFileIds().contains(secondFileId)).collect(Collectors.toList());
+            BatchFileTask[] tasks = Iterators.toArray(metadataManager.taskIterator(studyMetadata.getId()), BatchFileTask.class);
+            List<BatchFileTask> ops = Arrays.stream(tasks).filter(op -> op.getFileIds().contains(secondFileId)).collect(Collectors.toList());
             assertEquals(1, ops.size());
             assertEquals(MongoDBVariantOptions.STAGE.key(), ops.get(0).getOperationName());
             System.out.println("DONE");
@@ -481,11 +482,11 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         });
     }
 
-    public void mergeResume(URI file, StudyConfiguration studyConfiguration, Consumer<VariantStorageEngine> setUp) throws Exception {
+    public void mergeResume(URI file, StudyMetadata studyMetadata, Consumer<VariantStorageEngine> setUp) throws Exception {
 
         setUp.accept(variantStorageEngine);
 
-        StoragePipelineResult storagePipelineResult = runDefaultETL(file, variantStorageEngine, studyConfiguration, new ObjectMap()
+        StoragePipelineResult storagePipelineResult = runDefaultETL(file, variantStorageEngine, studyMetadata, new ObjectMap()
                 .append(MongoDBVariantOptions.STAGE.key(), true)
                 .append(MongoDBVariantOptions.MERGE.key(), false));
 
@@ -540,21 +541,21 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         System.out.println("count = " + count);
         assertTrue(count > 0);
 
-        MongoDBCollection stageCollection = dbAdaptor.getStageCollection(studyConfiguration.getStudyId());
-        long cleanedDocuments = MongoDBVariantStageLoader.cleanStageCollection(stageCollection, studyConfiguration.getStudyId(), Collections.singletonList(FILE_ID), null, null);
+        MongoDBCollection stageCollection = dbAdaptor.getStageCollection(studyMetadata.getId());
+        long cleanedDocuments = MongoDBVariantStageLoader.cleanStageCollection(stageCollection, studyMetadata.getId(), Collections.singletonList(FILE_ID), null, null);
         assertEquals(0, cleanedDocuments);
 
-        studyConfiguration = dbAdaptor.getMetadataManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
-        System.out.println(studyConfiguration.toString());
-        Integer fileId = studyConfiguration.getFileIds().get(Paths.get(file.getPath()).getFileName().toString());
-        assertTrue(studyConfiguration.getIndexedFiles().contains(fileId));
-        assertEquals(BatchFileTask.Status.READY, studyConfiguration.getBatches().get(1).currentStatus());
+        System.out.println(studyMetadata.toString());
+        Integer fileId = metadataManager.getFileId(studyMetadata.getId(), file);
+        assertTrue(metadataManager.getIndexedFiles(studyMetadata.getId()).contains(fileId));
+        BatchFileTask[] tasks = Iterators.toArray(metadataManager.taskIterator(studyMetadata.getId()), BatchFileTask.class);
+        assertEquals(BatchFileTask.Status.READY, tasks[1].currentStatus());
 
         // Insert in a different set of collections the same file
         MongoDBVariantStorageEngine variantStorageManager = getVariantStorageEngine("2");
         setUp.accept(variantStorageManager);
 
-        runDefaultETL(file, variantStorageManager, studyConfiguration, new ObjectMap()
+        runDefaultETL(file, variantStorageManager, studyMetadata, new ObjectMap()
                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
                 .append(VariantStorageEngine.Options.ANNOTATE.key(), false));
 
@@ -564,7 +565,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         MongoDBCollection variantsCollection = mongoDataStore.getCollection(MongoDBVariantOptions.COLLECTION_VARIANTS.defaultValue());
         MongoDBCollection variants2Collection = mongoDataStore.getCollection(MongoDBVariantOptions.COLLECTION_VARIANTS.defaultValue() + "2");
 //        MongoDBCollection stageCollection = mongoDataStore.getCollection(MongoDBVariantOptions.COLLECTION_STAGE.defaultValue());
-        MongoDBCollection stage2Collection = variantStorageManager.getDBAdaptor().getStageCollection(studyConfiguration.getStudyId());
+        MongoDBCollection stage2Collection = variantStorageManager.getDBAdaptor().getStageCollection(studyMetadata.getId());
 
         assertEquals(count, compareCollections(variants2Collection, variantsCollection));
         compareCollections(stage2Collection, stageCollection, doc -> {
@@ -699,8 +700,8 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
     @Test
     public void mergeWithOtherStages() throws Exception {
 
-        StudyConfiguration studyConfiguration1 = new StudyConfiguration(1, "s1");
-        StudyConfiguration studyConfiguration2 = new StudyConfiguration(2, "s2");
+        StudyMetadata studyMetadata1 = new StudyMetadata(1, "s1");
+        StudyMetadata studyMetadata2 = new StudyMetadata(2, "s2");
         URI file1 = getResourceUri("1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
         URI file2 = getResourceUri("1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
         URI file3 = getResourceUri("1000g_batches/1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
@@ -708,48 +709,51 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         URI file5 = getResourceUri("1000g_batches/2001-2504.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
 
         // Stage and merge file1
-        runDefaultETL(file1, getVariantStorageEngine(), studyConfiguration1, new ObjectMap()
+        runDefaultETL(file1, getVariantStorageEngine(), studyMetadata1, new ObjectMap()
                 .append(VariantStorageEngine.Options.ANNOTATE.key(), false)
                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
                 .append(MongoDBVariantOptions.STAGE.key(), true)
                 .append(MongoDBVariantOptions.MERGE.key(), true));
-        runDefaultETL(file2, getVariantStorageEngine(), studyConfiguration1, new ObjectMap()
+        runDefaultETL(file2, getVariantStorageEngine(), studyMetadata1, new ObjectMap()
                 .append(MongoDBVariantOptions.STAGE.key(), true)
                 .append(MongoDBVariantOptions.MERGE.key(), false));
 
-        runDefaultETL(file3, getVariantStorageEngine(), studyConfiguration2, new ObjectMap()
+        runDefaultETL(file3, getVariantStorageEngine(), studyMetadata2, new ObjectMap()
                 .append(MongoDBVariantOptions.STAGE.key(), true)
                 .append(MongoDBVariantOptions.MERGE.key(), false));
-        runDefaultETL(file4, getVariantStorageEngine(), studyConfiguration2, new ObjectMap()
+        runDefaultETL(file4, getVariantStorageEngine(), studyMetadata2, new ObjectMap()
                 .append(MongoDBVariantOptions.STAGE.key(), true)
                 .append(MongoDBVariantOptions.MERGE.key(), false));
         // Stage and merge file5
-        runDefaultETL(file5, getVariantStorageEngine(), studyConfiguration2, new ObjectMap()
+        runDefaultETL(file5, getVariantStorageEngine(), studyMetadata2, new ObjectMap()
                 .append(VariantStorageEngine.Options.ANNOTATE.key(), false)
                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
                 .append(MongoDBVariantOptions.STAGE.key(), true)
                 .append(MongoDBVariantOptions.MERGE.key(), true));
 
+        VariantStorageMetadataManager metadataManager1 = getVariantStorageEngine().getMetadataManager();
+        VariantStorageMetadataManager metadataManager2 = getVariantStorageEngine("2").getMetadataManager();
 
-        VariantStorageMetadataManager scm = getVariantStorageEngine("2").getDBAdaptor().getMetadataManager();
 
-        StudyConfiguration newStudyConfiguration1 = new StudyConfiguration(1, "s1");
-        newStudyConfiguration1.setSampleIds(studyConfiguration1.getSampleIds());    // Copy the sampleIds from the first load
-        newStudyConfiguration1.setFileIds(studyConfiguration1.getFileIds());
-        scm.updateStudyConfiguration(newStudyConfiguration1, null);
+        // Copy the sampleIds from the first load
+        StudyMetadata newStudyMetadata1 = new StudyMetadata(1, "s1");
+        metadataManager2.updateStudyMetadata(newStudyMetadata1);
+        metadataManager1.sampleMetadataIterator(studyMetadata1.getId()).forEachRemaining(s -> metadataManager2.updateSampleMetadata(newStudyMetadata1.getId(), s));
+        metadataManager1.fileMetadataIterator(studyMetadata1.getId()).forEachRemaining(s -> metadataManager2.updateFileMetadata(newStudyMetadata1.getId(), s));
 
-        StudyConfiguration newStudyConfiguration2 = new StudyConfiguration(2, "s2");
-        newStudyConfiguration2.setSampleIds(studyConfiguration2.getSampleIds());    // Copy the sampleIds from the first load
-        newStudyConfiguration2.setFileIds(studyConfiguration2.getFileIds());
-        scm.updateStudyConfiguration(newStudyConfiguration2, null);
+        // Copy the sampleIds from the first load
+        StudyMetadata newStudyMetadata2 = new StudyMetadata(2, "s2");
+        metadataManager2.updateStudyMetadata(newStudyMetadata2);
+        metadataManager1.sampleMetadataIterator(studyMetadata2.getId()).forEachRemaining(s -> metadataManager2.updateSampleMetadata(newStudyMetadata2.getId(), s));
+        metadataManager1.fileMetadataIterator(studyMetadata2.getId()).forEachRemaining(s -> metadataManager2.updateFileMetadata(newStudyMetadata2.getId(), s));
 
-        runDefaultETL(file1, getVariantStorageEngine("2"), newStudyConfiguration1, new ObjectMap()
+        runDefaultETL(file1, getVariantStorageEngine("2"), newStudyMetadata1, new ObjectMap()
 //                .append(VariantStorageEngine.Options.FILE_ID.key(), 1)
                 .append(VariantStorageEngine.Options.ANNOTATE.key(), false)
                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
                 .append(MongoDBVariantOptions.STAGE.key(), true)
                 .append(MongoDBVariantOptions.MERGE.key(), true));
-        runDefaultETL(file5, getVariantStorageEngine("2"), newStudyConfiguration2, new ObjectMap()
+        runDefaultETL(file5, getVariantStorageEngine("2"), newStudyMetadata2, new ObjectMap()
 //                .append(VariantStorageEngine.Options.FILE_ID.key(), 5)
                 .append(VariantStorageEngine.Options.ANNOTATE.key(), false)
                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
@@ -762,8 +766,8 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
 
     @Test
     public void concurrentMerge() throws Exception {
-        StudyConfiguration studyConfiguration1 = new StudyConfiguration(1, "s1");
-        StudyConfiguration studyConfiguration2 = new StudyConfiguration(2, "s2");
+        StudyMetadata studyMetadata1 = new StudyMetadata(1, "s1");
+        StudyMetadata studyMetadata2 = new StudyMetadata(2, "s2");
 
 
         URI file1 = getResourceUri("1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
@@ -773,28 +777,28 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         URI file5 = getResourceUri("1000g_batches/2001-2504.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
 
         MongoDBVariantStorageEngine variantStorageManager1 = getVariantStorageEngine();
-        runDefaultETL(file1, variantStorageManager1, studyConfiguration1, new ObjectMap()
+        runDefaultETL(file1, variantStorageManager1, studyMetadata1, new ObjectMap()
 //                        .append(VariantStorageEngine.Options.FILE_ID.key(), 1)
                         .append(MongoDBVariantOptions.STAGE.key(), true)
                         .append(MongoDBVariantOptions.MERGE.key(), false)
                 , true, true);
-        runDefaultETL(file2, variantStorageManager1, studyConfiguration1, new ObjectMap()
+        runDefaultETL(file2, variantStorageManager1, studyMetadata1, new ObjectMap()
 //                        .append(VariantStorageEngine.Options.FILE_ID.key(), 2)
                         .append(MongoDBVariantOptions.STAGE.key(), true)
                         .append(MongoDBVariantOptions.MERGE.key(), false)
                 , true, true);
-        StoragePipelineResult storagePipelineResult3 = runDefaultETL(file3, variantStorageManager1, studyConfiguration1, new ObjectMap()
+        StoragePipelineResult storagePipelineResult3 = runDefaultETL(file3, variantStorageManager1, studyMetadata1, new ObjectMap()
 //                        .append(VariantStorageEngine.Options.FILE_ID.key(), 3)
                         .append(MongoDBVariantOptions.STAGE.key(), true)
                         .append(MongoDBVariantOptions.MERGE.key(), false)
                 , true, true);
 
-        runDefaultETL(file4, variantStorageManager1, studyConfiguration2, new ObjectMap()
+        runDefaultETL(file4, variantStorageManager1, studyMetadata2, new ObjectMap()
 //                        .append(VariantStorageEngine.Options.FILE_ID.key(), 4)
                         .append(MongoDBVariantOptions.STAGE.key(), true)
                         .append(MongoDBVariantOptions.MERGE.key(), false)
                 , true, true);
-        StoragePipelineResult storagePipelineResult5 = runDefaultETL(file5, variantStorageManager1, studyConfiguration2, new ObjectMap()
+        StoragePipelineResult storagePipelineResult5 = runDefaultETL(file5, variantStorageManager1, studyMetadata2, new ObjectMap()
 //                        .append(VariantStorageEngine.Options.FILE_ID.key(), 5)
                         .append(MongoDBVariantOptions.STAGE.key(), true)
                         .append(MongoDBVariantOptions.MERGE.key(), false)
@@ -802,7 +806,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
 
         ExecutorService executor = Executors.newFixedThreadPool(2);
         Future mergeFile3 = executor.submit((Callable) () -> {
-            runDefaultETL(storagePipelineResult3.getTransformResult(), newVariantStorageEngine(), studyConfiguration1, new ObjectMap()
+            runDefaultETL(storagePipelineResult3.getTransformResult(), newVariantStorageEngine(), studyMetadata1, new ObjectMap()
 //                    .append(VariantStorageEngine.Options.FILE_ID.key(), 3)
                     .append(VariantStorageEngine.Options.ANNOTATE.key(), false)
                     .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
@@ -811,7 +815,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
             return 0;
         });
         Future mergeFile5 = executor.submit((Callable) () -> {
-            runDefaultETL(storagePipelineResult5.getTransformResult(), newVariantStorageEngine(), studyConfiguration2, new ObjectMap()
+            runDefaultETL(storagePipelineResult5.getTransformResult(), newVariantStorageEngine(), studyMetadata2, new ObjectMap()
 //                    .append(VariantStorageEngine.Options.FILE_ID.key(), 5)
                     .append(VariantStorageEngine.Options.ANNOTATE.key(), false)
                     .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
@@ -824,23 +828,26 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         assertEquals(0, mergeFile3.get());
         assertEquals(0, mergeFile5.get());
 
-        VariantStorageMetadataManager scm = getVariantStorageEngine("2").getDBAdaptor().getMetadataManager();
+        VariantStorageMetadataManager metadataManager1 = getVariantStorageEngine().getMetadataManager();
+        VariantStorageMetadataManager metadataManager2 = getVariantStorageEngine("2").getMetadataManager();
 
-        StudyConfiguration newStudyConfiguration1 = new StudyConfiguration(1, "s1");
-        newStudyConfiguration1.setSampleIds(studyConfiguration1.getSampleIds());    // Copy the sampleIds from the first load
-        scm.updateStudyConfiguration(newStudyConfiguration1, null);
+        // Copy the sampleIds from the first load
+        StudyMetadata newStudyMetadata1 = new StudyMetadata(1, "s1");
+        metadataManager2.updateStudyMetadata(newStudyMetadata1);
+        metadataManager1.sampleMetadataIterator(studyMetadata1.getId()).forEachRemaining(s -> metadataManager2.updateSampleMetadata(newStudyMetadata1.getId(), s));
 
-        StudyConfiguration newStudyConfiguration2 = new StudyConfiguration(2, "s2");
-        newStudyConfiguration2.setSampleIds(studyConfiguration2.getSampleIds());    // Copy the sampleIds from the first load
-        scm.updateStudyConfiguration(newStudyConfiguration2, null);
+        // Copy the sampleIds from the first load
+        StudyMetadata newStudyMetadata2 = new StudyMetadata(2, "s2");
+        metadataManager2.updateStudyMetadata(newStudyMetadata2);
+        metadataManager1.sampleMetadataIterator(studyMetadata2.getId()).forEachRemaining(s -> metadataManager2.updateSampleMetadata(newStudyMetadata2.getId(), s));
 
-        runDefaultETL(file3, getVariantStorageEngine("2"), newStudyConfiguration1, new ObjectMap()
+        runDefaultETL(file3, getVariantStorageEngine("2"), newStudyMetadata1, new ObjectMap()
 //                .append(VariantStorageEngine.Options.FILE_ID.key(), 3)
                 .append(VariantStorageEngine.Options.ANNOTATE.key(), false)
                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
                 .append(MongoDBVariantOptions.STAGE.key(), true)
                 .append(MongoDBVariantOptions.MERGE.key(), true));
-        runDefaultETL(file5, getVariantStorageEngine("2"), newStudyConfiguration2, new ObjectMap()
+        runDefaultETL(file5, getVariantStorageEngine("2"), newStudyMetadata2, new ObjectMap()
 //                .append(VariantStorageEngine.Options.FILE_ID.key(), 5)
                 .append(VariantStorageEngine.Options.ANNOTATE.key(), false)
                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
@@ -944,10 +951,10 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         super.multiIndexPlatinum(new ObjectMap(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "DP,AD,PL"));
         checkPlatinumDatabase(d -> ((List) d.get(FILES_FIELD)).size(), Collections.singleton("0/0"));
 
-//        StudyConfiguration studyConfiguration = variantStorageEngine.getStudyConfigurationManager()
-//                .getStudyConfiguration(1, null).first();
+//        StudyMetadata studyMetadata = variantStorageEngine.getStudyMetadataManager()
+//                .getStudyMetadata(1, null).first();
 
-//        Iterator<BatchFileOperation> iterator = studyConfiguration.getBatches().iterator();
+//        Iterator<BatchFileOperation> iterator = studyMetadata.getBatches().iterator();
 //        assertEquals(MongoDBVariantOptions.DIRECT_LOAD.key(), iterator.next().getOperationName());
 //        while (iterator.hasNext()) {
 //            BatchFileOperation batchFileOperation = iterator.next();
@@ -971,14 +978,14 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         try (VariantMongoDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor()) {
             MongoDBCollection variantsCollection = dbAdaptor.getVariantsCollection();
 
-            StudyConfiguration sc1 = dbAdaptor.getMetadataManager().getStudyConfiguration(1, null).first();
-            StudyConfiguration sc2 = dbAdaptor.getMetadataManager().getStudyConfiguration(2, null).first();
+            StudyMetadata sc1 = dbAdaptor.getMetadataManager().getStudyMetadata(1);
+            StudyMetadata sc2 = dbAdaptor.getMetadataManager().getStudyMetadata(2);
             for (Document document : variantsCollection.nativeQuery().find(new Document(), new QueryOptions())) {
                 String id = document.getString("_id");
                 List<Document> studies = document.get(DocumentToVariantConverter.STUDIES_FIELD, List.class);
                 assertEquals(id, 2, studies.size());
-                Document study1 = studies.stream().filter(d -> d.getInteger(STUDYID_FIELD).equals(sc1.getStudyId())).findAny().orElse(null);
-                Document study2 = studies.stream().filter(d -> d.getInteger(STUDYID_FIELD).equals(sc2.getStudyId())).findAny().orElse(null);
+                Document study1 = studies.stream().filter(d -> d.getInteger(STUDYID_FIELD).equals(sc1.getId())).findAny().orElse(null);
+                Document study2 = studies.stream().filter(d -> d.getInteger(STUDYID_FIELD).equals(sc2.getId())).findAny().orElse(null);
                 for (Document study : studies) {
                     Document gts = study.get(GENOTYPES_FIELD, Document.class);
                     Set<Integer> samples = new HashSet<>();
@@ -1012,11 +1019,11 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
                 Map<String, Document> files1 = ((List<Document>) study1.get(FILES_FIELD))
                         .stream()
                         .collect(Collectors.toMap(
-                                d -> sc1.getFileIds().inverse().get(Math.abs(d.getInteger(FILEID_FIELD))),
+                                d -> metadataManager.getFileName(sc1.getId(), Math.abs(d.getInteger(FILEID_FIELD))),
                                 Function.identity()));
                 Map<String, Document> files2 = ((List<Document>) study2.get(FILES_FIELD))
                         .stream()
-                        .collect(Collectors.toMap(d -> sc2.getFileIds().inverse().get(Math.abs(d.getInteger(FILEID_FIELD))), Function.identity()));
+                        .collect(Collectors.toMap(d -> metadataManager.getFileName(sc2.getId(), Math.abs(d.getInteger(FILEID_FIELD))), Function.identity()));
                 assertEquals(id, study1.get(FILES_FIELD, List.class).size(), study2.get(FILES_FIELD, List.class).size());
                 assertEquals(id, files1.size(), files2.size());
                 for (Map.Entry<String, Document> entry : files1.entrySet()) {
@@ -1096,10 +1103,10 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         checkLoadedVariants();
 
 //        // Check that the first file has been loaded with DIRECT_LOAD method
-//        StudyConfiguration studyConfiguration = variantStorageEngine.getStudyConfigurationManager()
-//                .getStudyConfiguration(1, null).first();
+//        StudyMetadata studyMetadata = variantStorageEngine.getStudyMetadataManager()
+//                .getStudyMetadata(1, null).first();
 //
-//        for (BatchFileOperation batchFileOperation : studyConfiguration.getBatches()) {
+//        for (BatchFileOperation batchFileOperation : studyMetadata.getBatches()) {
 //            assertEquals(MongoDBVariantOptions.DIRECT_LOAD.key(), batchFileOperation.getOperationName());
 //        }
     }
@@ -1111,12 +1118,11 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
 
         checkLoadedVariants();
 
-        StudyConfiguration studyConfiguration = variantStorageEngine.getMetadataManager()
-                .getStudyConfiguration(1, null).first();
+        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(STUDY_NAME);
 
-        for (BatchFileTask batchFileTask : studyConfiguration.getBatches()) {
-            assertEquals(MongoDBVariantOptions.DIRECT_LOAD.key(), batchFileTask.getOperationName());
-        }
+        metadataManager.taskIterator(studyMetadata.getId()).forEachRemaining(task -> {
+            assertEquals(MongoDBVariantOptions.DIRECT_LOAD.key(), task.getOperationName());
+        });
     }
 
     public void checkLoadedVariants() throws Exception {
@@ -1154,8 +1160,8 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
     public void removeFileTest(QueryOptions params) throws Exception {
         MongoDBVariantStorageEngine variantStorageEngineExpected = getVariantStorageEngine("_expected");
 
-        StudyConfiguration studyConfiguration1 = new StudyConfiguration(1, "Study1");
-        StudyConfiguration studyConfiguration2 = new StudyConfiguration(2, "Study2");
+        StudyMetadata studyMetadata1 = new StudyMetadata(1, "Study1");
+        StudyMetadata studyMetadata2 = new StudyMetadata(2, "Study2");
 
         ObjectMap options = new ObjectMap(params)
                 .append(VariantStorageEngine.Options.STUDY_TYPE.key(), SampleSetType.CONTROL_SET)
@@ -1163,27 +1169,27 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
                 .append(VariantStorageEngine.Options.ANNOTATE.key(), false);
         //Study1
         runDefaultETL(getResourceUri("1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
-                variantStorageEngineExpected, studyConfiguration1, options);
+                variantStorageEngineExpected, studyMetadata1, options);
 
         // Register file2, so internal IDs matches with the actual database
         URI file2Uri = getResourceUri("1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
-        int fileId2 = variantStorageEngineExpected.getMetadataManager().registerFile(studyConfiguration1.getStudyId(), UriUtils.fileName(file2Uri));
-        variantStorageEngineExpected.getMetadataManager().registerFileSamples(studyConfiguration1.getId(), fileId2, variantStorageEngineExpected.getVariantReaderUtils().readVariantFileMetadata(file2Uri));
+        int fileId2 = variantStorageEngineExpected.getMetadataManager().registerFile(studyMetadata1.getId(), UriUtils.fileName(file2Uri));
+        variantStorageEngineExpected.getMetadataManager().registerFileSamples(studyMetadata1.getId(), fileId2, variantStorageEngineExpected.getVariantReaderUtils().readVariantFileMetadata(file2Uri));
 //        runDefaultETL(getResourceUri("1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
-//                variantStorageEngineExpected, studyConfiguration1, options.append(VariantStorageEngine.Options.FILE_ID.key(), 2));
+//                variantStorageEngineExpected, studyMetadata1, options.append(VariantStorageEngine.Options.FILE_ID.key(), 2));
 
         //Study2
         runDefaultETL(getResourceUri("1000g_batches/1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
-                variantStorageEngineExpected, studyConfiguration2, options);
+                variantStorageEngineExpected, studyMetadata2, options);
         runDefaultETL(getResourceUri("1000g_batches/1501-2000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
-                variantStorageEngineExpected, studyConfiguration2, options);
+                variantStorageEngineExpected, studyMetadata2, options);
         runDefaultETL(getResourceUri("1000g_batches/2001-2504.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
-                variantStorageEngineExpected, studyConfiguration2, options);
+                variantStorageEngineExpected, studyMetadata2, options);
 
         super.removeFileTest(params);
         VariantMongoDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
 
-        int studyId = studyConfiguration1.getStudyId();
+        int studyId = studyMetadata1.getId();
         MongoDBCollection variantsCollection = dbAdaptor.getVariantsCollection();
         System.out.println("variantsCollection = " + variantsCollection);
         MongoDBCollection stageCollection = dbAdaptor.getStageCollection(studyId);

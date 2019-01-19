@@ -212,7 +212,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
      */
     public QueryResult removeFiles(String study, List<String> files, long timestamp, QueryOptions options) {
         StudyConfiguration sc = metadataManager.getStudyConfiguration(study, null).first();
-        Integer studyId = sc.getStudyId();
+        Integer studyId = sc.getId();
         List<Integer> fileIds = metadataManager.getFileIds(studyId, files);
 
         ArrayList<Integer> otherIndexedFiles = new ArrayList<>(sc.getIndexedFiles());
@@ -290,7 +290,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 .collect(Collectors.toSet());
 
         // Update and remove variants from variants collection
-        int studyId = sc.getStudyId();
+        int studyId = sc.getId();
         logger.info("Remove files from variants collection - step 1/3"); // Remove study if only contains removed files
         long updatedVariantsDocuments = removeStudyFromVariants(studyId, studiesToRemoveQuery, timestamp).first().getModifiedCount();
 
@@ -956,7 +956,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 continue;
             }
             VariantStats variantStats = iterator.next();
-            List<Document> cohorts = statsConverter.convertCohortsToStorageType(cohortStats, studyConfiguration.getStudyId());   // TODO
+            List<Document> cohorts = statsConverter.convertCohortsToStorageType(cohortStats, studyConfiguration.getId());   // TODO
             // remove when we remove fileId
 //            List cohorts = statsConverter.convertCohortsToStorageType(cohortStats, variantSource.getStudyId());   // TODO use when we
 // remove fileId
@@ -1019,14 +1019,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         // { st : { $elemMatch : {  sid : <studyId>, cid : <cohortId> } } }
         Document query = new Document(DocumentToVariantConverter.STATS_FIELD,
                 new Document("$elemMatch",
-                        new Document(DocumentToVariantStatsConverter.STUDY_ID, studyConfiguration.getStudyId())
+                        new Document(DocumentToVariantStatsConverter.STUDY_ID, studyConfiguration.getId())
                                 .append(DocumentToVariantStatsConverter.COHORT_ID, cohortId)));
 
         // { $pull : { st : {  sid : <studyId>, cid : <cohortId> } } }
         Document update = new Document(
                 "$pull",
                 new Document(DocumentToVariantConverter.STATS_FIELD,
-                        new Document(DocumentToVariantStatsConverter.STUDY_ID, studyConfiguration.getStudyId())
+                        new Document(DocumentToVariantStatsConverter.STUDY_ID, studyConfiguration.getId())
                                 .append(DocumentToVariantStatsConverter.COHORT_ID, cohortId)
                 )
         );

@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.core.metadata;
 import com.google.common.base.Throwables;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.google.common.collect.Iterators;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -27,6 +28,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.adaptors.ProjectMetadataAdaptor;
 import org.opencb.opencga.storage.core.metadata.adaptors.StudyMetadataDBAdaptor;
@@ -41,6 +43,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
@@ -185,7 +189,16 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     @Deprecated
-    public final QueryResult<StudyConfiguration> getStudyConfiguration(String studyName, QueryOptions options) {
+    public final QueryResult<StudyConfiguration> getStudyConfiguration(Object study, QueryOptions options) {
+        if (study instanceof Number) {
+            return getStudyConfiguration2(((Number) study).intValue(), options);
+        } else {
+            return getStudyConfiguration2(study.toString(), options);
+        }
+    }
+
+    @Deprecated
+    private QueryResult<StudyConfiguration> getStudyConfiguration2(String studyName, QueryOptions options) {
         if (StringUtils.isNumeric(studyName)) {
             return getStudyConfiguration(Integer.valueOf(studyName), options);
         }
@@ -198,7 +211,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 if (!readOnly) {
                     studyConfiguration = studyConfiguration.newInstance();
                 }
-                return new QueryResult<>(studyConfiguration.getStudyName(), 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
+                return new QueryResult<>(studyConfiguration.getName(), 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
             }
             Long timeStamp = stringStudyConfigurationMap.get(studyName).getTimeStamp();
             result = studyMetadataDBAdaptor.getStudyConfiguration(studyName, timeStamp, options);
@@ -215,9 +228,9 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
         StudyConfiguration studyConfiguration = result.first();
         if (studyConfiguration != null) {
-            intStudyConfigurationMap.put(studyConfiguration.getStudyId(), studyConfiguration);
-            stringStudyConfigurationMap.put(studyConfiguration.getStudyName(), studyConfiguration);
-            if (studyName != null && !studyName.equals(studyConfiguration.getStudyName())) {
+            intStudyConfigurationMap.put(studyConfiguration.getId(), studyConfiguration);
+            stringStudyConfigurationMap.put(studyConfiguration.getName(), studyConfiguration);
+            if (studyName != null && !studyName.equals(studyConfiguration.getName())) {
                 stringStudyConfigurationMap.put(studyName, studyConfiguration);
             }
             if (!readOnly) {
@@ -229,7 +242,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     @Deprecated
-    public final QueryResult<StudyConfiguration> getStudyConfiguration(int studyId, QueryOptions options) {
+    private QueryResult<StudyConfiguration> getStudyConfiguration2(int studyId, QueryOptions options) {
         QueryResult<StudyConfiguration> result;
         final boolean cached = options != null && options.getBoolean(CACHED, false);
         final boolean readOnly = options != null && options.getBoolean(READ_ONLY, false);
@@ -239,7 +252,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 if (!readOnly) {
                     studyConfiguration = studyConfiguration.newInstance();
                 }
-                return new QueryResult<>(studyConfiguration.getStudyName(), 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
+                return new QueryResult<>(studyConfiguration.getName(), 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
             }
             result = studyMetadataDBAdaptor.getStudyConfiguration(studyId, intStudyConfigurationMap.get(studyId).getTimeStamp(), options);
             if (result.getNumTotalResults() == 0) { //No changes. Return old value
@@ -247,7 +260,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 if (!readOnly) {
                     studyConfiguration = studyConfiguration.newInstance();
                 }
-                return new QueryResult<>(studyConfiguration.getStudyName(), 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
+                return new QueryResult<>(studyConfiguration.getName(), 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
             }
         } else {
             result = studyMetadataDBAdaptor.getStudyConfiguration(studyId, null, options);
@@ -255,8 +268,8 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
         StudyConfiguration studyConfiguration = result.first();
         if (studyConfiguration != null) {
-            intStudyConfigurationMap.put(studyConfiguration.getStudyId(), studyConfiguration);
-            stringStudyConfigurationMap.put(studyConfiguration.getStudyName(), studyConfiguration);
+            intStudyConfigurationMap.put(studyConfiguration.getId(), studyConfiguration);
+            stringStudyConfigurationMap.put(studyConfiguration.getName(), studyConfiguration);
             if (!readOnly) {
                 result.setResult(Collections.singletonList(studyConfiguration.newInstance()));
             }
@@ -316,8 +329,8 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
         // Store a copy of the StudyConfiguration.
         StudyConfiguration copy = studyConfiguration.newInstance();
-        stringStudyConfigurationMap.put(copy.getStudyName(), copy);
-        intStudyConfigurationMap.put(copy.getStudyId(), copy);
+        stringStudyConfigurationMap.put(copy.getName(), copy);
+        intStudyConfigurationMap.put(copy.getId(), copy);
         return studyMetadataDBAdaptor.updateStudyConfiguration(copy, options);
     }
 
@@ -437,7 +450,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             }
         } else if (StringUtils.isNumeric(study)) {
             int studyInt = Integer.parseInt(study);
-            if (defaultStudyConfiguration != null && studyInt == defaultStudyConfiguration.getStudyId()) {
+            if (defaultStudyConfiguration != null && studyInt == defaultStudyConfiguration.getId()) {
                 studyConfiguration = defaultStudyConfiguration;
             } else {
                 studyConfiguration = getStudyConfiguration(studyInt, options).first();
@@ -446,7 +459,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 throw VariantQueryException.studyNotFound(studyInt, getStudyNames(options));
             }
         } else {
-            if (defaultStudyConfiguration != null && defaultStudyConfiguration.getStudyName().equals(study)) {
+            if (defaultStudyConfiguration != null && defaultStudyConfiguration.getName().equals(study)) {
                 studyConfiguration = defaultStudyConfiguration;
             } else {
                 studyConfiguration = getStudyConfiguration(study, options).first();
@@ -581,6 +594,11 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     public Integer getFileId(int studyId, Object fileObj, boolean onlyIndexed) {
+        if (fileObj instanceof URI) {
+            fileObj = UriUtils.fileName(((URI) fileObj));
+        } else if (fileObj instanceof Path) {
+            fileObj = ((Path) fileObj).getFileName().toString();
+        }
         Integer fileId = parseResourceId(studyId, fileObj,
                 o -> getFileId(studyId, o),
                 o -> fileIdExists(studyId, o, onlyIndexed));
@@ -639,6 +657,10 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
     public LinkedHashSet<Integer> getIndexedFiles(int studyId) {
         return studyMetadataDBAdaptor.getIndexedFiles(studyId);
+    }
+
+    public Iterator<FileMetadata> fileMetadataIterator(int studyId) {
+        return studyMetadataDBAdaptor.fileIterator(studyId);
     }
 
     public SampleMetadata getSampleMetadata(int studyId, int sampleId) {
@@ -782,6 +804,10 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return studyMetadataDBAdaptor.cohortIterator(studyId);
     }
 
+    public Iterable<CohortMetadata> getCalculatedCohorts(int studyId) {
+        return () -> Iterators.filter(cohortIterator(studyId), CohortMetadata::isReady);
+    }
+
     public BatchFileTask getTask(int studyId, int taskId) {
         return studyMetadataDBAdaptor.getTask(studyId, taskId, null);
     }
@@ -916,6 +942,9 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 id = null;
             }
         } else {
+            if (!(obj instanceof String)) {
+                throw new IllegalArgumentException("Unable to parse obj type " + obj.getClass());
+            }
             String str = obj.toString();
             if (isNegated(str)) {
                 str = removeNegation(str);
@@ -976,7 +1005,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                     String study = split[0];
                     sampleStr = split[1];
                     StudyConfiguration sc;
-                    if (defaultStudyConfiguration != null && study.equals(defaultStudyConfiguration.getStudyName())) {
+                    if (defaultStudyConfiguration != null && study.equals(defaultStudyConfiguration.getName())) {
                         sc = defaultStudyConfiguration;
                     } else {
                         QueryResult<StudyConfiguration> queryResult = getStudyConfiguration(study, new QueryOptions());
@@ -991,7 +1020,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                     sampleId = sc.getSampleIds().get(sampleStr);
                 } else if (defaultStudyConfiguration != null) {
                     if (!defaultStudyConfiguration.getSampleIds().containsKey(sampleStr)) {
-                        throw VariantQueryException.sampleNotFound(sampleStr, defaultStudyConfiguration.getStudyName());
+                        throw VariantQueryException.sampleNotFound(sampleStr, defaultStudyConfiguration.getName());
                     }
                     sampleId = defaultStudyConfiguration.getSampleIds().get(sampleStr);
                 } else {
@@ -1018,13 +1047,13 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         if (StringUtils.isNumeric(cohort)) {
             cohortId = Integer.parseInt(cohort);
             if (!studyConfiguration.getCohortIds().containsValue(cohortId)) {
-                throw VariantQueryException.cohortNotFound(cohortId, studyConfiguration.getStudyId(),
+                throw VariantQueryException.cohortNotFound(cohortId, studyConfiguration.getId(),
                         studyConfiguration.getCohortIds().keySet());
             }
         } else {
             Integer cohortIdNullable = studyConfiguration.getCohortIds().get(cohort);
             if (cohortIdNullable == null) {
-                throw VariantQueryException.cohortNotFound(cohort, studyConfiguration.getStudyId(),
+                throw VariantQueryException.cohortNotFound(cohort, studyConfiguration.getId(),
                         studyConfiguration.getCohortIds().keySet());
             }
             cohortId = cohortIdNullable;
@@ -1120,7 +1149,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         for (String sample : samples) {
             Integer sampleId = getSampleId(studyConfiguration.getId(), sample);
             if (sampleId == null) {
-                throw VariantQueryException.sampleNotFound(sample, studyConfiguration.getStudyName());
+                throw VariantQueryException.sampleNotFound(sample, studyConfiguration.getName());
             }
             sampleIds.add(sampleId);
             Integer searchIndex = studyConfiguration.getSearchIndexedSampleSets().get(sampleId);
@@ -1177,7 +1206,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         if (studyConfiguration == null) {
             throw new StorageEngineException("StudyConfiguration is null");
         }
-        checkStudyId(studyConfiguration.getStudyId());
+        checkStudyId(studyConfiguration.getId());
     }
 
     public int registerFile(int studyId, VariantFileMetadata variantFileMetadata) throws StorageEngineException {

@@ -57,7 +57,7 @@ public class AddFilePathToStudyConfigurationMigration {
                     VariantStorageMetadataManager scm = engine.getMetadataManager();
                     for (String studyName : scm.getStudyNames(null)) {
                         StudyConfiguration sc = scm.getStudyConfiguration(studyName, null).first();
-                        logger.info("Migrating study " + sc.getStudyName());
+                        logger.info("Migrating study " + sc.getName());
 
                         for (Map.Entry<String, Integer> entry : sc.getFileIds().entrySet()) {
                             String fileName = entry.getKey();

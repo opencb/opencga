@@ -114,7 +114,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
     public void calculateStatsSeparatedCohortsTest() throws Exception {
         //Calculate stats for 2 cohorts separately
 
-        String studyName = studyMetadata.getStudyName();
+        String studyName = studyMetadata.getName();
         QueryOptions options = new QueryOptions();
         options.put(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100);
         Iterator<SampleMetadata> iterator = metadataManager.sampleMetadataIterator(studyMetadata.getId());
@@ -168,8 +168,8 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
     public StudyMetadata stats(QueryOptions options, StudyMetadata studyMetadata, Map<String, Set<String>> cohorts,
                                     URI output) throws IOException, StorageEngineException {
         options.put(DefaultVariantStatisticsManager.OUTPUT, output.toString());
-        variantStorageEngine.calculateStats(studyMetadata.getStudyName(), cohorts, options);
-        return metadataManager.getStudyMetadata(studyMetadata.getStudyId());
+        variantStorageEngine.calculateStats(studyMetadata.getName(), cohorts, options);
+        return metadataManager.getStudyMetadata(studyMetadata.getId());
     }
 
     public static StudyMetadata stats(VariantStatisticsManager vsm, QueryOptions options, StudyMetadata studyMetadata,
@@ -187,9 +187,9 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
 //                studyMetadata.getCohorts().put(cohortIds.get(cohort), sampleIds);
 //            });
 //            dbAdaptor.getMetadataManager().updateStudyMetadata(studyMetadata);
-            vsm.calculateStatistics(studyMetadata.getStudyName(), new ArrayList<>(cohorts.keySet()), options);
+            vsm.calculateStatistics(studyMetadata.getName(), new ArrayList<>(cohorts.keySet()), options);
         }
-        return dbAdaptor.getMetadataManager().getStudyMetadata(studyMetadata.getStudyId());
+        return dbAdaptor.getMetadataManager().getStudyMetadata(studyMetadata.getId());
     }
 
     static void checkCohorts(VariantDBAdaptor dbAdaptor, StudyMetadata studyMetadata) {

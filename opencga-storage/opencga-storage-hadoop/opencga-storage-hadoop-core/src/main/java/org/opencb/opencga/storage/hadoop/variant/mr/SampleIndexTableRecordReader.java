@@ -217,7 +217,7 @@ public class SampleIndexTableRecordReader extends TableRecordReader {
                         chromosome.equals(stopChr) ? end : Integer.MAX_VALUE));
             }
         }
-        iterator = sampleIndexDBAdaptor.iterator(regions, studyConfiguration.getStudyName(), samples, operation);
+        iterator = sampleIndexDBAdaptor.iterator(regions, studyConfiguration.getName(), samples, operation);
         loadMoreResults();
     }
 

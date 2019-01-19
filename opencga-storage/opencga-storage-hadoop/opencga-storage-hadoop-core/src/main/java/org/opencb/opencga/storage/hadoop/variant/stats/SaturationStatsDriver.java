@@ -82,7 +82,7 @@ public class SaturationStatsDriver extends AbstractVariantsTableDriver {
         }
         int numSamples = sc.getSampleIds().size();
         for (Integer sampleId : sc.getSampleIds().values()) {
-            scan.addColumn(getHelper().getColumnFamily(), VariantPhoenixHelper.buildSampleColumnKey(sc.getStudyId(), sampleId));
+            scan.addColumn(getHelper().getColumnFamily(), VariantPhoenixHelper.buildSampleColumnKey(sc.getId(), sampleId));
         }
         scan.addColumn(getHelper().getColumnFamily(), VariantPhoenixHelper.VariantColumn.TYPE.bytes());
 

@@ -28,6 +28,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.slf4j.Logger;
@@ -97,6 +98,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
     protected static URI corruptedInputUri;
     protected static URI outputUri;
     protected VariantStorageEngine variantStorageEngine;
+    protected VariantStorageMetadataManager metadataManager;
     private static Logger logger = LoggerFactory.getLogger(VariantStorageBaseTest.class);
     private static Path rootDir = null;
 //    private static AtomicInteger count = new AtomicInteger(0);
@@ -233,6 +235,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
     public final void _before() throws Exception {
         printActiveThreadsNumber();
         variantStorageEngine = getVariantStorageEngine();
+        metadataManager = variantStorageEngine.getMetadataManager();
     }
 
     @After
@@ -284,7 +287,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
 //        newParams.put(VariantStorageEngine.Options.STUDY_CONFIGURATION.key(), studyMetadata);
         newParams.putIfAbsent(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), studyMetadata.getAggregation());
 //        newParams.putIfAbsent(VariantStorageEngine.Options.STUDY_ID.key(), studyMetadata.getStudyId());
-        newParams.putIfAbsent(VariantStorageEngine.Options.STUDY.key(), studyMetadata.getStudyName());
+        newParams.putIfAbsent(VariantStorageEngine.Options.STUDY.key(), studyMetadata.getName());
 //        newParams.putIfAbsent(VariantStorageEngine.Options.FILE_ID.key(), FILE_ID);
         // Default value is already avro
 //        newParams.putIfAbsent(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro");

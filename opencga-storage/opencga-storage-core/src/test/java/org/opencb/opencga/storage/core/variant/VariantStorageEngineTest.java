@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.core.variant;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Iterators;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Ignore;
@@ -38,12 +39,13 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
@@ -74,41 +76,42 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
 
     @Test
     public void basicIndex() throws Exception {
+
         clearDB(DB_NAME);
-        StudyConfiguration studyConfiguration = newStudyConfiguration();
-        StoragePipelineResult etlResult = runDefaultETL(smallInputUri, variantStorageEngine, studyConfiguration,
+        StudyMetadata studyMetadata = newStudyMetadata();
+        StoragePipelineResult etlResult = runDefaultETL(smallInputUri, variantStorageEngine, studyMetadata,
                 new ObjectMap(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "json"));
         assertTrue("Incorrect transform file extension " + etlResult.getTransformResult() + ". Expected 'variants.json.gz'",
                 Paths.get(etlResult.getTransformResult()).toFile().getName().endsWith("variants.json.gz"));
         VariantFileMetadata fileMetadata = variantStorageEngine.getVariantReaderUtils().readVariantFileMetadata(etlResult.getTransformResult());
-        assertEquals(1, studyConfiguration.getIndexedFiles().size());
-        checkTransformedVariants(etlResult.getTransformResult(), studyConfiguration);
-        checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyConfiguration, true, false, true, getExpectedNumLoadedVariants(fileMetadata));
+        assertEquals(1, metadataManager.getIndexedFiles(studyMetadata.getId()).size());
+        checkTransformedVariants(etlResult.getTransformResult(), studyMetadata);
+        checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyMetadata, true, false, true, getExpectedNumLoadedVariants(fileMetadata));
     }
 
     @Test
     public void avroBasicIndex() throws Exception {
         clearDB(DB_NAME);
-        StudyConfiguration studyConfiguration = newStudyConfiguration();
-        StoragePipelineResult etlResult = runDefaultETL(smallInputUri, variantStorageEngine, studyConfiguration,
+        StudyMetadata studyMetadata = newStudyMetadata();
+        StoragePipelineResult etlResult = runDefaultETL(smallInputUri, variantStorageEngine, studyMetadata,
                 new ObjectMap(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro"));
         assertTrue("Incorrect transform file extension " + etlResult.getTransformResult() + ". Expected 'variants.avro.gz'",
                 Paths.get(etlResult.getTransformResult()).toFile().getName().endsWith("variants.avro.gz"));
 
-        assertEquals(1, studyConfiguration.getIndexedFiles().size());
-        VariantFileMetadata fileMetadata = checkTransformedVariants(etlResult.getTransformResult(), studyConfiguration);
-        checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyConfiguration, true, false, true, getExpectedNumLoadedVariants
+        assertEquals(1, metadataManager.getIndexedFiles(studyMetadata.getId()).size());
+        VariantFileMetadata fileMetadata = checkTransformedVariants(etlResult.getTransformResult(), studyMetadata);
+        checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyMetadata, true, false, true, getExpectedNumLoadedVariants
                 (fileMetadata));
     }
 
     @Test
     public void loadFromSTDIN() throws Exception {
         clearDB(DB_NAME);
-        StudyConfiguration studyConfiguration = newStudyConfiguration();
-        StoragePipelineResult etlResult = runDefaultETL(smallInputUri, variantStorageEngine, studyConfiguration,
+        StudyMetadata studyMetadata = newStudyMetadata();
+        StoragePipelineResult etlResult = runDefaultETL(smallInputUri, variantStorageEngine, studyMetadata,
                 new ObjectMap(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro"), true, false);
 
-        VariantFileMetadata fileMetadata = checkTransformedVariants(etlResult.getTransformResult(), studyConfiguration);
+        VariantFileMetadata fileMetadata = checkTransformedVariants(etlResult.getTransformResult(), studyMetadata);
 
         Path tempFile = Paths.get(outputUri).resolve("temp_file");
         Files.move(Paths.get(etlResult.getTransformResult()), tempFile);
@@ -127,10 +130,10 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
             System.setIn(in);
         }
 
-        studyConfiguration = variantStorageEngine.getMetadataManager().getStudyConfiguration(STUDY_NAME, null).first();
+        studyMetadata = metadataManager.getStudyMetadata(STUDY_NAME);
 
-        assertEquals(1, studyConfiguration.getIndexedFiles().size());
-        checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyConfiguration, true, false, true,
+        assertEquals(1, metadataManager.getIndexedFiles(studyMetadata.getId()).size());
+        checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyMetadata, true, false, true,
                 getExpectedNumLoadedVariants(fileMetadata));
     }
 
@@ -139,7 +142,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         clearDB(DB_NAME);
         int expectedNumVariants = NUM_VARIANTS - 37; //37 variants have been removed from this dataset because had the genotype 0|0 for
         // each sample
-        StudyConfiguration studyConfigurationMultiFile = new StudyConfiguration(1, "multi");
+        StudyMetadata studyMetadataMultiFile = new StudyMetadata(1, "multi");
 
         StoragePipelineResult etlResult;
         ObjectMap options = new ObjectMap()
@@ -147,67 +150,72 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
                 .append(VariantStorageEngine.Options.ANNOTATE.key(), false);
         URI file1Uri = getResourceUri("1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
-        runDefaultETL(file1Uri, variantStorageEngine, studyConfigurationMultiFile, options);
-        Integer defaultCohortId = studyConfigurationMultiFile.getCohortIds().get(StudyEntry.DEFAULT_COHORT);
-        assertTrue(studyConfigurationMultiFile.getCohorts().containsKey(defaultCohortId));
-        assertEquals(500, studyConfigurationMultiFile.getCohorts().get(defaultCohortId).size());
-        assertEquals(Collections.emptySet(), studyConfigurationMultiFile.getCalculatedStats());
-        assertEquals(Collections.emptySet(), studyConfigurationMultiFile.getInvalidStats());
-        Integer fileId1 = studyConfigurationMultiFile.getFileIds().get(UriUtils.fileName(file1Uri));
-        assertTrue(studyConfigurationMultiFile.getIndexedFiles().contains(fileId1));
+        runDefaultETL(file1Uri, variantStorageEngine, studyMetadataMultiFile, options);
+        CohortMetadata defaultCohort = metadataManager.getCohortMetadata(studyMetadataMultiFile.getId(), StudyEntry.DEFAULT_COHORT);
+        
+        assertNotNull(defaultCohort);
+        assertEquals(500, defaultCohort.getSamples().size());
+        assertFalse(defaultCohort.isReady());
+        assertFalse(defaultCohort.isInvalid());
+        Integer fileId1 = metadataManager.getFileId(studyMetadataMultiFile.getId(), file1Uri);
+        assertTrue(metadataManager.getIndexedFiles(studyMetadataMultiFile.getId()).contains(fileId1));
 
         options.append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
         URI file2Uri = getResourceUri("1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
-        runDefaultETL(file2Uri, variantStorageEngine, studyConfigurationMultiFile, options);
-        assertEquals(1000, studyConfigurationMultiFile.getCohorts().get(defaultCohortId).size());
-        assertEquals(Collections.singleton(defaultCohortId), studyConfigurationMultiFile.getCalculatedStats());
-        assertEquals(Collections.emptySet(), studyConfigurationMultiFile.getInvalidStats());
-        Integer fileId2 = studyConfigurationMultiFile.getFileIds().get(UriUtils.fileName(file2Uri));
-        assertTrue(studyConfigurationMultiFile.getIndexedFiles().contains(fileId2));
+        runDefaultETL(file2Uri, variantStorageEngine, studyMetadataMultiFile, options);
+        defaultCohort = metadataManager.getCohortMetadata(studyMetadataMultiFile.getId(), StudyEntry.DEFAULT_COHORT);
+        assertEquals(1000, defaultCohort.getSamples().size());
+        assertTrue(defaultCohort.isReady());
+        assertFalse(defaultCohort.isInvalid());
+        Integer fileId2 = metadataManager.getFileId(studyMetadataMultiFile.getId(), file2Uri);
+        assertTrue(metadataManager.getIndexedFiles(studyMetadataMultiFile.getId()).contains(fileId2));
 
         options.append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
         URI file3Uri = getResourceUri("1000g_batches/1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
-        runDefaultETL(file3Uri, variantStorageEngine, studyConfigurationMultiFile, options);
-        assertEquals(1500, studyConfigurationMultiFile.getCohorts().get(defaultCohortId).size());
-        assertEquals(Collections.emptySet(), studyConfigurationMultiFile.getCalculatedStats());
-        assertEquals(Collections.singleton(defaultCohortId), studyConfigurationMultiFile.getInvalidStats());
-        int fileId3 = studyConfigurationMultiFile.getFileIds().get(UriUtils.fileName(file3Uri));
-        assertTrue(studyConfigurationMultiFile.getIndexedFiles().contains(fileId3));
+        runDefaultETL(file3Uri, variantStorageEngine, studyMetadataMultiFile, options);
+        defaultCohort = metadataManager.getCohortMetadata(studyMetadataMultiFile.getId(), StudyEntry.DEFAULT_COHORT);
+        assertEquals(1500, defaultCohort.getSamples().size());
+        assertFalse(defaultCohort.isReady());
+        assertTrue(defaultCohort.isInvalid());
+        int fileId3 = metadataManager.getFileId(studyMetadataMultiFile.getId(), file3Uri);
+        assertTrue(metadataManager.getIndexedFiles(studyMetadataMultiFile.getId()).contains(fileId3));
 
         options.append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
         URI file4Uri = getResourceUri("1000g_batches/1501-2000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
-        runDefaultETL(file4Uri, variantStorageEngine, studyConfigurationMultiFile, options);
-        assertEquals(2000, studyConfigurationMultiFile.getCohorts().get(defaultCohortId).size());
-        int fileId4 = studyConfigurationMultiFile.getFileIds().get(UriUtils.fileName(file4Uri));
-        assertTrue(studyConfigurationMultiFile.getIndexedFiles().contains(fileId4));
+        runDefaultETL(file4Uri, variantStorageEngine, studyMetadataMultiFile, options);
+        defaultCohort = metadataManager.getCohortMetadata(studyMetadataMultiFile.getId(), StudyEntry.DEFAULT_COHORT);
+        assertEquals(2000, defaultCohort.getSamples().size());
+        int fileId4 = metadataManager.getFileId(studyMetadataMultiFile.getId(), file4Uri);
+        assertTrue(metadataManager.getIndexedFiles(studyMetadataMultiFile.getId()).contains(fileId4));
 
         URI file5Uri = getResourceUri("1000g_batches/2001-2504.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
-        runDefaultETL(file5Uri, variantStorageEngine, studyConfigurationMultiFile, options);
-        int fileId5 = studyConfigurationMultiFile.getFileIds().get(UriUtils.fileName(file5Uri));
-        assertEquals(2504, studyConfigurationMultiFile.getCohorts().get(defaultCohortId).size());
-        assertTrue(studyConfigurationMultiFile.getIndexedFiles().contains(fileId1));
-        assertTrue(studyConfigurationMultiFile.getIndexedFiles().contains(fileId2));
-        assertTrue(studyConfigurationMultiFile.getIndexedFiles().contains(fileId3));
-        assertTrue(studyConfigurationMultiFile.getIndexedFiles().contains(fileId4));
-        assertTrue(studyConfigurationMultiFile.getIndexedFiles().contains(fileId5));
+        runDefaultETL(file5Uri, variantStorageEngine, studyMetadataMultiFile, options);
+        int fileId5 = metadataManager.getFileId(studyMetadataMultiFile.getId(), file5Uri);
+        defaultCohort = metadataManager.getCohortMetadata(studyMetadataMultiFile.getId(), StudyEntry.DEFAULT_COHORT);
+        assertEquals(2504, defaultCohort.getSamples().size());
+        assertTrue(metadataManager.getIndexedFiles(studyMetadataMultiFile.getId()).contains(fileId1));
+        assertTrue(metadataManager.getIndexedFiles(studyMetadataMultiFile.getId()).contains(fileId2));
+        assertTrue(metadataManager.getIndexedFiles(studyMetadataMultiFile.getId()).contains(fileId3));
+        assertTrue(metadataManager.getIndexedFiles(studyMetadataMultiFile.getId()).contains(fileId4));
+        assertTrue(metadataManager.getIndexedFiles(studyMetadataMultiFile.getId()).contains(fileId5));
 
         VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
-        checkLoadedVariants(dbAdaptor, studyConfigurationMultiFile, true, false, false, expectedNumVariants);
+        checkLoadedVariants(dbAdaptor, studyMetadataMultiFile, true, false, false, expectedNumVariants);
 
 
         //Load, in a new study, the same dataset in one single file
-        StudyConfiguration studyConfigurationSingleFile = new StudyConfiguration(2, "single");
+        StudyMetadata studyMetadataSingleFile = new StudyMetadata(2, "single");
         URI fileUri = getResourceUri("filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
-        etlResult = runDefaultETL(fileUri, variantStorageEngine, studyConfigurationSingleFile, options);
-        int fileId = studyConfigurationSingleFile.getFileIds().get(UriUtils.fileName(fileUri));
-        assertTrue(studyConfigurationSingleFile.getIndexedFiles().contains(fileId));
+        etlResult = runDefaultETL(fileUri, variantStorageEngine, studyMetadataSingleFile, options);
+        int fileId = metadataManager.getFileId(studyMetadataSingleFile.getId(), fileUri);
+        assertTrue(metadataManager.getIndexedFiles(studyMetadataSingleFile.getId()).contains(fileId));
 
-        checkTransformedVariants(etlResult.getTransformResult(), studyConfigurationSingleFile);
+        checkTransformedVariants(etlResult.getTransformResult(), studyMetadataSingleFile);
 
 
         //Check that both studies contains the same information
         VariantDBIterator iterator = dbAdaptor.iterator(new Query(VariantQueryParam.STUDY.key(),
-                studyConfigurationMultiFile.getStudyId() + "," + studyConfigurationSingleFile.getStudyId()).append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "0/0"), new QueryOptions());
+                studyMetadataMultiFile.getId() + "," + studyMetadataSingleFile.getId()).append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "0/0"), new QueryOptions());
         int numVariants = 0;
         for (; iterator.hasNext(); ) {
             Variant variant = iterator.next();
@@ -216,18 +224,18 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
 // (VariantSourceEntry::getStudyId, Function.<VariantSourceEntry>identity()));
             Map<String, StudyEntry> map = variant.getStudiesMap();
 
-            assertTrue(variant.toString(), map.containsKey(studyConfigurationMultiFile.getStudyName()));
-            assertTrue(variant.toString(), map.containsKey(studyConfigurationSingleFile.getStudyName()));
-            String expected = map.get(studyConfigurationSingleFile.getStudyName()).getSamplesData().toString();
-            String actual = map.get(studyConfigurationMultiFile.getStudyName()).getSamplesData().toString();
+            assertTrue(variant.toString(), map.containsKey(studyMetadataMultiFile.getName()));
+            assertTrue(variant.toString(), map.containsKey(studyMetadataSingleFile.getName()));
+            String expected = map.get(studyMetadataSingleFile.getName()).getSamplesData().toString();
+            String actual = map.get(studyMetadataMultiFile.getName()).getSamplesData().toString();
             if (!assertWithConflicts(variant, () -> assertEquals(variant.toString(), expected, actual))) {
-                List<List<String>> samplesDataSingle = map.get(studyConfigurationSingleFile.getStudyName()).getSamplesData();
-                List<List<String>> samplesDataMulti = map.get(studyConfigurationMultiFile.getStudyName()).getSamplesData();
+                List<List<String>> samplesDataSingle = map.get(studyMetadataSingleFile.getName()).getSamplesData();
+                List<List<String>> samplesDataMulti = map.get(studyMetadataMultiFile.getName()).getSamplesData();
                 for (int i = 0; i < samplesDataSingle.size(); i++) {
-                    String sampleName = map.get(studyConfigurationMultiFile.getStudyName()).getOrderedSamplesName().get(i);
+                    String sampleName = map.get(studyMetadataMultiFile.getName()).getOrderedSamplesName().get(i);
                     String message = variant.toString()
                             + " sample: " + sampleName
-                            + " id " + studyConfigurationMultiFile.getSampleIds().get(sampleName);
+                            + " id " + metadataManager.getSampleId(studyMetadataMultiFile.getId(), sampleName);
                     String expectedGt = samplesDataSingle.get(i).toString();
                     String actualGt = samplesDataMulti.get(i).toString();
                     assertWithConflicts(variant, () -> assertEquals(message, expectedGt, actualGt));
@@ -247,8 +255,8 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
     public void multiIndexPlatinum(ObjectMap options) throws Exception {
         clearDB(DB_NAME);
         // each sample
-        StudyConfiguration studyConfigurationMultiFile = new StudyConfiguration(1, "multi");
-        StudyConfiguration studyConfigurationBatchFile = new StudyConfiguration(2, "batch");
+        StudyMetadata studyMetadataMultiFile = new StudyMetadata(1, "multi");
+        StudyMetadata studyMetadataBatchFile = new StudyMetadata(2, "batch");
 
         options.putIfAbsent(VariantStorageEngine.Options.STUDY_TYPE.key(), SampleSetType.UNKNOWN);
         options.putIfAbsent(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
@@ -262,9 +270,8 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
             ObjectMap fileOptions = new ObjectMap();
             fileOptions.putAll(options);
             runDefaultETL(getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA128" + fileId + "_S1.genome.vcf.gz"),
-                    variantStorageManager, studyConfigurationMultiFile, fileOptions);
-            studyConfigurationMultiFile = variantStorageMetadataManager.getStudyConfiguration(studyConfigurationMultiFile.getStudyId(), null).first();
-            assertTrue(studyConfigurationMultiFile.getIndexedFiles().contains(i));
+                    variantStorageManager, studyMetadataMultiFile, fileOptions);
+            assertTrue(metadataManager.getIndexedFiles(studyMetadataMultiFile.getId()).contains(i));
             i++;
         }
 
@@ -276,7 +283,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
 
         variantStorageManager = getVariantStorageEngine();
         variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions()
-                .append(VariantStorageEngine.Options.STUDY.key(), studyConfigurationBatchFile.getStudyName())
+                .append(VariantStorageEngine.Options.STUDY.key(), studyMetadataBatchFile.getName())
                 .putAll(options);
 
         List<StoragePipelineResult> results = variantStorageManager.index(uris, outputUri, true, true, true);
@@ -289,8 +296,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
             assertNull(result.getLoadError());
         }
 
-        studyConfigurationBatchFile = variantStorageMetadataManager.getStudyConfiguration(studyConfigurationBatchFile.getStudyId(), null).first();
-        checkLoadedVariants(dbAdaptor, studyConfigurationBatchFile, true, false, -1);
+        checkLoadedVariants(dbAdaptor, studyMetadataBatchFile, true, false, -1);
 
 
         dbAdaptor.close();
@@ -298,17 +304,17 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
 
 //
 //        //Load, in a new study, the same dataset in one single file
-//        StudyConfiguration studyConfigurationSingleFile = new StudyConfiguration(2, "single");
+//        StudyMetadata studyMetadataSingleFile = new StudyMetadata(2, "single");
 //        etlResult = runDefaultETL(getResourceUri("filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
-//                variantStorageManager, studyConfigurationSingleFile, options.append(VariantStorageEngine.Options.FILE_ID.key(), 10));
-//        assertTrue(studyConfigurationSingleFile.getIndexedFiles().contains(10));
+//                variantStorageManager, studyMetadataSingleFile, options.append(VariantStorageEngine.Options.FILE_ID.key(), 10));
+//        assertTrue(studyMetadataSingleFile.getIndexedFiles().contains(10));
 //
-//        checkTransformedVariants(etlResult.getTransformResult(), studyConfigurationSingleFile);
+//        checkTransformedVariants(etlResult.getTransformResult(), studyMetadataSingleFile);
 //
 //
 //        //Check that both studies contains the same information
 //        VariantDBIterator iterator = dbAdaptor.iterator(new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(),
-//                studyConfigurationMultiFile.getStudyId() + "," + studyConfigurationSingleFile.getStudyId()), new QueryOptions());
+//                studyMetadataMultiFile.getStudyId() + "," + studyMetadataSingleFile.getStudyId()), new QueryOptions());
 //        int numVariants = 0;
 //        for (; iterator.hasNext(); ) {
 //            Variant variant = iterator.next();
@@ -317,9 +323,9 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
 //// (VariantSourceEntry::getStudyId, Function.<VariantSourceEntry>identity()));
 //            Map<String, StudyEntry> map = variant.getStudiesMap();
 //
-//            assertTrue(map.containsKey(studyConfigurationMultiFile.getStudyName()));
-//            assertTrue(map.containsKey(studyConfigurationSingleFile.getStudyName()));
-//            assertEquals(map.get(studyConfigurationSingleFile.getStudyName()).getSamplesData(), map.get(studyConfigurationMultiFile
+//            assertTrue(map.containsKey(studyMetadataMultiFile.getStudyName()));
+//            assertTrue(map.containsKey(studyMetadataSingleFile.getStudyName()));
+//            assertEquals(map.get(studyMetadataSingleFile.getStudyName()).getSamplesData(), map.get(studyMetadataMultiFile
 //                    .getStudyName()).getSamplesData());
 //        }
 //        assertEquals(expectedNumVariants - 4, numVariants);
@@ -329,7 +335,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
     @Test
     public void multiRegionBatchIndex() throws Exception {
         clearDB(DB_NAME);
-        StudyConfiguration studyConfiguration = new StudyConfiguration(1, "multiRegion");
+        StudyMetadata studyMetadata = new StudyMetadata(1, "multiRegion");
 
         StoragePipelineResult etlResult;
         ObjectMap options = new ObjectMap()
@@ -343,16 +349,16 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         URI chr22 = getResourceUri("10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
 
 //        runDefaultETL(chr1, this.variantStorageEngine,
-//                studyConfiguration, options.append(VariantStorageEngine.Options.FILE_ID.key(), 5));
-//        Integer defaultCohortId = studyConfiguration.getCohortIds().get(StudyEntry.DEFAULT_COHORT);
-//        assertTrue(studyConfiguration.getCohorts().containsKey(defaultCohortId));
-//        assertEquals(2504, studyConfiguration.getCohorts().get(defaultCohortId).size());
-//        assertTrue(studyConfiguration.getIndexedFiles().contains(5));
-//        checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyConfiguration, true, false, -1);
+//                studyMetadata, options.append(VariantStorageEngine.Options.FILE_ID.key(), 5));
+//        Integer defaultCohortId = studyMetadata.getCohortIds().get(StudyEntry.DEFAULT_COHORT);
+//        assertTrue(studyMetadata.getCohorts().containsKey(defaultCohortId));
+//        assertEquals(2504, studyMetadata.getCohorts().get(defaultCohortId).size());
+//        assertTrue(metadataManager.getIndexedFiles(studyMetadata.getId()).contains(5));
+//        checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyMetadata, true, false, -1);
 //
 //        runDefaultETL(chr22, this.variantStorageEngine,
 ////        runDefaultETL(getResourceUri("1k.chr21.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"), variantStorageEngine,
-//                studyConfiguration, options.append(VariantStorageEngine.Options.FILE_ID.key(), 6));
+//                studyMetadata, options.append(VariantStorageEngine.Options.FILE_ID.key(), 6));
 
         variantStorageEngine.getOptions()
                 .append(VariantStorageEngine.Options.STUDY.key(), STUDY_NAME)
@@ -374,7 +380,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
     @Test
     public void multiRegionIndex() throws Exception {
         clearDB(DB_NAME);
-        StudyConfiguration studyConfiguration = new StudyConfiguration(1, "multiRegion");
+        StudyMetadata studyMetadata = new StudyMetadata(1, "multiRegion");
 
         ObjectMap options = new ObjectMap()
                 .append(VariantStorageEngine.Options.STUDY_TYPE.key(), SampleSetType.CONTROL_SET)
@@ -382,30 +388,32 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
                 .append(VariantStorageEngine.Options.ANNOTATE.key(), false);
 
         runDefaultETL(getResourceUri("1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageEngine,
-                studyConfiguration, options);
-        Integer defaultCohortId = studyConfiguration.getCohortIds().get(StudyEntry.DEFAULT_COHORT);
-        int fileIdChr1 = studyConfiguration.getFileIds().get("1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
-        assertTrue(studyConfiguration.getCohorts().containsKey(defaultCohortId));
-        assertEquals(2504, studyConfiguration.getCohorts().get(defaultCohortId).size());
-        assertTrue(studyConfiguration.getIndexedFiles().contains(fileIdChr1));
-        checkLoadedVariants(getVariantStorageEngine().getDBAdaptor(), studyConfiguration, true, false, false, -1);
+                studyMetadata, options);
+        CohortMetadata cohort = metadataManager.getCohortMetadata(studyMetadata.getId(), StudyEntry.DEFAULT_COHORT);
+        int fileIdChr1 = metadataManager.getFileId(studyMetadata.getId(), "1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
+        assertNotNull(cohort);
+        assertEquals(2504, cohort.getSamples().size());
+        assertTrue(metadataManager.getIndexedFiles(studyMetadata.getId()).contains(fileIdChr1));
+        checkLoadedVariants(getVariantStorageEngine().getDBAdaptor(), studyMetadata, true, false, false, -1);
 
         runDefaultETL(getResourceUri("10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageEngine,
 //        runDefaultETL(getResourceUri("1k.chr21.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"), variantStorageManager,
-                studyConfiguration, options
+                studyMetadata, options
                         .append(VariantStorageEngine.Options.LOAD_SPLIT_DATA.key(), true));
-        int fileIdChr22 = studyConfiguration.getFileIds().get("10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
+        int fileIdChr22 = metadataManager.getFileId(studyMetadata.getId(), "10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
 
-        assertTrue(studyConfiguration.getIndexedFiles().contains(fileIdChr22));
-        checkLoadedVariants(getVariantStorageEngine().getDBAdaptor(), studyConfiguration, true, false, false, -1);
+        assertTrue(metadataManager.getIndexedFiles(studyMetadata.getId()).contains(fileIdChr22));
+        checkLoadedVariants(getVariantStorageEngine().getDBAdaptor(), studyMetadata, true, false, false, -1);
 
-        assertEquals(studyConfiguration.getSamplesInFiles().get(fileIdChr1), studyConfiguration.getSamplesInFiles().get(fileIdChr22));
+        assertEquals(metadataManager.getFileMetadata(studyMetadata.getId(), fileIdChr1).getSamples(),
+                metadataManager.getFileMetadata(studyMetadata.getId(), fileIdChr22).getSamples());
 
         //Check generated stats files
-        assertEquals(2504, studyConfiguration.getCohorts().get(defaultCohortId).size());
-        File[] statsFile1 = getTmpRootDir().toFile().listFiles((dir, name1) -> name1.startsWith(VariantStoragePipeline.buildFilename(studyConfiguration.getStudyName(), fileIdChr1))
+        cohort = metadataManager.getCohortMetadata(studyMetadata.getId(), StudyEntry.DEFAULT_COHORT);
+        assertEquals(2504, cohort.getSamples().size());
+        File[] statsFile1 = getTmpRootDir().toFile().listFiles((dir, name1) -> name1.startsWith(VariantStoragePipeline.buildFilename(studyMetadata.getName(), fileIdChr1))
                 && name1.contains("variants"));
-        File[] statsFile2 = getTmpRootDir().toFile().listFiles((dir, name1) -> name1.startsWith(VariantStoragePipeline.buildFilename(studyConfiguration.getStudyName(), fileIdChr22))
+        File[] statsFile2 = getTmpRootDir().toFile().listFiles((dir, name1) -> name1.startsWith(VariantStoragePipeline.buildFilename(studyMetadata.getName(), fileIdChr22))
                 && name1.contains("variants"));
         assertEquals(1, statsFile1.length);
         assertEquals(1, statsFile2.length);
@@ -433,7 +441,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
     @Test
     public void multiRegionIndexFail() throws Exception {
         clearDB(DB_NAME);
-        StudyConfiguration studyConfiguration = new StudyConfiguration(1, "multiRegion");
+        StudyMetadata studyMetadata = new StudyMetadata(1, "multiRegion");
 
         ObjectMap options = new ObjectMap()
                 .append(VariantStorageEngine.Options.STUDY_TYPE.key(), SampleSetType.CONTROL_SET)
@@ -441,16 +449,15 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
                 .append(VariantStorageEngine.Options.ANNOTATE.key(), false);
 
         runDefaultETL(getResourceUri("1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageEngine,
-                studyConfiguration, options);
+                studyMetadata, options);
 
-        studyConfiguration.getFileIds().put("10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", 6);
         StorageEngineException exception = StorageEngineException.alreadyLoadedSamples(
                 "10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
                 Arrays.asList("", ""));
         thrown.expect(exception.getClass());
         thrown.expectMessage(exception.getMessage());
         runDefaultETL(getResourceUri("10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageEngine,
-                studyConfiguration, options.append(VariantStorageEngine.Options.LOAD_SPLIT_DATA.key(), false));
+                studyMetadata, options.append(VariantStorageEngine.Options.LOAD_SPLIT_DATA.key(), false));
     }
 
     /**
@@ -462,8 +469,8 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
     public void singleThreadIndex() throws Exception {
         clearDB(DB_NAME);
         ObjectMap params = new ObjectMap();
-        StudyConfiguration studyConfiguration = newStudyConfiguration();
-        params.put(VariantStorageEngine.Options.STUDY.key(), studyConfiguration.getStudyName());
+        StudyMetadata studyMetadata = newStudyMetadata();
+        params.put(VariantStorageEngine.Options.STUDY.key(), studyMetadata.getName());
         params.put(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "json");
         params.put(VariantStorageEngine.Options.COMPRESS_METHOD.key(), "gZiP");
         params.put(VariantStorageEngine.Options.TRANSFORM_THREADS.key(), 1);
@@ -472,15 +479,15 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
 //        params.put(VariantStorageEngine.Options.INCLUDE_SRC.key(), true);
         StoragePipelineResult etlResult = runETL(variantStorageEngine, params, true, true, true);
         VariantDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
-        studyConfiguration = dbAdaptor.getMetadataManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+        studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(studyMetadata.getId());
 
         assertTrue("Incorrect transform file extension " + etlResult.getTransformResult() + ". Expected 'variants.json.gz'",
                 Paths.get(etlResult.getTransformResult()).toFile().getName().endsWith("variants.json.gz"));
 
-        Integer fileId = studyConfiguration.getFileIds().get(UriUtils.fileName(inputUri));
-        assertTrue(studyConfiguration.getIndexedFiles().contains(fileId));
-        VariantFileMetadata fileMetadata = checkTransformedVariants(etlResult.getTransformResult(), studyConfiguration);
-        checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyConfiguration, true, false, getExpectedNumLoadedVariants(fileMetadata));
+        Integer fileId = metadataManager.getFileId(studyMetadata.getId(), inputUri);
+        assertTrue(metadataManager.getIndexedFiles(studyMetadata.getId()).contains(fileId));
+        VariantFileMetadata fileMetadata = checkTransformedVariants(etlResult.getTransformResult(), studyMetadata);
+        checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyMetadata, true, false, getExpectedNumLoadedVariants(fileMetadata));
 
     }
 
@@ -494,8 +501,8 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
     public void fastIndex() throws Exception {
         clearDB(DB_NAME);
         ObjectMap params = new ObjectMap();
-        StudyConfiguration studyConfiguration = newStudyConfiguration();
-        params.put(VariantStorageEngine.Options.STUDY.key(), studyConfiguration.getStudyName());
+        StudyMetadata studyMetadata = newStudyMetadata();
+        params.put(VariantStorageEngine.Options.STUDY.key(), studyMetadata.getName());
         params.put(VariantStorageEngine.Options.COMPRESS_METHOD.key(), "snappy");
         params.put(VariantStorageEngine.Options.TRANSFORM_THREADS.key(), 8);
         params.put(VariantStorageEngine.Options.LOAD_THREADS.key(), 8);
@@ -505,15 +512,15 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
 
         System.out.println("etlResult = " + etlResult);
         VariantDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
-        studyConfiguration = dbAdaptor.getMetadataManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+        studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(studyMetadata.getId());
 
         assertTrue("Incorrect transform file extension " + etlResult.getTransformResult() + ". Expected 'variants.avro.snappy'",
                 Paths.get(etlResult.getTransformResult()).toFile().getName().endsWith("variants.avro.snappy"));
 
-        Integer fileId = studyConfiguration.getFileIds().get(UriUtils.fileName(inputUri));
-        assertTrue(studyConfiguration.getIndexedFiles().contains(fileId));
-        VariantFileMetadata fileMetadata = checkTransformedVariants(etlResult.getTransformResult(), studyConfiguration);
-        checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyConfiguration, false, false, false, getExpectedNumLoadedVariants
+        Integer fileId = metadataManager.getFileId(studyMetadata.getId(), inputUri);
+        assertTrue(metadataManager.getIndexedFiles(studyMetadata.getId()).contains(fileId));
+        VariantFileMetadata fileMetadata = checkTransformedVariants(etlResult.getTransformResult(), studyMetadata);
+        checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyMetadata, false, false, false, getExpectedNumLoadedVariants
                 (fileMetadata));
 
     }
@@ -536,8 +543,8 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
     public void indexWithOtherFields(String extraFields) throws Exception {
         //GT:DS:GL
 
-        StudyConfiguration studyConfiguration = newStudyConfiguration();
-        StoragePipelineResult etlResult = runDefaultETL(smallInputUri, getVariantStorageEngine(), studyConfiguration,
+        StudyMetadata studyMetadata = newStudyMetadata();
+        StoragePipelineResult etlResult = runDefaultETL(smallInputUri, getVariantStorageEngine(), studyMetadata,
                 new ObjectMap(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), extraFields)
                         .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro")
                         .append(VariantStorageEngine.Options.ANNOTATE.key(), false)
@@ -545,13 +552,13 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         );
 
         VariantFileMetadata fileMetadata = variantStorageEngine.getVariantReaderUtils().readVariantFileMetadata(etlResult.getTransformResult());
-        checkTransformedVariants(etlResult.getTransformResult(), studyConfiguration, fileMetadata.getStats().getNumVariants());
+        checkTransformedVariants(etlResult.getTransformResult(), studyMetadata, fileMetadata.getStats().getNumVariants());
         VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
-        checkLoadedVariants(dbAdaptor, studyConfiguration, true, false, false, getExpectedNumLoadedVariants(fileMetadata));
+        checkLoadedVariants(dbAdaptor, studyMetadata, true, false, false, getExpectedNumLoadedVariants(fileMetadata));
 
         String fileId = UriUtils.fileName(smallInputUri);
         VariantReader reader = VariantReaderUtils.getVariantReader(Paths.get(etlResult.getTransformResult().getPath()),
-                new VariantFileMetadata(fileId, "").toVariantStudyMetadata(String.valueOf(studyConfiguration.getStudyId())));
+                new VariantFileMetadata(fileId, "").toVariantStudyMetadata(String.valueOf(studyMetadata.getId())));
 
         reader.open();
         reader.pre();
@@ -588,8 +595,8 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
 
     @Test
     public void indexWithoutOtherFields() throws Exception {
-        StudyConfiguration studyConfiguration = newStudyConfiguration();
-        runDefaultETL(smallInputUri, getVariantStorageEngine(), studyConfiguration,
+        StudyMetadata studyMetadata = newStudyMetadata();
+        runDefaultETL(smallInputUri, getVariantStorageEngine(), studyMetadata,
                 new ObjectMap(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantQueryUtils.NONE)
                         .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro")
                         .append(VariantStorageEngine.Options.ANNOTATE.key(), false)
@@ -605,15 +612,15 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
     /* ---------------------------------------------------- */
 
 
-    private VariantFileMetadata checkTransformedVariants(URI variantsJson, StudyConfiguration studyConfiguration) throws StorageEngineException {
-        return checkTransformedVariants(variantsJson, studyConfiguration, -1);
+    private VariantFileMetadata checkTransformedVariants(URI variantsJson, StudyMetadata studyMetadata) throws StorageEngineException {
+        return checkTransformedVariants(variantsJson, studyMetadata, -1);
     }
 
-    private VariantFileMetadata checkTransformedVariants(URI variantsJson, StudyConfiguration studyConfiguration, int expectedNumVariants)
+    private VariantFileMetadata checkTransformedVariants(URI variantsJson, StudyMetadata studyMetadata, int expectedNumVariants)
             throws StorageEngineException {
         long start = System.currentTimeMillis();
         VariantFileMetadata source = new VariantFileMetadata("6", VCF_TEST_FILE_NAME);
-        VariantReader variantReader = VariantReaderUtils.getVariantReader(Paths.get(variantsJson.getPath()), source.toVariantStudyMetadata(String.valueOf(studyConfiguration.getStudyId())));
+        VariantReader variantReader = VariantReaderUtils.getVariantReader(Paths.get(variantsJson.getPath()), source.toVariantStudyMetadata(String.valueOf(studyMetadata.getId())));
 
         variantReader.open();
         variantReader.pre();
@@ -638,29 +645,37 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         return source;
     }
 
-    private void checkLoadedVariants(VariantDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration, boolean includeSamples, boolean
+    private void checkLoadedVariants(VariantDBAdaptor dbAdaptor, StudyMetadata studyMetadata, boolean includeSamples, boolean
             includeSrc) {
-        checkLoadedVariants(dbAdaptor, studyConfiguration, includeSamples, includeSrc, NUM_VARIANTS/*9792*/);
+        checkLoadedVariants(dbAdaptor, studyMetadata, includeSamples, includeSrc, NUM_VARIANTS/*9792*/);
     }
 
-    private void checkLoadedVariants(VariantDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration,
+    private void checkLoadedVariants(VariantDBAdaptor dbAdaptor, StudyMetadata studyMetadata,
                                      boolean includeSamples, boolean includeSrc, int expectedNumVariants) {
-        checkLoadedVariants(dbAdaptor, studyConfiguration, includeSamples, includeSrc, false, expectedNumVariants);
+        checkLoadedVariants(dbAdaptor, studyMetadata, includeSamples, includeSrc, false, expectedNumVariants);
     }
 
-    private void checkLoadedVariants(VariantDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration,
+    private void checkLoadedVariants(VariantDBAdaptor dbAdaptor, StudyMetadata studyMetadata,
                                      boolean includeSamples, boolean includeSrc, boolean includeAnnotation, int expectedNumVariants) {
         long start = System.currentTimeMillis();
         int numVariants = 0;
-        String expectedStudyId = studyConfiguration.getStudyName();
+        String expectedStudyId = studyMetadata.getName();
         QueryResult<Long> count = dbAdaptor.count(new Query());
         assertEquals(1, count.getNumResults());
         if (expectedNumVariants >= 0) {
             assertEquals(expectedNumVariants, count.first().intValue());
         }
-//        for (Integer fileId : studyConfiguration.getIndexedFiles()) {
-//            assertTrue(studyConfiguration.getHeaders().containsKey(fileId));
+//        for (Integer fileId : metadataManager.getIndexedFiles(studyMetadata.getId())) {
+//            assertTrue(studyMetadata.getHeaders().containsKey(fileId));
 //        }
+        List<Integer> samples = metadataManager.getIndexedSamples(studyMetadata.getId());
+        assertEquals(samples.size(), Iterators.size(metadataManager.sampleMetadataIterator(studyMetadata.getId())));
+        Map<String, CohortMetadata> cohorts = new HashMap<>();
+        metadataManager.cohortIterator(studyMetadata.getId()).forEachRemaining(c -> {
+            if (c.isReady()) {
+                cohorts.put(c.getName(), c);
+            }
+        });
         for (Variant variant : dbAdaptor) {
             for (Map.Entry<String, StudyEntry> entry : variant.getStudiesMap().entrySet()) {
                 if (!entry.getValue().getStudyId().equals(expectedStudyId)) {
@@ -671,10 +686,10 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
                 assertEquals(expectedStudyId, entry.getValue().getStudyId());
                 if (includeSamples) {
                     assertNotNull(entry.getValue().getSamplesData());
-                    assertEquals(studyConfiguration.getSampleIds().size(), entry.getValue().getSamplesData().size());
+                    assertEquals(samples.size(), entry.getValue().getSamplesData().size());
 
-                    assertEquals(studyConfiguration.getSampleIds().size(), entry.getValue().getSamplesData().size());
-                    assertEquals(studyConfiguration.getSampleIds().keySet(), entry.getValue().getSamplesDataAsMap().keySet());
+                    assertEquals(samples.size(), entry.getValue().getSamplesData().size());
+                    assertEquals(new HashSet<>(samples), entry.getValue().getSamplesDataAsMap().keySet());
                 }
                 for (FileEntry fileEntry : entry.getValue().getFiles()) {
                     if (includeSrc) {
@@ -683,13 +698,12 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
                         assertNull(fileEntry.getAttributes().getOrDefault(VariantVcfFactory.SRC, null));
                     }
                 }
-                for (Integer cohortId : studyConfiguration.getCalculatedStats()) {
+                for (CohortMetadata cohort : cohorts.values()) {
                     try {
-                        String cohortName = StudyConfiguration.inverseMap(studyConfiguration.getCohortIds()).get(cohortId);
-                        assertTrue(entry.getValue().getStats().containsKey(cohortName));
-                        assertEquals(variant + " has incorrect stats for cohort \"" + cohortName + "\":" + cohortId,
-                                studyConfiguration.getCohorts().get(cohortId).size(),
-                                entry.getValue().getStats().get(cohortName).getGenotypeCount().values().stream().reduce((a, b) -> a + b)
+                        assertTrue(entry.getValue().getStats().containsKey(cohort.getName()));
+                        assertEquals(variant + " has incorrect stats for cohort \"" + cohort.getName() + "\":"+cohort.getId(),
+                                cohort.getSamples().size(),
+                                entry.getValue().getStats().get(cohort.getName()).getGenotypeCount().values().stream().reduce((a, b) -> a + b)
                                         .orElse(0).intValue());
                     } catch (AssertionError error) {
                         System.out.println(variant + " = " + variant.toJson());
@@ -712,9 +726,9 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
     public void insertVariantIntoSolr() throws Exception {
         clearDB(DB_NAME);
         ObjectMap params = new ObjectMap();
-        StudyConfiguration studyConfiguration = newStudyConfiguration();
+        StudyMetadata studyMetadata = newStudyMetadata();
 
-        params.put(VariantStorageEngine.Options.STUDY.key(), studyConfiguration.getStudyName());
+        params.put(VariantStorageEngine.Options.STUDY.key(), studyMetadata.getName());
         params.put(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "json");
         params.put(VariantStorageEngine.Options.COMPRESS_METHOD.key(), "gZiP");
         params.put(VariantStorageEngine.Options.TRANSFORM_THREADS.key(), 1);
@@ -737,8 +751,8 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
     }
 
     public void removeFileTest(QueryOptions params) throws Exception {
-        StudyConfiguration studyConfiguration1 = new StudyConfiguration(1, "Study1");
-        StudyConfiguration studyConfiguration2 = new StudyConfiguration(2, "Study2");
+        StudyMetadata studyMetadata1 = new StudyMetadata(1, "Study1");
+        StudyMetadata studyMetadata2 = new StudyMetadata(2, "Study2");
 
         ObjectMap options = new ObjectMap(params)
                 .append(VariantStorageEngine.Options.STUDY_TYPE.key(), SampleSetType.CONTROL_SET)
@@ -746,19 +760,19 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
                 .append(VariantStorageEngine.Options.ANNOTATE.key(), false);
         //Study1
         runDefaultETL(getResourceUri("1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
-                variantStorageEngine, studyConfiguration1, options);
+                variantStorageEngine, studyMetadata1, options);
         runDefaultETL(getResourceUri("1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
-                variantStorageEngine, studyConfiguration1, options);
+                variantStorageEngine, studyMetadata1, options);
 
         //Study2
         runDefaultETL(getResourceUri("1000g_batches/1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
-                variantStorageEngine, studyConfiguration2, options);
+                variantStorageEngine, studyMetadata2, options);
         runDefaultETL(getResourceUri("1000g_batches/1501-2000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
-                variantStorageEngine, studyConfiguration2, options);
+                variantStorageEngine, studyMetadata2, options);
         runDefaultETL(getResourceUri("1000g_batches/2001-2504.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
-                variantStorageEngine, studyConfiguration2, options);
+                variantStorageEngine, studyMetadata2, options);
 
-        variantStorageEngine.removeFile(studyConfiguration1.getStudyName(), 2);
+        variantStorageEngine.removeFile(studyMetadata1.getName(), 2);
 
         for (Variant variant : variantStorageEngine.getDBAdaptor()) {
             assertFalse(variant.getStudies().isEmpty());

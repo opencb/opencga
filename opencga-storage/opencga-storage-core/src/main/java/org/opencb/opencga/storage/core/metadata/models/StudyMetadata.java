@@ -47,8 +47,8 @@ public class StudyMetadata {
 
     @Deprecated
     public StudyMetadata(StudyConfiguration sc) {
-        id = sc.getStudyId();
-        name = sc.getStudyName();
+        id = sc.getId();
+        name = sc.getName();
         aggregation = sc.getAggregation();
         variantHeader = sc.getVariantHeader();
         timeStamp = sc.getTimeStamp();

@@ -208,7 +208,7 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
         preCalculateStats(metadataManager, studyMetadata, cohorts, overwrite, updateStats, options);
         overwrite = checkOverwrite(metadataManager, studyMetadata, cohorts, overwrite);
 
-        VariantSourceStats variantSourceStats = new VariantSourceStats(null/*FILE_ID*/, Integer.toString(studyMetadata.getStudyId()));
+        VariantSourceStats variantSourceStats = new VariantSourceStats(null/*FILE_ID*/, Integer.toString(studyMetadata.getId()));
 
 
         // reader, tasks and writer
@@ -306,7 +306,7 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
             boolean defaultCohortAbsent = false;
 
             List<VariantStatsWrapper> variantStatsWrappers = variantStatisticsCalculator.calculateBatch(variants,
-                    studyMetadata.getStudyName(), cohorts);
+                    studyMetadata.getName(), cohorts);
 
             long start = System.currentTimeMillis();
             for (VariantStatsWrapper variantStatsWrapper : variantStatsWrappers) {

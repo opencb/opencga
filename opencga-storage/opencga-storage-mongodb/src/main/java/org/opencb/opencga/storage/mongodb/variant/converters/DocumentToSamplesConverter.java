@@ -648,8 +648,8 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
     }
 
     public void addStudyConfiguration(StudyConfiguration studyConfiguration) {
-        this.studyConfigurations.put(studyConfiguration.getStudyId(), studyConfiguration);
-        this.__studySamplesId.put(studyConfiguration.getStudyId(), null);
+        this.studyConfigurations.put(studyConfiguration.getId(), studyConfiguration);
+        this.__studySamplesId.put(studyConfiguration.getId(), null);
 
         Set defGenotypeSet = studyConfiguration.getAttributes().get(DEFAULT_GENOTYPE.key(), Set.class);
         if (defGenotypeSet == null) {
@@ -662,7 +662,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
                 defGenotypeSet = new LinkedHashSet<>(defGenotype);
             }
         }
-        this.studyDefaultGenotypeSet.put(studyConfiguration.getStudyId(), defGenotypeSet);
+        this.studyDefaultGenotypeSet.put(studyConfiguration.getId(), defGenotypeSet);
     }
 
     public String getUnknownGenotype() {
@@ -707,13 +707,13 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
     }
 
     private LinkedHashMap<String, Integer> getSamplesPosition(StudyConfiguration studyConfiguration) {
-        if (!__samplesPosition.containsKey(studyConfiguration.getStudyId())) {
+        if (!__samplesPosition.containsKey(studyConfiguration.getId())) {
             LinkedHashMap<String, Integer> samplesPosition;
             samplesPosition = StudyConfiguration.getSamplesPosition(studyConfiguration,
-                    this.includeSamples.get(studyConfiguration.getStudyId()));
-            __samplesPosition.put(studyConfiguration.getStudyId(), samplesPosition);
+                    this.includeSamples.get(studyConfiguration.getId()));
+            __samplesPosition.put(studyConfiguration.getId(), samplesPosition);
         }
-        return __samplesPosition.get(studyConfiguration.getStudyId());
+        return __samplesPosition.get(studyConfiguration.getId());
     }
 
     public static String genotypeToDataModelType(String genotype) {

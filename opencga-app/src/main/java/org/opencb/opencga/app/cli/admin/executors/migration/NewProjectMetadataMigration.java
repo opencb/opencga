@@ -106,7 +106,7 @@ public class NewProjectMetadataMigration {
 
                             for (String studyName : scm.getStudyNames(null)) {
                                 StudyConfiguration studyConfiguration = scm.getStudyConfiguration(studyName, null).first();
-                                int studyId = studyConfiguration.getStudyId();
+                                int studyId = studyConfiguration.getId();
 
                                 updateMaxCounter(counters, "file", studyConfiguration.getFileIds().values());
                                 updateMaxCounter(counters, "file_" + studyId, studyConfiguration.getFileIds().values());

@@ -440,7 +440,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             if (sampleId != null) {
                 sampleIds.add(sampleId);
             } else {
-                throw VariantQueryException.sampleNotFound(sample, studyConfiguration.getStudyName());
+                throw VariantQueryException.sampleNotFound(sample, studyConfiguration.getName());
             }
         }
 
@@ -459,7 +459,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         }
 
         VariantStorageMetadataManager scm = getMetadataManager();
-        int studyId = studyConfiguration.getStudyId();
+        int studyId = studyConfiguration.getId();
 
         String jobOperationName = fillGaps ? FILL_GAPS_OPERATION_NAME : FILL_MISSING_OPERATION_NAME;
         List<Integer> fileIdsList = new ArrayList<>(fileIds);
@@ -746,7 +746,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             }
 
             try {
-                phoenixHelper.dropFiles(dbAdaptor.getJdbcConnection(), dbAdaptor.getVariantTable(), sc.getStudyId(), fileIds, sampleIds);
+                phoenixHelper.dropFiles(dbAdaptor.getJdbcConnection(), dbAdaptor.getVariantTable(), sc.getId(), fileIds, sampleIds);
             } catch (SQLException e) {
                 throw new StorageEngineException("Error removing columns from Phoenix", e);
             }

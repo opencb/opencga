@@ -61,7 +61,7 @@ public class AnalysisStatsMapper extends AbstractHBaseVariantMapper<ImmutableByt
         variantStatisticsCalculator = new VariantStatisticsCalculator(true);
         this.variantStatisticsCalculator.setAggregationType(Aggregation.NONE, null);
         StudyConfiguration studyConfiguration = this.getStudyConfiguration();
-        this.studyId = Integer.valueOf(studyConfiguration.getStudyId()).toString();
+        this.studyId = Integer.valueOf(studyConfiguration.getId()).toString();
         BiMap<Integer, String> sampleIds = getStudyConfiguration().getSampleIds().inverse();
         variantStatsToHBaseConverter
                 = new VariantStatsToHBaseConverter(this.getHelper(), studyConfiguration, studyConfiguration.getCohortIds());

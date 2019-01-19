@@ -29,6 +29,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
@@ -465,11 +466,14 @@ public final class VariantQueryUtils {
         if (includeFields.contains(VariantField.STUDIES_STATS)) {
             for (Integer studyId : includeStudies) {
                 List<Integer> cohorts = new LinkedList<>();
-                metadataManager.cohortIterator(studyId).forEachRemaining(cohort -> {
-                    if (cohort.isReady()/* || cohort.isInvalid()*/) {
-                        cohorts.add(cohort.getId());
-                    }
-                });
+                for (CohortMetadata cohort : metadataManager.getCalculatedCohorts(studyId)) {
+                    cohorts.add(cohort.getId());
+                }
+//                metadataManager.cohortIterator(studyId).forEachRemaining(cohort -> {
+//                    if (cohort.isReady()/* || cohort.isInvalid()*/) {
+//                        cohorts.add(cohort.getId());
+//                    }
+//                });
                 cohortIds.put(studyId, cohorts);
             }
         }

@@ -167,7 +167,7 @@ public class VariantSearchUtils {
     }
 
     public static String buildSamplesIndexCollectionName(String dbName, StudyConfiguration sc, int id) {
-        return dbName + '_' + sc.getStudyId() + '_' + id;
+        return dbName + '_' + sc.getId() + '_' + id;
     }
 
     /**

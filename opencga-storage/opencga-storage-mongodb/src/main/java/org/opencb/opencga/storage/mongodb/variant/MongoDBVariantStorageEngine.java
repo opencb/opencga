@@ -268,7 +268,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     public void removeStudy(String studyName) throws StorageEngineException {
         VariantStorageMetadataManager scm = getMetadataManager();
         AtomicReference<BatchFileTask> batchFileOperation = new AtomicReference<>();
-        int studyId = scm.lockAndUpdateOld(studyName, studyConfiguration -> {
+        StudyMetadata studyMetadata = scm.lockAndUpdateOld(studyName, studyConfiguration -> {
             boolean resume = getOptions().getBoolean(RESUME.key(), RESUME.defaultValue());
             batchFileOperation.set(VariantStorageMetadataManager.addRunningTask(
                     studyConfiguration,
@@ -277,7 +277,8 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
                     resume,
                     BatchFileTask.Type.REMOVE));
             return studyConfiguration;
-        }).getStudyId();
+        });
+        int studyId = studyMetadata.getId();
 
         Thread hook = scm.buildShutdownHook(REMOVE_OPERATION_NAME, studyId, Collections.emptyList());
         try {

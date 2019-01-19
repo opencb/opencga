@@ -59,12 +59,12 @@ public class VariantStorageMetadataManagerTest {
     @Test
     public void checkAndUpdateStudyConfigurationWithoutSampleIdsTest() throws StorageEngineException {
         StudyConfiguration studyConfiguration = newStudyConfiguration();
-        studyConfiguration.getSampleIds().put("s0", scm.newSampleId(studyConfiguration.getStudyId()));
-        studyConfiguration.getSampleIds().put("s10", scm.newSampleId(studyConfiguration.getStudyId()));
+        studyConfiguration.getSampleIds().put("s0", scm.newSampleId(studyConfiguration.getId()));
+        studyConfiguration.getSampleIds().put("s10", scm.newSampleId(studyConfiguration.getId()));
         Integer fileId = 5;
         VariantFileMetadata source = createVariantFileMetadata(studyConfiguration, fileId);
         ObjectMap options = new ObjectMap();
-        scm.registerFileSamples(studyConfiguration.getStudyId(), fileId, source);
+        scm.registerFileSamples(studyConfiguration.getId(), fileId, source);
         assertTrue(studyConfiguration.getSampleIds().keySet().containsAll(Arrays.asList("s0", "s1", "s2", "s3", "s4", "s5")));
         assertTrue(studyConfiguration.getSamplesInFiles().get(fileId).stream()
                 .map(s -> studyConfiguration.getSampleIds().inverse().get(s))
@@ -81,9 +81,9 @@ public class VariantStorageMetadataManagerTest {
         StudyConfiguration studyConfiguration = newStudyConfiguration();
         Integer fileId = 5;
         VariantFileMetadata source = createVariantFileMetadata(studyConfiguration, fileId);
-        studyConfiguration.getSampleIds().put("s10", scm.newSampleId(studyConfiguration.getStudyId()));
+        studyConfiguration.getSampleIds().put("s10", scm.newSampleId(studyConfiguration.getId()));
         ObjectMap options = new ObjectMap();
-        scm.registerFileSamples(studyConfiguration.getStudyId(), fileId, source);
+        scm.registerFileSamples(studyConfiguration.getId(), fileId, source);
         assertTrue(studyConfiguration.getSampleIds().keySet().containsAll(Arrays.asList("s0", "s1", "s2", "s3", "s4", "s5")));
         assertEquals(Arrays.asList("s0", "s1", "s2", "s3", "s4", "s5"),
                 studyConfiguration.getSamplesInFiles().get(fileId).stream()

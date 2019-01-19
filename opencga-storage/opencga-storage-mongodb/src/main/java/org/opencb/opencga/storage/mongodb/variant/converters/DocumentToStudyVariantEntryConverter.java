@@ -235,7 +235,7 @@ public class DocumentToStudyVariantEntryConverter {
                 if (queryResult.getResult().isEmpty()) {
                     studyIds.put(studyId, Integer.toString(studyId));
                 } else {
-                    studyIds.put(studyId, queryResult.first().getStudyName());
+                    studyIds.put(studyId, queryResult.first().getName());
                 }
             }
         }

@@ -232,7 +232,7 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     @Test
     public void testArchiveIterator() {
         int count = 0;
-        Query query = new Query(VariantQueryParam.STUDY.key(), studyMetadata.getStudyId())
+        Query query = new Query(VariantQueryParam.STUDY.key(), studyMetadata.getId())
                 .append(VariantQueryParam.FILE.key(), UriUtils.fileName(smallInputUri));
 
         for (VariantDBIterator iterator = dbAdaptor.iterator(query, new QueryOptions("archive", true)); iterator.hasNext(); ) {

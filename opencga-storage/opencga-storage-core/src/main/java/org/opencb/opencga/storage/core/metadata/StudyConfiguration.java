@@ -81,8 +81,8 @@ public class StudyConfiguration extends StudyMetadata {
     }
 
     public void copy(StudyConfiguration other) {
-        this.setId(other.getStudyId());
-        this.setName(other.getStudyName());
+        this.setId(other.getId());
+        this.setName(other.getName());
         this.fileIds = HashBiMap.create(other.fileIds == null ? Collections.emptyMap() : other.fileIds);
         this.filePaths = HashBiMap.create(other.filePaths == null ? Collections.emptyMap() : other.filePaths);
         this.sampleIds = HashBiMap.create(other.sampleIds == null ? Collections.emptyMap() : other.sampleIds);
@@ -171,8 +171,8 @@ public class StudyConfiguration extends StudyMetadata {
 
     public String toString(ToStringStyle style) {
         return new ToStringBuilder(this, style)
-                .append("studyId", getStudyId())
-                .append("studyName", getStudyName())
+                .append("studyId", getId())
+                .append("studyName", getName())
                 .append("fileIds", fileIds)
                 .append("filePaths", filePaths)
                 .append("sampleIds", sampleIds)
@@ -376,8 +376,8 @@ public class StudyConfiguration extends StudyMetadata {
         }
 
         StudyConfiguration that = (StudyConfiguration) o;
-        return getStudyId() == that.getStudyId()
-                && Objects.equals(getStudyName(), that.getStudyName())
+        return getId() == that.getId()
+                && Objects.equals(getName(), that.getName())
                 && Objects.equals(fileIds, that.fileIds)
                 && Objects.equals(filePaths, that.filePaths)
                 && Objects.equals(sampleIds, that.sampleIds)
@@ -396,7 +396,7 @@ public class StudyConfiguration extends StudyMetadata {
 
     @Override
     public int hashCode() {
-        return Objects.hash(getStudyId(), getStudyName(), fileIds, filePaths, sampleIds, cohortIds, cohorts, indexedFiles, headers,
+        return Objects.hash(getId(), getName(), fileIds, filePaths, sampleIds, cohortIds, cohorts, indexedFiles, headers,
                 samplesInFiles,
                 calculatedStats, invalidStats, batches, aggregation, timeStamp, getAttributes());
     }

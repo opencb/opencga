@@ -100,7 +100,7 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
                         .append(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100)
                         .append(DefaultVariantStatisticsManager.OUTPUT, outputUri)
                         .append(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME, "stats");
-                storageEngine.calculateStats(studyConfiguration.getStudyName(), Collections.singletonList("ALL"), statsOptions);
+                storageEngine.calculateStats(studyConfiguration.getName(), Collections.singletonList("ALL"), statsOptions);
 
                 query = new Query(VariantQueryParam.STUDY.key(), studyId);
                 expected = dbAdaptor.count(query).first();
@@ -186,12 +186,12 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
             checkLoadResult(expected, loadResult);
 
             //////////////////////
-            storageEngine.removeFiles(studyConfiguration.getStudyName(), Collections.singletonList(fileNames.get(0)));
+            storageEngine.removeFiles(studyConfiguration.getName(), Collections.singletonList(fileNames.get(0)));
             expected = 0;
 
         } else {
             //////////////////////
-            storageEngine.removeFiles(studyConfiguration.getStudyName(), Collections.singletonList(fileNames.get(0)));
+            storageEngine.removeFiles(studyConfiguration.getName(), Collections.singletonList(fileNames.get(0)));
             expected = dbAdaptor.count(query).first();
         }
 

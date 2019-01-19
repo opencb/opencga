@@ -144,7 +144,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
             return sm;
         });
 
-        int studyId = sm1.getStudyId();
+        int studyId = sm1.getId();
         List<Variant> variants1 = new LinkedList<>();
         variants1.addAll(newVariants("1", 1000, 1000, "A", asList("C", "T"), fileId1, studyId));
         variants1.addAll(newVariants("1", 1002, 1002, "A", asList("C", "G"), fileId1, studyId));
@@ -220,7 +220,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
     }
 
     private void loadVariantsBasic(StudyMetadata sc, int fileId, List<Variant> variants) throws Exception {
-        String archiveTableName = engine.getArchiveTableName(sc.getStudyId());
+        String archiveTableName = engine.getArchiveTableName(sc.getId());
         sc.getAttributes().append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
         VariantStorageMetadataManager metadataManager = this.metadataManager;
         metadataManager.updateStudyMetadata(sc);
@@ -237,18 +237,18 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         // Create empty VariantFileMetadata
         VariantFileMetadata fileMetadata = new VariantFileMetadata(String.valueOf(fileId), String.valueOf(fileId));
         fileMetadata.setSampleIds(variants.get(0).getStudies().get(0).getOrderedSamplesName());
-        metadataManager.updateVariantFileMetadata(String.valueOf(sc.getStudyId()), fileMetadata);
+        metadataManager.updateVariantFileMetadata(String.valueOf(sc.getId()), fileMetadata);
 
-        ArchiveTableHelper helper = new ArchiveTableHelper(dbAdaptor.getGenomeHelper(), sc.getStudyId(), fileMetadata);
+        ArchiveTableHelper helper = new ArchiveTableHelper(dbAdaptor.getGenomeHelper(), sc.getId(), fileMetadata);
 
 
         // Create dummy reader
-        VariantSliceReader reader = getVariantSliceReader(variants, sc.getStudyId(), fileId);
+        VariantSliceReader reader = getVariantSliceReader(variants, sc.getId(), fileId);
 
         // Writers
         VariantHBaseArchiveDataWriter archiveWriter = new VariantHBaseArchiveDataWriter(helper, archiveTableName, dbAdaptor.getHBaseManager());
         VariantHadoopDBWriter hadoopDBWriter = new VariantHadoopDBWriter(helper, dbAdaptor.getVariantTable(),
-                sc.getStudyId(),
+                sc.getId(),
                 metadataManager, dbAdaptor.getHBaseManager(), false);
 
         // Task
@@ -263,22 +263,22 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         metadataManager.updateStudyMetadata(sc);
         metadataManager.updateFileMetadata(sc.getId(), fileId, f->f.setIndexStatus(BatchFileTask.Status.READY));
         VariantPhoenixHelper phoenixHelper = new VariantPhoenixHelper(dbAdaptor.getGenomeHelper());
-        phoenixHelper.registerNewStudy(dbAdaptor.getJdbcConnection(), dbAdaptor.getVariantTable(), sc.getStudyId());
-        phoenixHelper.registerNewFiles(dbAdaptor.getJdbcConnection(), dbAdaptor.getVariantTable(), sc.getStudyId(), Collections.singleton(fileId), metadataManager.getFileMetadata(sc.getId(), fileId).getSamples());
+        phoenixHelper.registerNewStudy(dbAdaptor.getJdbcConnection(), dbAdaptor.getVariantTable(), sc.getId());
+        phoenixHelper.registerNewFiles(dbAdaptor.getJdbcConnection(), dbAdaptor.getVariantTable(), sc.getId(), Collections.singleton(fileId), metadataManager.getFileMetadata(sc.getId(), fileId).getSamples());
         phoenixHelper.registerRelease(dbAdaptor.getJdbcConnection(), dbAdaptor.getVariantTable(), 1);
     }
 
     private void stageVariants(StudyMetadata study, int fileId, List<Variant> variants) throws Exception {
-        String archiveTableName = engine.getArchiveTableName(study.getStudyId());
+        String archiveTableName = engine.getArchiveTableName(study.getId());
         ArchiveTableHelper.createArchiveTableIfNeeded(dbAdaptor.getGenomeHelper(), archiveTableName);
 
         // Create empty VariantFileMetadata
         VariantFileMetadata fileMetadata = new VariantFileMetadata(String.valueOf(fileId), String.valueOf(fileId));
         fileMetadata.setSampleIds(variants.get(0).getStudies().get(0).getOrderedSamplesName());
-        metadataManager.updateVariantFileMetadata(String.valueOf(study.getStudyId()), fileMetadata);
+        metadataManager.updateVariantFileMetadata(String.valueOf(study.getId()), fileMetadata);
 
         // Create dummy reader
-        VariantSliceReader reader = getVariantSliceReader(variants, study.getStudyId(), fileId);
+        VariantSliceReader reader = getVariantSliceReader(variants, study.getId(), fileId);
 
         // Task supplier
         Supplier<ParallelTaskRunner.Task<ImmutablePair<Long, List<Variant>>, VcfSliceProtos.VcfSlice>> taskSupplier = () -> {
@@ -294,7 +294,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         };
 
         // Writer
-        VariantHBaseArchiveDataWriter writer = new VariantHBaseArchiveDataWriter(dbAdaptor.getArchiveHelper(study.getStudyId(), fileId), archiveTableName, dbAdaptor.getHBaseManager());
+        VariantHBaseArchiveDataWriter writer = new VariantHBaseArchiveDataWriter(dbAdaptor.getArchiveHelper(study.getId(), fileId), archiveTableName, dbAdaptor.getHBaseManager());
 
         ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder().setNumTasks(1).build();
         ParallelTaskRunner<ImmutablePair<Long, List<Variant>>, VcfSliceProtos.VcfSlice> ptr = new ParallelTaskRunner<>(reader, taskSupplier, writer, config);
@@ -339,7 +339,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
     }
 
     public List<Variant> createFile1Variants() {
-        return createFile1Variants("1", fileId1, sm1.getStudyId());
+        return createFile1Variants("1", fileId1, sm1.getId());
     }
 
     public static List<Variant> createFile1Variants(String chromosome, Integer fileId, Integer studyId) {
@@ -351,7 +351,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
     }
 
     public List<Variant> createFile2Variants() {
-        return createFile2Variants("1", fileId2, sm1.getStudyId());
+        return createFile2Variants("1", fileId2, sm1.getId());
     }
 
     public static List<Variant> createFile2Variants(String chromosome, Integer fileId, Integer studyId) {

@@ -79,7 +79,7 @@ public class FileStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor {
     @Override
     public QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
 
-        Path path = getPath(studyConfiguration.getStudyId(), options);
+        Path path = getPath(studyConfiguration.getId(), options);
         try {
             write(studyConfiguration, path);
         } catch (IOException e) {

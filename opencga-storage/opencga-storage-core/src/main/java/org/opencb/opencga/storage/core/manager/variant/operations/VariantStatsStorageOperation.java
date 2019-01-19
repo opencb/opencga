@@ -120,7 +120,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
             calculateStatsOptions.put(DefaultVariantStatisticsManager.OUTPUT, outdirUri.resolve(outputFileName));
             VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
             variantStorageEngine.getOptions().putAll(calculateStatsOptions);
-            variantStorageEngine.calculateStats(studyConfiguration.getStudyName(), cohortsMap, calculateStatsOptions);
+            variantStorageEngine.calculateStats(studyConfiguration.getName(), cohortsMap, calculateStatsOptions);
 
 //            DefaultVariantStatisticsManager variantStatisticsManager = new DefaultVariantStatisticsManager(dbAdaptor);
 //

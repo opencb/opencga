@@ -46,7 +46,7 @@ public class DocumentToVariantStatsConverter {
     public DocumentToVariantStatsConverter(List<StudyConfiguration> studyConfigurations) {
         this.studyConfigurations = studyConfigurations
                 .stream()
-                .collect(Collectors.toMap(StudyConfiguration::getStudyId, Function.identity()));
+                .collect(Collectors.toMap(studyConfiguration -> studyConfiguration.getId(), Function.identity()));
     }
 
     public DocumentToVariantStatsConverter(VariantStorageMetadataManager variantStorageMetadataManager) {

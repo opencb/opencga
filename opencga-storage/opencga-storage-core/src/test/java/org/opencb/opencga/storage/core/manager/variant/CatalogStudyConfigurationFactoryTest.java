@@ -154,13 +154,13 @@ public class CatalogStudyConfigurationFactoryTest {
     }
 
     private void checkStudyConfiguration(Study study, StudyConfiguration studyConfiguration) throws CatalogException {
-        assertEquals("user@p1:s1", studyConfiguration.getStudyName());
-        assertEquals(study.getUid(), studyConfiguration.getStudyId());
+        assertEquals("user@p1:s1", studyConfiguration.getName());
+        assertEquals(study.getUid(), studyConfiguration.getId());
 
         assertTrue(studyConfiguration.getInvalidStats().isEmpty());
 
         for (Map.Entry<String, Integer> entry : studyConfiguration.getFileIds().entrySet()) {
-            File file = catalogManager.getFileManager().get(studyConfiguration.getStudyName(),
+            File file = catalogManager.getFileManager().get(studyConfiguration.getName(),
                     studyConfiguration.getFileIds().inverse().get(entry.getValue()), null, sessionId).first();
 
             assertEquals(file.getName(), entry.getKey());

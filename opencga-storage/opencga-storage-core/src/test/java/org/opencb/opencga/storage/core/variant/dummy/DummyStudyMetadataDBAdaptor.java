@@ -69,7 +69,7 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor {
 
     @Override
     public Map<String, Integer> getStudies(QueryOptions options) {
-        return STUDY_CONFIGURATIONS_BY_NAME.values().stream().collect(Collectors.toMap(StudyConfiguration::getStudyName, StudyConfiguration::getStudyId));
+        return STUDY_CONFIGURATIONS_BY_NAME.values().stream().collect(Collectors.toMap(studyConfiguration -> studyConfiguration.getName(), studyConfiguration1 -> studyConfiguration1.getId()));
     }
 
     @Override
@@ -92,8 +92,8 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor {
 
     @Override
     public QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
-        STUDY_CONFIGURATIONS_BY_ID.put(studyConfiguration.getStudyId(), studyConfiguration.newInstance());
-        STUDY_CONFIGURATIONS_BY_NAME.put(studyConfiguration.getStudyName(), studyConfiguration.newInstance());
+        STUDY_CONFIGURATIONS_BY_ID.put(studyConfiguration.getId(), studyConfiguration.newInstance());
+        STUDY_CONFIGURATIONS_BY_NAME.put(studyConfiguration.getName(), studyConfiguration.newInstance());
 
         return new QueryResult();
 
@@ -240,7 +240,7 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor {
         ObjectMapper objectMapper = new ObjectMapper(new JsonFactory()).configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         String prefix = "storage_configuration_" + NUM_PRINTS.incrementAndGet() + "_";
         for (StudyConfiguration studyConfiguration : DummyStudyMetadataDBAdaptor.STUDY_CONFIGURATIONS_BY_NAME.values()) {
-            try (OutputStream os = new FileOutputStream(path.resolve(prefix + studyConfiguration.getStudyName() + ".json").toFile())) {
+            try (OutputStream os = new FileOutputStream(path.resolve(prefix + studyConfiguration.getName() + ".json").toFile())) {
                 objectMapper.writerWithDefaultPrettyPrinter().writeValue(os, studyConfiguration);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);

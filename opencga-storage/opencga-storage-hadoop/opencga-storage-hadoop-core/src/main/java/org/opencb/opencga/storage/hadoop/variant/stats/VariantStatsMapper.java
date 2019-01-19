@@ -50,7 +50,7 @@ public class VariantStatsMapper extends VariantMapper<ImmutableBytesWritable, Pu
         calculator = new VariantStatisticsCalculator(overwrite);
         Properties tagmap = getAggregationMappingProperties(context.getConfiguration());
         calculator.setAggregationType(studyConfiguration.getAggregation(), tagmap);
-        study = studyConfiguration.getStudyName();
+        study = studyConfiguration.getName();
         converter = new VariantStatsToHBaseConverter(helper, studyConfiguration, studyConfiguration.getCohortIds());
 
         Collection<Integer> cohorts = getCohorts(context.getConfiguration());

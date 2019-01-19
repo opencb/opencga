@@ -101,7 +101,7 @@ public class CatalogStudyConfigurationFactory {
     public void updateCatalogFromStudyConfiguration(StudyConfiguration studyConfiguration, String sessionId)
             throws CatalogException {
 
-        logger.info("Updating StudyConfiguration " + studyConfiguration.getStudyId());
+        logger.info("Updating StudyConfiguration " + studyConfiguration.getId());
 
         //Check if cohort ALL has been modified
         String cohortName = StudyEntry.DEFAULT_COHORT;
@@ -112,7 +112,7 @@ public class CatalogStudyConfigurationFactory {
                     .map(studyConfiguration.getSampleIds().inverse()::get)
                     .collect(Collectors.toSet());
             Cohort defaultCohort = catalogManager.getCohortManager()
-                    .get(studyConfiguration.getStudyName(), cohortName, null, sessionId).first();
+                    .get(studyConfiguration.getName(), cohortName, null, sessionId).first();
             List<String> cohortFromCatalog = defaultCohort
                     .getSamples()
                     .stream()
@@ -129,9 +129,9 @@ public class CatalogStudyConfigurationFactory {
                     } else {
                         status = Cohort.CohortStatus.NONE;
                     }
-                    catalogManager.getCohortManager().setStatus(studyConfiguration.getStudyName(), cohortName, status, null, sessionId);
+                    catalogManager.getCohortManager().setStatus(studyConfiguration.getName(), cohortName, status, null, sessionId);
                 }
-                catalogManager.getCohortManager().update(studyConfiguration.getStudyName(), cohortName,
+                catalogManager.getCohortManager().update(studyConfiguration.getName(), cohortName,
                         new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(), cohortFromStorage),
                         true, null, sessionId);
             }
@@ -143,7 +143,7 @@ public class CatalogStudyConfigurationFactory {
                     .map(studyConfiguration.getCohortIds().inverse()::get)
                     .collect(Collectors.toList()));
 
-            try (DBIterator<Cohort> iterator = catalogManager.getCohortManager().iterator(studyConfiguration.getStudyName(),
+            try (DBIterator<Cohort> iterator = catalogManager.getCohortManager().iterator(studyConfiguration.getName(),
                     query,
                     new QueryOptions(), sessionId)) {
                 while (iterator.hasNext()) {
@@ -172,7 +172,7 @@ public class CatalogStudyConfigurationFactory {
                     if (cohort.getStatus() == null || !cohort.getStatus().getName().equals(Cohort.CohortStatus.READY)) {
                         logger.debug("Cohort \"{}\" change status from {} to {}",
                                 cohort.getId(), cohort.getStats(), Cohort.CohortStatus.READY);
-                        catalogManager.getCohortManager().setStatus(studyConfiguration.getStudyName(), cohort.getId(),
+                        catalogManager.getCohortManager().setStatus(studyConfiguration.getName(), cohort.getId(),
                                 Cohort.CohortStatus.READY, "Update status from Storage", sessionId);
                     }
                 }
@@ -184,7 +184,7 @@ public class CatalogStudyConfigurationFactory {
             Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), studyConfiguration.getInvalidStats().stream()
                     .map(studyConfiguration.getCohortIds().inverse()::get)
                     .collect(Collectors.toList()));
-            try (DBIterator<Cohort> iterator = catalogManager.getCohortManager().iterator(studyConfiguration.getStudyName(),
+            try (DBIterator<Cohort> iterator = catalogManager.getCohortManager().iterator(studyConfiguration.getName(),
                     query,
                     new QueryOptions(), sessionId)) {
                 while (iterator.hasNext()) {
@@ -192,7 +192,7 @@ public class CatalogStudyConfigurationFactory {
                     if (cohort.getStatus() == null || !cohort.getStatus().getName().equals(Cohort.CohortStatus.INVALID)) {
                         logger.debug("Cohort \"{}\" change status from {} to {}",
                                 cohort.getId(), cohort.getStats(), Cohort.CohortStatus.INVALID);
-                        catalogManager.getCohortManager().setStatus(studyConfiguration.getStudyName(), cohort.getId(),
+                        catalogManager.getCohortManager().setStatus(studyConfiguration.getName(), cohort.getId(),
                                 Cohort.CohortStatus.INVALID, "Update status from Storage", sessionId);
                     }
                 }
@@ -208,7 +208,7 @@ public class CatalogStudyConfigurationFactory {
             }
             Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), list);
 
-            try (DBIterator<File> iterator = catalogManager.getFileManager().iterator(studyConfiguration.getStudyName(),
+            try (DBIterator<File> iterator = catalogManager.getFileManager().iterator(studyConfiguration.getName(),
                     query,
                     new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(NAME.key(), PATH.key(), INDEX.key())), sessionId)) {
                 int numFiles = 0;
@@ -227,7 +227,7 @@ public class CatalogStudyConfigurationFactory {
                         logger.debug("File \"{}\" change status from {} to {}", file.getName(),
                                 file.getIndex().getStatus().getName(), FileIndex.IndexStatus.READY);
                         index.getStatus().setName(FileIndex.IndexStatus.READY);
-                        catalogManager.getFileManager().setFileIndex(studyConfiguration.getStudyName(), file.getPath(), index, sessionId);
+                        catalogManager.getFileManager().setFileIndex(studyConfiguration.getName(), file.getPath(), index, sessionId);
                     }
                 }
                 if (numFiles != studyConfiguration.getIndexedFiles().size()) {
@@ -239,7 +239,7 @@ public class CatalogStudyConfigurationFactory {
         // Update READY files
         Set<Integer> indexedFiles = studyConfiguration.getIndexedFiles();
         try (DBIterator<File> iterator = catalogManager.getFileManager()
-                .iterator(studyConfiguration.getStudyName(), INDEXED_FILES_QUERY, INDEXED_FILES_QUERY_OPTIONS, sessionId)) {
+                .iterator(studyConfiguration.getName(), INDEXED_FILES_QUERY, INDEXED_FILES_QUERY_OPTIONS, sessionId)) {
             while (iterator.hasNext()) {
                 File file = iterator.next();
                 Integer fileId = studyConfiguration.getFileIds().get(file.getName());
@@ -262,7 +262,7 @@ public class CatalogStudyConfigurationFactory {
 
         // Update ongoing files
         try (DBIterator<File> iterator = catalogManager.getFileManager()
-                .iterator(studyConfiguration.getStudyName(), RUNNING_INDEX_FILES_QUERY, INDEXED_FILES_QUERY_OPTIONS, sessionId)) {
+                .iterator(studyConfiguration.getName(), RUNNING_INDEX_FILES_QUERY, INDEXED_FILES_QUERY_OPTIONS, sessionId)) {
             while (iterator.hasNext()) {
                 File file = iterator.next();
                 Integer storageFileId = studyConfiguration.getFileIds().get(file.getName());
@@ -317,7 +317,7 @@ public class CatalogStudyConfigurationFactory {
         }
 
         try (DBIterator<File> iterator = catalogManager.getFileManager()
-                .iterator(studyConfiguration.getStudyName(), new Query(NAME.key(), loadingFilesRegardingStorage),
+                .iterator(studyConfiguration.getName(), new Query(NAME.key(), loadingFilesRegardingStorage),
                         INDEXED_FILES_QUERY_OPTIONS, sessionId)) {
             while (iterator.hasNext()) {
                 File file = iterator.next();

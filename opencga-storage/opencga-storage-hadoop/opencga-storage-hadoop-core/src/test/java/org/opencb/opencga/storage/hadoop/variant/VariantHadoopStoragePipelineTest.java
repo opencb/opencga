@@ -123,7 +123,7 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
     public void queryVariantTable() {
         System.out.println("Query from Variant table");
         VariantDBIterator iterator = dbAdaptor.iterator(
-                new Query(VariantQueryParam.STUDY.key(), studyConfiguration.getStudyId()),
+                new Query(VariantQueryParam.STUDY.key(), studyConfiguration.getId()),
                 new QueryOptions());
         while (iterator.hasNext()) {
             Variant variant = iterator.next();
@@ -190,7 +190,7 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
         System.out.println("Query from Archive table");
         dbAdaptor.iterator(
                 new Query()
-                        .append(VariantQueryParam.STUDY.key(), studyConfiguration.getStudyId())
+                        .append(VariantQueryParam.STUDY.key(), studyConfiguration.getId())
                         .append(VariantQueryParam.FILE.key(), FILE_ID),
                 new QueryOptions("archive", true)).forEachRemaining(variant -> {
             System.out.println("Variant from archive = " + variant.toJson());
@@ -233,7 +233,7 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
         System.out.println("Query from archive HBase " + tableName);
         HBaseManager hm = new HBaseManager(configuration.get());
         GenomeHelper genomeHelper = dbAdaptor.getGenomeHelper();
-        ArchiveTableHelper archiveHelper = dbAdaptor.getArchiveHelper(studyConfiguration.getStudyId(), FILE_ID);
+        ArchiveTableHelper archiveHelper = dbAdaptor.getArchiveHelper(studyConfiguration.getId(), FILE_ID);
         VcfSliceToVariantListConverter converter = new VcfSliceToVariantListConverter(archiveHelper.getFileMetadata().toVariantStudyMetadata(STUDY_NAME));
         hm.act(tableName, table -> {
             ResultScanner resultScanner = table.getScanner(genomeHelper.getColumnFamily());

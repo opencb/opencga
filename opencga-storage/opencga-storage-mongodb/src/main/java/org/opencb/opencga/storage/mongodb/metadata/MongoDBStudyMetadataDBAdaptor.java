@@ -31,6 +31,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.adaptors.StudyMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.mongodb.utils.MongoLock;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyConfigurationConverter;
 
@@ -109,7 +110,7 @@ public class MongoDBStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor {
         if (queryResult.getResult().isEmpty()) {
             studyConfiguration = null;
         } else {
-            if (queryResult.first().getStudyName() == null) {
+            if (queryResult.first().getName() == null) {
                 // If the studyName is null, it may be only a lock instead of a real study configuration
                 studyConfiguration = null;
             } else {
@@ -130,7 +131,7 @@ public class MongoDBStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor {
         Document studyMongo = new DocumentToStudyConfigurationConverter().convertToStorageType(studyConfiguration);
 
         // Update field by field, instead of replacing the whole object to preserve existing fields like "_lock"
-        Document query = new Document("_id", studyConfiguration.getStudyId());
+        Document query = new Document("_id", studyConfiguration.getId());
         List<Bson> updates = new ArrayList<>(studyMongo.size());
         studyMongo.forEach((s, o) -> updates.add(new Document("$set", new Document(s, o))));
         QueryResult<UpdateResult> queryResult = collection.update(query, Updates.combine(updates), new QueryOptions(UPSERT, true));
@@ -156,7 +157,7 @@ public class MongoDBStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor {
                 studyConfigurationConverter, null);
         return queryResult.getResult()
                 .stream()
-                .collect(Collectors.toMap(StudyConfiguration::getStudyName, StudyConfiguration::getStudyId));
+                .collect(Collectors.toMap(StudyMetadata::getName, StudyMetadata::getId));
     }
 
     @Override

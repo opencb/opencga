@@ -87,7 +87,7 @@ class HBaseVariantMetadataUtils {
     }
 
     static byte[] getStudyConfigurationRowKey(StudyConfiguration studyConfiguration) {
-        return getStudyConfigurationRowKey(studyConfiguration.getStudyId());
+        return getStudyConfigurationRowKey(studyConfiguration.getId());
     }
 
     static byte[] getStudyConfigurationRowKey(int studyId) {

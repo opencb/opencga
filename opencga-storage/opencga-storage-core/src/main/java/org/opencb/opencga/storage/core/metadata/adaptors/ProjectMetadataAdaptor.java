@@ -30,7 +30,7 @@ public interface ProjectMetadataAdaptor extends AutoCloseable {
 
     @Deprecated
     default int generateId(StudyConfiguration studyConfiguration, String idType) throws StorageEngineException {
-        return generateId(studyConfiguration == null ? null : studyConfiguration.getStudyId(), idType);
+        return generateId(studyConfiguration == null ? null : studyConfiguration.getId(), idType);
     }
 
     int generateId(Integer studyId, String idType) throws StorageEngineException;

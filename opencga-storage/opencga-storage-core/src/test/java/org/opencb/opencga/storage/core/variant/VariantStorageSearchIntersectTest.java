@@ -129,7 +129,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
 
             dbAdaptor.getMetadataManager().updateStudyConfiguration(studyConfiguration, QueryOptions.empty());
 
-            variantStorageEngine.calculateStats(studyConfiguration.getStudyName(),
+            variantStorageEngine.calculateStats(studyConfiguration.getName(),
                     new ArrayList<>(cohortIds.keySet()), options);
 
         }

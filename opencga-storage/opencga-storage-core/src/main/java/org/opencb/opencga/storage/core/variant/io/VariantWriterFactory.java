@@ -255,7 +255,7 @@ public class VariantWriterFactory {
                 StudyConfiguration sc = getStudyConfiguration(query, true);
                 List<String> cohorts = new ArrayList<>(sc.getCohortIds().keySet());
 
-                exporter = new VariantStatsTsvExporter(outputStream, sc.getStudyName(), cohorts);
+                exporter = new VariantStatsTsvExporter(outputStream, sc.getName(), cohorts);
                 break;
 
             case CELLBASE_GZ:

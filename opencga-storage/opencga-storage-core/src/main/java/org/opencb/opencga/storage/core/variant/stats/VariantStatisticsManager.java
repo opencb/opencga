@@ -88,7 +88,7 @@ public abstract class VariantStatisticsManager {
             VariantStorageMetadataManager metadataManager, StudyMetadata studyMetadata, Map<String, Set<String>> cohorts,
             boolean overwrite, boolean updateStats, ObjectMap options) throws StorageEngineException {
 
-        metadataManager.lockAndUpdate(studyMetadata.getStudyName(), sm -> {
+        metadataManager.lockAndUpdate(studyMetadata.getName(), sm -> {
 
             Collection<Integer> cohortIds = metadataManager.registerCohorts(studyMetadata.getName(), cohorts).values();
 

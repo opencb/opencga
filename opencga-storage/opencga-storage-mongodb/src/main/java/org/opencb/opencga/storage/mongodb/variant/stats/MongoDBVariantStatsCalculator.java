@@ -68,7 +68,7 @@ public class MongoDBVariantStatsCalculator extends AbstractDocumentConverter imp
         List<Document> studies = getList(document, DocumentToVariantConverter.STUDIES_FIELD);
         for (Document study : studies) {
             Integer sid = study.getInteger(DocumentToStudyVariantEntryConverter.STUDYID_FIELD);
-            if (studyMetadata.getStudyId() == sid) {
+            if (studyMetadata.getId() == sid) {
                 statsWrapper = calculateStats(variant, study);
                 break;
             }

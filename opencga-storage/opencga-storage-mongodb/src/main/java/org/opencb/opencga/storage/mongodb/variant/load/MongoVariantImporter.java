@@ -73,8 +73,8 @@ public class MongoVariantImporter extends VariantImporter {
         Map<String, LinkedHashMap<String, Integer>> samplesPositions = new HashMap<>();
         for (StudyConfiguration sc : studyConfigurations) {
             LinkedHashMap<String, Integer> map = StudyConfiguration.getSortedIndexedSamplesPosition(sc);
-            samplesPositions.put(sc.getStudyName(), map);
-            samplesPositions.put(String.valueOf(sc.getStudyId()), map);
+            samplesPositions.put(sc.getName(), map);
+            samplesPositions.put(String.valueOf(sc.getId()), map);
         }
         VariantReader variantReader = new VariantAvroReader(input.toAbsolutePath().toFile(), samplesPositions);
 
@@ -115,8 +115,8 @@ public class MongoVariantImporter extends VariantImporter {
             VariantMetadataManager metadataManager = new VariantMetadataManager().setVariantMetadata(metadata);
 
             studies.forEach((sc) -> {
-                VariantStudyMetadata studyMetadata = metadataManager.getVariantStudyMetadata(sc.getStudyName());
-                this.studiesIdRemap.put(sc.getStudyName(), String.valueOf(sc.getStudyId()));
+                VariantStudyMetadata studyMetadata = metadataManager.getVariantStudyMetadata(sc.getName());
+                this.studiesIdRemap.put(sc.getName(), String.valueOf(sc.getId()));
 
                 sc.getFileIds().forEach((name, id) -> fileIdRemap.put(name, String.valueOf(id)));
                 for (VariantFileMetadata fileMetadata : studyMetadata.getFiles()) {

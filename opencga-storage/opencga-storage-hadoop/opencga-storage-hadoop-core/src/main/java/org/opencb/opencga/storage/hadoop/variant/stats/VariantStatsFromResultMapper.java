@@ -45,7 +45,7 @@ public class VariantStatsFromResultMapper extends TableMapper<ImmutableBytesWrit
         try (VariantStorageMetadataManager metadataManager = new VariantStorageMetadataManager(
                 new HBaseVariantStorageMetadataDBAdaptorFactory(helper))) {
             studyMetadata = metadataManager.getStudyMetadata(helper.getStudyId());
-            study = studyMetadata.getStudyName();
+            study = studyMetadata.getName();
 
 
     //        boolean overwrite = context.getConfiguration().getBoolean(VariantStorageEngine.Options.OVERWRITE_STATS.key(), false);

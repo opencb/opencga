@@ -82,14 +82,14 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
 
         samples1 = Arrays.asList(it.next(), it.next());
         files1 = Collections.singletonList(UriUtils.fileName(smallInputUri));
-        variantStorageEngine.searchIndexSamples(studyConfiguration.getStudyName(), samples1);
+        variantStorageEngine.searchIndexSamples(studyConfiguration.getName(), samples1);
 
         runDefaultETL(getPlatinumFile(12877), variantStorageEngine, studyConfiguration);
         runDefaultETL(getPlatinumFile(12878), variantStorageEngine, studyConfiguration);
 
         samples2 = Arrays.asList("NA12877", "NA12878");
         files2 = Arrays.asList(UriUtils.fileName(getPlatinumFile(12877)), UriUtils.fileName(getPlatinumFile(12878)));
-        variantStorageEngine.searchIndexSamples(studyConfiguration.getStudyName(), samples2);
+        variantStorageEngine.searchIndexSamples(studyConfiguration.getName(), samples2);
     }
 
     @Test

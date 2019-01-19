@@ -162,8 +162,8 @@ public class HBaseStudyMetadataDBAdaptor extends AbstractHBaseDBAdaptor implemen
     public QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
         long startTime = System.currentTimeMillis();
         String error = "";
-        logger.info("Update StudyConfiguration {}", studyConfiguration.getStudyName());
-        updateStudiesSummary(studyConfiguration.getStudyName(), studyConfiguration.getStudyId(), options);
+        logger.info("Update StudyConfiguration {}", studyConfiguration.getName());
+        updateStudiesSummary(studyConfiguration.getName(), studyConfiguration.getId(), options);
         updateStudyMetadata(new StudyMetadata(studyConfiguration));
 
         studyConfiguration.getHeaders().clear(); // REMOVE: stored as VariantFileMetadata

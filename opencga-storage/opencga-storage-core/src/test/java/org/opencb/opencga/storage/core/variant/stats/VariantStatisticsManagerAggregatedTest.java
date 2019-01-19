@@ -27,7 +27,6 @@ import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -97,7 +96,7 @@ public abstract class VariantStatisticsManagerAggregatedTest extends VariantStor
 
         //Calculate stats
         List<String> cohorts = Collections.singletonList(StudyEntry.DEFAULT_COHORT);
-        vsm.calculateStatistics(studyMetadata.getStudyName(), cohorts, options);
+        vsm.calculateStatistics(studyMetadata.getName(), cohorts, options);
 
         checkAggregatedCohorts(dbAdaptor, studyMetadata);
     }

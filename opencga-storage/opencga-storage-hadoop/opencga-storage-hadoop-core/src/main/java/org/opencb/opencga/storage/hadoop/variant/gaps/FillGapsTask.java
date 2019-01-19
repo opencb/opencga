@@ -272,7 +272,7 @@ public class FillGapsTask {
                 variant.getEnd(),
                 variant.getReference(),
                 variant.getAlternate())
-                .setStudyId(String.valueOf(studyConfiguration.getStudyId()))
+                .setStudyId(String.valueOf(studyConfiguration.getId()))
                 .setFormat("GT")
                 .setFileId(fileId.toString())
                 .setSamplesPosition(samplePosition)
@@ -305,7 +305,7 @@ public class FillGapsTask {
                     variant.getReference(),
                     variant.getAlternate())
                 .addAlternate("<*>")
-                .setStudyId(String.valueOf(studyConfiguration.getStudyId()))
+                .setStudyId(String.valueOf(studyConfiguration.getId()))
                 .setFileId(fileId.toString())
                 // add overlapping variants at attributes
                 .setFormat("GT")
@@ -448,7 +448,7 @@ public class FillGapsTask {
 
     public Variant convertToVariant(VcfSliceProtos.VcfSlice vcfSlice, VcfSliceProtos.VcfRecord vcfRecord, Integer fileId) {
         VcfRecordProtoToVariantConverter converter = new VcfRecordProtoToVariantConverter(vcfSlice.getFields(),
-                getSamplePosition(fileId), fileId.toString(), studyConfiguration.getStudyName());
+                getSamplePosition(fileId), fileId.toString(), studyConfiguration.getName());
         return converter.convert(vcfRecord, vcfSlice.getChromosome(), vcfSlice.getPosition());
     }
 
