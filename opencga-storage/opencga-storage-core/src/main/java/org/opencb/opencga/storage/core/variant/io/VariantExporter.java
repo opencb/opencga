@@ -113,7 +113,7 @@ public class VariantExporter {
         // DataReader
         VariantDBReader variantDBReader = new VariantDBReader(engine, query, queryOptions);
 
-        // Task<Variant, Variant>
+        // TaskMetadata<Variant, Variant>
         Task<Variant, Variant> progressTask;
         if (logProgress) {
             final Query finalQuery = query;

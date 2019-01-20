@@ -24,9 +24,7 @@ import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.variant.dummy.DummyProjectMetadataAdaptor;
-import org.opencb.opencga.storage.core.variant.dummy.DummyStudyMetadataDBAdaptor;
-import org.opencb.opencga.storage.core.variant.dummy.DummyVariantFileMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -47,9 +45,8 @@ public class VariantStorageMetadataManagerTest {
 
     @Before
     public void setUp() throws Exception {
-        DummyProjectMetadataAdaptor.clear();
-        DummyStudyMetadataDBAdaptor.clear();
-        scm = new VariantStorageMetadataManager(new DummyProjectMetadataAdaptor(), new DummyStudyMetadataDBAdaptor(), new DummyVariantFileMetadataDBAdaptor());
+        DummyVariantStorageMetadataDBAdaptorFactory.clear();
+        scm = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
     }
 
     protected StudyConfiguration newStudyConfiguration() {

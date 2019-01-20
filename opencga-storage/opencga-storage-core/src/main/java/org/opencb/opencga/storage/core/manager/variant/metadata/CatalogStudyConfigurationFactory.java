@@ -31,7 +31,7 @@ import org.opencb.opencga.core.models.Cohort;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.FileIndex;
 import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.slf4j.Logger;
@@ -267,11 +267,11 @@ public class CatalogStudyConfigurationFactory {
                 File file = iterator.next();
                 Integer storageFileId = studyConfiguration.getFileIds().get(file.getName());
 
-                BatchFileTask loadOperation = null;
+                TaskMetadata loadOperation = null;
                 // Find last load operation
                 for (int i = studyConfiguration.getBatches().size() - 1; i >= 0; i--) {
-                    BatchFileTask op = studyConfiguration.getBatches().get(i);
-                    if (op.getType().equals(BatchFileTask.Type.LOAD) && op.getFileIds().contains(storageFileId)) {
+                    TaskMetadata op = studyConfiguration.getBatches().get(i);
+                    if (op.getType().equals(TaskMetadata.Type.LOAD) && op.getFileIds().contains(storageFileId)) {
                         loadOperation = op;
                         // Found last operation over this file.
                         break;
@@ -279,7 +279,7 @@ public class CatalogStudyConfigurationFactory {
                 }
 
                 // If last LOAD operation is ERROR or there is no LOAD operation
-                if (loadOperation == null || loadOperation.currentStatus().equals(BatchFileTask.Status.ERROR)) {
+                if (loadOperation == null || loadOperation.currentStatus().equals(TaskMetadata.Status.ERROR)) {
                     final FileIndex index;
                     index = file.getIndex() == null ? new FileIndex() : file.getIndex();
                     String prevStatus = index.getStatus().getName();
@@ -303,10 +303,10 @@ public class CatalogStudyConfigurationFactory {
         // Update running LOAD operations, regarding storage
         Set<String> loadingFilesRegardingStorage = new HashSet<>();
         for (int i = studyConfiguration.getBatches().size() - 1; i >= 0; i--) {
-            BatchFileTask op = studyConfiguration.getBatches().get(i);
-            if (op.getType().equals(BatchFileTask.Type.LOAD)
+            TaskMetadata op = studyConfiguration.getBatches().get(i);
+            if (op.getType().equals(TaskMetadata.Type.LOAD)
                     && op.currentStatus() != null
-                    && op.currentStatus().equals(BatchFileTask.Status.RUNNING)) {
+                    && op.currentStatus().equals(TaskMetadata.Status.RUNNING)) {
                 for (Integer fileId : op.getFileIds()) {
                     String fileName = studyConfiguration.getFileIds().inverse().get(fileId);
                     if (!loadingFilesRegardingCatalog.contains(fileName)) {

@@ -201,7 +201,7 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public VariantStorageMetadataManager getMetadataManager() {
-        return new VariantStorageMetadataManager(new DummyProjectMetadataAdaptor(), new DummyStudyMetadataDBAdaptor(), new DummyVariantFileMetadataDBAdaptor());
+        return new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
     }
 
     @Override

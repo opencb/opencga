@@ -5,7 +5,7 @@ import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.adaptors.VariantFileMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.metadata.adaptors.FileMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -53,8 +53,8 @@ public class VariantMetadataFactory {
             List<Integer> fileIds = queryFields.getFiles().get(studyMetadata.getId());
             if (fileIds != null && !fileIds.isEmpty()) {
                 Query query = new Query()
-                        .append(VariantFileMetadataDBAdaptor.VariantFileMetadataQueryParam.STUDY_ID.key(), studyMetadata.getId())
-                        .append(VariantFileMetadataDBAdaptor.VariantFileMetadataQueryParam.FILE_ID.key(), fileIds);
+                        .append(FileMetadataDBAdaptor.VariantFileMetadataQueryParam.STUDY_ID.key(), studyMetadata.getId())
+                        .append(FileMetadataDBAdaptor.VariantFileMetadataQueryParam.FILE_ID.key(), fileIds);
                 scm.variantFileMetadataIterator(query, new QueryOptions()).forEachRemaining(fileMetadata -> {
                     variantStudyMetadata.getFiles().removeIf(file -> file.getId().equals(fileMetadata.getId()));
                     variantStudyMetadata.getFiles().add(fileMetadata.getImpl());

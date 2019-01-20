@@ -54,7 +54,7 @@ import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -105,7 +105,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     private final AtomicReference<VariantSearchManager> variantSearchManager = new AtomicReference<>();
     private CellBaseUtils cellBaseUtils;
 
-    public static final String REMOVE_OPERATION_NAME = BatchFileTask.Type.REMOVE.name().toLowerCase();
+    public static final String REMOVE_OPERATION_NAME = TaskMetadata.Type.REMOVE.name().toLowerCase();
 
     private Logger logger = LoggerFactory.getLogger(VariantStorageEngine.class);
 
@@ -676,13 +676,13 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             dbAdaptor.close();
         } catch (Exception e) {
             getMetadataManager().lockAndUpdateOld(study, studyConfiguration -> {
-                studyConfiguration.getSearchIndexedSampleSetsStatus().put(id.get(), BatchFileTask.Status.ERROR);
+                studyConfiguration.getSearchIndexedSampleSetsStatus().put(id.get(), TaskMetadata.Status.ERROR);
                 return studyConfiguration;
             });
             throw e;
         }
         getMetadataManager().lockAndUpdateOld(study, studyConfiguration -> {
-            studyConfiguration.getSearchIndexedSampleSetsStatus().put(id.get(), BatchFileTask.Status.READY);
+            studyConfiguration.getSearchIndexedSampleSetsStatus().put(id.get(), TaskMetadata.Status.READY);
             return studyConfiguration;
         });
     }
@@ -726,7 +726,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
         // Invalidate secondary index
         metadataManager.lockAndUpdateOld(study, studyConfiguration -> {
-            studyConfiguration.getSearchIndexedSampleSetsStatus().put(secIndexId, BatchFileTask.Status.RUNNING);
+            studyConfiguration.getSearchIndexedSampleSetsStatus().put(secIndexId, TaskMetadata.Status.RUNNING);
             return studyConfiguration;
         });
 
@@ -772,15 +772,15 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @return FileIds to remove
      * @throws StorageEngineException StorageEngineException
      */
-    protected BatchFileTask preRemoveFiles(String study, List<String> files) throws StorageEngineException {
+    protected TaskMetadata preRemoveFiles(String study, List<String> files) throws StorageEngineException {
         List<Integer> fileIds = new ArrayList<>();
-        AtomicReference<BatchFileTask> batchFileOperation = new AtomicReference<>();
+        AtomicReference<TaskMetadata> batchFileOperation = new AtomicReference<>();
         getMetadataManager().lockAndUpdateOld(study, studyConfiguration -> {
             fileIds.addAll(getMetadataManager().getFileIds(studyConfiguration.getId(), files));
 
             boolean resume = getOptions().getBoolean(RESUME.key(), RESUME.defaultValue());
             batchFileOperation.set(addRunningTask(studyConfiguration, REMOVE_OPERATION_NAME, fileIds, resume,
-                    BatchFileTask.Type.REMOVE));
+                    TaskMetadata.Type.REMOVE));
 
             if (!studyConfiguration.getIndexedFiles().containsAll(fileIds)) {
                 // Remove indexed files to get non indexed files
@@ -813,13 +813,13 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     protected void postRemoveFiles(String study, List<Integer> fileIds, boolean error) throws StorageEngineException {
         getMetadataManager().lockAndUpdateOld(study, studyConfiguration -> {
             if (error) {
-                VariantStorageMetadataManager.setStatus(studyConfiguration, BatchFileTask.Status.ERROR, REMOVE_OPERATION_NAME, fileIds);
+                VariantStorageMetadataManager.setStatus(studyConfiguration, TaskMetadata.Status.ERROR, REMOVE_OPERATION_NAME, fileIds);
             } else {
                 for (Integer fileId : fileIds) {
                     getDBAdaptor().getMetadataManager().deleteVariantFileMetadata(studyConfiguration.getId(), fileId);
                 }
 
-                VariantStorageMetadataManager.setStatus(studyConfiguration, BatchFileTask.Status.READY, REMOVE_OPERATION_NAME, fileIds);
+                VariantStorageMetadataManager.setStatus(studyConfiguration, TaskMetadata.Status.READY, REMOVE_OPERATION_NAME, fileIds);
                 studyConfiguration.getIndexedFiles().removeAll(fileIds);
                 Set<Integer> removedSamples = new HashSet<>();
                 for (Integer fileId : fileIds) {

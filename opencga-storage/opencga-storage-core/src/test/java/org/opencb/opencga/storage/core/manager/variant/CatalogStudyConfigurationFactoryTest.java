@@ -27,12 +27,10 @@ import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.manager.variant.metadata.CatalogStudyConfigurationFactory;
-import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.variant.dummy.DummyProjectMetadataAdaptor;
-import org.opencb.opencga.storage.core.variant.dummy.DummyStudyMetadataDBAdaptor;
-import org.opencb.opencga.storage.core.variant.dummy.DummyVariantFileMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -111,7 +109,7 @@ public class CatalogStudyConfigurationFactoryTest {
 
     @Before
     public void setUp() throws Exception {
-        scm = new VariantStorageMetadataManager(new DummyProjectMetadataAdaptor(), new DummyStudyMetadataDBAdaptor(), new DummyVariantFileMetadataDBAdaptor());
+        scm = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
         Study study = catalogManager.getStudyManager().get(studyId, null, sessionId).first();
 
         StudyConfiguration studyConfigurationToReturn = new StudyConfiguration((int) study.getUid(), "user@p1:s1");
@@ -128,8 +126,7 @@ public class CatalogStudyConfigurationFactoryTest {
 
     @After
     public void tearDown() throws Exception {
-        DummyProjectMetadataAdaptor.writeAndClear(catalogManagerExternalResource.getOpencgaHome());
-        DummyStudyMetadataDBAdaptor.writeAndClear(catalogManagerExternalResource.getOpencgaHome());
+        DummyVariantStorageMetadataDBAdaptorFactory.writeAndClear(catalogManagerExternalResource.getOpencgaHome());
     }
 
     public static File create(String resourceName) throws IOException, CatalogException {
@@ -211,8 +208,8 @@ public class CatalogStudyConfigurationFactoryTest {
         nonIndexedFile = files.stream().filter(file -> !indexedFiles.contains(((int) file.getUid()))).findFirst().orElse(null);
         assertNotNull(nonIndexedFile);
         sc.getBatches()
-                .add(new BatchFileTask("LOAD", Collections.singletonList(((int) nonIndexedFile.getUid())), 1L, BatchFileTask.Type.LOAD)
-                        .addStatus(BatchFileTask.Status.RUNNING));
+                .add(new TaskMetadata("LOAD", Collections.singletonList(((int) nonIndexedFile.getUid())), 1L, TaskMetadata.Type.LOAD)
+                        .addStatus(TaskMetadata.Status.RUNNING));
         sc.getFileIds().put(nonIndexedFile.getName(), ((int) nonIndexedFile.getUid()));
 
         scm.updateStudyConfiguration(sc, null);

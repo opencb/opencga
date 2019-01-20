@@ -40,7 +40,7 @@ import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
@@ -165,7 +165,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
     /**
      * Give the name of the action that the job is doing.
      *
-     * Used to create the jobName and as {@link BatchFileTask#operationName}
+     * Used to create the jobName and as {@link TaskMetadata#operationName}
      *
      * e.g. : "Delete", "Load", "Annotate", ...
      *

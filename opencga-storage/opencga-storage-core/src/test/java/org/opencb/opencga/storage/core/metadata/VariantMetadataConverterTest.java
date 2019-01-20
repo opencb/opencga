@@ -11,17 +11,13 @@ import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.opencga.storage.core.metadata.models.*;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
-import org.opencb.opencga.storage.core.variant.dummy.DummyProjectMetadataAdaptor;
-import org.opencb.opencga.storage.core.variant.dummy.DummyStudyMetadataDBAdaptor;
-import org.opencb.opencga.storage.core.variant.dummy.DummyVariantFileMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 
 /**
@@ -41,7 +37,7 @@ public class VariantMetadataConverterTest {
 
     @Before
     public void setUp() throws Exception {
-        metadataManager = new VariantStorageMetadataManager(new DummyProjectMetadataAdaptor(), new DummyStudyMetadataDBAdaptor(), new DummyVariantFileMetadataDBAdaptor());
+        metadataManager = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
 
         URI uri = VariantStorageBaseTest.getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz");
         VariantFileMetadata fileMetadata = VariantReaderUtils.readVariantFileMetadata(Paths.get(uri), null);
@@ -58,14 +54,14 @@ public class VariantMetadataConverterTest {
 
         metadataManager.updateFileMetadata(1, new FileMetadata(1, 10, "file1.vcf")
                 .setSamples(new LinkedHashSet<>(Arrays.asList(1, 2, 3, 4)))
-                .setIndexStatus(BatchFileTask.Status.READY)
+                .setIndexStatus(TaskMetadata.Status.READY)
         );
         metadataManager.updateFileMetadata(1, new FileMetadata(1, 11, "file2.vcf")
                 .setSamples(new LinkedHashSet<>(Arrays.asList(4, 5, 6)))
-                .setIndexStatus(BatchFileTask.Status.READY)
+                .setIndexStatus(TaskMetadata.Status.READY)
         );
         metadataManager.updateCohortMetadata(1, new CohortMetadata(1, 20, "ALL", Arrays.asList(1, 2, 3, 4, 5, 6))
-                .setStatus(BatchFileTask.Status.READY));
+                .setStatus(TaskMetadata.Status.READY));
 
         variantMetadataConverter = new VariantMetadataConverter(metadataManager);
         objectWriter = new ObjectMapper()

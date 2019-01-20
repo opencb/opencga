@@ -96,7 +96,7 @@ public class MongoVariantImporter extends VariantImporter {
     }
 
     /**
-     * Simple Task for converting Variants into MongoDB Documents.
+     * Simple TaskMetadata for converting Variants into MongoDB Documents.
      */
     private static class VariantToDocumentConverter implements ParallelTaskRunner.Task<Variant, Document> {
         private final DocumentToVariantConverter variantConverter;

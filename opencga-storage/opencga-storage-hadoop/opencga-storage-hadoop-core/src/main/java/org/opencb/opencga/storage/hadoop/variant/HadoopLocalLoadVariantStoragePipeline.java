@@ -30,7 +30,7 @@ import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -100,10 +100,10 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         List<Integer> fileIds = Collections.singletonList(getFileId());
 
         taskId = getMetadataManager()
-                .addRunningTask(getStudyId(), OPERATION_NAME, fileIds, resume, BatchFileTask.Type.LOAD,
+                .addRunningTask(getStudyId(), OPERATION_NAME, fileIds, resume, TaskMetadata.Type.LOAD,
                 operation -> {
                     if (operation.getOperationName().equals(OPERATION_NAME)) {
-                        if (operation.currentStatus().equals(BatchFileTask.Status.ERROR)) {
+                        if (operation.currentStatus().equals(TaskMetadata.Status.ERROR)) {
                             Integer fileId = operation.getFileIds().get(0);
                             String fileName = getMetadataManager().getFileName(studyMetadata.getId(), fileId);
                             logger.warn("Pending load operation for file " + fileName + " (" + fileId + ')');
@@ -184,9 +184,9 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                     dbAdaptor.getGenomeHelper().getColumnFamily());
         }
 
-//        ((Task<VcfSlice, VcfSlice>) t -> t)
+//        ((TaskMetadata<VcfSlice, VcfSlice>) t -> t)
 //                .then(archiveWriter)
-//                .then((Task<VcfSlice, Variant>) slices -> slices
+//                .then((TaskMetadata<VcfSlice, Variant>) slices -> slices
 //                        .stream()
 //                        .flatMap(slice -> converter.convert(slice).stream())
 //                        .filter(variant -> !variant.getType().equals(VariantType.NO_VARIATION))
@@ -271,7 +271,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                     dbAdaptor.getGenomeHelper().getColumnFamily());
         }
 
-        // Task
+        // TaskMetadata
         String archiveFields = options.getString(ARCHIVE_FIELDS);
         String nonRefFilter = options.getString(ARCHIVE_NON_REF_FILTER);
         GroupedVariantsTask task = new GroupedVariantsTask(archiveWriter, hadoopDBWriter, sampleIndexDBLoader,
@@ -339,7 +339,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
     @Override
     public void securePostLoad(List<Integer> fileIds, StudyMetadata studyMetadata) throws StorageEngineException {
         super.securePostLoad(fileIds, studyMetadata);
-        getMetadataManager().setStatus(getStudyId(), taskId, BatchFileTask.Status.READY);
+        getMetadataManager().setStatus(getStudyId(), taskId, TaskMetadata.Status.READY);
     }
 
     private VariantHadoopDBWriter newVariantHadoopDBWriter() throws StorageEngineException {

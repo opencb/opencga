@@ -20,7 +20,7 @@ import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -59,7 +59,7 @@ public class DummyVariantStoragePipeline extends VariantStoragePipeline {
         super.securePreLoad(studyMetadata, source);
 
         List<Integer> fileIds = Collections.singletonList(getFileId());
-        getMetadataManager().addRunningTask(getStudyId(), "load", fileIds, false, BatchFileTask.Type.LOAD);
+        getMetadataManager().addRunningTask(getStudyId(), "load", fileIds, false, TaskMetadata.Type.LOAD);
     }
 
     @Override
@@ -75,10 +75,10 @@ public class DummyVariantStoragePipeline extends VariantStoragePipeline {
             }
         }
         if (getOptions().getBoolean(VARIANTS_LOAD_FAIL) || getOptions().getString(VARIANTS_LOAD_FAIL).equals(Paths.get(input).getFileName().toString())) {
-            getMetadataManager().atomicSetStatus(getStudyId(), BatchFileTask.Status.ERROR, "load", fileIds);
+            getMetadataManager().atomicSetStatus(getStudyId(), TaskMetadata.Status.ERROR, "load", fileIds);
             throw new StorageEngineException("Error loading file " + input);
         } else {
-            getMetadataManager().atomicSetStatus(getStudyId(), BatchFileTask.Status.DONE, "load", fileIds);
+            getMetadataManager().atomicSetStatus(getStudyId(), TaskMetadata.Status.DONE, "load", fileIds);
         }
         return input;
     }
@@ -97,9 +97,9 @@ public class DummyVariantStoragePipeline extends VariantStoragePipeline {
     @Override
     public void securePostLoad(List<Integer> fileIds, StudyMetadata studyMetadata) throws StorageEngineException {
         super.securePostLoad(fileIds, studyMetadata);
-        BatchFileTask.Status status = dbAdaptor.getMetadataManager()
-                .setStatus(studyMetadata.getId(), "load", fileIds, BatchFileTask.Status.READY);
-        if (status != BatchFileTask.Status.DONE) {
+        TaskMetadata.Status status = dbAdaptor.getMetadataManager()
+                .setStatus(studyMetadata.getId(), "load", fileIds, TaskMetadata.Status.READY);
+        if (status != TaskMetadata.Status.DONE) {
             logger.warn("Unexpected status " + status);
         }
     }

@@ -17,10 +17,12 @@ public class SampleMetadata {
     private String name;
     private Set<Integer> files;
 //    private Set<Integer> cohorts;
+    private TaskMetadata.Status indexStatus;
 
     public SampleMetadata() {
         files = new HashSet<>();
 //        cohorts = new HashSet<>();
+        indexStatus = TaskMetadata.Status.NONE;
     }
 
     public SampleMetadata(int studyId, int id, String name) {
@@ -74,6 +76,20 @@ public class SampleMetadata {
 //        this.cohorts = cohorts;
 //        return this;
 //    }
+
+
+    public TaskMetadata.Status getIndexStatus() {
+        return indexStatus;
+    }
+
+    public SampleMetadata setIndexStatus(TaskMetadata.Status indexStatus) {
+        this.indexStatus = indexStatus;
+        return this;
+    }
+
+    public boolean isIndexed() {
+        return TaskMetadata.Status.READY.equals(this.indexStatus);
+    }
 
     @Override
     public String toString() {

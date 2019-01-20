@@ -5,7 +5,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 
 import java.io.IOException;
@@ -151,7 +151,7 @@ class HBaseVariantMetadataUtils {
         return getStudyResourceRowKey(studyId, COHORT_NAME_INDEX_SEPARATOR, cohortName);
     }
 
-    static byte[] getTaskStatusIndexRowKey(int studyId, BatchFileTask.Status status, int taskId) {
+    static byte[] getTaskStatusIndexRowKey(int studyId, TaskMetadata.Status status, int taskId) {
         return getStudyResourceRowKey(studyId, TASK_STATUS_INDEX_SEPARATOR, status.name() + "_" + taskId);
     }
 

@@ -33,8 +33,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.adaptors.VariantFileMetadataDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.metadata.adaptors.FileMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantMetadataUtils.*;
@@ -53,39 +53,65 @@ import static org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantMet
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HBaseVariantFileMetadataDBAdaptor extends AbstractHBaseDBAdaptor implements VariantFileMetadataDBAdaptor {
+public class HBaseFileMetadataDBAdaptor extends AbstractHBaseDBAdaptor implements FileMetadataDBAdaptor {
 
-    protected static Logger logger = LoggerFactory.getLogger(HBaseVariantFileMetadataDBAdaptor.class);
+    protected static Logger logger = LoggerFactory.getLogger(HBaseFileMetadataDBAdaptor.class);
 
-    public HBaseVariantFileMetadataDBAdaptor(VariantTableHelper helper) {
+    public HBaseFileMetadataDBAdaptor(VariantTableHelper helper) {
         super(helper);
     }
 
     @Deprecated
-    public HBaseVariantFileMetadataDBAdaptor(Configuration configuration) {
+    public HBaseFileMetadataDBAdaptor(Configuration configuration) {
         // FIXME
         this(null, new HBaseVariantTableNameGenerator(HBaseVariantTableNameGenerator
                 .getDBNameFromVariantsTableName(new VariantTableHelper(configuration).getVariantsTableAsString()), configuration)
                 .getMetaTableName(), configuration);
     }
 
-    public HBaseVariantFileMetadataDBAdaptor(HBaseManager hBaseManager, String metaTableName, Configuration configuration) {
+    public HBaseFileMetadataDBAdaptor(HBaseManager hBaseManager, String metaTableName, Configuration configuration) {
         super(hBaseManager, metaTableName, configuration);
     }
+
+
+    @Override
+    public LinkedHashSet<Integer> getIndexedFiles(int studyId) {
+        // FIXME!
+        LinkedHashSet<Integer> indexedFiles = new LinkedHashSet<>();
+        fileIterator(studyId).forEachRemaining(file -> {
+            if (file.isIndexed()) {
+                indexedFiles.add(file.getId());
+            }
+        });
+
+        return indexedFiles;
+    }
+
+    @Override
+    public Iterator<FileMetadata> fileIterator(int studyId) {
+        return iterator(getFileMetadataRowKeyPrefix(studyId), FileMetadata.class, false);
+    }
+
+    @Override
+    public FileMetadata getFileMetadata(int studyId, int fileId, Long timeStamp) {
+        return readValue(getFileMetadataRowKey(studyId, fileId), FileMetadata.class, timeStamp);
+    }
+
+    @Override
+    public void updateFileMetadata(int studyId, FileMetadata file, Long timeStamp) {
+        putValue(getFileNameIndexRowKey(studyId, file.getName()), Type.INDEX, file.getId(), timeStamp);
+        putValue(getFileMetadataRowKey(studyId, file.getId()), Type.FILE, file, timeStamp);
+    }
+
+    @Override
+    public Integer getFileId(int studyId, String fileName) {
+        return readValue(getFileNameIndexRowKey(studyId, fileName), Integer.class, null);
+    }
+
 
     @Override
     public QueryResult<Long> count(Query query) {
         throw new UnsupportedOperationException();
-    }
-
-    public VariantFileMetadata getVariantFileMetadata(int studyId, int fileId, QueryOptions options)
-            throws IOException {
-        Iterator<VariantFileMetadata> iterator = iterator(studyId, Collections.singletonList(fileId), options);
-        if (iterator.hasNext()) {
-            return iterator.next();
-        } else {
-            throw VariantQueryException.fileNotFound(fileId, studyId);
-        }
     }
 
     @Override

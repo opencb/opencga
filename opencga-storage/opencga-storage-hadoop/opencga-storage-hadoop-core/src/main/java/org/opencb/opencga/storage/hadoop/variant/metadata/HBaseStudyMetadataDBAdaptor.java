@@ -30,7 +30,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.adaptors.StudyMetadataDBAdaptor;
-import org.opencb.opencga.storage.core.metadata.models.*;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.hadoop.utils.HBaseLock;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
@@ -39,7 +39,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.zip.DataFormatException;
@@ -197,131 +199,6 @@ public class HBaseStudyMetadataDBAdaptor extends AbstractHBaseDBAdaptor implemen
         sm.setTimeStamp(System.currentTimeMillis());
         updateStudiesSummary(sm.getName(), sm.getId(), null);
         putValue(getStudyMetadataRowKey(sm.getId()), Type.STUDY, sm, sm.getTimeStamp());
-    }
-
-    @Override
-    public LinkedHashSet<Integer> getIndexedFiles(int studyId) {
-        // FIXME!
-        LinkedHashSet<Integer> indexedFiles = new LinkedHashSet<>();
-        fileIterator(studyId).forEachRemaining(file -> {
-            if (file.isIndexed()) {
-                indexedFiles.add(file.getId());
-            }
-        });
-
-        return indexedFiles;
-    }
-
-    @Override
-    public Iterator<FileMetadata> fileIterator(int studyId) {
-        return iterator(getFileMetadataRowKeyPrefix(studyId), FileMetadata.class, false);
-    }
-
-    @Override
-    public FileMetadata getFileMetadata(int studyId, int fileId, Long timeStamp) {
-        return readValue(getFileMetadataRowKey(studyId, fileId), FileMetadata.class, timeStamp);
-    }
-
-    @Override
-    public void updateFileMetadata(int studyId, FileMetadata file, Long timeStamp) {
-        putValue(getFileNameIndexRowKey(studyId, file.getName()), Type.INDEX, file.getId(), timeStamp);
-        putValue(getFileMetadataRowKey(studyId, file.getId()), Type.FILE, file, timeStamp);
-    }
-
-    @Override
-    public Integer getFileId(int studyId, String fileName) {
-        return readValue(getFileNameIndexRowKey(studyId, fileName), Integer.class, null);
-    }
-
-    @Override
-    public SampleMetadata getSampleMetadata(int studyId, int sampleId, Long timeStamp) {
-        return readValue(getSampleMetadataRowKey(studyId, sampleId), SampleMetadata.class, timeStamp);
-    }
-
-    @Override
-    public void updateSampleMetadata(int studyId, SampleMetadata sample, Long timeStamp) {
-        putValue(getSampleNameIndexRowKey(studyId, sample.getName()), Type.INDEX, sample.getId(), timeStamp);
-        putValue(getSampleMetadataRowKey(studyId, sample.getId()), Type.SAMPLE, sample, timeStamp);
-    }
-
-    @Override
-    public Iterator<SampleMetadata> sampleMetadataIterator(int studyId) {
-        return iterator(getSampleMetadataRowKeyPrefix(studyId), SampleMetadata.class, false);
-    }
-
-    @Override
-    public List<Integer> getIndexedSamples(int studyId) {
-        // FIXME!
-        Set<Integer> set = new LinkedHashSet<>();
-        for (Integer indexedFile : getIndexedFiles(studyId)) {
-            set.addAll(getFileMetadata(studyId, indexedFile, null).getSamples());
-        }
-        return new ArrayList<>(set);
-    }
-
-    @Override
-    public BiMap<String, Integer> getIndexedSamplesMap(int studyId) {
-        // FIXME!
-        BiMap<String, Integer> map = HashBiMap.create();
-        for (Integer indexedFile : getIndexedFiles(studyId)) {
-            for (Integer sampleId : getFileMetadata(studyId, indexedFile, null).getSamples()) {
-                if (!map.containsValue(sampleId)) {
-                    map.put(getSampleMetadata(studyId, sampleId, null).getName(), sampleId);
-                }
-            }
-        }
-        return map;
-    }
-
-    @Override
-    public Integer getSampleId(int studyId, String sampleName) {
-        return readValue(getSampleNameIndexRowKey(studyId, sampleName), Integer.class, null);
-    }
-
-    @Override
-    public CohortMetadata getCohortMetadata(int studyId, int cohortId, Long timeStamp) {
-        return readValue(getCohortMetadataRowKey(studyId, cohortId), CohortMetadata.class, timeStamp);
-    }
-
-    @Override
-    public void updateCohortMetadata(int studyId, CohortMetadata cohort, Long timeStamp) {
-        putValue(getCohortNameIndexRowKey(studyId, cohort.getName()), Type.INDEX, cohort.getId(), timeStamp);
-        putValue(getCohortMetadataRowKey(studyId, cohort.getId()), Type.COHORT, cohort, timeStamp);
-    }
-
-    @Override
-    public Integer getCohortId(int studyId, String cohortName) {
-        return readValue(getCohortNameIndexRowKey(studyId, cohortName), Integer.class, null);
-    }
-
-    @Override
-    public Iterator<CohortMetadata> cohortIterator(int studyId) {
-        return iterator(getCohortMetadataRowKeyPrefix(studyId), CohortMetadata.class, false);
-    }
-
-    @Override
-    public BatchFileTask getTask(int studyId, int taskId, Long timeStamp) {
-        return readValue(getTaskRowKey(studyId, taskId), BatchFileTask.class, timeStamp);
-    }
-
-    @Override
-    public Iterator<BatchFileTask> taskIterator(int studyId, boolean reversed) {
-        return iterator(getTaskRowKeyPrefix(studyId), BatchFileTask.class, reversed);
-    }
-
-    @Override
-    public void updateTask(int studyId, BatchFileTask task, Long timeStamp) {
-        putValue(getTaskRowKey(studyId, task.getId()), Type.TASK, task, timeStamp);
-
-        BatchFileTask.Status currentStatus = task.currentStatus();
-        HashSet<BatchFileTask.Status> allStatus = new HashSet<>(task.getStatus().values());
-        for (BatchFileTask.Status status : allStatus) {
-            if (currentStatus.equals(status)) {
-                putValue(getTaskStatusIndexRowKey(studyId, currentStatus, task.getId()), Type.INDEX, task.getId(), timeStamp);
-            } else {
-                deleteRow(getTaskStatusIndexRowKey(studyId, status, task.getId()));
-            }
-        }
     }
 
     @Override

@@ -23,7 +23,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -96,7 +96,7 @@ public abstract class VariantStatisticsManager {
 
             for (Integer cohortId : cohortIds) {
                 metadataManager.updateCohortMetadata(studyMetadata.getId(), cohortId,
-                        cohort -> cohort.setStatus(BatchFileTask.Status.RUNNING));
+                        cohort -> cohort.setStatus(TaskMetadata.Status.RUNNING));
             }
             return sm;
         });
@@ -106,7 +106,7 @@ public abstract class VariantStatisticsManager {
             VariantStorageMetadataManager metadataManager, StudyMetadata studyMetadata, Collection<String> cohorts, boolean error)
             throws StorageEngineException {
 
-        BatchFileTask.Status status = error ? BatchFileTask.Status.ERROR : BatchFileTask.Status.READY;
+        TaskMetadata.Status status = error ? TaskMetadata.Status.ERROR : TaskMetadata.Status.READY;
         for (String cohortName : cohorts) {
             metadataManager.updateCohortMetadata(studyMetadata.getId(), cohortName,
                     cohort -> cohort.setStatus(status));
@@ -132,7 +132,7 @@ public abstract class VariantStatisticsManager {
                     throw new StorageEngineException("Cohort \"" + cohortName + "\" stats already calculated");
                 }
             }
-            cohort.setStatus(BatchFileTask.Status.RUNNING);
+            cohort.setStatus(TaskMetadata.Status.RUNNING);
             metadataManager.updateCohortMetadata(studyId, cohort);
         }
     }

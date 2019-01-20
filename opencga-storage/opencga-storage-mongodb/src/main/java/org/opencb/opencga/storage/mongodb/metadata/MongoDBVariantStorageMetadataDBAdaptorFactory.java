@@ -2,10 +2,7 @@ package org.opencb.opencga.storage.mongodb.metadata;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
-import org.opencb.opencga.storage.core.metadata.adaptors.ProjectMetadataAdaptor;
-import org.opencb.opencga.storage.core.metadata.adaptors.StudyMetadataDBAdaptor;
-import org.opencb.opencga.storage.core.metadata.adaptors.VariantFileMetadataDBAdaptor;
-import org.opencb.opencga.storage.core.metadata.adaptors.VariantStorageMetadataDBAdaptorFactory;
+import org.opencb.opencga.storage.core.metadata.adaptors.*;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
 
 /**
@@ -40,8 +37,23 @@ public class MongoDBVariantStorageMetadataDBAdaptorFactory implements VariantSto
     }
 
     @Override
-    public VariantFileMetadataDBAdaptor buildVariantFileMetadataDBAdaptor() {
-        return new MongoDBVariantFileMetadataDBAdaptor(db, options.getString(
+    public SampleMetadataDBAdaptor buildSampleMetadataDBAdaptor() {
+        throw new UnsupportedOperationException("TODO!");
+    }
+
+    @Override
+    public CohortMetadataDBAdaptor buildCohortMetadataDBAdaptor() {
+        throw new UnsupportedOperationException("TODO!");
+    }
+
+    @Override
+    public TaskMetadataDBAdaptor buildTaskDBAdaptor() {
+        throw new UnsupportedOperationException("TODO!");
+    }
+
+    @Override
+    public FileMetadataDBAdaptor buildFileMetadataDBAdaptor() {
+        return new MongoDBFileMetadataDBAdaptor(db, options.getString(
                 MongoDBVariantStorageEngine.MongoDBVariantOptions.COLLECTION_FILES.key(),
                 MongoDBVariantStorageEngine.MongoDBVariantOptions.COLLECTION_FILES.defaultValue()
         ));

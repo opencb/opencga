@@ -42,7 +42,7 @@ import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
-import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
@@ -466,12 +466,12 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         fileIdsList.sort(Integer::compareTo);
 
         boolean resume = options.getBoolean(RESUME.key(), RESUME.defaultValue());
-        BatchFileTask operation = scm.addRunningTask(
+        TaskMetadata operation = scm.addRunningTask(
                 studyId,
                 jobOperationName,
                 fileIdsList,
                 resume,
-                BatchFileTask.Type.OTHER,
+                TaskMetadata.Type.OTHER,
                 // Allow concurrent operations if fillGaps.
                 (v) -> fillGaps || v.getOperationName().equals(FILL_GAPS_OPERATION_NAME));
         options.put(AbstractVariantsTableDriver.TIMESTAMP, operation.getTimestamp());
@@ -539,7 +539,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             throw e;
         } finally {
             boolean fail = exception != null;
-            scm.setStatus(studyId, operation.getId(), fail ? BatchFileTask.Status.ERROR : BatchFileTask.Status.READY);
+            scm.setStatus(studyId, operation.getId(), fail ? TaskMetadata.Status.ERROR : TaskMetadata.Status.READY);
             scm.lockAndUpdate(study, sm -> {
                 if (!fillGaps && StringUtils.isEmpty(options.getString(REGION.key()))) {
                     sm.getAttributes().put(MISSING_GENOTYPES_UPDATED, !fail);
@@ -633,7 +633,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
         StudyConfiguration sc = scm.getStudyConfiguration(studyId, null).first();
         boolean removeWholeStudy = sc.getIndexedFiles().size() == fileIds.size() && sc.getIndexedFiles().containsAll(fileIds);
-        BatchFileTask operation = VariantStorageMetadataManager.getOperation(sc, REMOVE_OPERATION_NAME, fileIds);
+        TaskMetadata operation = VariantStorageMetadataManager.getOperation(sc, REMOVE_OPERATION_NAME, fileIds);
         options.put(AbstractVariantsTableDriver.TIMESTAMP, operation.getTimestamp());
 
         // Delete

@@ -16,8 +16,6 @@
 
 package org.opencb.opencga.storage.core.metadata.adaptors;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
@@ -70,98 +68,6 @@ public interface StudyMetadataDBAdaptor extends AutoCloseable {
         sc.setAttributes(sm.getAttributes());
 
         updateStudyConfiguration(sc, null);
-    }
-
-    default LinkedHashSet<Integer> getIndexedFiles(int studyId) {
-        return getStudyConfiguration(studyId, null, null).first().getIndexedFiles();
-    }
-
-    default Iterator<FileMetadata> fileIterator(int studyId) {
-        throw new UnsupportedOperationException("TODO");
-    }
-
-    default void updateIndexedFiles(int studyId, LinkedHashSet<Integer> indexedFiles) {
-        StudyConfiguration sc = getStudyConfiguration(studyId, null, null).first();
-        sc.setIndexedFiles(indexedFiles);
-        updateStudyConfiguration(sc, null);
-    }
-
-    default FileMetadata getFileMetadata(int studyId, int fileId, Long timeStamp) {
-        throw new UnsupportedOperationException("TODO");
-    }
-
-    default void updateFileMetadata(int studyId, FileMetadata file, Long timeStamp) {
-        throw new UnsupportedOperationException("TODO");
-    }
-
-    default Integer getFileId(int studyId, String fileName) {
-        throw new UnsupportedOperationException("TODO");
-    }
-
-    default SampleMetadata getSampleMetadata(int studyId, int sampleId, Long timeStamp) {
-        throw new UnsupportedOperationException("TODO");
-    }
-
-    default void updateSampleMetadata(int studyId, SampleMetadata sample, Long timeStamp) {
-        throw new UnsupportedOperationException("TODO");
-    }
-
-    default Iterator<SampleMetadata> sampleMetadataIterator(int studyId) {
-        throw new UnsupportedOperationException("TODO");
-    }
-
-    default BiMap<String, Integer> getIndexedSamplesMap(int studyId) {
-        // FIXME!
-        BiMap<String, Integer> map = HashBiMap.create();
-        for (Integer indexedFile : getIndexedFiles(studyId)) {
-            for (Integer sampleId : getFileMetadata(studyId, indexedFile, null).getSamples()) {
-                if (!map.containsValue(sampleId)) {
-                    map.put(getSampleMetadata(studyId, sampleId, null).getName(), sampleId);
-                }
-            }
-        }
-        return map;
-    }
-
-    default List<Integer> getIndexedSamples(int studyId) {
-        // FIXME!
-        Set<Integer> set = new LinkedHashSet<>();
-        for (Integer indexedFile : getIndexedFiles(studyId)) {
-            set.addAll(getFileMetadata(studyId, indexedFile, null).getSamples());
-        }
-        return new ArrayList<>(set);
-    }
-
-    default Integer getSampleId(int studyId, String sampleName) {
-        throw new UnsupportedOperationException("TODO");
-    }
-
-    default CohortMetadata getCohortMetadata(int studyId, int cohortId, Long timeStamp) {
-        throw new UnsupportedOperationException("TODO");
-    }
-
-    default void updateCohortMetadata(int studyId, CohortMetadata cohort, Long timeStamp) {
-        throw new UnsupportedOperationException("TODO");
-    }
-
-    default Integer getCohortId(int studyId, String cohortName) {
-        throw new UnsupportedOperationException("TODO");
-    }
-
-    default Iterator<CohortMetadata> cohortIterator(int studyId) {
-        throw new UnsupportedOperationException("TODO");
-    }
-
-    default BatchFileTask getTask(int studyId, int taskId, Long timeStamp) {
-        throw new UnsupportedOperationException("TODO");
-    }
-
-    default Iterator<BatchFileTask> taskIterator(int studyId, boolean reversed) {
-        throw new UnsupportedOperationException("TODO");
-    }
-
-    default void updateTask(int studyId, BatchFileTask task, Long timeStamp) {
-        throw new UnsupportedOperationException("TODO");
     }
 
     Map<String, Integer> getStudies(QueryOptions options);

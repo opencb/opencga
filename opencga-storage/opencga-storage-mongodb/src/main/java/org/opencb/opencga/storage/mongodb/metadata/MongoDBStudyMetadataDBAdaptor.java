@@ -161,6 +161,16 @@ public class MongoDBStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor {
     }
 
     @Override
+    public StudyMetadata getStudyMetadata(int id, Long timeStamp) {
+        throw new UnsupportedOperationException("TODO");
+    }
+
+    @Override
+    public void updateStudyMetadata(StudyMetadata sm) {
+        throw new UnsupportedOperationException("TODO");
+    }
+
+    @Override
     public void close() {
     }
 }

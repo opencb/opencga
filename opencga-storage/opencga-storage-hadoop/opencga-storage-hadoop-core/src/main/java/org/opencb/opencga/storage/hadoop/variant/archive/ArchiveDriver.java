@@ -47,7 +47,7 @@ import org.opencb.opencga.storage.hadoop.variant.archive.mr.VariantToVcfSliceMap
 import org.opencb.opencga.storage.hadoop.variant.archive.mr.VcfSliceCombiner;
 import org.opencb.opencga.storage.hadoop.variant.archive.mr.VcfSliceReducer;
 import org.opencb.opencga.storage.hadoop.variant.archive.mr.VcfSliceWritable;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantFileMetadataDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseFileMetadataDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -137,14 +137,14 @@ public class ArchiveDriver extends Configured implements Tool {
         boolean succeed = job.waitForCompletion(true);
         Runtime.getRuntime().removeShutdownHook(hook);
 
-        try (HBaseVariantFileMetadataDBAdaptor manager = new HBaseVariantFileMetadataDBAdaptor(conf)) {
+        try (HBaseFileMetadataDBAdaptor manager = new HBaseFileMetadataDBAdaptor(conf)) {
             manager.updateLoadedFilesSummary(studyId, Collections.singletonList(fileId));
         }
         return succeed ? 0 : 1;
     }
 
     private void storeMetaData(String studyId, VariantFileMetadata meta, Configuration conf) throws IOException, StorageEngineException {
-        try (HBaseVariantFileMetadataDBAdaptor manager = new HBaseVariantFileMetadataDBAdaptor(conf)) {
+        try (HBaseFileMetadataDBAdaptor manager = new HBaseFileMetadataDBAdaptor(conf)) {
             manager.updateVariantFileMetadata(studyId, meta);
         }
     }

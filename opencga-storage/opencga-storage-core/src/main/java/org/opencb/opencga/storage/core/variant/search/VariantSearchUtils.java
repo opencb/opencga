@@ -21,7 +21,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
@@ -300,7 +300,7 @@ public class VariantSearchUtils {
                         return null;
                     }
                 }
-                if (!BatchFileTask.Status.READY.equals(studyConfiguration.getSearchIndexedSampleSetsStatus().get(sampleSet))) {
+                if (!TaskMetadata.Status.READY.equals(studyConfiguration.getSearchIndexedSampleSetsStatus().get(sampleSet))) {
                     // Secondary index not ready
                     return null;
                 }

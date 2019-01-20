@@ -15,7 +15,7 @@ public class CohortMetadata {
 
     private List<Integer> samples;
 
-    private BatchFileTask.Status status = BatchFileTask.Status.NONE;
+    private TaskMetadata.Status status = TaskMetadata.Status.NONE;
 
     public int getStudyId() {
         return studyId;
@@ -63,20 +63,20 @@ public class CohortMetadata {
         return this;
     }
 
-    public BatchFileTask.Status getStatus() {
+    public TaskMetadata.Status getStatus() {
         return status;
     }
 
-    public CohortMetadata setStatus(BatchFileTask.Status status) {
+    public CohortMetadata setStatus(TaskMetadata.Status status) {
         this.status = status;
         return this;
     }
 
     public boolean isReady() {
-        return BatchFileTask.Status.READY.equals(status);
+        return TaskMetadata.Status.READY.equals(status);
     }
 
     public boolean isInvalid() {
-        return BatchFileTask.Status.ERROR.equals(status);
+        return TaskMetadata.Status.ERROR.equals(status);
     }
 }

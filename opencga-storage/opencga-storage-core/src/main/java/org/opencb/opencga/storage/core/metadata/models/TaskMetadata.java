@@ -31,7 +31,7 @@ import java.util.*;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class BatchFileTask {
+public class TaskMetadata {
 
     public enum Status {
         NONE,
@@ -54,15 +54,15 @@ public class BatchFileTask {
     private final TreeMap<Date, Status> status = new TreeMap<>(Date::compareTo);
     private Type type = Type.OTHER;
 
-    public BatchFileTask() {
+    public TaskMetadata() {
     }
 
     @Deprecated
-    public BatchFileTask(String operationName, List<Integer> fileIds, long timestamp, Type type) {
+    public TaskMetadata(String operationName, List<Integer> fileIds, long timestamp, Type type) {
         this(RandomUtils.nextInt(1, 1000), operationName, fileIds, timestamp, type);
     }
 
-    public BatchFileTask(int id, String operationName, List<Integer> fileIds, long timestamp, Type type) {
+    public TaskMetadata(int id, String operationName, List<Integer> fileIds, long timestamp, Type type) {
         this.id = id;
         this.operationName = operationName;
         this.fileIds = fileIds;
@@ -70,7 +70,7 @@ public class BatchFileTask {
         this.type = type;
     }
 
-    public BatchFileTask(BatchFileTask batch) {
+    public TaskMetadata(TaskMetadata batch) {
         this();
         this.id = batch.id;
         this.operationName = batch.operationName;
@@ -95,7 +95,7 @@ public class BatchFileTask {
         return operationName;
     }
 
-    public BatchFileTask setOperationName(String operationName) {
+    public TaskMetadata setOperationName(String operationName) {
         this.operationName = operationName;
         return this;
     }
@@ -104,7 +104,7 @@ public class BatchFileTask {
         return id;
     }
 
-    public BatchFileTask setId(int id) {
+    public TaskMetadata setId(int id) {
         this.id = id;
         return this;
     }
@@ -113,7 +113,7 @@ public class BatchFileTask {
         return fileIds;
     }
 
-    public BatchFileTask setFileIds(List<Integer> fileIds) {
+    public TaskMetadata setFileIds(List<Integer> fileIds) {
         this.fileIds = fileIds;
         return this;
     }
@@ -122,7 +122,7 @@ public class BatchFileTask {
         return timestamp;
     }
 
-    public BatchFileTask setTimestamp(long timestamp) {
+    public TaskMetadata setTimestamp(long timestamp) {
         this.timestamp = timestamp;
         return this;
     }
@@ -131,11 +131,11 @@ public class BatchFileTask {
         return status;
     }
 
-    public BatchFileTask addStatus(Status status) {
+    public TaskMetadata addStatus(Status status) {
         return addStatus(Calendar.getInstance().getTime(), status);
     }
 
-    public BatchFileTask addStatus(Date date, Status status) {
+    public TaskMetadata addStatus(Date date, Status status) {
         this.status.put(date, status);
         return this;
     }
@@ -144,7 +144,7 @@ public class BatchFileTask {
         return type;
     }
 
-    public BatchFileTask setType(Type type) {
+    public TaskMetadata setType(Type type) {
         this.type = type;
         return this;
     }

@@ -19,8 +19,8 @@ public class FileMetadata {
 
     private VariantFileMetadata variantFileMetadata;
 
-    private BatchFileTask.Status indexStatus;
-    private BatchFileTask.Status annotationStatus;
+    private TaskMetadata.Status indexStatus;
+    private TaskMetadata.Status annotationStatus;
 
     public FileMetadata() {
     }
@@ -87,23 +87,23 @@ public class FileMetadata {
     }
 
     public boolean isIndexed() {
-        return BatchFileTask.Status.READY.equals(getIndexStatus());
+        return TaskMetadata.Status.READY.equals(getIndexStatus());
     }
 
-    public BatchFileTask.Status getIndexStatus() {
+    public TaskMetadata.Status getIndexStatus() {
         return indexStatus;
     }
 
-    public FileMetadata setIndexStatus(BatchFileTask.Status indexStatus) {
+    public FileMetadata setIndexStatus(TaskMetadata.Status indexStatus) {
         this.indexStatus = indexStatus;
         return this;
     }
 
-    public BatchFileTask.Status getAnnotationStatus() {
+    public TaskMetadata.Status getAnnotationStatus() {
         return annotationStatus;
     }
 
-    public FileMetadata setAnnotationStatus(BatchFileTask.Status annotationStatus) {
+    public FileMetadata setAnnotationStatus(TaskMetadata.Status annotationStatus) {
         this.annotationStatus = annotationStatus;
         return this;
     }

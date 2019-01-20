@@ -44,7 +44,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.plain.StringDataReader;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -653,7 +653,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
         // Update indexed files
         for (Integer fileId : fileIds) {
-            metadataManager.updateFileMetadata(studyId, fileId, fileMetadata -> fileMetadata.setIndexStatus(BatchFileTask.Status.READY));
+            metadataManager.updateFileMetadata(studyId, fileId, fileMetadata -> fileMetadata.setIndexStatus(TaskMetadata.Status.READY));
         }
 //        studyMetadata.getIndexedFiles().addAll(fileIds);
 

@@ -32,21 +32,19 @@ import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.adaptors.VariantFileMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.metadata.adaptors.FileMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantFileMetadataConverter;
 
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
-public class MongoDBVariantFileMetadataDBAdaptor implements VariantFileMetadataDBAdaptor {
+public class MongoDBFileMetadataDBAdaptor implements FileMetadataDBAdaptor {
 
 //    private static final Map<String, List> SAMPLES_IN_SOURCES = new HashMap<>();
 
@@ -55,7 +53,7 @@ public class MongoDBVariantFileMetadataDBAdaptor implements VariantFileMetadataD
     private final DocumentToVariantFileMetadataConverter variantFileMetadataConverter;
     private final String collectionName;
 
-    public MongoDBVariantFileMetadataDBAdaptor(MongoCredentials credentials, String collectionName) throws UnknownHostException {
+    public MongoDBFileMetadataDBAdaptor(MongoCredentials credentials, String collectionName) throws UnknownHostException {
         // Mongo configuration
         mongoManager = new MongoDataStoreManager(credentials.getDataStoreServerAddresses());
         MongoDBConfiguration mongoDBConfiguration = credentials.getMongoDBConfiguration();
@@ -64,11 +62,36 @@ public class MongoDBVariantFileMetadataDBAdaptor implements VariantFileMetadataD
         variantFileMetadataConverter = new DocumentToVariantFileMetadataConverter();
     }
 
-    public MongoDBVariantFileMetadataDBAdaptor(MongoDataStore db, String collectionName) {
+    public MongoDBFileMetadataDBAdaptor(MongoDataStore db, String collectionName) {
         mongoManager = null;
         this.db = db;
         this.collectionName = collectionName;
         variantFileMetadataConverter = new DocumentToVariantFileMetadataConverter();
+    }
+
+    @Override
+    public FileMetadata getFileMetadata(int studyId, int fileId, Long timeStamp) {
+        throw new UnsupportedOperationException("TODO");
+    }
+
+    @Override
+    public Iterator<FileMetadata> fileIterator(int studyId) {
+        throw new UnsupportedOperationException("TODO");
+    }
+
+    @Override
+    public void updateFileMetadata(int studyId, FileMetadata file, Long timeStamp) {
+        throw new UnsupportedOperationException("TODO");
+    }
+
+    @Override
+    public Integer getFileId(int studyId, String fileName) {
+        throw new UnsupportedOperationException("TODO");
+    }
+
+    @Override
+    public LinkedHashSet<Integer> getIndexedFiles(int studyId) {
+        throw new UnsupportedOperationException("TODO");
     }
 
     @Override

@@ -32,12 +32,11 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.io.DataReader;
 import org.opencb.commons.run.ParallelTaskRunner;
-import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.adaptors.VariantFileMetadataDBAdaptor;
-import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
+import org.opencb.opencga.storage.core.metadata.adaptors.FileMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.MergeMode;
@@ -99,7 +98,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     private MongoDBVariantWriteResult writeResult;
     private List<Integer> fileIds;
     // current running task
-    private BatchFileTask currentTask;
+    private TaskMetadata currentTask;
 
     public MongoDBVariantStoragePipeline(StorageConfiguration configuration, String storageEngineId,
                                          VariantMongoDBAdaptor dbAdaptor) {
@@ -216,7 +215,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     DIRECT_LOAD.key(),
                     Collections.singletonList(fileId),
                     isResume(options),
-                    BatchFileTask.Type.LOAD);
+                    TaskMetadata.Type.LOAD);
             if (currentTask.getStatus().size() > 1) {
                 options.put(Options.RESUME.key(), true);
                 options.put(STAGE_RESUME.key(), true);
@@ -296,7 +295,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     new VariantDeduplicationTask(new DiscardDuplicatedVariantsResolver(fileId));
 
             //Remapping ids task
-            Task<Variant, Variant> remapIdsTask = new RemapVariantIdsTask(studyMetadata.getId(), fileId);
+            org.opencb.commons.run.Task remapIdsTask = new RemapVariantIdsTask(studyMetadata.getId(), fileId);
 
             // File reader
             DataReader<Variant> variantReader = VariantReaderUtils.getVariantReader(Paths.get(inputUri), metadata, stdin)
@@ -312,7 +311,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     variantReader, stageCollection, studyId, fileId, addAllStageDocuments);
 
 
-            //Task -- MongoDBVariantMerger
+            //TaskMetadata -- MongoDBVariantMerger
             ProgressLogger progressLogger = new ProgressLogger("Write variants in VARIANTS collection:", numRecords, 200);
 
             int release = options.getInt(Options.RELEASE.key(), Options.RELEASE.defaultValue());
@@ -347,7 +346,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             try {
                 Runtime.getRuntime().addShutdownHook(hook);
                 ptr.run();
-                getMetadataManager().atomicSetStatus(studyId, BatchFileTask.Status.DONE, DIRECT_LOAD.key(), fileIds);
+                getMetadataManager().atomicSetStatus(studyId, TaskMetadata.Status.DONE, DIRECT_LOAD.key(), fileIds);
             } finally {
                 Runtime.getRuntime().removeShutdownHook(hook);
             }
@@ -362,7 +361,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             dbAdaptor.getMetadataManager().updateVariantFileMetadata(String.valueOf(studyId), fileMetadata);
         } catch (ExecutionException e) {
             try {
-                getMetadataManager().atomicSetStatus(studyId, BatchFileTask.Status.ERROR, DIRECT_LOAD.key(),
+                getMetadataManager().atomicSetStatus(studyId, TaskMetadata.Status.ERROR, DIRECT_LOAD.key(),
                         fileIds);
             } catch (Exception e2) {
                 // Do not propagate this exception!
@@ -402,7 +401,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             VariantReader variantReader = VariantReaderUtils.getVariantReader(input, metadata, stdin);
 
             //Remapping ids task
-            Task<Variant, Variant> remapIdsTask = new RemapVariantIdsTask(studyMetadata.getId(), fileId);
+            org.opencb.commons.run.Task remapIdsTask = new RemapVariantIdsTask(studyMetadata.getId(), fileId);
 
             //Runner
             ProgressLogger progressLogger = new ProgressLogger("Write variants in STAGE collection:", numRecords, 200);
@@ -466,9 +465,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
      * - The file is not being staged
      *
      */
-    private BatchFileTask preStage(int fileId) throws StorageEngineException {
+    private TaskMetadata preStage(int fileId) throws StorageEngineException {
         VariantStorageMetadataManager scm = dbAdaptor.getMetadataManager();
-        AtomicReference<BatchFileTask> operation = new AtomicReference<>();
+        AtomicReference<TaskMetadata> operation = new AtomicReference<>();
         scm.lockAndUpdate(getStudyId(), studyMetadata -> {
             operation.set(securePreStage(fileId, studyMetadata));
             return studyMetadata;
@@ -477,14 +476,14 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         return operation.get();
     }
 
-    private BatchFileTask securePreStage(int fileId, StudyMetadata studyMetadata) throws StorageEngineException {
+    private TaskMetadata securePreStage(int fileId, StudyMetadata studyMetadata) throws StorageEngineException {
         String fileName = getMetadataManager().getFileName(studyMetadata.getId(), fileId);
 
         Query query = new Query()
-                .append(VariantFileMetadataDBAdaptor.VariantFileMetadataQueryParam.STUDY_ID.key(), studyMetadata.getId())
-                .append(VariantFileMetadataDBAdaptor.VariantFileMetadataQueryParam.FILE_ID.key(), fileId);
+                .append(FileMetadataDBAdaptor.VariantFileMetadataQueryParam.STUDY_ID.key(), studyMetadata.getId())
+                .append(FileMetadataDBAdaptor.VariantFileMetadataQueryParam.FILE_ID.key(), fileId);
 
-        BatchFileTask operation;
+        TaskMetadata operation;
         VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
         if (metadataManager.countVariantFileMetadata(query).first() == 1) {
             // Already staged!
@@ -492,9 +491,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
             operation = getMetadataManager().getTask(studyMetadata.getId(), STAGE.key(), Collections.singletonList(fileId));
 
-            if (operation != null && !operation.currentStatus().equals(BatchFileTask.Status.READY)) {
+            if (operation != null && !operation.currentStatus().equals(TaskMetadata.Status.READY)) {
                 // There was an error writing the operation status. Restore to "READY"
-                operation.addStatus(BatchFileTask.Status.READY);
+                operation.addStatus(TaskMetadata.Status.READY);
             }
             options.put(STAGE.key(), false);
         } else {
@@ -503,7 +502,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     getStudyId(), STAGE.key(),
                     Collections.singletonList(fileId),
                     resume,
-                    BatchFileTask.Type.OTHER,
+                    TaskMetadata.Type.OTHER,
                     batchFileOperation -> batchFileOperation.getOperationName().equals(STAGE.key()));
 
             // If there is more than one status is because we are resuming the operation.
@@ -519,7 +518,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     public void stageError() throws StorageEngineException {
         int fileId = getFileId();
         getMetadataManager()
-                .atomicSetStatus(getStudyId(), BatchFileTask.Status.ERROR, STAGE.key(), Collections.singletonList(fileId));
+                .atomicSetStatus(getStudyId(), TaskMetadata.Status.ERROR, STAGE.key(), Collections.singletonList(fileId));
     }
 
     public void stageSuccess(VariantFileMetadata metadata) throws StorageEngineException {
@@ -528,7 +527,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         metadata.setId(String.valueOf(fileId));
 
         getMetadataManager()
-                .atomicSetStatus(getStudyId(), BatchFileTask.Status.READY, STAGE.key(), Collections.singletonList(fileId));
+                .atomicSetStatus(getStudyId(), TaskMetadata.Status.READY, STAGE.key(), Collections.singletonList(fileId));
         metadata.setId(String.valueOf(fileId));
         dbAdaptor.getMetadataManager().updateVariantFileMetadata(String.valueOf(getStudyId()), metadata);
 
@@ -580,10 +579,10 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             Thread hook = new Thread(() -> {
                 try {
                     logger.error("Merge shutdown hook!");
-                    getMetadataManager().atomicSetStatus(getStudyId(), BatchFileTask.Status.ERROR, MERGE.key(), fileIds);
+                    getMetadataManager().atomicSetStatus(getStudyId(), TaskMetadata.Status.ERROR, MERGE.key(), fileIds);
                 } catch (Exception e) {
                     logger.error("Failed setting status '" + MERGE.key() + "' operation over files " + fileIds
-                            + " to '" + BatchFileTask.Status.ERROR + '\'', e);
+                            + " to '" + TaskMetadata.Status.ERROR + '\'', e);
                     throw Throwables.propagate(e);
                 }
             });
@@ -591,12 +590,12 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             try {
                 writeResult = mergeByChromosome(fileIds, batchSize, loadThreads, studyMetadata);
             } catch (Exception e) {
-                getMetadataManager().atomicSetStatus(getStudyId(), BatchFileTask.Status.ERROR, MERGE.key(), fileIds);
+                getMetadataManager().atomicSetStatus(getStudyId(), TaskMetadata.Status.ERROR, MERGE.key(), fileIds);
                 throw e;
             } finally {
                 Runtime.getRuntime().removeShutdownHook(hook);
             }
-            getMetadataManager().atomicSetStatus(getStudyId(), BatchFileTask.Status.DONE, MERGE.key(), fileIds);
+            getMetadataManager().atomicSetStatus(getStudyId(), TaskMetadata.Status.DONE, MERGE.key(), fileIds);
         }
 
         if (!options.getBoolean(STAGE_CLEAN_WHILE_LOAD.key(), STAGE_CLEAN_WHILE_LOAD.defaultValue())) {
@@ -633,9 +632,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             }
             boolean resume = isResumeMerge(options);
             currentTask = getMetadataManager()
-                    .addRunningTask(studyMetadata.getId(), MERGE.key(), fileIds, resume, BatchFileTask.Type.LOAD);
+                    .addRunningTask(studyMetadata.getId(), MERGE.key(), fileIds, resume, TaskMetadata.Type.LOAD);
 
-            if (currentTask.currentStatus().equals(BatchFileTask.Status.DONE)) {
+            if (currentTask.currentStatus().equals(TaskMetadata.Status.DONE)) {
                 options.put(MERGE_SKIP.key(), true);
             }
 
@@ -707,8 +706,8 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     public void securePostLoad(List<Integer> fileIds, StudyMetadata studyMetadata) throws StorageEngineException {
         super.securePostLoad(fileIds, studyMetadata);
         VariantStorageMetadataManager metadataManager = getMetadataManager();
-        BatchFileTask.Status status = metadataManager.setStatus(studyMetadata.getId(), currentTask.getId(), BatchFileTask.Status.READY);
-        if (status != BatchFileTask.Status.DONE) {
+        TaskMetadata.Status status = metadataManager.setStatus(studyMetadata.getId(), currentTask.getId(), TaskMetadata.Status.READY);
+        if (status != TaskMetadata.Status.DONE) {
             logger.warn("Unexpected status " + status);
         }
         Set<String> genotypes = new HashSet<>(studyMetadata.getAttributes().getAsStringList(LOADED_GENOTYPES.key()));

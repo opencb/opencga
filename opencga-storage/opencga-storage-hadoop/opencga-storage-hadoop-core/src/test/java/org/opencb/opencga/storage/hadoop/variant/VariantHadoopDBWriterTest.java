@@ -48,7 +48,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -251,7 +251,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
                 sc.getId(),
                 metadataManager, dbAdaptor.getHBaseManager(), false);
 
-        // Task
+        // TaskMetadata
         HadoopLocalLoadVariantStoragePipeline.GroupedVariantsTask task = new HadoopLocalLoadVariantStoragePipeline.GroupedVariantsTask(archiveWriter, hadoopDBWriter, null, null);
 
         ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder().setNumTasks(1).setBatchSize(1).build();
@@ -261,7 +261,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
 
         // Mark files as indexed and register new samples in phoenix
         metadataManager.updateStudyMetadata(sc);
-        metadataManager.updateFileMetadata(sc.getId(), fileId, f->f.setIndexStatus(BatchFileTask.Status.READY));
+        metadataManager.updateFileMetadata(sc.getId(), fileId, f->f.setIndexStatus(TaskMetadata.Status.READY));
         VariantPhoenixHelper phoenixHelper = new VariantPhoenixHelper(dbAdaptor.getGenomeHelper());
         phoenixHelper.registerNewStudy(dbAdaptor.getJdbcConnection(), dbAdaptor.getVariantTable(), sc.getId());
         phoenixHelper.registerNewFiles(dbAdaptor.getJdbcConnection(), dbAdaptor.getVariantTable(), sc.getId(), Collections.singleton(fileId), metadataManager.getFileMetadata(sc.getId(), fileId).getSamples());
@@ -280,7 +280,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         // Create dummy reader
         VariantSliceReader reader = getVariantSliceReader(variants, study.getId(), fileId);
 
-        // Task supplier
+        // TaskMetadata supplier
         Supplier<ParallelTaskRunner.Task<ImmutablePair<Long, List<Variant>>, VcfSliceProtos.VcfSlice>> taskSupplier = () -> {
             VariantToVcfSliceConverter converter = new VariantToVcfSliceConverter();
             return list -> {

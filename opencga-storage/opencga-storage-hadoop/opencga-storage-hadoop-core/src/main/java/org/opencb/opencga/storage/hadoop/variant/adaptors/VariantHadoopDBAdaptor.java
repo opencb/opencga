@@ -62,7 +62,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.VariantHBaseScanIterator;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantSqlQueryParser;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantFileMetadataDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchIndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
@@ -101,7 +101,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     private final AtomicReference<java.sql.Connection> phoenixCon = new AtomicReference<>();
     private final VariantSqlQueryParser queryParser;
     private final VariantHBaseQueryParser hbaseQueryParser;
-    private final HBaseVariantFileMetadataDBAdaptor variantFileMetadataDBAdaptor;
+    private final HBaseFileMetadataDBAdaptor variantFileMetadataDBAdaptor;
     private final int phoenixFetchSize;
     private boolean clientSideSkip;
     private HBaseManager hBaseManager;
@@ -124,7 +124,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         HBaseVariantStorageMetadataDBAdaptorFactory factory = new HBaseVariantStorageMetadataDBAdaptorFactory(
                 hBaseManager, tableNameGenerator.getMetaTableName(), conf);
         this.studyConfigurationManager.set(new VariantStorageMetadataManager(factory));
-        this.variantFileMetadataDBAdaptor = factory.buildVariantFileMetadataDBAdaptor();
+        this.variantFileMetadataDBAdaptor = factory.buildFileMetadataDBAdaptor();
 
         clientSideSkip = !options.getBoolean(PhoenixHelper.PHOENIX_SERVER_OFFSET_AVAILABLE, true);
         this.queryParser = new VariantSqlQueryParser(genomeHelper, this.variantTable,
@@ -203,7 +203,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     @Deprecated
-    public HBaseVariantFileMetadataDBAdaptor getVariantFileMetadataDBAdaptor() {
+    public HBaseFileMetadataDBAdaptor getVariantFileMetadataDBAdaptor() {
         return variantFileMetadataDBAdaptor;
     }
 

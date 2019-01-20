@@ -99,6 +99,6 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public VariantStorageMetadataManager getMetadataManager() throws StorageEngineException {
-        return new VariantStorageMetadataManager(new DummyProjectMetadataAdaptor(), new DummyStudyMetadataDBAdaptor(), new DummyVariantFileMetadataDBAdaptor());
+        return new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
     }
 }

@@ -29,7 +29,7 @@ import org.opencb.opencga.core.models.Variable;
 import org.opencb.opencga.storage.core.manager.variant.AbstractVariantStorageOperationTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.dummy.DummyStudyMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 
 import java.net.URI;
 import java.nio.file.Paths;
@@ -94,7 +94,7 @@ public class VariantImportTest extends AbstractVariantStorageOperationTest {
 
         variantManager.exportData(export, VariantOutputFormat.JSON_GZ, studyId, sessionId);
 
-        DummyStudyMetadataDBAdaptor.clear();
+        DummyVariantStorageMetadataDBAdaptorFactory.clear();
 
         variantManager.importData(URI.create(export), studyId2, sessionId);
 
@@ -112,7 +112,7 @@ public class VariantImportTest extends AbstractVariantStorageOperationTest {
         QueryOptions queryOptions = new QueryOptions();
         variantManager.exportData(export, VariantOutputFormat.AVRO, query, queryOptions, sessionId);
 
-        DummyStudyMetadataDBAdaptor.clear();
+        DummyVariantStorageMetadataDBAdaptorFactory.clear();
 
         variantManager.importData(URI.create(export), studyId2, sessionId);
 

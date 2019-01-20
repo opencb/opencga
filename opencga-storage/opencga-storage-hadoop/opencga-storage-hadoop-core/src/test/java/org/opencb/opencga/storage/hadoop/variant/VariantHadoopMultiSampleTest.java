@@ -39,9 +39,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -438,17 +437,17 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
         checkLoadedFilesS1S2(studyMetadata, dbAdaptor);
 
-        BatchFileTask[] tasks = Iterators.toArray(metadataManager.taskIterator(studyMetadata.getId()), BatchFileTask.class);
+        TaskMetadata[] tasks = Iterators.toArray(metadataManager.taskIterator(studyMetadata.getId()), TaskMetadata.class);
         assertEquals(2, tasks.length);
 
-        BatchFileTask batch = tasks[0];
-        assertEquals(BatchFileTask.Status.READY, batch.currentStatus());
-        assertThat(batch.getStatus().values(), hasItem(BatchFileTask.Status.ERROR));
+        TaskMetadata batch = tasks[0];
+        assertEquals(TaskMetadata.Status.READY, batch.currentStatus());
+        assertThat(batch.getStatus().values(), hasItem(TaskMetadata.Status.ERROR));
 
         batch = tasks[1];
-        assertEquals(BatchFileTask.Status.READY, batch.currentStatus());
+        assertEquals(TaskMetadata.Status.READY, batch.currentStatus());
         assertThat(batch.getStatus().values(),
-                not(hasItem(BatchFileTask.Status.ERROR)));
+                not(hasItem(TaskMetadata.Status.ERROR)));
 
 
     }
