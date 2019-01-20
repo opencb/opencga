@@ -478,7 +478,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     }
 
     private BatchFileTask securePreStage(int fileId, StudyMetadata studyMetadata) throws StorageEngineException {
-        String fileName = getMetadataManager().getFileMetadata(studyMetadata.getId(), fileId).getName();
+        String fileName = getMetadataManager().getFileName(studyMetadata.getId(), fileId);
 
         Query query = new Query()
                 .append(VariantFileMetadataDBAdaptor.VariantFileMetadataQueryParam.STUDY_ID.key(), studyMetadata.getId())

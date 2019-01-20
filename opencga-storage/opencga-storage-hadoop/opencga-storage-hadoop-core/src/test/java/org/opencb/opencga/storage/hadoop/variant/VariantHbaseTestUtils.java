@@ -379,7 +379,6 @@ public class VariantHbaseTestUtils {
         boolean old = HBaseToVariantConverter.isFailOnWrongVariants();
         HBaseToVariantConverter.setFailOnWrongVariants(false);
         for (StudyMetadata studyMetadata : studies) {
-//            FileStudyMetadataDBAdaptor.write(studyMetadata, outDir.resolve("study_configuration_" + studyMetadata.getStudyName() + ".json"));
             printVariantsFromArchiveTable(dbAdaptor, studyMetadata, outDir);
             printArchiveTable(studyMetadata, dbAdaptor, outDir);
             if (!dbAdaptor.getMetadataManager().getIndexedFiles(studyMetadata.getId()).isEmpty()) {

@@ -591,7 +591,7 @@ public class VariantMongoDBQueryParser {
                                 throw VariantQueryException.missingStudyForFile(fileId.toString(),
                                         metadataManager.getStudyNames(null));
                             }
-                            String fileName = metadataManager.getFileMetadata(defaultStudy.getId(), fileId).getName();
+                            String fileName = metadataManager.getFileName(defaultStudy.getId(), fileId);
                             String infoValue = infoMap.get(fileName);
                             if (infoValue != null) {
                                 addCompListQueryFilter(DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD, infoValue, fileBuilder, true);

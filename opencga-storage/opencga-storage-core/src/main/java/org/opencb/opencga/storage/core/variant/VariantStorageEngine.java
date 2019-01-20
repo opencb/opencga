@@ -54,7 +54,6 @@ import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.local.FileStudyMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
@@ -901,9 +900,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @return A StudyConfigurationManager object
      * @throws StorageEngineException If object is null
      */
-    public VariantStorageMetadataManager getMetadataManager() throws StorageEngineException {
-        return new VariantStorageMetadataManager(null, new FileStudyMetadataDBAdaptor(), null);
-    }
+    public abstract VariantStorageMetadataManager getMetadataManager() throws StorageEngineException;
 
     public VariantSearchManager getVariantSearchManager() throws StorageEngineException {
         if (variantSearchManager.get() == null) {

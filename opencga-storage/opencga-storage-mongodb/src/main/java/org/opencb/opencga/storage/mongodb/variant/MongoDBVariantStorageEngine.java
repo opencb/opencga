@@ -35,9 +35,8 @@ import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
-import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.local.FileStudyMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.metadata.models.BatchFileTask;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -572,8 +571,6 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         ObjectMap options = getOptions();
         if (metadataManager != null) {
             return metadataManager;
-        } else if (!options.getString(FileStudyMetadataDBAdaptor.STUDY_CONFIGURATION_PATH, "").isEmpty()) {
-            return super.getMetadataManager();
         } else {
             MongoDataStoreManager mongoDataStoreManager = getMongoDataStoreManager();
             MongoDataStore db = mongoDataStoreManager.get(
