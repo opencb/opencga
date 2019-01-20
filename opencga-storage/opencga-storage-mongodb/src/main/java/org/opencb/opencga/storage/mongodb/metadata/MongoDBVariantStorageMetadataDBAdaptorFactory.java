@@ -38,17 +38,26 @@ public class MongoDBVariantStorageMetadataDBAdaptorFactory implements VariantSto
 
     @Override
     public SampleMetadataDBAdaptor buildSampleMetadataDBAdaptor() {
-        throw new UnsupportedOperationException("TODO!");
+        return new MongoDBSampleMetadataDBAdaptor(db, options.getString(
+                MongoDBVariantStorageEngine.MongoDBVariantOptions.COLLECTION_SAMPLES.key(),
+                MongoDBVariantStorageEngine.MongoDBVariantOptions.COLLECTION_SAMPLES.defaultValue()
+        ));
     }
 
     @Override
     public CohortMetadataDBAdaptor buildCohortMetadataDBAdaptor() {
-        throw new UnsupportedOperationException("TODO!");
+        return new MongoDBCohortMetadataDBAdaptor(db, options.getString(
+                MongoDBVariantStorageEngine.MongoDBVariantOptions.COLLECTION_COHORTS.key(),
+                MongoDBVariantStorageEngine.MongoDBVariantOptions.COLLECTION_COHORTS.defaultValue()
+        ));
     }
 
     @Override
     public TaskMetadataDBAdaptor buildTaskDBAdaptor() {
-        throw new UnsupportedOperationException("TODO!");
+        return new MongoDBTaskMetadataDBAdaptor(db, options.getString(
+                MongoDBVariantStorageEngine.MongoDBVariantOptions.COLLECTION_TASKS.key(),
+                MongoDBVariantStorageEngine.MongoDBVariantOptions.COLLECTION_TASKS.defaultValue()
+        ));
     }
 
     @Override

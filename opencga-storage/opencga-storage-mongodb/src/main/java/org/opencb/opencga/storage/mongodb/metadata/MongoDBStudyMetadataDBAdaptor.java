@@ -16,9 +16,6 @@
 
 package org.opencb.opencga.storage.mongodb.metadata;
 
-import com.mongodb.ReadPreference;
-import com.mongodb.WriteConcern;
-import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.UpdateResult;
 import org.apache.commons.lang3.StringUtils;
@@ -35,10 +32,7 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.mongodb.utils.MongoLock;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyConfigurationConverter;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
@@ -47,17 +41,14 @@ import static org.opencb.commons.datastore.mongodb.MongoDBCollection.UPSERT;
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
-public class MongoDBStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor {
+public class MongoDBStudyMetadataDBAdaptor extends AbstractMongoDBAdaptor<StudyMetadata> implements StudyMetadataDBAdaptor {
 
     private final DocumentToStudyConfigurationConverter studyConfigurationConverter = new DocumentToStudyConfigurationConverter();
     private final MongoLock mongoLock;
-    private final MongoDBCollection collection;
 
     public MongoDBStudyMetadataDBAdaptor(MongoDataStore db, String collectionName) {
-        collection = db.getCollection(collectionName)
-                .withReadPreference(ReadPreference.primary())
-                .withWriteConcern(WriteConcern.ACKNOWLEDGED);
-        collection.createIndex(new Document("studyName", 1), new ObjectMap(MongoDBCollection.UNIQUE, true));
+        super(db, collectionName, StudyMetadata.class);
+        collection.createIndex(new Document("name", 1), new ObjectMap(MongoDBCollection.UNIQUE, true));
         mongoLock = new MongoLock(collection, "_lock");
     }
 
@@ -153,21 +144,19 @@ public class MongoDBStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor {
 
     @Override
     public Map<String, Integer> getStudies(QueryOptions options) {
-        QueryResult<StudyConfiguration> queryResult = collection.find(new Document(), Projections.include("studyId", "studyName"),
-                studyConfigurationConverter, null);
-        return queryResult.getResult()
-                .stream()
-                .collect(Collectors.toMap(StudyMetadata::getName, StudyMetadata::getId));
+        Map<String, Integer> map = new HashMap<>();
+        iterator(null, new QueryOptions(QueryOptions.INCLUDE, "id,name")).forEachRemaining(s -> map.put(s.getName(), s.getId()));
+        return map;
     }
 
     @Override
     public StudyMetadata getStudyMetadata(int id, Long timeStamp) {
-        throw new UnsupportedOperationException("TODO");
+        return get(id, null);
     }
 
     @Override
-    public void updateStudyMetadata(StudyMetadata sm) {
-        throw new UnsupportedOperationException("TODO");
+    public void updateStudyMetadata(StudyMetadata studyMetadata) {
+        update(studyMetadata.getId(), studyMetadata);
     }
 
     @Override

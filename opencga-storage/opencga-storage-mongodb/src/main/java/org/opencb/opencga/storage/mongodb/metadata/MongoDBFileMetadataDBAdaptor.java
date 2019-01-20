@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.storage.mongodb.metadata;
 
-import com.mongodb.client.MongoCursor;
+import com.google.common.collect.Iterators;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.DeleteResult;
@@ -28,65 +28,53 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
-import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.adaptors.FileMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
-import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantFileMetadataConverter;
 
-import java.net.UnknownHostException;
 import java.util.*;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
-public class MongoDBFileMetadataDBAdaptor implements FileMetadataDBAdaptor {
+public class MongoDBFileMetadataDBAdaptor extends AbstractMongoDBAdaptor<FileMetadata> implements FileMetadataDBAdaptor {
 
 //    private static final Map<String, List> SAMPLES_IN_SOURCES = new HashMap<>();
 
-    private final MongoDataStoreManager mongoManager;
-    private final MongoDataStore db;
     private final DocumentToVariantFileMetadataConverter variantFileMetadataConverter;
-    private final String collectionName;
-
-    public MongoDBFileMetadataDBAdaptor(MongoCredentials credentials, String collectionName) throws UnknownHostException {
-        // Mongo configuration
-        mongoManager = new MongoDataStoreManager(credentials.getDataStoreServerAddresses());
-        MongoDBConfiguration mongoDBConfiguration = credentials.getMongoDBConfiguration();
-        db = mongoManager.get(credentials.getMongoDbName(), mongoDBConfiguration);
-        this.collectionName = collectionName;
-        variantFileMetadataConverter = new DocumentToVariantFileMetadataConverter();
-    }
 
     public MongoDBFileMetadataDBAdaptor(MongoDataStore db, String collectionName) {
-        mongoManager = null;
-        this.db = db;
-        this.collectionName = collectionName;
+        super(db, collectionName, FileMetadata.class);
         variantFileMetadataConverter = new DocumentToVariantFileMetadataConverter();
+        createIdNameIndex();
     }
 
     @Override
     public FileMetadata getFileMetadata(int studyId, int fileId, Long timeStamp) {
-        throw new UnsupportedOperationException("TODO");
+        return super.get(studyId, fileId, null);
     }
 
     @Override
     public Iterator<FileMetadata> fileIterator(int studyId) {
-        throw new UnsupportedOperationException("TODO");
+        return super.iterator(buildQuery(studyId), null);
     }
 
     @Override
     public void updateFileMetadata(int studyId, FileMetadata file, Long timeStamp) {
-        throw new UnsupportedOperationException("TODO");
+        update(studyId, file.getId(), file);
     }
 
     @Override
     public Integer getFileId(int studyId, String fileName) {
-        throw new UnsupportedOperationException("TODO");
+        FileMetadata obj = getId(buildQuery(studyId, fileName));
+        if (obj == null) {
+            return null;
+        } else {
+            return obj.getId();
+        }
     }
 
     @Override
@@ -97,13 +85,11 @@ public class MongoDBFileMetadataDBAdaptor implements FileMetadataDBAdaptor {
     @Override
     public QueryResult<Long> count(Query query) {
         Bson bson = parseQuery(query);
-        MongoDBCollection coll = db.getCollection(collectionName);
-        return coll.count(bson);
+        return collection.count(bson);
     }
 
     @Override
     public void updateVariantFileMetadata(String studyId, VariantFileMetadata metadata) {
-        MongoDBCollection coll = db.getCollection(collectionName);
         if (Integer.valueOf(metadata.getId()) <= 0) {
             throw new IllegalArgumentException("FileIds must be integer positive");
         }
@@ -111,28 +97,15 @@ public class MongoDBFileMetadataDBAdaptor implements FileMetadataDBAdaptor {
         String id = document.getString("_id");
         document.append("_id", id);
         QueryOptions options = new QueryOptions(MongoDBCollection.REPLACE, true).append(MongoDBCollection.UPSERT, true);
-        coll.update(Filters.eq("_id", id), document, options);
+        collection.update(Filters.eq("_id", id), document, options);
     }
 
     @Override
     public Iterator<VariantFileMetadata> iterator(Query query, QueryOptions options) {
-        MongoDBCollection coll = db.getCollection(collectionName);
         Bson filter = parseQuery(query);
-
-        return new Iterator<VariantFileMetadata>() {
-            private final MongoCursor<Document> iterator = coll.nativeQuery().find(filter, options).iterator();
-            @Override
-            public boolean hasNext() {
-                return iterator.hasNext();
-            }
-
-            @Override
-            public VariantFileMetadata next() {
-                return variantFileMetadataConverter.convertToDataModelType(iterator.next());
-            }
-        };
+        return Iterators.transform(collection.nativeQuery().find(filter, options).iterator(),
+                variantFileMetadataConverter::convertToDataModelType);
     }
-
 
 //    @Override
 //    public QueryResult getAllSourcesByStudyId(String studyId, QueryOptions options) {
@@ -193,9 +166,8 @@ public class MongoDBFileMetadataDBAdaptor implements FileMetadataDBAdaptor {
     @Override
     public void delete(int study, int file) {
         String id = DocumentToVariantFileMetadataConverter.buildId(study, file);
-        MongoDBCollection coll = db.getCollection(collectionName);
 
-        DeleteResult deleteResult = coll.remove(Filters.eq("_id", id), null).first();
+        DeleteResult deleteResult = collection.remove(Filters.eq("_id", id), null).first();
 
         if (deleteResult.getDeletedCount() != 1) {
             throw new IllegalArgumentException("Unable to delete VariantSource " + id);
@@ -205,9 +177,6 @@ public class MongoDBFileMetadataDBAdaptor implements FileMetadataDBAdaptor {
 
     @Override
     public void close() {
-        if (mongoManager != null) {
-            mongoManager.close();
-        }
     }
 
     protected Bson parseQuery(Query query) {
@@ -335,7 +304,6 @@ public class MongoDBFileMetadataDBAdaptor implements FileMetadataDBAdaptor {
     @Override
     public QueryResult updateStats(VariantSourceStats variantSourceStats, StudyConfiguration studyConfiguration, QueryOptions
             queryOptions) {
-        MongoDBCollection coll = db.getCollection(collectionName);
 
         VariantFileMetadata source = new VariantFileMetadata("", "");
         source.setStats(variantSourceStats.getFileStats());
@@ -345,7 +313,7 @@ public class MongoDBFileMetadataDBAdaptor implements FileMetadataDBAdaptor {
                 .append(VariantFileMetadataQueryParam.FILE_ID.key(), variantSourceStats.getFileId()));
         Bson update = Updates.set("stats", globalStats);
 
-        return coll.update(query, update, null);
+        return collection.update(query, update, null);
     }
 
 
