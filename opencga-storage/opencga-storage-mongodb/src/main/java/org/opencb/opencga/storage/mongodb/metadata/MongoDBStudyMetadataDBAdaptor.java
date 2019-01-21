@@ -145,7 +145,7 @@ public class MongoDBStudyMetadataDBAdaptor extends AbstractMongoDBAdaptor<StudyM
     @Override
     public Map<String, Integer> getStudies(QueryOptions options) {
         Map<String, Integer> map = new HashMap<>();
-        iterator(null, new QueryOptions(QueryOptions.INCLUDE, "id,name")).forEachRemaining(s -> map.put(s.getName(), s.getId()));
+        iterator(new Document(), new QueryOptions(QueryOptions.INCLUDE, "id,name")).forEachRemaining(s -> map.put(s.getName(), s.getId()));
         return map;
     }
 

@@ -27,7 +27,6 @@ import org.opencb.biodata.models.variant.stats.VariantSourceStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.adaptors.FileMetadataDBAdaptor;
@@ -36,6 +35,8 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantFileMetadataConverter;
 
 import java.util.*;
+
+import static org.opencb.commons.datastore.mongodb.MongoDBCollection.UPSERT;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
@@ -79,7 +80,15 @@ public class MongoDBFileMetadataDBAdaptor extends AbstractMongoDBAdaptor<FileMet
 
     @Override
     public LinkedHashSet<Integer> getIndexedFiles(int studyId) {
-        throw new UnsupportedOperationException("TODO");
+        // FIXME!
+        LinkedHashSet<Integer> indexedFiles = new LinkedHashSet<>();
+        fileIterator(studyId).forEachRemaining(file -> {
+            if (file.isIndexed()) {
+                indexedFiles.add(file.getId());
+            }
+        });
+
+        return indexedFiles;
     }
 
     @Override
@@ -94,10 +103,10 @@ public class MongoDBFileMetadataDBAdaptor extends AbstractMongoDBAdaptor<FileMet
             throw new IllegalArgumentException("FileIds must be integer positive");
         }
         Document document = variantFileMetadataConverter.convertToStorageType(studyId, metadata);
-        String id = document.getString("_id");
-        document.append("_id", id);
-        QueryOptions options = new QueryOptions(MongoDBCollection.REPLACE, true).append(MongoDBCollection.UPSERT, true);
-        collection.update(Filters.eq("_id", id), document, options);
+        Document query = new Document("_id", document.getString("_id"));
+        List<Bson> updates = new ArrayList<>(document.size());
+        document.forEach((s, o) -> updates.add(new Document("$set", new Document(s, o))));
+        collection.update(query, Updates.combine(updates), new QueryOptions(UPSERT, true));
     }
 
     @Override

@@ -260,12 +260,12 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         this.studyMetadata = Objects.requireNonNull(studyMetadata);
         this.fileIds = Objects.requireNonNull(fileIds);
 
+        studyId = studyMetadata.getId();
+        studyIdStr = String.valueOf(studyId);
         excludeGenotypes = getExcludeGenotypes(studyMetadata);
         format = buildFormat(studyMetadata);
         indexedSamples = Collections.unmodifiableList(buildIndexedSamplesList(fileIds, dbAdaptor.getMetadataManager()));
-        studyId = studyMetadata.getId();
         this.release = release;
-        studyIdStr = String.valueOf(studyId);
 
         indexedFiles = dbAdaptor.getMetadataManager().getIndexedFiles(studyMetadata.getId());
         checkOverlappings = !ignoreOverlapping && (fileIds.size() > 1 || !indexedFiles.isEmpty());

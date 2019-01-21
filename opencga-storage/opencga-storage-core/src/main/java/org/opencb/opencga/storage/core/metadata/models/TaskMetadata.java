@@ -47,6 +47,7 @@ public class TaskMetadata {
         OTHER
     }
 
+    private int studyId;
     private int id;
     private String operationName;
     private List<Integer> fileIds;
@@ -97,6 +98,15 @@ public class TaskMetadata {
 
     public TaskMetadata setOperationName(String operationName) {
         this.operationName = operationName;
+        return this;
+    }
+
+    public int getStudyId() {
+        return studyId;
+    }
+
+    public TaskMetadata setStudyId(int studyId) {
+        this.studyId = studyId;
         return this;
     }
 

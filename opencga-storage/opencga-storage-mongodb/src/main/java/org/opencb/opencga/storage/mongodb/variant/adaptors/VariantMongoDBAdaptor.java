@@ -1108,22 +1108,16 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     private DocumentToVariantConverter getDocumentToVariantConverter(Query query, VariantQueryFields selectVariantElements) {
         List<Integer> returnedStudies = selectVariantElements.getStudies();
         DocumentToSamplesConverter samplesConverter;
-        samplesConverter = new DocumentToSamplesConverter(metadataManager);
+        samplesConverter = new DocumentToSamplesConverter(metadataManager, selectVariantElements);
         samplesConverter.setFormat(getIncludeFormats(query));
-        // Fetch some StudyConfigurations that will be needed
-        for (StudyConfiguration studyConfiguration : selectVariantElements.getStudyConfigurations().values()) {
-            samplesConverter.addStudyConfiguration(studyConfiguration);
-        }
         if (query.containsKey(UNKNOWN_GENOTYPE.key())) {
             samplesConverter.setUnknownGenotype(query.getString(UNKNOWN_GENOTYPE.key()));
         }
 
-        samplesConverter.setIncludeSamples(selectVariantElements.getSamples());
-
         DocumentToStudyVariantEntryConverter studyEntryConverter;
 
         studyEntryConverter = new DocumentToStudyVariantEntryConverter(false, selectVariantElements.getFiles(), samplesConverter);
-        studyEntryConverter.setVariantStorageMetadataManager(metadataManager);
+        studyEntryConverter.setMetadataManager(metadataManager);
         ProjectMetadata projectMetadata = getMetadataManager().getProjectMetadata();
         Map<Integer, String> annotationIds;
         if (projectMetadata != null) {

@@ -517,6 +517,9 @@ public class VariantMongoDBQueryParser {
                         .stream()
                         .filter(value -> !isNegated(value))
                         .map(value -> {
+                            if (value.startsWith("-")) {
+                                value = value.substring(1);
+                            }
                             Integer fileId = metadataManager.getFileIdPair(value, false, defaultStudy).getValue();
                             if (fileId == null) {
                                 throw VariantQueryException.fileNotFound(value, defaultStudy.getName());
@@ -841,7 +844,16 @@ public class VariantMongoDBQueryParser {
                     addQueryFilter(studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD
                                     + '.' + DocumentToStudyVariantEntryConverter.FILEID_FIELD,
                             fileNames, builder, QueryOperation.AND, filesOperation,
-                            f -> metadataManager.getFileIdPair(f, false, defaultStudy).getValue());
+                            value -> {
+                                if (value.startsWith("-")) {
+                                    value = value.substring(1);
+                                }
+                                Integer fileId = metadataManager.getFileIdPair(value, false, defaultStudy).getValue();
+                                if (fileId == null) {
+                                    throw VariantQueryException.fileNotFound(value, defaultStudy.getName());
+                                }
+                                return metadataManager.getFileIdPair(value, false, defaultStudy).getValue();
+                            });
                 } else {
                     // fileIdGroupsFromSamples is not empty. gtQueryOperation is always AND at this point
                     // assert gtQueryOperation == Operation.AND || gtQueryOperation == null
@@ -856,6 +868,9 @@ public class VariantMongoDBQueryParser {
                                     .stream()
                                     .filter(VariantQueryUtils::isNegated)
                                     .map(value -> {
+                                        if (value.startsWith("-")) {
+                                            value = value.substring(1);
+                                        }
                                         Integer fileId = metadataManager.getFileIdPair(value, false, defaultStudy)
                                                 .getValue();
                                         if (fileId == null) {

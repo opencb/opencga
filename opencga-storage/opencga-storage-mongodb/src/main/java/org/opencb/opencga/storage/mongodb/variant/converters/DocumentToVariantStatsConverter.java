@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.storage.mongodb.variant.converters;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import org.bson.Document;
 import org.opencb.biodata.models.feature.AllelesCode;
 import org.opencb.biodata.models.feature.Genotype;
@@ -24,6 +26,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,19 +42,6 @@ import java.util.stream.Collectors;
 public class DocumentToVariantStatsConverter {
 
     private static final Pattern MISSING_ALLELE = Pattern.compile("-1", Pattern.LITERAL);
-
-    public DocumentToVariantStatsConverter() {
-    }
-
-    public DocumentToVariantStatsConverter(List<StudyConfiguration> studyConfigurations) {
-        this.studyConfigurations = studyConfigurations
-                .stream()
-                .collect(Collectors.toMap(studyConfiguration -> studyConfiguration.getId(), Function.identity()));
-    }
-
-    public DocumentToVariantStatsConverter(VariantStorageMetadataManager variantStorageMetadataManager) {
-        this.variantStorageMetadataManager = variantStorageMetadataManager;
-    }
 
     public static final String COHORT_ID = "cid";
     public static final String STUDY_ID = "sid";
@@ -70,10 +60,24 @@ public class DocumentToVariantStatsConverter {
     protected static Logger logger = LoggerFactory.getLogger(DocumentToVariantStatsConverter.class);
 
     private VariantStorageMetadataManager variantStorageMetadataManager = null;
-    private Map<Integer, StudyConfiguration> studyConfigurations;
+    private Map<Integer, StudyMetadata> studyMetadataMap;
     private Map<Integer, String> studyIds = new HashMap<>();
     private Map<Integer, Map<Integer, String>> studyCohortNames = new HashMap<>();
     private Map<String, Genotype> genotypeMap = new HashMap<>();
+
+    public DocumentToVariantStatsConverter() {
+    }
+
+    @Deprecated
+    public DocumentToVariantStatsConverter(List<StudyConfiguration> studyConfigurations) {
+        this.studyMetadataMap = studyConfigurations
+                .stream()
+                .collect(Collectors.toMap(studyConfiguration -> studyConfiguration.getId(), Function.identity()));
+    }
+
+    public DocumentToVariantStatsConverter(VariantStorageMetadataManager variantStorageMetadataManager) {
+        this.variantStorageMetadataManager = variantStorageMetadataManager;
+    }
 
     public void setVariantStorageMetadataManager(VariantStorageMetadataManager variantStorageMetadataManager) {
         this.variantStorageMetadataManager = variantStorageMetadataManager;
@@ -290,30 +294,18 @@ public class DocumentToVariantStatsConverter {
         return studyIds.get(studyId);
     }
 
+    private final BiMap<String, Integer> cohortIds = HashBiMap.create();
 
     private String getCohortName(int studyId, int cohortId) {
-        if (studyCohortNames.containsKey(studyId)) {
-            return studyCohortNames.get(studyId).get(cohortId);
-        } else {
-            Map<Integer, String> cohortNames = StudyConfiguration.inverseMap(getStudyConfiguration(studyId).getCohortIds());
-            studyCohortNames.put(studyId, cohortNames);
-            return cohortNames.get(cohortId);
-        }
+        return cohortIds.inverse().computeIfAbsent(cohortId, c -> variantStorageMetadataManager.getCohortName(studyId, cohortId));
     }
 
     private Integer getCohortId(int studyId, String cohortName) {
-        StudyConfiguration studyConfiguration = getStudyConfiguration(studyId);
-        Map<String, Integer> cohortIds = studyConfiguration.getCohortIds();
-        Integer integer = cohortIds.get(cohortName);
-        return integer;
+        return cohortIds.computeIfAbsent(studyId + "_" + cohortName, c -> variantStorageMetadataManager.getCohortId(studyId, cohortName));
     }
 
-    private StudyConfiguration getStudyConfiguration(int studyId) {
-        if (studyConfigurations != null && studyConfigurations.containsKey(studyId)) {
-            return studyConfigurations.get(studyId);
-        } else {
-            return variantStorageMetadataManager.getStudyConfiguration(studyId, VariantStorageMetadataManager.RO_CACHED_OPTIONS).first();
-        }
+    private StudyMetadata getStudyMetadata(int studyId) {
+        return studyMetadataMap.computeIfAbsent(studyId, s -> variantStorageMetadataManager.getStudyMetadata(s));
     }
 
 

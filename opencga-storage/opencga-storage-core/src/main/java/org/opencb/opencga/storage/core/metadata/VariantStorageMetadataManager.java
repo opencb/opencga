@@ -568,6 +568,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     public void updateFileMetadata(int studyId, FileMetadata file) {
+        file.setStudyId(studyId);
         fileDBAdaptor.updateFileMetadata(studyId, file, null);
     }
 
@@ -651,6 +652,13 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         }
     }
 
+    public void updateIndexedFiles(int studyId, List<Integer> fileIds) {
+        for (Integer fileId : fileIds) {
+            updateFileMetadata(studyId, fileId, fileMetadata -> fileMetadata.setIndexStatus(TaskMetadata.Status.READY));
+        }
+//        studyDBAdaptor.addIndexedFiles(fileIds);
+    }
+
     public LinkedHashSet<Integer> getIndexedFiles(int studyId) {
         return fileDBAdaptor.getIndexedFiles(studyId);
     }
@@ -664,6 +672,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     public void updateSampleMetadata(int studyId, SampleMetadata sample) {
+        sample.setStudyId(studyId);
         sampleDBAdaptor.updateSampleMetadata(studyId, sample, null);
     }
 
@@ -754,6 +763,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     public void updateCohortMetadata(int studyId, CohortMetadata cohort) {
+        cohort.setStudyId(studyId);
         cohortDBAdaptor.updateCohortMetadata(studyId, cohort, null);
     }
 
@@ -835,6 +845,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     public void updateTask(int studyId, TaskMetadata task) {
+        task.setStudyId(studyId);
         taskDBAdaptor.updateTask(studyId, task, null);
     }
 
