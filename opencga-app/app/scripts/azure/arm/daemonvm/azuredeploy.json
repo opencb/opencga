@@ -68,7 +68,7 @@
         "mountArgs": {
             "type": "string"
         },
-        "webserverNamingPrefix": {
+        "opencgaFQDN": {
             "type": "string"
         },
         "solrHosts": {
@@ -120,7 +120,7 @@
         "subnetRef": "[concat(variables('vnetId'), '/subnets/', parameters('subnetName'))]",
         "solrHostsCSV": "[concat('\"', replace(replace(replace(replace(string(parameters('solrHosts')), ' ', ''), '[{\"host\":\"', ''), '\"},{\"host\":\"', ','), '\"}]', ''),'\"')]",
         "mongoDbHostsCSV": "[concat('\"', replace(replace(replace(replace(string(parameters('mongoDbHosts')), ' ', ''), '[{\"fqdn\":\"', ''), '\"},{\"fqdn\":\"', ','), '\"}]', ''),'\"')]",
-        "webserverHost": "[concat('http://', parameters('webserverNamingPrefix'), '.', resourceGroup().location,'.cloudapp.azure.com')]",
+        "webserverHost": "[parameters('opencgaFQDN')]",
         "restHost": "[concat(variables('webserverHost'), ':8080/opencga')]",
         "grpcHost": "[concat(variables('webserverHost'), ':9999')]",
         "singleQuote": "'",
