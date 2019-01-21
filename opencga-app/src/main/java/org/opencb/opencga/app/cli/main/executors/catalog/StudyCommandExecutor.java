@@ -403,7 +403,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         } catch (IOException e) {
             throw new CatalogException("Could not open file " + filePath + ". " + e.getMessage(), e);
         }
-        ObjectMapper objectMapper = JacksonUtils.getDefaultObjectMapper();
+        ObjectMapper objectMapper = JacksonUtils.getUpdateObjectMapper();
         try {
             return objectMapper.readValue(fileInputStream, ObjectMap.class);
         } catch (IOException e) {

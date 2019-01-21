@@ -16,12 +16,13 @@
 
 package org.opencb.opencga.client.rest.catalog;
 
-import org.codehaus.jackson.map.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.client.config.ClientConfiguration;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 
@@ -110,7 +111,7 @@ public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
     }
 
     public QueryResponse<Study> update(String studyId, String study, ObjectMap params) throws IOException {
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = JacksonUtils.getUpdateObjectMapper();
         String json = mapper.writeValueAsString(params);
         ObjectMap p = new ObjectMap("body", json);
         return execute(STUDY_URL, studyId, "update", p, POST, Study.class);
@@ -125,7 +126,7 @@ public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
     }
 
     public QueryResponse<VariableSet> updateVariableSet(String studyId, Query query, ObjectMap variableSet) throws IOException {
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = JacksonUtils.getUpdateObjectMapper();
         String json = mapper.writeValueAsString(variableSet);
         query.append("body", json);
         return execute(STUDY_URL, studyId, "variableSets", "", "update", query, POST, VariableSet.class);
@@ -133,7 +134,7 @@ public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
 
     public QueryResponse<VariableSet> updateVariableSetVariable(String studyId, String variableSet, Query query, ObjectMap variable)
             throws IOException {
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = JacksonUtils.getUpdateObjectMapper();
         String json = mapper.writeValueAsString(variable);
         query.append("body", json);
         return execute(STUDY_URL, studyId, "variableSets", variableSet, "variables/update", query, POST, VariableSet.class);
