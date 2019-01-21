@@ -52,7 +52,7 @@ Here are the properties that are defined for each t-shirt size:
 |             | worker-node-size    | D3v2         | D5v2   | D14v2  |
 |             |                     |              |
 | Daemon      |
-|             | node-size           | A4           | F8v2   | F8v2   |
+|             | node-size           | DS2v2        | F8v2   | F8v2   |
 |             | disk-type           | HDD          | HDD    | HDD    |
 |             |                     |              |        |
 | Web Servers |

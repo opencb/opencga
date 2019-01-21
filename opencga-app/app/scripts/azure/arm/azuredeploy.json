@@ -201,12 +201,12 @@
                     }
                 },
                 "daemon": {
-                    "nodeSize": "Standard_A4"
+                    "nodeSize": "Standard_DS2_v2"
                 },
                 "webServers": {
                     "minNodeCount": 1,
                     "maxNodeCount": 2,
-                    "nodeSize": "Standard_DS2_v3"
+                    "nodeSize": "Standard_DS2_v2"
                 }
             },
             {
@@ -248,7 +248,7 @@
                 "webServers": {
                     "minNodeCount": 2,
                     "maxNodeCount": 2,
-                    "nodeSize": "Standard_DS4_v3"
+                    "nodeSize": "Standard_DS4_v2"
                 }
             },
             {
@@ -290,7 +290,7 @@
                 "webServers": {
                     "minNodeCount": 2,
                     "maxNodeCount": 4,
-                    "nodeSize": "Standard_DS4_v3"
+                    "nodeSize": "Standard_DS4_v2"
                 }
             }
         ],
