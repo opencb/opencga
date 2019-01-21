@@ -51,24 +51,9 @@ public interface StudyMetadataDBAdaptor extends AutoCloseable {
     @Deprecated
     QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options);
 
-    default StudyMetadata getStudyMetadata(int id, Long timeStamp) {
-        return new StudyMetadata(getStudyConfiguration(id, timeStamp, null).first());
-    }
+    StudyMetadata getStudyMetadata(int id, Long timeStamp);
 
-    default void updateStudyMetadata(StudyMetadata sm) {
-        StudyConfiguration sc = getStudyConfiguration(sm.getId(), null, null).first();
-        if (sc == null) {
-            sc = new StudyConfiguration(sm.getId(), sm.getName());
-        }
-        sc.setStudyId(sm.getId());
-        sc.setStudyName(sm.getName());
-        sc.setAggregation(sm.getAggregation());
-        sc.setVariantHeader(sm.getVariantHeader());
-        sc.setTimeStamp(sm.getTimeStamp());
-        sc.setAttributes(sm.getAttributes());
-
-        updateStudyConfiguration(sc, null);
-    }
+    void updateStudyMetadata(StudyMetadata sm);
 
     Map<String, Integer> getStudies(QueryOptions options);
 

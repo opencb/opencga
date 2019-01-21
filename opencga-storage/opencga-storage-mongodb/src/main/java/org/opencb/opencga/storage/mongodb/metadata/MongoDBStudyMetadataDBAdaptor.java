@@ -133,7 +133,7 @@ public class MongoDBStudyMetadataDBAdaptor extends AbstractMongoDBAdaptor<StudyM
 
     @Override
     public List<String> getStudyNames(QueryOptions options) {
-        List<String> studyNames = collection.distinct("studyName", new Document("studyName", new Document("$exists", 1))).getResult();
+        List<String> studyNames = collection.distinct("name", new Document("name", new Document("$exists", 1))).getResult();
         return studyNames.stream().map(Object::toString).collect(Collectors.toList());
     }
 
