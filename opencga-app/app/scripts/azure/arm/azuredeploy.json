@@ -205,7 +205,7 @@
     "variables": {
         "avereEnabled": "[equals(parameters('nfsStorageOption'), 'AvereCluster')]",
         "azureFilesEnabled": "[equals(parameters('nfsStorageOption'), 'AzureFiles')]",
-        "webserverNamingPrefix": "[toLower(substring(concat('webservers', uniqueString(parameters('rgPrefix'))), 0, 16))]"
+        "dnsNamePrefix": "[toLower(substring(concat('opencga', uniqueString(subscription().subscriptionId,parameters('rgPrefix'))), 0, 16))]"
     },
     "resources": [
         {
@@ -248,6 +248,9 @@
                 "parameters":{  
                     "applicationGatewaySubnetId": {
                         "value": "[reference('vnet').outputs.appgwSubnetId.value]"
+                    },
+                    "dnsNamePrefix":{
+                        "value": "[variables('dnsNamePrefix')]"
                     }
                 }
             }
@@ -384,8 +387,8 @@
                     "mountArgs": {
                         "value": "[if(equals(parameters('nfsStorageOption'), 'AzureFiles'), concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value,',',reference('azurefiles').outputs.accountKey.value),concat('avere ', reference('avere').outputs.VSERVER_IPS.value))]"
                     },
-                    "webserverNamingPrefix": {
-                        "value": "[variables('webserverNamingPrefix')]"
+                    "opencgaFQDN": {
+                        "value": "[reference('appgw').outputs.fqdn.value]"
                     },
                     "solrHosts": {
                         "value": "[reference('solr').outputs.solrConnectionDetails.value]"
@@ -583,9 +586,6 @@
                     },
                     "ivaDockerImage": {
                         "value": "[parameters('ivaDockerImage')]"
-                    },
-                    "namingPrefix": {
-                        "value": "[variables('webserverNamingPrefix')]"
                     }
                 }
             }

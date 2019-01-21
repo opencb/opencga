@@ -16,20 +16,20 @@
         "skuCapacity":{
             "defaultValue": 1,
             "type": "int"
+        },
+        "dnsNamePrefix": {
+            "type": "string",
+            "metadata": {
+                "description": "DNS prefix used by the app gateway IP"
+            }
         }      
     },
     "variables": {
         "applicationGatewayName": "appgw",
         "applicationGatewayPublicIpName": "appgwpublicip",
         "applicationGatewayPublicIpId": "[resourceId('Microsoft.Network/publicIPAddresses',variables('applicationGatewayPublicIpName'))]",
-        "applicationGatewayId": "[resourceId('Microsoft.Network/applicationGateways', variables('applicationGatewayName'))]",
-        "skuV2": {
-                "name": "Standard_v2",
-                "tier": "Standard_v2",
-                "capacity": 1
-        }
+        "applicationGatewayId": "[resourceId('Microsoft.Network/applicationGateways', variables('applicationGatewayName'))]"
         
-
     },
     "resources": [{
         "type": "Microsoft.Network/publicIPAddresses",
@@ -40,7 +40,11 @@
             "name": "Basic"
         },
         "properties": {
-            "publicIPAllocationMethod": "Dynamic"
+            "publicIPAllocationMethod": "Dynamic",
+            "dnsSettings":
+            {
+                "domainNameLabel": "[parameters('dnsNamePrefix')]"
+            }
         }
     },
     {
@@ -238,9 +242,9 @@
             "type": "string",
             "value": "[concat(variables('applicationGatewayId'), '/backendAddressPools/bepool')]"
         },
-        "publicIp": {
-            "type":"object",
-            "value": "[reference(variables('applicationGatewayPublicIpName'))]"
+        "fqdn": {
+            "type":"string",
+            "value": "[reference(variables('applicationGatewayPublicIpName')).dnsSettings.fqdn]"
         }
     }
 }

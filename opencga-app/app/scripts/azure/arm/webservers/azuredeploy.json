@@ -87,19 +87,21 @@
             "metadata": {
                 "description": "Arguments passed to the mount.py script."
             }
-        },
-        "namingPrefix": {
-            "type": "string",
-            "metadata": {
-                "description": "DNS prefix used by the webserver VMSS"
-            }
         }
     },
     "variables": {
+        "vmssName":"opencgavmss",
+        "namingPrefix":"webservers",
         "sshKeyPath": "[concat('/home/',parameters('adminUsername'),'/.ssh/authorized_keys')]",
-        "vmssName": "webservers",
-        "nicName": "[concat(parameters('namingPrefix'), 'nic')]",
-        "ipConfigName": "[concat(parameters('namingPrefix'), 'ipconfig')]",
+        "publicIPAddressName": "[concat(variables('namingPrefix'), '-pip')]",
+        "loadBalancerName": "[concat(variables('namingPrefix'), '-lb')]",
+        "publicIPAddressID": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName'))]",
+        "lbID": "[resourceId('Microsoft.Network/loadBalancers',variables('loadBalancerName'))]",
+        "natPoolName": "[concat(variables('namingPrefix'), 'natpool')]",
+        "natStartPort": 50000,
+        "natEndPort": 50119,
+        "natBackendPort": 22,
+        "frontEndIPConfigID": "[concat(variables('lbID'),'/frontendIPConfigurations/loadBalancerFrontEnd')]",
         "imageReference": {
             "publisher": "Canonical",
             "offer": "UbuntuServer",
@@ -112,7 +114,6 @@
             "package_upgrade: true",
             "package_reboot_if_required: true",
             "runcmd:",
-            "- apt-get update",
             "- curl -fsSL https://get.docker.com/ | sh",
             "- curl -fsSL https://get.docker.com/gpg | sudo apt-key add -",
             "[concat('- curl -fsSL ', parameters('_artifactsLocation'), '/avere/mount.py', parameters('_artifactsLocationSasToken'), ' | python3 - ', parameters('mountArgs'))]",
@@ -121,7 +122,8 @@
             ""
         ],
         "cloud-init-string": "[replace(replace(replace(string(variables('cloud-init')),'\",\"','\n'),'[\"',''),'\"]','')]",
-        "customData": "[base64(variables('cloud-init-string'))]"
+        "customData": "[base64(variables('cloud-init-string'))]",
+        "publicDnsName" : "[toLower(substring(concat(variables('namingPrefix'), uniqueString(resourceGroup().id)), 0, 16))]"
     },
     "resources": [
         {
@@ -133,7 +135,7 @@
             "properties": {
                 "publicIPAllocationMethod": "Static",
                 "dnsSettings": {
-                    "domainNameLabel": "[parameters('namingPrefix')]"
+                    "domainNameLabel": "[variables('publicDnsName')]"
                 }
             }
         },
@@ -281,7 +283,7 @@
         {
             "comments": "This VMSS creates machines used to host the web components of OpenCGA, they are configured using the CloudInit found in the variables section of this ARM template",
             "type": "Microsoft.Compute/virtualMachineScaleSets",
-            "name": "[parameters('namingPrefix')]",
+            "name": "[variables('vmssName')]",
             "location": "[resourceGroup().location]",
             "apiVersion": "2017-03-30",
             "dependsOn": [
@@ -294,7 +296,7 @@
             "properties": {
                 "overprovision": true,
                 "upgradePolicy": {
-                    "mode": "Automatic",
+                    "mode": "Rolling",
                     "automaticOSUpgradePolicy": {
                         "enableAutomaticOSUpgrade": true
                     }
@@ -308,7 +310,7 @@
                         "imageReference": "[variables('imageReference')]"
                     },
                     "osProfile": {
-                        "computerNamePrefix": "[parameters('namingPrefix')]",
+                        "computerNamePrefix": "opencga",
                         "adminUsername": "[parameters('adminUsername')]",
                         "linuxConfiguration": {
                             "disablePasswordAuthentication": true,
@@ -322,17 +324,19 @@
                             }
                         },
                         "customData": "[variables('customData')]"
-                    },
+                    },                    
                     "networkProfile": {
-                       
+                        "healthProbe": {
+                            "id": "[concat(variables('lbId'), '/probes/tomcatHttpProbe')]"
+                        },
                         "networkInterfaceConfigurations": [
                             {
-                                "name": "[variables('nicName')]",
+                                "name": "nic1",
                                 "properties": {
                                     "primary": true,
                                     "ipConfigurations": [
                                         {
-                                            "name": "[variables('ipConfigName')]",
+                                            "name": "ipconfig",
                                             "properties": {
                                                 "subnet": {
                                                     "id": "[parameters('virtualNetworkSubnetId')]"
@@ -345,6 +349,16 @@
                           
                                                     }
                           
+                                                ],
+                                                "loadBalancerBackendAddressPools": [
+                                                    {
+                                                        "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/loadBalancers/', variables('loadBalancerName'), '/backendAddressPools/VMSSBackendPool')]"
+                                                    }
+                                                ],
+                                                "loadBalancerInboundNatPools": [
+                                                    {
+                                                        "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/loadBalancers/', variables('loadBalancerName'), '/inboundNatPools/', variables('natPoolName'))]"
+                                                    }
                                                 ]
                                             }
                                         }
@@ -363,11 +377,11 @@
             "name": "autoscalewad",
             "location": "[resourceGroup().location]",
             "dependsOn": [
-                "[concat('Microsoft.Compute/virtualMachineScaleSets/', parameters('namingPrefix'))]"
+                "[concat('Microsoft.Compute/virtualMachineScaleSets/', variables('vmssName'))]"
             ],
             "properties": {
                 "name": "autoscalewad",
-                "targetResourceUri": "[concat('/subscriptions/',subscription().subscriptionId, '/resourceGroups/',  resourceGroup().name, '/providers/Microsoft.Compute/virtualMachineScaleSets/', parameters('namingPrefix'))]",
+                "targetResourceUri": "[concat('/subscriptions/',subscription().subscriptionId, '/resourceGroups/',  resourceGroup().name, '/providers/Microsoft.Compute/virtualMachineScaleSets/', variables('vmssName'))]",
                 "enabled": true,
                 "mode": "Incremental",
                 "profiles": [
@@ -383,7 +397,7 @@
                                 "metricTrigger": {
                                     "metricName": "Percentage CPU",
                                     "metricNamespace": "",
-                                    "metricResourceUri": "[concat('/subscriptions/',subscription().subscriptionId, '/resourceGroups/',  resourceGroup().name, '/providers/Microsoft.Compute/virtualMachineScaleSets/', parameters('namingPrefix'))]",
+                                    "metricResourceUri": "[concat('/subscriptions/',subscription().subscriptionId, '/resourceGroups/',  resourceGroup().name, '/providers/Microsoft.Compute/virtualMachineScaleSets/', variables('vmssName'))]",
                                     "timeGrain": "PT1M",
                                     "statistic": "Average",
                                     "timeWindow": "PT5M",
@@ -402,7 +416,7 @@
                                 "metricTrigger": {
                                     "metricName": "Percentage CPU",
                                     "metricNamespace": "",
-                                    "metricResourceUri": "[concat('/subscriptions/',subscription().subscriptionId, '/resourceGroups/',  resourceGroup().name, '/providers/Microsoft.Compute/virtualMachineScaleSets/', parameters('namingPrefix'))]",
+                                    "metricResourceUri": "[concat('/subscriptions/',subscription().subscriptionId, '/resourceGroups/',  resourceGroup().name, '/providers/Microsoft.Compute/virtualMachineScaleSets/', variables('vmssName'))]",
                                     "timeGrain": "PT1M",
                                     "statistic": "Average",
                                     "timeWindow": "PT5M",
@@ -424,6 +438,9 @@
         }
     ],
     "outputs": {
-       
+        "lbFQDN": {
+            "type": "string",
+            "value": "[reference(variables('publicIPAddressName')).dnsSettings.fqdn]"
+        }
     }
 }

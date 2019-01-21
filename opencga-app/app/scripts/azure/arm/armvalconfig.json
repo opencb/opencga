@@ -108,6 +108,17 @@
                 "message": ".*",
                 "jsonPath": "resources.3",
                 "reason": "Incorrect schema match for VMSS"
+            },
+            {
+                "message": "Value is not accepted. Valid values: \"Microsoft.Resources/deployments\".",
+                "reason": "Incorrect schema",
+                "jsonPath": "resources.1.type"
+           
+            },
+            {
+            "message": "Value is not accepted. Valid values: \"2015-01-01\".",
+            "reason": "Incorrect schema",
+            "jsonPath": "resources.1.apiVersion"
             }
         ],
         "daemonvm/azuredeploy.json": [
