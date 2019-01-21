@@ -30,7 +30,7 @@ Here are the properties that are defined for each t-shirt size:
 |             | node-size           | n/a          | D16    | E32   |
 |             |                     |              |
 | Solr        |
-|             | vm-size             | E54v3        | E8v3   | E16v3 |
+|             | vm-size             | E4v3        | E8v3   | E16v3 |
 |             | vm-quantity         | 1            | 2      | 4     |
 |             | disk-type           | SSD          | SSD    | SSD   |
 |             |                     |              |
