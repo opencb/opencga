@@ -29,22 +29,22 @@ build-all:
 
 .PHONY: build
 build:
-	(cd $(shell git rev-parse --show-toplevel); $(MAKE) -s build -f $(PREFIX)/Makefile.docker)
+	(cd $(shell git rev-parse --show-toplevel); $(MAKE) build -f $(PREFIX)/Makefile.docker)
 
 # Tags a docker image with git commit SHA
 .PHONY: tag
 tag:
-	(cd $(shell git rev-parse --show-toplevel); $(MAKE) -s tag -f $(PREFIX)/Makefile.docker)
+	(cd $(shell git rev-parse --show-toplevel); $(MAKE) tag -f $(PREFIX)/Makefile.docker)
 
 # Logs in to a docker registry
 .PHONY: login
 login:
-	(cd $(shell git rev-parse --show-toplevel); $(MAKE) -s login -f $(PREFIX)/Makefile.docker)
+	(cd $(shell git rev-parse --show-toplevel); $(MAKE) login -f $(PREFIX)/Makefile.docker)
 
 # Publishes a docker image to docker registry
 .PHONY: publish
 publish: tag login
-	(cd $(shell git rev-parse --show-toplevel); $(MAKE) -s publish -f $(PREFIX)/Makefile.docker)
+	(cd $(shell git rev-parse --show-toplevel); $(MAKE) publish -f $(PREFIX)/Makefile.docker)
 
 .PHONY: default
 default: build-all;
