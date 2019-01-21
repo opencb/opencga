@@ -60,13 +60,6 @@
                 "description": "The docker image and tag for running the IVA service. For examples: 'repo/image:tag'"
             }
         },
-        "solrHighAvailability": {
-            "type": "bool",
-            "defaultValue": true,
-            "metadata": {
-                "description": ""
-            }
-        },
         "solrDiskSizeGB": {
             "type": "int",
             "defaultValue": 512,
@@ -208,17 +201,20 @@
             {
                 "type": "0 = Small",
                 "avereEnabled": false,
-                "azureFilesEnabled": true
+                "azureFilesEnabled": true,
+                "solrHighAvailability": false
             },
             {
                 "type": "1 = Medium",
                 "avereEnabled": false,
-                "azureFilesEnabled": true
+                "azureFilesEnabled": true,
+                "solrHighAvailability": true
             },
             {
                 "type": "2 = Large",
                 "avereEnabled": false,
-                "azureFilesEnabled": true
+                "azureFilesEnabled": true,
+                "solrHighAvailability": true
             }
         ],
         "selectedSize": "[variables('sizingOptions')[parameters('deploymentSize')]]"
@@ -626,7 +622,7 @@
                         "value": "[parameters('sshAdminKeyData')]"
                     },
                     "highAvailability": {
-                        "value": "[parameters('solrHighAvailability')]"
+                        "value": "[variables('selectedSize').solrHighAvailability]"
                     },
                     "solrDiskSizeGB": {
                         "value": "[parameters('solrDiskSizeGB')]"
