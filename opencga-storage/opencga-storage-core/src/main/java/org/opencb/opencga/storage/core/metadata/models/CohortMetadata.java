@@ -7,51 +7,22 @@ import java.util.List;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class CohortMetadata {
+public class CohortMetadata extends StudyResourceMetadata<CohortMetadata> {
 
-    private int studyId;
-    private int id;
-    private String name;
+//    private int studyId;
+//    private int id;
+//    private String name;
 
     private List<Integer> samples;
 
-    private TaskMetadata.Status status = TaskMetadata.Status.NONE;
-
-    public int getStudyId() {
-        return studyId;
-    }
+//    private TaskMetadata.Status status = TaskMetadata.Status.NONE;
 
     public CohortMetadata() {
     }
 
     public CohortMetadata(int studyId, int id, String name, List<Integer> samples) {
-        this.studyId = studyId;
-        this.id = id;
-        this.name = name;
+        super(studyId, id, name);
         this.samples = samples;
-    }
-
-    public CohortMetadata setStudyId(int studyId) {
-        this.studyId = studyId;
-        return this;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public CohortMetadata setId(int id) {
-        this.id = id;
-        return this;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public CohortMetadata setName(String name) {
-        this.name = name;
-        return this;
     }
 
     public List<Integer> getSamples() {
@@ -63,20 +34,19 @@ public class CohortMetadata {
         return this;
     }
 
-    public TaskMetadata.Status getStatus() {
-        return status;
+    public TaskMetadata.Status getStatsStatus() {
+        return getStatus("stats");
     }
 
-    public CohortMetadata setStatus(TaskMetadata.Status status) {
-        this.status = status;
-        return this;
+    public CohortMetadata setStatsStatus(TaskMetadata.Status status) {
+        return setStatus("stats", status);
     }
 
-    public boolean isReady() {
-        return TaskMetadata.Status.READY.equals(status);
+    public boolean isStatsReady() {
+        return isReady("stats");
     }
 
     public boolean isInvalid() {
-        return TaskMetadata.Status.ERROR.equals(status);
+        return isError("stats");
     }
 }

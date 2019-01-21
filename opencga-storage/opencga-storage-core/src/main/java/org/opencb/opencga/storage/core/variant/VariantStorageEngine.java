@@ -535,7 +535,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 }
                 Integer defaultCohortId = metadataManager.getCohortId(studyMetadata.getId(), StudyEntry.DEFAULT_COHORT);
                 CohortMetadata defaultCohort = metadataManager.getCohortMetadata(studyMetadata.getId(), defaultCohortId);
-                if (defaultCohort.isReady()) {
+                if (defaultCohort.isStatsReady()) {
                     logger.debug("Cohort '{}':{} was already calculated. Just update stats.", StudyEntry.DEFAULT_COHORT, defaultCohortId);
                     statsOptions.append(Options.UPDATE_STATS.key(), true);
                 }

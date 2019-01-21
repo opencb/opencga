@@ -65,6 +65,7 @@ import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVa
  */
 public class VariantMongoDBQueryParser {
 
+    public static final String OVERLAPPED_FILES_ONLY = "overlappedFilesOnly";
     public static final VariantStringIdConverter STRING_ID_CONVERTER = new VariantStringIdConverter();
     protected static Logger logger = LoggerFactory.getLogger(VariantMongoDBQueryParser.class);
     private final VariantStorageMetadataManager metadataManager;
@@ -505,6 +506,7 @@ public class VariantMongoDBQueryParser {
                         builder, QueryOperation.AND, study -> metadataManager.getStudyId(study, false, studies));
             }
 
+            boolean overlappedFilesFiles = query.getBoolean(OVERLAPPED_FILES_ONLY);
             List<Integer> fileIds = Collections.emptyList();
             List<String> fileNames = Collections.emptyList();
             QueryOperation filesOperation = QueryOperation.OR;
@@ -517,12 +519,12 @@ public class VariantMongoDBQueryParser {
                         .stream()
                         .filter(value -> !isNegated(value))
                         .map(value -> {
-                            if (value.startsWith("-")) {
-                                value = value.substring(1);
-                            }
                             Integer fileId = metadataManager.getFileIdPair(value, false, defaultStudy).getValue();
                             if (fileId == null) {
                                 throw VariantQueryException.fileNotFound(value, defaultStudy.getName());
+                            }
+                            if (overlappedFilesFiles) {
+                                fileId = -fileId;
                             }
                             return fileId;
                         })
@@ -845,14 +847,14 @@ public class VariantMongoDBQueryParser {
                                     + '.' + DocumentToStudyVariantEntryConverter.FILEID_FIELD,
                             fileNames, builder, QueryOperation.AND, filesOperation,
                             value -> {
-                                if (value.startsWith("-")) {
-                                    value = value.substring(1);
-                                }
                                 Integer fileId = metadataManager.getFileIdPair(value, false, defaultStudy).getValue();
                                 if (fileId == null) {
                                     throw VariantQueryException.fileNotFound(value, defaultStudy.getName());
                                 }
-                                return metadataManager.getFileIdPair(value, false, defaultStudy).getValue();
+                                if (overlappedFilesFiles) {
+                                    fileId = -fileId;
+                                }
+                                return fileId;
                             });
                 } else {
                     // fileIdGroupsFromSamples is not empty. gtQueryOperation is always AND at this point
@@ -868,13 +870,13 @@ public class VariantMongoDBQueryParser {
                                     .stream()
                                     .filter(VariantQueryUtils::isNegated)
                                     .map(value -> {
-                                        if (value.startsWith("-")) {
-                                            value = value.substring(1);
-                                        }
                                         Integer fileId = metadataManager.getFileIdPair(value, false, defaultStudy)
                                                 .getValue();
                                         if (fileId == null) {
                                             throw VariantQueryException.fileNotFound(value, defaultStudy.getName());
+                                        }
+                                        if (overlappedFilesFiles) {
+                                            fileId = -fileId;
                                         }
                                         return fileId;
                                     })

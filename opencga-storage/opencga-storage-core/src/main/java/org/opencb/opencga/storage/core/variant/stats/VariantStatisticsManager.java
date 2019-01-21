@@ -96,7 +96,7 @@ public abstract class VariantStatisticsManager {
 
             for (Integer cohortId : cohortIds) {
                 metadataManager.updateCohortMetadata(studyMetadata.getId(), cohortId,
-                        cohort -> cohort.setStatus(TaskMetadata.Status.RUNNING));
+                        cohort -> cohort.setStatsStatus(TaskMetadata.Status.RUNNING));
             }
             return sm;
         });
@@ -109,7 +109,7 @@ public abstract class VariantStatisticsManager {
         TaskMetadata.Status status = error ? TaskMetadata.Status.ERROR : TaskMetadata.Status.READY;
         for (String cohortName : cohorts) {
             metadataManager.updateCohortMetadata(studyMetadata.getId(), cohortName,
-                    cohort -> cohort.setStatus(status));
+                    cohort -> cohort.setStatsStatus(status));
         }
     }
 
@@ -127,12 +127,12 @@ public abstract class VariantStatisticsManager {
                 LoggerFactory.getLogger(VariantStatisticsManager.class)
                         .debug("Cohort \"" + cohortName + "\" stats calculated and INVALID. Set as calculated");
             }
-            if (cohort.isReady()) {
+            if (cohort.isStatsReady()) {
                 if (!updateStats) {
                     throw new StorageEngineException("Cohort \"" + cohortName + "\" stats already calculated");
                 }
             }
-            cohort.setStatus(TaskMetadata.Status.RUNNING);
+            cohort.setStatsStatus(TaskMetadata.Status.RUNNING);
             metadataManager.updateCohortMetadata(studyId, cohort);
         }
     }
@@ -201,18 +201,20 @@ public abstract class VariantStatisticsManager {
                     throw new StorageEngineException("Duplicated samples in cohort " + cohortName + ":" + cohortId);
                 }
 
-                if (!cohort.isInvalid() && cohort.isReady()) {
-                    //If provided samples are different than the stored in the StudyMetadata, and the cohort was not invalid.
-                    throw new StorageEngineException("Different samples in cohort " + cohortName + ":" + cohortId + ". "
-                            + "Samples in the StudyMetadata: " + cohort.getSamples().size() + ". "
-                            + "Samples provided " + samples.size() + ". Invalidate stats to continue.");
+                if (!sampleIds.equals(new HashSet<>(cohort.getSamples()))) {
+                    if (!cohort.isInvalid() && cohort.isStatsReady()) {
+                        //If provided samples are different than the stored in the StudyMetadata, and the cohort was not invalid.
+                        throw new StorageEngineException("Different samples in cohort " + cohortName + ":" + cohortId + ". "
+                                + "Samples in the StudyMetadata: " + cohort.getSamples().size() + ". "
+                                + "Samples provided " + samples.size() + ". Invalidate stats to continue.");
+                    }
                 }
             }
 
 //            if (studyMetadata.getInvalidStats().contains(cohortId)) {
 //                throw new IOException("Cohort \"" + cohortName + "\" stats already calculated and INVALID");
 //            }
-            if (cohort.isReady()) {
+            if (cohort.isStatsReady()) {
                 if (!overwrite) {
                     if (updateStats) {
                         logger.debug("Cohort \"" + cohortName + "\" stats already calculated. Calculate only for missing positions");

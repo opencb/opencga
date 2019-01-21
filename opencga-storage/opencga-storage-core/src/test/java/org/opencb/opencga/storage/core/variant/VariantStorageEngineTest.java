@@ -155,7 +155,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         
         assertNotNull(defaultCohort);
         assertEquals(500, defaultCohort.getSamples().size());
-        assertFalse(defaultCohort.isReady());
+        assertFalse(defaultCohort.isStatsReady());
         assertFalse(defaultCohort.isInvalid());
         Integer fileId1 = metadataManager.getFileId(studyMetadataMultiFile.getId(), file1Uri);
         assertTrue(metadataManager.getIndexedFiles(studyMetadataMultiFile.getId()).contains(fileId1));
@@ -165,7 +165,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         runDefaultETL(file2Uri, variantStorageEngine, studyMetadataMultiFile, options);
         defaultCohort = metadataManager.getCohortMetadata(studyMetadataMultiFile.getId(), StudyEntry.DEFAULT_COHORT);
         assertEquals(1000, defaultCohort.getSamples().size());
-        assertTrue(defaultCohort.isReady());
+        assertTrue(defaultCohort.isStatsReady());
         assertFalse(defaultCohort.isInvalid());
         Integer fileId2 = metadataManager.getFileId(studyMetadataMultiFile.getId(), file2Uri);
         assertTrue(metadataManager.getIndexedFiles(studyMetadataMultiFile.getId()).contains(fileId2));
@@ -175,7 +175,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         runDefaultETL(file3Uri, variantStorageEngine, studyMetadataMultiFile, options);
         defaultCohort = metadataManager.getCohortMetadata(studyMetadataMultiFile.getId(), StudyEntry.DEFAULT_COHORT);
         assertEquals(1500, defaultCohort.getSamples().size());
-        assertFalse(defaultCohort.isReady());
+        assertFalse(defaultCohort.isStatsReady());
         assertTrue(defaultCohort.isInvalid());
         int fileId3 = metadataManager.getFileId(studyMetadataMultiFile.getId(), file3Uri);
         assertTrue(metadataManager.getIndexedFiles(studyMetadataMultiFile.getId()).contains(fileId3));
@@ -668,11 +668,11 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
 //        for (Integer fileId : metadataManager.getIndexedFiles(studyMetadata.getId())) {
 //            assertTrue(studyMetadata.getHeaders().containsKey(fileId));
 //        }
-        List<Integer> samples = metadataManager.getIndexedSamples(studyMetadata.getId());
+        Set<String> samples = metadataManager.getIndexedSamplesMap(studyMetadata.getId()).keySet();
         assertEquals(samples.size(), Iterators.size(metadataManager.sampleMetadataIterator(studyMetadata.getId())));
         Map<String, CohortMetadata> cohorts = new HashMap<>();
         metadataManager.cohortIterator(studyMetadata.getId()).forEachRemaining(c -> {
-            if (c.isReady()) {
+            if (c.isStatsReady()) {
                 cohorts.put(c.getName(), c);
             }
         });

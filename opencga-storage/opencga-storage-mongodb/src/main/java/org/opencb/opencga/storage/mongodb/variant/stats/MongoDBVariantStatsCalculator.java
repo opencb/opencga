@@ -29,14 +29,12 @@ public class MongoDBVariantStatsCalculator extends AbstractDocumentConverter imp
     private StudyMetadata studyMetadata;
 
     private Map<Integer, CohortMetadata> cohorts;
-    private List<Integer> cohortIds;
     private String unknownGenotype;
     private String defaultGenotype;
     private final DocumentToVariantConverter variantConverter;
 
     public MongoDBVariantStatsCalculator(StudyMetadata studyMetadata, Collection<CohortMetadata> cohorts, String unknownGenotype) {
         this.studyMetadata = studyMetadata;
-        this.cohortIds = new ArrayList<>(cohorts.size());
         this.cohorts = cohorts.stream().collect(Collectors.toMap(CohortMetadata::getId, c -> c));
         this.unknownGenotype = unknownGenotype;
 
@@ -77,7 +75,7 @@ public class MongoDBVariantStatsCalculator extends AbstractDocumentConverter imp
     }
 
     public VariantStatsWrapper calculateStats(Variant variant, Document study) {
-        VariantStatsWrapper statsWrapper = new VariantStatsWrapper(variant, new HashMap<>(cohortIds.size()));
+        VariantStatsWrapper statsWrapper = new VariantStatsWrapper(variant, new HashMap<>(cohorts.size()));
 
         Document gt = study.get(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD, Document.class);
 
@@ -87,11 +85,11 @@ public class MongoDBVariantStatsCalculator extends AbstractDocumentConverter imp
             gtsMap.put(entry.getKey(), new HashSet<>((Collection) entry.getValue()));
         }
 
-        for (Integer cohortId : cohortIds) {
+        for (CohortMetadata cohort : cohorts.values()) {
             Map<String, Integer> gtStrCount = new HashMap<>();
 
-            int unknownGenotypes = cohorts.get(cohortId).getSamples().size();
-            for (Integer sampleId : cohorts.get(cohortId).getSamples()) {
+            int unknownGenotypes = cohort.getSamples().size();
+            for (Integer sampleId : cohort.getSamples()) {
                 for (Map.Entry<String, Set<Integer>> entry : gtsMap.entrySet()) {
                     String gtStr = entry.getKey();
                     // If any ?/? is present in the DB, must be read as "unknownGenotype", usually "./."
@@ -114,7 +112,7 @@ public class MongoDBVariantStatsCalculator extends AbstractDocumentConverter imp
                     (key, value) -> value == null ? count : value + count));
 
             VariantStats stats = VariantStatsCalculator.calculate(variant, gtCountMap);
-            statsWrapper.getCohortStats().put(cohorts.get(cohortId).getName(), stats);
+            statsWrapper.getCohortStats().put(cohort.getName(), stats);
         }
 
         return statsWrapper;

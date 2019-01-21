@@ -1002,7 +1002,15 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
     }
 
     private int getFileId(FileEntry fileEntry) {
-        return fileIdsMap.get(fileEntry.getFileId());
+        String fileName = fileEntry.getFileId();
+        Integer fileId = fileIdsMap.get(fileName);
+        if (fileId != null) {
+            return fileId;
+        } else {
+            fileId = dbAdaptor.getMetadataManager().getFileId(studyId, fileName);
+            populateInternalCaches(Collections.singletonList(fileId), dbAdaptor.getMetadataManager());
+            return fileIdsMap.get(fileName);
+        }
     }
 
     /**
@@ -1284,6 +1292,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                 samplesPosition.put(sampleName, samplesPosition.size());
             }
             fileIdsMap.put(String.valueOf(fileId), fileId);
+            fileIdsMap.put(String.valueOf(-fileId), fileId);
             fileIdsMap.put(fileMetadata.getName(), fileId);
             sampleNamesInFile.put(fileId, sampleNames);
             samplesPositionMap.put(fileId, samplesPosition);

@@ -27,6 +27,7 @@ import org.opencb.biodata.models.variant.stats.VariantSourceStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.adaptors.FileMetadataDBAdaptor;
@@ -46,9 +47,11 @@ public class MongoDBFileMetadataDBAdaptor extends AbstractMongoDBAdaptor<FileMet
 //    private static final Map<String, List> SAMPLES_IN_SOURCES = new HashMap<>();
 
     private final DocumentToVariantFileMetadataConverter variantFileMetadataConverter;
+    private final MongoDBCollection collectionStudies;
 
-    public MongoDBFileMetadataDBAdaptor(MongoDataStore db, String collectionName) {
+    MongoDBFileMetadataDBAdaptor(MongoDataStore db, String collectionName, String studiesCollectionName) {
         super(db, collectionName, FileMetadata.class);
+        collectionStudies = getCollection(studiesCollectionName);
         variantFileMetadataConverter = new DocumentToVariantFileMetadataConverter();
         createIdNameIndex();
     }
@@ -79,16 +82,20 @@ public class MongoDBFileMetadataDBAdaptor extends AbstractMongoDBAdaptor<FileMet
     }
 
     @Override
-    public LinkedHashSet<Integer> getIndexedFiles(int studyId) {
-        // FIXME!
-        LinkedHashSet<Integer> indexedFiles = new LinkedHashSet<>();
-        fileIterator(studyId).forEachRemaining(file -> {
-            if (file.isIndexed()) {
-                indexedFiles.add(file.getId());
-            }
-        });
+    public void addIndexedFiles(int studyId, List<Integer> fileIds) {
+        collectionStudies.update(Filters.eq("_id", studyId), Updates.addEachToSet("indexedFiles", fileIds), new QueryOptions(UPSERT, true));
+    }
 
-        return indexedFiles;
+    @Override
+    public LinkedHashSet<Integer> getIndexedFiles(int studyId) {
+        Document document = collectionStudies.find(Filters.eq("_id", studyId), null).first();
+        if (document != null) {
+            List list = document.get("indexedFiles", List.class);
+            if (list != null) {
+                return new LinkedHashSet<>(list);
+            }
+        }
+        return new LinkedHashSet<>();
     }
 
     @Override

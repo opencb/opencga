@@ -10,53 +10,20 @@ import java.util.Set;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class SampleMetadata {
+public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
 
-    private int studyId;
-    private int id;
-    private String name;
     private Set<Integer> files;
 //    private Set<Integer> cohorts;
-    private TaskMetadata.Status indexStatus;
 
     public SampleMetadata() {
         files = new HashSet<>();
 //        cohorts = new HashSet<>();
-        indexStatus = TaskMetadata.Status.NONE;
     }
 
     public SampleMetadata(int studyId, int id, String name) {
-        this();
-        this.studyId = studyId;
-        this.id = id;
-        this.name = name;
-    }
-
-    public int getStudyId() {
-        return studyId;
-    }
-
-    public SampleMetadata setStudyId(int studyId) {
-        this.studyId = studyId;
-        return this;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public SampleMetadata setId(int id) {
-        this.id = id;
-        return this;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public SampleMetadata setName(String name) {
-        this.name = name;
-        return this;
+        super(studyId, id, name);
+        files = new HashSet<>();
+//        cohorts = new HashSet<>();
     }
 
     public Set<Integer> getFiles() {
@@ -79,24 +46,24 @@ public class SampleMetadata {
 
 
     public TaskMetadata.Status getIndexStatus() {
-        return indexStatus;
+        return getStatus("index");
     }
 
     public SampleMetadata setIndexStatus(TaskMetadata.Status indexStatus) {
-        this.indexStatus = indexStatus;
-        return this;
+        return setStatus("index", indexStatus);
     }
 
     public boolean isIndexed() {
-        return TaskMetadata.Status.READY.equals(this.indexStatus);
+        return isReady("index");
     }
 
     @Override
     public String toString() {
         return new ToStringBuilder(this)
-                .append("studyId", studyId)
-                .append("id", id)
-                .append("name", name)
+                .append("studyId", getStudyId())
+                .append("id", getId())
+                .append("name", getName())
+                .append("status", getStatus())
                 .append("files", files)
 //                .append("cohorts", cohorts)
                 .toString();

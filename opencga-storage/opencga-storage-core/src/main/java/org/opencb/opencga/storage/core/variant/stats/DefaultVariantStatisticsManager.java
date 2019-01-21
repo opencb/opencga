@@ -80,7 +80,7 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
     protected final ObjectMapper jsonObjectMapper;
     private final VariantDBAdaptor dbAdaptor;
     protected long numStatsToLoad = 0;
-    protected static Logger logger = LoggerFactory.getLogger(DefaultVariantStatisticsManager.class);
+    private static Logger logger = LoggerFactory.getLogger(DefaultVariantStatisticsManager.class);
 
     public DefaultVariantStatisticsManager(VariantDBAdaptor dbAdaptor) {
         this.dbAdaptor = dbAdaptor;
@@ -136,7 +136,7 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
 
         VariantStorageMetadataManager metadataManager = variantDBAdaptor.getMetadataManager();
         StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
-        Map<String, Set<String>> cohortsMap = new HashMap<>(cohorts.size());
+        Map<String, Set<String>> cohortsMap = new LinkedHashMap<>(cohorts.size());
         for (String cohort : cohorts) {
             if (studyMetadata.isAggregated()) {
                 cohortsMap.put(cohort, Collections.emptySet());
@@ -354,16 +354,16 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
             IOException, StorageEngineException {
         VariantStorageMetadataManager variantStorageMetadataManager = variantDBAdaptor.getMetadataManager();
         StudyMetadata studyMetadata = variantStorageMetadataManager.getStudyMetadata(study);
-        loadStats(variantDBAdaptor, uri, studyMetadata, options);
+        loadStats(uri, studyMetadata, options);
     }
 
-    public void loadStats(VariantDBAdaptor variantDBAdaptor, URI uri, StudyMetadata studyMetadata, QueryOptions options) throws
+    public void loadStats(URI uri, StudyMetadata studyMetadata, QueryOptions options) throws
             IOException, StorageEngineException {
 
         URI variantStatsUri = Paths.get(uri.getPath() + VARIANT_STATS_SUFFIX).toUri();
         URI sourceStatsUri = Paths.get(uri.getPath() + SOURCE_STATS_SUFFIX).toUri();
 
-        Set<String> cohorts = readCohortsFromStatsFile(uri);
+        Set<String> cohorts = readCohortsFromStatsFile(variantStatsUri);
 //        boolean updateStats = options.getBoolean(Options.UPDATE_STATS.key(), false);
 //        checkAndUpdateCalculatedCohorts(studyMetadata, variantStatsUri, updateStats);
 

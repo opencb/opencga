@@ -50,6 +50,7 @@ import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
@@ -673,9 +674,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
 
         Document mongoQuery = queryParser.parseQuery(query);
-        System.out.println("mongoQuery = " + mongoQuery);
         Document projection = queryParser.createProjection(query, options);
-        System.out.println("projection = " + projection);
         options.putIfAbsent(MongoDBCollection.BATCH_SIZE, 100);
 
 
@@ -924,12 +923,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp, QueryOptions options) {
-        StudyConfiguration sc = metadataManager.getStudyConfiguration(studyName, options).first();
-        return updateStats(variantStatsWrappers, sc, timestamp, options);
+        StudyMetadata sm = metadataManager.getStudyMetadata(studyName);
+        return updateStats(variantStatsWrappers, sm, timestamp, options);
     }
 
     @Override
-    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration,
+    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyMetadata studyMetadata,
                                    long timestamp, QueryOptions options) {
 //        MongoCollection<Document> coll = db.getDb().getCollection(collectionName);
 //        BulkWriteOperation pullBuilder = coll.initializeUnorderedBulkOperation();
@@ -946,17 +945,15 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 //        VariantSource variantSource = queryOptions.get(VariantStorageEngine.VARIANT_SOURCE, VariantSource.class);
         DocumentToVariantConverter variantConverter = getDocumentToVariantConverter(new Query(), options);
         boolean overwrite = options.getBoolean(VariantStorageEngine.Options.OVERWRITE_STATS.key(), false);
-        //TODO: Use the StudyConfiguration to change names to ids
 
         // TODO make unset of 'st' if already present?
         for (VariantStatsWrapper wrapper : variantStatsWrappers) {
             Map<String, VariantStats> cohortStats = wrapper.getCohortStats();
-            Iterator<VariantStats> iterator = cohortStats.values().iterator();
-            if (!iterator.hasNext()) {
+
+            if (cohortStats.isEmpty()) {
                 continue;
             }
-            VariantStats variantStats = iterator.next();
-            List<Document> cohorts = statsConverter.convertCohortsToStorageType(cohortStats, studyConfiguration.getId());   // TODO
+            List<Document> cohorts = statsConverter.convertCohortsToStorageType(cohortStats, studyMetadata.getId());
             // remove when we remove fileId
 //            List cohorts = statsConverter.convertCohortsToStorageType(cohortStats, variantSource.getStudyId());   // TODO use when we
 // remove fileId

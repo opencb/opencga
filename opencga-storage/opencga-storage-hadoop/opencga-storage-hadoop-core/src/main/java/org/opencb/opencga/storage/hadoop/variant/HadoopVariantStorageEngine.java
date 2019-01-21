@@ -473,7 +473,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                 resume,
                 TaskMetadata.Type.OTHER,
                 // Allow concurrent operations if fillGaps.
-                (v) -> fillGaps || v.getOperationName().equals(FILL_GAPS_OPERATION_NAME));
+                (v) -> fillGaps || v.getName().equals(FILL_GAPS_OPERATION_NAME));
         options.put(AbstractVariantsTableDriver.TIMESTAMP, operation.getTimestamp());
 
         if (!fillGaps) {

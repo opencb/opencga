@@ -61,7 +61,7 @@ public class VariantMetadataConverterTest {
                 .setIndexStatus(TaskMetadata.Status.READY)
         );
         metadataManager.updateCohortMetadata(1, new CohortMetadata(1, 20, "ALL", Arrays.asList(1, 2, 3, 4, 5, 6))
-                .setStatus(TaskMetadata.Status.READY));
+                .setStatsStatus(TaskMetadata.Status.READY));
 
         variantMetadataConverter = new VariantMetadataConverter(metadataManager);
         objectWriter = new ObjectMapper()

@@ -65,6 +65,9 @@ public class MongoDBVariantStorageMetadataDBAdaptorFactory implements VariantSto
         return new MongoDBFileMetadataDBAdaptor(db, options.getString(
                 MongoDBVariantStorageEngine.MongoDBVariantOptions.COLLECTION_FILES.key(),
                 MongoDBVariantStorageEngine.MongoDBVariantOptions.COLLECTION_FILES.defaultValue()
+        ), options.getString(
+                MongoDBVariantStorageEngine.MongoDBVariantOptions.COLLECTION_STUDIES.key(),
+                MongoDBVariantStorageEngine.MongoDBVariantOptions.COLLECTION_STUDIES.defaultValue()
         ));
     }
 }

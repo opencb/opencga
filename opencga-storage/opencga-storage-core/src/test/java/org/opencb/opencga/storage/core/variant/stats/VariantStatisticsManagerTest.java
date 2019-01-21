@@ -136,7 +136,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
 
         CohortMetadata cohort1Metadata = metadataManager.getCohortMetadata(studyMetadata.getId(), "cohort1");
 //        assertThat(studyMetadata.getCalculatedStats(), hasItem(cohort1Id));
-        assertTrue(cohort1Metadata.isReady());
+        assertTrue(cohort1Metadata.isStatsReady());
         checkCohorts(dbAdaptor, studyMetadata);
 
         /** Create second cohort **/
@@ -153,8 +153,8 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
 
         cohort1Metadata = metadataManager.getCohortMetadata(studyMetadata.getId(), "cohort1");
         CohortMetadata cohort2Metadata = metadataManager.getCohortMetadata(studyMetadata.getId(), "cohort1");
-        assertTrue(cohort1Metadata.isReady());
-        assertTrue(cohort2Metadata.isReady());
+        assertTrue(cohort1Metadata.isStatsReady());
+        assertTrue(cohort2Metadata.isStatsReady());
 
         checkCohorts(dbAdaptor, studyMetadata);
 
@@ -178,7 +178,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
         if (vsm instanceof DefaultVariantStatisticsManager) {
             DefaultVariantStatisticsManager dvsm = (DefaultVariantStatisticsManager) vsm;
             URI stats = dvsm.createStats(dbAdaptor, resolve, cohorts, cohortIds, studyMetadata, options);
-            dvsm.loadStats(dbAdaptor, stats, studyMetadata, options);
+            dvsm.loadStats(stats, studyMetadata, options);
         } else {
             dbAdaptor.getMetadataManager().registerCohorts(studyMetadata.getName(), cohorts);
 //            studyMetadata.getCohortIds().putAll(cohortIds);
@@ -205,7 +205,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
                 String calculatedCohorts = cohortsStats.keySet().toString();
                 for (Map.Entry<String, CohortMetadata> entry : cohorts.entrySet()) {
                     CohortMetadata cohort = entry.getValue();
-                    if (!cohort.isReady()) {
+                    if (!cohort.isStatsReady()) {
                         continue;
                     }
                     assertTrue("CohortStats should contain stats for cohort '" + entry.getKey() + "'. Contains stats for " +

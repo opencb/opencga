@@ -660,7 +660,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         // Register or update default cohort
         metadataManager.registerCohorts(studyId, Collections.singletonMap(defaultCohortName, indexedSamples.keySet()));
 
-        logger.info("Add loaded samples to Default Cohort \"" + defaultCohortName + '"');
+        logger.info("Add " + indexedSamples.size() + " loaded samples to Default Cohort \"" + defaultCohortName + '"');
     }
 
     @Override

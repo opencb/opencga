@@ -653,10 +653,17 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     public void updateIndexedFiles(int studyId, List<Integer> fileIds) {
+        Set<Integer> samples = new HashSet<>();
         for (Integer fileId : fileIds) {
-            updateFileMetadata(studyId, fileId, fileMetadata -> fileMetadata.setIndexStatus(TaskMetadata.Status.READY));
+            updateFileMetadata(studyId, fileId, fileMetadata -> {
+                samples.addAll(fileMetadata.getSamples());
+                return fileMetadata.setIndexStatus(TaskMetadata.Status.READY);
+            });
         }
-//        studyDBAdaptor.addIndexedFiles(fileIds);
+        for (Integer sample : samples) {
+            updateSampleMetadata(studyId, sample, sampleMetadata -> sampleMetadata.setIndexStatus(TaskMetadata.Status.READY));
+        }
+        fileDBAdaptor.addIndexedFiles(studyId, fileIds);
     }
 
     public LinkedHashSet<Integer> getIndexedFiles(int studyId) {
@@ -673,6 +680,12 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
     public void updateSampleMetadata(int studyId, SampleMetadata sample) {
         sample.setStudyId(studyId);
+        sampleDBAdaptor.updateSampleMetadata(studyId, sample, null);
+    }
+
+    public <E extends Exception> void updateSampleMetadata(int studyId, int sampleId, UpdateFunction<SampleMetadata, E> update) throws E {
+        SampleMetadata sample = getSampleMetadata(studyId, sampleId);
+        sample = update.update(sample);
         sampleDBAdaptor.updateSampleMetadata(studyId, sample, null);
     }
 
@@ -811,7 +824,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     public Iterable<CohortMetadata> getCalculatedCohorts(int studyId) {
-        return () -> Iterators.filter(cohortIterator(studyId), CohortMetadata::isReady);
+        return () -> Iterators.filter(cohortIterator(studyId), CohortMetadata::isStatsReady);
     }
 
     public TaskMetadata getTask(int studyId, int taskId) {
@@ -825,7 +838,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         Iterator<TaskMetadata> it = taskIterator(studyId, true);
         while (it.hasNext()) {
             TaskMetadata t = it.next();
-            if (t != null && t.getOperationName().equals(taskName) && t.getFileIds().equals(fileIds)) {
+            if (t != null && t.getName().equals(taskName) && t.getFileIds().equals(fileIds)) {
                 task = t;
                 break;
             }
@@ -1069,7 +1082,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     public Set<Integer> getFileIdsFromSampleIds(int studyId, Collection<Integer> sampleIds) {
-        Set<Integer> fileIds = new HashSet<>();
+        Set<Integer> fileIds = new LinkedHashSet<>();
         for (Integer sampleId : sampleIds) {
             fileIds.addAll(getSampleMetadata(studyId, sampleId).getFiles());
         }
@@ -1082,13 +1095,22 @@ public class VariantStorageMetadataManager implements AutoCloseable {
      */
     public void registerFileSamples(int studyId, int fileId, VariantFileMetadata variantFileMetadata)
             throws StorageEngineException {
+        registerFileSamples(studyId, fileId, variantFileMetadata.getSampleIds());
+    }
+
+    /*
+     * Before load file, register the new sample names.
+     * If SAMPLE_IDS is missing, will auto-generate sampleIds
+     */
+    public void registerFileSamples(int studyId, int fileId, List<String> sampleIds)
+            throws StorageEngineException {
 
         FileMetadata fileMetadata = getFileMetadata(studyId, fileId);
 
 
         //Assign new sampleIds
-        LinkedHashSet<Integer> samples = new LinkedHashSet<>(variantFileMetadata.getSampleIds().size());
-        for (String sample : variantFileMetadata.getSampleIds()) {
+        LinkedHashSet<Integer> samples = new LinkedHashSet<>(sampleIds.size());
+        for (String sample : sampleIds) {
             samples.add(registerSample(studyId, fileId, sample));
         }
 
@@ -1217,8 +1239,13 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     public int registerFile(int studyId, VariantFileMetadata variantFileMetadata) throws StorageEngineException {
-        int fileId = registerFile(studyId, variantFileMetadata.getPath());
-        registerFileSamples(studyId, fileId, variantFileMetadata);
+        return registerFile(studyId, variantFileMetadata.getPath(), variantFileMetadata.getSampleIds());
+    }
+
+    public int registerFile(int studyId, String path, List<String> sampleNames)
+            throws StorageEngineException {
+        int fileId = registerFile(studyId, path);
+        registerFileSamples(studyId, fileId, sampleNames);
         return fileId;
     }
 
@@ -1300,6 +1327,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 }
                 sampleIds.add(sampleId);
             }
+            sampleIds.sort(Integer::compareTo);
 
             Integer cohortId = getCohortId(studyId, cohortName);
             List<Integer> oldSamples;
@@ -1311,14 +1339,15 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             } else {
                 cohort = getCohortMetadata(studyId, cohortId);
                 oldSamples = cohort.getSamples();
+                oldSamples.sort(Integer::compareTo);
                 cohort.setSamples(sampleIds);
             }
             cohortIds.put(cohortName, cohortId);
 
             if (oldSamples != null && !oldSamples.equals(sampleIds)) {
                 // Cohort has been modified!
-                if (cohort.isReady()) {
-                    cohort.setStatus(TaskMetadata.Status.ERROR);
+                if (cohort.isStatsReady()) {
+                    cohort.setStatsStatus(TaskMetadata.Status.ERROR);
                 }
             }
 
@@ -1391,7 +1420,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         TaskMetadata operation = null;
         for (int i = batches.size() - 1; i >= 0; i--) {
             operation = batches.get(i);
-            if (operation.getOperationName().equals(operationName) && operation.getFileIds().equals(files)) {
+            if (operation.getName().equals(operationName) && operation.getFileIds().equals(files)) {
                 break;
             }
             operation = null;
@@ -1497,7 +1526,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                             throw StorageEngineException.otherOperationInProgressException(operation, jobOperationName, fileIds, resume);
                         }
                     } else {
-                        logger.info("Resuming last batch operation \"" + operation.getOperationName() + "\" due to error.");
+                        logger.info("Resuming last batch operation \"" + operation.getName() + "\" due to error.");
                         resumeOperation = operation;
                     }
                     break;

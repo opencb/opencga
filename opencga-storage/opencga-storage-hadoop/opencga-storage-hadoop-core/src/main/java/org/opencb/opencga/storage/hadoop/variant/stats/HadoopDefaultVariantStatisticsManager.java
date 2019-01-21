@@ -23,6 +23,8 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.db.VariantStatsDBWriter;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
@@ -36,6 +38,9 @@ import java.util.Set;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class HadoopDefaultVariantStatisticsManager extends DefaultVariantStatisticsManager {
+
+    private static Logger logger = LoggerFactory.getLogger(HadoopDefaultVariantStatisticsManager.class);
+
     public HadoopDefaultVariantStatisticsManager(VariantDBAdaptor dbAdaptor) {
         super(dbAdaptor);
     }

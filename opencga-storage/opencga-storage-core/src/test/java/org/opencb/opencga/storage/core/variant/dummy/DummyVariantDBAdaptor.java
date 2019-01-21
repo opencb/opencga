@@ -29,7 +29,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -174,7 +173,7 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     // Update methods
 
     @Override
-    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration, long timestamp, QueryOptions options) {
+    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyMetadata studyMetadata, long timestamp, QueryOptions options) {
         QueryResult queryResult = new QueryResult();
         logger.info("Writing " + variantStatsWrappers.size() + " statistics");
         queryResult.setNumResults(variantStatsWrappers.size());

@@ -40,7 +40,7 @@ public class StorageEngineException extends Exception {
 
     public static StorageEngineException otherOperationInProgressException(TaskMetadata opInProgress,
                                                                            TaskMetadata currentOperation) {
-        return otherOperationInProgressException(opInProgress, currentOperation.getOperationName(), currentOperation.getFileIds());
+        return otherOperationInProgressException(opInProgress, currentOperation.getName(), currentOperation.getFileIds());
     }
 
     public static StorageEngineException otherOperationInProgressException(TaskMetadata operation, String jobOperationName,
@@ -53,20 +53,20 @@ public class StorageEngineException extends Exception {
         if (opInProgress.sameOperation(fileIds, opInProgress.getType(), currentOperationName)) {
             return currentOperationInProgressException(opInProgress);
         }
-        if (resume && opInProgress.getOperationName().equals(currentOperationName)) {
+        if (resume && opInProgress.getName().equals(currentOperationName)) {
             return new StorageEngineException("Can not resume \"" + currentOperationName + "\" "
                     + "in status \"" + opInProgress.currentStatus() + "\" with input files " + fileIds + ". "
                     + "Input files must be same from the previous batch: " + opInProgress.getFileIds());
         } else {
             return new StorageEngineException("Can not \"" + currentOperationName + "\" files " + fileIds
-                    + " while there is an operation \"" + opInProgress.getOperationName() + "\" "
+                    + " while there is an operation \"" + opInProgress.getName() + "\" "
                     + "in status \"" + opInProgress.currentStatus() + "\" for files " + opInProgress.getFileIds() + ". "
                     + "Finish or resume operation to continue.");
         }
     }
 
     public static StorageEngineException currentOperationInProgressException(TaskMetadata opInProgress) {
-        return new StorageEngineException("Operation \"" + opInProgress.getOperationName() + "\" "
+        return new StorageEngineException("Operation \"" + opInProgress.getName() + "\" "
                 + "for files " + opInProgress.getFileIds() + ' '
                 + "in status \"" + opInProgress.currentStatus() + "\". "
                 + "Relaunch with " + VariantStorageEngine.Options.RESUME.key() + "=true to finish the operation.");

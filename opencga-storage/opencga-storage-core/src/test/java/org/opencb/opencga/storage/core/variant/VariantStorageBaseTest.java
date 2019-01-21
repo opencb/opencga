@@ -101,6 +101,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
     protected VariantStorageMetadataManager metadataManager;
     private static Logger logger = LoggerFactory.getLogger(VariantStorageBaseTest.class);
     private static Path rootDir = null;
+    private static boolean cleanFirst = false;
 //    private static AtomicInteger count = new AtomicInteger(0);
 
     @Rule
@@ -226,6 +227,11 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
 //        return temporaryFolder.getRoot().toPath();
 //    }
 
+    @BeforeClass
+    public static void beforeClass() throws Exception {
+        cleanFirst = true;
+    }
+
     @Before
     public void before() throws Exception {
         clearDB(DB_NAME);
@@ -233,6 +239,10 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
 
     @Before
     public final void _before() throws Exception {
+        if (cleanFirst) {
+            clearDB(DB_NAME);
+            cleanFirst = false;
+        }
         printActiveThreadsNumber();
         variantStorageEngine = getVariantStorageEngine();
         metadataManager = variantStorageEngine.getMetadataManager();

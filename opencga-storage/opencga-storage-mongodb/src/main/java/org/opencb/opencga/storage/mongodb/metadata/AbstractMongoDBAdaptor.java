@@ -36,11 +36,15 @@ public class AbstractMongoDBAdaptor<T> {
 
     public AbstractMongoDBAdaptor(MongoDataStore db, String collectionName, Class<T> clazz) {
         this.db = db;
-        this.collection = db.getCollection(collectionName)
-                .withReadPreference(ReadPreference.primary())
-                .withWriteConcern(WriteConcern.ACKNOWLEDGED);
+        this.collection = getCollection(collectionName);
         converter = new GenericDocumentComplexConverter<>(clazz);
         converter.getObjectMapper().configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
+    }
+
+    protected MongoDBCollection getCollection(String collectionName) {
+        return db.getCollection(collectionName)
+                .withReadPreference(ReadPreference.primary())
+                .withWriteConcern(WriteConcern.ACKNOWLEDGED);
     }
 
     protected QueryResult createIdNameIndex() {

@@ -102,7 +102,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         taskId = getMetadataManager()
                 .addRunningTask(getStudyId(), OPERATION_NAME, fileIds, resume, TaskMetadata.Type.LOAD,
                 operation -> {
-                    if (operation.getOperationName().equals(OPERATION_NAME)) {
+                    if (operation.getName().equals(OPERATION_NAME)) {
                         if (operation.currentStatus().equals(TaskMetadata.Status.ERROR)) {
                             Integer fileId = operation.getFileIds().get(0);
                             String fileName = getMetadataManager().getFileName(studyMetadata.getId(), fileId);

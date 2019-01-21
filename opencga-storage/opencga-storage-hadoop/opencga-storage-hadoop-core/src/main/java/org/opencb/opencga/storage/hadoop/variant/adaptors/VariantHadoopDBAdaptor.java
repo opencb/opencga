@@ -35,7 +35,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -56,7 +55,6 @@ import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHadoopArchiveDBIterator;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToPhoenixConverter;
-import org.opencb.opencga.storage.hadoop.variant.converters.stats.VariantStatsToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantHBaseResultSetIterator;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantHBaseScanIterator;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
@@ -64,13 +62,11 @@ import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHel
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantSqlQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
-import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchIndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -572,7 +568,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         List<Integer> cohortIds = new ArrayList<>();
         getMetadataManager().cohortIterator(studyMetadata.getId())
                 .forEachRemaining(cohortMetadata -> {
-                    if (cohortMetadata.isReady()) {
+                    if (cohortMetadata.isStatsReady()) {
                         cohortIds.add(cohortMetadata.getId());
                     }
                 });
@@ -595,23 +591,10 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
      */
     @Override
     @Deprecated
-    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration,
+    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyMetadata studyMetadata,
                                    long timestamp, QueryOptions options) {
 
-        VariantStatsToHBaseConverter converter = new VariantStatsToHBaseConverter(genomeHelper, studyConfiguration,
-                studyConfiguration.getCohortIds());
-        List<Put> puts = converter.apply(variantStatsWrappers);
-        for (Put put : puts) {
-            HadoopVariantSearchIndexUtils.addNotSyncStatus(put, genomeHelper.getColumnFamily());
-        }
-
-        long start = System.currentTimeMillis();
-        try (Table table = getConnection().getTable(TableName.valueOf(variantTable))) {
-            table.put(puts);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-        return new QueryResult<>("Update annotations", (int) (System.currentTimeMillis() - start), 0, 0, "", "", Collections.emptyList());
+        throw new UnsupportedOperationException("Unimplemented method");
     }
 
     public VariantAnnotationPhoenixDBWriter newAnnotationLoader(QueryOptions options) {

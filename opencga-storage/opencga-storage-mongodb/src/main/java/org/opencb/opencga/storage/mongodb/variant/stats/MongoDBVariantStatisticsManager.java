@@ -19,6 +19,8 @@ import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsMan
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
@@ -31,6 +33,8 @@ import java.util.concurrent.ExecutionException;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class MongoDBVariantStatisticsManager extends DefaultVariantStatisticsManager {
+
+    private static Logger logger = LoggerFactory.getLogger(MongoDBVariantStatisticsManager.class);
 
     public MongoDBVariantStatisticsManager(VariantMongoDBAdaptor dbAdaptor) {
         super(dbAdaptor);

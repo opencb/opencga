@@ -35,10 +35,9 @@ import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.adaptors.FileMetadataDBAdaptor;
-import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.MergeMode;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
@@ -73,6 +72,7 @@ import java.util.stream.Collectors;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.*;
+import static org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBQueryParser.OVERLAPPED_FILES_ONLY;
 
 /**
  * Created on 30/03/16.
@@ -479,13 +479,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     private TaskMetadata securePreStage(int fileId, StudyMetadata studyMetadata) throws StorageEngineException {
         String fileName = getMetadataManager().getFileName(studyMetadata.getId(), fileId);
 
-        Query query = new Query()
-                .append(FileMetadataDBAdaptor.VariantFileMetadataQueryParam.STUDY_ID.key(), studyMetadata.getId())
-                .append(FileMetadataDBAdaptor.VariantFileMetadataQueryParam.FILE_ID.key(), fileId);
-
         TaskMetadata operation;
         VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
-        if (metadataManager.countVariantFileMetadata(query).first() == 1) {
+        if (metadataManager.getFileMetadata(studyMetadata.getId(), fileId).isReady(STAGE.key())) {
             // Already staged!
             logger.info("File \"{}\" ({}) already staged!", fileName, fileId);
 
@@ -503,7 +499,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     Collections.singletonList(fileId),
                     resume,
                     TaskMetadata.Type.OTHER,
-                    batchFileOperation -> batchFileOperation.getOperationName().equals(STAGE.key()));
+                    batchFileOperation -> batchFileOperation.getName().equals(STAGE.key()));
 
             // If there is more than one status is because we are resuming the operation.
             if (operation.getStatus().size() != 1) {
@@ -526,8 +522,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         int fileId = getFileId();
         metadata.setId(String.valueOf(fileId));
 
+        getMetadataManager().updateFileMetadata(getStudyId(), fileId, file -> file.setStatus(STAGE.key(), TaskMetadata.Status.READY));
         getMetadataManager()
-                .atomicSetStatus(getStudyId(), TaskMetadata.Status.READY, STAGE.key(), Collections.singletonList(fileId));
+                .setStatus(getStudyId(), currentTask.getId(), TaskMetadata.Status.READY);
         metadata.setId(String.valueOf(fileId));
         dbAdaptor.getMetadataManager().updateVariantFileMetadata(String.valueOf(getStudyId()), metadata);
 
@@ -746,7 +743,8 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                 .append(VariantQueryParam.FILE.key(), fileId)
                 .append(VariantQueryParam.STUDY.key(), studyMetadata.getId())).first();
         Long overlappedCount = dbAdaptor.count(new Query()
-                .append(VariantQueryParam.FILE.key(), -fileId)
+                .append(VariantQueryParam.FILE.key(), fileId)
+                .append(OVERLAPPED_FILES_ONLY, true)
                 .append(VariantQueryParam.STUDY.key(), studyMetadata.getId())).first();
         long variantsToLoad = 0;
 

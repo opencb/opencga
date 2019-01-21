@@ -9,54 +9,22 @@ import java.util.LinkedHashSet;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class FileMetadata {
+public class FileMetadata extends StudyResourceMetadata<FileMetadata> {
 
-    private int studyId;
-    private int id;
-    private String name;
     private String path;
     private LinkedHashSet<Integer> samples;
 
     private VariantFileMetadata variantFileMetadata;
 
-    private TaskMetadata.Status indexStatus;
-    private TaskMetadata.Status annotationStatus;
+//    private TaskMetadata.Status indexStatus;
+//    private TaskMetadata.Status annotationStatus;
 
     public FileMetadata() {
     }
 
     public FileMetadata(int studyId, int id, String name) {
-        this.studyId = studyId;
-        this.id = id;
-        this.name = name;
+        super(studyId, id, name);
         this.path = name;
-    }
-
-    public int getStudyId() {
-        return studyId;
-    }
-
-    public FileMetadata setStudyId(int studyId) {
-        this.studyId = studyId;
-        return this;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public FileMetadata setId(int id) {
-        this.id = id;
-        return this;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public FileMetadata setName(String name) {
-        this.name = name;
-        return this;
     }
 
     public String getPath() {
@@ -91,20 +59,18 @@ public class FileMetadata {
     }
 
     public TaskMetadata.Status getIndexStatus() {
-        return indexStatus;
+        return getStatus("index");
     }
 
     public FileMetadata setIndexStatus(TaskMetadata.Status indexStatus) {
-        this.indexStatus = indexStatus;
-        return this;
+        return setStatus("index", indexStatus);
     }
 
     public TaskMetadata.Status getAnnotationStatus() {
-        return annotationStatus;
+        return getStatus("annotation");
     }
 
     public FileMetadata setAnnotationStatus(TaskMetadata.Status annotationStatus) {
-        this.annotationStatus = annotationStatus;
-        return this;
+        return setStatus("annotation", annotationStatus);
     }
 }

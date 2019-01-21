@@ -49,7 +49,7 @@ public class TaskMetadata {
 
     private int studyId;
     private int id;
-    private String operationName;
+    private String name;
     private List<Integer> fileIds;
     private long timestamp;
     private final TreeMap<Date, Status> status = new TreeMap<>(Date::compareTo);
@@ -59,13 +59,13 @@ public class TaskMetadata {
     }
 
     @Deprecated
-    public TaskMetadata(String operationName, List<Integer> fileIds, long timestamp, Type type) {
-        this(RandomUtils.nextInt(1, 1000), operationName, fileIds, timestamp, type);
+    public TaskMetadata(String name, List<Integer> fileIds, long timestamp, Type type) {
+        this(RandomUtils.nextInt(1, 1000), name, fileIds, timestamp, type);
     }
 
-    public TaskMetadata(int id, String operationName, List<Integer> fileIds, long timestamp, Type type) {
+    public TaskMetadata(int id, String name, List<Integer> fileIds, long timestamp, Type type) {
         this.id = id;
-        this.operationName = operationName;
+        this.name = name;
         this.fileIds = fileIds;
         this.timestamp = timestamp;
         this.type = type;
@@ -74,7 +74,7 @@ public class TaskMetadata {
     public TaskMetadata(TaskMetadata batch) {
         this();
         this.id = batch.id;
-        this.operationName = batch.operationName;
+        this.name = batch.name;
         this.fileIds = new ArrayList<>(batch.fileIds);
         this.timestamp = batch.timestamp;
         this.status.putAll(batch.status);
@@ -83,7 +83,7 @@ public class TaskMetadata {
 
     public boolean sameOperation(Collection<Integer> fileIds, Type type, String jobOperationName) {
         return this.type.equals(type)
-                && this.operationName.equals(jobOperationName)
+                && this.name.equals(jobOperationName)
                 && fileIds.size() == this.fileIds.size()
                 && fileIds.containsAll(this.fileIds);
     }
@@ -92,14 +92,22 @@ public class TaskMetadata {
         return status.isEmpty() ? null : status.lastEntry().getValue();
     }
 
-    public String getOperationName() {
-        return operationName;
+    public String getName() {
+        return name;
     }
 
-    public TaskMetadata setOperationName(String operationName) {
-        this.operationName = operationName;
+    public TaskMetadata setName(String name) {
+        this.name = name;
         return this;
     }
+    public String getOperationName() {
+        return getName();
+    }
+
+    public TaskMetadata setOperationName(String name) {
+        return setName(name);
+    }
+
 
     public int getStudyId() {
         return studyId;
@@ -163,7 +171,7 @@ public class TaskMetadata {
     public String toString() {
         return new ToStringBuilder(this)
                 .append("id", id)
-                .append("operationName", operationName)
+                .append("operationName", name)
                 .append("fileIds", fileIds)
                 .append("timestamp", timestamp)
                 .append("status", status)
