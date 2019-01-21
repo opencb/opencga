@@ -38,7 +38,7 @@
 # - DOCKER_USERNAME=''   : (required) Username to login to the docker registry
 # - DOCKER_PASSWORD=''   : (required) Password to login to the docker registry
 # - DOCKER_SERVER=''     : (optional) Docker registry server (default: docker.io)
-# - DOCKER_REPO=''       : (optional) Docker registry repository (default: docker username for docker.io)
+# - DOCKER_ORG =''       : (optional) Docker organization (default: docker username for users on docker.io)
 # - DOCKER_BUILD_ARGS='' : (optional) Additional build arguments to pass to the docker build command
 # - PUBLISH=''           : (optional) Set to 'true' to publish the docker images to a container registry
 # - TAG=''               : (optional) Set to override the default Git commit SHA docker image tag

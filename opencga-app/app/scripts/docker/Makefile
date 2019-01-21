@@ -2,13 +2,7 @@
 
 # Usage:
 # ---
-# `make` : Will invoke the default build-all target to build all docker images
-# `make APP_NAME=opencga-app build` : will build a specific docker image
-# `ENVFILE /path/to/env/file make` : will build the default target using a custom `make_env` file
-# `make login` : Logs into the specified docker registry
-# `make APP_NAME=opencga-app tag` : will tag the specified app image should it exist
-# `make APP_NAME=opencga-app publish` : will push the specified app image should it exist
-# `make DOCKER_BUILD_ARGS=--no-cache APP_NAME=opencga-app build` : will build the docker image with additional docker args
+# Please refer to README.md
 
 PREFIX = opencga-app/app/scripts/docker/
 ENVFILE ?= $(PREFIX)/make_env
