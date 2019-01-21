@@ -197,7 +197,7 @@
                     },
                     "head": {
                         "nodeCount": 2,
-                        "nodeSize": "Standard_A6"
+                        "nodeSize": "Standard_D3_v2"
                     }
                 },
                 "daemon": {

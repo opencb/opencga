@@ -49,7 +49,7 @@ Here are the properties that are defined for each t-shirt size:
 |             | head-node-quanity   | 1            | 2      | 2      |
 |             | head-node-size      | D4v2         | D4v2   | D4v2   |
 |             | worker-node-quanity | 2            | 20     | 50     |
-|             | worker-node-size    | A6           | D5v2   | D14v2  |
+|             | worker-node-size    | D3v2         | D5v2   | D14v2  |
 |             |                     |              |
 | Daemon      |
 |             | node-size           | A4           | F8v2   | F8v2   |
