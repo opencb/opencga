@@ -17,7 +17,9 @@
         "deploymentSize": {
             "type": "int",
             "allowedValues": [
-                0, 1, 2
+                0,
+                1,
+                2
             ],
             "defaultValue": 0,
             "metadata": {
@@ -202,19 +204,58 @@
                 "type": "0 = Small",
                 "avereEnabled": false,
                 "azureFilesEnabled": true,
-                "solrHighAvailability": false
+                "solrHighAvailability": false,
+                "solr": {
+                    "nodeSize": "standard_E4_v3",
+                    "nodeCount": 1
+                },
+                "batch": {
+                    "maxNodeCount": 5,
+                    "nodeSize": "Standard_F8_v2"
+                },
+                "mongo": {
+                    "nodeCount": 1,
+                    "nodeSize": "Standard_D4_v2",
+                    "diskType": "E10"
+                }
             },
             {
                 "type": "1 = Medium",
                 "avereEnabled": false,
-                "azureFilesEnabled": true,
-                "solrHighAvailability": true
+                "avere": {
+                    "nodeCount": 3,
+                    "diskSize": 256,
+                    "nodeSize": "Standard_D16s_v3"
+                },
+                "azureFilesEnabled": false,
+                "solrHighAvailability": true,
+                "solr": {
+                    "nodeSize": "standard_E8_v3",
+                    "nodeCount": 2
+                },
+                "batch": {
+                    "maxNodeCount": 16,
+                    "nodeSize": "Standard_F8_v2"
+                }
             },
             {
                 "type": "2 = Large",
                 "avereEnabled": false,
-                "azureFilesEnabled": true,
-                "solrHighAvailability": true
+                "avere": {
+                    "nodeCount": 12,
+                    "diskSize": 1024,
+                    "nodeSize": "Standard_E32s_v3"
+                },
+                "azureFilesEnabled": false,
+                "solrHighAvailability": true,
+                "solr": {
+                    "nodeSize": "standard_E16_v3",
+                    "nodeCount": 2
+                },
+                "batch": {
+                    "maxNodeCount": 1000,
+                    "nodeSize": "Standard_F8_v2"
+                }
             }
         ],
         "selectedSize": "[variables('sizingOptions')[parameters('deploymentSize')]]"
