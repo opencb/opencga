@@ -69,13 +69,6 @@
                 "description": "Size of the data disk for Solr."
             }
         },
-        "solrVMSize": {
-            "type": "string",
-            "defaultValue": "Standard_E8_v3",
-            "metadata": {
-                "description": "Size of the VM"
-            }
-        },
         "zookeeperVMSize": {
             "type": "string",
             "defaultValue": "Standard_D2_v2",
@@ -108,31 +101,10 @@
                 "description": "The daemon container image to run"
             }
         },
-        "mongoVmSize": {
-            "type": "string",
-            "metadata": {
-                "description": "Size of vm (e.g. Standard_D1_v2)"
-            },
-            "defaultValue": "Standard_D1_v2"
-        },
         "mongoCertificateEmail": {
             "type": "string",
             "metadata": {
                 "description": "Email address used for mongoDB letsencrypt certificates"
-            }
-        },
-        "mongoClusterSize": {
-            "type": "int",
-            "defaultValue": 3,
-            "allowedValues": [
-                3,
-                5,
-                7,
-                9,
-                11
-            ],
-            "metadata": {
-                "description": "Amount of VMs to deploy for the mongodb replica set"
             }
         },
         "avereServicePrincipalAppId": {
