@@ -45,22 +45,34 @@
 #
 # When you have set your desired variables, you can simply run the Makefile with `make`.
 
+# Functions
+function make_image {
+    ENVFILE="${envfile}" \
+    APP_NAME="${1}" \
+    make --no-print-directory -f "${dockerDir}/Makefile.docker" "${2}"
+}
+
+# Script
 set -e
 
 envfile=$1
 buildPath=$2
-
-# Jump to the repo root dir so that we have a known working dir
-cd $(git rev-parse --show-toplevel)
 dockerDir="opencga-app/app/scripts/docker"
 
-# make_image directory, image name, make target
-function make_image {
-    ENVFILE="${envfile}" \
-    APP_NAME="${1}" \
-    MAKECMDGOALS="${2}" \
-    make -f "${dockerDir}/Makefile" "${2}"
-}
+# Validate parameters
+if [ -f "${envfile}" ]; then
+    . "${envfile}"  # If an envfile is set - use it
+fi
+if [ "$PUBLISH" ]; then
+    if [ -z "$DOCKER_USERNAME" ]; then
+        echo "DOCKER_USERNAME is required when parameter PUBLISH is true";
+        exit 1;
+    fi
+    if [ -z "$DOCKER_PASSWORD" ]; then
+        echo "DOCKER_PASSWORD is required when parameter PUBLISH is true";
+        exit 1;
+    fi
+fi
 
 # Define all the docker images in dependecy order
 declare -a images=(opencga opencga-app opencga-daemon opencga-init iva)
@@ -69,23 +81,31 @@ imagesLen="${#images[@]}"
 imagesLen=$((imagesLen-1))
 
 echo "---------------------"
-echo "Started building container images"
+echo "Started build job"
 echo "---------------------"
+echo
+
+# Print useful build job metadata
+ENVFILE="${envfile}" make --no-print-directory -f "${dockerDir}/Makefile.docker" "metadata"
 
 # Build OpenCGA
 if [ ! -d "${buildPath}" ]; then
-    echo "> No existing OpenCGA build."
-    echo "> Starting OpenCGA build."
+    echo "> No existing OpenCGA build, building from source..."
     docker run -it --rm \
     -v "$PWD":/src \
     -v "$HOME/.m2":/root/.m2 \
     -w /src maven:3.6-jdk-8 \
     mvn -T 1C install \
     -DskipTests -Dstorage-hadoop -Popencga-storage-hadoop-deps -Phdp-2.6.0 -DOPENCGA.STORAGE.DEFAULT_ENGINE=hadoop -Dopencga.war.name=opencga
-    echo "> Finished OpenCGA build."
+    echo "> Finished OpenCGA build"
 else
-    echo "> Using existing build from $PWD/build"
+    echo "> Using existing OpenCGA build from $PWD/build"
 fi
+
+echo
+echo "---------------------"
+echo "Started building container images"
+echo "---------------------"
 
 # Build all the child container images
 for image in "${images[@]}"
@@ -102,12 +122,13 @@ echo "---------------------"
 echo "Finished building container images"
 echo "---------------------"
 echo
-echo "---------------------"
-echo "Started publishing container images"
-echo "---------------------"
 
 # Publish the container images
 if [ "$PUBLISH" = true ]; then
+    echo "---------------------"
+    echo "Started publishing container images"
+    echo "---------------------"
+
     imageCount=0
     for image in "${images[@]}"
     do
@@ -122,10 +143,17 @@ if [ "$PUBLISH" = true ]; then
         echo
         imageCount=$((imageCount+1))
     done
+
+    echo "---------------------"
+    echo "Finished publishing container images"
+    echo "---------------------"
 else
-        echo "Not publishing any docker images"
+    echo "---------------------"
+    echo "Not publishing any container images"
+    echo "---------------------"
 fi
 
+echo
 echo "---------------------"
-echo "Finished publishing container images"
+echo "Finished build job"
 echo "---------------------"
