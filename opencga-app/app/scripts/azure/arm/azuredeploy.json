@@ -183,7 +183,7 @@
                 },
                 "batch": {
                     "maxNodeCount": 5,
-                    "nodeSize": "Standard_F8_v2"
+                    "nodeSize": "Standard_F8s_v2"
                 },
                 "mongo": {
                     "nodeCount": 1,
@@ -225,7 +225,7 @@
                 },
                 "batch": {
                     "maxNodeCount": 16,
-                    "nodeSize": "Standard_F8_v2"
+                    "nodeSize": "Standard_F8s_v2"
                 },
                 "mongo": {
                     "nodeCount": 3,
@@ -243,7 +243,7 @@
                     }
                 },
                 "daemon": {
-                    "nodeSize": "Standard_F8_v2"
+                    "nodeSize": "Standard_F8s_v2"
                 },
                 "webServers": {
                     "minNodeCount": 2,
@@ -267,7 +267,7 @@
                 },
                 "batch": {
                     "maxNodeCount": 1000,
-                    "nodeSize": "Standard_F8_v2"
+                    "nodeSize": "Standard_F8s_v2"
                 },
                 "mongo": {
                     "nodeCount": 5,
@@ -285,7 +285,7 @@
                     }
                 },
                 "daemon": {
-                    "nodeSize": "Standard_F8_v2"
+                    "nodeSize": "Standard_F8s_v2"
                 },
                 "webServers": {
                     "minNodeCount": 2,
@@ -368,10 +368,10 @@
                         "value": "[if(variables('selectedSize').azureFilesEnabled, concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value, ',' , reference('azurefiles').outputs.accountKey.value),concat('avere ', reference('avere').outputs.VSERVER_IPS.value))]"
                     },
                     "maxNodeCount": {
-                        "value": "[parameters('selectedSize').batch.maxNodeCount]"
+                        "value": "[variables('selectedSize').batch.maxNodeCount]"
                     },
                     "virtualMachineSize": {
-                        "value": "[parameters('selectedSize').batch.nodeSize]"
+                        "value": "[variables('selectedSize').batch.nodeSize]"
                     },
                     "dockerImagesToCache": {
                         "value": [
@@ -432,7 +432,7 @@
                         "value": "[parameters('_artifactsLocationSasToken')]"
                     },
                     "virtualMachineSize": {
-                        "value": "[parameters('selectedSize').daemon.nodeSize]"
+                        "value": "[variables('selectedSize').daemon.nodeSize]"
                     },
                     "openCgaAdminPassword": {
                         "value": "[parameters('openCgaAdminPassword')]"
@@ -539,16 +539,16 @@
                         "value": "[parameters('HDInsightClusterLoginPassword')]"
                     },
                     "clusterHeadNodeCount": {
-                        "value": "[parameters('selectedSize').hdInsight.head.nodeCount]"
+                        "value": "[variables('selectedSize').hdInsight.head.nodeCount]"
                     },
                     "clusterHeadNodeSize": {
-                        "value": "[parameters('selectedSize').hdInsight.head.nodeSize]"
+                        "value": "[variables('selectedSize').hdInsight.head.nodeSize]"
                     },
                     "clusterWorkerNodeCount": {
-                        "value": "[parameters('selectedSize').hdInsight.worker.nodeCount]"
+                        "value": "[variables('selectedSize').hdInsight.worker.nodeCount]"
                     },
                     "clusterWorkerNodeSize": {
-                        "value": "[parameters('selectedSize').hdInsight.worker.nodeSize]"
+                        "value": "[variables('selectedSize').hdInsight.worker.nodeSize]"
                     },
                     "sshPassword": {
                         "value": "[parameters('HDInsightSshPassword')]"
@@ -597,13 +597,13 @@
                 },
                 "parameters": {
                     "avereInstanceType": {
-                        "value": "[parameters('selectedSize').avere.nodeSize]"
+                        "value": "[variables('selectedSize').avere.nodeSize]"
                     },
                     "avereNodeCount": {
-                        "value": "[parameters('selectedSize').avere.nodeCount]"
+                        "value": "[variables('selectedSize').avere.nodeCount]"
                     },
                     "avereCacheSizeGB": {
-                        "value": "[parameters('selectedSize').avere.diskSize]"
+                        "value": "[variables('selectedSize').avere.diskSize]"
                     },
                     "servicePrincipalTenant": {
                         "value": "[subscription().tenantId]"
@@ -665,13 +665,13 @@
                         "value": "[parameters('_artifactsLocationSasToken')]"
                     },
                     "virtualMachineSize": {
-                        "value": "[parameters('selectedSize').webServers.nodeSize]"
+                        "value": "[variables('selectedSize').webServers.nodeSize]"
                     },
                     "minInstanceCount": {
-                        "value": "[parameters('selectedSize').webServers.minNodeCount]"
+                        "value": "[variables('selectedSize').webServers.minNodeCount]"
                     },
                     "maxInstanceCount": {
-                        "value": "[parameters('selectedSize').webServers.maxNodeCount]"
+                        "value": "[variables('selectedSize').webServers.maxNodeCount]"
                     },
                     "virtualNetworkSubnetId": {
                         "value": "[reference('vnet').outputs.hdinsightSubnetId.value]"
