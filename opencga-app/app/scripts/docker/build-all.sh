@@ -138,7 +138,7 @@ if [ "$PUBLISH" = true ]; then
 
         echo
         echo "--> Publishing image '${image}' : [${imageCount}/${imagesLen}]"
-        make_image "$dockerDir" "$image" publish
+        make_image "$image" publish
         echo "--> Done Publishing image '${image}'"
         echo
         imageCount=$((imageCount+1))

@@ -46,7 +46,7 @@ ifneq ($(DOCKER_SERVER),)
 DOCKER_SERVER := $(DOCKER_SERVER)/
 DOCKER_SERVER_REF = $(DOCKER_SERVER)
 else
-DOCKER_SERVER_REF = <not set>
+DOCKER_SERVER_REF = docker.io (default)
 endif
 
 DOCKER_USERNAME ?= <not set>
