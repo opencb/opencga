@@ -670,6 +670,9 @@
                     "minInstanceCount": {
                         "value": "[variables('selectedSize').webServers.minNodeCount]"
                     },
+                    "initialInstanceCount": {
+                        "value": "[variables('selectedSize').webServers.minNodeCount]"
+                    },
                     "maxInstanceCount": {
                         "value": "[variables('selectedSize').webServers.maxNodeCount]"
                     },
