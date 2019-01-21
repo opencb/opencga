@@ -204,9 +204,9 @@
                 "type": "0 = Small",
                 "avereEnabled": false,
                 "azureFilesEnabled": true,
-                "solrHighAvailability": false,
                 "solr": {
-                    "nodeSize": "standard_E4_v3",
+                    "ha": false,
+                    "nodeSize": "Standard_E4_v3",
                     "nodeCount": 1
                 },
                 "batch": {
@@ -217,6 +217,24 @@
                     "nodeCount": 1,
                     "nodeSize": "Standard_D4_v2",
                     "diskType": "E10"
+                },
+                "hdInsight": {
+                    "worker": {
+                        "nodeCount": 1,
+                        "nodeSize": "Standard_D4_v2"
+                    },
+                    "head": {
+                        "nodeCount": 2,
+                        "nodeSize": "Standard_A6"
+                    }
+                },
+                "daemon": {
+                    "nodeSize": "Standard_A4"
+                },
+                "webServers": {
+                    "minNodeCount": 1,
+                    "maxNodeCount": 2,
+                    "nodeSize": "Standard_DS2_v3"
                 }
             },
             {
@@ -224,18 +242,41 @@
                 "avereEnabled": false,
                 "avere": {
                     "nodeCount": 3,
-                    "diskSize": 256,
+                    "diskSize": 1024,
                     "nodeSize": "Standard_D16s_v3"
                 },
                 "azureFilesEnabled": false,
-                "solrHighAvailability": true,
                 "solr": {
-                    "nodeSize": "standard_E8_v3",
+                    "ha": true,                    
+                    "nodeSize": "Standard_E8_v3",
                     "nodeCount": 2
                 },
                 "batch": {
                     "maxNodeCount": 16,
                     "nodeSize": "Standard_F8_v2"
+                },
+                "mongo": {
+                    "nodeCount": 3,
+                    "nodeSize": "Standard_E8_v3",
+                    "diskType": "P20"
+                },
+                "hdInsight": {
+                    "worker": {
+                        "nodeCount": 2,
+                        "nodeSize": "Standard_D4_v2"
+                    },
+                    "head": {
+                        "nodeCount": 20,
+                        "nodeSize": "Standard_D5_v2"
+                    }
+                },
+                "daemon": {
+                    "nodeSize": "Standard_F8_v2"
+                },
+                "webServers": {
+                    "minNodeCount": 2,
+                    "maxNodeCount": 2,
+                    "nodeSize": "Standard_DS4_v3"
                 }
             },
             {
@@ -243,18 +284,41 @@
                 "avereEnabled": false,
                 "avere": {
                     "nodeCount": 12,
-                    "diskSize": 1024,
+                    "diskSize": 4096,
                     "nodeSize": "Standard_E32s_v3"
                 },
                 "azureFilesEnabled": false,
-                "solrHighAvailability": true,
                 "solr": {
-                    "nodeSize": "standard_E16_v3",
+                    "ha": true,                    
+                    "nodeSize": "Standard_E16_v3",
                     "nodeCount": 2
                 },
                 "batch": {
                     "maxNodeCount": 1000,
                     "nodeSize": "Standard_F8_v2"
+                },
+                "mongo": {
+                    "nodeCount": 5,
+                    "nodeSize": "Standard_E16_v3",
+                    "diskType": "P20"
+                },
+                "hdInsight": {
+                    "worker": {
+                        "nodeCount": 2,
+                        "nodeSize": "Standard_D4_v2"
+                    },
+                    "head": {
+                        "nodeCount": 50,
+                        "nodeSize": "Standard_D14_v2"
+                    }
+                },
+                "daemon": {
+                    "nodeSize": "Standard_F8_v2"
+                },
+                "webServers": {
+                    "minNodeCount": 2,
+                    "maxNodeCount": 4,
+                    "nodeSize": "Standard_DS4_v3"
                 }
             }
         ],
@@ -331,6 +395,12 @@
                     "mountArgs": {
                         "value": "[if(variables('selectedSize').azureFilesEnabled, concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value, ',' , reference('azurefiles').outputs.accountKey.value),concat('avere ', reference('avere').outputs.VSERVER_IPS.value))]"
                     },
+                    "maxNodeCount": {
+                        "value": "[parameters('selectedSize').batch.maxNodeCount]"
+                    },
+                    "virtualMachineSize": {
+                        "value": "[parameters('selectedSize').batch.nodeSize]"
+                    },
                     "dockerImagesToCache": {
                         "value": [
                             "[parameters('daemonContainerImage')]"
@@ -388,6 +458,9 @@
                     },
                     "_artifactsLocationSasToken": {
                         "value": "[parameters('_artifactsLocationSasToken')]"
+                    },
+                    "virtualMachineSize": {
+                        "value": "[parameters('selectedSize').daemon.nodeSize]"
                     },
                     "openCgaAdminPassword": {
                         "value": "[parameters('openCgaAdminPassword')]"
@@ -493,6 +566,18 @@
                     "clusterLoginPassword": {
                         "value": "[parameters('HDInsightClusterLoginPassword')]"
                     },
+                    "clusterHeadNodeCount": {
+                        "value": "[parameters('selectedSize').hdInsight.head.nodeCount]"
+                    },
+                    "clusterHeadNodeSize": {
+                        "value": "[parameters('selectedSize').hdInsight.head.nodeSize]"
+                    },
+                    "clusterWorkerNodeCount": {
+                        "value": "[parameters('selectedSize').hdInsight.worker.nodeCount]"
+                    },
+                    "clusterWorkerNodeSize": {
+                        "value": "[parameters('selectedSize').hdInsight.worker.nodeSize]"
+                    },
                     "sshPassword": {
                         "value": "[parameters('HDInsightSshPassword')]"
                     },
@@ -539,6 +624,15 @@
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
+                    "avereInstanceType": {
+                        "value": "[parameters('selectedSize').avere.nodeSize]"
+                    },
+                    "avereNodeCount": {
+                        "value": "[parameters('selectedSize').avere.nodeCount]"
+                    },
+                    "avereCacheSizeGB": {
+                        "value": "[parameters('selectedSize').avere.diskSize]"
+                    },
                     "servicePrincipalTenant": {
                         "value": "[subscription().tenantId]"
                     },
@@ -597,6 +691,15 @@
                     },
                     "_artifactsLocationSasToken": {
                         "value": "[parameters('_artifactsLocationSasToken')]"
+                    },
+                    "virtualMachineSize": {
+                        "value": "[parameters('selectedSize').webServers.nodeSize]"
+                    },
+                    "minInstanceCount": {
+                        "value": "[parameters('selectedSize').webServers.minNodeCount]"
+                    },
+                    "maxInstanceCount": {
+                        "value": "[parameters('selectedSize').webServers.maxNodeCount]"
                     },
                     "virtualNetworkSubnetId": {
                         "value": "[reference('vnet').outputs.hdinsightSubnetId.value]"
@@ -663,13 +766,13 @@
                         "value": "[parameters('sshAdminKeyData')]"
                     },
                     "highAvailability": {
-                        "value": "[variables('selectedSize').solrHighAvailability]"
+                        "value": "[variables('selectedSize').solr.ha]"
                     },
                     "solrDiskSizeGB": {
                         "value": "[parameters('solrDiskSizeGB')]"
                     },
                     "solrVMSize": {
-                        "value": "[parameters('solrVMSize')]"
+                        "value": "[variables('selectedSize').solr.nodeSize]"
                     },
                     "zookeeperVMSize": {
                         "value": "[parameters('zookeeperVMSize')]"
@@ -710,13 +813,13 @@
                         "value": "[parameters('rgLocation')]"
                     },
                     "vmSize": {
-                        "value": "[parameters('mongoVmSize')]"
+                        "value": "[variables('selectedSize').mongo.nodeSize]"
+                    },
+                    "clusterSize": {
+                        "value": "[variables('selectedSize').mongo.nodeCount]"
                     },
                     "certificateEmail": {
                         "value": "[parameters('mongoCertificateEmail')]"
-                    },
-                    "clusterSize": {
-                        "value": "[parameters('mongoClusterSize')]"
                     },
                     "adminUsername": {
                         "value": "[parameters('adminUsername')]"
