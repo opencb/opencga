@@ -17,8 +17,6 @@
 package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -29,15 +27,11 @@ import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecu
 import org.opencb.opencga.app.cli.main.options.StudyCommandOptions;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.VariableSet;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -390,26 +384,6 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap variable = loadFile(commandOptions.variable);
 
         return openCGAClient.getStudyClient().updateVariableSetVariable(commandOptions.study, commandOptions.variableSet, query, variable);
-    }
-
-    private ObjectMap loadFile(String filePath) throws CatalogException {
-        File file = Paths.get(filePath).toFile();
-        if (!file.exists() || file.isDirectory()) {
-            throw new CatalogException("File " + filePath + " not found");
-        }
-        FileInputStream fileInputStream;
-        try {
-            fileInputStream = FileUtils.openInputStream(file);
-        } catch (IOException e) {
-            throw new CatalogException("Could not open file " + filePath + ". " + e.getMessage(), e);
-        }
-        ObjectMapper objectMapper = JacksonUtils.getUpdateObjectMapper();
-        try {
-            return objectMapper.readValue(fileInputStream, ObjectMap.class);
-        } catch (IOException e) {
-            throw new CatalogException("Could not parse file " + filePath + ". Is it a valid JSON file?. "
-                    + e.getMessage(), e);
-        }
     }
 
     /************************************************* Acl commands *********************************************************/

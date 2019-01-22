@@ -45,6 +45,8 @@ public class UserCommandOptions {
     public DataModelOptions commonDataModelOptions;
     public NumericOptions commonNumericOptions;
 
+    protected static final String DEPRECATED = "[DEPRECATED] ";
+
     public UserCommandOptions(CommonCommandOptions commonCommandOptions, DataModelOptions dataModelOptions, NumericOptions numericOptions,
                               JCommander jCommander) {
 
@@ -96,7 +98,7 @@ public class UserCommandOptions {
         @Parameter(names = {"-e", "--email"}, description = "User email", required = true, arity = 1)
         public String email;
 
-        @Parameter(names = {"-o", "--organization"}, description = "User organization", required = false, arity = 1)
+        @Parameter(names = {"-o", "--organization"}, description = "User organization", arity = 1)
         public String organization;
     }
 
@@ -122,18 +124,20 @@ public class UserCommandOptions {
     @Parameters(commandNames = {"update"}, commandDescription = "Update some user attributes")
     public class UpdateCommandOptions extends BaseUserCommand {
 
-        @Parameter(names = {"-n", "--name"}, description = "User name", arity = 1)
+        @Parameter(names = {"-n", "--name"}, description = DEPRECATED + "Use --json instead.", arity = 1)
         public String name;
 
-        @Parameter(names = {"-e", "--email"}, description = "User's email", arity = 1)
+        @Parameter(names = {"-e", "--email"}, description = DEPRECATED + "Use --json instead.", arity = 1)
         public String email;
 
-        @Parameter(names = {"-o", "--organization"}, description = "User's organization", arity = 1)
+        @Parameter(names = {"-o", "--organization"}, description = DEPRECATED + "Use --json instead.", arity = 1)
         public String organization;
 
-        @Parameter(names = {"--attributes"}, description = "JSON string containing additional information to be stored", arity = 1)
+        @Parameter(names = {"--attributes"}, description = DEPRECATED + "Use --json instead.", arity = 1)
         public String attributes;
 
+        @Parameter(names = {"--json"}, description = "JSON file containing the user fields to be updated", required = true, arity = 1)
+        public String json;
     }
 
     @Parameters(commandNames = {"password"}, commandDescription = "Change the user's password")
