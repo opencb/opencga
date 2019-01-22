@@ -425,7 +425,7 @@
                     "batchDockerArgs": {
                         "value": "--mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions --mount type=bind,src=/media/primarynfs/variants,dst=/opt/opencga/variants --rm"
                     },
-                    "batchDockerImage": {
+                    "batchContainerImage": {
                         "value": "[parameters('daemonContainerImage')]"
                     },
                     "batchMaxConcurrentJobs": {
