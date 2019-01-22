@@ -51,13 +51,13 @@
             },
             "maxValue": 100
         },
-        "tomcatDockerImage": {
+        "openCGAContainerImage": {
             "type": "string",
             "metadata": {
                 "description": "The docker image and tag for running the tomcat service."
             }
         },
-        "ivaDockerImage": {
+        "ivaContainerImage" : {
             "type": "string",
             "metadata": {
                 "description": "The docker image and tag for running the IVA service."
@@ -118,8 +118,8 @@
             "- curl -fsSL https://get.docker.com/ | sh",
             "- curl -fsSL https://get.docker.com/gpg | sudo apt-key add -",
             "[concat('- curl -fsSL ', parameters('_artifactsLocation'), '/avere/mount.py', parameters('_artifactsLocationSasToken'), ' | python3 - ', parameters('mountArgs'))]",
-            "[concat('- docker run -d -p 8080:8080 -p 8443:8443 --restart=always --mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions ', parameters('tomcatDockerImage'))]",
-            "[concat('- docker run -d -p 80:80 -p 443:443 --restart=always --mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions ', parameters('ivaDockerImage'))]",
+            "[concat('- docker run -d -p 8080:8080 -p 8443:8443 --restart=always --mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions ', parameters('openCGAContainerImage'))]",
+            "[concat('- docker run -d -p 80:80 -p 443:443 --restart=always --mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions ', parameters('ivaContainerImage'))]",
             ""
         ],
         "cloud-init-string": "[replace(replace(replace(string(variables('cloud-init')),'\",\"','\n'),'[\"',''),'\"]','')]",

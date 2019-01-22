@@ -1,10 +1,13 @@
+FROM openjdk:8-jre-alpine
 
-FROM opencga-build as build
-FROM opencga-java-base
+ARG buildPath="./build"
 
-# Get opencga
 WORKDIR /opt/opencga
 
-RUN useradd -u 1001 opencga
+RUN adduser -S -u 1001 opencga
 
-COPY --from=build /build/build /opt/opencga
+RUN apk update && \
+    apk add ca-certificates && \
+    update-ca-certificates
+
+COPY ${buildPath} /opt/opencga
