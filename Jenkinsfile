@@ -40,15 +40,16 @@ pipeline {
 
         stage ('Publish Docker Images') {
              steps {
-               script {
+                script {
                    def images = ["opencga", "opencga-app", "opencga-daemon", "opencga-init", "iva"]
                    def tag = sh(returnStdout: true, script: "git rev-parse --verify HEAD").trim()
-                  for(int i =0; i < images.size(); i++){
-                     withDockerRegistry([ credentialsId: "wasim-docker-hub", url: "" ]) {
-                                        sh 'docker push opencb/${image}:${tag}'
-                     }
-                  }
-               }
+                   withDockerRegistry([ credentialsId: "wasim-docker-hub", url: "" ]) {
+                       for(int i =0; i < images.size(); i++){
+                           sh "docker tag '${images[i]}' opencb/'${images[i]}':${tag}"
+                           sh "docker push opencb/'${images[i]}':${tag}"
+                       }
+                   }
+                }
              }
         }
 
