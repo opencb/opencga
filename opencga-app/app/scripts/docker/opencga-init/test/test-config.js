@@ -15,13 +15,13 @@
  */
 
 const cellbase = {
-    hosts: ["http://bioinfo.hpc.cam.ac.uk/cellbase"],
+    hosts: ["CELLBASE_HOST_URL"],
     // hosts: ["http://cellbase.clinbioinfosspa.es/cb"],
     version: "v4",
 };
 
 const opencga = {
-    host: "http://bioinfodev.hpc.cam.ac.uk/opencga-test",
+    host: "<OPENCGA_HOST_URL>",
     // host: "http://bioinfo.hpc.cam.ac.uk/hgva",
     // host: "http://bio-dev-opencgainternal-tomcat-01.gel.zone:8080/opencga",
     version: "v1",

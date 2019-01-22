@@ -1,15 +1,31 @@
 FROM httpd
 
+# Minimum compatible git commit, please only use later commits.
+ARG IVA_COMMIT_SHA="dce421b6933d540d9c511c72e63c0e85dff00667"
+
 # Install dependencies
 RUN apt-get update && \
-apt-get install -y wget
+    apt-get upgrade -y && \
+    apt-get install -y curl gnupg2 && \
+    curl -sL https://deb.nodesource.com/setup_8.x | bash && \
+    apt-get install -y git nodejs npm
 
-ARG IVA_VERSION="1.0.0-beta"
+RUN echo '{ "allow_root": true }' > /root/.bowerrc && \
+    npm install -g grunt-cli
 
-RUN wget --quiet "https://github.com/opencb/iva/releases/download/v${IVA_VERSION}/iva-${IVA_VERSION}.tar.gz" && \
-tar xvf iva-${IVA_VERSION}.tar.gz --strip-components=1 -C /usr/local/apache2/htdocs/  && \
-rm ./iva-${IVA_VERSION}.tar.gz
+# Download and extract the IVA configuration into our local configuration
+RUN git clone -b "master" "https://github.com/opencb/iva.git" && \
+    cd iva && \
+    git reset "$IVA_COMMIT_SHA" --hard && \
+    git submodule update --init && \
+    cd lib/jsorolla && \
+    git checkout develop && \
+    npm install && \
+    cd ../.. && \
+    npm install --unsafe-perm && \
+    npm run build && \
+    cp -r build/* /usr/local/apache2/htdocs
 
 EXPOSE 80
 
-VOLUME usr/local/apache2/htdocs/conf
+VOLUME /usr/local/apache2/htdocs/conf

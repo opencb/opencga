@@ -48,13 +48,13 @@
                 "description": "What type of NFS storage do you want to use? Avere offers a high throughput SSD cache cluster over Azure Blob, AzureFiles offers modest read/write performance for smaller installations"
             }
         },
-        "tomcatDockerImage": {
+        "openCGAContainerImage": {
             "type": "string",
             "metadata": {
-                "description": "The docker image and tag for running the tomcat service. For examples: 'repo/image:tag'"
+                "description": "The docker image and tag for running the OpenCGA service. For examples: 'repo/image:tag'"
             }
         },
-        "ivaDockerImage": {
+        "ivaContainerImage": {
             "type": "string",
             "metadata": {
                 "description": "The docker image and tag for running the IVA service. For examples: 'repo/image:tag'"
@@ -101,14 +101,12 @@
         },
         "initContainerImage": {
             "type": "string",
-            "defaultValue": "dotjson/opencga-init",
             "metadata": {
                 "description": "The init container image to run"
             }
         },
         "daemonContainerImage": {
             "type": "string",
-            "defaultValue": "dotjson/opencga-daemon",
             "metadata": {
                 "description": "The daemon container image to run"
             }
@@ -342,6 +340,7 @@
             "apiVersion": "2018-05-01",
             "name": "daemonvm",
             "dependsOn": [
+                "avere",
                 "azurefiles",
                 "vnet",
                 "[parameters('rgPrefix')]",
@@ -426,7 +425,7 @@
                     "batchDockerArgs": {
                         "value": "--mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions --mount type=bind,src=/media/primarynfs/variants,dst=/opt/opencga/variants --rm"
                     },
-                    "batchDockerImage": {
+                    "batchContainerImage": {
                         "value": "[parameters('daemonContainerImage')]"
                     },
                     "batchMaxConcurrentJobs": {
@@ -544,7 +543,7 @@
             }
         },
         {
-            "comments": "This deploys a VMSS which hosts the tomcat and IVA services behind a LB with healthchecking, autoscaling and rolling update",
+            "comments": "This deploys a VMSS which hosts the OpenCGA and IVA services behind a LB with healthchecking, autoscaling and rolling update",
             "type": "Microsoft.Resources/deployments",
             "resourceGroup": "[parameters('rgPrefix')]",
             "apiVersion": "2017-05-10",
@@ -581,11 +580,11 @@
                     "SSHKeyData": {
                         "value": "[parameters('sshAdminKeyData')]"
                     },
-                    "tomcatDockerImage": {
-                        "value": "[parameters('tomcatDockerImage')]"
+                    "openCGAContainerImage": {
+                        "value": "[parameters('openCGAContainerImage')]"
                     },
-                    "ivaDockerImage": {
-                        "value": "[parameters('ivaDockerImage')]"
+                    "ivaContainerImage": {
+                        "value": "[parameters('ivaContainerImage')]"
                     }
                 }
             }

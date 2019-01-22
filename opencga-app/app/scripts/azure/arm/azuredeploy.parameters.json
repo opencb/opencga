@@ -32,10 +32,10 @@
         "mongoDBPassword": {
             "value": ""
         },
-        "tomcatDockerImage": {
+        "openCGAContainerImage": {
             "value": ""
         },
-        "ivaDockerImage": {
+        "ivaContainerImage": {
             "value": ""
         },
         "initContainerImage": {
