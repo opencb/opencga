@@ -101,7 +101,8 @@
         "natStartPort": 50000,
         "natEndPort": 50119,
         "natBackendPort": 22,
-        "frontEndIPConfigID": "[concat(variables('lbID'),'/frontendIPConfigurations/loadBalancerFrontEnd')]",
+        "publicFrontEndIPConfigID": "[concat(variables('lbID'),'/frontendIPConfigurations/loadBalancerFrontEnd')]",
+        "privateFrontEndIPConfigID": "[concat(variables('lbID'),'/frontendIPConfigurations/privateFrontEnd')]",
         "imageReference": {
             "publisher": "Canonical",
             "offer": "UbuntuServer",
@@ -151,7 +152,44 @@
             ],
             "properties": {
                 "loadBalancingRules": [
-                   
+                    {
+                        "name": "ivaHttp",
+                        "properties": {
+                            "frontendIPConfiguration": {
+                                "id": "[variables('privateFrontEndIPConfigID')]"
+                            },
+                            "backendAddressPool": {
+                                "id": "[concat(variables('lbID'),'/backendAddressPools/VMSSBackendPool')]"
+                            },
+                            "protocol": "Tcp",
+                            "frontendPort": 80,
+                            "backendPort": 80,
+                            "enableFloatingIP": false,
+                            "idleTimeoutInMinutes": 5,
+                            "probe": {
+                                "id": "[concat(variables('lbID'),'/probes/ivaHttpProbe')]"
+                            }
+                        }
+                    },
+                    {
+                        "name": "tomcatHttp",
+                        "properties": {
+                            "frontendIPConfiguration": {
+                                "id": "[variables('privateFrontEndIPConfigID')]"
+                            },
+                            "backendAddressPool": {
+                                "id": "[concat(variables('lbID'),'/backendAddressPools/VMSSBackendPool')]"
+                            },
+                            "protocol": "Tcp",
+                            "frontendPort": 8080,
+                            "backendPort": 8080,
+                            "enableFloatingIP": false,
+                            "idleTimeoutInMinutes": 5,
+                            "probe": {
+                                "id": "[concat(variables('lbID'),'/probes/tomcatHttpProbe')]"
+                            }
+                        }
+                    }
                 ],
                 "probes": [
                     {
@@ -183,6 +221,15 @@
                                 "id": "[variables('publicIPAddressID')]"
                             }
                         }
+                    },
+                    {
+                        "name": "privateFrontEnd",
+                        "properties": {
+                            "privateIPAllocationMethod" : "Dynamic",
+                            "subnet": {
+                                "id": "[parameters('virtualNetworkSubnetId')]"
+                            }
+                        }
                     }
                 ],
                 "backendAddressPools": [
@@ -195,7 +242,7 @@
                         "name": "[variables('natPoolName')]",
                         "properties": {
                             "frontendIPConfiguration": {
-                                "id": "[variables('frontEndIPConfigID')]"
+                                "id": "[variables('publicFrontEndIPConfigID')]"
                             },
                             "protocol": "tcp",
                             "frontendPortRangeStart": "[variables('natStartPort')]",
