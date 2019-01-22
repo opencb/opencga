@@ -1,0 +1,27 @@
+#cloud-config 
+
+write_files: 
+- path: /etc/systemd/system/opencga.service 
+permissions: 0644 
+owner: root 
+content: |     
+    [Unit] 
+    Description=OpenCGA daemon 
+    Requires=docker.service 
+    After=docker.service 
+    [Service] 
+    Restart=always 
+    [concat('ExecStart=',variables('execStart'))] 
+    ExecStop=/usr/bin/docker stop opencga-daemon 
+
+package_upgrade: true 
+package_reboot_if_required: true 
+
+runcmd: 
+- 'apt-get update' 
+- 'curl -fsSL https://get.docker.com/ | sh' 
+- 'curl -fsSL https://get.docker.com/gpg | sudo apt-key add -' 
+- [variables('getScriptCmd')] 
+- [variables('mountCmd')] 
+- [variables('initCmd')] 
+- 'systemctl start --no-block opencga' 

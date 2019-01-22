@@ -68,7 +68,7 @@
     },
     "_artifactsLocationSasToken": {
       "type": "string",
-      "defaultValue" : "",
+      "defaultValue": "",
       "metadata": {
         "description": "Artifacts location."
       }
@@ -92,18 +92,18 @@
           "diskName": "[concat(parameters('clusterName'), '-zookeeper',copyIndex('vmNames'), '-disk')]"
         }
       }
-    ],     
+    ],
     "cloudInit": [
-        "#cloud-config",
-        "",
-        "package_upgrade: true",
-        "package_reboot_if_required: true",
-        "",
-        "runcmd:",
-        " - export DEBIAN_FRONTEND='noninteractive'",
-        " - curl -fsSL https://get.docker.com/ | sh",
-        " - curl -fsSL https://get.docker.com/gpg | sudo apt-key add -",
-        "[concat(' - curl -fsSL ',variables('customScriptFilePath'),' | bash -s -- #VM_INDEX# ', parameters('clusterName'), '-zookeeper', ' ', parameters('scaleNumber'), ' ',variables('zookeeperVersion'))]"      
+      "#cloud-config",
+      "",
+      "package_upgrade: true",
+      "package_reboot_if_required: true",
+      "",
+      "runcmd:",
+      " - export DEBIAN_FRONTEND='noninteractive'",
+      " - curl -fsSL https://get.docker.com/ | sh",
+      " - curl -fsSL https://get.docker.com/gpg | sudo apt-key add -",
+      "[concat(' - curl -fsSL ',variables('customScriptFilePath'),' | bash -s -- #VM_INDEX# ', parameters('clusterName'), '-zookeeper', ' ', parameters('scaleNumber'), ' ',variables('zookeeperVersion'))]"
     ]
   },
   "resources": [
@@ -136,7 +136,7 @@
             "name": "ipconfig1",
             "properties": {
               "privateIPAllocationMethod": "Dynamic",
-                 "subnet": {
+              "subnet": {
                 "id": "[parameters('subnetId')]"
               }
             }
@@ -179,7 +179,6 @@
             }
           },
           "customData": "[base64(replace(replace(replace(replace(string(variables('cloudInit')),'#VM_INDEX#',string(copyIndex())),'\",\"','\n'),'[\"',''),'\"]',''))]"
-                 
         },
         "storageProfile": {
           "imageReference": {
@@ -192,7 +191,7 @@
             "name": "[variables('vmNames')[copyIndex()].diskName]",
             "caching": "ReadWrite",
             "createOption": "FromImage",
-            "diskSizeGB" : 50,
+            "diskSizeGB": 50,
             "managedDisk": {
               "storageAccountType": "[parameters('diskType')]"
             }
@@ -209,7 +208,7 @@
     }
   ],
   "outputs": {
-    "zookeeperHosts" :{
+    "zookeeperHosts": {
       "type": "string",
       "value": "dummy"
     }

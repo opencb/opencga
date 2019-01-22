@@ -1,0 +1,136 @@
+{
+    "ignore": {
+        "global": [
+            {
+                "message": "The parameter '_artifactsLocationSasToken' is never used.",
+                "jsonPath": "parameters._artifactsLocationSasToken",
+                "reason": "Shortly to be removed so no need to fixup"
+            },
+            {
+                "message": "The variable 'copy' is never used.",
+                "jsonPath": ".*",
+                "reason": "ARM validation fails with 'copy' syntax"
+            },
+            {
+                "message": "The variable '_comment.*' is never used.",
+                "jsonPath": "variables.*",
+                "reason": "Allow additional comments in variables section"
+            }
+        ],
+        "azuredeploy.json": [
+            {
+                "message": "Property \".*\" is not a defined property of.*'selectedSize'.*",
+                "jsonPath": ".*",
+                "reason": "ARM Language support doesn't handle nested objects"
+            },
+            {
+                "message": "Value is not accepted. Valid values: \"2015-01-01\".",
+                "jsonPath": ".*",
+                "reason": "Incorrect schema match"
+            },
+            {
+                "message": "Value is not accepted. Valid values: \"Microsoft.Network/dnsZones\".",
+                "jsonPath": ".*",
+                "reason": "Incorrect schema match"
+            },
+            {
+                "message": "String does not match the pattern of \"^[-\\w\\._\\(\\)]+$\".",
+                "jsonPath": "resources.10.resourceGroup",
+                "reason": "Schema matching ARM function against regex for name"
+            }
+        ],
+        "azurebatch/azuredeploy.json": [
+            {
+                "message": "Value is not accepted. Valid values: \"2017-09-01\".",
+                "jsonPath": ".*",
+                "reason":"Incorrect schema match"
+            },
+            {
+                "message": "Value is not accepted. Valid values: \"Microsoft.Network/applicationGateways\".",
+                "jsonPath": "resources.4.type",
+                "reason": "Incorrect schema match for AzureBatch"
+            }
+        ],
+        "azurefiles/azuredeploy.json": [
+            {
+                "message": ".*",
+                "jsonPath": "resources.1.*",
+                "reason": "Incorrect schema match for ContainerGroups"
+            }
+        ],
+        "hdinsight-storage/azuredeploy.json": [
+            {
+                "message": "String is longer than the maximum length of 24.",
+                "jsonPath": "resources.0.name",
+                "reason": "Schema validation fails as value is an ARM function"
+            }
+        ],
+        "hdinsight/azuredeploy.json": [
+            {
+                "message": "Incorrect type. Expected \"object\".",
+                "jsonPath": "resources.0.properties.storageProfile.storageaccounts.0",
+                "reason": "Schema validation fails as value is an ARM function"
+            }
+        ],
+        "mongodb/azuredeploy.json": [
+            {
+                "message": "Undefined variable reference: 'dnsNames'",
+                "jsonPath": "outputs.dnsNames.value",
+                "reason": "ARM validation fails with 'copy' syntax"
+            }
+        ],
+        "solr/azuredeploy.json": [
+            {
+                "message": "Undefined variable reference: 'vmNames'",
+                "jsonPath": ".*",
+                "reason": "ARM validation fails with 'copy' syntax"
+            },
+            {
+                "message": "Undefined variable reference: 'solrURLs'",
+                "jsonPath": ".*",
+                "reason": "ARM validation fails with 'copy' syntax"
+            },
+            {
+                "message": "Undefined variable reference: 'zookeeperHosts'",
+                "jsonPath": ".*",
+                "reason": "ARM validation fails with 'copy' syntax"
+            }
+        ],
+        "solr/zookeeper/azuredeploy.json": [
+            {
+                "message": "Undefined variable reference: 'vmNames'",
+                "jsonPath": ".*",
+                "reason": "ARM validation fails with 'copy' syntax"
+            }
+        ],
+        "webservers/azuredeploy.json": [
+            {
+                "message": "Value is not accepted. Valid values: \"Automatic\", \"Manual\".",
+                "jsonPath": "resources.2.properties.upgradePolicy.mode",
+                "reason": "Incorrect schema match for VMSS"
+            },
+            {
+                "message": ".*",
+                "jsonPath": "resources.3",
+                "reason": "Incorrect schema match for VMSS"
+            }
+        ],
+        "daemonvm/azuredeploy.json": [
+            {
+                "message": ".*",
+                "jsonPath": "variables.cloud-init.*",
+                "reason": "Validation fails when attempting to validate inline cloudinit"
+            },
+            {
+                "message": "Value is not accepted. Valid values: \"2017-06-01\".",
+                "jsonPath": "resources.0.apiVersion",
+                "reason": "Incorrect schema"
+            },
+            {
+                "message": "Value is not accepted. Valid values: \"Microsoft.Network/expressRouteCircuits\".",
+                "jsonPath": "resources.1.type",
+                "reason": "Incorrect schema match"
+            }
+        ]
+    }
+}

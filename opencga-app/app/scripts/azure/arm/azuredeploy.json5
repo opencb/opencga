@@ -1,0 +1,813 @@
+{
+    $schema: 'https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#',
+    contentVersion: '1.0.0.0',
+    parameters: {
+        _artifactsLocation: {
+            type: 'string',
+            metadata: {
+                description: '',
+            },
+        },
+        _artifactsLocationSasToken: {
+            type: 'string',
+            metadata: {
+                description: '',
+            },
+        },
+        deploymentSize: {
+            type: 'int',
+            allowedValues: [
+                0,
+                1,
+                2,
+            ],
+            defaultValue: 0,
+            metadata: {
+                description: 'What size of deployment do you want? 0 = For single researches testing things out. 1 = For x genomics with xgb per sec load rate. 2 = is for x/y',
+            },
+        },
+        rgPrefix: {
+            type: 'string',
+            metadata: {
+                description: 'The resource group prefix',
+            },
+        },
+        rgLocation: {
+            type: 'string',
+            defaultValue: 'UK South',
+            metadata: {
+                description: 'Location for deployment',
+            },
+        },
+        HDInsightStorageOption: {
+            type: 'string',
+            allowedValues: [
+                'DataLake',
+                'Blob',
+            ],
+            defaultValue: 'DataLake',
+            metadata: {
+                description: 'What type of storage will be used',
+            },
+        },
+        tomcatDockerImage: {
+            type: 'string',
+            metadata: {
+                description: "The docker image and tag for running the tomcat service. For examples: 'repo/image:tag'",
+            },
+        },
+        ivaDockerImage: {
+            type: 'string',
+            metadata: {
+                description: "The docker image and tag for running the IVA service. For examples: 'repo/image:tag'",
+            },
+        },
+        solrDiskSizeGB: {
+            type: 'int',
+            defaultValue: 512,
+            metadata: {
+                description: 'Size of the data disk for Solr.',
+            },
+        },
+        zookeeperVMSize: {
+            type: 'string',
+            defaultValue: 'Standard_D2_v2',
+            metadata: {
+                description: 'Size of the zookeeper VM',
+            },
+        },
+        solrDiskType: {
+            type: 'string',
+            defaultValue: 'Standard_LRS',
+            allowedValues: [
+                'Standard_LRS',
+                'Premium_LRS',
+            ],
+            metadata: {
+                description: 'Storage Account type',
+            },
+        },
+        initContainerImage: {
+            type: 'string',
+            defaultValue: 'dotjson/opencga-init',
+            metadata: {
+                description: 'The init container image to run',
+            },
+        },
+        daemonContainerImage: {
+            type: 'string',
+            defaultValue: 'dotjson/opencga-daemon',
+            metadata: {
+                description: 'The daemon container image to run',
+            },
+        },
+        mongoCertificateEmail: {
+            type: 'string',
+            metadata: {
+                description: 'Email address used for mongoDB letsencrypt certificates',
+            },
+        },
+        avereServicePrincipalAppId: {
+            type: 'string',
+            metadata: {
+                description: "The ServicePrincipal which Avere will use to provision the storage cluster. This SP needs to have 'Owner' rights to the ResourceGroup.",
+            },
+        },
+        avereServicePrincipalPassword: {
+            type: 'securestring',
+            metadata: {
+                description: "The ServicePrincipal's Password.",
+            },
+        },
+        adminUsername: {
+            type: 'string',
+            defaultValue: 'opencgaadmin',
+            metadata: {
+                description: 'Admin username used by various services',
+            },
+        },
+        sshAdminKeyData: {
+            type: 'securestring',
+            metadata: {
+                description: 'The RSA data for the SSH Public Key used to authenticate the following machines: WebServers, Avere, DaemonVM, Mongo, Solr and Zookeeper.',
+            },
+        },
+        mongoDBPassword: {
+            type: 'securestring',
+            metadata: {
+                description: 'This Data is used to derive unique passwords for several different services. Select a unique and random combination of data, the longer the better, and do not disclose it.',
+            },
+        },
+        HDInsightClusterLoginPassword: {
+            type: 'securestring',
+            metadata: {
+                description: 'Used to login to HDInsights cluster interface. The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter.',
+            },
+        },
+        HDInsightSshPassword: {
+            type: 'securestring',
+            metadata: {
+                description: 'Used to login to HDInsight cluster nodes via SSH. The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter.',
+            },
+        },
+        avereAdminPassword: {
+            type: 'securestring',
+            metadata: {
+                description: 'Used to login to the Avere cluster Portal. The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter.',
+            },
+        },
+        openCgaAdminPassword: {
+            type: 'securestring',
+            metadata: {
+                description: 'Used to login to OpenCGA. The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter.',
+            },
+        },
+        catalogSecretKey: {
+            type: 'securestring',
+            metadata: {
+                description: 'Secret key used when initializing the catalog.',
+            },
+        },
+    },
+    variables: {
+        webserverNamingPrefix: "[toLower(substring(concat('webservers', uniqueString(parameters('rgPrefix'))), 0, 16))]",
+        sizingOptions: [
+            {
+                type: '0 = Small',
+                avereEnabled: false,
+                azureFilesEnabled: true,
+                solr: {
+                    ha: false,
+                    nodeSize: 'Standard_E4_v3',
+                    nodeCount: 1,
+                },
+                batch: {
+                    maxNodeCount: 5,
+                    nodeSize: 'Standard_F8s_v2',
+                },
+                mongo: {
+                    nodeCount: 1,
+                    nodeSize: 'Standard_D4_v2',
+                    diskType: 'E10',
+                },
+                hdInsight: {
+                    worker: {
+                        nodeCount: 1,
+                        nodeSize: 'Standard_D4_v2',
+                    },
+                    head: {
+                        nodeCount: 2,
+                        nodeSize: 'Standard_D3_v2',
+                    },
+                },
+                daemon: {
+                    nodeSize: 'Standard_DS2_v2',
+                },
+                webServers: {
+                    minNodeCount: 1,
+                    maxNodeCount: 2,
+                    nodeSize: 'Standard_DS2_v2',
+                },
+            },
+            {
+                type: '1 = Medium',
+                avereEnabled: false,
+                avere: {
+                    nodeCount: 3,
+                    diskSize: 1024,
+                    nodeSize: 'Standard_D16s_v3',
+                },
+                azureFilesEnabled: false,
+                solr: {
+                    ha: true,
+                    nodeSize: 'Standard_E8_v3',
+                    nodeCount: 2,
+                },
+                batch: {
+                    maxNodeCount: 16,
+                    nodeSize: 'Standard_F8s_v2',
+                },
+                mongo: {
+                    nodeCount: 3,
+                    nodeSize: 'Standard_E8_v3',
+                    diskType: 'P20',
+                },
+                hdInsight: {
+                    worker: {
+                        nodeCount: 2,
+                        nodeSize: 'Standard_D4_v2',
+                    },
+                    head: {
+                        nodeCount: 20,
+                        nodeSize: 'Standard_D5_v2',
+                    },
+                },
+                daemon: {
+                    nodeSize: 'Standard_F8s_v2',
+                },
+                webServers: {
+                    minNodeCount: 2,
+                    maxNodeCount: 2,
+                    nodeSize: 'Standard_DS4_v2',
+                },
+            },
+            {
+                type: '2 = Large',
+                avereEnabled: false,
+                avere: {
+                    nodeCount: 12,
+                    diskSize: 4096,
+                    nodeSize: 'Standard_E32s_v3',
+                },
+                azureFilesEnabled: false,
+                solr: {
+                    ha: true,
+                    nodeSize: 'Standard_E16_v3',
+                    nodeCount: 2,
+                },
+                batch: {
+                    maxNodeCount: 1000,
+                    nodeSize: 'Standard_F8s_v2',
+                },
+                mongo: {
+                    nodeCount: 5,
+                    nodeSize: 'Standard_E16_v3',
+                    diskType: 'P20',
+                },
+                hdInsight: {
+                    worker: {
+                        nodeCount: 2,
+                        nodeSize: 'Standard_D4_v2',
+                    },
+                    head: {
+                        nodeCount: 50,
+                        nodeSize: 'Standard_D14_v2',
+                    },
+                },
+                daemon: {
+                    nodeSize: 'Standard_F8s_v2',
+                },
+                webServers: {
+                    minNodeCount: 2,
+                    maxNodeCount: 4,
+                    nodeSize: 'Standard_DS4_v2',
+                },
+            },
+        ],
+        selectedSize: "[variables('sizingOptions')[parameters('deploymentSize')]]",
+    },
+    resources: [
+        {
+            type: 'Microsoft.Resources/resourceGroups',
+            apiVersion: '2018-05-01',
+            location: "[parameters('rgLocation')]",
+            name: "[parameters('rgPrefix')]",
+            properties: {},
+        },
+        {
+            resourceGroup: "[parameters('rgPrefix')]",
+            type: 'Microsoft.Resources/deployments',
+            apiVersion: '2018-05-01',
+            name: 'vnet',
+            dependsOn: [
+                "[parameters('rgPrefix')]",
+            ],
+            properties: {
+                mode: 'Incremental',
+                template: "[local-jsonFile('./vnet/azuredeploy.json5')]",
+            },
+        },
+        {
+            condition: "[variables('selectedSize').azureFilesEnabled]",
+            resourceGroup: "[parameters('rgPrefix')]",
+            type: 'Microsoft.Resources/deployments',
+            apiVersion: '2018-05-01',
+            name: 'azurefiles',
+            dependsOn: [
+                "[parameters('rgPrefix')]",
+            ],
+            properties: {
+                mode: 'Incremental',
+                templateLink: {
+                    uri: "[concat(parameters('_artifactsLocation'), '/azurefiles/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    contentVersion: '1.0.0.0',
+                },
+            },
+        },
+        {
+            resourceGroup: "[parameters('rgPrefix')]",
+            type: 'Microsoft.Resources/deployments',
+            apiVersion: '2018-05-01',
+            name: 'azureBatch',
+            dependsOn: [
+                "[parameters('rgPrefix')]",
+                'avere',
+                'azurefiles',
+                'vnet',
+            ],
+            properties: {
+                mode: 'Incremental',
+                templateLink: {
+                    uri: "[concat(parameters('_artifactsLocation'), '/azurebatch/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    contentVersion: '1.0.0.0',
+                },
+                parameters: {
+                    _artifactsLocation: {
+                        value: "[parameters('_artifactsLocation')]",
+                    },
+                    _artifactsLocationSasToken: {
+                        value: "[parameters('_artifactsLocationSasToken')]",
+                    },
+                    virtualNetworkSubnetId: {
+                        value: "[reference('vnet').outputs.defaultSubnetId.value]",
+                    },
+                    mountArgs: {
+                        value: "[if(variables('selectedSize').azureFilesEnabled, concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value, ',' , reference('azurefiles').outputs.accountKey.value),concat('avere ', reference('avere').outputs.VSERVER_IPS.value))]",
+                    },
+                    maxNodeCount: {
+                        value: "[variables('selectedSize').batch.maxNodeCount]",
+                    },
+                    virtualMachineSize: {
+                        value: "[variables('selectedSize').batch.nodeSize]",
+                    },
+                    dockerImagesToCache: {
+                        value: [
+                            "[parameters('daemonContainerImage')]",
+                        ],
+                    },
+                },
+            },
+        },
+        {
+            resourceGroup: "[parameters('rgPrefix')]",
+            type: 'Microsoft.Resources/deployments',
+            apiVersion: '2018-05-01',
+            name: 'hdinsight-storage',
+            dependsOn: [
+                'vnet',
+                "[parameters('rgPrefix')]",
+            ],
+            properties: {
+                mode: 'Incremental',
+                templateLink: {
+                    uri: "[concat(parameters('_artifactsLocation'), '/hdinsight-storage/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    contentVersion: '1.0.0.0',
+                },
+                parameters: {
+                    networkAclsVirtualNetworkRule: {
+                        value: "[reference('vnet').outputs.hdinsightSubnetId.value]",
+                    },
+                    isHnsEnabled: {
+                        value: "[if(equals(parameters('HDInsightstorageOption'), 'DataLake'), json('true'), json('false'))]",
+                    },
+                },
+            },
+        },
+        {
+            comments: 'This deploys a VM to run the OpenCGA daemon',
+            resourceGroup: "[parameters('rgPrefix')]",
+            type: 'Microsoft.Resources/deployments',
+            apiVersion: '2018-05-01',
+            name: 'daemonvm',
+            dependsOn: [
+                'azurefiles',
+                'vnet',
+                "[parameters('rgPrefix')]",
+                'azureBatch',
+            ],
+            properties: {
+                mode: 'Incremental',
+                templateLink: {
+                    uri: "[concat(parameters('_artifactsLocation'), '/daemonvm/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    contentVersion: '1.0.0.0',
+                },
+                parameters: {
+                    _artifactsLocation: {
+                        value: "[parameters('_artifactsLocation')]",
+                    },
+                    _artifactsLocationSasToken: {
+                        value: "[parameters('_artifactsLocationSasToken')]",
+                    },
+                    virtualMachineSize: {
+                        value: "[variables('selectedSize').daemon.nodeSize]",
+                    },
+                    openCgaAdminPassword: {
+                        value: "[parameters('openCgaAdminPassword')]",
+                    },
+                    virtualNetworkId: {
+                        value: "[reference('vnet').outputs.vnetId.value]",
+                    },
+                    sshKeyData: {
+                        value: "[parameters('sshAdminKeyData')]",
+                    },
+                    hdInsightSshDns: {
+                        value: "[reference('hdinsight').outputs.clusterSshDnsName.value]",
+                    },
+                    hdInsightSshUsername: {
+                        value: "[reference('hdinsight').outputs.clusterSshUsername.value]",
+                    },
+                    hdInsightSshPassword: {
+                        value: "[reference('hdinsight').outputs.clusterSshPassword.value]",
+                    },
+                    daemonContainerImage: {
+                        value: "[parameters('daemonContainerImage')]",
+                    },
+                    initContainerImage: {
+                        value: "[parameters('initContainerImage')]",
+                    },
+                    mountArgs: {
+                        value: "[if(variables('selectedSize').azureFilesEnabled, concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value,',',reference('azurefiles').outputs.accountKey.value),concat('avere ', reference('avere').outputs.VSERVER_IPS.value))]",
+                    },
+                    webserverNamingPrefix: {
+                        value: "[variables('webserverNamingPrefix')]",
+                    },
+                    solrHosts: {
+                        value: "[reference('solr').outputs.solrConnectionDetails.value]",
+                    },
+                    solrUser: {
+                        value: 'todo',
+                    },
+                    solrPassword: {
+                        value: 'todo',
+                    },
+                    mongoDbHosts: {
+                        value: "[reference('mongodb').outputs.dnsNames.value]",
+                    },
+                    mongoDbUser: {
+                        value: "[reference('mongodb').outputs.mongoDBUser.value]",
+                    },
+                    mongoDbPassword: {
+                        value: "[reference('mongodb').outputs.mongoDBPassword.value]",
+                    },
+                    catalogSecretKey: {
+                        value: "[parameters('catalogSecretKey')]",
+                    },
+                    batchAccountName: {
+                        value: "[reference('azureBatch').outputs.batchAccountName.value]",
+                    },
+                    batchEndpoint: {
+                        value: "[reference('azureBatch').outputs.batchEndpoint.value]",
+                    },
+                    batchAccountKey: {
+                        value: "[reference('azureBatch').outputs.batchAccountKey.value]",
+                    },
+                    batchPoolId: {
+                        value: "[reference('azureBatch').outputs.batchPoolId.value]",
+                    },
+                    batchDockerArgs: {
+                        value: '--mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions --mount type=bind,src=/media/primarynfs/variants,dst=/opt/opencga/variants --rm',
+                    },
+                    batchDockerImage: {
+                        value: "[parameters('daemonContainerImage')]",
+                    },
+                    batchMaxConcurrentJobs: {
+                        value: "[reference('azureBatch').outputs.maxNodeCount.value]",
+                    },
+                },
+            },
+        },
+        {
+            type: 'Microsoft.Resources/resourceGroups',
+            apiVersion: '2018-05-01',
+            location: "[parameters('rgLocation')]",
+            name: "[concat(parameters('rgPrefix'),'-hdinsight')]",
+            properties: {},
+        },
+        {
+            resourceGroup: "[concat(parameters('rgPrefix'),'-hdinsight')]",
+            type: 'Microsoft.Resources/deployments',
+            apiVersion: '2018-05-01',
+            name: 'hdinsight',
+            dependsOn: [
+                'hdinsight-storage',
+                "[concat(parameters('rgPrefix'),'-hdinsight')]",
+            ],
+            properties: {
+                mode: 'Incremental',
+                templateLink: {
+                    uri: "[concat(parameters('_artifactsLocation'), '/hdinsight/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    contentVersion: '1.0.0.0',
+                },
+                parameters: {
+                    clusterLoginUserName: {
+                        value: "[parameters('adminUsername')]",
+                    },
+                    clusterLoginPassword: {
+                        value: "[parameters('HDInsightClusterLoginPassword')]",
+                    },
+                    clusterHeadNodeCount: {
+                        value: "[variables('selectedSize').hdInsight.head.nodeCount]",
+                    },
+                    clusterHeadNodeSize: {
+                        value: "[variables('selectedSize').hdInsight.head.nodeSize]",
+                    },
+                    clusterWorkerNodeCount: {
+                        value: "[variables('selectedSize').hdInsight.worker.nodeCount]",
+                    },
+                    clusterWorkerNodeSize: {
+                        value: "[variables('selectedSize').hdInsight.worker.nodeSize]",
+                    },
+                    sshPassword: {
+                        value: "[parameters('HDInsightSshPassword')]",
+                    },
+                    storageAccountName: {
+                        value: "[reference('hdinsight-storage').outputs.storageAccountName.value]",
+                    },
+                    storageAccountKey: {
+                        value: "[reference('hdinsight-storage').outputs.storageAccountKey.value]",
+                    },
+                    vnetId: {
+                        value: "[reference('vnet').outputs.vnetId.value]",
+                    },
+                    subnetId: {
+                        value: "[reference('vnet').outputs.hdinsightSubnetId.value]",
+                    },
+                    storageOption: {
+                        value: "[parameters('HDInsightstorageOption')]",
+                    },
+                },
+            },
+        },
+        {
+            condition: "[variables('selectedSize').avereEnabled]",
+            type: 'Microsoft.Resources/resourceGroups',
+            apiVersion: '2018-05-01',
+            location: "[parameters('rgLocation')]",
+            name: "[concat(parameters('rgPrefix'),'-avere')]",
+            properties: {},
+        },
+        {
+            condition: "[variables('selectedSize').avereEnabled]",
+            type: 'Microsoft.Resources/deployments',
+            resourceGroup: "[concat(parameters('rgPrefix'),'-avere')]",
+            apiVersion: '2018-05-01',
+            name: 'avere',
+            dependsOn: [
+                'vnet',
+                "[concat(parameters('rgPrefix'),'-avere')]",
+            ],
+            properties: {
+                mode: 'Incremental',
+                templateLink: {
+                    uri: "[concat(parameters('_artifactsLocation'), '/avere/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    contentVersion: '1.0.0.0',
+                },
+                parameters: {
+                    avereInstanceType: {
+                        value: "[variables('selectedSize').avere.nodeSize]",
+                    },
+                    avereNodeCount: {
+                        value: "[variables('selectedSize').avere.nodeCount]",
+                    },
+                    avereCacheSizeGB: {
+                        value: "[variables('selectedSize').avere.diskSize]",
+                    },
+                    servicePrincipalTenant: {
+                        value: '[subscription().tenantId]',
+                    },
+                    servicePrincipalAppId: {
+                        value: "[parameters('avereServicePrincipalAppId')]",
+                    },
+                    servicePrincipalPassword: {
+                        value: "[parameters('avereServicePrincipalPassword')]",
+                    },
+                    virtualNetworkName: {
+                        value: "[reference('vnet').outputs.virtualNetworkName.value]",
+                    },
+                    virtualNetworkResourceGroup: {
+                        value: "[parameters('rgPrefix')]",
+                    },
+                    virtualNetworkSubnetName: {
+                        value: "[reference('vnet').outputs.avereSubnetName.value]",
+                    },
+                    virtualNetworkSubnetId: {
+                        value: "[reference('vnet').outputs.avereClusterSubnetId.value]",
+                    },
+                    controllerAdminUsername: {
+                        value: "[parameters('adminUsername')]",
+                    },
+                    controllerSSHKeyData: {
+                        value: "[parameters('sshAdminKeyData')]",
+                    },
+                    adminPassword: {
+                        value: "[parameters('avereAdminPassword')]",
+                    },
+                },
+            },
+        },
+        {
+            comments: 'This deploys a VMSS which hosts the tomcat and IVA services behind a LB with healthchecking, autoscaling and rolling update',
+            type: 'Microsoft.Resources/deployments',
+            resourceGroup: "[parameters('rgPrefix')]",
+            apiVersion: '2017-05-10',
+            name: 'webservers',
+            dependsOn: [
+                'avere',
+                'azurefiles',
+                'vnet',
+                'daemonvm',
+                "[parameters('rgPrefix')]",
+            ],
+            properties: {
+                mode: 'Incremental',
+                templateLink: {
+                    uri: "[concat(parameters('_artifactsLocation'), '/webservers/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    contentVersion: '1.0.0.0',
+                },
+                parameters: {
+                    _artifactsLocation: {
+                        value: "[parameters('_artifactsLocation')]",
+                    },
+                    _artifactsLocationSasToken: {
+                        value: "[parameters('_artifactsLocationSasToken')]",
+                    },
+                    virtualMachineSize: {
+                        value: "[variables('selectedSize').webServers.nodeSize]",
+                    },
+                    minInstanceCount: {
+                        value: "[variables('selectedSize').webServers.minNodeCount]",
+                    },
+                    initialInstanceCount: {
+                        value: "[variables('selectedSize').webServers.minNodeCount]",
+                    },
+                    maxInstanceCount: {
+                        value: "[variables('selectedSize').webServers.maxNodeCount]",
+                    },
+                    virtualNetworkSubnetId: {
+                        value: "[reference('vnet').outputs.hdinsightSubnetId.value]",
+                    },
+                    mountArgs: {
+                        value: "[if(variables('selectedSize').azureFilesEnabled, concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value, ',' , reference('azurefiles').outputs.accountKey.value),concat('avere ', reference('avere').outputs.VSERVER_IPS.value))]",
+                    },
+                    SSHKeyData: {
+                        value: "[parameters('sshAdminKeyData')]",
+                    },
+                    tomcatDockerImage: {
+                        value: "[parameters('tomcatDockerImage')]",
+                    },
+                    ivaDockerImage: {
+                        value: "[parameters('ivaDockerImage')]",
+                    },
+                    namingPrefix: {
+                        value: "[variables('webserverNamingPrefix')]",
+                    },
+                },
+            },
+        },
+        {
+            type: 'Microsoft.Resources/resourceGroups',
+            apiVersion: '2018-05-01',
+            location: "[parameters('rgLocation')]",
+            name: "[concat(parameters('rgPrefix'),'-solr')]",
+            properties: {},
+        },
+        {
+            type: 'Microsoft.Resources/deployments',
+            resourceGroup: "[concat(parameters('rgPrefix'),'-solr')]",
+            apiVersion: '2017-05-10',
+            name: 'solr',
+            dependsOn: [
+                'vnet',
+            ],
+            properties: {
+                mode: 'Incremental',
+                templateLink: {
+                    uri: "[concat(parameters('_artifactsLocation'), '/solr/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    contentVersion: '1.0.0.0',
+                },
+                parameters: {
+                    clusterName: {
+                        value: 'opencga',
+                    },
+                    subnetId: {
+                        value: "[reference('vnet').outputs.solrSubnetId.value]",
+                    },
+                    _artifactsLocation: {
+                        value: "[parameters('_artifactsLocation')]",
+                    },
+                    _artifactsLocationSasToken: {
+                        value: "[parameters('_artifactsLocationSasToken')]",
+                    },
+                    location: {
+                        value: "[parameters('rgLocation')]",
+                    },
+                    adminUsername: {
+                        value: "[parameters('adminUsername')]",
+                    },
+                    sshKeyData: {
+                        value: "[parameters('sshAdminKeyData')]",
+                    },
+                    highAvailability: {
+                        value: "[variables('selectedSize').solr.ha]",
+                    },
+                    solrDiskSizeGB: {
+                        value: "[parameters('solrDiskSizeGB')]",
+                    },
+                    solrVMSize: {
+                        value: "[variables('selectedSize').solr.nodeSize]",
+                    },
+                    zookeeperVMSize: {
+                        value: "[parameters('zookeeperVMSize')]",
+                    },
+                    diskType: {
+                        value: "[parameters('solrDiskType')]",
+                    },
+                },
+            },
+        },
+        {
+            type: 'Microsoft.Resources/resourceGroups',
+            apiVersion: '2018-05-01',
+            location: "[parameters('rgLocation')]",
+            name: "[concat(parameters('rgPrefix'),'-mongodb')]",
+            properties: {},
+        },
+        {
+            type: 'Microsoft.Resources/deployments',
+            resourceGroup: "[concat(parameters('rgPrefix'),'-mongodb')]",
+            apiVersion: '2017-05-10',
+            name: 'mongodb',
+            dependsOn: [
+                'vnet',
+                "[parameters('rgPrefix')]",
+            ],
+            properties: {
+                mode: 'Incremental',
+                templateLink: {
+                    uri: "[concat(parameters('_artifactsLocation'), '/mongodb/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    contentVersion: '1.0.0.0',
+                },
+                parameters: {
+                    subnetId: {
+                        value: "[reference('vnet').outputs.mongoSubnetId.value]",
+                    },
+                    location: {
+                        value: "[parameters('rgLocation')]",
+                    },
+                    vmSize: {
+                        value: "[variables('selectedSize').mongo.nodeSize]",
+                    },
+                    clusterSize: {
+                        value: "[variables('selectedSize').mongo.nodeCount]",
+                    },
+                    certificateEmail: {
+                        value: "[parameters('mongoCertificateEmail')]",
+                    },
+                    adminUsername: {
+                        value: "[parameters('adminUsername')]",
+                    },
+                    adminSSHKeyData: {
+                        value: "[parameters('sshAdminKeyData')]",
+                    },
+                    mongoDBUsername: {
+                        value: "[parameters('adminUsername')]",
+                    },
+                    mongoDBPassword: {
+                        value: "[parameters('mongoDBPassword')]",
+                    },
+                },
+            },
+        },
+    ],
+    outputs: {},
+}
