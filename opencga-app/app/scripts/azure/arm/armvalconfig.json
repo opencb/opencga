@@ -32,7 +32,13 @@
                 "message": "String does not match the pattern of \"^[-\\w\\._\\(\\)]+$\".",
                 "jsonPath": "resources.10.resourceGroup",
                 "reason": "Schema matching ARM function against regex for name"
+            },
+              {
+                "message": "String does not match the pattern of \"^[-\\w\\._\\(\\)]+$\".",
+                "jsonPath": "resources.11.resourceGroup",
+                "reason": "Schema matching ARM function against regex for name"
             }
+           
         ],
         "azurebatch/azuredeploy.json": [
             {
