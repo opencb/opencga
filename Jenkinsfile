@@ -34,8 +34,23 @@ pipeline {
                 timeout(time: 10, unit: 'MINUTES')
             }
             steps {
-                sh 'make -f opencga-app/app/scripts/docker/Makefile'
+                sh 'make -f opencga-app/app/scripts/docker/Makefile DOCKER_ORG="opencb"'
             }
+        }
+
+        stage ('Publish Docker Images') {
+             steps {
+                script {
+                   def images = ["opencga", "opencga-app", "opencga-daemon", "opencga-init", "iva"]
+                   def tag = sh(returnStdout: true, script: "git rev-parse --verify HEAD").trim()
+                   withDockerRegistry([ credentialsId: "wasim-docker-hub", url: "" ]) {
+                       for(int i =0; i < images.size(); i++){
+                           sh "docker tag '${images[i]}' opencb/'${images[i]}':${tag}"
+                           sh "docker push opencb/'${images[i]}':${tag}"
+                       }
+                   }
+                }
+             }
         }
 
         stage ('Quick Test') {
