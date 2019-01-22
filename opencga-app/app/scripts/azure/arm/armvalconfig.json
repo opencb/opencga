@@ -101,18 +101,18 @@
         "webservers/azuredeploy.json": [
             {
                 "message": "Value is not accepted. Valid values: \"Automatic\", \"Manual\".",
-                "jsonPath": "resources.2.properties.upgradePolicy.mode",
+                "jsonPath": "resources.1.properties.upgradePolicy.mode",
                 "reason": "Incorrect schema match for VMSS"
             },
             {
                 "message": ".*",
-                "jsonPath": "resources.3",
+                "jsonPath": "resources.2",
                 "reason": "Incorrect schema match for VMSS"
             },
             {
                 "message": "Value is not accepted. Valid values: \"Microsoft.Resources/deployments\".",
                 "reason": "Incorrect schema",
-                "jsonPath": "resources.1.type"
+                "jsonPath": "resources.2.type"
            
             },
             {
