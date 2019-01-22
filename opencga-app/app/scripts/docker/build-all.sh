@@ -52,9 +52,27 @@ function make_image {
     make --no-print-directory -f "${dockerDir}/Makefile.docker" "${2}"
 }
 
+function version {
+    echo "$@" | awk -F. '{ printf("%d%03d%03d%03d\n", $1,$2,$3,$4); }';
+}
+
 # Script
 set -e
 
+# Check prerequisites
+minimumVersion="18.0.0"
+dockerVersion=$(docker version --format '{{.Server.Version}}')
+if [ "$(version "$dockerVersion")" -lt "$(version "$minimumVersion")" ]; then
+    echo
+    echo "Error:"
+    echo "---"
+    echo "This script requires at least Docker version $minimumVersion"
+    echo "You currently have $dockerVersion installed, please update and try again"
+    echo
+    exit 1
+fi
+
+# Arguments
 envfile=$1
 buildPath=$2
 dockerDir="opencga-app/app/scripts/docker"

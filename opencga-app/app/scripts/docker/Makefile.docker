@@ -84,7 +84,7 @@ build:
 tag:
 	docker tag $(APP_NAME) $(DOCKER_SERVER)$(DOCKER_ORG)/$(APP_NAME):$(TAG)
 
-# Logs in to a docker registry
+# Logs in to a docker registry (Requires docker version >= 18.0.0)
 .PHONY: login
 login:
 	@echo $(DOCKER_PASSWORD) | docker login -u $(DOCKER_USERNAME) --password-stdin $(DOCKER_SERVER)
