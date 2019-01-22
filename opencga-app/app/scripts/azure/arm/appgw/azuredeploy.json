@@ -209,7 +209,7 @@
                                         "id": "[concat(variables('applicationGatewayId'), '/backendAddressPools/bepool')]"
                                     },
                                     "paths":[
-                                        "/opencga/*"
+                                        "/opencga*"
                                     ]
                                 }
                             },

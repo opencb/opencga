@@ -120,9 +120,8 @@
             ""
         ],
         "cloud-init-string": "[replace(replace(replace(string(variables('cloud-init')),'\",\"','\n'),'[\"',''),'\"]','')]",
-        "customData": "[base64(variables('cloud-init-string'))]",
-        "publicDnsName" : "[toLower(substring(concat(variables('namingPrefix'), uniqueString(resourceGroup().id)), 0, 16))]"
-    },
+        "customData": "[base64(variables('cloud-init-string'))]"
+     },
     "resources": [
       
         {
