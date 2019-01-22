@@ -147,6 +147,7 @@
             "apiVersion": "2016-03-30",
             "dependsOn": [
                 "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))]"
+              
             ],
             "properties": {
                 "loadBalancingRules": [
@@ -212,6 +213,7 @@
             "location": "[resourceGroup().location]",
             "apiVersion": "2017-03-30",
             "dependsOn": [
+                "[concat('Microsoft.Network/loadBalancers/', variables('loadBalancerName'))]"
                    ],
             "sku": {
                 "name": "[parameters('virtualMachineSize')]",
