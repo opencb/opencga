@@ -93,9 +93,7 @@
         "vmssName":"opencgavmss",
         "namingPrefix":"webservers",
         "sshKeyPath": "[concat('/home/',parameters('adminUsername'),'/.ssh/authorized_keys')]",
-        "publicIPAddressName": "[concat(variables('namingPrefix'), '-pip')]",
         "loadBalancerName": "[concat(variables('namingPrefix'), '-lb')]",
-        "publicIPAddressID": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName'))]",
         "lbID": "[resourceId('Microsoft.Network/loadBalancers',variables('loadBalancerName'))]",
         "natPoolName": "[concat(variables('namingPrefix'), 'natpool')]",
         "natStartPort": 50000,
@@ -126,19 +124,7 @@
         "publicDnsName" : "[toLower(substring(concat(variables('namingPrefix'), uniqueString(resourceGroup().id)), 0, 16))]"
     },
     "resources": [
-        {
-            "comments": "The Public IP used by the loadbalancer, this will be the IP used to access the rest/web services of OpenCGA",
-            "type": "Microsoft.Network/publicIPAddresses",
-            "name": "[variables('publicIPAddressName')]",
-            "location": "[resourceGroup().location]",
-            "apiVersion": "2017-06-01",
-            "properties": {
-                "publicIPAllocationMethod": "Static",
-                "dnsSettings": {
-                    "domainNameLabel": "[variables('publicDnsName')]"
-                }
-            }
-        },
+      
         {
             "comments": "The LB configured to send traffic to the web nodes in the VMSS. It monitors the health endpoint of OpenCGA removing unhealthy nodes from the LB",
             "type": "Microsoft.Network/loadBalancers",
@@ -146,7 +132,7 @@
             "location": "[resourceGroup().location]",
             "apiVersion": "2016-03-30",
             "dependsOn": [
-                "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))]"
+             
               
             ],
             "properties": {
@@ -403,9 +389,6 @@
         }
     ],
     "outputs": {
-        "lbFQDN": {
-            "type": "string",
-            "value": "[reference(variables('publicIPAddressName')).dnsSettings.fqdn]"
-        }
+       
     }
 }
