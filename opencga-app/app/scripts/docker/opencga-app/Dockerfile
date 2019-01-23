@@ -46,4 +46,4 @@ EXPOSE 8080
 EXPOSE 8443
 
 # Launch Tomcat
-CMD ["/opt/tomcat/bin/catalina.sh", "run"]
+CMD ["/bin/sh", "-c", "/bin/sh -f /opt/opencga/conf/opencga-env.sh && /bin/sh -f /opt/tomcat/bin/catalina.sh run"]
