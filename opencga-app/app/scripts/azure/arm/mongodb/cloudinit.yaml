@@ -1,0 +1,14 @@
+#cloud-config
+
+write_files:
+ -  encoding: gzip
+    content: !!binary |
+        [local-gzipBase64File('postdeploy.sh')]
+    path: /opt/installmongodb.sh
+    permissions: "0744"
+ -  encoding: gzip
+    content: !!binary |
+        [local-gzipBase64File('renew_mongo_cert.sh')]
+    path: /opt/renew_mongo_cert.sh
+    permissions: "0744"
+

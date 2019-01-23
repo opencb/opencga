@@ -159,7 +159,7 @@
 -e OPENCGA_PASS=',parameters('openCgaAdminPassword'),' ',\
 parameters('daemonContainerImage'))]",
 
-        'cloud-init-string': "[local-textFile('cloudinit.yaml')]",
+        'cloud-init-string': "[local-templateFile('cloudinit.yaml', variables('getScriptCmd'))]",
 
         customData: "[base64(variables('cloud-init-string'))]",
     },

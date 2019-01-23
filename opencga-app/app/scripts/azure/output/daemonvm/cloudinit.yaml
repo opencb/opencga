@@ -11,7 +11,6 @@ content: |
     After=docker.service 
     [Service] 
     Restart=always 
-    [concat('ExecStart=',variables('execStart'))] 
     ExecStop=/usr/bin/docker stop opencga-daemon 
 
 package_upgrade: true 
@@ -21,7 +20,5 @@ runcmd:
 - 'apt-get update' 
 - 'curl -fsSL https://get.docker.com/ | sh' 
 - 'curl -fsSL https://get.docker.com/gpg | sudo apt-key add -' 
-- [variables('getScriptCmd')] 
-- [variables('mountCmd')] 
-- [variables('initCmd')] 
+- {{arg1}} 
 - 'systemctl start --no-block opencga' 

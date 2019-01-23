@@ -2,6 +2,7 @@ const JSON5 = require('json5')
 const fs = require('fs')
 const path = require('path')
 const shell = require('shelljs');
+const zlib = require('zlib')
 
 /**
  * Find all files recursively in specific folder with specific extension, e.g:
@@ -33,9 +34,40 @@ function findFilesInDir(startPath) {
     return results;
 }
 
+function processInlineTemplateFileFunc(fileContent, filepath) {
+    const funcName = "[local-templateFile(";
+    let startPos = fileContent.indexOf(funcName)
+
+    if (startPos !== -1) {
+        let endPos = fileContent.indexOf(")]", startPos)
+        console.log(endPos)
+        let variables = fileContent.substr(startPos + funcName.length, endPos - startPos).split(',')
+        let filepathToInline = variables[0].replace(/'/g, '')
+
+
+        let dir = path.dirname(filepath)
+        filepathToInline = path.join(dir, filepathToInline)
+        let filename = path.basename(filepathToInline)
+
+        let inlinefileContent = fs.readFileSync(filepathToInline).toString()
+        inlinefileContent = processInlineGzipFile(inlinefileContent, filepathToInline)
+        inlinefileContent = inlinefileContent.replace(/\r?\n|\r/g, "\\n").replace(/"/g, "\\\"")
+
+        let templatedReplace = `[replace(variables('fileContent${filename}'), '{{arg1}}', variables('arg1Replace'))]",
+        "arg1Replace": "[${variables[1].replace("))", ")").replace("]\"", "")}]",
+        "fileContent${filename}": "${inlinefileContent}",` 
+
+        let temp =  fileContent.replace(fileContent.substr(startPos, endPos), templatedReplace)
+        console.log(temp)
+        return temp
+    }
+    return fileContent
+}
+
+
 function processInlineTextFileFunc(fileContent, filepath) {
     let startPos = fileContent.indexOf("[local-textFile('")
-    
+
     if (startPos !== -1) {
         startPos = startPos + "[local-textFile('".length
         let endPos = fileContent.indexOf("')]", startPos)
@@ -43,17 +75,39 @@ function processInlineTextFileFunc(fileContent, filepath) {
         let fileToInline = fileContent.substr(startPos, endPos - startPos)
 
         let dir = path.dirname(filepath)
+        let filepathToInline = path.join(dir, fileToInline)
+        let inlinefileContent = fs.readFileSync(filepathToInline).toString()
+        inlinefileContent = processInlineGzipFile(inlinefileContent, filepathToInline)
 
-        let inlinefileContent = fs.readFileSync(path.join(dir, fileToInline)).toString()
+        return fileContent.replace(`[local-textFile('${fileToInline}')]`, inlinefileContent.replace(/\r?\n|\r/g, "\\n").replace(/"/g, "\\\""))
+    }
+    return fileContent
+}
 
-        return fileContent.replace(`[local-textFile('${fileToInline}')]`, inlinefileContent.replace(/\r?\n|\r/g, "\\n"))
+function processInlineGzipFile(fileContent, filepath) {
+    let startPos = fileContent.indexOf("[local-gzipBase64File('")
+
+    if (startPos !== -1) {
+        startPos = startPos + "[local-gzipBase64File('".length
+        let endPos = fileContent.indexOf("')]", startPos)
+        console.log(endPos)
+        let fileToInline = fileContent.substr(startPos, endPos - startPos)
+
+        let dir = path.dirname(filepath)
+
+        let inlinefileContent = fs.readFileSync(path.join(dir, fileToInline))
+
+        let gzipData = zlib.gzipSync(inlinefileContent)
+
+        return fileContent.replace(`[local-gzipBase64File('${fileToInline}')]`, gzipData.toString('base64'))
+
     }
     return fileContent
 }
 
 function processInlineJsonFileFunc(fileContent, filepath) {
     let startPos = fileContent.indexOf("[local-jsonFile('")
-    
+
     if (startPos !== -1) {
         startPos = startPos + "[local-jsonFile('".length
         let endPos = fileContent.indexOf("')]", startPos)
@@ -73,7 +127,7 @@ function processInlineJsonFileFunc(fileContent, filepath) {
             console.error(e)
             throw "can't use jsonFile func on non-json file"
         }
-       
+
         if (isObject) {
             return fileContent.replace(`"[local-jsonFile('${fileToInline}')]"`, inlinefileContent)
         }
@@ -94,6 +148,7 @@ files.forEach(function (filepath) {
     if (filepath.includes('.json5')) {
         fileContent = processInlineJsonFileFunc(fileContent, filepath)
         fileContent = processInlineTextFileFunc(fileContent, filepath)
+        // fileContent = processInlineTemplateFileFunc(fileContent, filepath)
         var parsed = JSON5.parse(fileContent)
         fileContent = JSON.stringify(parsed, undefined, 2)
     }
