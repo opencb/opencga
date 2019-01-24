@@ -17,6 +17,7 @@
 package org.opencb.opencga.app.cli.admin.executors;
 
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.analysis.demo.AnalysisDemo;
@@ -112,7 +113,12 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         CatalogManager catalogManager = new CatalogManager(configuration);
         String token = catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
 
-        catalogManager.getProjectManager().exportReleases(commandOptions.project, commandOptions.release, commandOptions.outputDir, token);
+        if (StringUtils.isNotEmpty(commandOptions.project)) {
+            catalogManager.getProjectManager().exportReleases(commandOptions.project, commandOptions.release, commandOptions.outputDir, token);
+        } else if (StringUtils.isNotEmpty(commandOptions.study) && StringUtils.isNotEmpty(commandOptions.inputFile)) {
+            catalogManager.getProjectManager().exportByFileNames(commandOptions.study, Paths.get(commandOptions.outputDir).toFile(),
+                    Paths.get(commandOptions.inputFile).toFile(), token);
+        }
     }
 
     private void importDatabase() throws CatalogException, IOException {
