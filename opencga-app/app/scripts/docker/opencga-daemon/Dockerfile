@@ -5,4 +5,4 @@ VOLUME /opt/opencga/sessions
 
 USER 1001:1001
 
-CMD ["sh", "-c", "echo ${OPENCGA_PASS} | /opt/opencga/bin/opencga-admin.sh catalog daemon --start"]
+CMD [". /opt/opencga/conf/opencga-env.sh && echo ${OPENCGA_PASS} | /opt/opencga/bin/opencga-admin.sh catalog daemon --start"]
