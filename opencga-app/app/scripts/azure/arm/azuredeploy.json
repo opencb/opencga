@@ -233,6 +233,22 @@
             "resourceGroup": "[parameters('rgPrefix')]",
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2018-05-01",
+            "name": "loganalytics",
+            "dependsOn": [
+                "[parameters('rgPrefix')]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/loganalytics/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                }
+            }
+        },
+        {
+            "resourceGroup": "[parameters('rgPrefix')]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
             "name": "appgw",
             "dependsOn": [
                 "vnet"
@@ -249,6 +265,9 @@
                     },
                     "dnsNamePrefix":{
                         "value": "[variables('dnsNamePrefix')]"
+                    },
+                    "LogAnalyticsWorkspaceResourceID": {
+                        "value": "[reference('loganalytics').outputs.logAnalyticsWorkspaceResourceID.value]"
                     }
                 }
             }
@@ -304,6 +323,9 @@
                         "value": [
                             "[parameters('daemonContainerImage')]"
                         ]
+                    },
+                    "LogAnalyticsWorkspaceResourceID": {
+                        "value": "[reference('loganalytics').outputs.logAnalyticsWorkspaceResourceID.value]"
                     }
                 }
             }
@@ -343,6 +365,7 @@
                 "avere",
                 "azurefiles",
                 "vnet",
+                "loganalytics",
                 "[parameters('rgPrefix')]",
                 "azureBatch"
             ],
@@ -430,7 +453,16 @@
                     },
                     "batchMaxConcurrentJobs": {
                         "value": "[reference('azureBatch').outputs.maxNodeCount.value]"
-                    }
+                    },
+                    "LogAnalyticsWorkspaceID": {
+                        "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceID.value]"
+                    },
+                    "LogAnalyticsWorkspaceKey": {
+                        "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceKey.value]"
+                   },
+                   "LogAnalyticsWorkspaceResourceID":{
+                        "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceResourceID.value]"
+                   } 
                 }
             }
         },
@@ -480,7 +512,16 @@
                     },
                     "storageOption": {
                         "value": "[parameters('HDInsightstorageOption')]"
-                    }
+                    },
+                    "LogAnalyticsWorkspaceResourceID": {
+                        "value": "[reference('loganalytics').outputs.logAnalyticsWorkspaceResourceID.value]"
+                    },
+                    "LogAnalyticsWorkspaceID": {
+                        "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceID.value]"
+                    },
+                    "LogAnalyticsWorkspaceKey": {
+                        "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceKey.value]"
+                    } 
                 }
             }
         },
@@ -551,6 +592,7 @@
             "dependsOn": [
                 "avere",
                 "azurefiles",
+                "loganalytics",
                 "vnet",
                 "daemonvm",
                 "[parameters('rgPrefix')]"
@@ -571,8 +613,8 @@
                     "virtualNetworkSubnetId": {
                         "value": "[reference('vnet').outputs.hdinsightSubnetId.value]"
                     },
-                   "appgwBackendAddressPoolId": {
-                    "value": "[reference('appgw').outputs.appgwBackendAddressPoolId.value]"
+                    "appgwBackendAddressPoolId": {
+                        "value": "[reference('appgw').outputs.appgwBackendAddressPoolId.value]"
                     },
                     "mountArgs": {
                         "value": "[if(equals(parameters('nfsStorageOption'), 'AzureFiles'), concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value, ',' , reference('azurefiles').outputs.accountKey.value),concat('avere ', reference('avere').outputs.VSERVER_IPS.value))]"
@@ -585,7 +627,16 @@
                     },
                     "ivaContainerImage": {
                         "value": "[parameters('ivaContainerImage')]"
-                    }
+                    },
+                    "LogAnalyticsWorkspaceID": {
+                        "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceID.value]"
+                    },
+                    "LogAnalyticsWorkspaceKey": {
+                        "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceKey.value]"
+                   },
+                   "LogAnalyticsWorkspaceResourceID":{
+                        "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceResourceID.value]"
+                   }               
                 }
             }
         },
@@ -646,7 +697,17 @@
                     },
                     "diskType": {
                         "value": "[parameters('solrDiskType')]"
-                    }
+                    },
+                    "LogAnalyticsWorkspaceID": {
+                        "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceID.value]"
+                    },
+                    "LogAnalyticsWorkspaceKey": {
+                        "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceKey.value]"
+                    },
+                   "LogAnalyticsWorkspaceResourceID":{
+                        "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceResourceID.value]"
+                   } 
+          
                 }
             }
         },
@@ -699,7 +760,10 @@
                     },
                     "mongoDBPassword": {
                         "value": "[parameters('mongoDBPassword')]"
-                    }
+                    },
+                   "LogAnalyticsWorkspaceResourceID":{
+                        "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceResourceID.value]"
+                   } 
                 }
             }
         }

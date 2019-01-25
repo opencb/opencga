@@ -63,12 +63,18 @@
         }, 
         "dockerImagesToCache": {
             "type": "array"
+        },
+        "LogAnalyticsWorkspaceResourceID": {
+            "type": "string",
+            "metadata": {
+                "description": "Log Analytics Workspace Resource ID"
+            }
         }
     },
     "variables": {
         "storageAccountName": "[concat('batch', uniqueString(resourceGroup().id))]",
         "batchAccountName": "[concat('batch', uniqueString(resourceGroup().id))]",
-        "batchEndpoint": "[concat('https://', variables('batchAccountName'), '.' , parameters('location'), '.batch.azure.com')]",
+        "batchEndpoint": "[concat('https://', variables('batchAccountName'), '.' , parameters('location'), '.batch.azure.com')]"
     },
     "resources": [
         {
@@ -99,10 +105,45 @@
                     "storageAccountId": "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
                 }
             },
+            "resources": [
+                {
+                    "type": "providers/diagnosticSettings",
+                    "name": "[concat('Microsoft.Insights/', variables('batchAccountName'))]",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Batch/batchAccounts', variables('batchAccountName'))]"
+                    ],
+                    "apiVersion": "2017-05-01-preview",
+                    "properties": {
+                      "name": "[variables('batchAccountName')]",
+                      "workspaceId": "[parameters('LogAnalyticsWorkspaceResourceID')]",
+                      "logs": [ 
+                        {
+                          "category": "ServiceLog",
+                          "enabled": true,
+                          "retentionPolicy": {
+                            "days": 0,
+                            "enabled": false
+                          }
+                        }
+                      ],
+                      "metrics": [
+                        {
+                          "category": "AllMetrics",
+                          "enabled": true,
+                          "retentionPolicy": {
+                            "enabled": false,
+                            "days": 0
+                          }
+                        }
+                      ]
+                    }
+                  }
+            ],
             "dependsOn": [
                 "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
             ]
         },
+        
         {
             "comments": "This creates a pool of VMs in Azure Batch which support container workloads. It runs a startup task to mount the shared storage before accepting tasks.",
             "type": "Microsoft.Batch/batchAccounts/pools",

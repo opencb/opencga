@@ -87,6 +87,24 @@
             "metadata": {
                 "description": "Arguments passed to the mount.py script."
             }
+        },
+        "LogAnalyticsWorkspaceID": {
+            "type": "string",
+            "metadata": {
+                "description": "Log Analytics Workspace ID"
+            }
+        },
+        "logAnalyticsWorkSpaceKey":{
+            "type": "string",
+            "metadata": {
+                "description": "Log Analytics Workspace Key"
+            }
+        },
+        "LogAnalyticsWorkspaceResourceID": {
+            "type": "string",
+            "metadata": {
+                "description": "Log Analytics Workspace Resource ID"
+            }
         }
     },
     "variables": {
@@ -106,6 +124,8 @@
             "sku": "18.04-LTS",
             "version": "latest"
         },
+        "logAnalyticsAgent": "[concat('docker run --privileged -d -v /var/run/docker.sock:/var/run/docker.sock -v /var/log:/var/log -v /var/lib/docker/containers:/var/lib/docker/containers -e WSID=',parameters('logAnalyticsWorkSpaceID'),' -e KEY=',parameters('logAnalyticsWorkSpaceKey'),' -p 127.0.0.1:25225:25225 -p 127.0.0.1:25224:25224/udp --name=omsagent -h=`hostname` --restart=always microsoft/oms')]",
+    
         "_comment": "The cloud init below is used to install docker then run the Avere mounting scripts located in ./arm/avere/mount.py",
         "cloud-init": [
             "#cloud-config",
@@ -114,6 +134,7 @@
             "runcmd:",
             "- curl -fsSL https://get.docker.com/ | sh",
             "- curl -fsSL https://get.docker.com/gpg | sudo apt-key add -",
+            "[concat('- ', variables('logAnalyticsAgent'))]",
             "[concat('- curl -fsSL ', parameters('_artifactsLocation'), '/avere/mount.py', parameters('_artifactsLocationSasToken'), ' | python3 - ', parameters('mountArgs'))]",
             "[concat('- docker run -d -p 8080:8080 -p 8443:8443 --restart=always --mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions ', parameters('openCGAContainerImage'))]",
             "[concat('- docker run -d -p 80:80 -p 443:443 --restart=always --mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions ', parameters('ivaContainerImage'))]",
@@ -227,7 +248,49 @@
                         }
                     }
                 ]
-            }
+            },
+            "resources":[
+                {
+                    "type": "providers/diagnosticSettings",
+                    "name": "[concat('Microsoft.Insights/', variables('loadBalancerName'))]",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Network/loadBalancers',variables('loadBalancerName'))]"
+                    ],
+                    "apiVersion": "2017-05-01-preview",
+                    "properties": {
+                      "name": "[variables('loadBalancerName')]",
+                      "workspaceId": "[parameters('LogAnalyticsWorkspaceResourceID')]",
+                      "logs": [ 
+                        {
+                          "category": "LoadBalancerAlertEvent",
+                          "enabled": true,
+                          "retentionPolicy": {
+                            "days": 0,
+                            "enabled": false
+                          }
+                        },
+                        {
+                            "category": "LoadBalancerProbeHealthStatus",
+                            "enabled": true,
+                            "retentionPolicy": {
+                              "days": 0,
+                              "enabled": false
+                            }
+                          }
+                      ],
+                      "metrics": [
+                        {
+                          "category": "AllMetrics",
+                          "enabled": true,
+                          "retentionPolicy": {
+                            "enabled": false,
+                            "days": 0
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
         },
         {
             "comments": "This VMSS creates machines used to host the web components of OpenCGA, they are configured using the CloudInit found in the variables section of this ARM template",
@@ -274,7 +337,7 @@
                             }
                         },
                         "customData": "[variables('customData')]"
-                    },                    
+                    },           
                     "networkProfile": {
                         "healthProbe": {
                             "id": "[concat(variables('lbId'), '/probes/tomcatHttpProbe')]"
