@@ -101,7 +101,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         }
 
         public ClinicalStatus() {
-            this(WAIT, "");
+            this(READY_FOR_INTERPRETATION, "");
         }
 
         public static boolean isValid(String status) {

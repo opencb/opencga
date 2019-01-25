@@ -148,6 +148,25 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             throw new CatalogException("Unrecognised due date. Accepted format is: yyyyMMddHHmmss");
         }
 
+        if (clinicalAnalysis.getFamily() != null && clinicalAnalysis.getProband() != null) {
+            if (StringUtils.isEmpty(clinicalAnalysis.getProband().getId())) {
+                throw new CatalogException("Missing proband id");
+            }
+            // Validate the proband has also been added within the family
+            if (clinicalAnalysis.getFamily().getMembers() == null) {
+                throw new CatalogException("Missing members information in the family");
+            }
+            boolean found = false;
+            for (Individual member : clinicalAnalysis.getFamily().getMembers()) {
+                if (StringUtils.isNotEmpty(member.getId()) && clinicalAnalysis.getProband().getId().equals(member.getId())) {
+                    found = true;
+                }
+            }
+            if (!found) {
+                throw new CatalogException("Missing proband in the family");
+            }
+        }
+
         clinicalAnalysis.setProband(getFullValidatedMember(clinicalAnalysis.getProband(), study, sessionId));
         clinicalAnalysis.setFamily(getFullValidatedFamily(clinicalAnalysis.getFamily(), study, sessionId));
         validateClinicalAnalysisFields(clinicalAnalysis, study, sessionId);
@@ -274,7 +293,15 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
             finalFamily.setMembers(finalMembers);
         } else {
-            finalFamily.setMembers(Collections.emptyList());
+            if (ListUtils.isNotEmpty(finalFamily.getMembers())) {
+                Query query = new Query()
+                        .append(IndividualDBAdaptor.QueryParams.UID.key(), finalFamily.getMembers().stream()
+                                .map(Individual::getUid).collect(Collectors.toList()))
+                        .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+                QueryResult<Individual> individuals =
+                        individualDBAdaptor.get(query, QueryOptions.empty(), catalogManager.getUserManager().getUserId(sessionId));
+                finalFamily.setMembers(individuals.getResult());
+            }
         }
 
         return finalFamily;
@@ -304,7 +331,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             finalMember = individualQueryResult.first();
         } else {
             finalMember = member;
-            if (ListUtils.isNotEmpty(samples) && samples.get(0).getUid() <= 0) {
+            if (ListUtils.isNotEmpty(samples) && StringUtils.isEmpty(samples.get(0).getUuid())) {
                 // We don't have the full sample information...
                 QueryResult<Individual> individualQueryResult = catalogManager.getIndividualManager().get(study.getFqn(),
                         finalMember.getId(), new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.SAMPLES.key()),
