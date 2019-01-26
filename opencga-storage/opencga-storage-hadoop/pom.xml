@@ -211,7 +211,7 @@
             <properties>
                 <opencga-storage-hadoop-deps.classifier>hdp-2.6.0</opencga-storage-hadoop-deps.classifier>
                 <hdp.dependencies.version>2.6.0.3-8</hdp.dependencies.version>
-
+                
                 <hadoop.version>2.7.3.${hdp.dependencies.version}</hadoop.version>
                 <hbase.version>1.1.2.${hdp.dependencies.version}</hbase.version>
                 <phoenix.version>4.7.0.${hdp.dependencies.version}</phoenix.version>
@@ -238,8 +238,47 @@
             <properties>
                 <opencga-storage-hadoop-deps.classifier>hdp-2.6.5</opencga-storage-hadoop-deps.classifier>
                 <hdp.dependencies.version>2.6.5.90-1</hdp.dependencies.version>
-
+    
                 <hadoop.version>2.7.3.${hdp.dependencies.version}</hadoop.version>
+                <hbase.version>1.1.2.${hdp.dependencies.version}</hbase.version>
+                <phoenix.version>4.7.0.${hdp.dependencies.version}</phoenix.version>
+            </properties>
+            <repositories>
+                <repository>
+                    <id>hortonworks-releases</id>
+                    <url>http://repo.hortonworks.com/content/repositories/releases/</url>
+                </repository>
+                <repository>
+                    <id>hortonworks-public</id>
+                    <url>http://repo.hortonworks.com/content/groups/public</url>
+                </repository>
+            </repositories>
+        </profile>
+
+        <!--
+        
+        hortonworks repo does not have versions of hadoop-common or hadoop-azure with Gen2 datalake support. 
+        
+        The jar files required are in ./opencga-app/app/scripts/azure/libs and added them to local maven repository
+
+        This profile specifies these precise versions - but hadoop-common.version will need specifying in the other profiles.
+
+        Alternatively maven central has later valid  version of hadoop-common, but not the required version of hadoop-azure.
+        -->
+        <profile>
+            <id>hdp-2.6.5-azure</id>
+            <activation>
+                <property>
+                     <name>opencga-storage-hadoop-deps.classifier</name>
+                    <value>hdp-2.6.5</value>
+                </property>
+            </activation>
+            <properties>
+                <opencga-storage-hadoop-deps.classifier>hdp-2.6.5</opencga-storage-hadoop-deps.classifier>
+                <hdp.dependencies.version>2.6.5.90-1</hdp.dependencies.version>
+                <azure.dependencies.version>2.7.3.2.6.5.3005-27</azure.dependencies.version>
+                <hadoop.version>2.7.3.${hdp.dependencies.version}</hadoop.version>
+                <hadoop-common.version>${azure.dependencies.version}</hadoop-common.version>
                 <hbase.version>1.1.2.${hdp.dependencies.version}</hbase.version>
                 <phoenix.version>4.7.0.${hdp.dependencies.version}</phoenix.version>
             </properties>

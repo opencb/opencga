@@ -89,28 +89,31 @@
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
-            <version>${hadoop.version}</version>
+            <version>${hadoop-common.version}</version>
             <optional>true</optional>
         </dependency>
+
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-client</artifactId>
             <version>${hadoop.version}</version>
             <optional>true</optional>
         </dependency>
+
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-azure</artifactId>
-            <version>${hadoop.version}</version>
+            <version>${azure.dependencies.version}</version>
             <optional>true</optional>
         </dependency>
-        <dependency>
+      <!-- 
+       <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-azure-datalake</artifactId>
             <version>${hadoop.version}</version>
             <optional>true</optional>
         </dependency>
-
+        -->
         <!--HBase dependencies-->
         <dependency>
             <groupId>org.apache.hbase</groupId>

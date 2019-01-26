@@ -107,6 +107,8 @@ echo
 ENVFILE="${envfile}" make --no-print-directory -f "${dockerDir}/Makefile.docker" "metadata"
 
 # Build OpenCGA
+# This needs to also run mvn install:install-file -Dfile ./opencga-app/app/scripts/azure/libs/hadoop-azure-2.7.3.2.6.5.3005-27.jar -DgroupId=org.apache.hadoop -DartifactId=hadoop-azure -Dversion=2.7.3.2.6.5.3005-27 -Dpackaging=jar 
+# Also for hadoop-common I can't add and  test this as have remote docker
 if [ ! -d "${buildPath}" ]; then
     echo "> No existing OpenCGA build, building from source..."
     docker run -it --rm \
@@ -114,7 +116,7 @@ if [ ! -d "${buildPath}" ]; then
     -v "$HOME/.m2":/root/.m2 \
     -w /src maven:3.6-jdk-8 \
     mvn -T 1C install \
-    -DskipTests -Dstorage-hadoop -Popencga-storage-hadoop-deps -Phdp-2.6.0 -DOPENCGA.STORAGE.DEFAULT_ENGINE=hadoop -Dopencga.war.name=opencga
+    -DskipTests -Dstorage-hadoop -Popencga-storage-hadoop-deps -Phdp-2.6.5-azure -DOPENCGA.STORAGE.DEFAULT_ENGINE=hadoop -Dopencga.war.name=opencga
     echo "> Finished OpenCGA build"
 else
     echo "> Using existing OpenCGA build from $PWD/build"

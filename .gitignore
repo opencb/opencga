@@ -96,3 +96,7 @@ venv
 
 # Java annotation processor (APT)
 .factorypath
+
+# Exclusions
+!hadoop-common-2.7.3.2.6.5.3005-27.jar
+!hadoop-azure-2.7.3.2.6.5.3005-27.jar
