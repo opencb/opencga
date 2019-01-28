@@ -41,7 +41,7 @@ python3 /tmp/override-js.py \
 # Copies the config files from our local directory into a
 # persistent volume to be shared by the other containers.
 echo "Initialising volume"
-mkdir -p /opt/volume/conf /opt/volume/sessions
+mkdir -p /opt/volume/conf /opt/volume/sessions /opt/volume/variants
 cp -r /opt/opencga/conf/* /opt/volume/conf
 
 echo "Installing catalog"
