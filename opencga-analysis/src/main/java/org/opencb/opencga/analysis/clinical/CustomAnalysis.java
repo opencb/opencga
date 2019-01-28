@@ -1,5 +1,6 @@
 package org.opencb.opencga.analysis.clinical;
 
+import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.clinical.interpretation.*;
 import org.opencb.biodata.models.clinical.utils.VariantToReportedVariantConverter;
@@ -15,7 +16,6 @@ import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.analysis.AnalysisResult;
 import org.opencb.opencga.analysis.OpenCgaAnalysis;
 import org.opencb.opencga.analysis.exceptions.AnalysisException;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
@@ -57,13 +57,16 @@ public class CustomAnalysis extends OpenCgaAnalysis<Interpretation> {
         super(opencgaHome, studyStr, token);
 
         this.query = query;
+        this.options = (options != null) ? options : new ObjectMap();
 
         this.cellBaseClient = new CellBaseClient(storageConfiguration.getCellbase().toClientConfiguration());
         this.alignmentStorageManager = new AlignmentStorageManager(catalogManager, StorageEngineFactory.get(storageConfiguration));
     }
 
     @Override
-    public AnalysisResult<Interpretation> execute() throws Exception {
+    public InterpretationResult execute() throws Exception {
+        StopWatch watcher = StopWatch.createStarted();
+
         String probandSampleId = null;
         Phenotype phenotype = null;
         ClinicalProperty.ModeOfInheritance moi = null;
@@ -152,23 +155,18 @@ public class CustomAnalysis extends OpenCgaAnalysis<Interpretation> {
             }
         }
 
-        QueryOptions queryOptions = new QueryOptions();
-        queryOptions.add(QueryOptions.LIMIT, 10);
+        QueryOptions queryOptions = new QueryOptions(options);
+//        queryOptions.add(QueryOptions.LIMIT, 20);
 
         // Execute query
         VariantQueryResult<Variant> variantQueryResult = variantStorageManager.get(query, queryOptions, token);
 
-
-        List<DiseasePanel> biodataDiseasePanels =
-                diseasePanels.stream().map(Panel::getDiseasePanel).collect(Collectors.toList());
-
         // Create reported variants and events
+        List<DiseasePanel> biodataDiseasePanels = diseasePanels.stream().map(Panel::getDiseasePanel).collect(Collectors.toList());
         List<ReportedVariant> reportedVariants = null;
-
         if (ListUtils.isNotEmpty(variantQueryResult.getResult())) {
             VariantToReportedVariantConverter converter = new VariantToReportedVariantConverter();
-            reportedVariants = converter.convert(variantQueryResult.getResult(), biodataDiseasePanels,
-                    phenotype, moi, null);
+            reportedVariants = converter.convert(variantQueryResult.getResult(), biodataDiseasePanels, phenotype, moi, null);
         }
 
         // Low coverage support
@@ -235,7 +233,15 @@ public class CustomAnalysis extends OpenCgaAnalysis<Interpretation> {
         }
 
         // Return interpretation result
-        return new AnalysisResult<>(interpretation);
+        return new InterpretationResult(
+                interpretation,
+                Math.toIntExact(watcher.getTime()),
+                new HashMap<>(),
+                variantQueryResult.getDbTime(),
+                variantQueryResult.getNumResults(),
+                variantQueryResult.getNumTotalResults(),
+                variantQueryResult.getWarningMsg(),
+                variantQueryResult.getErrorMsg());
     }
 
     /**

@@ -13,6 +13,7 @@ import org.opencb.biodata.models.commons.Software;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.analysis.AnalysisResult;
 import org.opencb.opencga.analysis.clinical.CustomAnalysis;
+import org.opencb.opencga.analysis.clinical.InterpretationResult;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -40,6 +41,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
+import static org.opencb.opencga.server.rest.analysis.VariantAnalysisWSService.DEPRECATED_VARIANT_QUERY_PARAM;
 import static org.opencb.opencga.storage.core.clinical.ReportedVariantQueryParam.*;
 import static org.opencb.opencga.storage.core.manager.variant.VariantStorageManager.getVariantQuery;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
@@ -826,31 +828,48 @@ public class InterpretationWSService extends AnalysisWSService {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             Query query = getVariantQuery(queryOptions);
-            ObjectMap customAnalysisOptions = getCustomAnalysisOptions(queryOptions);
+            ObjectMap customAnalysisOptions = new ObjectMap(queryOptions);
+            if (queryOptions.containsKey("includeLowCoverage")) {
+                customAnalysisOptions.put("includeLowCoverage", queryOptions.getBoolean("includeLowCoverage"));
+            }
+            if (queryOptions.containsKey("maxLowCoverage")) {
+                customAnalysisOptions.put("maxLowCoverage", queryOptions.getInt("maxLowCoverage"));
+            }
 
             String dataDir = configuration.getDataDir();
             String opencgaHome = Paths.get(dataDir).getParent().toString();
             System.out.println("opencgaHome = " + opencgaHome);
 
             CustomAnalysis customAnalysis = new CustomAnalysis(query, studyStr, opencgaHome, customAnalysisOptions, sessionId);
-            AnalysisResult<org.opencb.biodata.models.clinical.interpretation.Interpretation> analysisResult;
-            analysisResult = customAnalysis.execute();
-
-            return createOkResponse(analysisResult);
+            InterpretationResult interpretationResult = customAnalysis.execute();
+            return createAnalysisOkResponse(interpretationResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
-    private ObjectMap getCustomAnalysisOptions(QueryOptions queryOptions) {
-        ObjectMap options = new ObjectMap();
-        if (queryOptions.containsKey("includeLowCoverage")) {
-            options.put("includeLowCoverage", queryOptions.getBoolean("includeLowCoverage"));
+    // FIXME This method must be deleted once deprecated params are not supported any more
+    private Query getVariantQuery(QueryOptions queryOptions) {
+        Query query = VariantStorageManager.getVariantQuery(queryOptions);
+        queryOptions.forEach((key, value) -> {
+            org.opencb.commons.datastore.core.QueryParam newKey = DEPRECATED_VARIANT_QUERY_PARAM.get(key);
+            if (newKey != null) {
+                if (!VariantQueryUtils.isValidParam(query, newKey)) {
+                    query.put(newKey.key(), value);
+                }
+            }
+        });
+
+        String chromosome = queryOptions.getString("chromosome");
+        if (StringUtils.isNotEmpty(chromosome)) {
+            String region = query.getString(REGION.key());
+            if (StringUtils.isEmpty(region)) {
+                query.put(REGION.key(), chromosome);
+            } else {
+                query.put(REGION.key(), region + VariantQueryUtils.OR + chromosome);
+            }
         }
-        if (queryOptions.containsKey("maxLowCoverage")) {
-            options.put("maxLowCoverage", queryOptions.getInt("maxLowCoverage"));
-        }
-        return options;
+        return query;
     }
 
     private static class ClinicalInterpretationParameters {
@@ -880,7 +899,7 @@ public class InterpretationWSService extends AnalysisWSService {
         private Query getVariantQuery(QueryOptions queryOptions) {
             Query query = VariantStorageManager.getVariantQuery(queryOptions);
             queryOptions.forEach((key, value) -> {
-                org.opencb.commons.datastore.core.QueryParam newKey = VariantAnalysisWSService.DEPRECATED_VARIANT_QUERY_PARAM.get(key);
+                org.opencb.commons.datastore.core.QueryParam newKey = DEPRECATED_VARIANT_QUERY_PARAM.get(key);
                 if (newKey != null) {
                     if (!VariantQueryUtils.isValidParam(query, newKey)) {
                         query.put(newKey.key(), value);
