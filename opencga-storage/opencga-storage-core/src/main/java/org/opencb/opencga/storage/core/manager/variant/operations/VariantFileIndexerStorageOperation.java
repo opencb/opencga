@@ -158,7 +158,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         }
 
         // Update Catalog from the study configuration BEFORE executing the index and fetching files from Catalog
-        updateCatalogFromStudyConfiguration(sessionId, studyFQNByInputFileId, dataStore);
+        updateCatalogFromStorageMetadata(sessionId, studyFQNByInputFileId, dataStore);
 
         List<File> inputFiles = new ArrayList<>();
 //        for (Long fileIdLong : fileIds) {
@@ -307,7 +307,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             if (calculateStats && exception != null) {
                 updateDefaultCohortStatus(study, prevDefaultCohortStatus, sessionId);
             }
-            updateCatalogFromStudyConfiguration(sessionId, study.getFqn(), dataStore);
+            updateCatalogFromStorageMetadata(sessionId, study.getFqn(), dataStore);
         }
 
         if (exception == null) {

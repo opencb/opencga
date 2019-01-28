@@ -153,7 +153,7 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
     /**
      * Give the name of the action that the job is doing.
      *
-     * Used to create the jobName and as {@link TaskMetadata#operationName}
+     * Used to create the jobName and as {@link TaskMetadata#getName()}
      *
      * e.g. : "Delete", "Load", "Annotate", ...
      *

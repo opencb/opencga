@@ -71,7 +71,7 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor, Samp
 
     @Override
     public Map<String, Integer> getStudies(QueryOptions options) {
-        return STUDY_CONFIGURATIONS_BY_NAME.values().stream().collect(Collectors.toMap(studyConfiguration -> studyConfiguration.getName(), studyConfiguration1 -> studyConfiguration1.getId()));
+        return STUDY_METADATA_MAP.values().stream().collect(Collectors.toMap(StudyMetadata::getName, StudyMetadata::getId));
     }
 
     @Override

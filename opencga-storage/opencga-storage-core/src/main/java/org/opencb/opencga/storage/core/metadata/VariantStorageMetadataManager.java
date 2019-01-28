@@ -563,8 +563,13 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         }
     }
 
-    public FileMetadata getFileMetadata(int studyId, int fileId) {
-        return fileDBAdaptor.getFileMetadata(studyId, fileId, null);
+    public FileMetadata getFileMetadata(int studyId, Object fileObj) {
+        Integer fileId = getFileId(studyId, fileObj, false, false);
+        if (fileId == null) {
+            return null;
+        } else {
+            return fileDBAdaptor.getFileMetadata(studyId, fileId, null);
+        }
     }
 
     public void updateFileMetadata(int studyId, FileMetadata file) {
@@ -583,7 +588,11 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     public String getFileName(int studyId, int fileId) {
-        return getFileMetadata(studyId, fileId).getName();
+        FileMetadata file = getFileMetadata(studyId, fileId);
+        if (file == null) {
+            throw VariantQueryException.fileNotFound(fileId, studyId);
+        }
+        return file.getName();
     }
 
     public Integer getFileId(int studyId, Object fileObj) {
@@ -591,6 +600,10 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     public Integer getFileId(int studyId, Object fileObj, boolean onlyIndexed) {
+        return getFileId(studyId, fileObj, onlyIndexed, true);
+    }
+
+    private Integer getFileId(int studyId, Object fileObj, boolean onlyIndexed, boolean validate) {
         if (fileObj instanceof URI) {
             fileObj = UriUtils.fileName(((URI) fileObj));
         } else if (fileObj instanceof Path) {
@@ -598,7 +611,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         }
         Integer fileId = parseResourceId(studyId, fileObj,
                 o -> getFileId(studyId, o),
-                o -> fileIdExists(studyId, o, onlyIndexed));
+                validate ? o -> fileIdExists(studyId, o, onlyIndexed) : o -> true);
 
         if (fileId != null && onlyIndexed) {
             if (!getFileMetadata(studyId, fileId).isIndexed()) {
@@ -772,7 +785,11 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
     public CohortMetadata getCohortMetadata(int studyId, Object cohort) {
         Integer cohortId = getCohortId(studyId, cohort, false);
-        return cohortDBAdaptor.getCohortMetadata(studyId, cohortId, null);
+        if (cohortId == null) {
+            return null;
+        } else {
+            return cohortDBAdaptor.getCohortMetadata(studyId, cohortId, null);
+        }
     }
 
     public void updateCohortMetadata(int studyId, CohortMetadata cohort) {
@@ -827,6 +844,10 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return () -> Iterators.filter(cohortIterator(studyId), CohortMetadata::isStatsReady);
     }
 
+    public Iterable<CohortMetadata> getInvalidCohorts(int studyId) {
+        return () -> Iterators.filter(cohortIterator(studyId), CohortMetadata::isInvalid);
+    }
+
     public TaskMetadata getTask(int studyId, int taskId) {
         return taskDBAdaptor.getTask(studyId, taskId, null);
     }
@@ -855,6 +876,10 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
     public Iterator<TaskMetadata> taskIterator(int studyId, boolean reversed) {
         return taskDBAdaptor.taskIterator(studyId, reversed);
+    }
+
+    public Iterable<TaskMetadata> getRunningTasks(int studyId) {
+        return () -> Iterators.filter(taskIterator(studyId), t -> t.currentStatus().equals(TaskMetadata.Status.RUNNING));
     }
 
     public void updateTask(int studyId, TaskMetadata task) {

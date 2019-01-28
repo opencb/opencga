@@ -26,9 +26,10 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.io.avro.VariantAvroWriter;
@@ -40,7 +41,7 @@ import javax.annotation.Nullable;
 import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.zip.GZIPOutputStream;
 
@@ -252,10 +253,12 @@ public class VariantWriterFactory {
 
             case STATS_GZ:
             case STATS:
-                StudyConfiguration sc = getStudyConfiguration(query, true);
-                List<String> cohorts = new ArrayList<>(sc.getCohortIds().keySet());
-
-                exporter = new VariantStatsTsvExporter(outputStream, sc.getName(), cohorts);
+                StudyMetadata sm = getStudyMetadata(query, true);
+                List<String> cohorts = new LinkedList<>();
+                for (CohortMetadata cohort : variantStorageMetadataManager.getCalculatedCohorts(sm.getId())) {
+                    cohorts.add(cohort.getName());
+                }
+                exporter = new VariantStatsTsvExporter(outputStream, sm.getName(), cohorts);
                 break;
 
             case CELLBASE_GZ:
@@ -278,7 +281,7 @@ public class VariantWriterFactory {
         return StringUtils.isEmpty(output);
     }
 
-    protected StudyConfiguration getStudyConfiguration(Query query, boolean singleStudy) {
+    protected StudyMetadata getStudyMetadata(Query query, boolean singleStudy) {
         List<Integer> studyIds = VariantQueryUtils.getIncludeStudies(query, QueryOptions.empty(), variantStorageMetadataManager);
 
         if (studyIds.isEmpty()) {
@@ -292,7 +295,7 @@ public class VariantWriterFactory {
                 throw new IllegalArgumentException();
             }
         }
-        return variantStorageMetadataManager.getStudyConfiguration(studyIds.get(0), null).first();
+        return variantStorageMetadataManager.getStudyMetadata(studyIds.get(0));
     }
 
     /**
