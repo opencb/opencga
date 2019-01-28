@@ -2,24 +2,6 @@
     "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
-        "_artifactsLocation": {
-            "type": "string",
-            "metadata": {
-                "description": ""
-            }
-        },
-        "_artifactsLocationSasToken": {
-            "type": "string",
-            "metadata": {
-                "description": ""
-            }
-        },
-        "mountArgs": {
-            "type": "string",
-            "metadata": {
-                "description": "Arguments passed to the mount.py script."
-            }
-        },
         "virtualNetworkSubnetId": {
             "type": "string",
             "metadata": {
@@ -63,6 +45,12 @@
         }, 
         "dockerImagesToCache": {
             "type": "array"
+        },
+        "storageAccountId": {
+            "type": "string"
+        },
+        "startupCmd": {
+            "type": "string"
         }
     },
     "variables": {
@@ -81,12 +69,9 @@
             },
             "properties": {
                 "autoStorage": {
-                    "storageAccountId": "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+                    "storageAccountId": "[parameters('storageAccountId')]"
                 }
-            },
-            "dependsOn": [
-                "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
-            ]
+            }
         },
         {
             "comments": "This creates a pool of VMs in Azure Batch which support container workloads. It runs a startup task to mount the shared storage before accepting tasks.",
@@ -104,7 +89,7 @@
                     "nodeFillType": "Spread"
                 },
                 "startTask": {
-                    "commandLine": "[concat('/bin/bash -c \"curl -fsSL ', parameters('_artifactsLocation'), '/avere/mount.py', parameters('_artifactsLocationSasToken'), ' | python3 - ', parameters('mountArgs'), '\"')]",
+                    "commandLine": "[parameters('startupCmd')]",
                     "userIdentity": {
                         "autoUser": {
                             "elevationLevel": "Admin",

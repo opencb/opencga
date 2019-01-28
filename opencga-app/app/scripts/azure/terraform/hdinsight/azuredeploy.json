@@ -1,0 +1,271 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2014-04-01-preview/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "clusterName": {
+            "type": "string",
+            "metadata": {
+                "description": "The name of the HDInsight cluster to create."
+            }
+        },
+        "clusterLoginUserName": {
+            "type": "string",
+            "defaultValue": "admin",
+            "metadata": {
+                "description": "These credentials can be used to submit jobs to the cluster and to log into cluster dashboards."
+            }
+        },
+        "clusterLoginPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
+            }
+        },
+       
+        "clusterVersion": {
+            "type": "string",
+            "defaultValue": "3.6",
+            "metadata": {
+                "description": "HDInsight cluster version."
+            }
+        },
+     
+        "clusterHeadNodeCount": {
+            "type": "int",
+            "defaultValue": 2,
+            "metadata": {
+                "description": "The number of head nodes in the HDInsight cluster."
+            }
+        },
+        "clusterHeadNodeSize": {
+            "type": "string",
+            "defaultValue": "Standard_D4_V2",
+            "metadata": {
+                "description": "Head node VM Size"
+            }
+        },
+        "clusterWorkerNodeCount": {
+            "type": "int",
+            "defaultValue": 1,
+            "metadata": {
+                "description": "The number of nodes in the HDInsight cluster."
+            }
+        },
+        "clusterWorkerNodeSize": {
+            "type": "string",
+            "defaultValue": "Standard_D4_V2",
+            "metadata": {
+                "description": "Worker node VM Size"
+            }
+        },
+        "clusterZookeeperNodeCount": {
+            "type": "int",
+            "defaultValue": 3,
+            "metadata": {
+                "description": "The number of Zookeeper nodes in the HDInsight cluster."
+            }
+        },
+        "clusterZookeeperNodeSize": {
+            "type": "string",
+            "defaultValue": "Standard_D2_V2",
+            "metadata": {
+                "description": "Worker node VM Size"
+            }
+        },
+        "clusterKind": {
+            "type": "string",
+            "defaultValue": "HBASE",
+            "metadata": {
+                "description": "The type of the HDInsight cluster to create."
+            }
+        },
+        "sshUserName": {
+            "type": "string",
+            "defaultValue": "sshuser",
+            "metadata": {
+                "description": "These credentials can be used to remotely access the cluster."
+            }
+        },
+        "sshPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
+            }
+        },
+        "storageAccountName": {
+            "type": "string",
+            "metadata": {
+                "description": "Storage account to be used by HD Insight."
+            }
+        },
+        "storageAccountKey": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Storage account to be used by HD Insight."
+            }
+        },
+        "vnetId": {
+            "type": "string",
+            "metadata": {
+                "description": "VNet to be used"
+            }
+        },
+        "subnetId": {
+            "type": "string",
+            "metadata": {
+                "description": "Subnet to be used"
+            }
+        },
+        "storageOption": {
+            "type": "string",
+            "allowedValues": [
+                "DataLake",
+                "Blob"
+            ],
+            "metadata": {
+                "description": "What type of storage will be used"
+            }
+        }
+    },
+    "variables": {
+          
+        "dataLakeStorageProfile": {
+                           
+            "name": "[concat(parameters('storageAccountName'),'.dfs.core.windows.net')]",
+            "isDefault": true,
+            "fileSystem": "opencga",
+            "key": "[parameters('storageAccountKey')]"
+
+        },
+        "blobStorageProfile": {
+                           
+            "name": "[concat(parameters('storageAccountName'),'.blob.core.windows.net')]",
+            "isDefault": true,
+            "container": "opencga",
+            "key": "[parameters('storageAccountKey')]"
+
+        }
+
+    },
+    "resources": [
+        {
+            "apiVersion": "2018-06-01-preview",
+            "name": "[parameters('clusterName')]",
+            "type": "Microsoft.HDInsight/clusters",
+            "location": "[resourceGroup().location]",
+                           
+            "dependsOn": [
+                ],
+            "properties": {
+                "clusterVersion": "[parameters('clusterVersion')]",
+                "osType": "Linux",
+                "tier": "Standard",
+                "clusterDefinition": {
+                    "kind": "[parameters('clusterKind')]",
+                    "componentVersion": {
+                        "HBase": "1.1"
+                    },
+                    "configurations": {
+                        "gateway": {
+                            "restAuthCredential.isEnabled": true,
+                            "restAuthCredential.username": "[parameters('clusterLoginUserName')]",
+                            "restAuthCredential.password": "[parameters('clusterLoginPassword')]"
+                        }
+                    }
+                },
+                "storageProfile": {
+                    "storageaccounts": [
+                        "[if(equals(parameters('storageOption'), 'DataLake'), variables('dataLakeStorageProfile'),variables('blobStorageProfile'))]"
+                    ]
+                },
+                "computeProfile": {
+                    "roles": [
+                        {
+                            "autoscale": null,
+                            "name": "headnode",
+                            "minInstanceCount": 1,
+                            "targetInstanceCount": "[parameters('clusterHeadNodeCount')]",
+                            "hardwareProfile": {
+                                "vmSize": "[parameters('clusterHeadNodeSize')]"
+                            },
+                            "osProfile": {
+                                "linuxOperatingSystemProfile": {
+                                    "username": "[parameters('sshUserName')]",
+                                    "password": "[parameters('sshPassword')]"
+                                }
+                            },
+                            "virtualNetworkProfile": {
+                                "id": "[parameters('vnetId')]",
+                                "subnet": "[parameters('subnetId')]"
+                            },
+                            "scriptActions": [
+                                
+                            ]
+                        },
+                        {
+                            "autoscale": null,
+                            "name": "workernode",
+                            "targetInstanceCount": "[parameters('clusterWorkerNodeCount')]",
+                            "hardwareProfile": {
+                                "vmSize": "[parameters('clusterWorkerNodeSize')]"
+                            },
+                            "osProfile": {
+                                "linuxOperatingSystemProfile": {
+                                    "username": "[parameters('sshUserName')]",
+                                    "password": "[parameters('sshPassword')]"
+                                }
+                            },
+                            "virtualNetworkProfile": {
+                                "id": "[parameters('vnetId')]",
+                                "subnet": "[parameters('subnetId')]"
+                            },
+                            "scriptActions": [
+                              
+                            ]
+                        },
+                        {
+                            "autoscale": null,
+                            "name": "zookeepernode",
+                            "minInstanceCount": 1,
+                            "targetInstanceCount": "[parameters('clusterZookeeperNodeCount')]",
+                            "hardwareProfile": {
+                                "vmSize": "[parameters('clusterZookeeperNodeSize')]"
+                            },
+                            "osProfile": {
+                                "linuxOperatingSystemProfile": {
+                                    "username": "[parameters('sshUserName')]",
+                                    "password": "[parameters('sshPassword')]"
+                                }
+                            },
+                            "virtualNetworkProfile": {
+                                "id": "[parameters('vnetId')]",
+                                "subnet": "[parameters('subnetId')]"
+                            },
+                            "scriptActions": [
+                               
+                            ]
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "outputs": {
+
+        "clusterSshDNSName":{
+
+            "type": "string",
+            "value": "[concat(parameters('clusterName'),'-ssh.azurehdinsight.net')]"
+        },
+        "clusterSshUsername":{
+
+            "type": "string",
+            "value": "[concat(parameters('sshUserName'))]"
+        },
+        "clusterSshPassword":{
+
+            "type": "string",
+            "value": "[concat(parameters('sshPassword'))]"
+        }
+    }
+}
