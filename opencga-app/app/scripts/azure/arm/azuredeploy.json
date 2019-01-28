@@ -399,7 +399,7 @@
                         "value": "[reference('azureBatch').outputs.batchPoolId.value]"
                     },
                     "batchDockerArgs": {
-                        "value": "--mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions --mount type=bind,src=/media/primarynfs/variants,dst=/opt/opencga/variants --rm"
+                        "value": "-v  /media/primarynfs/conf:/opt/opencga/conf -v /media/primarynfs/sessions:/opt/opencga/sessions -v /media/primarynfs/variants:/opt/opencga/variants --rm"
                     },
                     "batchContainerImage": {
                         "value": "[parameters('daemonContainerImage')]"
