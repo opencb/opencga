@@ -1,6 +1,7 @@
 package org.opencb.opencga.analysis.clinical;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.Interpretation;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
@@ -107,15 +108,16 @@ public class XQueryAnalysis extends OpenCgaAnalysis<Interpretation> {
         // Check sample and proband exists
 
         Pedigree pedigree = FamilyManager.getPedigreeFromFamily(clinicalAnalysis.getFamily());
-        OntologyTerm disease = clinicalAnalysis.getDisease();
-        Phenotype phenotype = new Phenotype(disease.getId(), disease.getName(), disease.getSource(), Phenotype.Status.UNKNOWN);
+        OntologyTerm disorder = clinicalAnalysis.getDisorder();
+        Phenotype phenotype = new Phenotype(disorder.getId(), disorder.getName(), disorder.getSource(),
+                Phenotype.Status.UNKNOWN);
 
         FamilyFilter familyFilter = new FamilyFilter(pedigree, phenotype);
         List<DiseasePanel> biodataDiseasePanel = diseasePanels.stream().map(Panel::getDiseasePanel).collect(Collectors.toList());
         GeneFilter geneFilter = new GeneFilter();
         geneFilter.setPanels(biodataDiseasePanel);
 
-        List<List<Variant>> lists = this.bioNetDbManager.xQuery(familyFilter, geneFilter);
+        Pair<List<Variant>, List<Variant>> result = this.bioNetDbManager.xQuery(familyFilter, geneFilter);
 
         return null;
     }
