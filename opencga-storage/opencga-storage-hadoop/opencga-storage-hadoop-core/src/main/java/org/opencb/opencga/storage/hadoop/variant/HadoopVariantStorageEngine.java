@@ -182,9 +182,12 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     public static final String ARCHIVE_FILE_BATCH_SIZE = "opencga.archive.file_batch_size";
     public static final int DEFAULT_ARCHIVE_FILE_BATCH_SIZE = 1000;
     public static final String ARCHIVE_FIELDS = "opencga.archive.fields";
+    public static final String ARCHIVE_NON_REF_FILTER = "opencga.archive.non-ref.filter";
 
     // Sample index table configuration
     public static final String SAMPLE_INDEX_TABLE_COMPRESSION = "opencga.sample-index.table.compression";
+    public static final String SAMPLE_INDEX_TABLE_PRESPLIT_SIZE = "opencga.sample-index.table.presplit.size";
+    public static final int DEFAULT_SAMPLE_INDEX_TABLE_PRESPLIT_SIZE = 15;
 
     public static final String EXTERNAL_MR_EXECUTOR = "opencga.external.mr.executor";
     public static final String STATS_LOCAL = "stats.local";
@@ -276,7 +279,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                     if (doLoad && !error) {
                         // Read the VariantSource to get the original fileName (it may be different from the
                         // nextUri.getFileName if this is the transformed file)
-                        String fileName = storageETL.readVariantFileMetadata(nextUri).getPath();
+                        String filePath = storageETL.readVariantFileMetadata(nextUri).getPath();
+                        String fileName = Paths.get(filePath).getFileName().toString();
                         // Get latest study configuration from DB, might have been changed since
                         StudyConfiguration studyConfiguration = storageETL.getStudyConfiguration();
                         // Get file ID for the provided file name
@@ -579,7 +583,10 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         }
 
         if (mergeMode.equals(MergeMode.ADVANCED)) {
-            throw new IllegalStateException("Unable to load with MergeMode " + MergeMode.ADVANCED);
+//            throw new IllegalStateException("Unable to load with MergeMode " + MergeMode.ADVANCED);
+            // Force to use MergeMode=BASIC for Hadoop
+            options.put(MERGE_MODE.key(), MergeMode.BASIC.name());
+            mergeMode = MergeMode.BASIC;
         }
         HadoopVariantStoragePipeline storageETL = new HadoopLocalLoadVariantStoragePipeline(configuration, dbAdaptor,
                 hadoopConfiguration, getVariantReaderUtils(hadoopConfiguration), options);

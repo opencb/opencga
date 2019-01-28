@@ -16,8 +16,9 @@
 
 package org.opencb.opencga.core.models;
 
-import org.opencb.biodata.models.commons.OntologyTerm;
+import org.opencb.biodata.models.clinical.interpretation.Comment;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -33,23 +34,33 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     private String description;
     private Type type;
 
-    private OntologyTerm disease;
+    private Disorder disorder;
 
-    private File germline;
-    private File somatic;
+    // Map of sample id, list of files (VCF, BAM and BIGWIG)
+    private Map<String, List<File>> files;
 
     private Individual proband;
     private Family family;
     private List<Interpretation> interpretations;
 
+    private Priority priority;
+    private List<String> flags;
+
     private String creationDate;
     private String modificationDate;
-    private Status status;
+    private String dueDate;
+    private ClinicalStatus status;
     private int release;
+
+    private List<Comment> comments;
     private Map<String, Object> attributes;
 
+    public enum Priority {
+        URGENT, HIGH, MEDIUM, LOW
+    }
+
     public enum Type {
-        SINGLE, DUO, TRIO, FAMILY, AUTO, MULTISAMPLE
+        SINGLE, FAMILY, AUTOCOMPARATIVE, COHORT, SOMATIC_CANCER
     }
 
     // Todo: Think about a better place to have this enum
@@ -60,22 +71,69 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         REMOVE
     }
 
+    public static class ClinicalStatus extends Status {
+
+        public static final String WAIT = "WAIT";
+        public static final String REJECTED = "REJECTED";
+        public static final String READY_FOR_INTERPRETATION = "READY_FOR_INTERPRETATION";
+        public static final String INTERPRETATION_IN_PROGRESS = "INTERPRETATION_IN_PROGRESS";
+        public static final String INTERPRETED = "INTERPRETED";
+        public static final String PENDING_REVIEW = "PENDING_REVIEW";
+        public static final String READY_FOR_REPORT = "READY_FOR_REPORT";
+        public static final String REPORT_IN_PROGRESS = "REPORT_IN_PROGRESS";
+        public static final String DONE = "DONE";
+        public static final String REVIEW = "REVIEW";
+        public static final String CLOSED = "CLOSED";
+
+        public static final List<String> STATUS_LIST = Arrays.asList(READY, DELETED, WAIT, REJECTED, READY_FOR_INTERPRETATION,
+                INTERPRETATION_IN_PROGRESS, INTERPRETED, PENDING_REVIEW, READY_FOR_REPORT, REPORT_IN_PROGRESS, DONE, REVIEW, CLOSED);
+
+        public ClinicalStatus(String status, String message) {
+            if (isValid(status)) {
+                init(status, message);
+            } else {
+                throw new IllegalArgumentException("Unknown status " + status);
+            }
+        }
+
+        public ClinicalStatus(String status) {
+            this(status, "");
+        }
+
+        public ClinicalStatus() {
+            this(READY_FOR_INTERPRETATION, "");
+        }
+
+        public static boolean isValid(String status) {
+            if (Status.isValid(status)) {
+                return true;
+            }
+            if (STATUS_LIST.contains(status)) {
+                return true;
+            }
+            return false;
+        }
+    }
+
     public ClinicalAnalysis() {
     }
 
-    public ClinicalAnalysis(String id, String description, Type type, OntologyTerm disease, File germline, File somatic, Individual proband,
-                            Family family, List<Interpretation> interpretations, String creationDate, Status status, int release,
-                            Map<String, Object> attributes) {
+    public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, Map<String, List<File>> files, Individual proband,
+                            Family family, List<Interpretation> interpretations, Priority priority, List<String> flags, String creationDate,
+                            String dueDate, List<Comment> comments, ClinicalStatus status, int release, Map<String, Object> attributes) {
         this.id = id;
         this.description = description;
         this.type = type;
-        this.disease = disease;
-        this.germline = germline;
-        this.somatic = somatic;
+        this.disorder = disorder;
+        this.files = files;
         this.proband = proband;
         this.family = family;
         this.interpretations = interpretations;
+        this.priority = priority;
+        this.flags = flags;
         this.creationDate = creationDate;
+        this.dueDate = dueDate;
+        this.comments = comments;
         this.status = status;
         this.release = release;
         this.attributes = attributes;
@@ -85,19 +143,21 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClinicalAnalysis{");
         sb.append("id='").append(id).append('\'');
-        sb.append(", name='").append(name).append('\'');
         sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", type=").append(type);
-        sb.append(", disease=").append(disease);
-        sb.append(", germline=").append(germline);
-        sb.append(", somatic=").append(somatic);
+        sb.append(", disorder=").append(disorder);
+        sb.append(", files=").append(files);
         sb.append(", proband=").append(proband);
         sb.append(", family=").append(family);
         sb.append(", interpretations=").append(interpretations);
+        sb.append(", priority=").append(priority);
+        sb.append(", flags=").append(flags);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
+        sb.append(", dueDate='").append(dueDate).append('\'');
         sb.append(", status=").append(status);
+        sb.append(", comments=").append(comments);
         sb.append(", release=").append(release);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
@@ -161,30 +221,21 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
-    public OntologyTerm getDisease() {
-        return disease;
+    public Disorder getDisorder() {
+        return disorder;
     }
 
-    public ClinicalAnalysis setDisease(OntologyTerm disease) {
-        this.disease = disease;
+    public ClinicalAnalysis setDisorder(Disorder disorder) {
+        this.disorder = disorder;
         return this;
     }
 
-    public File getGermline() {
-        return germline;
+    public Map<String, List<File>> getFiles() {
+        return files;
     }
 
-    public ClinicalAnalysis setGermline(File germline) {
-        this.germline = germline;
-        return this;
-    }
-
-    public File getSomatic() {
-        return somatic;
-    }
-
-    public ClinicalAnalysis setSomatic(File somatic) {
-        this.somatic = somatic;
+    public ClinicalAnalysis setFiles(Map<String, List<File>> files) {
+        this.files = files;
         return this;
     }
 
@@ -215,6 +266,33 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
+    public Priority getPriority() {
+        return priority;
+    }
+
+    public ClinicalAnalysis setPriority(Priority priority) {
+        this.priority = priority;
+        return this;
+    }
+
+    public List<String> getFlags() {
+        return flags;
+    }
+
+    public ClinicalAnalysis setFlags(List<String> flags) {
+        this.flags = flags;
+        return this;
+    }
+
+    public String getDueDate() {
+        return dueDate;
+    }
+
+    public ClinicalAnalysis setDueDate(String dueDate) {
+        this.dueDate = dueDate;
+        return this;
+    }
+
     public String getCreationDate() {
         return creationDate;
     }
@@ -233,11 +311,20 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
-    public Status getStatus() {
+    public List<Comment> getComments() {
+        return comments;
+    }
+
+    public ClinicalAnalysis setComments(List<Comment> comments) {
+        this.comments = comments;
+        return this;
+    }
+
+    public ClinicalStatus getStatus() {
         return status;
     }
 
-    public ClinicalAnalysis setStatus(Status status) {
+    public ClinicalAnalysis setStatus(ClinicalStatus status) {
         this.status = status;
         return this;
     }

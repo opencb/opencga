@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.zip.GZIPInputStream;
 
@@ -43,27 +44,42 @@ public class StringDataReader implements DataReader<String> {
     private SizeInputStream sizeInputStream;
     private BiConsumer<Long, Long> readBytesListener;
     private BiConsumer<Long, Long> readLinesListener;
+    private final InputStream is;
+    private final boolean closeReader;
 
     public StringDataReader(Path path) {
-        this.path = path;
+        this.path = Objects.requireNonNull(path);
+        this.is = null;
+        closeReader = true;
+    }
+
+    public StringDataReader(InputStream is) {
+        this.path = null;
+        this.is = Objects.requireNonNull(is);
+        closeReader = false;
     }
 
     @Override
     public boolean open() {
         try {
-            String fileName = path.toFile().getName();
-            lastAvailable = getFileSize();
-            sizeInputStream = new SizeInputStream(new FileInputStream(path.toFile()), lastAvailable);
-            if (fileName.endsWith(".gz")) {
-                logger.debug("Gzip input compress");
-                this.reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(sizeInputStream)));
-            } else if (fileName.endsWith(".snappy") || fileName.endsWith(".snz")) {
-                logger.info("Snappy input compress");
-                this.reader = new BufferedReader(new InputStreamReader(new SnappyInputStream(sizeInputStream)));
-            } else {
-                logger.debug("Plain input compress");
-//                this.reader = Files.newBufferedReader(path, Charset.defaultCharset());
+            if (is != null) {
+                sizeInputStream = new SizeInputStream(is, 0);
                 this.reader = new BufferedReader(new InputStreamReader(sizeInputStream));
+            } else {
+                String fileName = path.toFile().getName();
+                lastAvailable = getFileSize();
+                sizeInputStream = new SizeInputStream(new FileInputStream(path.toFile()), lastAvailable);
+                if (fileName.endsWith(".gz")) {
+                    logger.debug("Gzip input compress");
+                    this.reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(sizeInputStream)));
+                } else if (fileName.endsWith(".snappy") || fileName.endsWith(".snz")) {
+                    logger.debug("Snappy input compress");
+                    this.reader = new BufferedReader(new InputStreamReader(new SnappyInputStream(sizeInputStream)));
+                } else {
+                    logger.debug("Plain input compress");
+//                this.reader = Files.newBufferedReader(path, Charset.defaultCharset());
+                    this.reader = new BufferedReader(new InputStreamReader(sizeInputStream));
+                }
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -74,7 +90,9 @@ public class StringDataReader implements DataReader<String> {
     @Override
     public boolean close() {
         try {
-            reader.close();
+            if (closeReader) {
+                reader.close();
+            }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -146,7 +164,11 @@ public class StringDataReader implements DataReader<String> {
     }
 
     public long getFileSize() throws IOException {
-        return Files.size(path);
+        if (path != null) {
+            return Files.size(path);
+        } else {
+            return -1;
+        }
     }
 
     class SizeInputStream extends InputStream {

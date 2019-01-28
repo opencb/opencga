@@ -295,7 +295,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         final String[] acceptedMapParams = {QueryParams.STATS.key(), QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, sampleParameters, acceptedMapParams);
 
-        final String[] acceptedObjectParams = {QueryParams.PHENOTYPES.key()};
+        final String[] acceptedObjectParams = {QueryParams.PHENOTYPES.key(), UpdateParams.COLLECTION.key(), UpdateParams.PROCESSING.key()};
         filterObjectParams(parameters, sampleParameters, acceptedObjectParams);
 
         if (parameters.containsKey(QueryParams.ID.key())) {

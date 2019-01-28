@@ -351,6 +351,11 @@ public class VariantHBaseQueryParser {
                 for (Integer sampleId : sampleIds) {
                     scan.addColumn(family, buildSampleColumnKey(studyId, sampleId));
                 }
+                Set<Integer> fileIds = StudyConfigurationManager.getFileIdsFromSampleIds(
+                        selectElements.getStudyConfigurations().get(studyId), sampleIds);
+                for (Integer fileId : fileIds) {
+                    scan.addColumn(family, buildFileColumnKey(studyId, fileId));
+                }
             });
 
             selectElements.getFiles().forEach((studyId, fileIds) -> {

@@ -21,11 +21,15 @@
     <parent>
         <artifactId>opencga-storage</artifactId>
         <groupId>org.opencb.opencga</groupId>
-        <version>1.4.0-rc2-dev</version>
+        <version>1.4.0-rc3-dev</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>opencga-storage-benchmark</artifactId>
+
+    <properties>
+        <jmeter.version>5.0</jmeter.version>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -36,35 +40,79 @@
         <dependency>
             <groupId>org.apache.jmeter</groupId>
             <artifactId>ApacheJMeter_core</artifactId>
-            <version>3.1</version>
+            <version>${jmeter.version}</version>
             <exclusions>
                 <exclusion>
                     <artifactId>mongo-java-driver</artifactId>
                     <groupId>org.mongodb</groupId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.logging.log4j</groupId>
+                    <artifactId>log4j-slf4j-impl</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.jmeter</groupId>
             <artifactId>ApacheJMeter_http</artifactId>
-            <version>3.1</version>
+            <version>${jmeter.version}</version>
             <exclusions>
                 <exclusion>
                     <artifactId>mongo-java-driver</artifactId>
                     <groupId>org.mongodb</groupId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.logging.log4j</groupId>
+                    <artifactId>log4j-slf4j-impl</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.jmeter</groupId>
             <artifactId>ApacheJMeter_java</artifactId>
-            <version>3.1</version>
+            <version>${jmeter.version}</version>
             <exclusions>
                 <exclusion>
                     <artifactId>mongo-java-driver</artifactId>
                     <groupId>org.mongodb</groupId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.apache.logging.log4j</groupId>
+                    <artifactId>log4j-slf4j-impl</artifactId>
+                </exclusion>
             </exclusions>
+        </dependency>
+
+        <!--TEST-->
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-storage-core</artifactId>
+            <version>${opencga.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.googlecode.grep4j</groupId>
+            <artifactId>grep4j</artifactId>
+            <version>1.8.7</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-storage-mongodb</artifactId>
+            <version>${opencga.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-storage-mongodb</artifactId>
+            <version>${opencga.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
         </dependency>
 
     </dependencies>

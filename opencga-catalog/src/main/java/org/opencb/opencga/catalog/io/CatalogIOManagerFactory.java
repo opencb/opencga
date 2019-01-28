@@ -73,9 +73,9 @@ public class CatalogIOManagerFactory {
                 case "file":
                     catalogIOManagers.put("file", new PosixCatalogIOManager(configuration));
                     break;
-                case "hdfs":
-                    catalogIOManagers.put("hdfs", new HdfsCatalogIOManager(configuration));
-                    break;
+//                case "hdfs":
+//                    catalogIOManagers.put("hdfs", new HdfsCatalogIOManager(configuration));
+//                    break;
                 default:
                     throw new UnsupportedOperationException("Unsupported file system : " + io);
             }

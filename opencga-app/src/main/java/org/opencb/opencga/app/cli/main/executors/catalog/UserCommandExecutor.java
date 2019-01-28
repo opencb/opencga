@@ -148,6 +148,7 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Creating user...");
 
         ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(UserDBAdaptor.QueryParams.ID.key(), usersCommandOptions.createCommandOptions.user);
         params.putIfNotEmpty(UserDBAdaptor.QueryParams.NAME.key(), usersCommandOptions.createCommandOptions.name);
         params.putIfNotEmpty(UserDBAdaptor.QueryParams.EMAIL.key(), usersCommandOptions.createCommandOptions.email);
         params.putIfNotEmpty(UserDBAdaptor.QueryParams.PASSWORD.key(), usersCommandOptions.createCommandOptions.password);
@@ -212,14 +213,10 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
 //        openCGAClient.getUserClient().delete(usersCommandOptions.deleteCommandOptions.user, new ObjectMap());
     }
 
-    private QueryResponse<User> update() throws ClientException, IOException {
+    private QueryResponse<User> update() throws IOException, CatalogException {
         logger.debug("Updating user");
 
-        ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(UserDBAdaptor.QueryParams.NAME.key(), usersCommandOptions.updateCommandOptions.name);
-        params.putIfNotEmpty(UserDBAdaptor.QueryParams.EMAIL.key(), usersCommandOptions.updateCommandOptions.email);
-        params.putIfNotEmpty(UserDBAdaptor.QueryParams.ORGANIZATION.key(), usersCommandOptions.updateCommandOptions.organization);
-        params.putIfNotEmpty(UserDBAdaptor.QueryParams.ATTRIBUTES.key(), usersCommandOptions.updateCommandOptions.attributes);
+        ObjectMap params = loadFile(usersCommandOptions.updateCommandOptions.json);
         return openCGAClient.getUserClient().update(usersCommandOptions.updateCommandOptions.user, null, params);
     }
 

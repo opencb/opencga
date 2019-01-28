@@ -53,6 +53,7 @@ import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.biodata.models.variant.VariantBuilder.REF_ONLY_ALT;
 import static org.opencb.opencga.storage.core.metadata.StudyConfigurationManager.RO_CACHED_OPTIONS;
 import static org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass.UNKNOWN_GENOTYPE;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED;
@@ -315,16 +316,14 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             Integer sampleId = pair.getKey();
             List<String> sampleData = pair.getValue();
             addMainSampleDataColumn(studyConfiguration, studyEntry, formatsMap, sampleId, sampleData);
-
         }
 
         Map<String, List<String>> alternateFileMap = new HashMap<>();
         for (Pair<String, PhoenixArray> pair : filesMap) {
             String fileId = pair.getKey();
             PhoenixArray fileColumn = pair.getValue();
-            addFileEntry(studyConfiguration, studyEntry, fileId, fileColumn, alternateFileMap);
+            addFileEntry(studyConfiguration, variant, studyEntry, fileId, fileColumn, alternateFileMap);
         }
-
         addSecondaryAlternates(variant, studyEntry, studyConfiguration, alternateFileMap);
 
         fillEmptySamplesData(studyEntry, studyConfiguration, fillMissingColumnValue);
@@ -352,8 +351,8 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         } else {
             returnedSamplesPosition = getReturnedSamplesPosition(studyConfiguration);
         }
+        studyEntry.setSamplesData(new ArrayList<>(returnedSamplesPosition.size()));
         studyEntry.setSortedSamplesPosition(returnedSamplesPosition);
-//        studyEntry.setSamplesData(new ArrayList<>(samplesPosition.size()));
         return studyEntry;
     }
 
@@ -404,8 +403,23 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         }
     }
 
-    private void addFileEntry(StudyConfiguration studyConfiguration, StudyEntry studyEntry, String fileId, PhoenixArray fileColumn,
-                              Map<String, List<String>> alternateFileMap) {
+    private void addFileEntry(StudyConfiguration studyConfiguration, Variant variant, StudyEntry studyEntry, String fileIdStr,
+                              PhoenixArray fileColumn, Map<String, List<String>> alternateFileMap) {
+        int fileId = Integer.parseInt(fileIdStr);
+        String alternate = normalizeNonRefAlternateCoordinate(variant, (String) (fileColumn.getElement(FILE_SEC_ALTS_IDX)));
+        String fileName = studyConfiguration.getFileIds().inverse().get(fileId);
+
+        // Add all combinations of secondary alternates, even the combination of "none secondary alternates", i.e. empty string
+        alternateFileMap.computeIfAbsent(alternate, (key) -> new ArrayList<>()).add(fileName);
+        String call = (String) (fileColumn.getElement(FILE_CALL_IDX));
+        if (!selectVariantElements.getFiles().get(studyConfiguration.getStudyId()).contains(fileId)) {
+            // TODO: Should we return the original CALL?
+//            if (call != null && !call.isEmpty()) {
+//                studyEntry.getFiles().add(new FileEntry(fileName, call, Collections.emptyMap()));
+//            }
+            return;
+        }
+
         HashMap<String, String> attributes = new HashMap<>(fileColumn.getDimensions() - 1);
         String qual = (String) (fileColumn.getElement(FILE_QUAL_IDX));
         if (qual != null) {
@@ -415,11 +429,6 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         if (filter != null) {
             attributes.put(StudyEntry.FILTER, filter);
         }
-        String alternate = (String) (fileColumn.getElement(FILE_SEC_ALTS_IDX));
-        String fileName = studyConfiguration.getFileIds().inverse().get(Integer.parseInt(fileId));
-
-        // Add all combinations of secondary alternates, even the combination of "none secondary alternates", i.e. empty string
-        alternateFileMap.computeIfAbsent(alternate, (key) -> new ArrayList<>()).add(fileName);
 
         List<String> fixedAttributes = HBaseToVariantConverter.getFixedAttributes(studyConfiguration);
         int i = FILE_INFO_START_IDX;
@@ -434,7 +443,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             i++;
         }
         // fileColumn.getElement(FILE_VARIANT_OVERLAPPING_STATUS_IDX);
-        studyEntry.getFiles().add(new FileEntry(fileName, (String) (fileColumn.getElement(FILE_CALL_IDX)), attributes));
+        studyEntry.getFiles().add(new FileEntry(fileName, call, attributes));
     }
 
     private void fillEmptySamplesData(StudyEntry studyEntry, StudyConfiguration studyConfiguration, int fillMissingColumnValue) {
@@ -683,9 +692,13 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 StudyEntry se = new StudyEntry("0");
                 se.setSecondaryAlternates(getAlternateCoordinates(secondaryAlternates));
                 se.setFormat(studyEntry.getFormat());
+                se.setSamplesData(new ArrayList<>(fileIds.size()));
 
                 for (String fileId : fileIds) {
-                    se.getFiles().add(studyEntry.getFile(fileId));
+                    FileEntry fileEntry = studyEntry.getFile(fileId);
+                    if (fileEntry != null) {
+                        se.getFiles().add(fileEntry);
+                    }
                     for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(studyConfiguration.getFileIds().get(fileId))) {
                         String sample = studyConfiguration.getSampleIds().inverse().get(sampleId);
                         List<String> sampleData = studyEntry.getSampleData(sample);
@@ -757,6 +770,27 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 alternate,
                 type
         );
+    }
+
+    public static String normalizeNonRefAlternateCoordinate(Variant variant, String s) {
+        if (s != null && s.contains(REF_ONLY_ALT)) {
+            StringBuilder sb = new StringBuilder();
+            String reference = variant.getReference();
+            for (String s1 : s.split(",")) {
+                if (sb.length() > 0) {
+                    sb.append(',');
+                }
+                if (s1.contains(REF_ONLY_ALT)) {
+                    StudyEntryToHBaseConverter.buildSecondaryAlternate(variant.getChromosome(), variant.getStart(), variant.getEnd(),
+                            reference, REF_ONLY_ALT, VariantType.NO_VARIATION, sb);
+                } else {
+                    sb.append(s1);
+                }
+            }
+            return sb.toString();
+        } else {
+            return s;
+        }
     }
 
     protected Integer getStudyId(String[] split) {

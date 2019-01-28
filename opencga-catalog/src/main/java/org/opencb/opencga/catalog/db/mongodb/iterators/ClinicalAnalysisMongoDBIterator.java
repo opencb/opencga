@@ -20,6 +20,7 @@ import java.util.*;
 
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.NATIVE_QUERY;
 
+@Deprecated
 public class ClinicalAnalysisMongoDBIterator<E> extends MongoDBIterator<E>  {
 
     private long studyUid;

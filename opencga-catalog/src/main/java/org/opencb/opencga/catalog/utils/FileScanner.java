@@ -31,7 +31,6 @@ import org.opencb.opencga.core.models.Study;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Paths;
@@ -275,24 +274,8 @@ public class FileScanner {
                 } else {
                     start = System.currentTimeMillis();
 
-                    String checksum = null;
-                    if (calculateChecksum) {
-                        checksum = ioManager.calculateChecksum(uri);
-                    }
-
-                    file = catalogManager.getFileManager().upload(study.getFqn(), new FileInputStream(Paths.get(uri).toFile()),
-                            new File().setPath(filePath).setChecksum(checksum), overwrite, true, sessionId).first();
-//                    file = catalogManager.getFileManager().register(study,
-//                            new File()
-//                                    .setUri(uri)
-//                                    .setPath(filePath)
-//                                    .setChecksum(checksum)
-//                                    .setStatus(new File.FileStatus(File.FileStatus.READY)),
-//                            true, QueryOptions.empty(), sessionId).first();
-
-                    if (deleteSource) {
-                        ioManager.deleteFile(uri);
-                    }
+                    file = catalogManager.getFileManager().upload(study.getFqn(), uri,
+                            new File().setPath(filePath), overwrite, true, calculateChecksum, deleteSource, sessionId).first();
 
                     end = System.currentTimeMillis();
                     uploadFileTime = end - start;
@@ -309,28 +292,9 @@ public class FileScanner {
                     }
                     long start = System.currentTimeMillis();
 
-                    if (calculateChecksum) {
-                        String checksum = ioManager.calculateChecksum(uri);
-                        catalogManager.getFileManager().update(study.getFqn(), filePath,
-                                new ObjectMap(FileDBAdaptor.QueryParams.CHECKSUM.key(), checksum), QueryOptions.empty(), sessionId);
-                    }
+                    file = catalogManager.getFileManager()
+                            .upload(study.getFqn(), uri, file, overwrite, true, calculateChecksum, deleteSource, sessionId).first();
 
-                    catalogManager.getFileManager().setStatus(study.getFqn(), filePath, File.FileStatus.READY, "", sessionId);
-                    file = catalogManager.getFileManager().get(study.getFqn(), filePath, QueryOptions.empty(), sessionId).first();
-//
-//                    file = catalogManager.getFileManager().register(study,
-//                            new File()
-//                                    .setUri(uri)
-//                                    .setPath(filePath)
-//                                    .setChecksum(checksum)
-//                                    .setStatus(new File.FileStatus(File.FileStatus.READY)),
-//                            true, QueryOptions.empty(), sessionId).first();
-//
-//                    if (deleteSource) {
-//                        ioManager.deleteFile(uri);
-//                    }
-
-//                    catalogFileUtils.upload(uri, file, null, sessionId, true, true, deleteSource, calculateChecksum);
                     long end = System.currentTimeMillis();
                     uploadFilesTime += end - start;
                 }

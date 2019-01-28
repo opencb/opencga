@@ -104,15 +104,11 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         studySubCommands.addCommand("create", studyCommandOptions.createCommandOptions);
         studySubCommands.addCommand("info", studyCommandOptions.infoCommandOptions);
         studySubCommands.addCommand("search", studyCommandOptions.searchCommandOptions);
-        studySubCommands.addCommand("summary", studyCommandOptions.summaryCommandOptions);
+        studySubCommands.addCommand("stats", studyCommandOptions.statsCommandOptions);
         studySubCommands.addCommand("delete", studyCommandOptions.deleteCommandOptions);
         studySubCommands.addCommand("update", studyCommandOptions.updateCommandOptions);
         studySubCommands.addCommand("scan-files", studyCommandOptions.scanFilesCommandOptions);
         studySubCommands.addCommand("resync-files", studyCommandOptions.resyncFilesCommandOptions);
-        studySubCommands.addCommand("files", studyCommandOptions.filesCommandOptions);
-        studySubCommands.addCommand("jobs", studyCommandOptions.jobsCommandOptions);
-        studySubCommands.addCommand("samples", studyCommandOptions.samplesCommandOptions);
-        studySubCommands.addCommand("help", studyCommandOptions.helpCommandOptions);
         studySubCommands.addCommand("groups", studyCommandOptions.groupsCommandOptions);
         studySubCommands.addCommand("groups-create", studyCommandOptions.groupsCreateCommandOptions);
         studySubCommands.addCommand("groups-delete", studyCommandOptions.groupsDeleteCommandOptions);
@@ -121,6 +117,10 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         studySubCommands.addCommand("admins-update", studyCommandOptions.adminsGroupUpdateCommandOptions);
         studySubCommands.addCommand("acl", studyCommandOptions.aclsCommandOptions);
         studySubCommands.addCommand("acl-update", studyCommandOptions.aclsUpdateCommandOptions);
+        studySubCommands.addCommand("variable-sets", studyCommandOptions.variableSetsCommandOptions);
+        studySubCommands.addCommand("variable-sets-update", studyCommandOptions.variableSetsUpdateCommandOptions);
+        studySubCommands.addCommand("variable-sets-variables-update", studyCommandOptions.variablesUpdateCommandOptions);
+        studySubCommands.addCommand("variable-sets-variables-update", studyCommandOptions.variablesUpdateCommandOptions);
 
         fileCommandOptions = new FileCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand("files", fileCommandOptions);
@@ -147,6 +147,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
 //        fileSubCommands.addCommand("variants", fileCommandOptions.variantsCommandOptions);
         fileSubCommands.addCommand("acl", fileCommandOptions.aclsCommandOptions);
         fileSubCommands.addCommand("acl-update", fileCommandOptions.aclsUpdateCommandOptions);
+        fileSubCommands.addCommand("annotation-sets-update", fileCommandOptions.annotationUpdateCommandOptions);
 
         jobCommandOptions = new JobCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand("jobs", jobCommandOptions);
@@ -241,7 +242,6 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         variableSubCommands.addCommand("info", variableCommandOptions.infoCommandOptions);
         variableSubCommands.addCommand("search", variableCommandOptions.searchCommandOptions);
         variableSubCommands.addCommand("delete", variableCommandOptions.deleteCommandOptions);
-        variableSubCommands.addCommand("update", variableCommandOptions.updateCommandOptions);
         variableSubCommands.addCommand("field-add", variableCommandOptions.fieldAddCommandOptions);
         variableSubCommands.addCommand("field-delete", variableCommandOptions.fieldDeleteCommandOptions);
         variableSubCommands.addCommand("field-rename", variableCommandOptions.fieldRenameCommandOptions);

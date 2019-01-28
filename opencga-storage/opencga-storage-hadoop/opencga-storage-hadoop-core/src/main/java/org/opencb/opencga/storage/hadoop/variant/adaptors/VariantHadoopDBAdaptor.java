@@ -385,21 +385,14 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
         if (archiveIterator) {
             String study = query.getString(STUDY.key());
-            StudyConfiguration studyConfiguration;
-            int studyId;
-            if (StringUtils.isNumeric(study)) {
-                studyId = Integer.parseInt(study);
-                studyConfiguration = getStudyConfigurationManager().getStudyConfiguration(studyId, options).first();
-            } else {
-                studyConfiguration = getStudyConfigurationManager().getStudyConfiguration(study, options).first();
-                studyId = studyConfiguration.getStudyId();
-            }
+            StudyConfiguration studyConfiguration = getStudyConfigurationManager().getStudyConfiguration(study, options).first();
+            int studyId = studyConfiguration.getStudyId();
 
-            int fileId = query.getInt(FILE.key());
-            if (!studyConfiguration.getFileIds().containsValue(fileId)) {
-                return VariantDBIterator.emptyIterator();
+            String file = query.getString(FILE.key());
+            Integer fileId = StudyConfigurationManager.getFileIdFromStudy(file, studyConfiguration, true);
+            if (fileId == null) {
+                throw VariantQueryException.fileNotFound(file, study);
             }
-
             LinkedHashSet<Integer> samlpeIds = studyConfiguration.getSamplesInFiles().get(fileId);
             List<String> returnedSamples = new ArrayList<>(samlpeIds.size());
             for (Integer sampleId : samlpeIds) {
@@ -422,7 +415,9 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
             Scan scan = new Scan();
             scan.addColumn(archiveHelper.getColumnFamily(), archiveHelper.getNonRefColumnName());
-            scan.addColumn(archiveHelper.getColumnFamily(), archiveHelper.getRefColumnName());
+            if (options.getBoolean("ref", true)) {
+                scan.addColumn(archiveHelper.getColumnFamily(), archiveHelper.getRefColumnName());
+            }
             VariantHBaseQueryParser.addArchiveRegionFilter(scan, region, archiveHelper);
             scan.setMaxResultSize(options.getInt("limit"));
             String tableName = getTableNameGenerator().getArchiveTableName(studyId);

@@ -18,6 +18,9 @@ package org.opencb.opencga.storage.core.variant.io;
 
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.variant.vcf.VCFHeaderVersion;
+import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
@@ -28,6 +31,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.io.avro.VariantAvroReader;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -72,6 +76,19 @@ public class VariantReaderUtils {
      * @throws StorageEngineException if the format is not valid or there is an error reading
      */
     public static VariantReader getVariantReader(Path input, VariantStudyMetadata metadata) throws StorageEngineException {
+        return getVariantReader(input, metadata, false);
+    }
+
+    /**
+     * Get a variant data reader depending on the type of the input file.
+     *
+     * @param input Stream Input variant file (avro, json, vcf)
+     * @param metadata Optional VariantSource
+     * @param stdin Indicate if the file should be read from the Standard Input
+     * @return  VariantReader
+     * @throws StorageEngineException if the format is not valid or there is an error reading
+     */
+    public static VariantReader getVariantReader(Path input, VariantStudyMetadata metadata, boolean stdin) throws StorageEngineException {
         String fileName = input.getFileName().toString();
         if (metadata == null) {
             VariantFileMetadata variantFileMetadata = createEmptyVariantFileMetadata(input);
@@ -80,13 +97,9 @@ public class VariantReaderUtils {
         if (isJson(fileName)) {
             return getVariantJsonReader(input, metadata);
         } else if (isAvro(fileName)) {
-            return getVariantAvroReader(input, metadata);
+            return getVariantAvroReader(input, metadata, stdin);
         } else if (isVcf(fileName)) {
-            try {
-                return new VariantVcfHtsjdkReader(FileUtils.newInputStream(input), metadata);
-            } catch (IOException e) {
-                throw new StorageEngineException(e.getMessage(), e);
-            }
+            return getVariantVcfReader(input, metadata, stdin);
         } else {
             throw variantInputNotSupported(input);
         }
@@ -107,15 +120,36 @@ public class VariantReaderUtils {
         return variantJsonReader;
     }
 
-    protected static VariantAvroReader getVariantAvroReader(Path input, VariantStudyMetadata metadata) throws StorageEngineException {
+    protected static VariantAvroReader getVariantAvroReader(Path input, VariantStudyMetadata metadata, boolean stdin)
+            throws StorageEngineException {
         VariantAvroReader variantAvroReader;
         if (isAvro(input.toString())) {
             String sourceFile = getMetaFromTransformedFile(input.toAbsolutePath().toString());
-            variantAvroReader = new VariantAvroReader(input.toAbsolutePath().toFile(), new File(sourceFile), metadata);
+            if (stdin) {
+                variantAvroReader = new VariantAvroReader(System.in, new File(sourceFile), metadata);
+            } else {
+                variantAvroReader = new VariantAvroReader(input.toAbsolutePath().toFile(), new File(sourceFile), metadata);
+            }
         } else {
             throw variantInputNotSupported(input);
         }
         return variantAvroReader;
+    }
+
+    public static VariantVcfHtsjdkReader getVariantVcfReader(Path input, VariantStudyMetadata metadata) {
+        return getVariantVcfReader(input, metadata, false);
+    }
+
+    public static VariantVcfHtsjdkReader getVariantVcfReader(Path input, VariantStudyMetadata metadata, boolean stdin) {
+        if (metadata == null) {
+            VariantFileMetadata variantFileMetadata = createEmptyVariantFileMetadata(input);
+            metadata = variantFileMetadata.toVariantStudyMetadata("");
+        }
+        if (stdin) {
+            return new VariantVcfHtsjdkReader(System.in, metadata);
+        } else {
+            return new VariantVcfHtsjdkReader(input, metadata);
+        }
     }
 
     public static Path getMetaFromTransformedFile(Path variantsFile) {
@@ -197,6 +231,22 @@ public class VariantReaderUtils {
      * @throws StorageEngineException if the format is not valid or there is an error reading
      */
     public static VariantFileMetadata readVariantFileMetadata(Path input, VariantFileMetadata metadata) throws StorageEngineException {
+        return readVariantFileMetadata(input, metadata, false);
+    }
+
+    /**
+     * Read the {@link VariantFileMetadata} from a variant file.
+     *
+     * Accepted formats: Avro, Json and VCF
+     *
+     * @param input Input variant file (avro, json, vcf)
+     * @param metadata {@link VariantFileMetadata} to fill. Can be null
+     * @param stdin Indicate if the file should be read from the Standard Input
+     * @return Read {@link VariantFileMetadata}
+     * @throws StorageEngineException if the format is not valid or there is an error reading
+     */
+    public static VariantFileMetadata readVariantFileMetadata(Path input, VariantFileMetadata metadata, boolean stdin)
+            throws StorageEngineException {
         if (metadata == null) {
             metadata = createEmptyVariantFileMetadata(input);
         }
@@ -212,19 +262,40 @@ public class VariantReaderUtils {
                 throw new StorageEngineException("Unable to read VariantSource", e);
             }
         }
-
-        VariantReader reader = getVariantReader(input, metadata.toVariantStudyMetadata(""));
+        if (stdin) {
+            markStdin();
+        }
+        VariantReader reader = getVariantReader(input, metadata.toVariantStudyMetadata(""), stdin);
         try {
             metadata = VariantMetadataUtils.readVariantFileMetadata(reader, metadata);
         } catch (IOException e) {
             throw new StorageEngineException("Unable to read VariantSource", e);
         }
-
+        if (stdin) {
+            resetStdin();
+        }
         return metadata;
     }
 
-    private static VariantFileMetadata createEmptyVariantFileMetadata(Path input) {
-        return new VariantFileMetadata(input.getFileName().toString(), input.getFileName().toString());
+    public static Pair<VCFHeader, VCFHeaderVersion> readHtsHeader(Path input, boolean stdin) throws StorageEngineException {
+        if (stdin) {
+            markStdin();
+        }
+        VariantVcfHtsjdkReader vcfReader = VariantReaderUtils.getVariantVcfReader(input, null, stdin);
+        vcfReader.open();
+        vcfReader.pre();
+        VCFHeader vcfHeader = vcfReader.getVCFHeader();
+        VCFHeaderVersion version = vcfReader.getVCFHeaderVersion();
+        vcfReader.close();
+
+        if (stdin) {
+            resetStdin();
+        }
+        return Pair.of(vcfHeader, version);
+    }
+
+    public static VariantFileMetadata createEmptyVariantFileMetadata(Path input) {
+        return new VariantFileMetadata(input.getFileName().toString(), input.toAbsolutePath().toString());
     }
 
     public static boolean isAvro(String fileName) {
@@ -270,6 +341,31 @@ public class VariantReaderUtils {
 
     public static boolean isMetaFile(String file) {
         return VALID_META.matcher(file).find();
+    }
+
+    /**
+     * Mark current point in the StandardInput to reset later on.
+     */
+    private static void markStdin() {
+        if (!System.in.markSupported()) {
+            System.setIn(new BufferedInputStream(System.in));
+        }
+        System.in.mark(10 * 1024 * 1024); //10MB
+    }
+
+    /**
+     * Reposition the stdin stream.
+     *
+     * Must be called after {@link VariantReaderUtils#markStdin()}
+     *
+     * @throws StorageEngineException If the stdin was not marked, or more than 10MB were read.
+     */
+    private static void resetStdin() throws StorageEngineException {
+        try {
+            System.in.reset();
+        } catch (IOException e) {
+            throw new StorageEngineException("Error resetting stdin", e);
+        }
     }
 
 }

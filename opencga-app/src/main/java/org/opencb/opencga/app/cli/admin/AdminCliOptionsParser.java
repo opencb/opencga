@@ -551,7 +551,8 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         @Parameter(names = {"--to"}, description = "Group in a study that will be synchronised", arity = 1)
         public String to;
 
-        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where the list of users will be associated to.", required = true, arity = 1)
+        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where the list of users will be associated to.",
+                required = true, arity = 1)
         public String study;
 
         @Parameter(names = {"--auth-origin"}, description = "Authentication id (as defined in the catalog configuration file) of the origin"

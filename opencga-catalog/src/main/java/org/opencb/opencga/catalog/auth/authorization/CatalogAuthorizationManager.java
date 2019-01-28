@@ -73,7 +73,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     // List of Acls defined for the special users (admin, daemon...) read from the main configuration file.
     private static final List<StudyAclEntry> SPECIAL_ACL_LIST = Arrays.asList(
-            new StudyAclEntry(ADMIN, Arrays.asList("VIEW_FILE_HEADERS", "VIEW_FILE_CONTENTS", "VIEW_FILES", "WRITE_FILES",
+            new StudyAclEntry(ADMIN, Arrays.asList("VIEW_FILE_HEADERS", "VIEW_FILE_CONTENTS", "VIEW_FILES", "WRITE_FILES", "UPLOAD_FILES",
                     "VIEW_JOBS", "WRITE_JOBS")));
 
     private final boolean openRegister;
@@ -294,7 +294,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     private boolean isAdministrativeUser(long studyId, String user) throws CatalogException {
         QueryResult<Group> groupBelonging = getGroupBelonging(studyId, user);
         for (Group group : groupBelonging.getResult()) {
-            if (group.getName().equals(ADMINS_GROUP)) {
+            if (group.getId().equals(ADMINS_GROUP)) {
                 return true;
             }
         }
@@ -832,7 +832,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (member.startsWith("@")) { //group
             // If the userId does not belong to the group...
             QueryResult<Group> groupBelonging = getGroupBelonging(studyId, userId);
-            if (groupBelonging.getNumResults() != 1 || !groupBelonging.first().getName().equals(member)) {
+            if (groupBelonging.getNumResults() != 1 || !groupBelonging.first().getId().equals(member)) {
                 throw new CatalogAuthorizationException("The user " + userId + " does not have permissions to see the ACLs of "
                         + member);
             }

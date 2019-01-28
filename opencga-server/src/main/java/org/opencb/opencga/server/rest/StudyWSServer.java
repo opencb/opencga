@@ -34,8 +34,8 @@ import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.server.WebServiceException;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.net.URI;
@@ -453,8 +453,22 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "JSON containing the parameters", required = true) GroupCreateParams params) {
         params = ObjectUtils.defaultIfNull(params, new GroupCreateParams());
 
+        if (StringUtils.isNotEmpty(params.name)) {
+            params.name = params.id;
+        }
+
+        if (StringUtils.isNotEmpty(params.id)) {
+            params.id = params.name;
+        }
+        if (StringUtils.isEmpty(params.id)) {
+            return createErrorResponse(new CatalogException("Group 'id' key missing."));
+        }
+
+        List<String> userList = StringUtils.isEmpty(params.users) ? Collections.emptyList() : Arrays.asList(params.users.split(","));
+
         try {
-            QueryResult group = catalogManager.getStudyManager().createGroup(studyStr, params.name, params.users, sessionId);
+            QueryResult group = catalogManager.getStudyManager().createGroup(studyStr, new Group(params.id, params.name, userList, null),
+                    sessionId);
             return createOkResponse(group);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -881,6 +895,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     public static class GroupCreateParams {
         @JsonProperty(required = true)
+        public String id;
         public String name;
         public String users;
     }

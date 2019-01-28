@@ -59,6 +59,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
 
 import static org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.STDIN;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.*;
 
 /**
@@ -237,7 +238,9 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
 
     protected void loadFromAvro(Path input, String table, ArchiveTableHelper helper, ProgressLogger progressLogger)
             throws StorageEngineException {
-        VariantReader variantReader = VariantReaderUtils.getVariantReader(input, helper.getStudyMetadata());
+        boolean stdin = options.getBoolean(STDIN.key(), STDIN.defaultValue());
+
+        VariantReader variantReader = VariantReaderUtils.getVariantReader(input, helper.getStudyMetadata(), stdin);
         int studyId = helper.getStudyId();
         int fileId = Integer.valueOf(helper.getFileMetadata().getId());
 
@@ -269,7 +272,9 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
 
         // Task
         String archiveFields = options.getString(ARCHIVE_FIELDS);
-        GroupedVariantsTask task = new GroupedVariantsTask(archiveWriter, hadoopDBWriter, sampleIndexDBLoader, null, archiveFields);
+        String nonRefFilter = options.getString(ARCHIVE_NON_REF_FILTER);
+        GroupedVariantsTask task = new GroupedVariantsTask(archiveWriter, hadoopDBWriter, sampleIndexDBLoader,
+                null, archiveFields, nonRefFilter);
 
 
         ParallelTaskRunner<ImmutablePair<Long, List<Variant>>, VcfSlice> ptr =
@@ -355,12 +360,12 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
 
         GroupedVariantsTask(VariantHBaseArchiveDataWriter archiveWriter, VariantHadoopDBWriter hadoopDBWriter,
                             SampleIndexDBLoader sampleIndexDBLoader, ProgressLogger progressLogger) {
-            this(archiveWriter, hadoopDBWriter, sampleIndexDBLoader, progressLogger, null);
+            this(archiveWriter, hadoopDBWriter, sampleIndexDBLoader, progressLogger, null, null);
         }
 
         GroupedVariantsTask(VariantHBaseArchiveDataWriter archiveWriter, VariantHadoopDBWriter hadoopDBWriter,
-                            SampleIndexDBLoader sampleIndexDBLoader, ProgressLogger progressLogger, String fields) {
-            this.converterTask = new VariantToVcfSliceConverterTask(progressLogger, fields);
+                            SampleIndexDBLoader sampleIndexDBLoader, ProgressLogger progressLogger, String fields, String nonRefFilter) {
+            this.converterTask = new VariantToVcfSliceConverterTask(progressLogger, fields, nonRefFilter);
             this.archiveWriter = Objects.requireNonNull(archiveWriter);
             this.hadoopDBWriter = Objects.requireNonNull(hadoopDBWriter);
             this.sampleIndexDBLoader = sampleIndexDBLoader;

@@ -22,6 +22,7 @@ import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 
 import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 
@@ -103,6 +104,10 @@ public class SampleCommandOptions {
 
         @Parameter(names = {"--no-lazy"}, description = "Obtain the entire related job and experiment objects", arity = 0)
         public boolean noLazy;
+
+        @Parameter(names = {"--flatten-annotations"}, description = "Flag indicating whether nested annotations should be returned flattened",
+                arity = 0)
+        public boolean flattenAnnotations;
     }
 
     @Parameters(commandNames = {"create"}, commandDescription = "Create a sample")
@@ -166,14 +171,19 @@ public class SampleCommandOptions {
         @Parameter(names = {"--individual"}, description = "Filter by id or name of the individual", required = false, arity = 1)
         public String individual;
 
-        @Parameter(names = {"-a", "--annotation"}, description = "SampleAnnotations values. <variableName>:<annotationValue>(,<annotationValue>)*", arity = 1)
-        public String annotation;
-
         @Parameter(names = {"--type"}, description = "Sample type", arity = 1)
         public String type;
 
         @Parameter(names = {"--somatic"}, description = "Flag indicating if the sample comes from somatic cells", arity = 1)
         public Boolean somatic;
+
+        @Parameter(names = {"--annotation"}, description = "Annotation filters. Example: age>30;gender=FEMALE. For more information, " +
+                "please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0", arity = 1)
+        public String annotation;
+
+        @Parameter(names = {"--flatten-annotations"}, description = "Flag indicating whether nested annotations should be returned flattened",
+                arity = 0)
+        public boolean flattenAnnotations;
     }
 
 
@@ -197,6 +207,10 @@ public class SampleCommandOptions {
 
         @Parameter(names = {"--type"}, description = "Sample type", arity = 1)
         public String type;
+
+        @Parameter(names = {"--annotation-sets-action"}, description = "Action to be performed if the array of annotationSets is being updated. (ADD, SET, REMOVE)",
+                arity = 1)
+        public ParamUtils.UpdateAction annotationSetsAction;
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete the selected sample")

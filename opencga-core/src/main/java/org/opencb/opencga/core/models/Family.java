@@ -36,6 +36,7 @@ public class Family extends Annotable {
     private String uuid;
 
     private List<Phenotype> phenotypes;
+    private List<Disorder> disorders;
     private List<Individual> members;
 
     private String creationDate;
@@ -51,18 +52,19 @@ public class Family extends Annotable {
     public Family() {
     }
 
-    public Family(String id, String name, List<Phenotype> phenotypes, List<Individual> members, String description,
-                  int expectedSize, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
-        this(id, name, phenotypes, members, TimeUtils.getTime(), new FamilyStatus(Status.READY), description, expectedSize, -1, 1,
-                annotationSets, attributes);
+    public Family(String id, String name, List<Phenotype> phenotypes, List<Disorder> disorders, List<Individual> members,
+                  String description, int expectedSize, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+        this(id, name, phenotypes, disorders, members, TimeUtils.getTime(), new FamilyStatus(Status.READY), description, expectedSize, -1,
+                1, annotationSets, attributes);
     }
 
-    public Family(String id, String name, List<Phenotype> phenotypes, List<Individual> members, String creationDate,
-                  FamilyStatus status, String description, int expectedSize, int release, int version, List<AnnotationSet> annotationSets,
-                  Map<String, Object> attributes) {
+    public Family(String id, String name, List<Phenotype> phenotypes, List<Disorder> disorders, List<Individual> members,
+                  String creationDate, FamilyStatus status, String description, int expectedSize, int release, int version,
+                  List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.phenotypes = defaultObject(phenotypes, Collections::emptyList);
+        this.disorders = defaultObject(disorders, Collections::emptyList);
         this.members = defaultObject(members, Collections::emptyList);
         this.creationDate = defaultObject(creationDate, TimeUtils::getTime);
         this.status = defaultObject(status, new FamilyStatus());
@@ -114,6 +116,7 @@ public class Family extends Annotable {
         sb.append(", name='").append(name).append('\'');
         sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", phenotypes=").append(phenotypes);
+        sb.append(", disorders=").append(disorders);
         sb.append(", members=").append(members);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
@@ -173,6 +176,15 @@ public class Family extends Annotable {
 
     public Family setPhenotypes(List<Phenotype> phenotypes) {
         this.phenotypes = phenotypes;
+        return this;
+    }
+
+    public List<Disorder> getDisorders() {
+        return disorders;
+    }
+
+    public Family setDisorders(List<Disorder> disorders) {
+        this.disorders = disorders;
         return this;
     }
 

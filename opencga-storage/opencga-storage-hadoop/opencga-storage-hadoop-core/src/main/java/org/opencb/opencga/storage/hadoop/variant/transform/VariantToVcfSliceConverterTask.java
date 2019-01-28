@@ -16,12 +16,14 @@
 
 package org.opencb.opencga.storage.hadoop.variant.transform;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.solr.common.StringUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.tools.variant.converters.proto.VariantToVcfSliceConverter;
+import org.opencb.biodata.tools.variant.filters.VariantAvroFilters;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.run.ParallelTaskRunner.Task;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -41,17 +43,18 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngi
 public class VariantToVcfSliceConverterTask implements Task<ImmutablePair<Long, List<Variant>>, VcfSliceProtos.VcfSlice> {
     private final VariantToVcfSliceConverter converterNonRef;
     private final VariantToVcfSliceConverter converterRef;
+    private VariantAvroFilters refFilter;
     private final ProgressLogger progressLogger;
 
     public VariantToVcfSliceConverterTask() {
-        this(null);
+        this(null, null, null);
     }
 
     public VariantToVcfSliceConverterTask(ProgressLogger progressLogger) {
-        this(progressLogger, null);
+        this(progressLogger, null, null);
     }
 
-    public VariantToVcfSliceConverterTask(ProgressLogger progressLogger, String fields) {
+    public VariantToVcfSliceConverterTask(ProgressLogger progressLogger, String fields, String nonRefFilter) {
         this.progressLogger = progressLogger;
         this.converterNonRef = new VariantToVcfSliceConverter();
 
@@ -65,6 +68,11 @@ public class VariantToVcfSliceConverterTask implements Task<ImmutablePair<Long, 
             parseArchiveFields(attributeFields, formatFields, fields);
             this.converterRef = new VariantToVcfSliceConverter(attributeFields, formatFields);
         }
+        this.refFilter = new VariantAvroFilters().addTypeFilter(VariantType.NO_VARIATION)
+                .addSampleFormatFilter("GT", VariantToVcfSliceConverterTask::isHomRef);
+        if (StringUtils.isNotEmpty(nonRefFilter)) {
+            refFilter.addFilter(new VariantAvroFilters().addFilter(true, true, nonRefFilter).negate());
+        }
     }
 
     @Override
@@ -74,7 +82,7 @@ public class VariantToVcfSliceConverterTask implements Task<ImmutablePair<Long, 
             List<Variant> ref = new ArrayList<>(pair.right.size());
             List<Variant> nonRef = new ArrayList<>(pair.right.size());
             for (Variant variant : pair.right) {
-                if (isRefVariant(variant)) {
+                if (refFilter.test(variant)) {
                     ref.add(variant);
                 } else {
                     nonRef.add(variant);
@@ -127,8 +135,10 @@ public class VariantToVcfSliceConverterTask implements Task<ImmutablePair<Long, 
     }
 
     private static void parseArchiveFields(Set<String> attributeFields, Set<String> formatFields, String fields) {
-        // Always store GT in archive table!
+        // Always store GT, QUAL and FILTER in archive table!
         formatFields.add("GT");
+        formatFields.add("FILTER");
+        formatFields.add("QUAL");
 
         Set<String> currentFieldsSet = null;
         for (String field : fields.split(",")) {

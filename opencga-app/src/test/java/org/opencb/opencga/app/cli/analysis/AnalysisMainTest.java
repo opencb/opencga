@@ -25,7 +25,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.models.*;
@@ -35,13 +34,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 /**
  * Created on 09/05/16
@@ -65,6 +65,7 @@ public class AnalysisMainTest {
     private String studyId;
     private String outdirId;
     private Logger logger = LoggerFactory.getLogger(AnalysisMainTest.class);
+    private Map<File.Bioformat, DataStore> datastores;
 
 
     @Before
@@ -81,23 +82,28 @@ public class AnalysisMainTest {
         projectId = catalogManager.getProjectManager().create("p1", "p1", "Project 1", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionId).first().getId();
 
-        Map<File.Bioformat, DataStore> datastores = new HashMap<>();
+        datastores = new HashMap<>();
         datastores.put(File.Bioformat.VARIANT, new DataStore(STORAGE_ENGINE, dbNameVariants));
         datastores.put(File.Bioformat.ALIGNMENT, new DataStore(STORAGE_ENGINE, dbNameAlignments));
 
-        Study study = catalogManager.getStudyManager().create(projectId, "s1", "s1", "s1", Study.Type.CASE_CONTROL, null,
+
+    }
+
+    private void createStudy(Map<File.Bioformat, DataStore> datastores, String studyName) throws CatalogException {
+        Study study = catalogManager.getStudyManager().create(projectId, studyName, studyName, studyName, Study.Type.CASE_CONTROL, null,
                 "Study " +
                         "1", null, null, null, null, datastores, null, Collections.singletonMap(VariantStorageEngine.Options.AGGREGATED_TYPE.key(),
                         Aggregation.NONE), null, sessionId).first();
         studyId = study.getId();
         outdirId = catalogManager.getFileManager().createFolder(studyId, Paths.get("data", "index").toString(), null,
                 true, null, QueryOptions.empty(), sessionId).first().getId();
+
     }
 
     @Test
     public void testVariantIndex() throws Exception {
 //        Job job;
-
+        createStudy(datastores, "s1");
         File file1 = opencga.createFile(studyId, "1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", sessionId);
         File file2 = opencga.createFile(studyId, "1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", sessionId);
         File file3 = opencga.createFile(studyId, "1000g_batches/1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", sessionId);
@@ -232,8 +238,7 @@ public class AnalysisMainTest {
 
     @Test
     public void testVariantIndexAndQuery() throws CatalogException, IOException {
-        Job job;
-
+        createStudy(datastores, "s2");
         File file1 = opencga.createFile(studyId, "1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", sessionId);
 //        File file1 = opencga.createFile(studyId, "variant-test-file.vcf.gz", sessionId);
 //        File file1 = opencga.createFile(studyId, "100k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", sessionId);
@@ -327,24 +332,34 @@ public class AnalysisMainTest {
 
     @Test
     public void testAlignmentIndex() throws CatalogException, IOException {
-        Job job;
+//        Job job;
 
         File bam = opencga.createFile(studyId, "HG00096.chrom20.small.bam", sessionId);
-        File bai = opencga.createFile(studyId, "HG00096.chrom20.small.bam.bai", sessionId);
+//        File bai = opencga.createFile(studyId, "HG00096.chrom20.small.bam.bai", sessionId);
+
+        String temporalDir = opencga.createTmpOutdir(studyId, "index", sessionId);
 
         // Index file1
         execute("alignment", "index",
                 "--session-id", sessionId,
                 "--study", studyId,
                 "--file", bam.getName(),
-                "-o", opencga.createTmpOutdir(studyId, "index", sessionId));
-        assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(studyId, bam.getId(), null, sessionId).first().getIndex().getStatus().getName());
-        job = catalogManager.getJobManager().get(studyId, new Query(JobDBAdaptor.QueryParams.INPUT.key(), bam.getUid()), null, sessionId).first();
-        assertEquals(Job.JobStatus.READY, job.getStatus().getName());
+                "-o", temporalDir);
 
-        execute("alignment", "query", "--session-id", sessionId, "--file", "user@p1:s1:" + bam.getPath(), "--region", "20");
+
+//        assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(studyId, bam.getId(), null, sessionId).first().getIndex().getStatus().getName());
+//        job = catalogManager.getJobManager().get(studyId, new Query(JobDBAdaptor.QueryParams.INPUT.key(), bam.getUid()), null, sessionId).first();
+//        assertEquals(Job.JobStatus.READY, job.getStatus().getName());
+
+        assertEquals(3, Files.list(Paths.get(temporalDir)).collect(Collectors.toList()).size());
+        assertTrue(Files.exists(Paths.get(temporalDir).resolve("HG00096.chrom20.small.bam.bai")));
+        assertTrue(Files.exists(Paths.get(temporalDir).resolve("HG00096.chrom20.small.bam.bw")));
+        assertTrue(Files.exists(Paths.get(temporalDir).resolve("status.json")));
+
+//        execute("alignment", "query", "--session-id", sessionId, "--file", "user@p1:s1:" + bam.getPath(), "--region", "20");
 
     }
+
 
     public int execute(String... args) {
         int exitValue = AnalysisMain.privateMain(args);

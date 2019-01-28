@@ -17,6 +17,7 @@
 
 package org.opencb.opencga.storage.core.manager.variant.metadata;
 
+import com.google.common.collect.BiMap;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -36,10 +37,8 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.nio.file.Paths;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.api.FileDBAdaptor.QueryParams.INDEX;
@@ -201,14 +200,20 @@ public class CatalogStudyConfigurationFactory {
         }
 
         if (!studyConfiguration.getIndexedFiles().isEmpty()) {
-            Query query = new Query(FileDBAdaptor.QueryParams.NAME.key(), studyConfiguration.getIndexedFiles().stream()
-                    .map(studyConfiguration.getFileIds().inverse()::get)
-                    .collect(Collectors.toList()));
+            List<String> list = new ArrayList<>();
+            BiMap<Integer, String> integerStringBiMap = studyConfiguration.getFilePaths().inverse();
+            for (Integer fileId : studyConfiguration.getIndexedFiles()) {
+                String path = integerStringBiMap.get(fileId);
+                list.add(Paths.get(path).toUri().toString());
+            }
+            Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), list);
 
             try (DBIterator<File> iterator = catalogManager.getFileManager().iterator(studyConfiguration.getStudyName(),
                     query,
                     new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(NAME.key(), PATH.key(), INDEX.key())), sessionId)) {
+                int numFiles = 0;
                 while (iterator.hasNext()) {
+                    numFiles++;
                     File file = iterator.next();
                     String status = file.getIndex() == null || file.getIndex().getStatus() == null
                             ? FileIndex.IndexStatus.NONE
@@ -224,6 +229,9 @@ public class CatalogStudyConfigurationFactory {
                         index.getStatus().setName(FileIndex.IndexStatus.READY);
                         catalogManager.getFileManager().setFileIndex(studyConfiguration.getStudyName(), file.getPath(), index, sessionId);
                     }
+                }
+                if (numFiles != studyConfiguration.getIndexedFiles().size()) {
+                    logger.warn("Some files were not found in catalog given their file uri");
                 }
             }
         }

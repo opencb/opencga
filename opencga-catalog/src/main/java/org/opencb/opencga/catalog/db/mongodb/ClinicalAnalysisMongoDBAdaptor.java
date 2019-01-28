@@ -34,7 +34,7 @@ import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.ClinicalAnalysisConverter;
-import org.opencb.opencga.catalog.db.mongodb.iterators.ClinicalAnalysisMongoDBIterator;
+import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -177,13 +177,17 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             document.getSet().put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
         }
 
-        String[] acceptedParams = {QueryParams.DESCRIPTION.key()};
+        String[] acceptedParams = {QueryParams.DESCRIPTION.key(), QueryParams.PRIORITY.key(), QueryParams.DUE_DATE.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
-        String[] acceptedObjectParams = {QueryParams.FAMILY.key(), QueryParams.PROBAND.key()};
+        String[] acceptedListParams = {QueryParams.FLAGS.key()};
+        filterStringListParams(parameters, document.getSet(), acceptedListParams);
+
+        String[] acceptedObjectParams = {QueryParams.FILES.key(), QueryParams.FAMILY.key(), QueryParams.DISORDER.key(),
+                QueryParams.PROBAND.key(), QueryParams.COMMENTS.key(), QueryParams.STATUS.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         clinicalConverter.validateFamilyToUpdate(document.getSet());
-        clinicalConverter.validateSubjectsToUpdate(document.getSet());
+        clinicalConverter.validateProbandToUpdate(document.getSet());
 
         if (parameters.containsKey(QueryParams.INTERPRETATIONS.key())) {
             List<Object> objectInterpretationList = parameters.getAsList(QueryParams.INTERPRETATIONS.key());
@@ -333,8 +337,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     @Override
     public DBIterator<ClinicalAnalysis> iterator(Query query, QueryOptions options) throws CatalogDBException {
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
-        return new ClinicalAnalysisMongoDBIterator(mongoCursor, clinicalConverter, dbAdaptorFactory, query.getLong(PRIVATE_STUDY_ID), null,
-                options);
+        return new MongoDBIterator<>(mongoCursor, clinicalConverter);
     }
 
     @Override
@@ -343,8 +346,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         queryOptions.put(NATIVE_QUERY, true);
 
         MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions);
-        return new ClinicalAnalysisMongoDBIterator(mongoCursor, null, dbAdaptorFactory, query.getLong(PRIVATE_STUDY_ID), null,
-                options);
+        return new MongoDBIterator(mongoCursor);
     }
 
     @Override
@@ -352,8 +354,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             throws CatalogDBException, CatalogAuthorizationException {
         Document studyDocument = getStudyDocument(query);
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options, studyDocument, user);
-        return new ClinicalAnalysisMongoDBIterator(mongoCursor, clinicalConverter, dbAdaptorFactory, query.getLong(PRIVATE_STUDY_ID), user,
-                options);
+        return new MongoDBIterator(mongoCursor, clinicalConverter);
     }
 
     @Override
@@ -364,8 +365,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
         Document studyDocument = getStudyDocument(query);
         MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions, studyDocument, user);
-        return new ClinicalAnalysisMongoDBIterator(mongoCursor, null, dbAdaptorFactory, query.getLong(PRIVATE_STUDY_ID), user,
-                options);
+        return new MongoDBIterator(mongoCursor);
     }
 
     private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {
@@ -482,12 +482,11 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         List<Bson> filterList = new ArrayList<>();
         filterList.add(Filters.eq(QueryParams.ID.key(), clinicalAnalysis.getId()));
         filterList.add(Filters.eq(PRIVATE_STUDY_ID, studyId));
-        filterList.add(Filters.eq(QueryParams.STATUS_NAME.key(), Status.READY));
 
         Bson bson = Filters.and(filterList);
         QueryResult<Long> count = clinicalCollection.count(bson);
         if (count.getResult().get(0) > 0) {
-            throw new CatalogDBException("Cannot create clinical analysis. A clinical analysis with { name: '"
+            throw new CatalogDBException("Cannot create clinical analysis. A clinical analysis with { id: '"
                     + clinicalAnalysis.getId() + "'} already exists.");
         }
 
@@ -521,34 +520,25 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     public QueryResult<ClinicalAnalysis> get(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
+        List<ClinicalAnalysis> documentList = new ArrayList<>();
+        QueryResult<ClinicalAnalysis> queryResult;
+        try (DBIterator<ClinicalAnalysis> dbIterator = iterator(query, options, user)) {
+            while (dbIterator.hasNext()) {
+                documentList.add(dbIterator.next());
+            }
+        }
+        queryResult = endQuery("Get", startTime, documentList);
 
-        // Get the study document
-        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_UID.key()));
-        QueryResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
-        if (queryResult.getNumResults() == 0) {
-            throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_UID.key()) + " not found");
+        if (options != null && options.getBoolean(QueryOptions.SKIP_COUNT, false)) {
+            return queryResult;
         }
 
-        // Get the document query needed to check the permissions as well
-        Document queryForAuthorisedEntries = getQueryForAuthorisedEntries((Document) queryResult.first(), user,
-                StudyAclEntry.StudyPermissions.VIEW_CLINICAL_ANALYSIS.name(),
-                ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.VIEW.name(), Entity.CLINICAL_ANALYSIS.name());
-
-        filterOutDeleted(query);
-        Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
-        QueryOptions qOptions;
-        if (options != null) {
-            qOptions = options;
-        } else {
-            qOptions = new QueryOptions();
+        // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
+        if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
+            QueryResult<Long> count = count(query, user, StudyAclEntry.StudyPermissions.VIEW_CLINICAL_ANALYSIS);
+            queryResult.setNumTotalResults(count.first());
         }
-
-        QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult = clinicalCollection.find(bson, clinicalConverter, qOptions);
-//        addReferencesInfoToClinicalAnalysis(clinicalAnalysisQueryResult);
-
-        logger.debug("Clinical Analysis get: query : {}, dbTime: {}", bson.toBsonDocument(Document.class,
-                MongoClient.getDefaultCodecRegistry()), qOptions.toJson(), clinicalAnalysisQueryResult.getDbTime());
-        return endQuery("Get clinical analysis", startTime, clinicalAnalysisQueryResult);
+        return queryResult;
     }
 
     @Override
@@ -608,6 +598,9 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                         mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
                         addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
                         break;
+                    case DISORDER:
+                        addOntologyQueryFilter(queryParam.key(), queryParam.key(), query, andBsonList);
+                        break;
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
@@ -617,13 +610,15 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     case STATUS_NAME:
                         // Convert the status to a positive status
                         query.put(queryParam.key(),
-                                Status.getPositiveStatus(Status.STATUS_LIST, query.getString(queryParam.key())));
+                                Status.getPositiveStatus(ClinicalAnalysis.ClinicalStatus.STATUS_LIST, query.getString(queryParam.key())));
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     // Other parameter that can be queried.
                     case ID:
                     case UUID:
                     case TYPE:
+                    case DUE_DATE:
+                    case PRIORITY:
                     case SAMPLE_UID:
                     case PROBAND_UID:
                     case FAMILY_UID:

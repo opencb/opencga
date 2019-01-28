@@ -18,9 +18,7 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 
 import org.opencb.commons.datastore.core.QueryParam;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
@@ -37,6 +35,7 @@ public final class VariantQueryParam implements QueryParam {
     private final String description;
 
     private static final List<VariantQueryParam> VALUES = new ArrayList<>();
+    private static final Map<String, VariantQueryParam> VALUES_MAP = new HashMap<>();
     private static final String ACCEPTS_ALL_NONE = "Accepts '" + ALL + "' and '" + NONE + "'.";
     private static final String ACCEPTS_AND_OR = "Accepts AND (" + AND + ") and OR (" + OR + ") operators.";
 
@@ -310,6 +309,7 @@ public final class VariantQueryParam implements QueryParam {
         this.description = description;
 
         VALUES.add(this);
+        VALUES_MAP.put(key, this);
     }
 
     @Override
@@ -334,5 +334,9 @@ public final class VariantQueryParam implements QueryParam {
 
     public static List<VariantQueryParam> values() {
         return Collections.unmodifiableList(VALUES);
+    }
+
+    public static VariantQueryParam valueOf(String param) {
+        return VALUES_MAP.get(param);
     }
 }

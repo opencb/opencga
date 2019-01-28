@@ -1,0 +1,53 @@
+---
+baseQuery :
+  summary : true
+
+queries :
+- id : "RegionAndBiotype"
+  description : "Purpose of this query"
+  query :
+    region : "22:16052853-16054112"
+    gene :   "BRCA2"
+    biotype : "coding"
+    populationFrequencyMaf : "1kG_phase3:ALL>0.1"
+  tolerationThreshold : 300
+
+- id : "Region"
+  description : "Purpose of this query"
+  query :
+    region : "22:16052853-16054112"
+  tolerationThreshold : 400
+
+- id : "Gene"
+  description : "Purpose of this query"
+  query :
+    gene : "MIB2"
+  tolerationThreshold : 500
+
+- id : "PF"
+  description : "Purpose of this query"
+  query :
+    populationFrequencyMaf : "1kG_phase3:ALL>=0.2"
+  tolerationThreshold : 600
+
+- id : "FC"
+  description : "Purpose of this query"
+  query :
+    functionalScore : "cadd_scaled>=0.2,cadd_raw>0"
+  tolerationThreshold : 600
+
+- id : "FCAndType"
+  description : "Purpose of this query"
+  query :
+    functionalScore : "cadd_scaled>=0.2,cadd_raw>0"
+    type : SNV
+  tolerationThreshold : 600
+
+- id : "Type"
+  description : "Purpose of this query"
+  query :
+    type : CNV
+
+sessionIds :
+- "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0IiwiYXVkIjoiT3BlbkNHQSB1c2VycyIsImlhdCI6MTU0MzQwMTU5OCwiZXhwIjozNzU0MzQwMTU5OH0.c0HSb8j9dfB6nzoq3OYZqYmU1sSoRAzN5C-5miJ6UzY"
+- "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0IiwiYXVkIjoiT3BlbkNHQSB1c2VycyIsImlhdCI6MTU0MzQwMTU5OCwiZXhwIjozNzU0MzQwMTU5OH0.c0HSb8j9dfB6nzoq3OYZqYmU1sSoRAzN5C-5miJ6UzY"

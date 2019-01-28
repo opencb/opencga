@@ -70,6 +70,9 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         SNAPSHOT("snapshot", INTEGER, ""), // Last version of individual at release = snapshot
         VERSION("version", INTEGER, ""), // Version of the individual
 
+        DISORDERS("disorders", TEXT_ARRAY, ""),
+        DISORDERS_ID("disorders.id", TEXT, ""),
+
         PHENOTYPES("phenotypes", TEXT_ARRAY, ""),
         PHENOTYPES_ID("phenotypes.id", TEXT, ""),
         PHENOTYPES_NAME("phenotypes.name", TEXT, ""),
@@ -148,6 +151,7 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         POPULATION_NAME(QueryParams.POPULATION_NAME.key()),
         POPULATION_SUBPOPULATION(QueryParams.POPULATION_SUBPOPULATION.key()),
         PHENOTYPES(QueryParams.PHENOTYPES.key()),
+        DISORDERS(QueryParams.DISORDERS.key()),
         LIFE_STATUS(QueryParams.LIFE_STATUS.key()),
         AFFECTATION_STATUS(QueryParams.AFFECTATION_STATUS.key()),
         ANNOTATION_SETS(QueryParams.ANNOTATION_SETS.key()),

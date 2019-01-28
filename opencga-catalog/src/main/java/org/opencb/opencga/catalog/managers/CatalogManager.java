@@ -195,7 +195,7 @@ public class CatalogManager implements AutoCloseable {
 
     public void deleteCatalogDB(boolean force) throws CatalogException, URISyntaxException {
         if (!force) {
-            userManager.validatePassword("admin", configuration.getAdmin().getPassword(), true);
+            userManager.login("admin", configuration.getAdmin().getPassword());
         }
         catalogDBAdaptorFactory.deleteCatalogDB();
         clearCatalog();

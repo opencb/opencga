@@ -174,12 +174,6 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     }
 
     @Override
-    public void testGetAllVariants_negatedGenotypesMixed() {
-        thrown.expect(VariantQueryException.class);
-        super.testGetAllVariants_negatedGenotypesMixed();
-    }
-
-    @Override
     @Ignore
     public void groupBy_gene_limit_0() throws Exception {
         Assume.assumeTrue(GROUP_BY);

@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.config;
 
+import java.net.URI;
 import java.util.List;
 
 /**
@@ -23,7 +24,6 @@ import java.util.List;
  */
 public class BenchmarkConfiguration {
 
-    private String storageEngine;
     private int numRepetitions;
     private boolean load;
     private List<String> queries;
@@ -32,31 +32,37 @@ public class BenchmarkConfiguration {
     @Deprecated
     private String table;
     private String mode;
+    private int delay;
+    private String connectionType;
     private DatabaseCredentials database;
     private int concurrency;
+    private URI rest;
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("BenchmarkConfiguration{");
-        sb.append("storageEngine='").append(storageEngine).append('\'');
         sb.append(", numRepetitions=").append(numRepetitions);
         sb.append(", load=").append(load);
         sb.append(", queries=").append(queries);
         sb.append(", databaseName='").append(databaseName).append('\'');
         sb.append(", table='").append(table).append('\'');
         sb.append(", mode='").append(mode).append('\'');
+        sb.append(", delay=").append(delay);
+        sb.append(", connectionType='").append(connectionType).append('\'');
         sb.append(", database=").append(database);
         sb.append(", concurrency=").append(concurrency);
+        sb.append(", rest=").append(rest);
         sb.append('}');
         return sb.toString();
     }
 
-    public String getStorageEngine() {
-        return storageEngine;
+    public String getConnectionType() {
+        return connectionType;
     }
 
-    public void setStorageEngine(String storageEngine) {
-        this.storageEngine = storageEngine;
+    public BenchmarkConfiguration setConnectionType(String connectionType) {
+        this.connectionType = connectionType;
+        return this;
     }
 
     public int getNumRepetitions() {
@@ -122,5 +128,23 @@ public class BenchmarkConfiguration {
 
     public void setConcurrency(int concurrency) {
         this.concurrency = concurrency;
+    }
+
+    public URI getRest() {
+        return rest;
+    }
+
+    public BenchmarkConfiguration setRest(URI rest) {
+        this.rest = rest;
+        return this;
+    }
+
+    public int getDelay() {
+        return delay;
+    }
+
+    public BenchmarkConfiguration setDelay(int delay) {
+        this.delay = delay;
+        return this;
     }
 }

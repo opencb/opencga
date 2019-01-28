@@ -92,6 +92,12 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--transform"}, description = "If present it only runs the transform stage, no load is executed")
         public boolean transform;
 
+        @Parameter(names = {"--stdin"}, description = "Read the variants file from the standard input")
+        public boolean stdin;
+
+        @Parameter(names = {"--stdout"}, description = "Write the transformed variants file to the standard output")
+        public boolean stdout;
+
         @Parameter(names = {"--load"}, description = "If present only the load stage is executed, transformation is skipped")
         public boolean load;
 

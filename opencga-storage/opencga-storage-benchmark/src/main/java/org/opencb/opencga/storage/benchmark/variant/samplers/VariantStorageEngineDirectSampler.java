@@ -22,14 +22,13 @@ import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
 import org.apache.jmeter.protocol.java.sampler.JavaSampler;
 import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
 import org.apache.jmeter.samplers.SampleResult;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.benchmark.variant.generators.QueryGenerator;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -137,7 +136,7 @@ public class VariantStorageEngineDirectSampler extends JavaSampler implements Va
 
             try {
                 Query query = queryGenerator.generateQuery(new Query());
-                QueryOptions queryOptions = new QueryOptions();
+                QueryOptions queryOptions = new QueryOptions(query);
                 int limit = javaSamplerContext.getIntParameter(QueryOptions.LIMIT, -1);
                 boolean count = Boolean.parseBoolean(javaSamplerContext.getParameter(QueryOptions.COUNT, Boolean.FALSE.toString()));
 
@@ -145,24 +144,35 @@ public class VariantStorageEngineDirectSampler extends JavaSampler implements Va
                     queryOptions.append(QueryOptions.LIMIT, limit);
                 }
 
+                VariantQueryUtils.addDefaultLimit(queryOptions, Integer.MAX_VALUE, VariantQueryUtils.LIMIT_DEFAULT);
+
                 result.setResponseMessage(query.toJson());
+                result.setResponseCodeOK();
                 result.sampleStart();
-                long numResults;
+                long numResults = 0;
                 if (count) {
                     numResults = variantStorageEngine.count(query).first();
                 } else {
-                    VariantQueryResult<Variant> queryResult = variantStorageEngine.get(query, queryOptions);
-                    numResults = queryResult.getNumResults();
+                    try (VariantDBIterator iterator = variantStorageEngine.iterator(query, queryOptions)) {
+                        while (iterator.hasNext()) {
+                            iterator.next();
+                            numResults++;
+                        }
+                    }
                 }
                 result.sampleEnd();
                 result.setBytes(numResults);
+                result.setSuccessful(true);
+                result.setSampleLabel(queryGenerator.getQueryId());
 
                 logger.debug("query: {}", numResults);
             } catch (Error e) {
+                result.setSuccessful(false);
                 logger.error("Error!", e);
                 throw e;
-            } catch (StorageEngineException | RuntimeException e) {
+            } catch (Exception e) {
                 logger.error("Error!", e);
+                result.setSuccessful(false);
                 result.setErrorCount(1);
             }
             return result;
@@ -178,9 +188,4 @@ public class VariantStorageEngineDirectSampler extends JavaSampler implements Va
             }
         }
     }
-
-//    @Override
-//    public Arguments getDefaultParameters() {
-//        return null;
-//    }
 }

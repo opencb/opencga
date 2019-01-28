@@ -28,7 +28,6 @@ import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
-import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -53,9 +52,7 @@ import org.opencb.opencga.storage.core.variant.io.json.VariantAnnotationJsonData
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
@@ -63,9 +60,8 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.zip.GZIPInputStream;
 
-import static org.opencb.biodata.models.core.Region.*;
+import static org.opencb.biodata.models.core.Region.normalizeChromosome;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.*;
 
 /**
@@ -389,13 +385,9 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                 throw new RuntimeException(e); // This should never happen!
             }
         } else if (fileName.endsWith(".vcf") || fileName.endsWith(".vcf.gz")) {
-            InputStream is = new FileInputStream(path.toFile());
-            if (fileName.endsWith(".gz")) {
-                is = new GZIPInputStream(is);
-            }
             VariantStudyMetadata metadata = new VariantFileMetadata(fileName, fileName).toVariantStudyMetadata("s");
             ParallelTaskRunner<Variant, Void> ptr = new ParallelTaskRunner<>(
-                    new VariantVcfHtsjdkReader(is, metadata),
+                    VariantReaderUtils.getVariantVcfReader(Paths.get(fileName), metadata),
                     variantList -> {
                         for (Variant variant : variantList) {
                             Region region = new Region(normalizeChromosome(variant.getChromosome()), variant.getStart(), variant.getEnd());

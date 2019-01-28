@@ -162,6 +162,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         @Deprecated
         DB_NAME("database.name", "opencga"),
 
+        STDIN("stdin", false),
+        STDOUT("stdout", false),
         TRANSFORM_BATCH_SIZE("transform.batch.size", 200),
         TRANSFORM_THREADS("transform.threads", 4),
         TRANSFORM_FORMAT("transform.format", "avro"),
@@ -1394,6 +1396,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             // TODO: Improve this heuristic
             // Count only real params
             Collection<VariantQueryParam> coveredParams = coveredParams(query);
+            coveredParams.removeAll(MODIFIER_QUERY_PARAMS);
             int intersectParamsThreshold = getOptions().getInt(INTERSECT_PARAMS_THRESHOLD.key(), INTERSECT_PARAMS_THRESHOLD.defaultValue());
             intersect = coveredParams.size() >= intersectParamsThreshold;
         }

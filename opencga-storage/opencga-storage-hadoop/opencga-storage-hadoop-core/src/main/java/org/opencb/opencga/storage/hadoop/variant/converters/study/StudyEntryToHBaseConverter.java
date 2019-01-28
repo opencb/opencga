@@ -23,6 +23,7 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.tools.Converter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
@@ -233,6 +234,16 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
             }
         }
         return sb.toString();
+    }
+
+    protected static void buildSecondaryAlternate(String chromosome, int start, int end, String reference, String alternate,
+                                                           VariantType type, StringBuilder sb) {
+        sb.append(chromosome).append(ALTERNATE_COORDINATE_SEPARATOR)
+                .append(start).append(ALTERNATE_COORDINATE_SEPARATOR)
+                .append(end).append(ALTERNATE_COORDINATE_SEPARATOR)
+                .append(reference).append(ALTERNATE_COORDINATE_SEPARATOR)
+                .append(alternate).append(ALTERNATE_COORDINATE_SEPARATOR)
+                .append(type);
     }
 
     private int[] buildFormatRemap(StudyEntry studyEntry) {

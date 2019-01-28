@@ -71,6 +71,8 @@ public class IndexDaemon extends MonitorParentDaemon {
             .append(QueryOptions.LIMIT, 1);
 
     private CatalogIOManager catalogIOManager;
+    // FIXME: This should not be used directly! All the queries MUST go through the CatalogManager
+    @Deprecated
     private JobDBAdaptor jobDBAdaptor;
 
     private String binHome;
@@ -156,7 +158,7 @@ public class IndexDaemon extends MonitorParentDaemon {
         }
     }
 
-    private void checkRunningJob(Job job) throws CatalogIOException {
+    private void checkRunningJob(Job job) throws CatalogException {
         Path tmpOutdirPath = getJobTemporaryFolder(job.getUid(), tempJobFolder);
         Job.JobStatus jobStatus;
 
@@ -195,8 +197,10 @@ public class IndexDaemon extends MonitorParentDaemon {
                     }
                 } catch (CatalogException | URISyntaxException e) {
                     logger.error("Error removing temporal directory", e);
+                    outputRecorder.updateJobStatus(job, new Job.JobStatus(Job.JobStatus.ERROR));
                 } catch (IOException e) {
                     logger.error("Error recording files generated to Catalog", e);
+                    outputRecorder.updateJobStatus(job, new Job.JobStatus(Job.JobStatus.ERROR));
                 } finally {
                     closeSessionId(job);
                 }
@@ -204,7 +208,7 @@ public class IndexDaemon extends MonitorParentDaemon {
                 try {
                     jobDBAdaptor.update(job.getUid(), parameters, QueryOptions.empty());
                 } catch (CatalogException e) {
-                    logger.error("Error updating job {} with {}", job.getUid(), parameters.toJson(), e);
+                    logger.error("Error updating job {} with {}", job.getUuid(), parameters.toJson(), e);
                 }
             }
 
@@ -291,6 +295,8 @@ public class IndexDaemon extends MonitorParentDaemon {
                     commandLine.append(" ").append(param.getValue());
                 }
             }
+
+            commandLine.append(" -s ").append(job.getAttributes().get(Job.OPENCGA_STUDY));
         }
 
         logger.info("Updating job CLI '{}' from '{}' to '{}'", commandLine.toString(), Job.JobStatus.PREPARED, Job.JobStatus.QUEUED);

@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>1.4.0-rc2-dev</version>
+        <version>1.4.0-rc3-dev</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -155,7 +155,7 @@
                     <configurationDirectory>conf</configurationDirectory>
                     <!--Do we need to include the configuration folder in the classpath?-->
                     <includeConfigurationDirectoryInClasspath>false</includeConfigurationDirectoryInClasspath>
-                    <environmentSetupFileName>${opencga.env.file}</environmentSetupFileName>
+                    <environmentSetupFileName>../conf/${opencga.env.file}</environmentSetupFileName>
                     <programs>
                         <program>
                             <id>opencga.sh</id>
@@ -250,7 +250,7 @@
                                 <echo>Copying to ${build.dir}</echo>
                                 <exec executable="cp">
                                     <arg value="-r"/>
-                                    <arg value="${app.dir}/bin"/>
+                                    <arg value="${app.dir}/conf"/>
                                     <arg value="${project.basedir}/target/appassembler/libs"/>
                                     <arg value="${project.basedir}/target/conf"/>
                                     <arg value="${app.dir}/completion"/>

@@ -1,7 +1,7 @@
 # Overview
 OpenCGA is an open-source project that aims to provide a Big Data storage engine and analysis framework for genomic scale data analysis of hundreds of terabytes or even petabytes. OpenCGA provides a scalable and high-performance **Storage Engine** framework to index biological data such as BAM or VCF files using different NoSQL databases, currently only MongoDB has been fully developed. A data analytics and genomic **Analysis** layer interface has been implemented over this big data storage index. A metadata **Catalog** has been alse developed to provide authentification and ACLs and to keep track all of files and sample annotation. All these can be queried through a comprehensive RESTful web services API or using the command line interface.
 
-OpenCGA constitutes the big data analysis component of [OpenCB](http://www.opencb.org/) initiative. It is used by other projects such as [EMBL-EBI EVA](http://www.ebi.ac.uk/eva/), [Babelomics](http://www.babelomics.org/) or [BierApp](http://bierapp.babelomics.org/).
+OpenCGA constitutes the big data analysis component of [OpenCB](http://www.opencb.org/) initiative. It is used by other projects such as [EMBL-EBI EVA](https://www.ebi.ac.uk/eva/), [Babelomics](http://www.babelomics.org/) or [BierApp](http://bierapp.babelomics.org/).
 
 ### Documentation
 You can find OpenCGA documentation and tutorials at: https://github.com/opencb/opencga/wiki.
@@ -15,7 +15,7 @@ Releases notes are available at [GitHub releases](https://github.com/opencb/open
 Roadmap is available at [GitHub milestones](https://github.com/opencb/opencga/milestones). You can report bugs or request new features at [GitHub issue tracking](https://github.com/opencb/opencga/issues).
 
 ### Versioning
-OpenCGA is versioned following the rules from [Semantic versioning](http://semver.org/).
+OpenCGA is versioned following the rules from [Semantic versioning](https://semver.org/).
 
 ### Maintainers
 We recommend to contact OpenCGA developers by writing to OpenCB mailing list opencb@googlegroups.com. Current main developers and maintainers are:
@@ -36,10 +36,10 @@ We recommend to contact OpenCGA developers by writing to OpenCB mailing list ope
 OpenCGA is an open-source and collaborative project. We appreciate any help and feedback from users, you can contribute in many different ways such as simple bug reporting and feature request. Dependending on your skills you are more than welcome to develop client tools, new features or even fixing bugs.
 
 
-# How to build 
-OpenCGA is mainly developed in Java and it uses [Apache Maven](http://maven.apache.org/) as building tool. OpenCGA requires Java 8, in particular **JDK 1.8.0_60+**, and other OpenCB dependencies that can be found in [Maven Central Repository](http://search.maven.org/).
+# How to build
+OpenCGA is mainly developed in Java and it uses [Apache Maven](https://maven.apache.org/) as building tool. OpenCGA requires Java 8, in particular **JDK 1.8.0_60+**, and other OpenCB dependencies that can be found in [Maven Central Repository](https://search.maven.org/).
 
-Stable releases are merged and tagged at **_master_** branch, you are encourage to use latest stable release for production. Current active development is carried out at **_develop_** branch and need **Java 8**, in particular **JDK 1.8.0_60+**, only compilation is guaranteed and bugs are expected, use this branch for development or for testing new functionalities. Dependencies of **_master_** branch are ensured to be deployed at [Maven Central Repository](http://search.maven.org/), but dependencies for **_develop_** branch may require users to download and install the following git repositories from OpenCB:
+Stable releases are merged and tagged at **_master_** branch, you are encourage to use latest stable release for production. Current active development is carried out at **_develop_** branch and need **Java 8**, in particular **JDK 1.8.0_60+**, only compilation is guaranteed and bugs are expected, use this branch for development or for testing new functionalities. Dependencies of **_master_** branch are ensured to be deployed at [Maven Central Repository](https://search.maven.org/), but dependencies for **_develop_** branch may require users to download and install the following git repositories from OpenCB:
 * _java-common-libs_: https://github.com/opencb/java-common-libs (branch 'develop')
 * _biodata_: https://github.com/opencb/biodata (branch 'develop')
 * _cellbase_: https://github.com/opencb/cellbase (branch 'develop')
@@ -69,14 +69,14 @@ Latest stable release at **_master_** branch can be downloaded executing:
 
 ### Build
 You can build OpenCGA by executing the following command from the root of the cloned repository:
-  
+
     $ mvn clean install -DskipTests
 
 For changing particular settings during buildings you can create a profile in _~/.m2/settings.xml_ in the \<*profiles*\> section using this template:
 
         <?xml version="1.0" encoding="UTF-8"?>
-        <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0" 
-          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+        <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
             <profiles>
                 <profile>
@@ -93,7 +93,7 @@ For changing particular settings during buildings you can create a profile in _~
                         <OPENCGA.JOBS.DIR>${OPENCGA.USER.WORKSPACE}/jobs/</OPENCGA.JOBS.DIR>
                         <OPENCGA.DB.PREFIX>opencga</OPENCGA.DB.PREFIX>
                         <OPENCGA.EXECUTION.MODE>LOCAL</OPENCGA.EXECUTION.MODE>
-                        
+
                         <!-- Client -->
                         <OPENCGA.CLIENT.REST.HOST>http://localhost:8080/${opencga.war.name}</OPENCGA.CLIENT.REST.HOST>
                         <OPENCGA.CLIENT.GRPC.HOST>http://localhost:9091</OPENCGA.CLIENT.GRPC.HOST>
@@ -139,7 +139,6 @@ For changing particular settings during buildings you can create a profile in _~
                         <OPENCGA.STORAGE.HADOOP.VARIANT.DB.USER></OPENCGA.STORAGE.HADOOP.VARIANT.DB.USER>
                         <OPENCGA.STORAGE.HADOOP.VARIANT.DB.PASSWORD></OPENCGA.STORAGE.HADOOP.VARIANT.DB.PASSWORD>
                         <OPENCGA.STORAGE.HADOOP.VARIANT.HBASE.NAMESPACE></OPENCGA.STORAGE.HADOOP.VARIANT.HBASE.NAMESPACE>
-                        <OPENCGA.STORAGE.HADOOP.VARIANT.ARCHIVE.TABLE.PREFIX>${OPENCGA.DB.PREFIX}_study</OPENCGA.STORAGE.HADOOP.VARIANT.ARCHIVE.TABLE.PREFIX>
 
                         <!-- Email server -->
                         <OPENCGA.MAIL.HOST></OPENCGA.MAIL.HOST>
@@ -193,5 +192,5 @@ We try to improve the admin experience by making the installation and build as s
 At this moment the only fully developed storage engine plugin is [MongoDB](https://www.mongodb.org/). MongoDB is free and open-source and can be downloaded from [here](https://www.mongodb.org/downloads). Currently Apache HBase plugin is under heavy development and will be ready soon.
 
 ##### AES encryption
-For AES encryption please download UnlimitedJCEPolicyJDK7.zip from http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html .
+For AES encryption please download UnlimitedJCEPolicyJDK7.zip from https://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html .
 Then unzip the file into $JAVA_HOME/jre/lib/security

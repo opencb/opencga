@@ -32,7 +32,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
-import org.opencb.opencga.core.config.Policies;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -137,8 +136,8 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
 
         fileMetadataReader = FileMetadataReader.get(catalogManager);
         catalogFileUtils = new FileUtils(catalogManager);
-        Policies policies = new Policies();
-        policies.setUserCreation(Policies.UserCreation.ALWAYS);
+//        Policies policies = new Policies();
+//        policies.setUserCreation(Policies.UserCreation.ALWAYS);
 
         User user = catalogManager.getUserManager().create(userId, "User", "user@email.org", "user", "ACME", null, Account.FULL, null, null).first();
         sessionId = catalogManager.getUserManager().login(userId, "user");
@@ -164,6 +163,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
     @After
     public void tearDown() throws Exception {
         DummyStudyConfigurationAdaptor.writeAndClear(opencga.getOpencgaHome());
+        DummyVariantFileMetadataDBAdaptor.writeAndClear(opencga.getOpencgaHome());
         DummyProjectMetadataAdaptor.writeAndClear(opencga.getOpencgaHome());
     }
 

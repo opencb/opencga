@@ -95,9 +95,9 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 .setMultiples(new Multiples("multiples", Arrays.asList("child1", "child2")))
                 .setParentalConsanguinity(true);
 
-        Family family = new Family("family", "family", Arrays.asList(disease1, disease2),
-                Arrays.asList(relChild1, relChild2, relChild3, relFather, relMother), "", -1, Collections.emptyList(),
-                Collections.emptyMap());
+        Family family = new Family("family", "family", Arrays.asList(disease1, disease2), null,
+                Arrays.asList(relChild1, relChild2, relChild3, relFather, relMother), "", -1,
+                Collections.emptyList(), Collections.emptyMap());
 
         return familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
     }
@@ -107,10 +107,12 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         createDummyFamily();
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
                 .setId("analysis").setDescription("My description").setType(ClinicalAnalysis.Type.FAMILY)
+                .setDueDate("20180510100000")
                 .setProband(new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2"))));
 
         if (createFamily) {
-            clinicalAnalysis.setFamily(new Family().setId("family"));
+            clinicalAnalysis.setFamily(new Family().setId("family")
+                .setMembers(Arrays.asList(new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2"))))));
         }
 
         return catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
@@ -124,7 +126,11 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(0, dummyEnvironment.first().getInterpretations().size());
 
         assertEquals("family", dummyEnvironment.first().getFamily().getId());
-        assertEquals(5, dummyEnvironment.first().getFamily().getMembers().size());
+        assertEquals(1, dummyEnvironment.first().getFamily().getMembers().size());
+
+        assertEquals("child1", dummyEnvironment.first().getFamily().getMembers().get(0).getId());
+        assertEquals(1, dummyEnvironment.first().getFamily().getMembers().get(0).getSamples().size());
+        assertEquals("sample2", dummyEnvironment.first().getFamily().getMembers().get(0).getSamples().get(0).getId());
 
         assertNotNull(dummyEnvironment.first().getProband());
         assertEquals("child1", dummyEnvironment.first().getProband().getId());
@@ -176,7 +182,8 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         ObjectMap params = new ObjectMap()
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key(),
                         new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2"))))
-                .append(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(), new Family().setId("family"));
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(), new Family().setId("family")
+                        .setMembers(Arrays.asList(new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2"))))));
         QueryResult<ClinicalAnalysis> updateResult = catalogManager.getClinicalAnalysisManager().update(STUDY, "analysis", params,
                 QueryOptions.empty(), sessionIdUser);
 

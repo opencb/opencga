@@ -213,8 +213,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                                       Individual individual, Map<String, Object> stats, Map<String, Object> attributes,
                                       QueryOptions options, String sessionId)
             throws CatalogException {
-        Sample sample = new Sample(name, source, individual, description, type, somatic, -1, 1, Collections.emptyList(),
-                Collections.emptyList(), stats, attributes);
+        Sample sample = new Sample(name, source, individual, null, null, -1, 1, description, type, somatic, Collections.emptyList(),
+                Collections.emptyList(), attributes).setStats(stats);
         return create(studyStr, sample, options, sessionId);
     }
 
