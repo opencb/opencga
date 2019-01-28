@@ -10,15 +10,13 @@ variable "location" {
   type = "string"
 }
 
-
 variable "resource_group_name" {
   type = "string"
 }
 
-
 resource "azurerm_resource_group" "hdinsight-rg" {
-    name = "${var.resource_group_name}"
-    location = "${var.location}"
+  name     = "${var.resource_group_name}"
+  location = "${var.location}"
 }
 
 resource "random_string" "cluster_name" {
@@ -51,22 +49,38 @@ resource "random_string" "cluster_password" {
     group_name = "${var.resource_group_name}"
   }
 
-  length  = 12
+  length  = 18
   upper   = true
   special = true
   number  = true
-}
-
-resource "azurerm_storage_account" "hdinsight_storage" {
-    name = "${random_string.storage_name.result}"
-    account_kind = "StorageV2"
-    network_rules= {
-        bypass = "AzureServices"
-        virtual_network_subnet_ids = "${var.virtual_network_subnet_id}"   
-    }
   
 }
 
+resource "random_integer" "cluster_password_int" {
+  keepers = {
+    # Generate a new id each time we switch to a new resource group
+    group_name = "${var.resource_group_name}"
+  }
+
+  min     = 1
+  max     = 99999
+}
+
+
+resource "azurerm_storage_account" "hdinsight_storage" {
+  name         = "${random_string.storage_name.result}"
+  account_kind = "StorageV2"
+
+  network_rules = {
+    bypass                     = ["AzureServices"]
+    virtual_network_subnet_ids = ["${var.virtual_network_subnet_id}"]
+  }
+
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+  resource_group_name      = "${azurerm_resource_group.hdinsight-rg.name}"
+  location                 = "${var.location}"
+}
 
 resource "azurerm_template_deployment" "hdinsight" {
   name                = "hdinsight"
@@ -74,18 +88,19 @@ resource "azurerm_template_deployment" "hdinsight" {
 
   # these key-value pairs are passed into the ARM Template's `parameters` block
   parameters {
-      "clusterName" = "${random_string.cluster_name.result}",
-      "clusterLoginPassword" = "${random_string.cluster_password.result}"
-      "storageAccountName" = "${random_string.storage_name.result}"
-      "storageAccountKey" = "${azurerm_storage_account.hdinsight_storage.primary_access_key}"
-      "vnetId" = "${var.virtual_network_id}"
-      "subnetId" = "${var.virtual_network_subnet_id}"
-      "storageOption" = "DataLake"
+    "clusterName"          = "${random_string.cluster_name.result}"
+    "clusterLoginPassword" = "${random_string.cluster_password.result}${random_integer.cluster_password_int.result}"
+    "sshPassword"          = "${random_string.cluster_password.result}${random_integer.cluster_password_int.result}"
+    "storageAccountName"   = "${random_string.storage_name.result}"
+    "storageAccountKey"    = "${azurerm_storage_account.hdinsight_storage.primary_access_key}"
+    "vnetId"               = "${var.virtual_network_id}"
+    "subnetId"             = "${var.virtual_network_subnet_id}"
+    "storageOption"        = "DataLake"
   }
 
   deployment_mode = "Incremental"
 
-  template_body = "${file("azuredeploy.json")}"
+  template_body = "${file("${path.module}/azuredeploy.json")}"
 }
 
 output "cluster_name" {
@@ -93,5 +108,5 @@ output "cluster_name" {
 }
 
 output "cluster_password" {
-    value = "${random_string.cluster_password.result}"
+  value = "${random_string.cluster_password.result}"
 }
