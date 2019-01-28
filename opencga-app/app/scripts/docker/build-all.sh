@@ -42,6 +42,7 @@
 # - DOCKER_BUILD_ARGS='' : (optional) Additional build arguments to pass to the docker build command
 # - PUBLISH=''           : (optional) Set to 'true' to publish the docker images to a container registry
 # - TAG=''               : (optional) Set to override the default Git commit SHA docker image tag
+# - HADOOP_FLAVOR='hdp-2.6.5' : (optional) Compile against an specific Hadoop flavour and version
 #
 # When you have set your desired variables, you can simply run the Makefile with `make`.
 
@@ -108,13 +109,14 @@ ENVFILE="${envfile}" make --no-print-directory -f "${dockerDir}/Makefile.docker"
 
 # Build OpenCGA
 if [ ! -d "${buildPath}" ]; then
+    HADOOP_FLAVOR=${HADOOP_FLAVOR:-hdp-2.6.5}
     echo "> No existing OpenCGA build, building from source..."
     docker run -it --rm \
     -v "$PWD":/src \
     -v "$HOME/.m2":/root/.m2 \
     -w /src maven:3.6-jdk-8 \
     mvn -T 1C install \
-    -DskipTests -Dstorage-hadoop -Popencga-storage-hadoop-deps -Phdp-2.6.0 -DOPENCGA.STORAGE.DEFAULT_ENGINE=hadoop -Dopencga.war.name=opencga
+    -DskipTests -Dstorage-hadoop -Popencga-storage-hadoop-deps -P"${HADOOP_FLAVOR}" -DOPENCGA.STORAGE.DEFAULT_ENGINE=hadoop -Dopencga.war.name=opencga
     echo "> Finished OpenCGA build"
 else
     echo "> Using existing OpenCGA build from $PWD/build"
