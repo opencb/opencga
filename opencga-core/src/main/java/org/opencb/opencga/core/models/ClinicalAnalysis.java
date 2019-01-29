@@ -17,6 +17,7 @@
 package org.opencb.opencga.core.models;
 
 import org.opencb.biodata.models.clinical.interpretation.Comment;
+import org.opencb.biodata.models.commons.Disorder;
 
 import java.util.Arrays;
 import java.util.List;
@@ -60,7 +61,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     }
 
     public enum Type {
-        SINGLE, FAMILY, AUTOCOMPARATIVE, COHORT, SOMATIC_CANCER
+        SINGLE, FAMILY, CANCER, COHORT, AUTOCOMPARATIVE
     }
 
     // Todo: Think about a better place to have this enum
@@ -73,20 +74,23 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     public static class ClinicalStatus extends Status {
 
-        public static final String WAIT = "WAIT";
-        public static final String REJECTED = "REJECTED";
+        public static final String INCOMPLETE = "INCOMPLETE";
+        public static final String READY_FOR_VALIDATION = "READY_FOR_VALIDATION";
         public static final String READY_FOR_INTERPRETATION = "READY_FOR_INTERPRETATION";
         public static final String INTERPRETATION_IN_PROGRESS = "INTERPRETATION_IN_PROGRESS";
-        public static final String INTERPRETED = "INTERPRETED";
-        public static final String PENDING_REVIEW = "PENDING_REVIEW";
+//        public static final String INTERPRETED = "INTERPRETED";
+        public static final String READY_FOR_INTEPRETATION_REVIEW = "READY_FOR_INTEPRETATION_REVIEW";
+        public static final String INTERPRETATION_REVIEW_IN_PROGRESS = "INTERPRETATION_REVIEW_IN_PROGRESS";
         public static final String READY_FOR_REPORT = "READY_FOR_REPORT";
         public static final String REPORT_IN_PROGRESS = "REPORT_IN_PROGRESS";
         public static final String DONE = "DONE";
-        public static final String REVIEW = "REVIEW";
+        public static final String REVIEW_IN_PROGRESS = "REVIEW_IN_PROGRESS";
         public static final String CLOSED = "CLOSED";
+        public static final String REJECTED = "REJECTED";
 
-        public static final List<String> STATUS_LIST = Arrays.asList(READY, DELETED, WAIT, REJECTED, READY_FOR_INTERPRETATION,
-                INTERPRETATION_IN_PROGRESS, INTERPRETED, PENDING_REVIEW, READY_FOR_REPORT, REPORT_IN_PROGRESS, DONE, REVIEW, CLOSED);
+        public static final List<String> STATUS_LIST = Arrays.asList(INCOMPLETE, READY, DELETED, READY_FOR_VALIDATION,
+                READY_FOR_INTERPRETATION, INTERPRETATION_IN_PROGRESS, READY_FOR_INTEPRETATION_REVIEW, INTERPRETATION_REVIEW_IN_PROGRESS,
+                READY_FOR_REPORT, REPORT_IN_PROGRESS, DONE, REVIEW_IN_PROGRESS, CLOSED, REJECTED);
 
         public ClinicalStatus(String status, String message) {
             if (isValid(status)) {
@@ -108,6 +112,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
             if (Status.isValid(status)) {
                 return true;
             }
+
             if (STATUS_LIST.contains(status)) {
                 return true;
             }

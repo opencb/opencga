@@ -3,7 +3,6 @@ package org.opencb.opencga.analysis.clinical;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.clinical.interpretation.*;
-import org.opencb.biodata.models.clinical.utils.VariantToReportedVariantConverter;
 import org.opencb.biodata.models.commons.Analyst;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.commons.Software;
@@ -13,6 +12,7 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.core.Transcript;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
+import org.opencb.biodata.tools.clinical.DefaultReportedVariantCreator;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
@@ -165,8 +165,8 @@ public class CustomAnalysis extends OpenCgaAnalysis<Interpretation> {
         List<DiseasePanel> biodataDiseasePanels = diseasePanels.stream().map(Panel::getDiseasePanel).collect(Collectors.toList());
         List<ReportedVariant> reportedVariants = null;
         if (ListUtils.isNotEmpty(variantQueryResult.getResult())) {
-            VariantToReportedVariantConverter converter = new VariantToReportedVariantConverter();
-            reportedVariants = converter.convert(variantQueryResult.getResult(), biodataDiseasePanels, phenotype, moi, null);
+            DefaultReportedVariantCreator converter = new DefaultReportedVariantCreator(biodataDiseasePanels, phenotype, moi, null);
+            reportedVariants = converter.create(variantQueryResult.getResult());
         }
 
         // Low coverage support
