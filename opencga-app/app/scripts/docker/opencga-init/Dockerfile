@@ -56,4 +56,4 @@ RUN chmod +x /tmp/setup.sh
 # It is the responsibility of the setup.sh
 # script to initialise the volume correctly
 # and apply any runtime config transforms.
-ENTRYPOINT ["/tmp/setup.sh"]
+ENTRYPOINT [ "/bin/bash","/tmp/setup.sh" ]

@@ -54,6 +54,12 @@
                 "description": "The docker image and tag for running the OpenCGA service. For examples: 'repo/image:tag'"
             }
         },
+        "batchContainerImage": {
+            "type": "string",
+            "metadata": {
+                "description": "The docker image and tag for running the batch jobs. For examples: 'repo/image:tag'"
+            }
+        },
         "ivaContainerImage": {
             "type": "string",
             "metadata": {
@@ -402,7 +408,7 @@
                         "value": "-v  /media/primarynfs/conf:/opt/opencga/conf -v /media/primarynfs/sessions:/opt/opencga/sessions -v /media/primarynfs/variants:/opt/opencga/variants --rm"
                     },
                     "batchContainerImage": {
-                        "value": "[parameters('daemonContainerImage')]"
+                        "value": "[parameters('batchContainerImage')]"
                     },
                     "batchMaxConcurrentJobs": {
                         "value": "[reference('azureBatch').outputs.maxNodeCount.value]"

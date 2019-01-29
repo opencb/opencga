@@ -93,7 +93,7 @@ if [ "$PUBLISH" ]; then
 fi
 
 # Define all the docker images in dependecy order
-declare -a images=(opencga opencga-app opencga-daemon opencga-init iva)
+declare -a images=(opencga opencga-app opencga-daemon opencga-init opencga-batch iva)
 imageCount=0
 imagesLen="${#images[@]}"
 imagesLen=$((imagesLen-1))
