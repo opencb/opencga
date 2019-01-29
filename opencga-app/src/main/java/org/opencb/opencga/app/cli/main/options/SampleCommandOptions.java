@@ -56,6 +56,8 @@ public class SampleCommandOptions {
     public DataModelOptions commonDataModelOptions;
     public NumericOptions commonNumericOptions;
 
+    protected static final String DEPRECATED = "[DEPRECATED] ";
+
     public SampleCommandOptions(CommonCommandOptions commonCommandOptions, DataModelOptions dataModelOptions, NumericOptions numericOptions,
                                 JCommander jCommander) {
 
@@ -116,23 +118,28 @@ public class SampleCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-n", "--name"}, description = "Name for the sample, this must be unique in the study", required = true,
-                arity = 1)
+        @Parameter(names = {"--id"}, description = "Sample id", required = true, arity = 1)
+        public String id;
+
+        @Parameter(names = {"--json"}, description = "JSON file containing the rest of the sample fields", arity = 1)
+        public String json;
+
+        @Parameter(names = {"-n", "--name"}, description = DEPRECATED + "Use --json instead.", arity = 1)
         public String name;
 
-        @Parameter(names = {"--source"}, description = "Source from which this sample is created such as VCF file", arity = 1)
+        @Parameter(names = {"--source"}, description = DEPRECATED + "Use --json instead.", arity = 1)
         public String source;
 
-        @Parameter(names = {"-d", "--description"}, description = "Description of the sample", arity = 1)
+        @Parameter(names = {"-d", "--description"}, description = DEPRECATED + "Use --json instead.", arity = 1)
         public String description;
 
-        @Parameter(names = {"--individual"}, description = "Individual name or id to whom the sample belongs to", arity = 1)
+        @Parameter(names = {"--individual"}, description = DEPRECATED + "Use --json instead.", arity = 1)
         public String individual;
 
-        @Parameter(names = {"--somatic"}, description = "Flag indicating that the sample comes from somatic cells", arity = 0)
+        @Parameter(names = {"--somatic"}, description = DEPRECATED + "Use --json instead.", arity = 0)
         public boolean somatic;
 
-        @Parameter(names = {"--type"}, description = "Sample type", arity = 1)
+        @Parameter(names = {"--type"}, description = DEPRECATED + "Use --json instead.", arity = 1)
         public String type;
     }
 
@@ -190,22 +197,25 @@ public class SampleCommandOptions {
     @Parameters(commandNames = {"update"}, commandDescription = "Update sample")
     public class UpdateCommandOptions extends BaseSampleCommand {
 
-        @Parameter(names = {"-n", "--name"}, description = "New sample name.", required = false, arity = 1)
+        @Parameter(names = {"--json"}, description = "JSON file containing the sample fields to be updated", arity = 1)
+        public String json;
+
+        @Parameter(names = {"-n", "--name"}, description = DEPRECATED + "Use --json instead.", required = false, arity = 1)
         public String name;
 
-        @Parameter(names = {"--individual"}, description = "Individual id or name", required = false, arity = 1)
+        @Parameter(names = {"--individual"}, description = DEPRECATED + "Use --json instead.", required = false, arity = 1)
         public String individual;
 
-        @Parameter(names = {"--source"}, description = "Source", required = false, arity = 1)
+        @Parameter(names = {"--source"}, description = DEPRECATED + "Use --json instead.", required = false, arity = 1)
         public String source;
 
-        @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
+        @Parameter(names = {"-d", "--description"}, description = DEPRECATED + "Use --json instead.", required = false, arity = 1)
         public String description;
 
-        @Parameter(names = {"--somatic"}, description = "Boolean indicating whether the sample comes from somatic cells or not", arity = 1)
+        @Parameter(names = {"--somatic"}, description = DEPRECATED + "Use --json instead.", arity = 1)
         public Boolean somatic;
 
-        @Parameter(names = {"--type"}, description = "Sample type", arity = 1)
+        @Parameter(names = {"--type"}, description = DEPRECATED + "Use --json instead.", arity = 1)
         public String type;
 
         @Parameter(names = {"--annotation-sets-action"}, description = "Action to be performed if the array of annotationSets is being updated. (ADD, SET, REMOVE)",

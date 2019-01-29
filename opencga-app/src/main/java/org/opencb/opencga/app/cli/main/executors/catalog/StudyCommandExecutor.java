@@ -164,17 +164,20 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<Study> create() throws CatalogException, IOException {
         logger.debug("Creating a new study");
 
-        String project = studiesCommandOptions.createCommandOptions.project;
-        String name = studiesCommandOptions.createCommandOptions.name;
-        String alias = studiesCommandOptions.createCommandOptions.alias;
-        String id = studiesCommandOptions.createCommandOptions.id;
+        StudyCommandOptions.CreateCommandOptions commandOptions = studiesCommandOptions.createCommandOptions;
 
-        ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(StudyDBAdaptor.QueryParams.DESCRIPTION.key(), studiesCommandOptions.createCommandOptions.description);
-        params.putIfNotNull(StudyDBAdaptor.QueryParams.TYPE.key(), Study.Type.valueOf(studiesCommandOptions.createCommandOptions.type));
-        params.putIfNotEmpty("alias", alias);
+        ObjectMap params;
+        if (StringUtils.isNotEmpty(commandOptions.json)) {
+            params = loadFile(commandOptions.json);
+        } else {
+            params = new ObjectMap();
+            params.putIfNotEmpty(StudyDBAdaptor.QueryParams.DESCRIPTION.key(), commandOptions.description);
+            params.putIfNotNull(StudyDBAdaptor.QueryParams.TYPE.key(), Study.Type.valueOf(commandOptions.type));
+            params.putIfNotEmpty(StudyDBAdaptor.QueryParams.ALIAS.key(), commandOptions.name);
+            params.putIfNotEmpty(StudyDBAdaptor.QueryParams.NAME.key(), commandOptions.alias);
+        }
 
-        return openCGAClient.getStudyClient().create(project, id, name, params);
+        return openCGAClient.getStudyClient().create(commandOptions.project, commandOptions.id, params);
     }
 
     private QueryResponse<Study> info() throws CatalogException, IOException {
@@ -190,15 +193,23 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<Study> update() throws CatalogException, IOException {
         logger.debug("Updating the study");
 
-        studiesCommandOptions.updateCommandOptions.study = getSingleValidStudy(studiesCommandOptions.updateCommandOptions.study);
+        StudyCommandOptions.UpdateCommandOptions commandOptions = studiesCommandOptions.updateCommandOptions;
 
-        ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(StudyDBAdaptor.QueryParams.NAME.key(), studiesCommandOptions.updateCommandOptions.name);
-        params.putIfNotEmpty(StudyDBAdaptor.QueryParams.TYPE.key(), studiesCommandOptions.updateCommandOptions.type);
-        params.putIfNotEmpty(StudyDBAdaptor.QueryParams.DESCRIPTION.key(), studiesCommandOptions.updateCommandOptions.description);
-        params.putIfNotEmpty(StudyDBAdaptor.QueryParams.STATS.key(), studiesCommandOptions.updateCommandOptions.stats);
-        params.putIfNotEmpty(StudyDBAdaptor.QueryParams.ATTRIBUTES.key(), studiesCommandOptions.updateCommandOptions.attributes);
-        return openCGAClient.getStudyClient().update(studiesCommandOptions.updateCommandOptions.study, null, params);
+        commandOptions.study = getSingleValidStudy(commandOptions.study);
+
+        ObjectMap params;
+        if (StringUtils.isNotEmpty(commandOptions.json)) {
+            params = loadFile(commandOptions.json);
+        } else {
+            params = new ObjectMap();
+            params.putIfNotEmpty(StudyDBAdaptor.QueryParams.NAME.key(), commandOptions.name);
+            params.putIfNotEmpty(StudyDBAdaptor.QueryParams.TYPE.key(), commandOptions.type);
+            params.putIfNotEmpty(StudyDBAdaptor.QueryParams.DESCRIPTION.key(), commandOptions.description);
+            params.putIfNotEmpty(StudyDBAdaptor.QueryParams.STATS.key(), commandOptions.stats);
+            params.putIfNotEmpty(StudyDBAdaptor.QueryParams.ATTRIBUTES.key(), commandOptions.attributes);
+        }
+
+        return openCGAClient.getStudyClient().update(commandOptions.study, null, params);
     }
 
     private QueryResponse<Study> delete() throws CatalogException, IOException {

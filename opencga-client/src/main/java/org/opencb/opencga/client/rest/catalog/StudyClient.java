@@ -42,8 +42,8 @@ public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
         this.aclClass = StudyAclEntry.class;
     }
 
-    public QueryResponse<Study> create(String projectId, String studyId, String studyName, ObjectMap params) throws IOException {
-        params = addParamsToObjectMap(params, "name", studyName, "id", studyId);
+    public QueryResponse<Study> create(String projectId, String studyId, ObjectMap params) throws IOException {
+        params = addParamsToObjectMap(params, "id", studyId);
         ObjectMap p = new ObjectMap("body", params);
         p = addParamsToObjectMap(p, "projectId", projectId);
         return execute(STUDY_URL, "create", p, POST, Study.class);
