@@ -209,7 +209,7 @@
     "variables": {
         "avereEnabled": "[equals(parameters('nfsStorageOption'), 'AvereCluster')]",
         "azureFilesEnabled": "[equals(parameters('nfsStorageOption'), 'AzureFiles')]",
-        "webserverNamingPrefix": "[toLower(substring(concat('webservers', uniqueString(parameters('rgPrefix'))), 0, 16))]"
+        "dnsNamePrefix": "[toLower(substring(concat('opencga', uniqueString(subscription().subscriptionId,parameters('rgPrefix'))), 0, 16))]"
     },
     "resources": [
         {
@@ -232,6 +232,30 @@
                 "templateLink": {
                     "uri": "[concat(parameters('_artifactsLocation'), '/vnet/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
                     "contentVersion": "1.0.0.0"
+                }
+            }
+        },
+        {
+            "resourceGroup": "[parameters('rgPrefix')]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
+            "name": "appgw",
+            "dependsOn": [
+                "vnet"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/appgw/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters":{  
+                    "applicationGatewaySubnetId": {
+                        "value": "[reference('vnet').outputs.appgwSubnetId.value]"
+                    },
+                    "dnsNamePrefix":{
+                        "value": "[variables('dnsNamePrefix')]"
+                    }
                 }
             }
         },
@@ -368,8 +392,8 @@
                     "mountArgs": {
                         "value": "[if(equals(parameters('nfsStorageOption'), 'AzureFiles'), concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value,',',reference('azurefiles').outputs.accountKey.value),concat('avere ', reference('avere').outputs.VSERVER_IPS.value))]"
                     },
-                    "webserverNamingPrefix": {
-                        "value": "[variables('webserverNamingPrefix')]"
+                    "opencgaFQDN": {
+                        "value": "[reference('appgw').outputs.fqdn.value]"
                     },
                     "solrHosts": {
                         "value": "[reference('solr').outputs.solrConnectionDetails.value]"
@@ -553,6 +577,9 @@
                     "virtualNetworkSubnetId": {
                         "value": "[reference('vnet').outputs.hdinsightSubnetId.value]"
                     },
+                   "appgwBackendAddressPoolId": {
+                    "value": "[reference('appgw').outputs.appgwBackendAddressPoolId.value]"
+                    },
                     "mountArgs": {
                         "value": "[if(equals(parameters('nfsStorageOption'), 'AzureFiles'), concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value, ',' , reference('azurefiles').outputs.accountKey.value),concat('avere ', reference('avere').outputs.VSERVER_IPS.value))]"
                     },
@@ -564,9 +591,6 @@
                     },
                     "ivaContainerImage": {
                         "value": "[parameters('ivaContainerImage')]"
-                    },
-                    "namingPrefix": {
-                        "value": "[variables('webserverNamingPrefix')]"
                     }
                 }
             }

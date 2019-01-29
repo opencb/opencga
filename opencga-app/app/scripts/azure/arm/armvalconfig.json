@@ -32,7 +32,13 @@
                 "message": "String does not match the pattern of \"^[-\\w\\._\\(\\)]+$\".",
                 "jsonPath": "resources.10.resourceGroup",
                 "reason": "Schema matching ARM function against regex for name"
+            },
+              {
+                "message": "String does not match the pattern of \"^[-\\w\\._\\(\\)]+$\".",
+                "jsonPath": "resources.11.resourceGroup",
+                "reason": "Schema matching ARM function against regex for name"
             }
+           
         ],
         "azurebatch/azuredeploy.json": [
             {
@@ -101,13 +107,24 @@
         "webservers/azuredeploy.json": [
             {
                 "message": "Value is not accepted. Valid values: \"Automatic\", \"Manual\".",
-                "jsonPath": "resources.2.properties.upgradePolicy.mode",
+                "jsonPath": "resources.1.properties.upgradePolicy.mode",
                 "reason": "Incorrect schema match for VMSS"
             },
             {
                 "message": ".*",
-                "jsonPath": "resources.3",
+                "jsonPath": "resources.2",
                 "reason": "Incorrect schema match for VMSS"
+            },
+            {
+                "message": "Value is not accepted. Valid values: \"Microsoft.Resources/deployments\".",
+                "reason": "Incorrect schema",
+                "jsonPath": "resources.2.type"
+           
+            },
+            {
+            "message": "Value is not accepted. Valid values: \"2015-01-01\".",
+            "reason": "Incorrect schema",
+            "jsonPath": "resources.1.apiVersion"
             }
         ],
         "daemonvm/azuredeploy.json": [
