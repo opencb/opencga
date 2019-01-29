@@ -9,9 +9,9 @@ import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.ReportedLowCoverage;
 import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
 import org.opencb.biodata.models.commons.Analyst;
+import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Software;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.opencga.analysis.AnalysisResult;
 import org.opencb.opencga.analysis.clinical.CustomAnalysis;
 import org.opencb.opencga.analysis.clinical.InterpretationResult;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
@@ -43,7 +43,6 @@ import java.util.stream.Collectors;
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 import static org.opencb.opencga.server.rest.analysis.VariantAnalysisWSService.DEPRECATED_VARIANT_QUERY_PARAM;
 import static org.opencb.opencga.storage.core.clinical.ReportedVariantQueryParam.*;
-import static org.opencb.opencga.storage.core.manager.variant.VariantStorageManager.getVariantQuery;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
 @Path("/{apiVersion}/analysis/clinical")
