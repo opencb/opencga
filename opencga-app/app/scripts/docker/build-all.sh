@@ -108,13 +108,14 @@ ENVFILE="${envfile}" make --no-print-directory -f "${dockerDir}/Makefile.docker"
 
 # Build OpenCGA
 if [ ! -d "${buildPath}" ]; then
+    HADOOP_FLAVOR=${HADOOP_FLAVOR:-hdp-2.6.5}
     echo "> No existing OpenCGA build, building from source..."
     docker run -it --rm \
     -v "$PWD":/src \
     -v "$HOME/.m2":/root/.m2 \
     -w /src maven:3.6-jdk-8 \
     mvn -T 1C install \
-    -DskipTests -Dstorage-hadoop -Popencga-storage-hadoop-deps -Phdp-2.6.5 -DOPENCGA.STORAGE.DEFAULT_ENGINE=hadoop -Dopencga.war.name=opencga
+    -DskipTests -Dstorage-hadoop -Popencga-storage-hadoop-deps -P"${HADOOP_FLAVOR}" -DOPENCGA.STORAGE.DEFAULT_ENGINE=hadoop -Dopencga.war.name=opencga
     echo "> Finished OpenCGA build"
 else
     echo "> Using existing OpenCGA build from $PWD/build"
