@@ -46,4 +46,4 @@ EXPOSE 8080
 EXPOSE 8443
 
 # Launch Tomcat
-CMD ["/opt/tomcat/bin/catalina.sh run"]
+CMD ["/opt/tomcat/bin/catalina.sh","run"]
