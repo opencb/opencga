@@ -42,6 +42,7 @@
 # - DOCKER_BUILD_ARGS='' : (optional) Additional build arguments to pass to the docker build command
 # - PUBLISH=''           : (optional) Set to 'true' to publish the docker images to a container registry
 # - TAG=''               : (optional) Set to override the default Git commit SHA docker image tag
+# - HADOOP_FLAVOR='hdp-2.6.5' : (optional) Compile against an specific Hadoop flavour and version
 #
 # When you have set your desired variables, you can simply run the Makefile with `make`.
 
