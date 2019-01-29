@@ -44,6 +44,9 @@
         "daemonContainerImage": {
             "value": ""
         },
+        "batchContainerImage": {
+            "value": ""
+        },
         "catalogSecretKey": {
             "value": ""
         },
