@@ -145,6 +145,9 @@
                     }
                 },
                 "scaleSettings": {
+                    "fixedScale": {
+                            "targetDedicatedNodes": 1
+                    },
                     "autoScale": {
                         "evaluationInterval": "PT5M",
                         "formula": "[concat('startingNumberOfVMs = 0;maxNumberofVMs = ', parameters('maxNodeCount'), ';pendingTaskSamplePercent = $PendingTasks.GetSamplePercent(160 * TimeInterval_Second);pendingTaskSamples = pendingTaskSamplePercent < 70 ? startingNumberOfVMs : avg($PendingTasks.GetSample(160 * TimeInterval_Second));$TargetDedicatedNodes=min(maxNumberofVMs, pendingTaskSamples);')]"
