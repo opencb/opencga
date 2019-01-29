@@ -6,6 +6,4 @@ VOLUME /opt/opencga/variants
 
 USER 1001:1001
 
-ENTRYPOINT [ "/bin/bash","-c" ]
-
-CMD ["echo ${OPENCGA_PASS} | /opt/opencga/bin/opencga-admin.sh catalog daemon --start"]
+CMD ["-c" ,"echo ${OPENCGA_PASS} | /opt/opencga/bin/opencga-admin.sh catalog daemon --start"]
