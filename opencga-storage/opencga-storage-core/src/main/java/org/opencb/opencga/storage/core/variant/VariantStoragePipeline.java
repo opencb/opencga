@@ -651,7 +651,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         int studyId = getStudyId();
 
         // Update indexed files
-        metadataManager.updateIndexedFiles(studyId, fileIds);
+        metadataManager.addIndexedFiles(studyId, fileIds);
 
         // Update the cohort ALL. Invalidate if needed
         String defaultCohortName = StudyEntry.DEFAULT_COHORT;

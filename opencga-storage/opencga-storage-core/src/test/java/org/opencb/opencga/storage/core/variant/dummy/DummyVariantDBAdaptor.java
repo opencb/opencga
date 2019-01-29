@@ -195,7 +195,10 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     // Unsupported methods
     @Override
     public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp, QueryOptions queryOptions) {
-        throw new UnsupportedOperationException();
+        System.out.println("Update stats : "
+                + (variantStatsWrappers.isEmpty() ? "" : variantStatsWrappers.get(0).getCohortStats().keySet().toString()));
+
+        return new QueryResult();
     }
 
     @Override

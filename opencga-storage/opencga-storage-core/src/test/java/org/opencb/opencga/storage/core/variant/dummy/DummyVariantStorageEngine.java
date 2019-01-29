@@ -22,6 +22,7 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
@@ -77,23 +78,21 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public void removeFiles(String study, List<String> files) throws StorageEngineException {
-        List<Integer> fileIds = preRemoveFiles(study, files).getFileIds();
+        TaskMetadata task = preRemoveFiles(study, files);
         try {
             Thread.sleep(1);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-        postRemoveFiles(study, fileIds, false);
+        postRemoveFiles(study, task.getFileIds(), task.getId(), false);
     }
 
     @Override
     public void removeStudy(String studyName) throws StorageEngineException {
-        getMetadataManager().lockAndUpdateOld(studyName, studyConfiguration -> {
-            studyConfiguration.getIndexedFiles().clear();
-            studyConfiguration.getCalculatedStats().clear();
-            studyConfiguration.getInvalidStats().clear();
-            studyConfiguration.getCohorts().put(studyConfiguration.getCohortIds().get(StudyEntry.DEFAULT_COHORT), Collections.emptySet());
-            return studyConfiguration;
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
+        metadataManager.lockAndUpdate(studyName, studyMetadata -> {
+            metadataManager.removeIndexedFiles(studyMetadata.getId(), metadataManager.getIndexedFiles(studyMetadata.getId()));
+            return studyMetadata;
         });
     }
 

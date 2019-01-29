@@ -54,10 +54,7 @@ import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
-import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
-import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
-import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.metadata.models.*;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
@@ -89,7 +86,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager.addRunningTask;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
@@ -773,22 +769,31 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @throws StorageEngineException StorageEngineException
      */
     protected TaskMetadata preRemoveFiles(String study, List<String> files) throws StorageEngineException {
-        List<Integer> fileIds = new ArrayList<>();
         AtomicReference<TaskMetadata> batchFileOperation = new AtomicReference<>();
-        getMetadataManager().lockAndUpdateOld(study, studyConfiguration -> {
-            fileIds.addAll(getMetadataManager().getFileIds(studyConfiguration.getId(), files));
-
-            boolean resume = getOptions().getBoolean(RESUME.key(), RESUME.defaultValue());
-            batchFileOperation.set(addRunningTask(studyConfiguration, REMOVE_OPERATION_NAME, fileIds, resume,
-                    TaskMetadata.Type.REMOVE));
-
-            if (!studyConfiguration.getIndexedFiles().containsAll(fileIds)) {
-                // Remove indexed files to get non indexed files
-                fileIds.removeAll(studyConfiguration.getIndexedFiles());
-                throw new StorageEngineException("Unable to remove non indexed files: " + fileIds);
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
+        metadataManager.lockAndUpdate(study, studyMetadata -> {
+            List<Integer> fileIds = new ArrayList<>(files.size());
+            for (String file : files) {
+                FileMetadata fileMetadata = metadataManager.getFileMetadata(studyMetadata.getId(), file);
+                if (fileMetadata == null) {
+                    throw VariantQueryException.fileNotFound(file, study);
+                }
+                fileIds.add(fileMetadata.getId());
+                if (!fileMetadata.isIndexed()) {
+                    throw new StorageEngineException("Unable to remove non indexed file: " + fileMetadata.getName());
+                }
             }
 
-            return studyConfiguration;
+            boolean resume = getOptions().getBoolean(RESUME.key(), RESUME.defaultValue());
+
+            batchFileOperation.set(metadataManager.addRunningTask(
+                    studyMetadata.getId(),
+                    REMOVE_OPERATION_NAME,
+                    fileIds,
+                    resume,
+                    TaskMetadata.Type.REMOVE));
+
+            return studyMetadata;
         });
         return batchFileOperation.get();
     }
@@ -807,46 +812,50 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      *
      * @param study    Study
      * @param fileIds  Removed file ids
+     * @param taskId   Remove task id
      * @param error    If the remove operation succeeded
      * @throws StorageEngineException StorageEngineException
      */
-    protected void postRemoveFiles(String study, List<Integer> fileIds, boolean error) throws StorageEngineException {
-        getMetadataManager().lockAndUpdateOld(study, studyConfiguration -> {
+    protected void postRemoveFiles(String study, List<Integer> fileIds, int taskId, boolean error) throws StorageEngineException {
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
+        metadataManager.lockAndUpdate(study, studyMetadata -> {
             if (error) {
-                VariantStorageMetadataManager.setStatus(studyConfiguration, TaskMetadata.Status.ERROR, REMOVE_OPERATION_NAME, fileIds);
+                metadataManager.setStatus(studyMetadata.getId(), taskId, TaskMetadata.Status.ERROR);
             } else {
-                for (Integer fileId : fileIds) {
-                    getDBAdaptor().getMetadataManager().deleteVariantFileMetadata(studyConfiguration.getId(), fileId);
-                }
+                metadataManager.setStatus(studyMetadata.getId(), taskId, TaskMetadata.Status.READY);
+                metadataManager.removeIndexedFiles(studyMetadata.getId(), fileIds);
 
-                VariantStorageMetadataManager.setStatus(studyConfiguration, TaskMetadata.Status.READY, REMOVE_OPERATION_NAME, fileIds);
-                studyConfiguration.getIndexedFiles().removeAll(fileIds);
                 Set<Integer> removedSamples = new HashSet<>();
                 for (Integer fileId : fileIds) {
-                    removedSamples.addAll(studyConfiguration.getSamplesInFiles().get(fileId));
+                    removedSamples.addAll(metadataManager.getFileMetadata(studyMetadata.getId(), fileId).getSamples());
                 }
-                List<Integer> invalidCohorts = new ArrayList<>();
-                for (Integer cohortId : studyConfiguration.getCalculatedStats()) {
-                    Set<Integer> cohort = studyConfiguration.getCohorts().get(cohortId);
+                List<Integer> cohortsToInvalidate = new LinkedList<>();
+                for (CohortMetadata cohort : metadataManager.getCalculatedCohorts(studyMetadata.getId())) {
                     for (Integer removedSample : removedSamples) {
-                        if (cohort.contains(removedSample)) {
+                        if (cohort.getSamples().contains(removedSample)) {
                             logger.info("Invalidating statistics of cohort "
-                                    + studyConfiguration.getCohortIds().inverse().get(cohortId)
-                                    + " (" + cohortId + ')');
-                            invalidCohorts.add(cohortId);
+                                    + cohort.getName()
+                                    + " (" + cohort.getId() + ')');
+                            cohortsToInvalidate.add(cohort.getId());
                             break;
                         }
                     }
                 }
-                studyConfiguration.getCalculatedStats().removeAll(invalidCohorts);
-                studyConfiguration.getInvalidStats().addAll(invalidCohorts);
+                for (Integer cohortId : cohortsToInvalidate) {
+                    metadataManager.updateCohortMetadata(studyMetadata.getId(), cohortId,
+                            cohort -> cohort.setStatsStatus(TaskMetadata.Status.ERROR));
+                }
 
                 // Restore default cohort with indexed samples
-                Integer defaultCohort = studyConfiguration.getCohortIds().get(StudyEntry.DEFAULT_COHORT);
-                studyConfiguration.getCohorts()
-                        .put(defaultCohort, StudyConfiguration.getIndexedSamples(studyConfiguration).values());
+                metadataManager.updateCohortMetadata(studyMetadata.getId(), StudyEntry.DEFAULT_COHORT,
+                        defaultCohort -> defaultCohort.setSamples(metadataManager.getIndexedSamples(studyMetadata.getId())));
+
+
+                for (Integer fileId : fileIds) {
+                    getDBAdaptor().getMetadataManager().deleteVariantFileMetadata(studyMetadata.getId(), fileId);
+                }
             }
-            return studyConfiguration;
+            return studyMetadata;
         });
     }
 

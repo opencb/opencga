@@ -665,7 +665,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         }
     }
 
-    public void updateIndexedFiles(int studyId, List<Integer> fileIds) {
+    public void addIndexedFiles(int studyId, List<Integer> fileIds) {
         Set<Integer> samples = new HashSet<>();
         for (Integer fileId : fileIds) {
             updateFileMetadata(studyId, fileId, fileMetadata -> {
@@ -677,6 +677,34 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             updateSampleMetadata(studyId, sample, sampleMetadata -> sampleMetadata.setIndexStatus(TaskMetadata.Status.READY));
         }
         fileDBAdaptor.addIndexedFiles(studyId, fileIds);
+    }
+
+    public void removeIndexedFiles(int studyId, Collection<Integer> fileIds) throws StorageEngineException {
+        Set<Integer> samples = new HashSet<>();
+        for (Integer fileId : fileIds) {
+            updateFileMetadata(studyId, fileId, fileMetadata -> {
+                samples.addAll(fileMetadata.getSamples());
+                return fileMetadata.setIndexStatus(TaskMetadata.Status.NONE);
+            });
+//            deleteVariantFileMetadata(studyId, fileId);
+        }
+        for (Integer sample : samples) {
+            updateSampleMetadata(studyId, sample, sampleMetadata -> {
+                boolean indexed = false;
+                for (Integer fileId : sampleMetadata.getFiles()) {
+                    if (!fileIds.contains(fileId)) {
+                        if (getFileMetadata(studyId, fileId).isIndexed()) {
+                            indexed = true;
+                        }
+                    }
+                }
+                if (!indexed) {
+                    sampleMetadata.setIndexStatus(TaskMetadata.Status.NONE);
+                }
+                return sampleMetadata;
+            });
+        }
+        fileDBAdaptor.removeIndexedFiles(studyId, fileIds);
     }
 
     public LinkedHashSet<Integer> getIndexedFiles(int studyId) {
@@ -769,7 +797,8 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             for (Object includeSampleObj : includeSamples) {
                 Integer sampleId = getSampleId(sm.getId(), includeSampleObj, false);
                 if (sampleId == null) {
-                    throw VariantQueryException.sampleNotFound(includeSampleObj, sm.getName());
+                    continue;
+//                    throw VariantQueryException.sampleNotFound(includeSampleObj, sm.getName());
                 }
                 String includeSample = getSampleName(sm.getId(), sampleId);
 
@@ -957,24 +986,33 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         }
 
         if (studyId == null) {
-            return getResourcePair(obj, toId, resourceName);
+            return getResourcePair(obj, toId, resourceName, skipNegated);
         }
 
         return Pair.of(studyId, id);
     }
 
-    private Pair<Integer, Integer> getResourcePair(Object obj, BiFunction<Integer, String, Integer> toId, String resourceName) {
+    private Pair<Integer, Integer> getResourcePair(
+            Object obj, BiFunction<Integer, String, Integer> toId, String resourceName, boolean skipNegated) {
         Map<String, Integer> studies = getStudies(null);
         Collection<Integer> studyIds = studies.values();
         Integer resourceIdFromStudy;
+        String resourceStr = obj.toString();
+        if (isNegated(resourceStr)) { //Skip negated studies
+            if (skipNegated) {
+                return null;
+            } else {
+                resourceStr = removeNegation(resourceStr);
+            }
+        }
         for (Integer studyId : studyIds) {
             StudyMetadata sm = getStudyMetadata(studyId);
-            resourceIdFromStudy = toId.apply(sm.getId(), obj.toString());
+            resourceIdFromStudy = toId.apply(sm.getId(), resourceStr);
             if (resourceIdFromStudy != null) {
                 return Pair.of(sm.getId(), resourceIdFromStudy);
             }
         }
-        throw VariantQueryException.missingStudyFor(resourceName, obj.toString(), studies.keySet());
+        throw VariantQueryException.missingStudyFor(resourceName, resourceStr, studies.keySet());
     }
 
     private Integer parseResourceId(int studyId, Object obj, Function<String, Integer> toId, Predicate<Integer> validId) {

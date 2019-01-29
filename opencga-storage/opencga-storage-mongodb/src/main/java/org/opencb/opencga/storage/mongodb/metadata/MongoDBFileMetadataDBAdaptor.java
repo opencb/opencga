@@ -87,6 +87,12 @@ public class MongoDBFileMetadataDBAdaptor extends AbstractMongoDBAdaptor<FileMet
     }
 
     @Override
+    public void removeIndexedFiles(int studyId, Collection<Integer> fileIds) {
+        collectionStudies.update(Filters.eq("_id", studyId), Updates.pullAll("indexedFiles", new ArrayList<>(fileIds)),
+                new QueryOptions(UPSERT, true));
+    }
+
+    @Override
     public LinkedHashSet<Integer> getIndexedFiles(int studyId) {
         Document document = collectionStudies.find(Filters.eq("_id", studyId), null).first();
         if (document != null) {

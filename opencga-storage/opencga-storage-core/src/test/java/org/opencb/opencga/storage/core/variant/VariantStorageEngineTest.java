@@ -751,8 +751,8 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
     }
 
     public void removeFileTest(QueryOptions params) throws Exception {
-        StudyMetadata studyMetadata1 = new StudyMetadata(1, "Study1");
-        StudyMetadata studyMetadata2 = new StudyMetadata(2, "Study2");
+        StudyMetadata studyMetadata1 = variantStorageEngine.getMetadataManager().createStudy("Study1");
+        StudyMetadata studyMetadata2 = variantStorageEngine.getMetadataManager().createStudy("Study2");
 
         ObjectMap options = new ObjectMap(params)
                 .append(VariantStorageEngine.Options.STUDY_TYPE.key(), SampleSetType.CONTROL_SET)

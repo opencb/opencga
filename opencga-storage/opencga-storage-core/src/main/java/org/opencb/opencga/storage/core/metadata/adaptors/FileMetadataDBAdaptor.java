@@ -29,10 +29,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -78,6 +75,8 @@ public interface FileMetadataDBAdaptor extends AutoCloseable {
     Integer getFileId(int studyId, String fileName);
 
     default void addIndexedFiles(int studyId, List<Integer> fileIds) {}
+
+    default void removeIndexedFiles(int studyId, Collection<Integer> fileIds) {};
 
     LinkedHashSet<Integer> getIndexedFiles(int studyId);
 

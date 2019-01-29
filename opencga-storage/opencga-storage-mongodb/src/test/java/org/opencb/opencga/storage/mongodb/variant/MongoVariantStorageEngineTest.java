@@ -581,12 +581,15 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
     public MongoDBVariantStorageEngine getVariantStorageEngine(String collectionSufix) throws Exception {
         MongoDBVariantStorageEngine variantStorageEngine = newVariantStorageEngine();
         ObjectMap renameCollections = new ObjectMap()
+                .append(MongoDBVariantOptions.COLLECTION_VARIANTS.key(), MongoDBVariantOptions.COLLECTION_VARIANTS.defaultValue() + collectionSufix)
                 .append(MongoDBVariantOptions.COLLECTION_PROJECT.key(), MongoDBVariantOptions.COLLECTION_PROJECT.defaultValue() + collectionSufix)
                 .append(MongoDBVariantOptions.COLLECTION_STUDIES.key(), MongoDBVariantOptions.COLLECTION_STUDIES.defaultValue() + collectionSufix)
                 .append(MongoDBVariantOptions.COLLECTION_FILES.key(), MongoDBVariantOptions.COLLECTION_FILES.defaultValue() + collectionSufix)
+                .append(MongoDBVariantOptions.COLLECTION_SAMPLES.key(), MongoDBVariantOptions.COLLECTION_SAMPLES.defaultValue() + collectionSufix)
+                .append(MongoDBVariantOptions.COLLECTION_TASKS.key(), MongoDBVariantOptions.COLLECTION_TASKS.defaultValue() + collectionSufix)
+                .append(MongoDBVariantOptions.COLLECTION_COHORTS.key(), MongoDBVariantOptions.COLLECTION_COHORTS.defaultValue() + collectionSufix)
                 .append(MongoDBVariantOptions.COLLECTION_STAGE.key(), MongoDBVariantOptions.COLLECTION_STAGE.defaultValue() + collectionSufix)
                 .append(MongoDBVariantOptions.COLLECTION_ANNOTATION.key(), MongoDBVariantOptions.COLLECTION_ANNOTATION.defaultValue() + collectionSufix)
-                .append(MongoDBVariantOptions.COLLECTION_VARIANTS.key(), MongoDBVariantOptions.COLLECTION_VARIANTS.defaultValue() + collectionSufix)
                 .append(MongoDBVariantOptions.COLLECTION_TRASH.key(), MongoDBVariantOptions.COLLECTION_TRASH.defaultValue() + collectionSufix);
 
         variantStorageEngine.getOptions().putAll(renameCollections);
@@ -873,13 +876,13 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         StudyMetadata studyMetadata = createStudyMetadata();
         VariantStorageMetadataManager metadataManager = variantStorageEngine.getMetadataManager();
         MongoDBVariantStoragePipeline.checkCanLoadSampleBatch(metadataManager, studyMetadata, 1, false);
-        metadataManager.updateIndexedFiles(studyMetadata.getId(), Collections.singletonList(1));
+        metadataManager.addIndexedFiles(studyMetadata.getId(), Collections.singletonList(1));
         MongoDBVariantStoragePipeline.checkCanLoadSampleBatch(metadataManager, studyMetadata, 2, true);
-        metadataManager.updateIndexedFiles(studyMetadata.getId(), Collections.singletonList(2));
+        metadataManager.addIndexedFiles(studyMetadata.getId(), Collections.singletonList(2));
         MongoDBVariantStoragePipeline.checkCanLoadSampleBatch(metadataManager, studyMetadata, 3, false);
-        metadataManager.updateIndexedFiles(studyMetadata.getId(), Collections.singletonList(3));
+        metadataManager.addIndexedFiles(studyMetadata.getId(), Collections.singletonList(3));
         MongoDBVariantStoragePipeline.checkCanLoadSampleBatch(metadataManager, studyMetadata, 4, true);
-        metadataManager.updateIndexedFiles(studyMetadata.getId(), Collections.singletonList(4));
+        metadataManager.addIndexedFiles(studyMetadata.getId(), Collections.singletonList(4));
     }
 
     @Test
@@ -887,19 +890,19 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         StudyMetadata studyMetadata = createStudyMetadata();
         VariantStorageMetadataManager metadataManager = variantStorageEngine.getMetadataManager();
         MongoDBVariantStoragePipeline.checkCanLoadSampleBatch(metadataManager, studyMetadata, 4, false);
-        metadataManager.updateIndexedFiles(studyMetadata.getId(), Collections.singletonList(4));
+        metadataManager.addIndexedFiles(studyMetadata.getId(), Collections.singletonList(4));
         MongoDBVariantStoragePipeline.checkCanLoadSampleBatch(metadataManager, studyMetadata, 3, true);
-        metadataManager.updateIndexedFiles(studyMetadata.getId(), Collections.singletonList(3));
+        metadataManager.addIndexedFiles(studyMetadata.getId(), Collections.singletonList(3));
         MongoDBVariantStoragePipeline.checkCanLoadSampleBatch(metadataManager, studyMetadata, 2, false);
-        metadataManager.updateIndexedFiles(studyMetadata.getId(), Collections.singletonList(2));
+        metadataManager.addIndexedFiles(studyMetadata.getId(), Collections.singletonList(2));
         MongoDBVariantStoragePipeline.checkCanLoadSampleBatch(metadataManager, studyMetadata, 1, true);
-        metadataManager.updateIndexedFiles(studyMetadata.getId(), Collections.singletonList(1));
+        metadataManager.addIndexedFiles(studyMetadata.getId(), Collections.singletonList(1));
     }
 
     @Test
     public void checkCanLoadSampleBatchFailTest() throws StorageEngineException {
         StudyMetadata studyMetadata = createStudyMetadata();
-        metadataManager.updateIndexedFiles(studyMetadata.getId(), Arrays.asList(1, 3, 4));
+        metadataManager.addIndexedFiles(studyMetadata.getId(), Arrays.asList(1, 3, 4));
         StorageEngineException e = MongoVariantStorageEngineException.alreadyLoadedSamples("file2.vcf", Arrays.asList("s2"));
         thrown.expect(e.getClass());
         thrown.expectMessage(e.getMessage());
@@ -909,7 +912,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
     @Test
     public void checkCanLoadSampleBatchFail2Test() throws StorageEngineException {
         StudyMetadata studyMetadata = createStudyMetadata();
-        metadataManager.updateIndexedFiles(studyMetadata.getId(), Arrays.asList(1, 2));
+        metadataManager.addIndexedFiles(studyMetadata.getId(), Arrays.asList(1, 2));
         StorageEngineException e = MongoVariantStorageEngineException.alreadyLoadedSomeSamples("file5.vcf");
         thrown.expect(e.getClass());
         thrown.expectMessage(e.getMessage());
@@ -1146,8 +1149,8 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
     public void removeFileTest(QueryOptions params) throws Exception {
         MongoDBVariantStorageEngine variantStorageEngineExpected = getVariantStorageEngine("_expected");
 
-        StudyMetadata studyMetadata1 = new StudyMetadata(1, "Study1");
-        StudyMetadata studyMetadata2 = new StudyMetadata(2, "Study2");
+        StudyMetadata studyMetadata1 = variantStorageEngineExpected.getMetadataManager().createStudy("Study1");
+        StudyMetadata studyMetadata2 = variantStorageEngineExpected.getMetadataManager().createStudy("Study2");
 
         ObjectMap options = new ObjectMap(params)
                 .append(VariantStorageEngine.Options.STUDY_TYPE.key(), SampleSetType.CONTROL_SET)

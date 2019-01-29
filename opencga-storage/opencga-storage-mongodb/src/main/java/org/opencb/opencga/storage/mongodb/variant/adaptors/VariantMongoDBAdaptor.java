@@ -48,7 +48,6 @@ import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -212,11 +211,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
      * @return A QueryResult with the file deleted
      */
     public QueryResult removeFiles(String study, List<String> files, long timestamp, QueryOptions options) {
-        StudyConfiguration sc = metadataManager.getStudyConfiguration(study, null).first();
-        Integer studyId = sc.getId();
+        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
+        Integer studyId = studyMetadata.getId();
         List<Integer> fileIds = metadataManager.getFileIds(studyId, files);
 
-        ArrayList<Integer> otherIndexedFiles = new ArrayList<>(sc.getIndexedFiles());
+        LinkedHashSet<Integer> otherIndexedFiles = metadataManager.getIndexedFiles(studyMetadata.getId());
         otherIndexedFiles.removeAll(fileIds);
 
         // First, remove the study entry that only contains the files to remove
@@ -236,7 +235,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         );
         removeFilesFromStageCollection(studiesToRemoveQuery, studyId, fileIds);
 
-        return removeFilesFromVariantsCollection(studiesToRemoveQuery, sc, fileIds, timestamp);
+        return removeFilesFromVariantsCollection(studiesToRemoveQuery, studyMetadata, fileIds, timestamp);
     }
 
     private void removeFilesFromStageCollection(Bson studiesToRemoveQuery, Integer studyId, List<Integer> fileIds) {
@@ -283,15 +282,15 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         logger.info("Removed " + removedStageDocuments + " documents from stage");
     }
 
-    private QueryResult<UpdateResult> removeFilesFromVariantsCollection(Bson studiesToRemoveQuery, StudyConfiguration sc,
+    private QueryResult<UpdateResult> removeFilesFromVariantsCollection(Bson studiesToRemoveQuery, StudyMetadata sm,
                                                                         List<Integer> fileIds, long timestamp) {
-        Set<Integer> sampleIds = fileIds.stream()
-                .map(sc.getSamplesInFiles()::get)
-                .flatMap(Collection::stream)
-                .collect(Collectors.toSet());
+        Set<Integer> sampleIds = new HashSet<>();
+        for (Integer fileId : fileIds) {
+            sampleIds.addAll(metadataManager.getFileMetadata(sm.getId(), fileId).getSamples());
+        }
 
         // Update and remove variants from variants collection
-        int studyId = sc.getId();
+        int studyId = sm.getId();
         logger.info("Remove files from variants collection - step 1/3"); // Remove study if only contains removed files
         long updatedVariantsDocuments = removeStudyFromVariants(studyId, studiesToRemoveQuery, timestamp).first().getModifiedCount();
 
@@ -301,7 +300,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         Bson query;
         // If default genotype is not the unknown genotype, we must iterate over all the documents in the study
-        if (!sc.getAttributes().getString(DEFAULT_GENOTYPE.key()).equals(GenotypeClass.UNKNOWN_GENOTYPE)) {
+        if (!sm.getAttributes().getString(DEFAULT_GENOTYPE.key()).equals(GenotypeClass.UNKNOWN_GENOTYPE)) {
             query = eq(DocumentToVariantConverter.STUDIES_FIELD + '.' + STUDYID_FIELD, studyId);
         } else {
             query = elemMatch(DocumentToVariantConverter.STUDIES_FIELD,
@@ -316,7 +315,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         updates.add(
                 pull(DocumentToVariantConverter.STUDIES_FIELD + ".$." + FILES_FIELD,
                         in(FILEID_FIELD, fileIds)));
-        for (String gt : sc.getAttributes().getAsStringList(LOADED_GENOTYPES.key())) {
+        for (String gt : sm.getAttributes().getAsStringList(LOADED_GENOTYPES.key())) {
             updates.add(
                     pullByFilter(
                             in(DocumentToVariantConverter.STUDIES_FIELD + ".$." + GENOTYPES_FIELD + '.' + gt, sampleIds)));
@@ -1010,20 +1009,20 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     public QueryResult removeStats(String studyName, String cohortName, QueryOptions options) {
-        StudyConfiguration studyConfiguration = metadataManager.getStudyConfiguration(studyName, options).first();
-        int cohortId = studyConfiguration.getCohortIds().get(cohortName);
+        StudyMetadata sm = metadataManager.getStudyMetadata(studyName);
+        int cohortId = metadataManager.getCohortId(sm.getId(), cohortName);
 
         // { st : { $elemMatch : {  sid : <studyId>, cid : <cohortId> } } }
         Document query = new Document(DocumentToVariantConverter.STATS_FIELD,
                 new Document("$elemMatch",
-                        new Document(DocumentToVariantStatsConverter.STUDY_ID, studyConfiguration.getId())
+                        new Document(DocumentToVariantStatsConverter.STUDY_ID, sm.getId())
                                 .append(DocumentToVariantStatsConverter.COHORT_ID, cohortId)));
 
         // { $pull : { st : {  sid : <studyId>, cid : <cohortId> } } }
         Document update = new Document(
                 "$pull",
                 new Document(DocumentToVariantConverter.STATS_FIELD,
-                        new Document(DocumentToVariantStatsConverter.STUDY_ID, studyConfiguration.getId())
+                        new Document(DocumentToVariantStatsConverter.STUDY_ID, sm.getId())
                                 .append(DocumentToVariantStatsConverter.COHORT_ID, cohortId)
                 )
         );

@@ -20,7 +20,6 @@ import com.google.common.base.Throwables;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.log4j.Level;
-import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -36,8 +35,8 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -257,9 +256,9 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         try {
             Runtime.getRuntime().addShutdownHook(hook);
             getDBAdaptor().removeFiles(study, files, task.getTimestamp(), new QueryOptions(options));
-            postRemoveFiles(study, fileIds, false);
+            postRemoveFiles(study, fileIds, task.getId(), false);
         } catch (Exception e) {
-            postRemoveFiles(study, fileIds, true);
+            postRemoveFiles(study, fileIds, task.getId(), true);
             throw e;
         } finally {
             Runtime.getRuntime().removeShutdownHook(hook);
@@ -268,41 +267,38 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public void removeStudy(String studyName) throws StorageEngineException {
-        VariantStorageMetadataManager scm = getMetadataManager();
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
         AtomicReference<TaskMetadata> batchFileOperation = new AtomicReference<>();
-        StudyMetadata studyMetadata = scm.lockAndUpdateOld(studyName, studyConfiguration -> {
+        AtomicReference<TaskMetadata> taskMetadata = new AtomicReference<>();
+        StudyMetadata studyMetadata = metadataManager.lockAndUpdate(studyName, sm -> {
             boolean resume = getOptions().getBoolean(RESUME.key(), RESUME.defaultValue());
-            batchFileOperation.set(VariantStorageMetadataManager.addRunningTask(
-                    studyConfiguration,
+            taskMetadata.set(metadataManager.addRunningTask(sm.getId(),
                     REMOVE_OPERATION_NAME,
                     Collections.emptyList(),
                     resume,
                     TaskMetadata.Type.REMOVE));
-            return studyConfiguration;
+            return sm;
         });
         int studyId = studyMetadata.getId();
 
-        Thread hook = scm.buildShutdownHook(REMOVE_OPERATION_NAME, studyId, Collections.emptyList());
+        Thread hook = metadataManager.buildShutdownHook(REMOVE_OPERATION_NAME, studyId, Collections.emptyList());
         try {
             Runtime.getRuntime().addShutdownHook(hook);
             ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
             getDBAdaptor().removeStudy(studyName, batchFileOperation.get().getTimestamp(), new QueryOptions(options));
 
-            scm.lockAndUpdateOld(studyName, studyConfiguration -> {
-                for (Integer fileId : studyConfiguration.getIndexedFiles()) {
+            metadataManager.lockAndUpdate(studyName, sm -> {
+                LinkedHashSet<Integer> indexedFiles = metadataManager.getIndexedFiles(sm.getId());
+                for (Integer fileId : indexedFiles) {
                     getDBAdaptor().getMetadataManager().deleteVariantFileMetadata(studyId, fileId);
                 }
-                VariantStorageMetadataManager
-                        .setStatus(studyConfiguration, TaskMetadata.Status.READY, REMOVE_OPERATION_NAME, Collections.emptyList());
-                studyConfiguration.getIndexedFiles().clear();
-                studyConfiguration.getCalculatedStats().clear();
-                studyConfiguration.getInvalidStats().clear();
-                Integer defaultCohortId = studyConfiguration.getCohortIds().get(StudyEntry.DEFAULT_COHORT);
-                studyConfiguration.getCohorts().put(defaultCohortId, Collections.emptySet());
-                return studyConfiguration;
+                metadataManager.setStatus(sm.getId(), taskMetadata.get().getId(), TaskMetadata.Status.READY);
+
+                metadataManager.removeIndexedFiles(sm.getId(), indexedFiles);
+                return sm;
             });
         } catch (Exception e) {
-            scm.atomicSetStatus(studyId, TaskMetadata.Status.ERROR, REMOVE_OPERATION_NAME, Collections.emptyList());
+            metadataManager.atomicSetStatus(studyId, TaskMetadata.Status.ERROR, REMOVE_OPERATION_NAME, Collections.emptyList());
             throw e;
         } finally {
             Runtime.getRuntime().removeShutdownHook(hook);
