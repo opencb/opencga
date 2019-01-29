@@ -105,9 +105,11 @@ data "template_file" "cloud_init" {
   template = "${file("${path.module}/cloudinit.tmpl.yaml")}"
 
   vars {
-    mount_args    = "${var.mount_args})"
-    opencga_image = "${var.opencga_image}"
-    iva_image     = "${var.iva_image}"
+    mount_args              = "${var.mount_args}"
+    opencga_image           = "${var.opencga_image}"
+    iva_image               = "${var.iva_image}"
+    cloud_init_check_script = "${base64gzip(file("${path.module}/../scripts/cloudinitcheck.sh"))}"
+    mount_script            = "${base64gzip(file("${path.module}/../scripts/mount.py"))}"
   }
 }
 
@@ -123,20 +125,7 @@ data "template_cloudinit_config" "config" {
     content_type = "text/cloud-config"
     content      = "${data.template_file.cloud_init.rendered}"
   }
-
-  part {
-    filename     = "/opt/opencga/azure/mount.py"
-    content_type = "text/x-python"
-    content      = "${file("${path.module}/../scripts/mount.py")}"
-  }
 }
-
-
-locals {
-  // Zip up and base64 the command then ship it to python with the mount_args set
-  cloudInitCheckCommand = "/bin/bash -c \" echo ${base64gzip(file("${path.module}/../scripts/cloudinitcheck.sh"))} | base64 -d | gunzip | xargs -I '{}' bash -c '{}' \""
-}
-
 
 resource "azurerm_virtual_machine_scale_set" "webservers" {
   name                = "opencga-webservers"
@@ -147,12 +136,13 @@ resource "azurerm_virtual_machine_scale_set" "webservers" {
   automatic_os_upgrade = true
   upgrade_policy_mode  = "Rolling"
 
-  rolling_upgrade_policy {
-    max_batch_instance_percent              = 20
-    max_unhealthy_instance_percent          = 20
-    max_unhealthy_upgraded_instance_percent = 5
-    pause_time_between_batches              = "PT0S"
-  }
+  # rolling_upgrade_policy {
+  #   max_batch_instance_percent              = 20
+  #   max_unhealthy_instance_percent          = 20
+  #   max_unhealthy_upgraded_instance_percent = 5
+  #   pause_time_between_batches              = "PT0S"
+  # }
+  upgrade_policy_mode = "Automatic"
 
   # required when using rolling upgrade policy
   health_probe_id = "${azurerm_lb_probe.probe.id}"
@@ -201,9 +191,9 @@ resource "azurerm_virtual_machine_scale_set" "webservers" {
 
     settings = <<SETTINGS
     {
-        "commandToExecute": "${local.cloudInitCheckCommand}"
+        "commandToExecute": "/bin/bash -f /opt/cloudinitcheck.sh"
     }
-SETTINGS
+    SETTINGS
   }
 
   network_profile {

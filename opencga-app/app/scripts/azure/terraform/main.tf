@@ -36,7 +36,7 @@ module "azurebatch" {
 
   virtual_network_subnet_id = "${azurerm_subnet.batch.id}"
 
-  mount_args = "${module.azurefiles.storage_account_name},${module.azurefiles.share_name},${module.azurefiles.storage_key}"
+  mount_args = "azurefiles ${module.azurefiles.storage_account_name},${module.azurefiles.share_name},${module.azurefiles.storage_key}"
 }
 
 module "webservers" {
@@ -47,7 +47,7 @@ module "webservers" {
 
   virtual_network_subnet_id = "${azurerm_subnet.web.id}"
 
-  mount_args = "${module.azurefiles.storage_account_name},${module.azurefiles.share_name},${module.azurefiles.storage_key}"
+  mount_args = "azurefiles ${module.azurefiles.storage_account_name},${module.azurefiles.share_name},${module.azurefiles.storage_key}"
 
   admin_username = "opencga"
   ssh_key_data   = "${file("~/.ssh/id_rsa.pub")}"

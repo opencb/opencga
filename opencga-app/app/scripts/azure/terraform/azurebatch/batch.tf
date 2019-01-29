@@ -33,7 +33,7 @@ resource "random_string" "storage_name" {
 
 locals {
   // Zip up and base64 the command then ship it to python with the mount_args set
-  startupCmd = "/bin/bash -c \" echo ${base64gzip(file("${path.module}/../scripts/mount.py"))} | base64 -d | gunzip | python3 - ${var.mount_args})\""
+  startupCmd = "/bin/bash -c \" echo ${base64gzip(file("${path.module}/../scripts/mount.py"))} | base64 -d | gunzip | python3 - ${var.mount_args}\""
 }
 
 resource "random_string" "batch_name" {

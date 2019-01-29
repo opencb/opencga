@@ -66,22 +66,6 @@ resource "random_integer" "cluster_password_int" {
   max     = 99999
 }
 
-
-resource "azurerm_storage_account" "hdinsight_storage" {
-  name         = "${random_string.storage_name.result}"
-  account_kind = "StorageV2"
-
-  network_rules = {
-    bypass                     = ["AzureServices"]
-    virtual_network_subnet_ids = ["${var.virtual_network_subnet_id}"]
-  }
-
-  account_tier             = "Standard"
-  account_replication_type = "LRS"
-  resource_group_name      = "${azurerm_resource_group.hdinsight-rg.name}"
-  location                 = "${var.location}"
-}
-
 resource "azurerm_template_deployment" "hdinsight" {
   name                = "hdinsight"
   resource_group_name = "${var.resource_group_name}"
@@ -92,10 +76,8 @@ resource "azurerm_template_deployment" "hdinsight" {
     "clusterLoginPassword" = "${random_string.cluster_password.result}${random_integer.cluster_password_int.result}"
     "sshPassword"          = "${random_string.cluster_password.result}${random_integer.cluster_password_int.result}"
     "storageAccountName"   = "${random_string.storage_name.result}"
-    "storageAccountKey"    = "${azurerm_storage_account.hdinsight_storage.primary_access_key}"
     "vnetId"               = "${var.virtual_network_id}"
     "subnetId"             = "${var.virtual_network_subnet_id}"
-    "storageOption"        = "DataLake"
   }
 
   deployment_mode = "Incremental"

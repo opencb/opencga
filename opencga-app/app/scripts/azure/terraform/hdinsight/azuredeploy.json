@@ -98,12 +98,6 @@
                 "description": "Storage account to be used by HD Insight."
             }
         },
-        "storageAccountKey": {
-            "type": "securestring",
-            "metadata": {
-                "description": "Storage account to be used by HD Insight."
-            }
-        },
         "vnetId": {
             "type": "string",
             "metadata": {
@@ -116,38 +110,62 @@
                 "description": "Subnet to be used"
             }
         },
-        "storageOption": {
+        "accountType": {
             "type": "string",
-            "allowedValues": [
-                "DataLake",
-                "Blob"
-            ],
-            "metadata": {
-                "description": "What type of storage will be used"
-            }
-        }
-    },
-    "variables": {
-          
-        "dataLakeStorageProfile": {
-                           
-            "name": "[concat(parameters('storageAccountName'),'.dfs.core.windows.net')]",
-            "isDefault": true,
-            "fileSystem": "opencga",
-            "key": "[parameters('storageAccountKey')]"
-
+            "defaultValue": "Standard_LRS"
         },
-        "blobStorageProfile": {
-                           
-            "name": "[concat(parameters('storageAccountName'),'.blob.core.windows.net')]",
-            "isDefault": true,
-            "container": "opencga",
-            "key": "[parameters('storageAccountKey')]"
-
+        "kind": {
+            "type": "string",
+            "defaultValue": "StorageV2"
+        },
+        "accessTier": {
+            "type": "string",
+            "defaultValue": "Hot"
+        },
+        "supportsHttpsTrafficOnly": {
+            "type": "bool",
+            "defaultValue": true
+        },
+        "networkAclsBypass": {
+            "type": "string",
+            "defaultValue": "AzureServices"
+        },
+        "networkAclsDefaultAction": {
+            "type": "string",
+            "defaultValue": "Deny"
+        },
+        "isHnsEnabled": {
+            "type": "bool",
+            "defaultValue": true
         }
-
     },
     "resources": [
+        {
+            "name": "[parameters('storageAccountName')]",
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2018-07-01",
+            "location": "[resourceGroup().location]",
+                           
+            "properties": {
+                "accessTier": "[parameters('accessTier')]",
+                "supportsHttpsTrafficOnly": "[parameters('supportsHttpsTrafficOnly')]",
+                "networkAcls": {
+                    "bypass": "[parameters('networkAclsBypass')]",
+                    "defaultAction": "[parameters('networkAclsDefaultAction')]",
+                    "ipRules": [],
+                    "virtualNetworkRules":[
+                        {
+                            "id": "[parameters('subnetId')]"
+                        }
+                    ] 
+                },
+                "isHnsEnabled": "[parameters('isHnsEnabled')]"
+            },
+            "sku": {
+                "name": "[parameters('accountType')]"
+            },
+            "kind": "[parameters('kind')]"
+        },
         {
             "apiVersion": "2018-06-01-preview",
             "name": "[parameters('clusterName')]",
@@ -155,7 +173,8 @@
             "location": "[resourceGroup().location]",
                            
             "dependsOn": [
-                ],
+                "[concat('Microsoft.Storage/storageAccounts/', parameters('storageAccountName'))]"
+              ],
             "properties": {
                 "clusterVersion": "[parameters('clusterVersion')]",
                 "osType": "Linux",
@@ -175,7 +194,14 @@
                 },
                 "storageProfile": {
                     "storageaccounts": [
-                        "[if(equals(parameters('storageOption'), 'DataLake'), variables('dataLakeStorageProfile'),variables('blobStorageProfile'))]"
+                        {
+                           
+                            "name": "[concat(parameters('storageAccountName'),'.dfs.core.windows.net')]",
+                            "isDefault": true,
+                            "fileSystem": "opencga",
+                            "key": "[listKeys(concat('Microsoft.Storage/storageAccounts/',parameters('storageAccountName')), '2018-02-01').keys[0].value]"
+                
+                        }
                     ]
                 },
                 "computeProfile": {
