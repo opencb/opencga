@@ -16,7 +16,7 @@ pipeline {
                 timeout(time: 30, unit: 'MINUTES')
             }
             steps {
-                sh 'mvn clean install -DskipTests -Dstorage-hadoop -Popencga-storage-hadoop-deps -Phdp-2.6.0 -DOPENCGA.STORAGE.DEFAULT_ENGINE=hadoop -Dopencga.war.name=opencga -Dcheckstyle.skip'
+                sh 'mvn clean install -DskipTests -Dstorage-mongodb -Dstorage-hadoop -Popencga-storage-hadoop-deps -Phdp-2.6.5 -DOPENCGA.STORAGE.DEFAULT_ENGINE=hadoop -Dopencga.war.name=opencga -Dcheckstyle.skip'
             }
         }
 
