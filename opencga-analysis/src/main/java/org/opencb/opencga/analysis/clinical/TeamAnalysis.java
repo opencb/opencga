@@ -40,7 +40,7 @@ import java.util.List;
 import static org.opencb.biodata.models.clinical.interpretation.DiseasePanel.GenePanel;
 import static org.opencb.biodata.models.clinical.interpretation.DiseasePanel.VariantPanel;
 
-public class ClinicalInterpretationAnalysis extends OpenCgaAnalysis<Interpretation> {
+public class TeamAnalysis extends OpenCgaAnalysis<Interpretation> {
 
     private ClinicalAnalysis clinicalAnalysis;
 
@@ -63,11 +63,11 @@ public class ClinicalInterpretationAnalysis extends OpenCgaAnalysis<Interpretati
 
     private Interpretation interpretation;
 
-//    public ClinicalInterpretationAnalysis(String clnicalAnalysisId, String panelId, Query variantQuery, String sessionId) {
+//    public TeamAnalysis(String clnicalAnalysisId, String panelId, Query variantQuery, String sessionId) {
 //
 //    }
 
-    public ClinicalInterpretationAnalysis(
+    public TeamAnalysis(
             String opencgaHome,
             String sessionId,
             String studyStr,
@@ -197,7 +197,7 @@ public class ClinicalInterpretationAnalysis extends OpenCgaAnalysis<Interpretati
         return interpretation;
     }
 
-    public ClinicalInterpretationAnalysis setInterpretation(Interpretation interpretation) {
+    public TeamAnalysis setInterpretation(Interpretation interpretation) {
         this.interpretation = interpretation;
         return this;
     }
