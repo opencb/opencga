@@ -14,6 +14,18 @@
                 "description": ""
             }
         },
+        "deploymentSize": {
+            "type": "int",
+            "allowedValues": [
+                0,
+                1,
+                2
+            ],
+            "defaultValue": 0,
+            "metadata": {
+                "description": "What size of deployment do you want? 0 = For single researches testing things out. 1 = For x genomics with xgb per sec load rate. 2 = is for x/y"
+            }
+        },
         "rgPrefix": {
             "type": "string",
             "metadata": {
@@ -38,16 +50,6 @@
                 "description": "What type of storage will be used"
             }
         },
-        "nfsStorageOption": {
-            "type": "string",
-            "allowedValues": [
-                "AvereCluster",
-                "AzureFiles"
-            ],
-            "metadata": {
-                "description": "What type of NFS storage do you want to use? Avere offers a high throughput SSD cache cluster over Azure Blob, AzureFiles offers modest read/write performance for smaller installations"
-            }
-        },
         "openCGAContainerImage": {
             "type": "string",
             "metadata": {
@@ -66,25 +68,11 @@
                 "description": "The docker image and tag for running the IVA service. For examples: 'repo/image:tag'"
             }
         },
-        "solrHighAvailability": {
-            "type": "bool",
-            "defaultValue": true,
-            "metadata": {
-                "description": ""
-            }
-        },
         "solrDiskSizeGB": {
             "type": "int",
             "defaultValue": 512,
             "metadata": {
                 "description": "Size of the data disk for Solr."
-            }
-        },
-        "solrVMSize": {
-            "type": "string",
-            "defaultValue": "Standard_E8_v3",
-            "metadata": {
-                "description": "Size of the VM"
             }
         },
         "zookeeperVMSize": {
@@ -117,31 +105,10 @@
                 "description": "The daemon container image to run"
             }
         },
-        "mongoVmSize": {
-            "type": "string",
-            "metadata": {
-                "description": "Size of vm (e.g. Standard_D1_v2)"
-            },
-            "defaultValue": "Standard_D1_v2"
-        },
         "mongoCertificateEmail": {
             "type": "string",
             "metadata": {
                 "description": "Email address used for mongoDB letsencrypt certificates"
-            }
-        },
-        "mongoClusterSize": {
-            "type": "int",
-            "defaultValue": 3,
-            "allowedValues": [
-                3,
-                5,
-                7,
-                9,
-                11
-            ],
-            "metadata": {
-                "description": "Amount of VMs to deploy for the mongodb replica set"
             }
         },
         "avereServicePrincipalAppId": {
@@ -207,9 +174,131 @@
         }
     },
     "variables": {
-        "avereEnabled": "[equals(parameters('nfsStorageOption'), 'AvereCluster')]",
-        "azureFilesEnabled": "[equals(parameters('nfsStorageOption'), 'AzureFiles')]",
-        "dnsNamePrefix": "[toLower(substring(concat('opencga', uniqueString(subscription().subscriptionId,parameters('rgPrefix'))), 0, 16))]"
+        "dnsNamePrefix": "[toLower(substring(concat('opencga', uniqueString(subscription().subscriptionId,parameters('rgPrefix'))), 0, 16))]",
+        "sizingOptions": [
+            {
+                "type": "0 = Small",
+                "avereEnabled": false,
+                "azureFilesEnabled": true,
+                "solr": {
+                    "ha": false,
+                    "nodeSize": "Standard_E4_v3",
+                    "nodeCount": 1
+                },
+                "batch": {
+                    "maxNodeCount": 5,
+                    "nodeSize": "Standard_F8s_v2"
+                },
+                "mongo": {
+                    "nodeCount": 1,
+                    "nodeSize": "Standard_D4_v2",
+                    "diskType": "E10"
+                },
+                "hdInsight": {
+                    "worker": {
+                        "nodeCount": 1,
+                        "nodeSize": "Standard_D4_v2"
+                    },
+                    "head": {
+                        "nodeCount": 2,
+                        "nodeSize": "Standard_D3_v2"
+                    }
+                },
+                "daemon": {
+                    "nodeSize": "Standard_DS2_v2"
+                },
+                "webServers": {
+                    "minNodeCount": 1,
+                    "maxNodeCount": 2,
+                    "nodeSize": "Standard_DS2_v2"
+                }
+            },
+            {
+                "type": "1 = Medium",
+                "avereEnabled": false,
+                "avere": {
+                    "nodeCount": 3,
+                    "diskSize": 1024,
+                    "nodeSize": "Standard_D16s_v3"
+                },
+                "azureFilesEnabled": false,
+                "solr": {
+                    "ha": true,                    
+                    "nodeSize": "Standard_E8_v3",
+                    "nodeCount": 2
+                },
+                "batch": {
+                    "maxNodeCount": 16,
+                    "nodeSize": "Standard_F8s_v2"
+                },
+                "mongo": {
+                    "nodeCount": 3,
+                    "nodeSize": "Standard_E8_v3",
+                    "diskType": "P20"
+                },
+                "hdInsight": {
+                    "worker": {
+                        "nodeCount": 2,
+                        "nodeSize": "Standard_D4_v2"
+                    },
+                    "head": {
+                        "nodeCount": 20,
+                        "nodeSize": "Standard_D5_v2"
+                    }
+                },
+                "daemon": {
+                    "nodeSize": "Standard_F8s_v2"
+                },
+                "webServers": {
+                    "minNodeCount": 2,
+                    "maxNodeCount": 2,
+                    "nodeSize": "Standard_DS4_v2"
+                }
+            },
+            {
+                "type": "2 = Large",
+                "avereEnabled": false,
+                "avere": {
+                    "nodeCount": 12,
+                    "diskSize": 4096,
+                    "nodeSize": "Standard_E32s_v3"
+                },
+                "azureFilesEnabled": false,
+                "solr": {
+                    "ha": true,                    
+                    "nodeSize": "Standard_E16_v3",
+                    "nodeCount": 2
+                },
+                "batch": {
+                    "maxNodeCount": 1000,
+                    "nodeSize": "Standard_F8s_v2"
+                },
+                "mongo": {
+                    "nodeCount": 5,
+                    "nodeSize": "Standard_E16_v3",
+                    "diskType": "P20"
+                },
+                "hdInsight": {
+                    "worker": {
+                        "nodeCount": 2,
+                        "nodeSize": "Standard_D4_v2"
+                    },
+                    "head": {
+                        "nodeCount": 50,
+                        "nodeSize": "Standard_D14_v2"
+                    }
+                },
+                "daemon": {
+                    "nodeSize": "Standard_F8s_v2"
+                },
+                "webServers": {
+                    "minNodeCount": 2,
+                    "maxNodeCount": 4,
+                    "nodeSize": "Standard_DS4_v2"
+                }
+            }
+        ],
+        "selectedSize": "[variables('sizingOptions')[parameters('deploymentSize')]]"
     },
     "resources": [
         {
@@ -279,7 +368,7 @@
             }
         },
         {
-            "condition": "[variables('azureFilesEnabled')]",
+            "condition": "[variables('selectedSize').azureFilesEnabled]",
             "resourceGroup": "[parameters('rgPrefix')]",
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2018-05-01",
@@ -323,7 +412,13 @@
                         "value": "[reference('vnet').outputs.defaultSubnetId.value]"
                     },
                     "mountArgs": {
-                        "value": "[if(equals(parameters('nfsStorageOption'), 'AzureFiles'), concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value, ',' , reference('azurefiles').outputs.accountKey.value),concat('avere ', reference('avere').outputs.VSERVER_IPS.value))]"
+                        "value": "[if(variables('selectedSize').azureFilesEnabled, concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value, ',' , reference('azurefiles').outputs.accountKey.value),concat('avere ', reference('avere').outputs.VSERVER_IPS.value))]"
+                    },
+                    "maxNodeCount": {
+                        "value": "[variables('selectedSize').batch.maxNodeCount]"
+                    },
+                    "virtualMachineSize": {
+                        "value": "[variables('selectedSize').batch.nodeSize]"
                     },
                     "dockerImagesToCache": {
                         "value": [
@@ -388,6 +483,9 @@
                     "_artifactsLocationSasToken": {
                         "value": "[parameters('_artifactsLocationSasToken')]"
                     },
+                    "virtualMachineSize": {
+                        "value": "[variables('selectedSize').daemon.nodeSize]"
+                    },
                     "openCgaAdminPassword": {
                         "value": "[parameters('openCgaAdminPassword')]"
                     },
@@ -413,7 +511,7 @@
                         "value": "[parameters('initContainerImage')]"
                     },
                     "mountArgs": {
-                        "value": "[if(equals(parameters('nfsStorageOption'), 'AzureFiles'), concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value,',',reference('azurefiles').outputs.accountKey.value),concat('avere ', reference('avere').outputs.VSERVER_IPS.value))]"
+                        "value": "[if(variables('selectedSize').azureFilesEnabled, concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value,',',reference('azurefiles').outputs.accountKey.value),concat('avere ', reference('avere').outputs.VSERVER_IPS.value))]"
                     },
                     "opencgaFQDN": {
                         "value": "[reference('appgw').outputs.fqdn.value]"
@@ -501,6 +599,18 @@
                     "clusterLoginPassword": {
                         "value": "[parameters('HDInsightClusterLoginPassword')]"
                     },
+                    "clusterHeadNodeCount": {
+                        "value": "[variables('selectedSize').hdInsight.head.nodeCount]"
+                    },
+                    "clusterHeadNodeSize": {
+                        "value": "[variables('selectedSize').hdInsight.head.nodeSize]"
+                    },
+                    "clusterWorkerNodeCount": {
+                        "value": "[variables('selectedSize').hdInsight.worker.nodeCount]"
+                    },
+                    "clusterWorkerNodeSize": {
+                        "value": "[variables('selectedSize').hdInsight.worker.nodeSize]"
+                    },
                     "sshPassword": {
                         "value": "[parameters('HDInsightSshPassword')]"
                     },
@@ -532,7 +642,7 @@
             }
         },
         {
-            "condition": "[variables('avereEnabled')]",
+            "condition": "[variables('selectedSize').avereEnabled]",
             "type": "Microsoft.Resources/resourceGroups",
             "apiVersion": "2018-05-01",
             "location": "[parameters('rgLocation')]",
@@ -540,7 +650,7 @@
             "properties": {}
         },
         {
-            "condition": "[variables('avereEnabled')]",
+            "condition": "[variables('selectedSize').avereEnabled]",
             "type": "Microsoft.Resources/deployments",
             "resourceGroup": "[concat(parameters('rgPrefix'),'-avere')]",
             "apiVersion": "2018-05-01",
@@ -556,6 +666,15 @@
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
+                    "avereInstanceType": {
+                        "value": "[variables('selectedSize').avere.nodeSize]"
+                    },
+                    "avereNodeCount": {
+                        "value": "[variables('selectedSize').avere.nodeCount]"
+                    },
+                    "avereCacheSizeGB": {
+                        "value": "[variables('selectedSize').avere.diskSize]"
+                    },
                     "servicePrincipalTenant": {
                         "value": "[subscription().tenantId]"
                     },
@@ -616,6 +735,18 @@
                     "_artifactsLocationSasToken": {
                         "value": "[parameters('_artifactsLocationSasToken')]"
                     },
+                    "virtualMachineSize": {
+                        "value": "[variables('selectedSize').webServers.nodeSize]"
+                    },
+                    "minInstanceCount": {
+                        "value": "[variables('selectedSize').webServers.minNodeCount]"
+                    },
+                    "initialInstanceCount": {
+                        "value": "[variables('selectedSize').webServers.minNodeCount]"
+                    },
+                    "maxInstanceCount": {
+                        "value": "[variables('selectedSize').webServers.maxNodeCount]"
+                    },
                     "virtualNetworkSubnetId": {
                         "value": "[reference('vnet').outputs.hdinsightSubnetId.value]"
                     },
@@ -623,7 +754,7 @@
                         "value": "[reference('appgw').outputs.appgwBackendAddressPoolId.value]"
                     },
                     "mountArgs": {
-                        "value": "[if(equals(parameters('nfsStorageOption'), 'AzureFiles'), concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value, ',' , reference('azurefiles').outputs.accountKey.value),concat('avere ', reference('avere').outputs.VSERVER_IPS.value))]"
+                        "value": "[if(variables('selectedSize').azureFilesEnabled, concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value, ',' , reference('azurefiles').outputs.accountKey.value),concat('avere ', reference('avere').outputs.VSERVER_IPS.value))]"
                     },
                     "SSHKeyData": {
                         "value": "[parameters('sshAdminKeyData')]"
@@ -690,13 +821,13 @@
                         "value": "[parameters('sshAdminKeyData')]"
                     },
                     "highAvailability": {
-                        "value": "[parameters('solrHighAvailability')]"
+                        "value": "[variables('selectedSize').solr.ha]"
                     },
                     "solrDiskSizeGB": {
                         "value": "[parameters('solrDiskSizeGB')]"
                     },
                     "solrVMSize": {
-                        "value": "[parameters('solrVMSize')]"
+                        "value": "[variables('selectedSize').solr.nodeSize]"
                     },
                     "zookeeperVMSize": {
                         "value": "[parameters('zookeeperVMSize')]"
@@ -747,13 +878,13 @@
                         "value": "[parameters('rgLocation')]"
                     },
                     "vmSize": {
-                        "value": "[parameters('mongoVmSize')]"
+                        "value": "[variables('selectedSize').mongo.nodeSize]"
+                    },
+                    "clusterSize": {
+                        "value": "[variables('selectedSize').mongo.nodeCount]"
                     },
                     "certificateEmail": {
                         "value": "[parameters('mongoCertificateEmail')]"
-                    },
-                    "clusterSize": {
-                        "value": "[parameters('mongoClusterSize')]"
                     },
                     "adminUsername": {
                         "value": "[parameters('adminUsername')]"

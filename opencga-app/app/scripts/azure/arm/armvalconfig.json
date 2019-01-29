@@ -19,6 +19,11 @@
         ],
         "azuredeploy.json": [
             {
+                "message": "Property \".*\" is not a defined property of.*'selectedSize'.*",
+                "jsonPath": ".*",
+                "reason": "ARM Language support doesn't handle nested objects"
+            },
+            {
                 "message": "Value is not accepted. Valid values: \"2015-01-01\".",
                 "jsonPath": ".*",
                 "reason": "Incorrect schema match"
