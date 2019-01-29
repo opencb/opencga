@@ -143,6 +143,16 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         ParamUtils.checkAlias(clinicalAnalysis.getId(), "id");
         ParamUtils.checkObj(clinicalAnalysis.getType(), "type");
         ParamUtils.checkObj(clinicalAnalysis.getDueDate(), "dueDate");
+        if (clinicalAnalysis.getAssigned() != null) {
+            // We obtain the users with access to the study
+            Set<String> users = new HashSet<>(catalogManager.getStudyManager().getGroup(studyStr, "members", sessionId).first()
+                    .getUserIds());
+            if (!users.contains(clinicalAnalysis.getAssigned().getAssignee())) {
+                throw new CatalogException("Cannot assign clinical analysis to " + clinicalAnalysis.getAssigned().getAssignee()
+                        + ". User not found or with no access to the study.");
+            }
+            clinicalAnalysis.getAssigned().setAssignedBy(userId);
+        }
 
         if (TimeUtils.toDate(clinicalAnalysis.getDueDate()) == null) {
             throw new CatalogException("Unrecognised due date. Accepted format is: yyyyMMddHHmmss");
@@ -440,6 +450,17 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                     if (TimeUtils.toDate(parameters.getString(DUE_DATE.key())) == null) {
                         throw new CatalogException("Unrecognised due date. Accepted format is: yyyyMMddHHmmss");
                     }
+                    break;
+                case ASSIGNED:
+                    LinkedHashMap<String, Object> assigned = (LinkedHashMap<String, Object>) param.getValue();
+                    // We obtain the users with access to the study
+                    Set<String> users = new HashSet<>(catalogManager.getStudyManager().getGroup(studyStr, "members", sessionId).first()
+                            .getUserIds());
+                    if (!users.contains(String.valueOf(assigned.get("assignee")))) {
+                        throw new CatalogException("Cannot assign clinical analysis to " + assigned.get("assignee")
+                                + ". User not found or with no access to the study.");
+                    }
+                    assigned.put("assignedBy", resource.getUser());
                     break;
                 case FILES:
                 case STATUS:
