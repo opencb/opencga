@@ -22,7 +22,13 @@
             "metadata": {
                 "description": "DNS prefix used by the app gateway IP"
             }
-        }      
+        },
+        "LogAnalyticsWorkspaceResourceID": {
+            "type": "string",
+            "metadata": {
+                "description": "Log Analytics Workspace Resource ID"
+            }
+        }
     },
     "variables": {
         "applicationGatewayName": "appgw",
@@ -45,7 +51,56 @@
             {
                 "domainNameLabel": "[parameters('dnsNamePrefix')]"
             }
-        }
+        },
+         "resources": [
+                {
+                    "type": "providers/diagnosticSettings",
+                    "name": "[concat('Microsoft.Insights/', variables('applicationGatewayPublicIpName'))]",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Network/publicIPAddresses',variables('applicationGatewayPublicIpName'))]"
+                    ],
+                    "apiVersion": "2017-05-01-preview",
+                    "properties": {
+                      "name": "[variables('applicationGatewayPublicIpName')]",
+                      "workspaceId": "[parameters('LogAnalyticsWorkspaceResourceID')]",
+                      "logs": [ 
+                        {
+                            "category": "DDoSProtectionNotifications",
+                            "enabled": true,
+                            "retentionPolicy": {
+                              "enabled": false,
+                              "days": 0
+                            }
+                          },  
+                          {
+                            "category": "DDoSMitigationFlowLogs",
+                            "enabled": true,
+                            "retentionPolicy": {
+                              "enabled": false,
+                              "days": 0
+                            }
+                          },{
+                            "category": "DDoSMitigationReports",
+                            "enabled": true,
+                            "retentionPolicy": {
+                              "enabled": false,
+                              "days": 0
+                            }
+                          }
+                      ],
+                      "metrics": [
+                        {
+                          "category": "AllMetrics",
+                          "enabled": true,
+                          "retentionPolicy": {
+                            "enabled": false,
+                            "days": 0
+                          }
+                        }
+                      ]
+                    }
+                  }
+            ]
     },
     {
         "type": "Microsoft.Network/applicationGateways",
@@ -233,6 +288,56 @@
                 }
             ]
         },
+        "resources": [
+            {
+                "type": "providers/diagnosticSettings",
+                "name": "[concat('Microsoft.Insights/', variables('applicationGatewayName'))]",
+                "dependsOn": [
+                    "[resourceId('Microsoft.Network/applicationGateways', variables('applicationGatewayName'))]"
+                ],
+                "apiVersion": "2017-05-01-preview",
+                "properties": {
+                  "name": "[variables('applicationGatewayName')]",
+                  "workspaceId": "[parameters('LogAnalyticsWorkspaceResourceID')]",
+                  "logs": [ 
+                    {
+                      "category": "ApplicationGatewayAccessLog",
+                      "enabled": true,
+                      "retentionPolicy": {
+                        "days": 0,
+                        "enabled": false
+                      }
+                    },
+                    {
+                        "category": "ApplicationGatewayPerformanceLog",
+                        "enabled": true,
+                        "retentionPolicy": {
+                          "days": 0,
+                          "enabled": false
+                        }
+                      },
+                      {
+                        "category": "ApplicationGatewayFirewallLog",
+                        "enabled": true,
+                        "retentionPolicy": {
+                          "days": 0,
+                          "enabled": false
+                        }
+                      }
+                  ],
+                  "metrics": [
+                    {
+                      "category": "AllMetrics",
+                      "enabled": true,
+                      "retentionPolicy": {
+                        "enabled": false,
+                        "days": 0
+                      }
+                    }
+                  ]
+                }
+              }
+        ],
         "dependsOn": [
             "[concat('Microsoft.Network/publicIPAddresses/', variables('applicationGatewayPublicIpName'))]"
         ]
@@ -244,7 +349,7 @@
         },
         "fqdn": {
             "type":"string",
-            "value": "[reference(variables('applicationGatewayPublicIpName')).dnsSettings.fqdn]"
+            "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses/', variables('applicationGatewayPublicIpName'))).dnsSettings.fqdn]"
         }
     }
 }
