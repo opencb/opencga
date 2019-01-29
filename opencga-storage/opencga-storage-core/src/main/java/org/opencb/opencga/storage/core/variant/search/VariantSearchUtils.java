@@ -195,6 +195,9 @@ public class VariantSearchUtils {
     public static String inferSpecificSearchIndexSamplesCollection(
             Query query, QueryOptions options, VariantStorageMetadataManager metadataManager, String dbName)
             throws StorageEngineException {
+        if (true) {
+            return null;
+        }
         if (!VariantStorageEngine.UseSearchIndex.from(options).equals(VariantStorageEngine.UseSearchIndex.NO)) { // YES or AUTO
             if (isValidParam(query, VariantQueryParam.STUDY)) {
                 if (VariantQueryUtils.splitValue(query.getString(VariantQueryParam.STUDY.key())).getValue().size() > 1) {

@@ -118,7 +118,7 @@ public class CatalogStorageMetadataSynchronizerTest {
             metadataManager.registerFile(studyMetadata.getId(), file.getUri().getPath(), file.getSamples().stream()
                     .map(Sample::getId).collect(Collectors.toList()));
         }
-        metadataManager.updateIndexedFiles(studyMetadata.getId(), indexedFiles.stream()
+        metadataManager.addIndexedFiles(studyMetadata.getId(), indexedFiles.stream()
                 .map(f -> metadataManager.getFileId(studyMetadata.getId(), f))
                 .collect(Collectors.toList()));
 //        checkStudyConfiguration(study, studyConfigurationToReturn);
@@ -196,7 +196,7 @@ public class CatalogStorageMetadataSynchronizerTest {
 
         File nonIndexedFile = files.stream().filter(file -> !indexedFiles.contains(file.getName())).findFirst().orElse(null);
         assertNotNull(nonIndexedFile);
-        metadataManager.updateIndexedFiles(sc.getId(), Collections.singletonList(metadataManager.getFileId(sc.getId(), nonIndexedFile.getName())));
+        metadataManager.addIndexedFiles(sc.getId(), Collections.singletonList(metadataManager.getFileId(sc.getId(), nonIndexedFile.getName())));
 
         studyConfigurationFactory.synchronizeCatalogFromStorage(sc, sessionId);
 

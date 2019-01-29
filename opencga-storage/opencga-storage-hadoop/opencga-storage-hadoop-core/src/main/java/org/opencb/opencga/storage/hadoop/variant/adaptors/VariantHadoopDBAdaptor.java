@@ -582,8 +582,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     @Deprecated
     public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp,
                                    QueryOptions queryOptions) {
-        return updateStats(variantStatsWrappers,
-                getMetadataManager().getStudyConfiguration(studyName, queryOptions).first(), timestamp, queryOptions);
+        throw new UnsupportedOperationException("Unimplemented method");
     }
 
     /**
@@ -593,7 +592,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     @Deprecated
     public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyMetadata studyMetadata,
                                    long timestamp, QueryOptions options) {
-
         throw new UnsupportedOperationException("Unimplemented method");
     }
 

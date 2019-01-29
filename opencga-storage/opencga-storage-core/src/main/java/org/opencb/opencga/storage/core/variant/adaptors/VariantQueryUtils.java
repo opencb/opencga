@@ -659,7 +659,8 @@ public final class VariantQueryUtils {
                 for (String sample : includeSamplesList) {
                     Integer sampleId = metadataManager.getSampleId(studyId, sample);
                     if (sampleId == null) {
-                        throw VariantQueryException.sampleNotFound(sample, sm.getName());
+//                        throw VariantQueryException.sampleNotFound(sample, sm.getName());
+                        break;
                     }
                     sampleIds.add(sampleId);
                 }

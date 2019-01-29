@@ -567,11 +567,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         if (connected) {
             String study = options.getString(Options.STUDY.key());
 //            archiveCredentials = buildCredentials(getArchiveTableName(studyId));
-            StudyConfiguration sc = getMetadataManager().getStudyConfiguration(study, null).first();
-            if (sc == null || !sc.getAttributes().containsKey(MERGE_MODE.key())) {
+            StudyMetadata sm = getMetadataManager().getStudyMetadata(study);
+            if (sm == null || !sm.getAttributes().containsKey(MERGE_MODE.key())) {
                 mergeMode = MergeMode.from(options);
             } else {
-                mergeMode = MergeMode.from(sc.getAttributes());
+                mergeMode = MergeMode.from(sm.getAttributes());
             }
         } else {
             mergeMode = MergeMode.BASIC;
@@ -739,15 +739,15 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             VariantHadoopDBAdaptor dbAdaptor = getDBAdaptor();
             VariantPhoenixHelper phoenixHelper = new VariantPhoenixHelper(dbAdaptor.getGenomeHelper());
 
-            StudyConfiguration sc = dbAdaptor.getMetadataManager().getStudyConfiguration(study, null).first();
+            StudyMetadata sm = getMetadataManager().getStudyMetadata(study);
 
             List<Integer> sampleIds = new ArrayList<>();
             for (Integer fileId : fileIds) {
-                sampleIds.addAll(sc.getSamplesInFiles().get(fileId));
+                sampleIds.addAll(getMetadataManager().getFileMetadata(sm.getId(), fileId).getSamples());
             }
 
             try {
-                phoenixHelper.dropFiles(dbAdaptor.getJdbcConnection(), dbAdaptor.getVariantTable(), sc.getId(), fileIds, sampleIds);
+                phoenixHelper.dropFiles(dbAdaptor.getJdbcConnection(), dbAdaptor.getVariantTable(), sm.getId(), fileIds, sampleIds);
             } catch (SQLException e) {
                 throw new StorageEngineException("Error removing columns from Phoenix", e);
             }
@@ -756,8 +756,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public void removeStudy(String studyName) throws StorageEngineException {
-        StudyConfiguration sc = getMetadataManager().getStudyConfiguration(studyName, null).first();
-        removeFiles(studyName, sc.getIndexedFiles().stream().map(Object::toString).collect(Collectors.toList()));
+        int studyId = getMetadataManager().getStudyId(studyName);
+        removeFiles(studyName, getMetadataManager().getIndexedFiles(studyId).stream().map(Object::toString).collect(Collectors.toList()));
     }
 
     private HBaseCredentials getDbCredentials() throws StorageEngineException {
