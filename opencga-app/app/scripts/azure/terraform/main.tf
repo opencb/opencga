@@ -1,6 +1,8 @@
 variable "location" {}
 variable "opencga_image" {}
 variable "iva_image" {}
+variable "opencga_init_image" {}
+variable "batch_container_image" {}
 
 variable "resource_group_prefix" {
   default = "opencga"
@@ -39,6 +41,23 @@ module "azurebatch" {
   mount_args = "azurefiles ${module.azurefiles.storage_account_name},${module.azurefiles.share_name},${module.azurefiles.storage_key}"
 }
 
+
+resource "random_string" "webservers_dns_prefix" {
+  keepers = {
+    # Generate a new id each time we switch to a new resource group
+    group_name = "${var.resource_group_name}"
+  }
+
+  length  = 8
+  upper   = false
+  special = false
+  number  = false
+}
+
+locals {
+  webservers_url = "http://${random_string.webservers_dns_prefix.result}.${var.location}.cloudapp.azure.com"
+}
+
 module "webservers" {
   source = "./webservers"
 
@@ -54,4 +73,77 @@ module "webservers" {
 
   opencga_image = "${var.opencga_image}"
   iva_image     = "${var.iva_image}"
+
+  dns_prefix = "${random_string.webservers_dns_prefix.result}"
+}
+
+resource "template_file" "opencga_init_cmd" {
+  template = <<EOF
+docker run --mount type=bind,src=/media/primarynfs,dst=/opt/volume \
+-e OPENCGA_PASS=${opencga_password}\
+-e HBASE_SSH_DNS=${hdinsight_ssh_dns} \
+-e HBASE_SSH_USER=${hdinsight_ssh_username}\
+-e HBASE_SSH_PASS=${hdinsight_ssh_password} \
+-e SEARCH_HOSTS=${solr_hosts_csv} \
+-e CELLBASE_HOSTS=${mongo_hosts_csv} \
+-e CLINICAL_HOSTS=${solr_hosts_CSV}\
+-e CATALOG_DATABASE_HOSTS=${mongo_hosts_csv}\
+-e CATALOG_DATABASE_USER=${mongo_user}\
+-e CATALOG_DATABASE_PASSWORD=${mongo_password}\
+-e CATALOG_SEARCH_HOSTS=${solr_hosts_csv} \
+-e CATALOG_SEARCH_USER=${solr_user} \
+-e CATALOG_SEARCH_PASSWORD=${solr_password} \
+-e REST_HOST=\"${rest_host}\" \
+-e GRPC_HOST=\"${grpc_host}\"\
+-e BATCH_EXEC_MODE=AZURE \
+-e BATCH_ACCOUNT_NAME=${batch_account_name} \
+-e BATCH_ACCOUNT_KEY=${batch_account_key}\
+-e BATCH_ENDPOINT=${batch_endpoint} \
+-e BATCH_POOL_ID=${batch_pool_id}\
+-e BATCH_DOCKER_ARGS='${batch_docker_args}'\
+-e BATCH_DOCKER_IMAGE=${batch_container_image} \
+-e BATCH_MAX_CONCURRENT_JOBS=1
+ ${opencga_init_image} ${catalog_secret_key}
+      EOF
+
+  vars {
+    opencga_password       = "${var.opencga_password}"
+    hdinsight_ssh_dns      = "${module.hdinsight.cluster_dns}"
+    hdinsight_ssh_username = "${var.hdinsight_ssh_username}"
+    hdinsight_ssh_password = "${module.hdinsight.cluster_password}"
+    solr_hosts_csv         = "${var.solr_hosts_csv}"
+    solr_user              = "${var.solr_user}"
+    solr_password          = "${var.solr_password}"
+    mongo_hosts_csv        = "${var.mongo_hosts_csv}"
+    mongo_user             = "${var.mongo_user}"
+    mongo_password         = "${var.mongo_password}"
+    rest_host              = "${local.webservers_url}"
+    grpc_host              = "${local.webservers_url}"
+    batch_account_name     = "${module.azurebatch.batch_account_name}"
+    batch_account_key      = "${module.azurebatch.batch_account_key}"
+    batch_account_endpoint = "${module.azurebatch.batch_account_endpoint}"
+    batch_account_pool_id  = "${module.azurebatch.batch_account_pool_id}"
+    batch_docker_args      = "--mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions --mount type=bind,src=/media/primarynfs/variants,dst=/opt/opencga/variants --rm"
+    batch_container_image  = "${var.batch_container_image}"
+    opencga_init_image     = "${var.opencga_init_image}"
+    catalog_secret_key     = "${var.catalog_secret_key}"
+  }
+}
+
+module "daemonvm" {
+  source = "./daemonvm"
+
+  location            = "${var.location}"
+  resource_group_name = "${var.resource_group_prefix}"
+
+  virtual_network_subnet_id = "${azurerm_subnet.daemonvm.id}"
+
+  mount_args = "azurefiles ${module.azurefiles.storage_account_name},${module.azurefiles.share_name},${module.azurefiles.storage_key}"
+
+  admin_username = "opencga"
+  ssh_key_data   = "${file("~/.ssh/id_rsa.pub")}"
+
+  opencga_image      = "${var.opencga_image}"
+  opencga_init_image = "${var.opencga_init_image}"
+  init_cmd           = "${template_file.init_cmd.rendered}"
 }

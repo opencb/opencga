@@ -47,3 +47,10 @@ resource "azurerm_subnet" "avere" {
   virtual_network_name = "${azurerm_virtual_network.opencga.name}"
   address_prefix       = "10.0.5.0/24"
 }
+
+resource "azurerm_subnet" "daemonvm" {
+  name                 = "daemonvm"
+  resource_group_name  = "${azurerm_resource_group.opencga.name}"
+  virtual_network_name = "${azurerm_virtual_network.opencga.name}"
+  address_prefix       = "10.0.6.0/24"
+}

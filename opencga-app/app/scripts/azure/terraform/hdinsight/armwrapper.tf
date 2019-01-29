@@ -53,7 +53,6 @@ resource "random_string" "cluster_password" {
   upper   = true
   special = true
   number  = true
-  
 }
 
 resource "random_integer" "cluster_password_int" {
@@ -62,8 +61,8 @@ resource "random_integer" "cluster_password_int" {
     group_name = "${var.resource_group_name}"
   }
 
-  min     = 1
-  max     = 99999
+  min = 1
+  max = 99999
 }
 
 resource "azurerm_template_deployment" "hdinsight" {
@@ -78,6 +77,7 @@ resource "azurerm_template_deployment" "hdinsight" {
     "storageAccountName"   = "${random_string.storage_name.result}"
     "vnetId"               = "${var.virtual_network_id}"
     "subnetId"             = "${var.virtual_network_subnet_id}"
+    "clusterLoginUserName" = "opencga"
   }
 
   deployment_mode = "Incremental"
@@ -89,6 +89,14 @@ output "cluster_name" {
   value = "${random_string.cluster_name.result}"
 }
 
+output "cluster_dns" {
+  value = "${random_string.cluster_name.result}-ssh.azurehdinsight.net"
+}
+
 output "cluster_password" {
   value = "${random_string.cluster_password.result}"
+}
+
+output "cluster_username" {
+  value = "opencga"
 }

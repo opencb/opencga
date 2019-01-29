@@ -24,22 +24,11 @@ variable "admin_username" {
 
 variable "opencga_image" {}
 variable "iva_image" {}
+variable "dns_prefix" {}
 
 resource "azurerm_resource_group" "batch" {
   name     = "${var.resource_group_name}"
   location = "${var.location}"
-}
-
-resource "random_string" "dns_label" {
-  keepers = {
-    # Generate a new id each time we switch to a new resource group
-    group_name = "${var.resource_group_name}"
-  }
-
-  length  = 8
-  upper   = false
-  special = false
-  number  = false
 }
 
 resource "azurerm_public_ip" "ip" {
@@ -47,7 +36,7 @@ resource "azurerm_public_ip" "ip" {
   location            = "${azurerm_resource_group.batch.location}"
   resource_group_name = "${azurerm_resource_group.batch.name}"
   allocation_method   = "Static"
-  domain_name_label   = "${random_string.dns_label.result}"
+  domain_name_label   = "${var.dns_prefix}"
 }
 
 resource "azurerm_lb" "lb" {
