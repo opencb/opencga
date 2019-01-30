@@ -79,6 +79,10 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         private String assignedBy;
         private String date;
 
+        public Assigned() {
+            this(null, null);
+        }
+
         public Assigned(String assignee, String assignedBy) {
             this.assignee = assignee;
             this.assignedBy = assignedBy;

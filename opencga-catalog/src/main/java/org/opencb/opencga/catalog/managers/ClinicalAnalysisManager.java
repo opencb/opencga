@@ -143,7 +143,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         ParamUtils.checkAlias(clinicalAnalysis.getId(), "id");
         ParamUtils.checkObj(clinicalAnalysis.getType(), "type");
         ParamUtils.checkObj(clinicalAnalysis.getDueDate(), "dueDate");
-        if (clinicalAnalysis.getAssigned() != null) {
+        if (clinicalAnalysis.getAssigned() != null && StringUtils.isNotEmpty(clinicalAnalysis.getAssigned().getAssignee())) {
             // We obtain the users with access to the study
             Set<String> users = new HashSet<>(catalogManager.getStudyManager().getGroup(studyStr, "members", sessionId).first()
                     .getUserIds());
@@ -456,7 +456,8 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                     // We obtain the users with access to the study
                     Set<String> users = new HashSet<>(catalogManager.getStudyManager().getGroup(studyStr, "members", sessionId).first()
                             .getUserIds());
-                    if (!users.contains(String.valueOf(assigned.get("assignee")))) {
+                    if (StringUtils.isNotEmpty(String.valueOf(assigned.get("assignee")))
+                            && !users.contains(String.valueOf(assigned.get("assignee")))) {
                         throw new CatalogException("Cannot assign clinical analysis to " + assigned.get("assignee")
                                 + ". User not found or with no access to the study.");
                     }
