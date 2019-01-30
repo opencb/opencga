@@ -88,8 +88,7 @@ if [ "$PUBLISH" ]; then
         exit 1;
     fi
     if [ -z "$DOCKER_PASSWORD" ]; then
-        echo "DOCKER_PASSWORD is required when parameter PUBLISH is true";
-        exit 1;
+        echo "DOCKER_PASSWORD is not currently set. Assuming docker is already logged in!";
     fi
 fi
 
