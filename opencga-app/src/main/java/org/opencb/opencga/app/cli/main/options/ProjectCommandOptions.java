@@ -164,23 +164,26 @@ public class ProjectCommandOptions {
     @Parameters(commandNames = {"update"}, commandDescription = "Update a project")
     public class UpdateCommandOptions extends BaseProjectCommand {
 
-        @Parameter(names = {"-n", "--name"}, description = "Project name", arity = 1)
+        @Parameter(names = {"-n", "--name"}, description = DEPRECATED + "Use --json instead.", arity = 1)
         public String name;
 
-        @Parameter(names = {"-d", "--description"}, description = "Description", arity = 1)
+        @Parameter(names = {"-d", "--description"}, description = DEPRECATED + "Use --json instead.", arity = 1)
         public String description;
 
-        @Parameter(names = {"-o", "--organization"}, description = "Organization", arity = 1)
+        @Parameter(names = {"-o", "--organization"}, description = DEPRECATED + "Use --json instead.", arity = 1)
         public String organization;
 
-        @Parameter(names = {"-a", "--attributes"}, description = "Attributes", arity = 1)
+        @Parameter(names = {"-a", "--attributes"}, description = DEPRECATED + "Use --json instead.", arity = 1)
         public String attributes;
 
-        @Parameter(names = {"--organism-common-name"}, description = "Organism common name", arity = 1)
+        @Parameter(names = {"--organism-common-name"}, description = DEPRECATED + "Use --json instead.", arity = 1)
         public String commonName;
 
-        @Parameter(names = {"--organism-taxonomy-code"}, description = "Organism taxonomy code", arity = 1)
+        @Parameter(names = {"--organism-taxonomy-code"}, description = DEPRECATED + "Use --json instead.", arity = 1)
         public String taxonomyCode;
+
+        @Parameter(names = {"--json"}, description = "JSON file containing the project fields to be updated", arity = 1)
+        public String json;
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "[PENDING] Delete a project")

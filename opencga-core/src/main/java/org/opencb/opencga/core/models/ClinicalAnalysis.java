@@ -18,6 +18,7 @@ package org.opencb.opencga.core.models;
 
 import org.opencb.biodata.models.clinical.interpretation.Comment;
 import org.opencb.biodata.models.commons.Disorder;
+import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.Arrays;
 import java.util.List;
@@ -44,6 +45,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     private Family family;
     private List<Interpretation> interpretations;
 
+    private Assigned assigned;
     private Priority priority;
     private List<String> flags;
 
@@ -70,6 +72,59 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         ADD,
         SET,
         REMOVE
+    }
+
+    public static class Assigned {
+        private String assignee;
+        private String assignedBy;
+        private String date;
+
+        public Assigned() {
+            this(null, null);
+        }
+
+        public Assigned(String assignee, String assignedBy) {
+            this.assignee = assignee;
+            this.assignedBy = assignedBy;
+            this.date = TimeUtils.getTime();
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("Assigned{");
+            sb.append("assignee='").append(assignee).append('\'');
+            sb.append(", assignedBy='").append(assignedBy).append('\'');
+            sb.append(", date='").append(date).append('\'');
+            sb.append('}');
+            return sb.toString();
+        }
+
+        public String getAssignee() {
+            return assignee;
+        }
+
+        public Assigned setAssignee(String assignee) {
+            this.assignee = assignee;
+            return this;
+        }
+
+        public String getAssignedBy() {
+            return assignedBy;
+        }
+
+        public Assigned setAssignedBy(String assignedBy) {
+            this.assignedBy = assignedBy;
+            return this;
+        }
+
+        public String getDate() {
+            return date;
+        }
+
+        public Assigned setDate(String date) {
+            this.date = date;
+            return this;
+        }
     }
 
     public static class ClinicalStatus extends Status {
@@ -124,8 +179,9 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     }
 
     public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, Map<String, List<File>> files, Individual proband,
-                            Family family, List<Interpretation> interpretations, Priority priority, List<String> flags, String creationDate,
-                            String dueDate, List<Comment> comments, ClinicalStatus status, int release, Map<String, Object> attributes) {
+                            Family family, List<Interpretation> interpretations, Priority priority, Assigned assigned, List<String> flags,
+                            String creationDate, String dueDate, List<Comment> comments, ClinicalStatus status, int release,
+                            Map<String, Object> attributes) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -136,6 +192,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         this.interpretations = interpretations;
         this.priority = priority;
         this.flags = flags;
+        this.assigned = assigned;
         this.creationDate = creationDate;
         this.dueDate = dueDate;
         this.comments = comments;
@@ -156,6 +213,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         sb.append(", proband=").append(proband);
         sb.append(", family=").append(family);
         sb.append(", interpretations=").append(interpretations);
+        sb.append(", assigned=").append(assigned);
         sb.append(", priority=").append(priority);
         sb.append(", flags=").append(flags);
         sb.append(", creationDate='").append(creationDate).append('\'');
@@ -268,6 +326,15 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     public ClinicalAnalysis setInterpretations(List<Interpretation> interpretations) {
         this.interpretations = interpretations;
+        return this;
+    }
+
+    public Assigned getAssigned() {
+        return assigned;
+    }
+
+    public ClinicalAnalysis setAssigned(Assigned assigned) {
+        this.assigned = assigned;
         return this;
     }
 

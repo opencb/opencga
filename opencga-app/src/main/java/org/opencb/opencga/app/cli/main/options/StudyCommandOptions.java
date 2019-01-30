@@ -62,6 +62,8 @@ public class StudyCommandOptions {
     public DataModelOptions commonDataModelOptions;
     public NumericOptions commonNumericOptions;
 
+    protected static final String DEPRECATED = "[DEPRECATED] ";
+
     public StudyCommandOptions(CommonCommandOptions commonCommandOptions, DataModelOptions dataModelOptions, NumericOptions numericOptions,
                                JCommander jCommander) {
 
@@ -112,19 +114,22 @@ public class StudyCommandOptions {
                 arity = 1)
         public String project;
 
-        @Parameter(names = {"-n", "--name"}, description = "Study name", required = true, arity = 1)
-        public String name;
-
         @Parameter(names = {"--id"}, description = "Study id", required = true, arity = 1)
         public String id;
 
-        @Parameter(names = {"-a", "--alias"}, description = "Study alias", arity = 1)
+        @Parameter(names = {"--json"}, description = "JSON file containing the rest of the study fields", arity = 1)
+        public String json;
+
+        @Parameter(names = {"-n", "--name"}, description = DEPRECATED + "Use --json instead.", arity = 1)
+        public String name;
+
+        @Parameter(names = {"-a", "--alias"}, description = DEPRECATED + "Use --json instead.", arity = 1)
         public String alias;
 
-        @Parameter(names = {"-t", "--type"}, description = "Type of study, ej.CASE_CONTROL,CASE_SET,...", arity = 1)
+        @Parameter(names = {"-t", "--type"}, description = DEPRECATED + "Use --json instead.", arity = 1)
         public String type = "CASE_CONTROL";
 
-        @Parameter(names = {"-d", "--description"}, description = "Description", arity = 1)
+        @Parameter(names = {"-d", "--description"}, description = DEPRECATED + "Use --json instead.", arity = 1)
         public String description;
     }
 
@@ -193,22 +198,31 @@ public class StudyCommandOptions {
 
     }
 
-    @Parameters(commandNames = {"update"}, commandDescription = "Update the attributes of a study")
-    public class UpdateCommandOptions extends BaseStudyCommand {
+    @Parameters(commandNames = {"update"}, commandDescription = "Update a study")
+    public class UpdateCommandOptions {
 
-        @Parameter(names = {"-n", "--name"}, description = "Study name", arity = 1)
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study.", arity = 1, required = true)
+        public String study;
+
+        @Parameter(names = {"--json"}, description = "JSON file containing the study fields to be updated", arity = 1)
+        public String json;
+
+        @Parameter(names = {"-n", "--name"}, description = DEPRECATED + "Use --json instead.", arity = 1)
         public String name;
 
-        @Parameter(names = {"-t", "--type"}, description = "Type of study, ej.CASE_CONTROL,CASE_SET,...", arity = 1)
+        @Parameter(names = {"-t", "--type"}, description = DEPRECATED + "Use --json instead.", arity = 1)
         public String type;
 
-        @Parameter(names = {"-d", "--description"}, description = "Organization", arity = 1)
+        @Parameter(names = {"-d", "--description"}, description = DEPRECATED + "Use --json instead.", arity = 1)
         public String description;
 
-        @Parameter(names = {"--stats"}, description = "Stats", arity = 1)
+        @Parameter(names = {"--stats"}, description = DEPRECATED + "Use --json instead.", arity = 1)
         public String stats;
 
-        @Parameter(names = {"--attributes"}, description = "Attributes", arity = 1)
+        @Parameter(names = {"--attributes"}, description = DEPRECATED + "Use --json instead.", arity = 1)
         public String attributes;
 
     }

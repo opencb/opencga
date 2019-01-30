@@ -32,8 +32,8 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -324,6 +324,7 @@ public class InterpretationWSService extends AnalysisWSService {
 
         public ProbandParam proband;
         public FamilyParam family;
+        public String assignee;
         public ClinicalAnalysis.ClinicalStatus status;
         public List<ClinicalInterpretationParameters> interpretations;
 
@@ -379,7 +380,8 @@ public class InterpretationWSService extends AnalysisWSService {
                             : new ArrayList<>();
             String clinicalId = StringUtils.isEmpty(id) ? name : id;
             return new ClinicalAnalysis(clinicalId, description, type, disorder, fileMap, individual, f,
-                    interpretationList, priority, flags, null, dueDate, comments, status, 1, attributes).setName(name);
+                    interpretationList, priority, new ClinicalAnalysis.Assigned(assignee, ""), flags, null, dueDate, comments,
+                    status, 1, attributes).setName(name);
         }
     }
     

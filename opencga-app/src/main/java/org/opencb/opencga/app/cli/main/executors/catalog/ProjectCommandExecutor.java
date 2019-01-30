@@ -143,15 +143,22 @@ public class ProjectCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<Project> update() throws CatalogException, IOException {
         logger.debug("Updating project");
 
-        ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.NAME.key(), projectsCommandOptions.updateCommandOptions.name);
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.DESCRIPTION.key(), projectsCommandOptions.updateCommandOptions.description);
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANIZATION.key(), projectsCommandOptions.updateCommandOptions.organization);
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ATTRIBUTES.key(), projectsCommandOptions.updateCommandOptions.attributes);
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key(),
-                projectsCommandOptions.updateCommandOptions.commonName);
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key(),
-                projectsCommandOptions.updateCommandOptions.taxonomyCode);
+        ProjectCommandOptions.UpdateCommandOptions commandOptions = projectsCommandOptions.updateCommandOptions;
+
+        ObjectMap params;
+        if (StringUtils.isNotEmpty(commandOptions.json)) {
+            params = loadFile(commandOptions.json);
+        } else {
+            params = new ObjectMap();
+            params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.NAME.key(), projectsCommandOptions.updateCommandOptions.name);
+            params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.DESCRIPTION.key(), projectsCommandOptions.updateCommandOptions.description);
+            params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANIZATION.key(), projectsCommandOptions.updateCommandOptions.organization);
+            params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ATTRIBUTES.key(), projectsCommandOptions.updateCommandOptions.attributes);
+            params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key(),
+                    projectsCommandOptions.updateCommandOptions.commonName);
+            params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key(),
+                    projectsCommandOptions.updateCommandOptions.taxonomyCode);
+        }
 
         return openCGAClient.getProjectClient().update(projectsCommandOptions.updateCommandOptions.project, null, params);
     }
