@@ -28,7 +28,10 @@
                                 {
                                     "service": "Microsoft.Storage"
                                 }
-                            ]
+                            ],
+                            "networkSecurityGroup" : {
+                                "id" : "[resourceId('Microsoft.Network/networkSecurityGroups', 'nsg-default')]"
+                            }
                         },
                         "type": "Microsoft.Network/virtualNetworks/subnets"
                     },
@@ -42,7 +45,10 @@
                                 {
                                     "service": "Microsoft.Storage"
                                 }
-                            ]
+                            ],
+                            "networkSecurityGroup" : {
+                                "id" : "[resourceId('Microsoft.Network/networkSecurityGroups', 'nsg-averecluster')]"
+                            }
                         },
                         "type": "Microsoft.Network/virtualNetworks/subnets"
                     },
@@ -52,7 +58,10 @@
                             "addressPrefix": "10.0.2.0/24",
                             "ipConfigurations": [],
                             "delegations": [],
-                            "serviceEndpoints": []
+                            "serviceEndpoints": [],
+                            "networkSecurityGroup" : {
+                                "id" : "[resourceId('Microsoft.Network/networkSecurityGroups', 'nsg-solr')]"
+                            }
                         },
                         "type": "Microsoft.Network/virtualNetworks/subnets"
                     },
@@ -62,7 +71,10 @@
                             "addressPrefix": "10.0.3.0/24",
                             "ipConfigurations": [],
                             "delegations": [],
-                            "serviceEndpoints": []
+                            "serviceEndpoints": [],
+                            "networkSecurityGroup" : {
+                                "id" : "[resourceId('Microsoft.Network/networkSecurityGroups', 'nsg-mongodb')]"
+                            }
                         },
                         "type": "Microsoft.Network/virtualNetworks/subnets"
                     }

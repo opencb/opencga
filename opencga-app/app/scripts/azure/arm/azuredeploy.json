@@ -217,8 +217,25 @@
             "resourceGroup": "[parameters('rgPrefix')]",
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2018-05-01",
+            "name": "nsgs",
+            "dependsOn": [
+                "[parameters('rgPrefix')]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/nsg/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                }
+            }
+        },
+        {
+            "resourceGroup": "[parameters('rgPrefix')]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
             "name": "vnet",
             "dependsOn": [
+                "nsgs",
                 "[parameters('rgPrefix')]"
             ],
             "properties": {

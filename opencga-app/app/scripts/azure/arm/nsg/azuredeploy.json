@@ -68,7 +68,7 @@
             }
         },
         {
-            "name": "nsg-avere",
+            "name": "nsg-averecluster",
             "type": "Microsoft.Network/networkSecurityGroups",
             "apiVersion": "2018-08-01",
             "location": "[resourceGroup().location]",
@@ -78,17 +78,7 @@
             }
         },
         {
-            "name": "nsg-batch",
-            "type": "Microsoft.Network/networkSecurityGroups",
-            "apiVersion": "2018-08-01",
-            "location": "[resourceGroup().location]",
-            "tags": {},
-            "properties": {
-                "securityRules": []
-            }
-        },
-        {
-            "name": "nsg-mongo",
+            "name": "nsg-mongodb",
             "type": "Microsoft.Network/networkSecurityGroups",
             "apiVersion": "2018-08-01",
             "location": "[resourceGroup().location]",
