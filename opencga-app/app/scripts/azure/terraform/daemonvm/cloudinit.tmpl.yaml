@@ -1,19 +1,5 @@
 #cloud-config
 
-write_files:
-- path: /etc/systemd/system/opencga.service
-  permissions: 0644
-  owner: root
-  content: |    
-    [Unit]
-    Description=OpenCGA daemon
-    Requires=docker.service
-    After=docker.service
-    [Service]
-    Restart=always
-    ExecStart=',variables('execStart'))]
-    ExecStop=/usr/bin/docker stop opencga-daemon
-
 package_upgrade: true
 package_reboot_if_required: true
 
@@ -26,7 +12,19 @@ runcmd:
  - '${daemon_start_cmd}'
  - 'systemctl start --no-block opencga'
 
- write_files:
+write_files:
+ -  path: /etc/systemd/system/opencga.service
+    permissions: 0644
+    owner: root
+    content: |    
+     [Unit]
+     Description=OpenCGA daemon
+     Requires=docker.service
+     After=docker.service
+     [Service]
+     Restart=always
+     ExecStart=',variables('execStart'))]
+     ExecStop=/usr/bin/docker stop opencga-daemon
  -  encoding: gzip
     content: !!binary |
         ${mount_script}

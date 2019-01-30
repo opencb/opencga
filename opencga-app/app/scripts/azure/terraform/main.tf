@@ -41,11 +41,21 @@ module "azurebatch" {
   mount_args = "azurefiles ${module.azurefiles.storage_account_name},${module.azurefiles.share_name},${module.azurefiles.storage_key}"
 }
 
+module "mongo" {
+  source = "./mongo"
+
+  location            = "${var.location}"
+  resource_group_name = "${var.resource_group_prefix}-mongo"
+
+  virtual_network_subnet_id = "${azurerm_subnet.mongo.id}"
+  admin_username = "opencga"
+  ssh_key_data   = "${file("~/.ssh/id_rsa.pub")}"
+}
 
 resource "random_string" "webservers_dns_prefix" {
   keepers = {
     # Generate a new id each time we switch to a new resource group
-    group_name = "${var.resource_group_name}"
+    group_name = "${var.resource_group_prefix}-mongo"
   }
 
   length  = 8
@@ -53,6 +63,7 @@ resource "random_string" "webservers_dns_prefix" {
   special = false
   number  = false
 }
+
 
 locals {
   webservers_url = "http://${random_string.webservers_dns_prefix.result}.${var.location}.cloudapp.azure.com"
@@ -114,7 +125,7 @@ docker run --mount type=bind,src=/media/primarynfs,dst=/opt/volume \
     solr_hosts_csv         = "${var.solr_hosts_csv}"
     solr_user              = "${var.solr_user}"
     solr_password          = "${var.solr_password}"
-    mongo_hosts_csv        = "${var.mongo_hosts_csv}"
+    mongo_hosts_csv        = "${join(",", module.mongo.replica_dns_names)}"
     mongo_user             = "${var.mongo_user}"
     mongo_password         = "${var.mongo_password}"
     rest_host              = "${local.webservers_url}"

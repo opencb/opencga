@@ -44,6 +44,7 @@ data "template_file" "cloud_init" {
     init_cmd         = "${var.init_cmd}"
     daemon_start_cmd = "${local.daemon_start_cmd}"
     mount_script     = "${base64gzip(file("${path.module}/../scripts/mount.py"))}"
+    cloud_init_check_script = "${base64gzip(file("${path.module}/../scripts/cloudinitcheck.sh"))}"
   }
 }
 
