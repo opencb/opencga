@@ -90,7 +90,33 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
         this.cellBaseClient = new CellBaseClient(storageConfiguration.getCellbase().toClientConfiguration());
         this.alignmentStorageManager = new AlignmentStorageManager(catalogManager, StorageEngineFactory.get(storageConfiguration));
     }
+/*
+     Tiering (AR), query:
+     -------------------
 
+        biotype: protein_coding,IG_C_gene,IG_D_gene,IG_J_gene,IG_V_gene,IG_V_gene,nonsense_mediated_decay,
+                 non_stop_decay,TR_C_gene,TR_D_gene,TR_J_gene,TR_V_gene
+
+        alternate_frequency: 1kG_phase3:AFR<0.01;1kG_phase3:AMR<0.01;1kG_phase3:EAS<0.01;1kG_phase3:EUR<0.01;
+                             1kG_phase3:SAS<0.01;GNOMAD_EXOMES:AFR<0.01;GNOMAD_EXOMES:AMR<0.01;GNOMAD_EXOMES:EAS<0.01;
+                             GNOMAD_EXOMES:FIN<0.01;GNOMAD_EXOMES:NFE<0.01;GNOMAD_EXOMES:ASJ<0.01;GNOMAD_EXOMES:OTH<0.01
+
+        ct: SO:0001893,SO:0001574,SO:0001575,SO:0001587,SO:0001589,SO:0001578,SO:0001582,SO:0001889,SO:0001821,
+            SO:0001822,SO:0001583,SO:0001630,SO:0001626"
+
+     Tiering (AD), query:
+     --------------------
+
+        biotype: protein_coding,IG_C_gene,IG_D_gene,IG_J_gene,IG_V_gene,IG_V_gene,nonsense_mediated_decay,
+                 non_stop_decay,TR_C_gene,TR_D_gene,TR_J_gene,TR_V_gene
+
+        alternate_frequency: 1kG_phase3:AFR<0.002;1kG_phase3:AMR<0.002;1kG_phase3:EAS<0.002;1kG_phase3:EUR<0.002;
+                             1kG_phase3:SAS<0.002;GNOMAD_EXOMES:AFR<0.001;GNOMAD_EXOMES:AMR<0.001;GNOMAD_EXOMES:EAS<0.001;
+                             GNOMAD_EXOMES:FIN<0.001;GNOMAD_EXOMES:NFE<0.001;GNOMAD_EXOMES:ASJ<0.001;GNOMAD_EXOMES:OTH<0.002
+
+         ct: SO:0001893,SO:0001574,SO:0001575,SO:0001587,SO:0001589,SO:0001578,SO:0001582,SO:0001889,SO:0001821,
+             SO:0001822,SO:0001583,SO:0001630,SO:0001626
+*/
 
     @Override
     public AnalysisResult<Interpretation> execute() throws Exception {

@@ -33,10 +33,11 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class CustomAnalysis extends OpenCgaAnalysis<Interpretation> {
+public class CustomAnalysis extends FamilyAnalysis {
 
     private String clinicalAnalysisId;
     private Query query;
+    private Set<String> findings;
     private ObjectMap options;
 
     private CellBaseClient cellBaseClient;
@@ -47,16 +48,17 @@ public class CustomAnalysis extends OpenCgaAnalysis<Interpretation> {
     private final static int LOW_COVERAGE_DEFAULT = 20;
     private final static String CUSTOM_ANALYSIS_NAME = "Custom";
 
-    public CustomAnalysis(String clinicalAnalysisId, Query query, String studyStr, String opencgaHome, ObjectMap options, String token) {
-        this(query, opencgaHome, studyStr, options, token);
+    public CustomAnalysis(String clinicalAnalysisId, Query query, Set<String> findings, String studyStr, String opencgaHome, ObjectMap options, String token) {
+        this(query, findings, opencgaHome, studyStr, options, token);
 
         this.clinicalAnalysisId = clinicalAnalysisId;
     }
 
-    public CustomAnalysis(Query query, String studyStr, String opencgaHome, ObjectMap options, String token) {
+    public CustomAnalysis(Query query, Set<String> findings, String studyStr, String opencgaHome, ObjectMap options, String token) {
         super(opencgaHome, studyStr, token);
 
         this.query = query;
+        this.findings = findings;
         this.options = (options != null) ? options : new ObjectMap();
 
         this.cellBaseClient = new CellBaseClient(storageConfiguration.getCellbase().toClientConfiguration());
@@ -81,7 +83,6 @@ public class CustomAnalysis extends OpenCgaAnalysis<Interpretation> {
         if (!query.containsKey(VariantQueryParam.STUDY.key())) {
             query.put(VariantQueryParam.STUDY.key(), studyStr);
         }
-
 
         // Check clinical analysis (only when sample proband ID is not provided)
         if (clinicalAnalysisId != null) {
@@ -121,7 +122,6 @@ public class CustomAnalysis extends OpenCgaAnalysis<Interpretation> {
             if (clinicalAnalysis.getFiles() != null && clinicalAnalysis.getFiles().size() > 0) {
                 files = clinicalAnalysis.getFiles();
             }
-
 
             // If disease is not provided, then take it from clinical analysis
             if (clinicalAnalysis.getDisorder() != null) {
@@ -165,8 +165,8 @@ public class CustomAnalysis extends OpenCgaAnalysis<Interpretation> {
         List<DiseasePanel> biodataDiseasePanels = diseasePanels.stream().map(Panel::getDiseasePanel).collect(Collectors.toList());
         List<ReportedVariant> reportedVariants = null;
         if (ListUtils.isNotEmpty(variantQueryResult.getResult())) {
-            DefaultReportedVariantCreator converter = new DefaultReportedVariantCreator(biodataDiseasePanels, phenotype, moi, null);
-            reportedVariants = converter.create(variantQueryResult.getResult());
+            DefaultReportedVariantCreator creator = new DefaultReportedVariantCreator(biodataDiseasePanels, findings, phenotype, moi, null);
+            reportedVariants = creator.create(variantQueryResult.getResult());
         }
 
         // Low coverage support

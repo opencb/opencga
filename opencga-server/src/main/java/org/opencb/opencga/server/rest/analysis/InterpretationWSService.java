@@ -835,11 +835,13 @@ public class InterpretationWSService extends AnalysisWSService {
                 customAnalysisOptions.put("maxLowCoverage", queryOptions.getInt("maxLowCoverage"));
             }
 
+
             String dataDir = configuration.getDataDir();
             String opencgaHome = Paths.get(dataDir).getParent().toString();
-            System.out.println("opencgaHome = " + opencgaHome);
+//            System.out.println("opencgaHome = " + opencgaHome);
 
-            CustomAnalysis customAnalysis = new CustomAnalysis(query, studyStr, opencgaHome, customAnalysisOptions, sessionId);
+            // TODO, pass the findings to the custom analysis for tier3
+            CustomAnalysis customAnalysis = new CustomAnalysis(query, null, studyStr, opencgaHome, customAnalysisOptions, sessionId);
             InterpretationResult interpretationResult = customAnalysis.execute();
             return createAnalysisOkResponse(interpretationResult);
         } catch (Exception e) {
