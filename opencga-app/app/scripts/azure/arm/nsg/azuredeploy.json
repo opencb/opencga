@@ -16,7 +16,7 @@
                         "name": "http_in",
                         "properties": {
                             "description": "Allow all inbound HTTP traffic",
-                            "protocol": "Tcp",
+                            "protocol": "*",
                             "sourcePortRange": "*",
                             "destinationPortRange": "80",
                             "sourceAddressPrefix": "VirtualNetwork",
@@ -30,7 +30,7 @@
                         "name": "https_in",
                         "properties": {
                             "description": "Allow all inbound HTTPS traffic",
-                            "protocol": "Tcp",
+                            "protocol": "*",
                             "sourcePortRange": "*",
                             "destinationPortRange": "443",
                             "sourceAddressPrefix": "VirtualNetwork",
@@ -44,7 +44,7 @@
                         "name": "ssh_in",
                         "properties": {
                             "description": "Allow all SSH traffic",
-                            "protocol": "Tcp",
+                            "protocol": "*",
                             "sourcePortRange": "*",
                             "destinationPortRange": "22",
                             "sourceAddressPrefix": "Internet",
@@ -52,6 +52,20 @@
                             "access": "Allow",
                             "priority": 3102,
                             "direction": "Inbound"
+                        }
+                    },
+                    {
+                        "name" : "outbound_all",
+                        "properties" : {
+                            "description": "Allow all outbound traffic.",
+                            "protocol" : "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "*",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 100,
+                            "direction": "Outbound"
                         }
                     }
                 ]
