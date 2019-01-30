@@ -43,8 +43,8 @@ RUN apk add --update --no-cache openssh \
 RUN git clone "https://github.com/opencb/iva.git" && \
     cd iva && \
     git reset "$IVA_COMMIT_SHA" --hard && \
-    mkdir -p /opt/opencga/conf/iva && \
-    cp -r src/conf/* /opt/opencga/conf/iva
+    mkdir -p /opt/opencga/ivaconf && \
+    cp -r src/conf/* /opt/opencga/ivaconf
 
 # Mount volume to copy config into
 VOLUME /opt/volume
