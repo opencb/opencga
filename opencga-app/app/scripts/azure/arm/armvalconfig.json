@@ -22,9 +22,19 @@
                 "reason": "Schema Error"
             },
             {
-                "message": "Value is not accepted. Valid values: \"2018-08-01\".",
+                "message": "Value is not accepted. Valid values: \"20*",
                 "jsonPath": "resources.*",
-                "reason": "Schema Error"
+                "reason": "Get rid of all scema version errors as schema cannot be relied on"
+            },
+            {
+                "message": "Value is not accepted. Valid values: \"Microsoft.*",
+                "jsonPath": "resources.*",
+                "reason": "Get rid of all incorrect schema matches as schema cannot be relied on"
+            },
+            {
+                "message": "String does not match the pattern of \"^[-\\w\\._\\(\\)]+$\".",
+                "jsonPath": "resources.*",
+                "reason": "Schema matching ARM function against regex for name"
             }
         ],
         "azuredeploy.json": [
@@ -32,16 +42,6 @@
                 "message": "Property \".*\" is not a defined property of.*'selectedSize'.*",
                 "jsonPath": ".*",
                 "reason": "ARM Language support doesn't handle nested objects"
-            },
-            {
-                "message": "Value is not accepted. Valid values: \"2015-01-01\".",
-                "jsonPath": ".*",
-                "reason": "Incorrect schema match"
-            },
-            {
-                "message": "Value is not accepted. Valid values: \"Microsoft.Network/dnsZones\".",
-                "jsonPath": ".*",
-                "reason": "Incorrect schema match"
             },
             {
                 "message": "String does not match the pattern of \"^[-\\w\\._\\(\\)]+$\".",
@@ -56,16 +56,7 @@
            
         ],
         "azurebatch/azuredeploy.json": [
-            {
-                "message": "Value is not accepted. Valid values: \"2017-09-01\".",
-                "jsonPath": ".*",
-                "reason":"Incorrect schema match"
-            },
-            {
-                "message": "Value is not accepted. Valid values: \"Microsoft.Network/applicationGateways\".",
-                "jsonPath": "resources.4.type",
-                "reason": "Incorrect schema match for AzureBatch"
-            }
+            
         ],
         "azurefiles/azuredeploy.json": [
             {
