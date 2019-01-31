@@ -205,8 +205,8 @@
                         "probe":  {
                             "id":  "[concat(variables('applicationGatewayId'), '/probes/ivaHttpProbe')]"
                         },
-                        "probeEnabled":true
-                        
+                        "probeEnabled":true,
+                        "requestTimeout": 60
                     }
                 },
                 {
@@ -219,7 +219,8 @@
                         "probe": {
                             "id": "[concat(variables('applicationGatewayId'), '/probes/openCGAHttpProbe')]"
                         },
-                        "probeEnabled":true
+                        "probeEnabled":true,
+                        "requestTimeout": 60
                     }
                 }
             ],

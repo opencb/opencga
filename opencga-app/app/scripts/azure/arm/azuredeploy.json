@@ -215,7 +215,7 @@
             },
             {
                 "type": "1 = Medium",
-                "avereEnabled": false,
+                "avereEnabled": true,
                 "avere": {
                     "nodeCount": 3,
                     "diskSize": 1024,
@@ -257,7 +257,7 @@
             },
             {
                 "type": "2 = Large",
-                "avereEnabled": false,
+                "avereEnabled": true,
                 "avere": {
                     "nodeCount": 12,
                     "diskSize": 4096,
