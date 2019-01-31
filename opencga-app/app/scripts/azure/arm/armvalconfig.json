@@ -148,6 +148,18 @@
                 "jsonPath": "resources.1.type",
                 "reason": "Incorrect schema match"
             }
+        ],
+        "loganalytics/azuredeploy.json": [
+            {
+                "message": "Missing property \"kind\".",
+                "jsonPath": "resources.0.resources.*",
+                "reason": "Incorrect schema"
+            },
+            {
+                "message": "Error: Value is not accepted. Valid values: \"dataSources\".",
+                "jsonPath": "resources.0.resources.*",
+                "reason": "Incorrect schema"
+            }
         ]
     }
 }
