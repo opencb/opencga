@@ -24,6 +24,7 @@ import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 
 import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 
@@ -55,6 +56,7 @@ public class IndividualCommandOptions {
     public CommonCommandOptions commonCommandOptions;
     public DataModelOptions commonDataModelOptions;
     public NumericOptions commonNumericOptions;
+//    public AnnotationCommandOptions.AnnotationCommandOptionsSearch annotationCommandOptionsSearch;
 
     public IndividualCommandOptions(CommonCommandOptions commonCommandOptions, DataModelOptions dataModelOptions,
                                     NumericOptions numericOptions, JCommander jCommander) {
@@ -147,6 +149,9 @@ public class IndividualCommandOptions {
         @ParametersDelegate
         public DataModelOptions dataModelOptions = commonDataModelOptions;
 
+        @Parameter(names = {"--flatten-annotations"}, description = "Flag indicating whether nested annotations should be returned flattened",
+                arity = 0)
+        public boolean flattenAnnotations;
     }
 
     @Parameters(commandNames = {"search"}, commandDescription = "Search for individuals")
@@ -201,8 +206,13 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--affectation-status"}, description = "Affectation status", required = false, arity = 1)
         public String affectationStatus;
 
-        @Parameter(names = {"--annotation"}, description = "Annotation, e.g: key1=value(,key2=value)", required = false, arity = 1)
+        @Parameter(names = {"--annotation"}, description = "Annotation filters. Example: age>30;gender=FEMALE. For more information, " +
+                "please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0", arity = 1)
         public String annotation;
+
+        @Parameter(names = {"--flatten-annotations"}, description = "Flag indicating whether nested annotations should be returned flattened",
+                arity = 0)
+        public boolean flattenAnnotations;
 
     }
 
@@ -247,6 +257,10 @@ public class IndividualCommandOptions {
 
         @Parameter(names = {"-dob", "--date-of-birth"}, description = "Date of birth. Format: yyyyMMdd", arity = 1)
         public String dateOfBirth;
+
+        @Parameter(names = {"--annotation-sets-action"}, description = "Action to be performed if the array of annotationSets is being updated. (ADD, SET, REMOVE)",
+                arity = 1)
+        public ParamUtils.UpdateAction annotationSetsAction;
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete individual information")

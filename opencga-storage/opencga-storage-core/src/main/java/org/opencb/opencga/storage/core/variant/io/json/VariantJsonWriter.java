@@ -104,7 +104,9 @@ public class VariantJsonWriter implements VariantWriter {
     public boolean open() {
         try {
             if (outdir != null) {
-                String output = Paths.get(outdir.toString(), fileMetadata.getPath()).toAbsolutePath().toString()
+                String filePath = fileMetadata.getPath();
+                String fileName = Paths.get(filePath).getFileName().toString();
+                String output = Paths.get(outdir.toString(), fileName).toAbsolutePath().toString()
                         + "." + VariantReaderUtils.VARIANTS_FILE + ".json.gz";
                 variantsStream = new GZIPOutputStream(new FileOutputStream(output));
                 fileStream = new GZIPOutputStream(new FileOutputStream(VariantReaderUtils.getMetaFromTransformedFile(output)));

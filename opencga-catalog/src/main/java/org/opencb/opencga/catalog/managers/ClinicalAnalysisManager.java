@@ -143,9 +143,38 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         ParamUtils.checkAlias(clinicalAnalysis.getId(), "id");
         ParamUtils.checkObj(clinicalAnalysis.getType(), "type");
         ParamUtils.checkObj(clinicalAnalysis.getDueDate(), "dueDate");
+        if (clinicalAnalysis.getAssigned() != null && StringUtils.isNotEmpty(clinicalAnalysis.getAssigned().getAssignee())) {
+            // We obtain the users with access to the study
+            Set<String> users = new HashSet<>(catalogManager.getStudyManager().getGroup(studyStr, "members", sessionId).first()
+                    .getUserIds());
+            if (!users.contains(clinicalAnalysis.getAssigned().getAssignee())) {
+                throw new CatalogException("Cannot assign clinical analysis to " + clinicalAnalysis.getAssigned().getAssignee()
+                        + ". User not found or with no access to the study.");
+            }
+            clinicalAnalysis.getAssigned().setAssignedBy(userId);
+        }
 
         if (TimeUtils.toDate(clinicalAnalysis.getDueDate()) == null) {
             throw new CatalogException("Unrecognised due date. Accepted format is: yyyyMMddHHmmss");
+        }
+
+        if (clinicalAnalysis.getFamily() != null && clinicalAnalysis.getProband() != null) {
+            if (StringUtils.isEmpty(clinicalAnalysis.getProband().getId())) {
+                throw new CatalogException("Missing proband id");
+            }
+            // Validate the proband has also been added within the family
+            if (clinicalAnalysis.getFamily().getMembers() == null) {
+                throw new CatalogException("Missing members information in the family");
+            }
+            boolean found = false;
+            for (Individual member : clinicalAnalysis.getFamily().getMembers()) {
+                if (StringUtils.isNotEmpty(member.getId()) && clinicalAnalysis.getProband().getId().equals(member.getId())) {
+                    found = true;
+                }
+            }
+            if (!found) {
+                throw new CatalogException("Missing proband in the family");
+            }
         }
 
         clinicalAnalysis.setProband(getFullValidatedMember(clinicalAnalysis.getProband(), study, sessionId));
@@ -159,6 +188,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         clinicalAnalysis.setAttributes(ParamUtils.defaultObject(clinicalAnalysis.getAttributes(), Collections.emptyMap()));
         clinicalAnalysis.setInterpretations(ParamUtils.defaultObject(clinicalAnalysis.getInterpretations(), ArrayList::new));
         clinicalAnalysis.setPriority(ParamUtils.defaultObject(clinicalAnalysis.getPriority(), ClinicalAnalysis.Priority.MEDIUM));
+        clinicalAnalysis.setFlags(ParamUtils.defaultObject(clinicalAnalysis.getFlags(), ArrayList::new));
 
         clinicalAnalysis.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.CLINICAL));
         QueryResult<ClinicalAnalysis> queryResult = clinicalDBAdaptor.insert(study.getUid(), clinicalAnalysis, options);
@@ -273,7 +303,15 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
             finalFamily.setMembers(finalMembers);
         } else {
-            finalFamily.setMembers(Collections.emptyList());
+            if (ListUtils.isNotEmpty(finalFamily.getMembers())) {
+                Query query = new Query()
+                        .append(IndividualDBAdaptor.QueryParams.UID.key(), finalFamily.getMembers().stream()
+                                .map(Individual::getUid).collect(Collectors.toList()))
+                        .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+                QueryResult<Individual> individuals =
+                        individualDBAdaptor.get(query, QueryOptions.empty(), catalogManager.getUserManager().getUserId(sessionId));
+                finalFamily.setMembers(individuals.getResult());
+            }
         }
 
         return finalFamily;
@@ -303,7 +341,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             finalMember = individualQueryResult.first();
         } else {
             finalMember = member;
-            if (ListUtils.isNotEmpty(samples) && samples.get(0).getUid() <= 0) {
+            if (ListUtils.isNotEmpty(samples) && StringUtils.isEmpty(samples.get(0).getUuid())) {
                 // We don't have the full sample information...
                 QueryResult<Individual> individualQueryResult = catalogManager.getIndividualManager().get(study.getFqn(),
                         finalMember.getId(), new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.SAMPLES.key()),
@@ -413,12 +451,25 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                         throw new CatalogException("Unrecognised due date. Accepted format is: yyyyMMddHHmmss");
                     }
                     break;
+                case ASSIGNED:
+                    LinkedHashMap<String, Object> assigned = (LinkedHashMap<String, Object>) param.getValue();
+                    // We obtain the users with access to the study
+                    Set<String> users = new HashSet<>(catalogManager.getStudyManager().getGroup(studyStr, "members", sessionId).first()
+                            .getUserIds());
+                    if (StringUtils.isNotEmpty(String.valueOf(assigned.get("assignee")))
+                            && !users.contains(String.valueOf(assigned.get("assignee")))) {
+                        throw new CatalogException("Cannot assign clinical analysis to " + assigned.get("assignee")
+                                + ". User not found or with no access to the study.");
+                    }
+                    assigned.put("assignedBy", resource.getUser());
+                    break;
                 case FILES:
                 case STATUS:
                 case DISORDER:
                 case FAMILY:
                 case PROBAND:
                 case COMMENTS:
+                case FLAGS:
                     break;
                 default:
                     throw new CatalogException("Cannot update " + queryParam);

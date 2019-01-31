@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.core.variant.dummy;
 
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
@@ -39,6 +40,13 @@ import java.util.List;
  */
 public class DummyVariantStorageEngine extends VariantStorageEngine {
 
+    public DummyVariantStorageEngine() {
+        super();
+    }
+
+    public DummyVariantStorageEngine(StorageConfiguration configuration) {
+        super(configuration);
+    }
 
     public static final String STORAGE_ENGINE_ID = "dummy";
 

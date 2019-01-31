@@ -25,15 +25,14 @@ import org.opencb.opencga.app.cli.GeneralCliOptions;
 /**
  * Created by sgallego on 6/14/16.
  */
-@Parameters(commandNames = {"variables"}, commandDescription = "Variable set commands")
+@Parameters(commandNames = {"variables"}, commandDescription = "[DEPRECATED] Variable set commands")
 public class VariableCommandOptions {
-
+    protected static final String DEPRECATED = "[DEPRECATED] ";
 
     public CreateCommandOptions createCommandOptions;
     public InfoCommandOptions infoCommandOptions;
     public SearchCommandOptions searchCommandOptions;
 
-    public UpdateCommandOptions updateCommandOptions;
     public DeleteCommandOptions deleteCommandOptions;
     public FieldAddCommandOptions fieldAddCommandOptions;
     public FieldDeleteCommandOptions fieldDeleteCommandOptions;
@@ -50,7 +49,6 @@ public class VariableCommandOptions {
         this.infoCommandOptions = new InfoCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
-        this.updateCommandOptions = new UpdateCommandOptions();
         this.fieldAddCommandOptions = new FieldAddCommandOptions();
         this.fieldDeleteCommandOptions = new FieldDeleteCommandOptions();
         this.fieldRenameCommandOptions = new FieldRenameCommandOptions();
@@ -71,7 +69,7 @@ public class VariableCommandOptions {
     }
 
 
-    @Parameters(commandNames = {"create"}, commandDescription = "Create a variable set.")
+    @Parameters(commandNames = {"create"}, commandDescription = DEPRECATED + "Use 'studies variable-sets-update' instead.")
     public class CreateCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
@@ -95,7 +93,7 @@ public class VariableCommandOptions {
     }
 
 
-    @Parameters(commandNames = {"info"}, commandDescription = "Get variable set information")
+    @Parameters(commandNames = {"info"}, commandDescription = DEPRECATED + "Use 'studies variable-sets' instead.")
     public class InfoCommandOptions extends BaseVariableCommand {
 
         @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
@@ -105,7 +103,7 @@ public class VariableCommandOptions {
         public String exclude;
     }
 
-    @Parameters(commandNames = {"search"}, commandDescription = "Search for variable sets")
+    @Parameters(commandNames = {"search"}, commandDescription = DEPRECATED + "Use 'studies variable-sets' instead.")
     public class SearchCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
@@ -137,26 +135,12 @@ public class VariableCommandOptions {
 
     }
 
-    @Parameters(commandNames = {"update"}, commandDescription = "Update variableSet information [PENDING]")
-    public class UpdateCommandOptions extends BaseVariableCommand {
-
-        @Parameter(names = {"-n", "--name"}, description = "Name", required = false, arity = 1)
-        public String name;
-
-        @Parameter(names = {"--description"}, description = "Description", required = false, arity = 1)
-        public String description;
-
-//        @Parameter(names = {"--json"}, description = "Json file containing the variables to be updated.", required = false)
-//        public String jsonFile;
-
-    }
-
-    @Parameters(commandNames = {"delete"}, commandDescription = "Delete an unused variable Set")
+    @Parameters(commandNames = {"delete"}, commandDescription = DEPRECATED + "Use 'studies variable-sets-update'")
     public class DeleteCommandOptions extends BaseVariableCommand {
 
     }
 
-    @Parameters(commandNames = {"field-add"}, commandDescription = "Add variables to a variable set")
+    @Parameters(commandNames = {"field-add"}, commandDescription = DEPRECATED + "Use 'studies variable-sets-variables-update'")
     public class FieldAddCommandOptions extends BaseVariableCommand {
 
         @Parameter(names = {"--json"}, description = "Json file containing the variables to be added.", required = true)
@@ -164,14 +148,14 @@ public class VariableCommandOptions {
 
     }
 
-    @Parameters(commandNames = {"field-delete"}, commandDescription = "Delete one field from a variable set")
+    @Parameters(commandNames = {"field-delete"}, commandDescription = DEPRECATED + "Use 'studies variable-sets-variables-update'")
     public class FieldDeleteCommandOptions extends BaseVariableCommand {
 
         @Parameter(names = {"--name"}, description = "Name.", required = true, arity = 1)
         public String name;
     }
 
-    @Parameters(commandNames = {"field-rename"}, commandDescription = "Rename the field id of a field in a variable set")
+    @Parameters(commandNames = {"field-rename"}, commandDescription = DEPRECATED + "Use 'studies variable-sets-variables-update'")
     public class FieldRenameCommandOptions extends BaseVariableCommand {
 
         @Parameter(names = {"--old-name"}, description = "Old Name.", required = true, arity = 1)

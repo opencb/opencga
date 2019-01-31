@@ -42,6 +42,7 @@ import java.util.List;
 public class DummyVariantStoragePipeline extends VariantStoragePipeline {
 
     public static final String VARIANTS_LOAD_FAIL = "dummy.variants.load.fail";
+    public static final String LOAD_SLEEP = "dummy.variants.load.sleep";
     private final Logger logger = LoggerFactory.getLogger(DummyVariantStoragePipeline.class);
 
     public DummyVariantStoragePipeline(StorageConfiguration configuration, String storageEngineId, VariantDBAdaptor dbAdaptor, VariantReaderUtils variantReaderUtils) {
@@ -67,6 +68,14 @@ public class DummyVariantStoragePipeline extends VariantStoragePipeline {
     public URI load(URI input) throws IOException, StorageEngineException {
         logger.info("Loading file " + input);
         List<Integer> fileIds = Collections.singletonList(getFileId());
+        if (getOptions().getInt(LOAD_SLEEP) > 0) {
+            try {
+                Thread.sleep(getOptions().getInt(LOAD_SLEEP));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new StorageEngineException("Interrupted", e);
+            }
+        }
         if (getOptions().getBoolean(VARIANTS_LOAD_FAIL) || getOptions().getString(VARIANTS_LOAD_FAIL).equals(Paths.get(input).getFileName().toString())) {
             getStudyConfigurationManager().atomicSetStatus(getStudyId(), BatchFileOperation.Status.ERROR, "load", fileIds);
             throw new StorageEngineException("Error loading file " + input);
@@ -79,6 +88,11 @@ public class DummyVariantStoragePipeline extends VariantStoragePipeline {
     @Override
     public URI postLoad(URI input, URI output) throws StorageEngineException {
         logger.info("Post load file " + input);
+
+        VariantFileMetadata fileMetadata = readVariantFileMetadata(input);
+        fileMetadata.setId(String.valueOf(getFileId()));
+        dbAdaptor.getStudyConfigurationManager().updateVariantFileMetadata(getStudyId(), fileMetadata);
+
         return super.postLoad(input, output);
     }
 
