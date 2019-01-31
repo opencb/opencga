@@ -103,9 +103,23 @@
                         "name": "http_in",
                         "properties": {
                             "description": "Allow all inbound HTTP traffic",
-                            "protocol": "Tcp",
+                            "protocol": "*",
                             "sourcePortRange": "*",
                             "destinationPortRange": "80",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 3100,
+                            "direction": "Inbound"
+                        }
+                    },
+                    {
+                        "name": "https_in",
+                        "properties": {
+                            "description": "Allow all inbound HTTPS traffic",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "443",
                             "sourceAddressPrefix": "*",
                             "destinationAddressPrefix": "*",
                             "access": "Allow",
