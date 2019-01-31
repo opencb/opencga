@@ -25,7 +25,7 @@ import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOu
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantSqlQueryParser;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantSqlQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantFileOutputFormat;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;

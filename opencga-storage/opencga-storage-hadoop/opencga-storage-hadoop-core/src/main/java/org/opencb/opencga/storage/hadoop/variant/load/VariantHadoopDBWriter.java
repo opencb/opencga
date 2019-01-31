@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.hadoop.variant.index;
+package org.opencb.opencga.storage.hadoop.variant.load;
 
 import org.apache.hadoop.hbase.client.Put;
 import org.opencb.biodata.models.variant.Variant;

@@ -13,7 +13,7 @@ import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.adaptors.ProjectMetadataAdaptor;
 import org.opencb.opencga.storage.hadoop.utils.HBaseLock;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

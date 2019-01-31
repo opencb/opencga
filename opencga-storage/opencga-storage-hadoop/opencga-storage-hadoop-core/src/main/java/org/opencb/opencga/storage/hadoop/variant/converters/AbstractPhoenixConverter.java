@@ -19,7 +19,7 @@ package org.opencb.opencga.storage.hadoop.variant.converters;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.phoenix.schema.types.*;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 
 import java.sql.Array;
 import java.sql.SQLException;

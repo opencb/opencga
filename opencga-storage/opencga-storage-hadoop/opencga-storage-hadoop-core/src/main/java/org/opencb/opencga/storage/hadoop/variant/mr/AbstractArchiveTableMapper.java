@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.hadoop.variant.index;
+package org.opencb.opencga.storage.hadoop.variant.mr;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.Cell;
@@ -26,8 +26,6 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveResultToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.mr.AbstractHBaseVariantMapper;
-import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

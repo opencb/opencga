@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.hadoop.variant.index.phoenix;
+package org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix;
 
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.collections.CollectionUtils;
@@ -42,7 +42,7 @@ import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAn
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTask;
 import org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.*;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,8 +54,8 @@ import java.util.stream.Collectors;
 import static org.opencb.commons.datastore.core.QueryOptions.COUNT;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
-import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper.Column;
-import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.*;
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper.Column;
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.*;
 
 /**
  * Created on 16/12/15.

@@ -24,7 +24,6 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;

@@ -31,7 +31,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantSqlQueryParser.DEFAULT_LOADED_GENOTYPES;
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantSqlQueryParser.DEFAULT_LOADED_GENOTYPES;
 
 /**
  * Created on 14/05/18.

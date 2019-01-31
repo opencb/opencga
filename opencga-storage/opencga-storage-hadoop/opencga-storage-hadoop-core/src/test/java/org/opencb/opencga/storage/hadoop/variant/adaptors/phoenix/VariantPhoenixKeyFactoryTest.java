@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.hadoop.variant.index.phoenix;
+package org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix;
 
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.ByteStringer;
