@@ -275,7 +275,7 @@ public class StudyManager extends AbstractManager {
         // StudyAcl studyAcl = new StudyAcl(userId, AuthorizationManager.getAdminAcls());
 
         Study study = new Study(id, name, alias, type, creationDate, description, status, TimeUtils.getTime(),
-                0, cipher, Arrays.asList(new Group(MEMBERS, Collections.emptyList()), new Group(ADMINS, Collections.emptyList())),
+                0, cipher, Arrays.asList(new Group(MEMBERS, Collections.singletonList(userId)), new Group(ADMINS, Collections.emptyList())),
                 experiments, files, jobs, new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
                 Collections.emptyList(), new LinkedList<>(), null, null, datastores, project.getCurrentRelease(), stats,
                 attributes);
@@ -795,17 +795,26 @@ public class StudyManager extends AbstractManager {
 
         switch (groupParams.getAction()) {
             case SET:
+                if (MEMBERS.equals(groupId)) {
+                    throw new CatalogException("Operation not valid. Valid actions over the '@members' group are ADD or REMOVE.");
+                }
                 studyDBAdaptor.setUsersToGroup(study.getUid(), groupId, users);
                 studyDBAdaptor.addUsersToGroup(study.getUid(), MEMBERS, users);
                 break;
             case ADD:
                 studyDBAdaptor.addUsersToGroup(study.getUid(), groupId, users);
-                if (!groupId.equals(MEMBERS)) {
+                if (!MEMBERS.equals(groupId)) {
                     studyDBAdaptor.addUsersToGroup(study.getUid(), MEMBERS, users);
                 }
                 break;
             case REMOVE:
-                if (groupId.equals(MEMBERS)) {
+                if (MEMBERS.equals(groupId)) {
+                    // Check we are not trying to remove the owner of the study from the group
+                    String owner = getOwner(study);
+                    if (users.contains(owner)) {
+                        throw new CatalogException("Cannot remove owner of the study from the '@members' group");
+                    }
+
                     // We remove the users from all the groups and acls
                     authorizationManager.resetPermissionsFromAllEntities(study.getUid(), users);
                     studyDBAdaptor.removeUsersFromAllGroups(study.getUid(), users);
