@@ -43,8 +43,6 @@ public class CustomAnalysis extends FamilyAnalysis {
     private CellBaseClient cellBaseClient;
     private AlignmentStorageManager alignmentStorageManager;
 
-    private final static String SEPARATOR = "__";
-
     private final static int LOW_COVERAGE_DEFAULT = 20;
     private final static String CUSTOM_ANALYSIS_NAME = "Custom";
 
