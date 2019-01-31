@@ -210,7 +210,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
     protected List<String> checkCohorts(Study study, Aggregation aggregation, List<String> cohorts, QueryOptions options, String sessionId)
             throws CatalogException, IOException {
         List<String> cohortIds;
-        String studyId = study.getId();
+        String studyId = study.getFqn();
 
         // Check aggregation mapping properties
         String tagMap = options.getString(Options.AGGREGATION_MAPPING_PROPERTIES.key());

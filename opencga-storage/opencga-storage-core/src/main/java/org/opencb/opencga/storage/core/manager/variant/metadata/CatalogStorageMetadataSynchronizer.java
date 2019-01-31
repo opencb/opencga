@@ -265,7 +265,7 @@ public class CatalogStorageMetadataSynchronizer {
                 FileMetadata fileMetadata = metadataManager.getFileMetadata(study.getId(), file.getName());
 
                 // If last LOAD operation is ERROR or there is no LOAD operation
-                if (fileMetadata.getIndexStatus().equals(TaskMetadata.Status.ERROR)) {
+                if (fileMetadata != null && fileMetadata.getIndexStatus().equals(TaskMetadata.Status.ERROR)) {
                     final FileIndex index;
                     index = file.getIndex() == null ? new FileIndex() : file.getIndex();
                     String prevStatus = index.getStatus().getName();
