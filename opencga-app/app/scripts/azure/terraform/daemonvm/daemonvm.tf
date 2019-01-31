@@ -66,6 +66,15 @@ data "template_cloudinit_config" "config" {
   }
 }
 
+resource "azurerm_public_ip" "daemon" {
+  name              = "daemon-pip"
+  allocation_method = "Dynamic"
+
+  location            = "${var.location}"
+  resource_group_name = "${var.resource_group_name}"
+}
+
+
 resource "azurerm_network_interface" "daemon" {
   name                = "daemon-nic"
   location            = "${azurerm_resource_group.opencga.location}"
@@ -75,6 +84,7 @@ resource "azurerm_network_interface" "daemon" {
     name                          = "ipconfig"
     subnet_id                     = "${var.virtual_network_subnet_id}"
     private_ip_address_allocation = "Dynamic"
+    public_ip_address_id          = "${azurerm_public_ip.daemon.id}"
   }
 }
 
@@ -93,7 +103,7 @@ resource "azurerm_virtual_machine" "daemon" {
   }
 
   storage_os_disk {
-    name              = "daemonosdisk"
+    name              = "daemon-os-disk"
     caching           = "ReadWrite"
     create_option     = "FromImage"
     managed_disk_type = "Standard_LRS"

@@ -106,29 +106,29 @@ module "webservers" {
 
 data "template_file" "opencga_init_cmd" {
   template = <<EOF
-docker run --mount type=bind,src=/media/primarynfs,dst=/opt/volume \
--e OPENCGA_PASS=$${opencga_password}\
--e HBASE_SSH_DNS=$${hdinsight_ssh_dns} \
--e HBASE_SSH_USER=$${hdinsight_ssh_username}\
--e HBASE_SSH_PASS=$${hdinsight_ssh_password} \
--e SEARCH_HOSTS=$${solr_hosts_csv} \
--e CELLBASE_HOSTS=$${mongo_hosts_csv} \
--e CLINICAL_HOSTS=$${solr_hosts_csv}\
--e CATALOG_DATABASE_HOSTS=$${mongo_hosts_csv}\
--e CATALOG_DATABASE_USER=$${mongo_user}\
--e CATALOG_DATABASE_PASSWORD=$${mongo_password}\
--e CATALOG_SEARCH_HOSTS=$${solr_hosts_csv} \
--e CATALOG_SEARCH_USER=$${solr_user} \
--e CATALOG_SEARCH_PASSWORD=$${solr_password} \
--e REST_HOST=\"$${rest_host}\" \
--e GRPC_HOST=\"$${grpc_host}\"\
--e BATCH_EXEC_MODE=AZURE \
--e BATCH_ACCOUNT_NAME=$${batch_account_name} \
--e BATCH_ACCOUNT_KEY=$${batch_account_key}\
--e BATCH_ENDPOINT=$${batch_account_endpoint} \
--e BATCH_POOL_ID=$${batch_account_pool_id}\
--e BATCH_DOCKER_ARGS='$${batch_docker_args}'\
--e BATCH_DOCKER_IMAGE=$${batch_container_image} \
+docker run --mount type=bind,src=/media/primarynfs,dst=/opt/volume
+-e OPENCGA_PASS=$${opencga_password}
+-e HBASE_SSH_DNS=$${hdinsight_ssh_dns}
+-e HBASE_SSH_USER=$${hdinsight_ssh_username}
+-e HBASE_SSH_PASS="$${hdinsight_ssh_password}"
+-e SEARCH_HOSTS=$${solr_hosts_csv}
+-e CELLBASE_HOSTS=$${mongo_hosts_csv} 
+-e CLINICAL_HOSTS=$${solr_hosts_csv}
+-e CATALOG_DATABASE_HOSTS=$${mongo_hosts_csv}
+-e CATALOG_DATABASE_USER=$${mongo_user}
+-e CATALOG_DATABASE_PASSWORD="$${mongo_password}"
+-e CATALOG_SEARCH_HOSTS=$${solr_hosts_csv}
+-e CATALOG_SEARCH_USER=$${solr_user}
+-e CATALOG_SEARCH_PASSWORD=$${solr_password}
+-e REST_HOST="$${rest_host}"
+-e GRPC_HOST="$${grpc_host}"
+-e BATCH_EXEC_MODE=AZUREbarr
+-e BATCH_ACCOUNT_NAME=$${batch_account_name}
+-e BATCH_ACCOUNT_KEY="$${batch_account_key}"
+-e BATCH_ENDPOINT=$${batch_account_endpoint}
+-e BATCH_POOL_ID=$${batch_account_pool_id}
+-e BATCH_DOCKER_ARGS="$${batch_docker_args}"
+-e BATCH_DOCKER_IMAGE=$${batch_container_image}
 -e BATCH_MAX_CONCURRENT_JOBS=1
  $${opencga_init_image} $${catalog_secret_key}
       EOF
@@ -172,6 +172,6 @@ module "daemonvm" {
 
   opencga_image          = "${var.opencga_image}"
   opencga_init_image     = "${var.opencga_init_image}"
-  init_cmd               = "${data.template_file.opencga_init_cmd.rendered}"
+  init_cmd               = "${replace(data.template_file.opencga_init_cmd.rendered, "/\\n/", " ")}"
   opencga_admin_password = "${var.opencga_admin_password}"
 }

@@ -1,22 +1,20 @@
 #cloud-config
-
 package_upgrade: true
 package_reboot_if_required: true
-
 runcmd:
- - 'apt-get update'
- - 'curl -fsSL https://get.docker.com/ | sh'
- - 'curl -fsSL https://get.docker.com/gpg | sudo apt-key add -'
- - 'python3 /opt/mount.py ${mount_args}'
- - '${init_cmd}'
- - '${daemon_start_cmd}'
- - 'systemctl start --no-block opencga'
+- 'apt-get update'
+- 'curl -fsSL https://get.docker.com/ | sh'
+- 'curl -fsSL https://get.docker.com/gpg | sudo apt-key add -'
+- 'python3 /opt/mount.py ${mount_args}'
+- '${init_cmd}'
+- '${daemon_start_cmd}'
+- 'systemctl start --no-block opencg'
 
 write_files:
  -  path: /etc/systemd/system/opencga.service
-    permissions: 0644
+    permissions: "0644"
     owner: root
-    content: |    
+    content: |
      [Unit]
      Description=OpenCGA daemon
      Requires=docker.service
@@ -29,9 +27,9 @@ write_files:
     content: !!binary |
         ${mount_script}
     path: /opt/mount.py
-    permissions: \"0744\"
+    permissions: "0744"
  -  encoding: gzip
     content: !!binary |
         ${cloud_init_check_script}
     path: /opt/cloudinitcheck.sh
-    permissions: \"0744\"
+    permissions: "0744"
