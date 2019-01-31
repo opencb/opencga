@@ -15,6 +15,16 @@
                 "message": "The variable '_comment.*' is never used.",
                 "jsonPath": "variables.*",
                 "reason": "Allow additional comments in variables section"
+            },
+            {
+                "message": "Value is not accepted. Valid values: \"tapConfigurations\".",
+                "jsonPath": "resources.*",
+                "reason": "Schema Error"
+            },
+            {
+                "message": "Value is not accepted. Valid values: \"2018-08-01\".",
+                "jsonPath": "resources.*",
+                "reason": "Schema Error"
             }
         ],
         "azuredeploy.json": [
@@ -156,10 +166,19 @@
                 "reason": "Incorrect schema"
             },
             {
-                "message": "Error: Value is not accepted. Valid values: \"dataSources\".",
+                "message": "Value is not accepted. Valid values: \"dataSources\".",
                 "jsonPath": "resources.0.resources.*",
                 "reason": "Incorrect schema"
+            },
+            {
+
+
+                "message": "Value is not accepted. Valid values: \"2015-11-01-preview\".",
+                "jsonPath": "resources.0.apiVersion",
+                "reason": "Incorrect schema"
+
             }
+
         ]
     }
 }
