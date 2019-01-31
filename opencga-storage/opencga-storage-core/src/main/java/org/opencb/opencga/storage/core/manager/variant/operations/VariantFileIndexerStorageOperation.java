@@ -593,7 +593,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
     }
 
     private Cohort createDefaultCohort(Study study, String sessionId) throws CatalogException {
-        return catalogManager.getCohortManager().create(study.getId(), StudyEntry.DEFAULT_COHORT, Study.Type.COLLECTION,
+        return catalogManager.getCohortManager().create(study.getFqn(), StudyEntry.DEFAULT_COHORT, Study.Type.COLLECTION,
                 DEFAULT_COHORT_DESCRIPTION, Collections.emptyList(), null, null, sessionId).first();
     }
 
