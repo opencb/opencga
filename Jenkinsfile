@@ -2,15 +2,6 @@ pipeline {
     agent any
     stages {
 
-        stage ('Validate ARM Templates') {
-            options {
-                timeout(time: 5, unit: 'MINUTES')
-            }
-            steps {
-                sh 'cd opencga-app/app/scripts/azure/arm && npm install armval && node node_modules/.bin/armval "**/azuredeploy.json" && rm -rf node_modules && rm -rf package-lock.json'
-            }
-        }
-
         stage ('Build') {
             options {
                 timeout(time: 30, unit: 'MINUTES')
