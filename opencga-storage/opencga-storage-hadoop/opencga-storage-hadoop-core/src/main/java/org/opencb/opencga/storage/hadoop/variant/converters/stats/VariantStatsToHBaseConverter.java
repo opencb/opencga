@@ -21,7 +21,7 @@ import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.Converter;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
@@ -42,15 +42,17 @@ import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPho
 public class VariantStatsToHBaseConverter extends AbstractPhoenixConverter implements Converter<VariantStatsWrapper, Put> {
 
     private final GenomeHelper genomeHelper;
-    private final StudyConfiguration studyConfiguration;
+    private final StudyMetadata studyMetadata;
     private final int studyId;
     private final Logger logger = LoggerFactory.getLogger(VariantStatsToHBaseConverter.class);
+    private final Map<String, Integer> cohortIds;
 
-    public VariantStatsToHBaseConverter(GenomeHelper genomeHelper, StudyConfiguration studyConfiguration) {
+    public VariantStatsToHBaseConverter(GenomeHelper genomeHelper, StudyMetadata studyMetadata, Map<String, Integer> cohortIds) {
         super(genomeHelper.getColumnFamily());
         this.genomeHelper = genomeHelper;
-        this.studyConfiguration = studyConfiguration;
-        this.studyId = studyConfiguration.getStudyId();
+        this.studyMetadata = studyMetadata;
+        this.studyId = studyMetadata.getId();
+        this.cohortIds = cohortIds;
     }
 
     @Override
@@ -64,7 +66,7 @@ public class VariantStatsToHBaseConverter extends AbstractPhoenixConverter imple
                 variantStatsWrapper.getReference(), variantStatsWrapper.getAlternate(), variantStatsWrapper.getSv());
         Put put = new Put(row);
         for (Map.Entry<String, VariantStats> entry : variantStatsWrapper.getCohortStats().entrySet()) {
-            Integer cohortId = studyConfiguration.getCohortIds().get(entry.getKey());
+            Integer cohortId = cohortIds.get(entry.getKey());
             Column mafColumn = VariantPhoenixHelper.getMafColumn(studyId, cohortId);
             Column mgfColumn = VariantPhoenixHelper.getMgfColumn(studyId, cohortId);
             Column statsColumn = VariantPhoenixHelper.getStatsColumn(studyId, cohortId);

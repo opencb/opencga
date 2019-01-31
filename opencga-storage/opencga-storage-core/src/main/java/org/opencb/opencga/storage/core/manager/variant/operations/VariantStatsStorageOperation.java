@@ -33,7 +33,7 @@ import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
@@ -80,7 +80,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
         Aggregation aggregation = getAggregation(studyFqn, options, sessionId);
 
         DataStore dataStore = StorageOperation.getDataStore(catalogManager, studyFqn, File.Bioformat.VARIANT, sessionId);
-        StudyConfiguration studyConfiguration = updateCatalogFromStudyConfiguration(sessionId, studyFqn, dataStore);
+        StudyMetadata studyMetadata = updateCatalogFromStorageMetadata(sessionId, studyFqn, dataStore);
 
         List<String> cohortIds = checkCohorts(study, aggregation, cohorts, options, sessionId);
         Map<String, List<String>> cohortsMap = checkCanCalculateCohorts(studyFqn, cohortIds, updateStats, resume, sessionId);
@@ -120,7 +120,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
             calculateStatsOptions.put(DefaultVariantStatisticsManager.OUTPUT, outdirUri.resolve(outputFileName));
             VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
             variantStorageEngine.getOptions().putAll(calculateStatsOptions);
-            variantStorageEngine.calculateStats(studyConfiguration.getStudyName(), cohortsMap, calculateStatsOptions);
+            variantStorageEngine.calculateStats(studyMetadata.getName(), cohortsMap, calculateStatsOptions);
 
 //            DefaultVariantStatisticsManager variantStatisticsManager = new DefaultVariantStatisticsManager(dbAdaptor);
 //

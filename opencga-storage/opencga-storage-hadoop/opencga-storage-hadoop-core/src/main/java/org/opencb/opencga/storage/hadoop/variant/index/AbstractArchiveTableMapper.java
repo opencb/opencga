@@ -78,7 +78,7 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
         super.setup(context);
 
         // Load VCF meta data for columns
-        int studyId = getStudyConfiguration().getStudyId();
+        int studyId = getStudyConfiguration().getId();
         resultConverter = new ArchiveResultToVariantConverter(studyId, getHelper().getColumnFamily(), this.getStudyConfiguration());
 
         rowKeyFactory = new ArchiveRowKeyFactory(getHelper().getConf());

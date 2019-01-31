@@ -13,9 +13,9 @@ import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
-import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.slf4j.Logger;
@@ -81,7 +81,7 @@ public class NewProjectMetadataMigration {
 
                         VariantStorageEngine variantStorageEngine = storageEngineFactory
                                 .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
-                        StudyConfigurationManager scm = variantStorageEngine.getStudyConfigurationManager();
+                        VariantStorageMetadataManager scm = variantStorageEngine.getMetadataManager();
 
                         Map<String, Integer> currentCounters = scm.lockAndUpdateProject(projectMetadata -> {
                             if (projectMetadata == null || StringUtils.isEmpty(projectMetadata.getSpecies())) {
@@ -106,7 +106,7 @@ public class NewProjectMetadataMigration {
 
                             for (String studyName : scm.getStudyNames(null)) {
                                 StudyConfiguration studyConfiguration = scm.getStudyConfiguration(studyName, null).first();
-                                int studyId = studyConfiguration.getStudyId();
+                                int studyId = studyConfiguration.getId();
 
                                 updateMaxCounter(counters, "file", studyConfiguration.getFileIds().values());
                                 updateMaxCounter(counters, "file_" + studyId, studyConfiguration.getFileIds().values());

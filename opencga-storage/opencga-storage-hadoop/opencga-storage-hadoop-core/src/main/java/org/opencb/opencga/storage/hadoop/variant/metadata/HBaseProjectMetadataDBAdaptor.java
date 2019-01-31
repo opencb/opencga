@@ -9,8 +9,7 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.adaptors.ProjectMetadataAdaptor;
 import org.opencb.opencga.storage.hadoop.utils.HBaseLock;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
@@ -34,7 +33,7 @@ import static org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantMet
  */
 public class HBaseProjectMetadataDBAdaptor extends AbstractHBaseDBAdaptor implements ProjectMetadataAdaptor {
 
-    private static Logger logger = LoggerFactory.getLogger(HBaseStudyConfigurationDBAdaptor.class);
+    private static Logger logger = LoggerFactory.getLogger(HBaseStudyMetadataDBAdaptor.class);
 
     private final HBaseLock lock;
 
@@ -128,10 +127,11 @@ public class HBaseProjectMetadataDBAdaptor extends AbstractHBaseDBAdaptor implem
     }
 
     @Override
-    public int generateId(StudyConfiguration studyConfiguration, String idType) throws StorageEngineException {
+    public int generateId(Integer studyId, String idType) throws StorageEngineException {
         try {
+            ensureTableExists();
             return hBaseManager.act(tableName, (table) -> {
-                byte[] column = getCounterColumn(studyConfiguration, idType);
+                byte[] column = getCounterColumn(studyId, idType);
                 return (int) table.incrementColumnValue(getProjectRowKey(), family, column, 1);
 
             });

@@ -19,7 +19,7 @@ package org.opencb.opencga.storage.core.variant.annotation.annotators;
 import org.apache.commons.lang.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

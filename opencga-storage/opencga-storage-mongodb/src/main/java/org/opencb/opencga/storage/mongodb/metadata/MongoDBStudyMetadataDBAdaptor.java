@@ -16,9 +16,6 @@
 
 package org.opencb.opencga.storage.mongodb.metadata;
 
-import com.mongodb.ReadPreference;
-import com.mongodb.WriteConcern;
-import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.UpdateResult;
 import org.apache.commons.lang3.StringUtils;
@@ -30,14 +27,12 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.adaptors.StudyConfigurationAdaptor;
+import org.opencb.opencga.storage.core.metadata.adaptors.StudyMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.mongodb.utils.MongoLock;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyConfigurationConverter;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
@@ -46,17 +41,14 @@ import static org.opencb.commons.datastore.mongodb.MongoDBCollection.UPSERT;
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
-public class MongoDBStudyConfigurationDBAdaptor implements StudyConfigurationAdaptor {
+public class MongoDBStudyMetadataDBAdaptor extends AbstractMongoDBAdaptor<StudyMetadata> implements StudyMetadataDBAdaptor {
 
     private final DocumentToStudyConfigurationConverter studyConfigurationConverter = new DocumentToStudyConfigurationConverter();
     private final MongoLock mongoLock;
-    private final MongoDBCollection collection;
 
-    public MongoDBStudyConfigurationDBAdaptor(MongoDataStore db, String collectionName) {
-        collection = db.getCollection(collectionName)
-                .withReadPreference(ReadPreference.primary())
-                .withWriteConcern(WriteConcern.ACKNOWLEDGED);
-        collection.createIndex(new Document("studyName", 1), new ObjectMap(MongoDBCollection.UNIQUE, true));
+    public MongoDBStudyMetadataDBAdaptor(MongoDataStore db, String collectionName) {
+        super(db, collectionName, StudyMetadata.class);
+        collection.createIndex(new Document("name", 1), new ObjectMap(MongoDBCollection.UNIQUE, true));
         mongoLock = new MongoLock(collection, "_lock");
     }
 
@@ -109,7 +101,7 @@ public class MongoDBStudyConfigurationDBAdaptor implements StudyConfigurationAda
         if (queryResult.getResult().isEmpty()) {
             studyConfiguration = null;
         } else {
-            if (queryResult.first().getStudyName() == null) {
+            if (queryResult.first().getName() == null) {
                 // If the studyName is null, it may be only a lock instead of a real study configuration
                 studyConfiguration = null;
             } else {
@@ -130,7 +122,7 @@ public class MongoDBStudyConfigurationDBAdaptor implements StudyConfigurationAda
         Document studyMongo = new DocumentToStudyConfigurationConverter().convertToStorageType(studyConfiguration);
 
         // Update field by field, instead of replacing the whole object to preserve existing fields like "_lock"
-        Document query = new Document("_id", studyConfiguration.getStudyId());
+        Document query = new Document("_id", studyConfiguration.getId());
         List<Bson> updates = new ArrayList<>(studyMongo.size());
         studyMongo.forEach((s, o) -> updates.add(new Document("$set", new Document(s, o))));
         QueryResult<UpdateResult> queryResult = collection.update(query, Updates.combine(updates), new QueryOptions(UPSERT, true));
@@ -141,7 +133,7 @@ public class MongoDBStudyConfigurationDBAdaptor implements StudyConfigurationAda
 
     @Override
     public List<String> getStudyNames(QueryOptions options) {
-        List<String> studyNames = collection.distinct("studyName", new Document("studyName", new Document("$exists", 1))).getResult();
+        List<String> studyNames = collection.distinct("name", new Document("name", new Document("$exists", 1))).getResult();
         return studyNames.stream().map(Object::toString).collect(Collectors.toList());
     }
 
@@ -152,11 +144,19 @@ public class MongoDBStudyConfigurationDBAdaptor implements StudyConfigurationAda
 
     @Override
     public Map<String, Integer> getStudies(QueryOptions options) {
-        QueryResult<StudyConfiguration> queryResult = collection.find(new Document(), Projections.include("studyId", "studyName"),
-                studyConfigurationConverter, null);
-        return queryResult.getResult()
-                .stream()
-                .collect(Collectors.toMap(StudyConfiguration::getStudyName, StudyConfiguration::getStudyId));
+        Map<String, Integer> map = new HashMap<>();
+        iterator(new Document(), new QueryOptions(QueryOptions.INCLUDE, "id,name")).forEachRemaining(s -> map.put(s.getName(), s.getId()));
+        return map;
+    }
+
+    @Override
+    public StudyMetadata getStudyMetadata(int id, Long timeStamp) {
+        return get(id, null);
+    }
+
+    @Override
+    public void updateStudyMetadata(StudyMetadata studyMetadata) {
+        update(studyMetadata.getId(), studyMetadata);
     }
 
     @Override

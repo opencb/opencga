@@ -24,9 +24,7 @@ import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.variant.dummy.DummyProjectMetadataAdaptor;
-import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationAdaptor;
-import org.opencb.opencga.storage.core.variant.dummy.DummyVariantFileMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -39,17 +37,16 @@ import static org.junit.Assert.assertTrue;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class StudyConfigurationManagerTest {
+public class VariantStorageMetadataManagerTest {
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
-    private StudyConfigurationManager scm;
+    private VariantStorageMetadataManager scm;
 
     @Before
     public void setUp() throws Exception {
-        DummyProjectMetadataAdaptor.clear();
-        DummyStudyConfigurationAdaptor.clear();
-        scm = new StudyConfigurationManager(new DummyProjectMetadataAdaptor(), new DummyStudyConfigurationAdaptor(), new DummyVariantFileMetadataDBAdaptor());
+        DummyVariantStorageMetadataDBAdaptorFactory.clear();
+        scm = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
     }
 
     protected StudyConfiguration newStudyConfiguration() {
@@ -59,12 +56,12 @@ public class StudyConfigurationManagerTest {
     @Test
     public void checkAndUpdateStudyConfigurationWithoutSampleIdsTest() throws StorageEngineException {
         StudyConfiguration studyConfiguration = newStudyConfiguration();
-        studyConfiguration.getSampleIds().put("s0", scm.newSampleId(studyConfiguration));
-        studyConfiguration.getSampleIds().put("s10", scm.newSampleId(studyConfiguration));
+        studyConfiguration.getSampleIds().put("s0", scm.newSampleId(studyConfiguration.getId()));
+        studyConfiguration.getSampleIds().put("s10", scm.newSampleId(studyConfiguration.getId()));
         Integer fileId = 5;
         VariantFileMetadata source = createVariantFileMetadata(studyConfiguration, fileId);
         ObjectMap options = new ObjectMap();
-        scm.registerFileSamples(studyConfiguration, fileId, source, options);
+        scm.registerFileSamples(studyConfiguration.getId(), fileId, source);
         assertTrue(studyConfiguration.getSampleIds().keySet().containsAll(Arrays.asList("s0", "s1", "s2", "s3", "s4", "s5")));
         assertTrue(studyConfiguration.getSamplesInFiles().get(fileId).stream()
                 .map(s -> studyConfiguration.getSampleIds().inverse().get(s))
@@ -81,9 +78,9 @@ public class StudyConfigurationManagerTest {
         StudyConfiguration studyConfiguration = newStudyConfiguration();
         Integer fileId = 5;
         VariantFileMetadata source = createVariantFileMetadata(studyConfiguration, fileId);
-        studyConfiguration.getSampleIds().put("s10", scm.newSampleId(studyConfiguration));
+        studyConfiguration.getSampleIds().put("s10", scm.newSampleId(studyConfiguration.getId()));
         ObjectMap options = new ObjectMap();
-        scm.registerFileSamples(studyConfiguration, fileId, source, options);
+        scm.registerFileSamples(studyConfiguration.getId(), fileId, source);
         assertTrue(studyConfiguration.getSampleIds().keySet().containsAll(Arrays.asList("s0", "s1", "s2", "s3", "s4", "s5")));
         assertEquals(Arrays.asList("s0", "s1", "s2", "s3", "s4", "s5"),
                 studyConfiguration.getSamplesInFiles().get(fileId).stream()

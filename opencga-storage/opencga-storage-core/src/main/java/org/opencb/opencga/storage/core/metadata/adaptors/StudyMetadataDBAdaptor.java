@@ -19,12 +19,11 @@ package org.opencb.opencga.storage.core.metadata.adaptors;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.models.*;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -32,22 +31,29 @@ import java.util.concurrent.TimeoutException;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public interface StudyConfigurationAdaptor extends AutoCloseable {
+public interface StudyMetadataDBAdaptor extends AutoCloseable {
 
     default long lockStudy(int studyId, long lockDuration, long timeout, String lockName) throws InterruptedException, TimeoutException {
-        LoggerFactory.getLogger(StudyConfigurationAdaptor.class).warn("Ignoring lock");
+        LoggerFactory.getLogger(StudyMetadataDBAdaptor.class).warn("Ignoring lock");
         return 0;
     }
 
     default void unLockStudy(int studyId, long lockId, String lockName) {
-        LoggerFactory.getLogger(StudyConfigurationAdaptor.class).warn("Ignoring unLock");
+        LoggerFactory.getLogger(StudyMetadataDBAdaptor.class).warn("Ignoring unLock");
     }
 
+    @Deprecated
     QueryResult<StudyConfiguration> getStudyConfiguration(String studyName, Long time, QueryOptions options);
 
+    @Deprecated
     QueryResult<StudyConfiguration> getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options);
 
+    @Deprecated
     QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options);
+
+    StudyMetadata getStudyMetadata(int id, Long timeStamp);
+
+    void updateStudyMetadata(StudyMetadata sm);
 
     Map<String, Integer> getStudies(QueryOptions options);
 

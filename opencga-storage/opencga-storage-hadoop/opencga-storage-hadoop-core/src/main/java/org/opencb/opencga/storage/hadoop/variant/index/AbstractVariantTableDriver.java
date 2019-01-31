@@ -38,10 +38,9 @@ import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -74,7 +73,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
 
     private VariantTableHelper variantTablehelper;
 
-    protected StudyConfigurationManager scm;
+    protected VariantStorageMetadataManager scm;
     protected StudyConfiguration studyConfiguration;
 
     public AbstractVariantTableDriver() { /* nothing */ }
@@ -164,7 +163,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
     /**
      * Give the name of the action that the job is doing.
      *
-     * Used to create the jobName and as {@link org.opencb.opencga.storage.core.metadata.BatchFileOperation#operationName}
+     * Used to create the jobName and as {@link TaskMetadata#getName()}
      *
      * e.g. : "Delete", "Load", "Annotate", ...
      *
@@ -257,19 +256,9 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
         return scan;
     }
 
-    protected StudyConfiguration loadStudyConfiguration() throws IOException {
-        StudyConfigurationManager scm = getStudyConfigurationManager();
-        int studyId = getHelper().getStudyId();
-        QueryResult<StudyConfiguration> res = scm.getStudyConfiguration(studyId, new QueryOptions());
-        if (res.getResult().size() != 1) {
-            throw new IllegalStateException("StudyConfiguration " + studyId + " not found! " + res.getResult().size());
-        }
-        return res.first();
-    }
-
-    protected StudyConfigurationManager getStudyConfigurationManager() throws IOException {
+    protected VariantStorageMetadataManager getStudyConfigurationManager() throws IOException {
         if (scm == null) {
-            scm = new StudyConfigurationManager(new HBaseVariantStorageMetadataDBAdaptorFactory(getHelper()));
+            scm = new VariantStorageMetadataManager(new HBaseVariantStorageMetadataDBAdaptorFactory(getHelper()));
         }
         return scm;
     }

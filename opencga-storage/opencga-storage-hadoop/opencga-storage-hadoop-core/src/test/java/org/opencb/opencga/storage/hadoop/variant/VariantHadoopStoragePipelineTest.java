@@ -33,6 +33,8 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -75,20 +77,25 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
         URI inputUri = VariantStorageBaseTest.getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz");
 //            URI inputUri = VariantStorageManagerTestUtils.getResourceUri("variant-test-file.vcf.gz");
 
-        studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
-        etlResult = VariantStorageBaseTest.runDefaultETL(inputUri, variantStorageManager, studyConfiguration,
-                new ObjectMap(Options.TRANSFORM_FORMAT.key(), "avro")
-                        .append(Options.ANNOTATE.key(), true)
-                        .append(Options.CALCULATE_STATS.key(), false)
-        );
+        try {
+            studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
+            etlResult = VariantStorageBaseTest.runDefaultETL(inputUri, variantStorageManager, studyConfiguration,
+                    new ObjectMap(Options.TRANSFORM_FORMAT.key(), "avro")
+                            .append(Options.ANNOTATE.key(), true)
+                            .append(Options.CALCULATE_STATS.key(), false)
+            );
 
-        fileMetadata = variantStorageManager.readVariantFileMetadata(etlResult.getTransformResult());
-        VariantSetStats stats = fileMetadata.getStats();
-        Assert.assertNotNull(stats);
-
-        try (VariantHadoopDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor()) {
-            VariantHbaseTestUtils.printVariantsFromVariantsTable(dbAdaptor);
-            VariantHbaseTestUtils.printVariantsFromArchiveTable(dbAdaptor, studyConfiguration);
+            fileMetadata = variantStorageManager.readVariantFileMetadata(etlResult.getTransformResult());
+            VariantSetStats stats = fileMetadata.getStats();
+            Assert.assertNotNull(stats);
+        } finally {
+            try (VariantHadoopDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor()) {
+                VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri());
+//                VariantHbaseTestUtils.printVariantsFromVariantsTable(dbAdaptor);
+//                VariantHbaseTestUtils.printVariantsFromArchiveTable(dbAdaptor, studyConfiguration);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -116,7 +123,7 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
     public void queryVariantTable() {
         System.out.println("Query from Variant table");
         VariantDBIterator iterator = dbAdaptor.iterator(
-                new Query(VariantQueryParam.STUDY.key(), studyConfiguration.getStudyId()),
+                new Query(VariantQueryParam.STUDY.key(), studyConfiguration.getId()),
                 new QueryOptions());
         while (iterator.hasNext()) {
             Variant variant = iterator.next();
@@ -183,7 +190,7 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
         System.out.println("Query from Archive table");
         dbAdaptor.iterator(
                 new Query()
-                        .append(VariantQueryParam.STUDY.key(), studyConfiguration.getStudyId())
+                        .append(VariantQueryParam.STUDY.key(), studyConfiguration.getId())
                         .append(VariantQueryParam.FILE.key(), FILE_ID),
                 new QueryOptions("archive", true)).forEachRemaining(variant -> {
             System.out.println("Variant from archive = " + variant.toJson());
@@ -226,7 +233,7 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
         System.out.println("Query from archive HBase " + tableName);
         HBaseManager hm = new HBaseManager(configuration.get());
         GenomeHelper genomeHelper = dbAdaptor.getGenomeHelper();
-        ArchiveTableHelper archiveHelper = dbAdaptor.getArchiveHelper(studyConfiguration.getStudyId(), FILE_ID);
+        ArchiveTableHelper archiveHelper = dbAdaptor.getArchiveHelper(studyConfiguration.getId(), FILE_ID);
         VcfSliceToVariantListConverter converter = new VcfSliceToVariantListConverter(archiveHelper.getFileMetadata().toVariantStudyMetadata(STUDY_NAME));
         hm.act(tableName, table -> {
             ResultScanner resultScanner = table.getScanner(genomeHelper.getColumnFamily());
@@ -262,15 +269,16 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
     @Test
     public void checkMeta() throws Exception {
         System.out.println("Get studies");
-        List<String> studyNames = dbAdaptor.getStudyConfigurationManager().getStudyNames(new QueryOptions());
+        VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
+        List<String> studyNames = metadataManager.getStudyNames(new QueryOptions());
         assertEquals(1, studyNames.size());
         for (String studyName : studyNames) {
             System.out.println("studyName = " + studyName);
-            StudyConfiguration sc = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyName, new QueryOptions()).first();
-            assertEquals(sc.getStudyId(), STUDY_ID);
-            assertEquals(sc.getStudyName(), STUDY_NAME);
-            assertEquals(Collections.singleton(FILE_ID), sc.getIndexedFiles());
-            System.out.println("sc = " + sc);
+            StudyMetadata sm = metadataManager.getStudyMetadata(studyName);
+            assertEquals(sm.getId(), STUDY_ID);
+            assertEquals(sm.getName(), STUDY_NAME);
+            assertEquals(Collections.singleton(FILE_ID), metadataManager.getIndexedFiles(STUDY_ID));
+            System.out.println("sm = " + sm);
         }
     }
 

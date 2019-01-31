@@ -38,9 +38,9 @@ import java.util.List;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 
-import static org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper.COUNTER_GROUP_NAME;
 import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.getQueryFromConfig;
 import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.getQueryOptionsFromConfig;
+import static org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper.COUNTER_GROUP_NAME;
 
 /**
  * Created on 14/06/18.
@@ -100,13 +100,13 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
             boolean useSampleIndex = !getConf().getBoolean("skipSampleIndex", false) && SampleIndexQueryParser.validSampleIndexQuery(query);
             if (useSampleIndex) {
                 // Remove extra fields from the query
-                SampleIndexQueryParser.parseSampleIndexQuery(query, getStudyConfigurationManager());
+                SampleIndexQueryParser.parseSampleIndexQuery(query, getMetadataManager());
 
                 logger.info("Use sample index to read from HBase");
             }
             caching = getConf().getInt(HadoopVariantStorageEngine.MAPREDUCE_HBASE_SCAN_CACHING, 50);
 
-            VariantHBaseQueryParser parser = new VariantHBaseQueryParser(getHelper(), getStudyConfigurationManager());
+            VariantHBaseQueryParser parser = new VariantHBaseQueryParser(getHelper(), getMetadataManager());
             List<Scan> scans = parser.parseQueryMultiRegion(query, options);
             for (Scan scan : scans) {
                 scan.setCaching(caching);
@@ -117,7 +117,7 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
             VariantMapReduceUtil.initVariantMapperJobFromHBase(job, variantTable, scans, getMapperClass(), useSampleIndex);
         } else {
             logger.info("Init MapReduce job reading from Phoenix");
-            String sql = new VariantSqlQueryParser(getHelper(), variantTable, getStudyConfigurationManager())
+            String sql = new VariantSqlQueryParser(getHelper(), variantTable, getMetadataManager())
                     .parse(query, options).getSql();
 
             VariantMapReduceUtil.initVariantMapperJobFromPhoenix(job, variantTable, sql, getMapperClass());

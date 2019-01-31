@@ -28,7 +28,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.io.DataWriter;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.converters.stage.StageDocumentToVariantConverter;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantWriteResult;
@@ -87,17 +87,17 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
     private final Bson cleanStage;
 
     public MongoDBVariantMergeLoader(MongoDBCollection variantsCollection, MongoDBCollection stageCollection,
-                                     MongoDBCollection studiesCollection, StudyConfiguration studyConfiguration, List<Integer> fileIds,
+                                     MongoDBCollection studiesCollection, StudyMetadata studyMetadata, List<Integer> fileIds,
                                      boolean resume, boolean cleanWhileLoading, ProgressLogger progressLogger) {
         this.progressLogger = progressLogger;
         this.variantsCollection = variantsCollection;
         this.stageCollection = stageCollection;
         this.studiesCollection = studiesCollection;
         this.resume = resume;
-        this.studyId = studyConfiguration.getStudyId();
+        this.studyId = studyMetadata.getId();
         this.fileIds = fileIds;
         this.result = new MongoDBVariantWriteResult();
-        result.getGenotypes().addAll(studyConfiguration.getAttributes().getAsStringList(LOADED_GENOTYPES.key()));
+        result.getGenotypes().addAll(studyMetadata.getAttributes().getAsStringList(LOADED_GENOTYPES.key()));
         this.cleanWhileLoading = cleanWhileLoading;
 
         List<String> studyFileToPull = new ArrayList<>(fileIds.size());

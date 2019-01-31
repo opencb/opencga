@@ -20,15 +20,17 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.client.Get;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.util.StopWatch;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.adaptors.StudyConfigurationAdaptor;
+import org.opencb.opencga.storage.core.metadata.adaptors.StudyMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.hadoop.utils.HBaseLock;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
@@ -51,17 +53,17 @@ import static org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantMet
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HBaseStudyConfigurationDBAdaptor extends AbstractHBaseDBAdaptor implements StudyConfigurationAdaptor {
+public class HBaseStudyMetadataDBAdaptor extends AbstractHBaseDBAdaptor implements StudyMetadataDBAdaptor {
 
-    private static Logger logger = LoggerFactory.getLogger(HBaseStudyConfigurationDBAdaptor.class);
+    private static Logger logger = LoggerFactory.getLogger(HBaseStudyMetadataDBAdaptor.class);
 
     private final HBaseLock lock;
 
-    public HBaseStudyConfigurationDBAdaptor(VariantTableHelper helper) {
+    public HBaseStudyMetadataDBAdaptor(VariantTableHelper helper) {
         this(null, helper.getMetaTableAsString(), helper.getConf());
     }
 
-    public HBaseStudyConfigurationDBAdaptor(HBaseManager hBaseManager, String metaTableName, Configuration configuration) {
+    public HBaseStudyMetadataDBAdaptor(HBaseManager hBaseManager, String metaTableName, Configuration configuration) {
         super(hBaseManager, metaTableName, configuration);
         lock = new HBaseLock(this.hBaseManager, this.tableName, family, null);
     }
@@ -128,7 +130,7 @@ public class HBaseStudyConfigurationDBAdaptor extends AbstractHBaseDBAdaptor imp
         }
 
         try {
-            if (hBaseManager.tableExists(tableName)) {
+            if (tableExists()) {
                 studyConfigurationList = hBaseManager.act(tableName, table -> {
                     Result result = table.get(get);
                     if (result.isEmpty()) {
@@ -162,8 +164,9 @@ public class HBaseStudyConfigurationDBAdaptor extends AbstractHBaseDBAdaptor imp
     public QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
         long startTime = System.currentTimeMillis();
         String error = "";
-        logger.info("Update StudyConfiguration {}", studyConfiguration.getStudyName());
-        updateStudiesSummary(studyConfiguration.getStudyName(), studyConfiguration.getStudyId(), options);
+        logger.info("Update StudyConfiguration {}", studyConfiguration.getName());
+        updateStudiesSummary(studyConfiguration.getName(), studyConfiguration.getId(), options);
+        updateStudyMetadata(new StudyMetadata(studyConfiguration));
 
         studyConfiguration.getHeaders().clear(); // REMOVE: stored as VariantFileMetadata
 
@@ -187,29 +190,24 @@ public class HBaseStudyConfigurationDBAdaptor extends AbstractHBaseDBAdaptor imp
     }
 
     @Override
-    public BiMap<String, Integer> getStudies(QueryOptions options) {
-        Get get = new Get(getStudiesSummaryRowKey());
-        try {
-            if (!hBaseManager.tableExists(tableName)) {
-                logger.debug("Get StudyConfiguration summary TABLE_NO_EXISTS");
-                return HashBiMap.create();
-            }
-            return hBaseManager.act(tableName, table -> {
-                Result result = table.get(get);
-                if (result.isEmpty()) {
-                    logger.debug("Get StudyConfiguration summary EMPTY");
-                    return HashBiMap.create();
-                } else {
-                    byte[] value = result.getValue(family, getValueColumn());
-                    Map<String, Integer> map = objectMapper.readValue(value, Map.class);
-                    logger.debug("Get StudyConfiguration summary {}", map);
+    public StudyMetadata getStudyMetadata(int id, Long timeStamp) {
+        return readValue(getStudyMetadataRowKey(id), StudyMetadata.class, timeStamp);
+    }
 
-                    return HashBiMap.create(map);
-                }
-            });
-        } catch (IOException e) {
-            logger.warn("Get StudyConfiguration summary ERROR", e);
-            throw new UncheckedIOException(e);
+    @Override
+    public void updateStudyMetadata(StudyMetadata sm) {
+        sm.setTimeStamp(System.currentTimeMillis());
+        updateStudiesSummary(sm.getName(), sm.getId(), null);
+        putValue(getStudyMetadataRowKey(sm.getId()), Type.STUDY, sm, sm.getTimeStamp());
+    }
+
+    @Override
+    public BiMap<String, Integer> getStudies(QueryOptions options) {
+        Map<String, Integer> studies = readValue(getStudiesSummaryRowKey(), Map.class);
+        if (studies == null) {
+            return HashBiMap.create();
+        } else {
+            return HashBiMap.create(studies);
         }
     }
 
@@ -223,26 +221,12 @@ public class HBaseStudyConfigurationDBAdaptor extends AbstractHBaseDBAdaptor imp
             return;
         } else {
             studiesSummary.put(study, studyId);
-            updateStudiesSummary(studiesSummary, options);
+            updateStudiesSummary(studiesSummary);
         }
     }
 
-    private void updateStudiesSummary(BiMap<String, Integer> studies, QueryOptions options) {
-        try {
-            ensureTableExists();
-            Connection connection = hBaseManager.getConnection();
-            try (Table table = connection.getTable(TableName.valueOf(tableName))) {
-                byte[] bytes = objectMapper.writeValueAsBytes(studies);
-                Put put = new Put(getStudiesSummaryRowKey());
-                put.addColumn(family, getValueColumn(), bytes);
-                put.addColumn(family, getTypeColumn(), Type.STUDIES.bytes());
-                table.put(put);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+    private void updateStudiesSummary(BiMap<String, Integer> studies) {
+        putValue(getStudiesSummaryRowKey(), Type.STUDIES, studies, null);
     }
 
     @Override

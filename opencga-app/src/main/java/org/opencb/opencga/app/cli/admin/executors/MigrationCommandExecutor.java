@@ -1,6 +1,7 @@
 package org.opencb.opencga.app.cli.admin.executors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.opencga.app.cli.admin.executors.migration.AddFilePathToStudyConfigurationMigration;
 import org.opencb.opencga.app.cli.admin.executors.migration.AnnotationSetMigration;
 import org.opencb.opencga.app.cli.admin.executors.migration.NewProjectMetadataMigration;
 import org.opencb.opencga.app.cli.admin.executors.migration.NewVariantMetadataMigration;
@@ -183,6 +184,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
 
             if (!skipStorage) {
                 new NewProjectMetadataMigration(storageConfiguration, catalogManager, options).migrate(sessionId);
+                new AddFilePathToStudyConfigurationMigration(storageConfiguration, catalogManager).migrate(sessionId);
             }
 
         }

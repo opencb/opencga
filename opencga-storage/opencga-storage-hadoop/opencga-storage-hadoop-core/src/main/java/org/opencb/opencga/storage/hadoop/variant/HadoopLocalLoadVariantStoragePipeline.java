@@ -30,9 +30,8 @@ import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.transform.DiscardDuplicatedVariantsResolver;
@@ -71,6 +70,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
 
     private final Logger logger = LoggerFactory.getLogger(HadoopLocalLoadVariantStoragePipeline.class);
     private static final String OPERATION_NAME = "Load";
+    private int taskId;
 
     /**
      * @param configuration      {@link StorageConfiguration}
@@ -87,8 +87,8 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
     }
 
     @Override
-    protected void securePreLoad(StudyConfiguration studyConfiguration, VariantFileMetadata fileMetadata) throws StorageEngineException {
-        super.securePreLoad(studyConfiguration, fileMetadata);
+    protected void securePreLoad(StudyMetadata studyMetadata, VariantFileMetadata fileMetadata) throws StorageEngineException {
+        super.securePreLoad(studyMetadata, fileMetadata);
 
         if (options.getBoolean(VariantStorageEngine.Options.LOAD_SPLIT_DATA.key(),
                 VariantStorageEngine.Options.LOAD_SPLIT_DATA.defaultValue())) {
@@ -99,12 +99,13 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         boolean resume = options.getBoolean(VariantStorageEngine.Options.RESUME.key(), VariantStorageEngine.Options.RESUME.defaultValue());
         List<Integer> fileIds = Collections.singletonList(getFileId());
 
-        StudyConfigurationManager.addBatchOperation(studyConfiguration, OPERATION_NAME, fileIds, resume, BatchFileOperation.Type.LOAD,
+        taskId = getMetadataManager()
+                .addRunningTask(getStudyId(), OPERATION_NAME, fileIds, resume, TaskMetadata.Type.LOAD,
                 operation -> {
-                    if (operation.getOperationName().equals(OPERATION_NAME)) {
-                        if (operation.currentStatus().equals(BatchFileOperation.Status.ERROR)) {
+                    if (operation.getName().equals(OPERATION_NAME)) {
+                        if (operation.currentStatus().equals(TaskMetadata.Status.ERROR)) {
                             Integer fileId = operation.getFileIds().get(0);
-                            String fileName = studyConfiguration.getFileIds().inverse().get(fileId);
+                            String fileName = getMetadataManager().getFileName(studyMetadata.getId(), fileId);
                             logger.warn("Pending load operation for file " + fileName + " (" + fileId + ')');
                         } else {
                             ongoingLoads.incrementAndGet();
@@ -113,7 +114,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                     } else {
                         return false;
                     }
-                });
+                }).getId();
 
         if (ongoingLoads.get() > 1) {
             logger.info("There are " + ongoingLoads.get() + " concurrent load operations");
@@ -173,7 +174,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         VariantHBaseArchiveDataWriter archiveWriter = new VariantHBaseArchiveDataWriter(helper, table, dbAdaptor.getHBaseManager());
         VcfSliceToVariantListConverter converter = new VcfSliceToVariantListConverter(helper.getStudyMetadata());
         VariantHadoopDBWriter variantsWriter = newVariantHadoopDBWriter();
-        List<Integer> sampleIds = new ArrayList<>(getStudyConfiguration().getSamplesInFiles().get(helper.getFileId()));
+        List<Integer> sampleIds = new ArrayList<>(getMetadataManager().getFileMetadata(getStudyId(), getFileId()).getSamples());
         SampleIndexDBLoader sampleIndexDBLoader;
         if (sampleIds.isEmpty() || options.getBoolean(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key())) {
             sampleIndexDBLoader = null;
@@ -183,9 +184,9 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                     dbAdaptor.getGenomeHelper().getColumnFamily());
         }
 
-//        ((Task<VcfSlice, VcfSlice>) t -> t)
+//        ((TaskMetadata<VcfSlice, VcfSlice>) t -> t)
 //                .then(archiveWriter)
-//                .then((Task<VcfSlice, Variant>) slices -> slices
+//                .then((TaskMetadata<VcfSlice, Variant>) slices -> slices
 //                        .stream()
 //                        .flatMap(slice -> converter.convert(slice).stream())
 //                        .filter(variant -> !variant.getType().equals(VariantType.NO_VARIATION))
@@ -260,7 +261,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         // Variants Writer
         VariantHadoopDBWriter hadoopDBWriter = newVariantHadoopDBWriter();
         // Sample Index Writer
-        List<Integer> sampleIds = new ArrayList<>(getStudyConfiguration().getSamplesInFiles().get(fileId));
+        List<Integer> sampleIds = new ArrayList<>(getMetadataManager().getFileMetadata(studyId, fileId).getSamples());
         SampleIndexDBLoader sampleIndexDBLoader;
         if (sampleIds.isEmpty() || options.getBoolean(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key())) {
             sampleIndexDBLoader = null;
@@ -270,7 +271,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                     dbAdaptor.getGenomeHelper().getColumnFamily());
         }
 
-        // Task
+        // TaskMetadata
         String archiveFields = options.getString(ARCHIVE_FIELDS);
         String nonRefFilter = options.getString(ARCHIVE_NON_REF_FILTER);
         GroupedVariantsTask task = new GroupedVariantsTask(archiveWriter, hadoopDBWriter, sampleIndexDBLoader,
@@ -328,27 +329,26 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
     }
 
     private void updateLoadedGenotypes(HashSet<String> loadedGenotypes) throws StorageEngineException {
-        getStudyConfigurationManager().lockAndUpdate(getStudyId(), sc -> {
-            loadedGenotypes.addAll(sc.getAttributes().getAsStringList(VariantStorageEngine.Options.LOADED_GENOTYPES.key()));
-            sc.getAttributes().put(VariantStorageEngine.Options.LOADED_GENOTYPES.key(), loadedGenotypes);
-            return sc;
+        getMetadataManager().lockAndUpdate(getStudyId(), sm -> {
+            loadedGenotypes.addAll(sm.getAttributes().getAsStringList(VariantStorageEngine.Options.LOADED_GENOTYPES.key()));
+            sm.getAttributes().put(VariantStorageEngine.Options.LOADED_GENOTYPES.key(), loadedGenotypes);
+            return sm;
         });
     }
 
     @Override
-    public void securePostLoad(List<Integer> fileIds, StudyConfiguration studyConfiguration) throws StorageEngineException {
-        super.securePostLoad(fileIds, studyConfiguration);
-        StudyConfigurationManager.setStatus(studyConfiguration, BatchFileOperation.Status.READY, OPERATION_NAME, fileIds);
+    public void securePostLoad(List<Integer> fileIds, StudyMetadata studyMetadata) throws StorageEngineException {
+        super.securePostLoad(fileIds, studyMetadata);
+        getMetadataManager().setStatus(getStudyId(), taskId, TaskMetadata.Status.READY);
     }
 
     private VariantHadoopDBWriter newVariantHadoopDBWriter() throws StorageEngineException {
-        StudyConfiguration studyConfiguration = getStudyConfiguration();
         boolean includeReferenceVariantsData = getOptions().getBoolean(VARIANT_TABLE_LOAD_REFERENCE, false);
         return new VariantHadoopDBWriter(
                 dbAdaptor.getGenomeHelper(),
                 dbAdaptor.getCredentials().getTable(),
-                getStudyConfigurationManager().getProjectMetadata().first(),
-                studyConfiguration,
+                getStudyId(),
+                getMetadataManager(),
                 dbAdaptor.getHBaseManager(), includeReferenceVariantsData);
     }
 

@@ -6,8 +6,8 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -59,17 +59,18 @@ public class SampleIndexQueryParser {
         return false;
     }
 
+
     /**
      * Build SampleIndexQuery. Extract Regions (+genes), Study, Sample and Genotypes.
-     *
+     * <p>
      * Assumes that the query is valid.
      *
-     * @param query         Input query. Will be modified.
-     * @param scm           StudyConfigurationManager
-     * @return              Valid SampleIndexQuery
-     * @see                 SampleIndexQueryParser#validSampleIndexQuery(Query)
+     * @param query           Input query. Will be modified.
+     * @param metadataManager VariantStorageMetadataManager
+     * @return Valid SampleIndexQuery
+     * @see SampleIndexQueryParser#validSampleIndexQuery(Query)
      */
-    public static SampleIndexQuery parseSampleIndexQuery(Query query, StudyConfigurationManager scm) {
+    public static SampleIndexQuery parseSampleIndexQuery(Query query, VariantStorageMetadataManager metadataManager) {
         //
         // Extract regions
         List<Region> regions = new ArrayList<>();
@@ -88,7 +89,7 @@ public class SampleIndexQueryParser {
         // TODO: Accept variant IDs?
 
         // Extract study
-        StudyConfiguration defaultStudyConfiguration = VariantQueryUtils.getDefaultStudyConfiguration(query, null, scm);
+        StudyMetadata defaultStudy = VariantQueryUtils.getDefaultStudy(query, null, metadataManager);
 
         // Extract sample and genotypes to filter
         QueryOperation queryOperation;
@@ -119,17 +120,17 @@ public class SampleIndexQueryParser {
             queryOperation = VariantQueryUtils.checkOperator(samplesStr);
             List<String> samples = VariantQueryUtils.splitValue(samplesStr, queryOperation);
             samples.stream().filter(s -> !isNegated(s)).forEach(sample -> samplesMap.put(sample, Collections.emptyList()));
-        //} else if (isValidParam(query, FILE)) {
+            //} else if (isValidParam(query, FILE)) {
             // TODO: Add FILEs filter
         } else {
             throw new IllegalStateException("Unable to query SamplesIndex");
         }
 
-        if (defaultStudyConfiguration == null) {
+        if (defaultStudy == null) {
             String sample = samplesMap.keySet().iterator().next();
-            throw VariantQueryException.missingStudyForSample(sample, scm.getStudyNames(null));
+            throw VariantQueryException.missingStudyForSample(sample, metadataManager.getStudyNames(null));
         }
-        String study = defaultStudyConfiguration.getStudyName();
+        String study = defaultStudy.getName();
 
         byte annotationMask = parseAnnotationMask(query);
 

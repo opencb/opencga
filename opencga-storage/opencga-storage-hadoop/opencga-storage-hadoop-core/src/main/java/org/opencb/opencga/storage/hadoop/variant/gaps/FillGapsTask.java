@@ -16,6 +16,7 @@ import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.tools.variant.converters.proto.VcfRecordProtoToVariantConverter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.StudyEntryToHBaseConverter;
@@ -53,7 +54,7 @@ public class FillGapsTask {
         this.skipReferenceVariants = skipReferenceVariants;
 
         this.helper = helper;
-        studyConverter = new StudyEntryToHBaseConverter(this.helper.getColumnFamily(), studyConfiguration,
+        studyConverter = new StudyEntryToHBaseConverter(this.helper.getColumnFamily(), new StudyMetadata(studyConfiguration),
                 true,
                 null, // Do not update release
                 true); // Do not skip any genotype
@@ -271,7 +272,7 @@ public class FillGapsTask {
                 variant.getEnd(),
                 variant.getReference(),
                 variant.getAlternate())
-                .setStudyId(String.valueOf(studyConfiguration.getStudyId()))
+                .setStudyId(String.valueOf(studyConfiguration.getId()))
                 .setFormat("GT")
                 .setFileId(fileId.toString())
                 .setSamplesPosition(samplePosition)
@@ -304,7 +305,7 @@ public class FillGapsTask {
                     variant.getReference(),
                     variant.getAlternate())
                 .addAlternate("<*>")
-                .setStudyId(String.valueOf(studyConfiguration.getStudyId()))
+                .setStudyId(String.valueOf(studyConfiguration.getId()))
                 .setFileId(fileId.toString())
                 // add overlapping variants at attributes
                 .setFormat("GT")
@@ -447,7 +448,7 @@ public class FillGapsTask {
 
     public Variant convertToVariant(VcfSliceProtos.VcfSlice vcfSlice, VcfSliceProtos.VcfRecord vcfRecord, Integer fileId) {
         VcfRecordProtoToVariantConverter converter = new VcfRecordProtoToVariantConverter(vcfSlice.getFields(),
-                getSamplePosition(fileId), fileId.toString(), studyConfiguration.getStudyName());
+                getSamplePosition(fileId), fileId.toString(), studyConfiguration.getName());
         return converter.convert(vcfRecord, vcfSlice.getChromosome(), vcfSlice.getPosition());
     }
 

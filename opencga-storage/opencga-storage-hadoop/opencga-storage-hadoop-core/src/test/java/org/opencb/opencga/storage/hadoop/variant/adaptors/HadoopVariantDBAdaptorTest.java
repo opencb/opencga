@@ -114,10 +114,10 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
             try {
                 if (!fileIndexed) {
                     VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
-                    studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
-                    studyConfiguration.getAttributes().put(MISSING_GENOTYPES_UPDATED, true);
-                    dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
-                    VariantHbaseTestUtils.printVariants(studyConfiguration, dbAdaptor, newOutputUri());
+                    studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(studyMetadata.getId());
+                    studyMetadata.getAttributes().put(MISSING_GENOTYPES_UPDATED, true);
+                    dbAdaptor.getMetadataManager().updateStudyMetadata(studyMetadata);
+                    VariantHbaseTestUtils.printVariants(studyMetadata, dbAdaptor, newOutputUri());
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -239,7 +239,7 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     @Test
     public void testArchiveIterator() {
         int count = 0;
-        Query query = new Query(VariantQueryParam.STUDY.key(), studyConfiguration.getStudyId())
+        Query query = new Query(VariantQueryParam.STUDY.key(), studyMetadata.getId())
                 .append(VariantQueryParam.FILE.key(), UriUtils.fileName(smallInputUri));
 
         for (VariantDBIterator iterator = dbAdaptor.iterator(query, new QueryOptions("archive", true)); iterator.hasNext(); ) {
@@ -276,7 +276,7 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
         int onlyDBAdaptor = queryResult.getNumResults();
 
         // Query SampleIndex
-        byte annotationMask = SampleIndexQueryParser.parseSampleIndexQuery(query, variantStorageEngine.getStudyConfigurationManager()).getAnnotationMask();
+        byte annotationMask = SampleIndexQueryParser.parseSampleIndexQuery(query, variantStorageEngine.getMetadataManager()).getAnnotationMask();
         int onlyIndex = (int) ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor().count(null, STUDY_NAME, "NA19600", Collections.emptyList(), annotationMask);
 
         // Query SampleIndex+DBAdaptor

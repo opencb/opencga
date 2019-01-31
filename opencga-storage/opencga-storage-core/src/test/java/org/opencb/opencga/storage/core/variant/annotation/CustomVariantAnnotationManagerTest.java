@@ -24,7 +24,7 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -54,7 +54,7 @@ public abstract class CustomVariantAnnotationManagerTest extends VariantStorageB
         clearDB(DB_NAME);
         ObjectMap params = new ObjectMap(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
                 .append(VariantStorageEngine.Options.ANNOTATE.key(), false);
-        runDefaultETL(inputUri, variantStorageEngine, newStudyConfiguration(), params);
+        runDefaultETL(inputUri, variantStorageEngine, newStudyMetadata(), params);
         projectMetadata = new ProjectMetadata("hsapiens", "grch37", 1);
     }
 

@@ -85,7 +85,24 @@
     <field name="soAcc" type="int" indexed="true" stored="true" multiValued="true"/>
     <field name="geneToSoAcc" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="traits" type="text_en" indexed="true" stored="true" multiValued="true"/>
+    <!--
+       The field 'other' contains info about display consequence type, HGVS, cytobands, repeats and trancripts:
+            DCT sep displayConsequenceType
+            HGVS sep hgvs1
+            HGVS sep hgvs2
+            ...
+            CB sep cytobandName1 sep stain1 sep start1 sep end1
+            CB sep cytobandName2 sep stain2 sep start2 sep end2
+            ...
+            RP sep repeatName1 sep id1 sep source1 sep copyNumber1 sep percentageMatch1 sep start1 sep end1
+            RP sep repeatName2 sep id2 sep source2 sep copyNumber2 sep percentageMatch2 sep start2 sep end2
+            ...
+            TRANS sep transcriptId1 sep biotype1 sep cdnaPostion1 sep cdsPosition1 sep codon1 siftScore1 sep siftDescr1 sep poliphenScore1 sep poliphenDescr1 sep uniprotAccession1 sep uniprotAccession1 sep uniprotVariantId1 sep position1 sep aaChange1
+            TRANS sep transcriptId2 sep biotype2 sep cdnaPostion2 sep cdsPosition2 sep codon2 siftScore2 sep siftDescr2 sep poliphenScore2 sep poliphenDescr2 sep uniprotAccession2 sep uniprotAccession2 sep uniprotVariantId2 sep position2 sep aaChange2
+            ...
+    -->
     <field name="other" type="string" indexed="false" stored="true" multiValued="true"/>
+
     <dynamicField name="stats_*" type="float" indexed="true" stored="true" multiValued="false"/>
     <dynamicField name="popFreq_*" type="float" indexed="true" stored="true" multiValued="false"/>
     <dynamicField name="gt_*" type="string" indexed="true" stored="true" multiValued="false"/>

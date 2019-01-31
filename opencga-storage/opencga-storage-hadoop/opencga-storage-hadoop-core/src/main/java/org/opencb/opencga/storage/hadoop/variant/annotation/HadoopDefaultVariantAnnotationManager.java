@@ -28,9 +28,9 @@ import org.opencb.commons.io.DataReader;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
@@ -79,7 +79,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
 
         if (VariantPhoenixHelper.DEFAULT_TABLE_TYPE == PTableType.VIEW
                 || params.getBoolean(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, false)) {
-            int currentAnnotationId = dbAdaptor.getStudyConfigurationManager().getProjectMetadata().first()
+            int currentAnnotationId = dbAdaptor.getMetadataManager().getProjectMetadata()
                     .getAnnotation().getCurrent().getId();
             VariantAnnotationToHBaseConverter hBaseConverter =
                     new VariantAnnotationToHBaseConverter(dbAdaptor.getGenomeHelper(), progressLogger, currentAnnotationId);
@@ -104,16 +104,16 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
     public void loadVariantAnnotation(URI uri, ObjectMap params) throws IOException, StorageEngineException {
         super.loadVariantAnnotation(uri, params);
 
-        StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
+        VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
         SampleIndexAnnotationLoader indexAnnotationLoader = new SampleIndexAnnotationLoader(
                 dbAdaptor.getGenomeHelper(),
                 dbAdaptor.getHBaseManager(),
                 dbAdaptor.getTableNameGenerator(),
-                scm);
+                metadataManager);
 
         // TODO: Do not update all samples
-        for (Integer studyId : scm.getStudyIds(null)) {
-            StudyConfiguration sc = scm.getStudyConfiguration(studyId, null).first();
+        for (Integer studyId : metadataManager.getStudyIds(null)) {
+            StudyConfiguration sc = metadataManager.getStudyConfiguration(studyId, null).first();
 
             Set<Integer> indexedSamples = sc.getIndexedFiles()
                     .stream()
@@ -140,7 +140,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
     public void saveAnnotation(String name, ObjectMap inputOptions) throws StorageEngineException, VariantAnnotatorException {
         QueryOptions options = getOptions(inputOptions);
 
-        ProjectMetadata projectMetadata = dbAdaptor.getStudyConfigurationManager().lockAndUpdateProject(project -> {
+        ProjectMetadata projectMetadata = dbAdaptor.getMetadataManager().lockAndUpdateProject(project -> {
             registerNewAnnotationSnapshot(name, variantAnnotator, project);
             return project;
         });
@@ -164,7 +164,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
     public void deleteAnnotation(String name, ObjectMap inputOptions) throws StorageEngineException, VariantAnnotatorException {
         QueryOptions options = getOptions(inputOptions);
 
-        ProjectMetadata.VariantAnnotationMetadata saved = dbAdaptor.getStudyConfigurationManager().getProjectMetadata().first()
+        ProjectMetadata.VariantAnnotationMetadata saved = dbAdaptor.getMetadataManager().getProjectMetadata()
                 .getAnnotation().getSaved(name);
 
         String columnFamily = Bytes.toString(dbAdaptor.getGenomeHelper().getColumnFamily());
@@ -176,7 +176,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
 
         mrExecutor.run(DeleteHBaseColumnDriver.class, args, options, "Delete annotation snapshot '" + name + '\'');
 
-        dbAdaptor.getStudyConfigurationManager().lockAndUpdateProject(project -> {
+        dbAdaptor.getMetadataManager().lockAndUpdateProject(project -> {
             removeAnnotationSnapshot(name, project);
             return project;
         });

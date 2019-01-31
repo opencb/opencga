@@ -67,7 +67,7 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
     public void removeFileTestMergeAdvanced() throws Exception {
         StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
         System.out.println("studyConfiguration = " + studyConfiguration);
-        String studyName = studyConfiguration.getStudyName();
+        String studyName = studyConfiguration.getName();
 
         ObjectMap options = new ObjectMap(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, true)
                 .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.ADVANCED);
@@ -111,7 +111,7 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
     public void removeFileTestMergeBasic() throws Exception {
         StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
         System.out.println("studyConfiguration = " + studyConfiguration);
-        String studyName = studyConfiguration.getStudyName();
+        String studyName = studyConfiguration.getName();
 
         ObjectMap options = new ObjectMap(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, true)
                 .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
@@ -156,7 +156,7 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
     public void removeFileTestMergeBasicFillGaps() throws Exception {
         StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
         System.out.println("studyConfiguration = " + studyConfiguration);
-        String studyName = studyConfiguration.getStudyName();
+        String studyName = studyConfiguration.getName();
 
         ObjectMap options = new ObjectMap(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, true)
                 .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
@@ -206,7 +206,7 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
     public void removeSingleFileTest() throws Exception {
         StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
         System.out.println("studyConfiguration = " + studyConfiguration);
-        String studyName = studyConfiguration.getStudyName();
+        String studyName = studyConfiguration.getName();
 
         Map<String, Object> options = Collections.singletonMap(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, true);
         loadFile("s1.genome.vcf", studyConfiguration, options);
@@ -253,9 +253,9 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
     protected void checkSampleIndexTable(StudyConfiguration studyConfiguration, VariantHadoopDBAdaptor dbAdaptor, String removedFile) throws Exception {
         LinkedHashSet<Integer> sampleIds = studyConfiguration.getSamplesInFiles().get(studyConfiguration.getFileIds().get(removedFile));
         SampleIndexDBAdaptor sampleIndexDBAdaptor = new SampleIndexDBAdaptor(getVariantStorageEngine().getDBAdaptor().getGenomeHelper(), dbAdaptor.getHBaseManager(),
-                dbAdaptor.getTableNameGenerator(), dbAdaptor.getStudyConfigurationManager());
+                dbAdaptor.getTableNameGenerator(), dbAdaptor.getMetadataManager());
         for (Integer sampleId : sampleIds) {
-            assertFalse(sampleIndexDBAdaptor.rawIterator(studyConfiguration.getStudyId(), sampleId).hasNext());
+            assertFalse(sampleIndexDBAdaptor.rawIterator(studyConfiguration.getId(), sampleId).hasNext());
         }
     }
 

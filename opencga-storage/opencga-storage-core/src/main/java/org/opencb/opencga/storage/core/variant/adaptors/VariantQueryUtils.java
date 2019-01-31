@@ -28,15 +28,15 @@ import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
+import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -432,70 +432,24 @@ public final class VariantQueryUtils {
         return xrefs;
     }
 
-    public static final class SelectVariantElements {
-        private final Set<VariantField> fields;
-        private final List<Integer> studies;
-        private final Map<Integer, StudyConfiguration> studyConfigurations;
-        private final Map<Integer, List<Integer>> samples;
-        private final Map<Integer, List<Integer>> files;
-//        private final Map<Integer, List<Integer>> cohortIds;
-
-        public SelectVariantElements(StudyConfiguration studyConfiguration, List<Integer> samples, List<Integer> files) {
-            this.fields = VariantField.getIncludeFields(null);
-            this.studies = Collections.singletonList(studyConfiguration.getStudyId());
-            this.studyConfigurations = Collections.singletonMap(studyConfiguration.getStudyId(), studyConfiguration);
-            this.samples = Collections.singletonMap(studyConfiguration.getStudyId(), samples);
-            this.files = Collections.singletonMap(studyConfiguration.getStudyId(), files);
-        }
-
-        private SelectVariantElements(Set<VariantField> fields, List<Integer> studies, Map<Integer, StudyConfiguration> studyConfigurations,
-                                      Map<Integer, List<Integer>> samples, Map<Integer, List<Integer>> files) {
-            this.fields = fields;
-            this.studies = studies;
-            this.studyConfigurations = studyConfigurations;
-            this.samples = samples;
-            this.files = files;
-        }
-
-        public Set<VariantField> getFields() {
-            return fields;
-        }
-
-        public List<Integer> getStudies() {
-            return studies;
-        }
-
-        public Map<Integer, StudyConfiguration> getStudyConfigurations() {
-            return studyConfigurations;
-        }
-
-        public Map<Integer, List<Integer>> getSamples() {
-            return samples;
-        }
-
-        public Map<Integer, List<Integer>> getFiles() {
-            return files;
-        }
-    }
-
-    public static SelectVariantElements parseSelectElements(
-            Query query, QueryOptions options, StudyConfigurationManager studyConfigurationManager) {
+    public static VariantQueryFields parseVariantQueryFields(
+            Query query, QueryOptions options, VariantStorageMetadataManager metadataManager) {
         Set<VariantField> includeFields = VariantField.getIncludeFields(options);
-        List<Integer> includeStudies = VariantQueryUtils.getIncludeStudies(query, options, studyConfigurationManager, includeFields);
+        List<Integer> includeStudies = VariantQueryUtils.getIncludeStudies(query, options, metadataManager, includeFields);
 
-        Map<Integer, StudyConfiguration> studyConfigurations = new HashMap<>();
+        Map<Integer, StudyMetadata> studyMetadata = new HashMap<>();
 
         for (Integer studyId : includeStudies) {
-            StudyConfiguration sc = studyConfigurationManager.getStudyConfiguration(studyId, options).first();
-            if (sc == null) {
-                throw VariantQueryException.studyNotFound(studyId, studyConfigurationManager.getStudyNames(options));
+            StudyMetadata sm = metadataManager.getStudyMetadata(studyId);
+            if (sm == null) {
+                throw VariantQueryException.studyNotFound(studyId, metadataManager.getStudyNames(options));
             }
-            studyConfigurations.put(studyId, sc);
+            studyMetadata.put(studyId, sm);
         }
 
-        Function<Integer, StudyConfiguration> provider = studyConfigurations::get;
-        Map<Integer, List<Integer>> sampleIds = VariantQueryUtils.getIncludeSamples(query, options, includeStudies, provider);
-        Map<Integer, List<Integer>> fileIds = VariantQueryUtils.getIncludeFiles(query, includeStudies, includeFields, provider);
+        Map<Integer, List<Integer>> sampleIds = VariantQueryUtils.getIncludeSamples(query, options, includeStudies, metadataManager);
+        Map<Integer, List<Integer>> fileIds = VariantQueryUtils.getIncludeFiles(query, includeStudies, includeFields,
+                metadataManager);
 
 
         if (fileIds.values().stream().allMatch(List::isEmpty)) {
@@ -508,8 +462,25 @@ public final class VariantQueryUtils {
             includeFields.removeAll(VariantField.STUDIES_SAMPLES_DATA.getChildren());
         }
 
+        Map<Integer, List<Integer>> cohortIds = new HashMap<>();
+        if (includeFields.contains(VariantField.STUDIES_STATS)) {
+            for (Integer studyId : includeStudies) {
+                List<Integer> cohorts = new LinkedList<>();
+                for (CohortMetadata cohort : metadataManager.getCalculatedCohorts(studyId)) {
+                    cohorts.add(cohort.getId());
+                }
+//                metadataManager.cohortIterator(studyId).forEachRemaining(cohort -> {
+//                    if (cohort.isReady()/* || cohort.isInvalid()*/) {
+//                        cohorts.add(cohort.getId());
+//                    }
+//                });
+                cohortIds.put(studyId, cohorts);
+            }
+        }
 
-        return new SelectVariantElements(includeFields, includeStudies, studyConfigurations, sampleIds, fileIds);
+
+
+        return new VariantQueryFields(includeFields, includeStudies, studyMetadata, sampleIds, fileIds, cohortIds);
     }
 
     public static String[] splitStudyResource(String value) {
@@ -521,33 +492,33 @@ public final class VariantQueryUtils {
         }
     }
 
-    public static StudyConfiguration getDefaultStudyConfiguration(Query query, QueryOptions options,
-                                                                  StudyConfigurationManager studyConfigurationManager) {
-        final StudyConfiguration defaultStudyConfiguration;
+    public static StudyMetadata getDefaultStudy(Query query, QueryOptions options,
+                                                VariantStorageMetadataManager metadataManager) {
+        final StudyMetadata defaultStudy;
         if (isValidParam(query, VariantQueryParam.STUDY)) {
             String value = query.getString(VariantQueryParam.STUDY.key());
 
             // Check that the study exists
             VariantQueryUtils.QueryOperation studiesOperation = checkOperator(value);
             List<String> studiesNames = splitValue(value, studiesOperation);
-            List<Integer> studyIds = studyConfigurationManager.getStudyIds(studiesNames, options); // Non negated studyIds
+            List<Integer> studyIds = metadataManager.getStudyIds(studiesNames); // Non negated studyIds
 
 
             if (studyIds.size() == 1) {
-                defaultStudyConfiguration = studyConfigurationManager.getStudyConfiguration(studyIds.get(0), null).first();
+                defaultStudy = metadataManager.getStudyMetadata(studyIds.get(0));
             } else {
-                defaultStudyConfiguration = null;
+                defaultStudy = null;
             }
 
         } else {
-            List<String> studyNames = studyConfigurationManager.getStudyNames(null);
+            List<String> studyNames = metadataManager.getStudyNames(null);
             if (studyNames != null && studyNames.size() == 1) {
-                defaultStudyConfiguration = studyConfigurationManager.getStudyConfiguration(studyNames.get(0), new QueryOptions()).first();
+                defaultStudy = metadataManager.getStudyMetadata(studyNames.get(0));
             } else {
-                defaultStudyConfiguration = null;
+                defaultStudy = null;
             }
         }
-        return defaultStudyConfiguration;
+        return defaultStudy;
     }
 
     public static boolean isOutputMultiStudy(Query query, QueryOptions options, Collection<?> studies) {
@@ -572,25 +543,24 @@ public final class VariantQueryUtils {
         }
     }
 
-    public static List<Integer> getIncludeStudies(Query query, QueryOptions options, StudyConfigurationManager studyConfigurationManager) {
-        return getIncludeStudies(query, options, studyConfigurationManager, VariantField.getIncludeFields(options));
+    public static List<Integer> getIncludeStudies(Query query, QueryOptions options, VariantStorageMetadataManager metadataManager) {
+        return getIncludeStudies(query, options, metadataManager, VariantField.getIncludeFields(options));
     }
 
-    private static List<Integer> getIncludeStudies(Query query, QueryOptions options, StudyConfigurationManager studyConfigurationManager,
+    private static List<Integer> getIncludeStudies(Query query, QueryOptions options, VariantStorageMetadataManager metadataManager,
                                                    Set<VariantField> fields) {
         List<String> studiesList = getIncludeStudiesList(query, fields);
 
         List<Integer> studyIds;
         if (studiesList == null) {
-            studyIds = studyConfigurationManager.getStudyIds(options);
+            studyIds = metadataManager.getStudyIds();
             if (studyIds.size() > 1) {
                 Map<Integer, List<Integer>> map = null;
                 if (isIncludeSamplesDefined(query, fields)) {
-                    map = getIncludeSamples(query, options, studyIds,
-                            studyId -> studyConfigurationManager.getStudyConfiguration(studyId, null).first());
+                    map = getIncludeSamples(query, options, studyIds, metadataManager);
                 } else if (isIncludeFilesDefined(query, fields)) {
                     map = getIncludeFiles(query, studyIds, fields,
-                            studyId -> studyConfigurationManager.getStudyConfiguration(studyId, null).first());
+                            metadataManager);
                 }
                 if (map != null) {
                     List<Integer> studyIdsFromSubFields = new ArrayList<>();
@@ -605,7 +575,7 @@ public final class VariantQueryUtils {
                 }
             }
         } else {
-            studyIds = studyConfigurationManager.getStudyIds(studiesList, options);
+            studyIds = metadataManager.getStudyIds(studiesList);
         }
         return studyIds;
     }
@@ -657,11 +627,10 @@ public final class VariantQueryUtils {
      * @param query                     Query with the QueryParams
      * @param studyIds                  Returned studies
      * @param fields                    Returned fields
-     * @param studyProvider             StudyConfiguration provider
      * @return List of fileIds to return.
      */
-    private static Map<Integer, List<Integer>> getIncludeFiles(
-            Query query, Collection<Integer> studyIds, Set<VariantField> fields, Function<Integer, StudyConfiguration> studyProvider) {
+    private static Map<Integer, List<Integer>> getIncludeFiles(Query query, Collection<Integer> studyIds, Set<VariantField> fields,
+            VariantStorageMetadataManager metadataManager) {
 
         List<String> includeSamplesList = getIncludeSamplesList(query);
         List<String> includeFilesList = getIncludeFilesList(query, fields);
@@ -669,8 +638,8 @@ public final class VariantQueryUtils {
 
         Map<Integer, List<Integer>> files = new HashMap<>(studyIds.size());
         for (Integer studyId : studyIds) {
-            StudyConfiguration sc = studyProvider.apply(studyId);
-            if (sc == null) {
+            StudyMetadata sm = metadataManager.getStudyMetadata(studyId);
+            if (sm == null) {
                 continue;
             }
 
@@ -678,23 +647,30 @@ public final class VariantQueryUtils {
             if (includeFilesList != null) {
                 fileIds = new ArrayList<>();
                 for (String file : includeFilesList) {
-                    Integer fileId = StudyConfigurationManager.getFileIdFromStudy(file, sc);
+                    Integer fileId = metadataManager.getFileId(studyId, file);
                     if (fileId != null) {
                         fileIds.add(fileId);
                     }
                 }
             } else if (returnAllFiles) {
-                fileIds = new ArrayList<>(sc.getIndexedFiles());
+                fileIds = new ArrayList<>(metadataManager.getIndexedFiles(studyId));
             } else if (includeSamplesList != null && !includeSamplesList.isEmpty()) {
-                List<Integer> sampleIds = includeSamplesList.stream()
-                        .map(sample -> StudyConfigurationManager.getSampleIdFromStudy(sample, sc)).collect(Collectors.toList());
-                Set<Integer> fileSet = StudyConfigurationManager.getFileIdsFromSampleIds(sc, sampleIds);
+                List<Integer> sampleIds = new ArrayList<>();
+                for (String sample : includeSamplesList) {
+                    Integer sampleId = metadataManager.getSampleId(studyId, sample);
+                    if (sampleId == null) {
+//                        throw VariantQueryException.sampleNotFound(sample, sm.getName());
+                        break;
+                    }
+                    sampleIds.add(sampleId);
+                }
+                Set<Integer> fileSet = metadataManager.getFileIdsFromSampleIds(studyId, sampleIds);
                 fileIds = new ArrayList<>(fileSet);
             } else {
                 // Return all files
-                fileIds = new ArrayList<>(sc.getIndexedFiles());
+                fileIds = new ArrayList<>(metadataManager.getIndexedFiles(studyId));
             }
-            files.put(sc.getStudyId(), fileIds);
+            files.put(studyId, fileIds);
         }
 
         return files;
@@ -765,102 +741,87 @@ public final class VariantQueryUtils {
         return isValidParam(query, FILE, true) || isValidParam(query, INCLUDE_FILE, true);
     }
 
-    public static Map<String, List<String>> getSamplesMetadata(Query query, StudyConfigurationManager studyConfigurationManager) {
-        List<Integer> includeStudies = getIncludeStudies(query, null, studyConfigurationManager);
-        Function<Integer, StudyConfiguration> studyProvider = studyId ->
-                studyConfigurationManager.getStudyConfiguration(studyId, null).first();
-        return getIncludeSamples(query, null, includeStudies, studyProvider, (sc, s) -> s, StudyConfiguration::getStudyName);
-    }
-
-    public static Map<String, List<String>> getSamplesMetadata(Query query, StudyConfiguration studyConfiguration) {
-        List<Integer> includeStudies = Collections.singletonList(studyConfiguration.getStudyId());
-        Function<Integer, StudyConfiguration> studyProvider = studyId -> studyConfiguration;
-        return getIncludeSamples(query, null, includeStudies, studyProvider, (sc, s) -> s, StudyConfiguration::getStudyName);
-    }
-
     public static Map<String, List<String>> getSamplesMetadata(Query query, QueryOptions options,
-                                                               StudyConfigurationManager studyConfigurationManager) {
+                                                               VariantStorageMetadataManager metadataManager) {
         if (VariantField.getIncludeFields(options).contains(VariantField.STUDIES)) {
-            List<Integer> includeStudies = getIncludeStudies(query, options, studyConfigurationManager);
-            Function<Integer, StudyConfiguration> studyProvider = studyId ->
-                    studyConfigurationManager.getStudyConfiguration(studyId, options).first();
-            return getIncludeSamples(query, options, includeStudies, studyProvider, (sc, s) -> s, StudyConfiguration::getStudyName);
+            Map<Integer, List<Integer>> includeSamples = getIncludeSamples(query, options, metadataManager);
+            Map<String, List<String>> sampleMetadata = new HashMap<>(includeSamples.size());
+
+            for (Map.Entry<Integer, List<Integer>> entry : includeSamples.entrySet()) {
+                Integer studyId = entry.getKey();
+                List<Integer> sampleIds = entry.getValue();
+                String studyName = metadataManager.getStudyName(studyId);
+                ArrayList<String> sampleNames = new ArrayList<>(sampleIds.size());
+                for (Integer sampleId : sampleIds) {
+                    sampleNames.add(metadataManager.getSampleName(studyId, sampleId));
+                }
+                sampleMetadata.put(studyName, sampleNames);
+            }
+
+            return sampleMetadata;
         } else {
             return Collections.emptyMap();
         }
     }
 
     public static Map<String, List<String>> getSamplesMetadataIfRequested(Query query, QueryOptions options,
-                                                                          StudyConfigurationManager studyConfigurationManager) {
+                                                                          VariantStorageMetadataManager variantStorageMetadataManager) {
         if (query.getBoolean(SAMPLE_METADATA.key(), false)) {
-            return getSamplesMetadata(query, options, studyConfigurationManager);
+            return getSamplesMetadata(query, options, variantStorageMetadataManager);
         } else {
             return null;
         }
     }
 
     public static Map<Integer, List<Integer>> getIncludeSamples(Query query, QueryOptions options,
-                                                                StudyConfigurationManager studyConfigurationManager) {
-        List<Integer> includeStudies = getIncludeStudies(query, options, studyConfigurationManager);
-        return getIncludeSamples(query, options, includeStudies, studyId ->
-                studyConfigurationManager.getStudyConfiguration(studyId, options).first());
+                                                                VariantStorageMetadataManager variantStorageMetadataManager) {
+        List<Integer> includeStudies = getIncludeStudies(query, options, variantStorageMetadataManager);
+        return getIncludeSamples(query, options, includeStudies, variantStorageMetadataManager);
     }
 
-    public static Map<Integer, List<Integer>> getIncludeSamples(Query query, QueryOptions options,
-                                                                Collection<StudyConfiguration> studies) {
-        Map<Integer, StudyConfiguration> map = studies.stream()
-                .collect(Collectors.toMap(StudyConfiguration::getStudyId, Function.identity()));
-        return getIncludeSamples(query, options, map.keySet(), map::get);
-    }
-
-    private static Map<Integer, List<Integer>> getIncludeSamples(Query query, QueryOptions options, Collection<Integer> studyIds,
-                                                                 Function<Integer, StudyConfiguration> studyProvider) {
-        return getIncludeSamples(query, options, studyIds, studyProvider, (sc, s) -> sc.getSampleIds().get(s),
-                StudyConfiguration::getStudyId);
-    }
-
-    private static <T> Map<T, List<T>> getIncludeSamples(
+    public static Map<Integer, List<Integer>> getIncludeSamples(
             Query query, QueryOptions options, Collection<Integer> studyIds,
-            Function<Integer, StudyConfiguration> studyProvider,
-            BiFunction<StudyConfiguration, String, T> getSample, Function<StudyConfiguration, T> getStudyId) {
+            VariantStorageMetadataManager metadataManager) {
 
         List<String> includeFilesList = getIncludeFilesList(query);
         List<String> includeSamplesList = getIncludeSamplesList(query, options);
         LinkedHashSet<String> includeSamplesSet = includeSamplesList != null ? new LinkedHashSet<>(includeSamplesList) : null;
         boolean includeAllSamples = query.getString(VariantQueryParam.INCLUDE_SAMPLE.key()).equals(ALL);
 
-        Map<T, List<T>> samples = new HashMap<>(studyIds.size());
+        Map<Integer, List<Integer>> samples = new HashMap<>(studyIds.size());
         for (Integer studyId : studyIds) {
-            StudyConfiguration sc = studyProvider.apply(studyId);
-            if (sc == null) {
+            StudyMetadata sm = metadataManager.getStudyMetadata(studyId);
+            if (sm == null) {
                 continue;
             }
 
-            List<T> sampleNames;
+            List<Integer> sampleIds;
             if (includeSamplesSet != null || includeAllSamples || includeFilesList == null || includeFilesList.isEmpty()) {
                 LinkedHashMap<String, Integer> includeSamplesPosition
-                        = StudyConfiguration.getSamplesPosition(sc, includeSamplesSet);
-                @SuppressWarnings("unchecked")
-                T[] a = (T[]) new Object[includeSamplesPosition.size()];
-                sampleNames = Arrays.asList(a);
-                includeSamplesPosition.forEach((sample, position) -> sampleNames.set(position, getSample.apply(sc, sample)));
+                        = metadataManager.getSamplesPosition(sm, includeSamplesSet);
+
+                sampleIds = Arrays.asList(new Integer[includeSamplesPosition.size()]);
+                for (Map.Entry<String, Integer> entry : includeSamplesPosition.entrySet()) {
+                    String sample = entry.getKey();
+                    Integer position = entry.getValue();
+                    Integer sampleId = metadataManager.getSampleId(studyId, sample);
+                    sampleIds.set(position, sampleId);
+                }
             } else {
-                Set<T> sampleSet = new LinkedHashSet<>();
+                Set<Integer> sampleSet = new LinkedHashSet<>();
                 for (String file : includeFilesList) {
-                    Integer fileId = StudyConfigurationManager.getFileIdFromStudy(file, sc);
+                    Integer fileId = metadataManager.getFileId(sm.getId(), file, true);
                     if (fileId == null) {
                         continue;
                     }
-                    LinkedHashSet<Integer> sampleIds = sc.getSamplesInFiles().get(fileId);
-                    if (sampleIds != null) {
-                        for (Integer sampleId : sampleIds) {
-                            sampleSet.add(getSample.apply(sc, sc.getSampleIds().inverse().get(sampleId)));
-                        }
+                    FileMetadata fileMetadata = metadataManager.getFileMetadata(studyId, fileId);
+                    if (CollectionUtils.isNotEmpty(fileMetadata.getSamples())) {
+                        sampleSet.addAll(fileMetadata.getSamples());
                     }
                 }
-                sampleNames = new ArrayList<T>(sampleSet);
+                sampleIds = new ArrayList<>(sampleSet);
             }
-            samples.put(getStudyId.apply(sc), sampleNames);
+            samples.put(studyId, sampleIds);
         }
 
         return samples;

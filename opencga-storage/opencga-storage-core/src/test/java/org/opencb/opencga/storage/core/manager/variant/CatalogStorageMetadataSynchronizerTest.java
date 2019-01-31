@@ -26,13 +26,12 @@ import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.core.models.*;
-import org.opencb.opencga.storage.core.manager.variant.metadata.CatalogStudyConfigurationFactory;
-import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
+import org.opencb.opencga.storage.core.manager.variant.metadata.CatalogStorageMetadataSynchronizer;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.dummy.DummyProjectMetadataAdaptor;
-import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationAdaptor;
-import org.opencb.opencga.storage.core.variant.dummy.DummyVariantFileMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +48,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.get
 /**
  * Created by hpccoll1 on 16/07/15.
  */
-public class CatalogStudyConfigurationFactoryTest {
+public class CatalogStorageMetadataSynchronizerTest {
     @ClassRule
     public static CatalogManagerExternalResource catalogManagerExternalResource = new CatalogManagerExternalResource();
 
@@ -61,15 +60,15 @@ public class CatalogStudyConfigurationFactoryTest {
     static private FileMetadataReader fileMetadataReader;
     static private FileUtils catalogFileUtils;
     static private long outputId;
-    static Logger logger = LoggerFactory.getLogger(CatalogStudyConfigurationFactoryTest.class);
+    static Logger logger = LoggerFactory.getLogger(CatalogStorageMetadataSynchronizerTest.class);
     static private String catalogPropertiesFile;
     static private final String userId = "user";
     static private List<File> files = new ArrayList<>();
-    static private LinkedHashSet<Integer> indexedFiles = new LinkedHashSet<>();
+    static private LinkedHashSet<String> indexedFiles = new LinkedHashSet<>();
     private static String cohortId;
     private static long cohortUid;
-    private StudyConfigurationManager scm;
-    private CatalogStudyConfigurationFactory studyConfigurationFactory;
+    private VariantStorageMetadataManager metadataManager;
+    private CatalogStorageMetadataSynchronizer studyConfigurationFactory;
 
     @BeforeClass
     public static void beforeClass() throws Exception {
@@ -111,25 +110,23 @@ public class CatalogStudyConfigurationFactoryTest {
 
     @Before
     public void setUp() throws Exception {
-        scm = new StudyConfigurationManager(new DummyProjectMetadataAdaptor(), new DummyStudyConfigurationAdaptor(), new DummyVariantFileMetadataDBAdaptor());
+        metadataManager = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
         Study study = catalogManager.getStudyManager().get(studyId, null, sessionId).first();
 
-        StudyConfiguration studyConfigurationToReturn = new StudyConfiguration((int) study.getUid(), "user@p1:s1");
-        studyConfigurationToReturn.setIndexedFiles(indexedFiles);
+        StudyMetadata studyMetadata = metadataManager.createStudy(study.getFqn());
         for (File file : files) {
-            if (indexedFiles.contains(((int) file.getUid()))) {
-                studyConfigurationToReturn.getFileIds().put(file.getName(), ((int) file.getUid()));
-            }
+            metadataManager.registerFile(studyMetadata.getId(), file.getUri().getPath(), file.getSamples().stream()
+                    .map(Sample::getId).collect(Collectors.toList()));
         }
-
-        scm.updateStudyConfiguration(studyConfigurationToReturn, null);
+        metadataManager.addIndexedFiles(studyMetadata.getId(), indexedFiles.stream()
+                .map(f -> metadataManager.getFileId(studyMetadata.getId(), f))
+                .collect(Collectors.toList()));
 //        checkStudyConfiguration(study, studyConfigurationToReturn);
     }
 
     @After
     public void tearDown() throws Exception {
-        DummyProjectMetadataAdaptor.writeAndClear(catalogManagerExternalResource.getOpencgaHome());
-        DummyStudyConfigurationAdaptor.writeAndClear(catalogManagerExternalResource.getOpencgaHome());
+        DummyVariantStorageMetadataDBAdaptorFactory.writeAndClear(catalogManagerExternalResource.getOpencgaHome());
     }
 
     public static File create(String resourceName) throws IOException, CatalogException {
@@ -145,7 +142,7 @@ public class CatalogStudyConfigurationFactoryTest {
             FileIndex fileIndex = new FileIndex("user", "today", new FileIndex.IndexStatus(FileIndex.IndexStatus.READY), 1234,
                     Collections.emptyMap());
             catalogManager.getFileManager().setFileIndex(studyId, file.getPath(), fileIndex, sessionId);
-            indexedFiles.add((int) file.getUid());
+            indexedFiles.add(file.getName());
             List<String> samples = catalogManager.getCohortManager().getSamples(studyId, cohortId, null, sessionId).getResult().stream().map(Sample::getId).collect(Collectors.toList());
             samples.addAll(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
             catalogManager.getCohortManager().update(studyId, cohortId, new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(), samples), true, null, sessionId);
@@ -154,13 +151,13 @@ public class CatalogStudyConfigurationFactoryTest {
     }
 
     private void checkStudyConfiguration(Study study, StudyConfiguration studyConfiguration) throws CatalogException {
-        assertEquals("user@p1:s1", studyConfiguration.getStudyName());
-        assertEquals(study.getUid(), studyConfiguration.getStudyId());
+        assertEquals("user@p1:s1", studyConfiguration.getName());
+        assertEquals(study.getUid(), studyConfiguration.getId());
 
         assertTrue(studyConfiguration.getInvalidStats().isEmpty());
 
         for (Map.Entry<String, Integer> entry : studyConfiguration.getFileIds().entrySet()) {
-            File file = catalogManager.getFileManager().get(studyConfiguration.getStudyName(),
+            File file = catalogManager.getFileManager().get(studyConfiguration.getName(),
                     studyConfiguration.getFileIds().inverse().get(entry.getValue()), null, sessionId).first();
 
             assertEquals(file.getName(), entry.getKey());
@@ -182,43 +179,40 @@ public class CatalogStudyConfigurationFactoryTest {
 
     @Test
     public void updateCatalogFromStudyConfigurationTest() throws Exception {
-        studyConfigurationFactory = new CatalogStudyConfigurationFactory(catalogManager);
+        studyConfigurationFactory = new CatalogStorageMetadataSynchronizer(catalogManager, metadataManager);
 
-        StudyConfiguration sc = studyConfigurationFactory.getStudyConfiguration(studyId, scm, new QueryOptions());
+        StudyMetadata sc = studyConfigurationFactory.getStudyMetadata(studyId);
 
-        List<Long> samples = catalogManager.getCohortManager().getSamples(studyId, cohortId, null, sessionId)
+        List<String> samples = catalogManager.getCohortManager().getSamples(studyId, cohortId, null, sessionId)
                 .getResult()
                 .stream()
-                .map(Sample::getUid)
+                .map(Sample::getId)
                 .collect(Collectors.toList());
-        samples.add(files.get(0).getSamples().get(0).getUid());
+        samples.add(files.get(0).getSamples().get(0).getId());
 
-        sc.getCohorts().put(((int) cohortUid), samples.stream().map(Long::intValue).collect(Collectors.toSet()));
+        metadataManager.registerCohorts(studyId, Collections.singletonMap(cohortId, samples));
 
         catalogManager.getCohortManager().setStatus(studyId, cohortId, Cohort.CohortStatus.CALCULATING, "", sessionId);
 
-        File nonIndexedFile = files.stream().filter(file -> !indexedFiles.contains(((int) file.getUid()))).findFirst().orElse(null);
+        File nonIndexedFile = files.stream().filter(file -> !indexedFiles.contains(file.getName())).findFirst().orElse(null);
         assertNotNull(nonIndexedFile);
-        sc.getIndexedFiles().add(((int) nonIndexedFile.getUid()));
-        sc.getFileIds().put(nonIndexedFile.getName(), ((int) nonIndexedFile.getUid()));
-        scm.updateStudyConfiguration(sc, null);
+        metadataManager.addIndexedFiles(sc.getId(), Collections.singletonList(metadataManager.getFileId(sc.getId(), nonIndexedFile.getName())));
 
-        studyConfigurationFactory.updateCatalogFromStudyConfiguration(sc, sessionId);
+        studyConfigurationFactory.synchronizeCatalogFromStorage(sc, sessionId);
 
-        assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(studyId, nonIndexedFile.getName(), null, sessionId).first().getIndex().getStatus().getName());
+        nonIndexedFile = catalogManager.getFileManager().get(studyId, nonIndexedFile.getName(), null, sessionId).first();
+        assertEquals(FileIndex.IndexStatus.READY, nonIndexedFile.getIndex().getStatus().getName());
 
 
-        nonIndexedFile = files.stream().filter(file -> !indexedFiles.contains(((int) file.getUid()))).findFirst().orElse(null);
+        nonIndexedFile = files.stream().filter(file -> !indexedFiles.contains(file.getName())).findFirst().orElse(null);
         assertNotNull(nonIndexedFile);
-        sc.getBatches()
-                .add(new BatchFileOperation("LOAD", Collections.singletonList(((int) nonIndexedFile.getUid())), 1L, BatchFileOperation.Type.LOAD)
-                        .addStatus(BatchFileOperation.Status.RUNNING));
-        sc.getFileIds().put(nonIndexedFile.getName(), ((int) nonIndexedFile.getUid()));
+        metadataManager.updateTask(sc.getId(), new TaskMetadata("LOAD", Collections.singletonList(metadataManager.getFileId(sc.getId(), nonIndexedFile.getName())), 1L, TaskMetadata.Type.LOAD)
+                .addStatus(TaskMetadata.Status.RUNNING));
 
-        scm.updateStudyConfiguration(sc, null);
-        studyConfigurationFactory.updateCatalogFromStudyConfiguration(sc, sessionId);
+        studyConfigurationFactory.synchronizeCatalogFromStorage(sc, sessionId);
 
-        assertEquals(FileIndex.IndexStatus.INDEXING, catalogManager.getFileManager().get(studyId, nonIndexedFile.getName(), null, sessionId).first().getIndex().getStatus().getName());
+        nonIndexedFile = catalogManager.getFileManager().get(studyId, nonIndexedFile.getName(), null, sessionId).first();
+        assertEquals(FileIndex.IndexStatus.INDEXING, nonIndexedFile.getIndex().getStatus().getName());
 
     }
 }

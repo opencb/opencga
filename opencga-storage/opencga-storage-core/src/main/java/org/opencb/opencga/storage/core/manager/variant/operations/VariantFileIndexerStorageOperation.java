@@ -27,6 +27,7 @@ import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
@@ -157,7 +158,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         }
 
         // Update Catalog from the study configuration BEFORE executing the index and fetching files from Catalog
-        updateCatalogFromStudyConfiguration(sessionId, studyFQNByInputFileId, dataStore);
+        updateCatalogFromStorageMetadata(sessionId, studyFQNByInputFileId, dataStore);
 
         List<File> inputFiles = new ArrayList<>();
 //        for (Long fileIdLong : fileIds) {
@@ -206,7 +207,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         int release = projectQueryResult.first().getCurrentRelease();
 
         // Add species, assembly and release
-        updateProjectMetadata(variantStorageEngine.getStudyConfigurationManager(), studyInfo.getOrganism(), release);
+        updateProjectMetadata(variantStorageEngine.getMetadataManager(), studyInfo.getOrganism(), release);
 
         variantStorageEngine.getOptions().putAll(options);
         boolean calculateStats = options.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key())
@@ -306,7 +307,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             if (calculateStats && exception != null) {
                 updateDefaultCohortStatus(study, prevDefaultCohortStatus, sessionId);
             }
-            updateCatalogFromStudyConfiguration(sessionId, study.getFqn(), dataStore);
+            updateCatalogFromStorageMetadata(sessionId, study.getFqn(), dataStore);
         }
 
         if (exception == null) {
@@ -571,7 +572,21 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT);
         Cohort cohort = catalogManager.getCohortManager().get(study.getFqn(), query, null, sessionId).first();
         if (cohort == null) {
-            return createDefaultCohort(study, sessionId);
+            try {
+                return createDefaultCohort(study, sessionId);
+            } catch (CatalogDBException e) {
+                if (e.getMessage().contains("already exists")) {
+                    cohort = catalogManager.getCohortManager().get(study.getFqn(), query, null, sessionId).first();
+                    if (cohort == null) {
+                        throw e;
+                    } else {
+                        // Do not fail when concurrent cohort creation.
+                        return cohort;
+                    }
+                } else {
+                    throw e;
+                }
+            }
         } else {
             return cohort;
         }

@@ -19,16 +19,12 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.GENE;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.GENOTYPE;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.SAMPLE;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.AND;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.OR;
 
@@ -110,6 +106,12 @@ public class VariantQueryException extends IllegalArgumentException {
                 + (availableStudies == null || availableStudies.isEmpty() ? "" : " Available studies: " + availableStudies));
     }
 
+    public static VariantQueryException cohortNotFound(String cohortName, int studyId, VariantStorageMetadataManager metadataManager) {
+        List<String> availableCohorts = new LinkedList<>();
+        metadataManager.cohortIterator(studyId).forEachRemaining(cohort -> availableCohorts.add(cohort.getName()));
+        return cohortNotFound(null, cohortName, studyId, availableCohorts);
+    }
+
     public static VariantQueryException cohortNotFound(int cohortId, int studyId, Collection<String> availableCohorts) {
         return cohortNotFound(cohortId, null, studyId, availableCohorts);
     }
@@ -131,34 +133,33 @@ public class VariantQueryException extends IllegalArgumentException {
     }
 
     public static VariantQueryException missingStudyForSample(String sample, Collection<String> availableStudies) {
-        return new VariantQueryException("Unknown sample \"" + sample + "\". Please, specify the study belonging."
-                + (availableStudies == null || availableStudies.isEmpty() ? "" : " Available studies: " + availableStudies));
+        return missingStudyFor("sample", sample, availableStudies);
     }
 
     public static VariantQueryException missingStudyForSamples(Collection<String> samples, Collection<String> availableStudies) {
-        if (samples.size() == 1) {
-            return missingStudyForSample(samples.iterator().next(), availableStudies);
-        }
-        return new VariantQueryException("Unknown samples " + samples + ". Please, specify the study belonging."
-                + (availableStudies == null || availableStudies.isEmpty() ? "" : " Available studies: " + availableStudies));
+        return missingStudyFor("sample", samples, availableStudies);
     }
 
     public static VariantQueryException missingStudyForFile(String file, Collection<String> availableStudies) {
-        return new VariantQueryException("Unknown file \"" + file + "\". Please, specify the study belonging."
-                + (availableStudies == null || availableStudies.isEmpty() ? "" : " Available studies: " + availableStudies));
+        return missingStudyFor("file", file, availableStudies);
     }
 
     public static VariantQueryException missingStudyFor(String resource, Collection<String> values, Collection<String> availableStudies) {
         String valueStr;
         if (values.size() == 1) {
-            valueStr = values.iterator().next();
+            valueStr = '"' + values.iterator().next() + '"';
         } else {
+            resource += "s";
             valueStr = values.toString();
         }
-        return missingStudyFor(resource, valueStr, availableStudies);
+        return missingStudyFor0(resource, valueStr, availableStudies);
     }
 
     public static VariantQueryException missingStudyFor(String resource, String value, Collection<String> availableStudies) {
+        return missingStudyFor0(resource, '"' + value + '"', availableStudies);
+    }
+
+    private static VariantQueryException missingStudyFor0(String resource, String value, Collection<String> availableStudies) {
         return new VariantQueryException("Unknown " + resource + " " + value + ". Please, specify the study belonging."
                 + (availableStudies == null || availableStudies.isEmpty() ? "" : " Available studies: " + availableStudies));
     }
@@ -168,11 +169,11 @@ public class VariantQueryException extends IllegalArgumentException {
 //    }
 
     public static VariantQueryException sampleNotFound(Object sample, Object study) {
-        return new VariantQueryException("Sample " + sample + " not found in study " + study);
+        return new VariantQueryException("Sample '" + sample + "' not found in study '" + study + "'");
     }
 
     public static VariantQueryException fileNotFound(Object file, Object study) {
-        return new VariantQueryException("File " + file + " not found in study " + study);
+        return new VariantQueryException("File '" + file + "' not found in study '" + study + "'");
     }
 
     public static VariantQueryException incompatibleSampleAndGenotypeOperators() {

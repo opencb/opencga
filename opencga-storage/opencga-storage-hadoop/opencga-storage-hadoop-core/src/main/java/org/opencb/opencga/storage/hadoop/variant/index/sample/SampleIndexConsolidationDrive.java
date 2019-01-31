@@ -111,10 +111,10 @@ public class SampleIndexConsolidationDrive extends AbstractVariantsTableDriver {
                 gts.add(counter.getName());
             }
             if (!gts.isEmpty()) {
-                getStudyConfigurationManager().lockAndUpdate(getStudyId(), sc -> {
-                    gts.addAll(sc.getAttributes().getAsStringList(VariantStorageEngine.Options.LOADED_GENOTYPES.key()));
-                    sc.getAttributes().put(VariantStorageEngine.Options.LOADED_GENOTYPES.key(), gts);
-                    return sc;
+                getMetadataManager().lockAndUpdate(getStudyId(), sm -> {
+                    gts.addAll(sm.getAttributes().getAsStringList(VariantStorageEngine.Options.LOADED_GENOTYPES.key()));
+                    sm.getAttributes().put(VariantStorageEngine.Options.LOADED_GENOTYPES.key(), gts);
+                    return sm;
                 });
             }
         }

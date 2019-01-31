@@ -26,16 +26,16 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.Iterator;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
-public interface VariantFileMetadataDBAdaptor extends AutoCloseable {
+public interface FileMetadataDBAdaptor extends AutoCloseable {
 
     enum VariantFileMetadataQueryParam implements QueryParam {
         STUDY_ID("studyId", Type.INTEGER_ARRAY),
@@ -65,6 +65,21 @@ public interface VariantFileMetadataDBAdaptor extends AutoCloseable {
         }
     }
 
+
+    FileMetadata getFileMetadata(int studyId, int fileId, Long timeStamp);
+
+    Iterator<FileMetadata> fileIterator(int studyId);
+
+    void updateFileMetadata(int studyId, FileMetadata file, Long timeStamp);
+
+    Integer getFileId(int studyId, String fileName);
+
+    default void addIndexedFiles(int studyId, List<Integer> fileIds) {}
+
+    default void removeIndexedFiles(int studyId, Collection<Integer> fileIds) {};
+
+    LinkedHashSet<Integer> getIndexedFiles(int studyId);
+
     default QueryResult<Long> count() {
         return count(new Query());
     }
@@ -77,7 +92,8 @@ public interface VariantFileMetadataDBAdaptor extends AutoCloseable {
 
     void updateVariantFileMetadata(String studyId, VariantFileMetadata metadata) throws StorageEngineException;
 
-    default QueryResult<VariantFileMetadata> get(int studyId, int fileId, QueryOptions options) throws StorageEngineException {
+    default QueryResult<VariantFileMetadata> getVariantFileMetadata(int studyId, int fileId, QueryOptions options)
+            throws StorageEngineException {
         StopWatch stopWatch = StopWatch.createStarted();
         Iterator<VariantFileMetadata> iterator;
         try {
@@ -85,7 +101,7 @@ public interface VariantFileMetadataDBAdaptor extends AutoCloseable {
                     .append(VariantFileMetadataQueryParam.STUDY_ID.key(), studyId);
             iterator = iterator(query, options);
         } catch (IOException e) {
-            throw new StorageEngineException("Error reading from VariantFileMetadataDBAdaptor", e);
+            throw new StorageEngineException("Error reading from FileMetadataDBAdaptor", e);
         }
         VariantFileMetadata metadata = Iterators.getOnlyElement(iterator, null);
         if (metadata != null) {

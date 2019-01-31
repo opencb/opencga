@@ -40,7 +40,7 @@ public class FillMissingFromArchiveTask extends AbstractFillFromArchiveTask {
 
     public FillMissingFromArchiveTask(StudyConfiguration studyConfiguration, GenomeHelper helper, boolean overwrite) {
         super(studyConfiguration, helper, Collections.emptyList(), true);
-        fillMissingColumn = VariantPhoenixHelper.getFillMissingColumn(studyConfiguration.getStudyId());
+        fillMissingColumn = VariantPhoenixHelper.getFillMissingColumn(studyConfiguration.getId());
         this.overwrite = overwrite;
         Integer lastFile = new ArrayList<>(studyConfiguration.getIndexedFiles()).get(studyConfiguration.getIndexedFiles().size() - 1);
         lastFileBytes = PInteger.INSTANCE.toBytes(lastFile);

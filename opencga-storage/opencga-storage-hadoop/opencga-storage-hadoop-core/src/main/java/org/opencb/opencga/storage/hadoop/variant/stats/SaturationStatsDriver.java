@@ -19,7 +19,8 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
@@ -29,7 +30,9 @@ import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -72,7 +75,8 @@ public class SaturationStatsDriver extends AbstractVariantsTableDriver {
 
     @Override
     protected Job setupJob(Job job, String archiveTable, String variantTable) throws IOException {
-        StudyConfiguration sc = getStudyConfigurationManager().getStudyConfiguration(getStudyId(), null).first();
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
+        StudyMetadata sm = metadataManager.getStudyConfiguration(getStudyId(), null).first();
 
         Scan scan = new Scan();
         scan.setCaching(caching);
@@ -80,9 +84,10 @@ public class SaturationStatsDriver extends AbstractVariantsTableDriver {
         if (StringUtils.isNotEmpty(region)) {
             VariantHBaseQueryParser.addRegionFilter(scan, new Region(region));
         }
-        int numSamples = sc.getSampleIds().size();
-        for (Integer sampleId : sc.getSampleIds().values()) {
-            scan.addColumn(getHelper().getColumnFamily(), VariantPhoenixHelper.buildSampleColumnKey(sc.getStudyId(), sampleId));
+        int numSamples = 0;
+        for (Integer sampleId : metadataManager.getIndexedSamples(sm.getId())) {
+            scan.addColumn(getHelper().getColumnFamily(), VariantPhoenixHelper.buildSampleColumnKey(sm.getId(), sampleId));
+            numSamples++;
         }
         scan.addColumn(getHelper().getColumnFamily(), VariantPhoenixHelper.VariantColumn.TYPE.bytes());
 

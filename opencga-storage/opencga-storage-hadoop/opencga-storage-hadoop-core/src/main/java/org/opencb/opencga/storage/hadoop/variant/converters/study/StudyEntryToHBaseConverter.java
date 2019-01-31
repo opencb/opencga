@@ -26,7 +26,8 @@ import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.tools.Converter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus;
@@ -49,45 +50,61 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
     private static final int UNKNOWN_FIELD = -1;
     private static final int FILTER_FIELD = -2;
     private final Set<String> defaultGenotypes;
-    private final StudyConfiguration studyConfiguration;
+//    private final StudyConfiguration studyConfiguration;
+    private final StudyMetadata studyMetadata;
     private final List<String> fixedFormat;
     private final Set<String> fixedFormatSet;
     private final List<String> fileAttributes;
     private final PhoenixHelper.Column studyColumn;
+    private final Map<String, Integer> sampleIdsMap;
     private final LinkedListMultimap<Integer, Integer> sampleToFileMap;
     private boolean addSecondaryAlternates;
     private final PhoenixHelper.Column releaseColumn;
 
-    public StudyEntryToHBaseConverter(byte[] columnFamily, StudyConfiguration studyConfiguration, boolean addSecondaryAlternates,
-                                      Integer release) {
-        this(columnFamily, studyConfiguration, addSecondaryAlternates, release, false);
-    }
+//    public StudyEntryToHBaseConverter(byte[] columnFamily, StudyMetadata studyMetadata, boolean addSecondaryAlternates,
+//                                      Integer release) {
+//        this(columnFamily, studyMetadata, addSecondaryAlternates, release, false);
+//    }
 
-    public StudyEntryToHBaseConverter(byte[] columnFamily, StudyConfiguration studyConfiguration, boolean addSecondaryAlternates,
+    @Deprecated
+    public StudyEntryToHBaseConverter(byte[] columnFamily, StudyMetadata studyMetadata, boolean addSecondaryAlternates,
                                       Integer release, boolean includeReferenceVariantsData) {
-        this(columnFamily, studyConfiguration, addSecondaryAlternates,
+        this(columnFamily, studyMetadata.getId(), null, addSecondaryAlternates,
                 release, includeReferenceVariantsData
                         ? Collections.emptySet()
                         : new HashSet<>(Arrays.asList("0/0", "0|0")));
     }
 
-    private StudyEntryToHBaseConverter(byte[] columnFamily, StudyConfiguration studyConfiguration,
+    public StudyEntryToHBaseConverter(byte[] columnFamily, int studyId, VariantStorageMetadataManager metadataManager,
+                                      boolean addSecondaryAlternates, Integer release, boolean includeReferenceVariantsData) {
+        this(columnFamily, studyId, metadataManager, addSecondaryAlternates,
+                release, includeReferenceVariantsData
+                        ? Collections.emptySet()
+                        : new HashSet<>(Arrays.asList("0/0", "0|0")));
+    }
+
+    private StudyEntryToHBaseConverter(byte[] columnFamily, int studyId, VariantStorageMetadataManager metadataManager,
                                        boolean addSecondaryAlternates, Integer release, Set<String> defaultGenotypes) {
         super(columnFamily);
-        this.studyConfiguration = studyConfiguration;
-        studyColumn = VariantPhoenixHelper.getStudyColumn(studyConfiguration.getStudyId());
+        this.studyMetadata = metadataManager.getStudyMetadata(studyId);
+        studyColumn = VariantPhoenixHelper.getStudyColumn(studyMetadata.getId());
         this.addSecondaryAlternates = addSecondaryAlternates;
         this.defaultGenotypes = defaultGenotypes;
-        fixedFormat = HBaseToVariantConverter.getFixedFormat(studyConfiguration);
+        fixedFormat = HBaseToVariantConverter.getFixedFormat(studyMetadata.getAttributes());
         fixedFormatSet = new HashSet<>(fixedFormat);
-        fileAttributes = HBaseToVariantConverter.getFixedAttributes(studyConfiguration);
+        fileAttributes = HBaseToVariantConverter.getFixedAttributes(studyMetadata);
 
         sampleToFileMap = LinkedListMultimap.create();
-        for (Map.Entry<Integer, LinkedHashSet<Integer>> entry : studyConfiguration.getSamplesInFiles().entrySet()) {
-            for (Integer sampleId : entry.getValue()) {
-                sampleToFileMap.put(sampleId, entry.getKey());
-            }
-        }
+        sampleIdsMap = new HashMap<>();
+        metadataManager.sampleMetadataIterator(studyId).forEachRemaining(sampleMetadata -> {
+            sampleToFileMap.putAll(sampleMetadata.getId(), sampleMetadata.getFiles());
+            sampleIdsMap.put(sampleMetadata.getName(), sampleMetadata.getId());
+        });
+//        for (Map.Entry<Integer, LinkedHashSet<Integer>> entry : studyConfiguration.getSamplesInFiles().entrySet()) {
+//            for (Integer sampleId : entry.getValue()) {
+//                sampleToFileMap.put(sampleId, entry.getKey());
+//            }
+//        }
         //        Integer release = studyConfiguration.getAttributes().getInt(VariantStorageEngine.Options.RELEASE.key());
         if (release != null) {
             if (release <= 0) {
@@ -152,9 +169,9 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
         boolean writeFileAttributes = writeAllFileAttributes;
         Set<Integer> filesToWrite = new HashSet<>();
         for (String sampleName : samplesName) {
-            Integer sampleId = studyConfiguration.getSampleIds().get(sampleName);
+            Integer sampleId = sampleIdsMap.get(sampleName);
             if (sampleIds == null || sampleIds.contains(sampleId)) {
-                byte[] column = VariantPhoenixHelper.buildSampleColumnKey(studyConfiguration.getStudyId(), sampleId);
+                byte[] column = VariantPhoenixHelper.buildSampleColumnKey(studyMetadata.getId(), sampleId);
                 List<String> sampleData = studyEntry.getSamplesData().get(sampleIdx);
                 // Write sample data if the is no genotype information, or if the genotype is equals to the default genotype
                 if (gtIdx == null || !defaultGenotypes.contains(sampleData.get(gtIdx))) {
@@ -177,7 +194,7 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
                 int fileId = Integer.parseInt(fileEntry.getFileId());
                 if (writeAllFileAttributes || filesToWrite.contains(fileId)) {
                     byte[] fileColumnKey = VariantPhoenixHelper
-                            .buildFileColumnKey(studyConfiguration.getStudyId(), fileId);
+                            .buildFileColumnKey(studyMetadata.getId(), fileId);
                     List<String> fileColumn = remapFileData(variant, studyEntry, fileEntry, overlappingStatus);
                     addVarcharArray(put, fileColumnKey, fileColumn);
                 }

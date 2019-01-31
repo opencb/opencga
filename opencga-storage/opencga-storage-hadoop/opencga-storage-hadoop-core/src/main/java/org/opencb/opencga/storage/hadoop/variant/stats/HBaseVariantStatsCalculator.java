@@ -14,9 +14,9 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.merge.VariantAlternateRearranger;
 import org.opencb.biodata.tools.variant.stats.VariantStatsCalculator;
 import org.opencb.commons.run.Task;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
@@ -34,15 +34,16 @@ import java.util.stream.Collectors;
 public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implements Task<Result, VariantStats> {
 
     private final List<String> samples;
-    private final StudyConfiguration sc;
+    private final StudyMetadata sm;
     //    private List<byte[]> rows;
     private HBaseToGenotypeCountConverter converter;
 
-    public HBaseVariantStatsCalculator(byte[] columnFamily, StudyConfiguration sc, List<String> samples) {
+    public HBaseVariantStatsCalculator(byte[] columnFamily, VariantStorageMetadataManager metadataManager, StudyMetadata sm,
+                                       List<String> samples) {
         super(columnFamily);
-        this.sc = sc;
+        this.sm = sm;
         this.samples = samples;
-        converter = new HBaseToGenotypeCountConverter(columnFamily);
+        converter = new HBaseToGenotypeCountConverter(metadataManager, columnFamily);
     }
 
     @Override
@@ -73,14 +74,19 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
         private final List<Integer> sampleIds;
         private final Set<Integer> sampleIdsSet;
         private final Set<Integer> fileIds;
+        private final Map<Integer, Collection<Integer>> samplesInFile;
 
-        private HBaseToGenotypeCountConverter(byte[] columnFamily) {
-            super(columnFamily, null, null);
-            sampleIds = samples.stream().map(sc.getSampleIds()::get).collect(Collectors.toList());
-            sampleIdsSet = samples.stream().map(sc.getSampleIds()::get).collect(Collectors.toSet());
+        private HBaseToGenotypeCountConverter(VariantStorageMetadataManager metadataManager, byte[] columnFamily) {
+            super(columnFamily, metadataManager, null);
+            sampleIds = samples.stream().map(s -> metadataManager.getSampleId(sm.getId(), s)).collect(Collectors.toList());
+            sampleIdsSet = new HashSet<>(sampleIds);
 
-            fileIds = StudyConfigurationManager.getFileIdsFromSampleIds(sc, sampleIds);
-            super.setSelectVariantElements(new VariantQueryUtils.SelectVariantElements(sc, sampleIds, Collections.emptyList()));
+            fileIds = metadataManager.getFileIdsFromSampleIds(sm.getId(), sampleIds);
+            samplesInFile = new HashMap<>(fileIds.size());
+            for (Integer fileId : fileIds) {
+                samplesInFile.put(fileId, metadataManager.getFileMetadata(sm.getId(), fileId).getSamples());
+            }
+            super.setSelectVariantElements(new VariantQueryFields(sm, sampleIds, Collections.emptyList()));
             super.setUnknownGenotype("./.");
         }
 
@@ -138,7 +144,7 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
             }
 
             if (processedSamples.size() != sampleIds.size()) {
-                String defaultGenotype = getDefaultGenotype(sc);
+                String defaultGenotype = getDefaultGenotype(sm);
 
                 if (defaultGenotype.equals("0/0")) {
                     // All missing samples are reference.
@@ -150,8 +156,8 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
                     // Some samples are missing, some other are reference.
 
                     // Same order as "sampleIds"
-                    List<Boolean> missingUpdatedList = getMissingUpdatedSamples(sc, fillMissingColumnValue);
-                    List<Boolean> sampleWithVariant = getSampleWithVariant(sc, filesInThisVariant);
+                    List<Boolean> missingUpdatedList = getMissingUpdatedSamples(sm, fillMissingColumnValue);
+                    List<Boolean> sampleWithVariant = getSampleWithVariant(sm, filesInThisVariant);
                     int i = 0;
                     int reference = 0;
                     int missing = 0;
@@ -208,7 +214,7 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
                 VariantAlternateRearranger rearranger = new VariantAlternateRearranger(alternateCoordinates, reorderedAlternates);
 
                 for (Integer fileId : entry.getValue()) {
-                    for (Integer sampleId : sc.getSamplesInFiles().get(fileId)) {
+                    for (Integer sampleId : samplesInFile.get(fileId)) {
                         String gt = sampleToGT.get(sampleId);
                         if (gt != null) {
                             try {

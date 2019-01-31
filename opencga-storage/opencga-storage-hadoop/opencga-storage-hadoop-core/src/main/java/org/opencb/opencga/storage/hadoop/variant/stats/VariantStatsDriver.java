@@ -58,13 +58,14 @@ public class VariantStatsDriver extends AbstractVariantsTableDriver {
                 VariantStorageEngine.Options.UPDATE_STATS.defaultValue());
         boolean overwrite = options.getBoolean(VariantStorageEngine.Options.OVERWRITE_STATS.key(),
                 VariantStorageEngine.Options.OVERWRITE_STATS.defaultValue());
-        Query query = VariantStatisticsManager.buildInputQuery(readStudyConfiguration(), cohorts, overwrite, updateStats, options);
+        Query query = VariantStatisticsManager.buildInputQuery(getMetadataManager(), readStudyMetadata(),
+                cohorts, overwrite, updateStats, options);
         QueryOptions queryOptions = VariantStatisticsManager.buildIncludeExclude();
         LOG.info("Query : " + query.toJson());
 
         if (getConf().get(STATS_INPUT, STATS_INPUT_DEFAULT).equalsIgnoreCase("native")) {
             // Some of the filters in query are not supported by VariantHBaseQueryParser
-            Scan scan = new VariantHBaseQueryParser(getHelper(), getStudyConfigurationManager()).parseQuery(query, queryOptions);
+            Scan scan = new VariantHBaseQueryParser(getHelper(), getMetadataManager()).parseQuery(query, queryOptions);
 
             LOG.info(scan.toString());
 
@@ -72,7 +73,7 @@ public class VariantStatsDriver extends AbstractVariantsTableDriver {
             VariantMapReduceUtil.initTableMapperJob(job, variantTableName, variantTableName, scan, VariantStatsFromResultMapper.class);
         } else if (getConf().get(STATS_INPUT, STATS_INPUT_DEFAULT).equalsIgnoreCase("phoenix")) {
             // Sql
-            String sql = new VariantSqlQueryParser(getHelper(), getVariantsTable(), getStudyConfigurationManager())
+            String sql = new VariantSqlQueryParser(getHelper(), getVariantsTable(), getMetadataManager())
                     .parse(query, queryOptions).getSql();
 
             LOG.info(sql);
@@ -83,7 +84,7 @@ public class VariantStatsDriver extends AbstractVariantsTableDriver {
             // scan
             // TODO: Improve filter!
             // Some of the filters in query are not supported by VariantHBaseQueryParser
-            Scan scan = new VariantHBaseQueryParser(getHelper(), getStudyConfigurationManager()).parseQuery(query, queryOptions);
+            Scan scan = new VariantHBaseQueryParser(getHelper(), getMetadataManager()).parseQuery(query, queryOptions);
 
             LOG.info(scan.toString());
             // input

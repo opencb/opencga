@@ -18,9 +18,9 @@ package org.opencb.opencga.storage.hadoop.variant.index;
 
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.slf4j.Logger;
@@ -41,7 +41,7 @@ public class VariantHBaseResultSetIterator extends VariantDBIterator {
     private final Statement statement;
     private final ResultSet resultSet;
     private final GenomeHelper genomeHelper;
-    private final StudyConfigurationManager scm;
+    private final VariantStorageMetadataManager scm;
     private final HBaseToVariantConverter<ResultSet> converter;
     private final Logger logger = LoggerFactory.getLogger(VariantHBaseResultSetIterator.class);
 
@@ -49,8 +49,8 @@ public class VariantHBaseResultSetIterator extends VariantDBIterator {
     private int count = 0;
 
     public VariantHBaseResultSetIterator(
-            Statement statement, ResultSet resultSet, GenomeHelper genomeHelper, StudyConfigurationManager scm,
-            VariantQueryUtils.SelectVariantElements select, List<String> formats,
+            Statement statement, ResultSet resultSet, GenomeHelper genomeHelper, VariantStorageMetadataManager scm,
+            VariantQueryFields select, List<String> formats,
             String unknownGenotype, QueryOptions options)
             throws SQLException {
         this.statement = statement;

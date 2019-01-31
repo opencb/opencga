@@ -41,13 +41,14 @@ public abstract class VariantImporter {
 
     public void importData(URI inputUri) throws StorageEngineException, IOException {
         VariantMetadataImporter metadataImporter = new VariantMetadataImporter();
-        VariantMetadata metadata = metadataImporter.importMetaData(inputUri, dbAdaptor.getStudyConfigurationManager());
+        VariantMetadata metadata = metadataImporter.importMetaData(inputUri, dbAdaptor.getMetadataManager());
 
         importData(inputUri, metadata);
     }
 
     public void importData(URI input, VariantMetadata metadata) throws StorageEngineException, IOException {
-        List<StudyConfiguration> studyConfigurations = new VariantMetadataConverter().toStudyConfigurations(metadata);
+        List<StudyConfiguration> studyConfigurations = new VariantMetadataConverter(dbAdaptor.getMetadataManager())
+                .toStudyConfigurations(metadata);
         importData(input, metadata, studyConfigurations);
     }
 

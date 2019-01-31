@@ -24,7 +24,6 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.PTable;
 import org.apache.phoenix.schema.PTableType;
 import org.apache.phoenix.schema.types.*;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -292,13 +291,11 @@ public class VariantPhoenixHelper {
         phoenixHelper.addMissingColumns(con, variantsTableName, annotColumns, true, DEFAULT_TABLE_TYPE);
     }
 
-    public void updateStatsColumns(Connection con, String variantsTableName, StudyConfiguration studyConfiguration) throws SQLException {
+    public void updateStatsColumns(Connection con, String variantsTableName, int studyId, List<Integer> cohortIds) throws SQLException {
         HBaseVariantTableNameGenerator.checkValidVariantsTableName(variantsTableName);
         List<Column> columns = new ArrayList<>();
-        for (Integer cohortId : studyConfiguration.getCalculatedStats()) {
-            for (Column column : getStatsColumns(studyConfiguration.getStudyId(), cohortId)) {
-                columns.add(column);
-            }
+        for (Integer cohortId : cohortIds) {
+            columns.addAll(getStatsColumns(studyId, cohortId));
         }
         phoenixHelper.addMissingColumns(con, variantsTableName, columns, true, DEFAULT_TABLE_TYPE);
     }

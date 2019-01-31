@@ -20,7 +20,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.ProgressLogger;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 
@@ -36,16 +36,16 @@ public class VariantStatsDBWriter implements DataWriter<VariantStatsWrapper> {
 
     private final VariantDBAdaptor dbAdaptor;
     private final QueryOptions options;
-    private final StudyConfiguration studyConfiguration;
+    private final StudyMetadata studyMetadata;
     private ProgressLogger progressLogger;
     private final AtomicLong numWrites = new AtomicLong();
     private final AtomicLong numStats = new AtomicLong();
     private final long timestamp;
 
-    public VariantStatsDBWriter(VariantDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration, QueryOptions options) {
+    public VariantStatsDBWriter(VariantDBAdaptor dbAdaptor, StudyMetadata studyMetadata, QueryOptions options) {
         this.dbAdaptor = dbAdaptor;
         this.options = options;
-        this.studyConfiguration = studyConfiguration;
+        this.studyMetadata = studyMetadata;
         timestamp = System.currentTimeMillis();
     }
 
@@ -58,7 +58,7 @@ public class VariantStatsDBWriter implements DataWriter<VariantStatsWrapper> {
 
     @Override
     public boolean write(List<VariantStatsWrapper> batch) {
-        QueryResult writeResult = dbAdaptor.updateStats(batch, studyConfiguration, timestamp, options);
+        QueryResult writeResult = dbAdaptor.updateStats(batch, studyMetadata.getName(), timestamp, options);
 
         numStats.addAndGet(batch.size());
         numWrites.addAndGet(writeResult.getNumResults());

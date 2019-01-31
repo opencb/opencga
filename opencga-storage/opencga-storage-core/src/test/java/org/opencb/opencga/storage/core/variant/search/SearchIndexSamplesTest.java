@@ -14,7 +14,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
-import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -59,9 +59,9 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
             load();
             loaded = true;
         }
-        variantStorageEngine.getStudyConfigurationManager().lockAndUpdate(STUDY_NAME, sc -> {
+        variantStorageEngine.getMetadataManager().lockAndUpdateOld(STUDY_NAME, sc -> {
             for (Integer id : sc.getSearchIndexedSampleSetsStatus().keySet()) {
-                sc.getSearchIndexedSampleSetsStatus().put(id, BatchFileOperation.Status.READY);
+                sc.getSearchIndexedSampleSetsStatus().put(id, TaskMetadata.Status.READY);
             }
             COLLECTION_1 = "opencga_variants_test_1_" + sc.getSearchIndexedSampleSets().get(sc.getSampleIds().get(samples1.get(0)));
             COLLECTION_2 = "opencga_variants_test_1_" + sc.getSearchIndexedSampleSets().get(sc.getSampleIds().get(samples2.get(0)));
@@ -82,14 +82,14 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
 
         samples1 = Arrays.asList(it.next(), it.next());
         files1 = Collections.singletonList(UriUtils.fileName(smallInputUri));
-        variantStorageEngine.searchIndexSamples(studyConfiguration.getStudyName(), samples1);
+        variantStorageEngine.searchIndexSamples(studyConfiguration.getName(), samples1);
 
         runDefaultETL(getPlatinumFile(12877), variantStorageEngine, studyConfiguration);
         runDefaultETL(getPlatinumFile(12878), variantStorageEngine, studyConfiguration);
 
         samples2 = Arrays.asList("NA12877", "NA12878");
         files2 = Arrays.asList(UriUtils.fileName(getPlatinumFile(12877)), UriUtils.fileName(getPlatinumFile(12878)));
-        variantStorageEngine.searchIndexSamples(studyConfiguration.getStudyName(), samples2);
+        variantStorageEngine.searchIndexSamples(studyConfiguration.getName(), samples2);
     }
 
     @Test
@@ -127,9 +127,9 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
 
     @Test
     public void testResumeOnError() throws Exception {
-        variantStorageEngine.getStudyConfigurationManager().lockAndUpdate(STUDY_NAME, sc -> {
+        variantStorageEngine.getMetadataManager().lockAndUpdateOld(STUDY_NAME, sc -> {
             Integer id = sc.getSearchIndexedSampleSets().get(sc.getSampleIds().get(samples1.get(0)));
-            sc.getSearchIndexedSampleSetsStatus().put(id, BatchFileOperation.Status.ERROR);
+            sc.getSearchIndexedSampleSetsStatus().put(id, TaskMetadata.Status.ERROR);
             return sc;
         });
         variantStorageEngine.searchIndexSamples(STUDY_NAME, samples1);
@@ -137,9 +137,9 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
 
     @Test
     public void testResumeWhileRunning() throws Exception {
-        variantStorageEngine.getStudyConfigurationManager().lockAndUpdate(STUDY_NAME, sc -> {
+        variantStorageEngine.getMetadataManager().lockAndUpdateOld(STUDY_NAME, sc -> {
             Integer id = sc.getSearchIndexedSampleSets().get(sc.getSampleIds().get(samples1.get(0)));
-            sc.getSearchIndexedSampleSetsStatus().put(id, BatchFileOperation.Status.RUNNING);
+            sc.getSearchIndexedSampleSetsStatus().put(id, TaskMetadata.Status.RUNNING);
             return sc;
         });
         variantStorageEngine.getOptions().put(VariantStorageEngine.Options.RESUME.key(), true);
@@ -148,9 +148,9 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
 
     @Test
     public void testResumeFail() throws Exception {
-        variantStorageEngine.getStudyConfigurationManager().lockAndUpdate(STUDY_NAME, sc -> {
+        variantStorageEngine.getMetadataManager().lockAndUpdateOld(STUDY_NAME, sc -> {
             Integer id = sc.getSearchIndexedSampleSets().get(sc.getSampleIds().get(samples1.get(0)));
-            sc.getSearchIndexedSampleSetsStatus().put(id, BatchFileOperation.Status.RUNNING);
+            sc.getSearchIndexedSampleSetsStatus().put(id, TaskMetadata.Status.RUNNING);
             return sc;
         });
         thrown.expectMessage("Samples already being indexed. Resume operation to continue.");
@@ -205,9 +205,9 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
 
         check(COLLECTION_1, query, QueryOptions.empty());
 
-        variantStorageEngine.getStudyConfigurationManager().lockAndUpdate(STUDY_NAME, sc -> {
+        variantStorageEngine.getMetadataManager().lockAndUpdateOld(STUDY_NAME, sc -> {
             Integer id = sc.getSearchIndexedSampleSets().get(sc.getSampleIds().get(samples1.get(0)));
-            sc.getSearchIndexedSampleSetsStatus().put(id, BatchFileOperation.Status.RUNNING);
+            sc.getSearchIndexedSampleSetsStatus().put(id, TaskMetadata.Status.RUNNING);
             return sc;
         });
 
@@ -215,7 +215,7 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
     }
 
     protected void check(String collection, Query query, QueryOptions options) throws StorageEngineException {
-        assertEquals(query.toJson() + " " + options.toJson(), collection, VariantSearchUtils.inferSpecificSearchIndexSamplesCollection(query, options, variantStorageEngine.getStudyConfigurationManager(), DB_NAME));
+        assertEquals(query.toJson() + " " + options.toJson(), collection, VariantSearchUtils.inferSpecificSearchIndexSamplesCollection(query, options, variantStorageEngine.getMetadataManager(), DB_NAME));
     }
 
     @Test

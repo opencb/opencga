@@ -35,7 +35,6 @@ import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.biodata.tools.variant.stats.VariantSetStatsCalculator;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.io.avro.AvroFileWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
@@ -44,8 +43,8 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.plain.StringDataReader;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -87,7 +86,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
     protected final ObjectMap transformStats = new ObjectMap();
     protected Integer privateFileId;
     protected Integer privateStudyId;
-    protected StudyConfiguration privateStudyConfiguration;
+//    protected StudyMetadata privateStudyMetadata;
 
 
     public VariantStoragePipeline(StorageConfiguration configuration, String storageEngineId, VariantDBAdaptor dbAdaptor,
@@ -132,44 +131,41 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
         boolean isolate = options.getBoolean(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(),
                 Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.defaultValue());
-        StudyConfiguration studyConfiguration;
+        StudyMetadata metadata;
         if (isolate) {
             logger.debug("Isolated study configuration");
-            studyConfiguration = new StudyConfiguration(-1, "unknown", -1, fileName);
-            studyConfiguration.setAggregationStr(options.getString(Options.AGGREGATED_TYPE.key(),
+            metadata = new StudyMetadata(-1, "unknown");
+            metadata.setAggregationStr(options.getString(Options.AGGREGATED_TYPE.key(),
                     Options.AGGREGATED_TYPE.defaultValue().toString()));
             options.put(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(), true);
+            privateStudyId = -1;
         } else {
-            StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
-            checkExistsStudyConfiguration(null);
-            studyConfiguration = scm.lockAndUpdate(study, existingStudyConfiguration -> {
-                if (existingStudyConfiguration.getAggregation() == null) {
-                    existingStudyConfiguration.setAggregationStr(options.getString(Options.AGGREGATED_TYPE.key(),
+            VariantStorageMetadataManager smm = dbAdaptor.getMetadataManager();
+            ensureStudyMetadataExists(null);
+
+            StudyMetadata studyMetadata = smm.lockAndUpdate(study, existingStudyMetadata -> {
+                if (existingStudyMetadata.getAggregation() == null) {
+                    existingStudyMetadata.setAggregationStr(options.getString(Options.AGGREGATED_TYPE.key(),
                             Options.AGGREGATED_TYPE.defaultValue().toString()));
                 }
-                setFileId(scm.registerFile(existingStudyConfiguration, fileName));
-                return existingStudyConfiguration;
+                return existingStudyMetadata;
             });
+            setFileId(smm.registerFile(studyMetadata.getId(), input.getPath()));
         }
-        privateStudyConfiguration = studyConfiguration;
 
         return input;
     }
 
-    protected VariantFileMetadata buildVariantFileMetadata(Path input) throws StorageEngineException {
-        Integer fileId;
+    protected VariantFileMetadata createEmptyVariantFileMetadata(Path input) {
+        VariantFileMetadata fileMetadata = VariantReaderUtils.createEmptyVariantFileMetadata(input);
+        int fileId;
         if (options.getBoolean(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(), Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION
                 .defaultValue())) {
             fileId = -1;
         } else {
             fileId = getFileId();
         }
-//        Aggregation aggregation = options.get(Options.AGGREGATED_TYPE.key(), Aggregation.class, Options
-//                .AGGREGATED_TYPE.defaultValue());
-        String fileName = input.getFileName().toString();
-//        Type type = options.get(Options.STUDY_TYPE.key(), Type.class,
-//                Options.STUDY_TYPE.defaultValue());
-        return new VariantFileMetadata(fileId.toString(), fileName);
+        return fileMetadata.setId(Integer.toString(fileId));
     }
 
     /**
@@ -203,13 +199,14 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         boolean stdout = options.getBoolean(STDOUT.key(), STDOUT.defaultValue());
 
         // Create empty VariantFileMetadata
-        VariantFileMetadata metadataTemplate = buildVariantFileMetadata(input);
+        VariantFileMetadata metadataTemplate = createEmptyVariantFileMetadata(input);
         // Read VariantFileMetadata
         final VariantFileMetadata metadata = VariantReaderUtils.readVariantFileMetadata(input, metadataTemplate, stdin);
 
 
         VariantFileHeader variantMetadata = metadata.getHeader();
-        String fileName = metadata.getPath();
+        String filePath = metadata.getPath();
+        String fileName = Paths.get(filePath).getFileName().toString();
         String studyId = String.valueOf(getStudyId());
         boolean generateReferenceBlocks = options.getBoolean(Options.GVCF.key(), false);
 
@@ -456,65 +453,58 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
     @Override
     public URI postTransform(URI input) throws IOException, FileFormatException {
-        // Delete isolated storage configuration
-        if (options.getBoolean(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key())) {
-            privateStudyConfiguration = null;
-        }
-
         return input;
     }
 
     @Override
     public URI preLoad(URI input, URI output) throws StorageEngineException {
-        getOrCreateStudyConfiguration(false);
+        getOrCreateStudyMetadata();
         int studyId = getStudyId();
 
         VariantFileMetadata fileMetadata = readVariantFileMetadata(input);
-        //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
-        dbAdaptor.getStudyConfigurationManager().lockAndUpdate(studyId, studyConfiguration -> {
-            securePreLoad(studyConfiguration, fileMetadata);
-            privateStudyConfiguration = studyConfiguration;
-            return studyConfiguration;
+        //Get the studyConfiguration. If there is no StudyMetadata, create a empty one.
+        dbAdaptor.getMetadataManager().lockAndUpdate(studyId, study -> {
+            securePreLoad(study, fileMetadata);
+            return study;
         });
 
         return input;
     }
 
     /**
-     * PreLoad step for modify the StudyConfiguration.
+     * PreLoad step for modify the StudyMetadata and register the file to be loaded.
      * This step is executed inside a study lock.
      *
-     * @see StudyConfigurationManager#lockStudy(int)
-     * @param studyConfiguration    StudyConfiguration
+     * @see VariantStorageMetadataManager#lockStudy(int)
+     * @param studyMetadata         StudyMetadata
      * @param fileMetadata          VariantFileMetadata
      * @throws StorageEngineException  If any condition is wrong
      */
-    protected void securePreLoad(StudyConfiguration studyConfiguration, VariantFileMetadata fileMetadata) throws StorageEngineException {
+    protected void securePreLoad(StudyMetadata studyMetadata, VariantFileMetadata fileMetadata) throws StorageEngineException {
 
         /*
-         * Before load file, check and add fileName to the StudyConfiguration.
+         * Before load file, check and add fileName to the StudyMetadata.
          * FileName is read from the VariantFileMetadata
          * Will fail if:
          *     fileId was already in the studyConfiguration.indexedFiles
          */
 
-        String fileName = fileMetadata.getPath();
-        int fileId = getStudyConfigurationManager().registerFile(studyConfiguration, fileName);
-        getStudyConfigurationManager().registerFileSamples(studyConfiguration, fileId, fileMetadata, options);
+        int studyId = studyMetadata.getId();
+        int fileId = getMetadataManager().registerFile(studyId, fileMetadata);
         setFileId(fileId);
 
         final boolean excludeGenotypes;
-        if (studyConfiguration.getIndexedFiles().isEmpty()) {
+        if (getMetadataManager().getIndexedFiles(studyId).isEmpty()) {
             // First indexed file
-            // Use the EXCLUDE_GENOTYPES value from CLI. Write in StudyConfiguration.attributes
+            // Use the EXCLUDE_GENOTYPES value from CLI. Write in StudyMetadata.attributes
             excludeGenotypes = options.getBoolean(Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES.defaultValue());
-            studyConfiguration.setAggregationStr(options.getString(Options.AGGREGATED_TYPE.key(),
+            studyMetadata.setAggregationStr(options.getString(Options.AGGREGATED_TYPE.key(),
                     Options.AGGREGATED_TYPE.defaultValue().toString()));
-            studyConfiguration.getAttributes().put(Options.EXCLUDE_GENOTYPES.key(), excludeGenotypes);
+            studyMetadata.getAttributes().put(Options.EXCLUDE_GENOTYPES.key(), excludeGenotypes);
         } else {
             // Not first indexed file
-            // Use the EXCLUDE_GENOTYPES value from StudyConfiguration. Ignore CLI value
-            excludeGenotypes = studyConfiguration.getAttributes()
+            // Use the EXCLUDE_GENOTYPES value from StudyMetadata. Ignore CLI value
+            excludeGenotypes = studyMetadata.getAttributes()
                     .getBoolean(Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES.defaultValue());
             options.put(Options.EXCLUDE_GENOTYPES.key(), excludeGenotypes);
         }
@@ -538,16 +528,16 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                     .map(VariantFileHeaderComplexLine::getId);
 
         }
-        List<String> extraGenotypeFields = studyConfiguration.getAttributes().getAsStringList(EXTRA_GENOTYPE_FIELDS.key());
+        List<String> extraGenotypeFields = studyMetadata.getAttributes().getAsStringList(EXTRA_GENOTYPE_FIELDS.key());
         stream.forEach(format -> {
             if (!extraGenotypeFields.contains(format) && !format.equals(VariantMerger.GT_KEY)) {
                 extraGenotypeFields.add(format);
             }
         });
-        studyConfiguration.getAttributes().put(EXTRA_GENOTYPE_FIELDS.key(), extraGenotypeFields);
+        studyMetadata.getAttributes().put(EXTRA_GENOTYPE_FIELDS.key(), extraGenotypeFields);
         getOptions().put(EXTRA_GENOTYPE_FIELDS.key(), extraGenotypeFields);
 
-        List<String> extraFormatFields = studyConfiguration.getAttributes().getAsStringList(Options.EXTRA_GENOTYPE_FIELDS.key());
+        List<String> extraFormatFields = studyMetadata.getAttributes().getAsStringList(Options.EXTRA_GENOTYPE_FIELDS.key());
 
         List<String> formatsFields;
         if (excludeGenotypes) {
@@ -557,13 +547,13 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             formatsFields.add(VCFConstants.GENOTYPE_KEY);
             formatsFields.addAll(extraFormatFields);
         }
-        studyConfiguration.addVariantFileHeader(fileMetadata.getHeader(), formatsFields);
+        studyMetadata.addVariantFileHeader(fileMetadata.getHeader(), formatsFields);
 
 
         // Check if EXTRA_GENOTYPE_FIELDS_TYPE is filled
-        if (!studyConfiguration.getAttributes().containsKey(Options.EXTRA_GENOTYPE_FIELDS_TYPE.key())) {
+        if (!studyMetadata.getAttributes().containsKey(Options.EXTRA_GENOTYPE_FIELDS_TYPE.key())) {
             List<String> extraFieldsType = new ArrayList<>(extraFormatFields.size());
-            Map<String, VariantFileHeaderComplexLine> formatsMap = studyConfiguration.getVariantHeaderLines("FORMAT");
+            Map<String, VariantFileHeaderComplexLine> formatsMap = studyMetadata.getVariantHeaderLines("FORMAT");
             for (String extraFormatField : extraFormatFields) {
                 VariantFileHeaderComplexLine line = formatsMap.get(extraFormatField);
                 if (line == null) {
@@ -574,7 +564,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                                 "Sample genotype filter. Similar in concept to the FILTER field.",
                                 ".",
                                 VCFHeaderLineType.String.toString(), null);
-                        studyConfiguration.getVariantHeader().getComplexLines().add(line);
+                        studyMetadata.getVariantHeader().getComplexLines().add(line);
                     } else {
                         throw new StorageEngineException("Unknown FORMAT field '" + extraFormatField + '\'');
                     }
@@ -607,15 +597,15 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                 logger.debug(extraFormatField + " : " + type);
             }
 
-            studyConfiguration.getAttributes().put(Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), extraFieldsType);
+            studyMetadata.getAttributes().put(Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), extraFieldsType);
         }
 
-        int currentRelease = getStudyConfigurationManager().getProjectMetadata(options).first().getRelease();
+        int currentRelease = getMetadataManager().getProjectMetadata(options).getRelease();
         if (options.containsKey(Options.RELEASE.key())) {
             int release = options.getInt(Options.RELEASE.key(), Options.RELEASE.defaultValue());
             // Update current release
             if (currentRelease != release) {
-                getStudyConfigurationManager().lockAndUpdateProject(pm -> {
+                getMetadataManager().lockAndUpdateProject(pm -> {
                     if (release < pm.getRelease() || release <= 0) {
                         //ERROR, asking to use a release lower than currentRelease
                         throw StorageEngineException.invalidReleaseException(release, pm.getRelease());
@@ -638,46 +628,39 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
     }
 
     protected final URI postLoad(URI input, URI output, List<Integer> fileIds) throws StorageEngineException {
+        List<Integer> finalFileIds;
         if (fileIds == null || fileIds.isEmpty()) {
-            fileIds = Collections.singletonList(getFileId());
+            finalFileIds = Collections.singletonList(getFileId());
+        } else {
+            finalFileIds = fileIds;
         }
 
-        int studyId = getStudyId();
-        long lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId);
+        // Check loaded variants BEFORE updating the StudyMetadata
+        checkLoadedVariants(finalFileIds, getStudyMetadata());
 
-        // Check loaded variants BEFORE updating the StudyConfiguration
-        checkLoadedVariants(fileIds, getStudyConfiguration());
-
-        StudyConfiguration studyConfiguration;
-        try {
-            //Update StudyConfiguration
-            studyConfiguration = getStudyConfiguration(true);
-            securePostLoad(fileIds, studyConfiguration);
-            dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, new QueryOptions());
-        } finally {
-            dbAdaptor.getStudyConfigurationManager().unLockStudy(studyId, lock);
-        }
-
+        //Update StudyMetadata
+        getMetadataManager().lockAndUpdate(getStudyId(), sm -> {
+            securePostLoad(finalFileIds, sm);
+            return sm;
+        });
         return input;
     }
 
-    public void securePostLoad(List<Integer> fileIds, StudyConfiguration studyConfiguration) throws StorageEngineException {
+    public void securePostLoad(List<Integer> fileIds, StudyMetadata studyMetadata) throws StorageEngineException {
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
+        int studyId = getStudyId();
+
         // Update indexed files
-        studyConfiguration.getIndexedFiles().addAll(fileIds);
+        metadataManager.addIndexedFiles(studyId, fileIds);
 
         // Update the cohort ALL. Invalidate if needed
         String defaultCohortName = StudyEntry.DEFAULT_COHORT;
-        BiMap<String, Integer> indexedSamples = StudyConfiguration.getIndexedSamples(studyConfiguration);
+        BiMap<String, Integer> indexedSamples = metadataManager.getIndexedSamplesMap(studyId);
 
         // Register or update default cohort
-        getStudyConfigurationManager()
-                .registerCohorts(studyConfiguration, Collections.singletonMap(defaultCohortName, indexedSamples.keySet()));
-        int defaultCohortId = studyConfiguration.getCohortIds().get(defaultCohortName);
+        metadataManager.registerCohorts(studyId, Collections.singletonMap(defaultCohortName, indexedSamples.keySet()));
 
-
-        logger.info("Add loaded samples to Default Cohort \"" + defaultCohortName + '"');
-        studyConfiguration.getCohorts().put(defaultCohortId, indexedSamples.values());
-
+        logger.info("Add " + indexedSamples.size() + " loaded samples to Default Cohort \"" + defaultCohortName + '"');
     }
 
     @Override
@@ -691,13 +674,13 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         }
     }
 
-    protected abstract void checkLoadedVariants(int fileId, StudyConfiguration studyConfiguration)
+    protected abstract void checkLoadedVariants(int fileId, StudyMetadata studyMetadata)
             throws StorageEngineException;
 
-    protected void checkLoadedVariants(List<Integer> fileIds, StudyConfiguration studyConfiguration)
+    protected void checkLoadedVariants(List<Integer> fileIds, StudyMetadata studyMetadata)
             throws StorageEngineException {
         for (Integer fileId : fileIds) {
-            checkLoadedVariants(fileId, studyConfiguration);
+            checkLoadedVariants(fileId, studyMetadata);
         }
     }
 
@@ -724,61 +707,50 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
     }
 
     /* --------------------------------------- */
-    /*  StudyConfiguration utils methods        */
+    /*  StudyMetadata utils methods        */
     /* --------------------------------------- */
 
-    protected StudyConfiguration getOrCreateStudyConfiguration(boolean forceFetch) throws StorageEngineException {
-        return checkExistsStudyConfiguration(getStudyConfiguration(forceFetch));
+    protected StudyMetadata getOrCreateStudyMetadata() throws StorageEngineException {
+        return ensureStudyMetadataExists(getStudyMetadata());
     }
 
-    protected StudyConfiguration checkExistsStudyConfiguration(StudyConfiguration studyConfiguration) throws StorageEngineException {
-        if (studyConfiguration == null) {
-            studyConfiguration = getStudyConfiguration();
-            if (studyConfiguration == null) {
+    protected StudyMetadata ensureStudyMetadataExists(StudyMetadata studyMetadata) throws StorageEngineException {
+        if (studyMetadata == null) {
+            studyMetadata = getStudyMetadata();
+            if (studyMetadata == null) {
                 String studyName = options.getString(Options.STUDY.key(), Options.STUDY.defaultValue());
-                logger.info("Creating a new StudyConfiguration '{}'", studyName);
-                studyConfiguration = getStudyConfigurationManager().createStudy(studyName);
+                logger.info("Creating a new StudyMetadata '{}'", studyName);
+                studyMetadata = getMetadataManager().createStudy(studyName);
             }
         }
-        privateStudyConfiguration = studyConfiguration;
-        setStudyId(studyConfiguration.getStudyId());
-        return studyConfiguration;
-    }
-
-    public final StudyConfiguration getStudyConfiguration() throws StorageEngineException {
-        return getStudyConfiguration(false);
+//        privateStudyMetadata = studyMetadata;
+        setStudyId(studyMetadata.getId());
+        return studyMetadata;
     }
 
     /**
-     * Reads the study configuration.
+     * Reads the study metadata.
      *
-     * @param forceFetch If true, forces to get the StudyConfiguration from the database. Ignores current one.
-     * @return           The study configuration.
-     * @throws StorageEngineException If the study configuration is not found
+     * @return           The study metadata.
+     * @throws StorageEngineException If the study metadata is not found
      */
-    public final StudyConfiguration getStudyConfiguration(boolean forceFetch) throws StorageEngineException {
-        if (!forceFetch && privateStudyConfiguration != null) {
-            return privateStudyConfiguration;
+    public final StudyMetadata getStudyMetadata() throws StorageEngineException {
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
+        final StudyMetadata studyMetadata;
+        String study = options.getString(Options.STUDY.key());
+        if (!StringUtils.isEmpty(study)) {
+            studyMetadata = metadataManager.getStudyMetadata(study);
+        } else if (privateStudyId != null) {
+            studyMetadata = metadataManager.getStudyMetadata(privateStudyId);
         } else {
-            StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
-            final StudyConfiguration studyConfiguration;
-            String study = options.getString(Options.STUDY.key());
-            if (!StringUtils.isEmpty(study)) {
-                studyConfiguration = studyConfigurationManager.getStudyConfiguration(study, new QueryOptions(options)).first();
-            } else if (privateStudyId != null) {
-                studyConfiguration = studyConfigurationManager.getStudyConfiguration(privateStudyId, new QueryOptions(options)).first();
-            } else {
-                throw new StorageEngineException("Unable to get StudyConfiguration. Missing studyId or studyName");
-            }
-            privateStudyConfiguration = studyConfiguration;
-            privateStudyId = studyConfiguration == null ? null : studyConfiguration.getStudyId();
-            return studyConfiguration;
+            throw new StorageEngineException("Unable to get StudyMetadata. Missing studyId or studyName");
         }
+        privateStudyId = studyMetadata == null ? null : studyMetadata.getId();
+        return studyMetadata;
     }
 
-
     public Thread newShutdownHook(String jobOperationName, List<Integer> files) throws StorageEngineException {
-        return getStudyConfigurationManager().buildShutdownHook(jobOperationName, getStudyId(), files);
+        return getMetadataManager().buildShutdownHook(jobOperationName, getStudyId(), files);
     }
 
     public VariantDBAdaptor getDBAdaptor() {
@@ -797,7 +769,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
     protected int getStudyId() throws StorageEngineException {
         if (privateStudyId == null) {
-            privateStudyId = getStudyConfiguration().getStudyId();
+            privateStudyId = getStudyMetadata().getId();
             return privateStudyId;
         } else {
             return privateStudyId;
@@ -812,7 +784,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         return options;
     }
 
-    public StudyConfigurationManager getStudyConfigurationManager() {
-        return getDBAdaptor().getStudyConfigurationManager();
+    public VariantStorageMetadataManager getMetadataManager() {
+        return getDBAdaptor().getMetadataManager();
     }
 }

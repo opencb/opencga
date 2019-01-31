@@ -29,8 +29,8 @@ public class HBaseVariantStorageMetadataDBAdaptorFactory implements VariantStora
     }
 
     @Override
-    public HBaseVariantFileMetadataDBAdaptor buildVariantFileMetadataDBAdaptor() {
-        return new HBaseVariantFileMetadataDBAdaptor(hBaseManager, metaTableName, configuration);
+    public HBaseFileMetadataDBAdaptor buildFileMetadataDBAdaptor() {
+        return new HBaseFileMetadataDBAdaptor(hBaseManager, metaTableName, configuration);
     }
 
     @Override
@@ -39,7 +39,22 @@ public class HBaseVariantStorageMetadataDBAdaptorFactory implements VariantStora
     }
 
     @Override
-    public HBaseStudyConfigurationDBAdaptor buildStudyConfigurationDBAdaptor() {
-        return new HBaseStudyConfigurationDBAdaptor(hBaseManager, metaTableName, configuration);
+    public HBaseStudyMetadataDBAdaptor buildStudyConfigurationDBAdaptor() {
+        return new HBaseStudyMetadataDBAdaptor(hBaseManager, metaTableName, configuration);
+    }
+
+    @Override
+    public HBaseSampleMetadataDBAdaptor buildSampleMetadataDBAdaptor() {
+        return new HBaseSampleMetadataDBAdaptor(hBaseManager, metaTableName, configuration);
+    }
+
+    @Override
+    public HBaseCohortMetadataDBAdaptor buildCohortMetadataDBAdaptor() {
+        return new HBaseCohortMetadataDBAdaptor(hBaseManager, metaTableName, configuration);
+    }
+
+    @Override
+    public HBaseTaskMetadataDBAdaptor buildTaskDBAdaptor() {
+        return new HBaseTaskMetadataDBAdaptor(hBaseManager, metaTableName, configuration);
     }
 }

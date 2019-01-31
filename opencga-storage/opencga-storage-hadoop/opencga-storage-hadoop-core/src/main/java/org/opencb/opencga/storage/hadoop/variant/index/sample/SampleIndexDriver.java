@@ -20,7 +20,6 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.util.ToolRunner;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -105,10 +104,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
 
 
         if (allSamples) {
-            StudyConfiguration sc = getStudyConfigurationManager().getStudyConfiguration(study, null).first();
-            for (Integer fileId : sc.getIndexedFiles()) {
-                sampleIds.addAll(sc.getSamplesInFiles().get(fileId));
-            }
+            sampleIds.addAll(getMetadataManager().getIndexedSamples(study));
         } else {
             for (int sample : samples) {
                 sampleIds.add(sample);

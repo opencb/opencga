@@ -6,7 +6,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -25,7 +25,7 @@ import static org.opencb.opencga.storage.core.variant.stats.VariantStatisticsMan
 @Ignore
 public abstract class VariantStatisticsManagerMultiFilesTest extends VariantStorageBaseTest {
 
-    protected StudyConfiguration studyConfiguration;
+    protected StudyMetadata studyMetadata;
     protected VariantDBAdaptor dbAdaptor;
 
     @Rule
@@ -50,7 +50,7 @@ public abstract class VariantStatisticsManagerMultiFilesTest extends VariantStor
 //        storageEngine.index(inputFiles.subList(0, inputFiles.size()/2), outputUri, true, true, true);
 //        storageEngine.index(inputFiles.subList(inputFiles.size()/2, inputFiles.size()), outputUri, true, true, true);
         storageEngine.index(inputFiles, outputUri, true, true, true);
-        studyConfiguration = storageEngine.getStudyConfigurationManager().getStudyConfiguration(STUDY_ID, null).first();
+        studyMetadata = storageEngine.getMetadataManager().getStudyMetadata(STUDY_ID);
     }
 
     @Test
@@ -58,12 +58,12 @@ public abstract class VariantStatisticsManagerMultiFilesTest extends VariantStor
         //Calculate stats for 2 cohorts at one time
         VariantStatisticsManager vsm = variantStorageEngine.newVariantStatisticsManager();
 
-        checkCohorts(dbAdaptor, studyConfiguration);
+        checkCohorts(dbAdaptor, studyMetadata);
 
         QueryOptions options = new QueryOptions();
         options.put(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100);
 
-        List<String> samples = new ArrayList<>(studyConfiguration.getSampleIds().keySet());
+        List<String> samples = new ArrayList<>(metadataManager.getIndexedSamplesMap(studyMetadata.getId()).keySet());
 
         /** Create cohorts **/
         HashSet<String> cohort1 = new HashSet<>(samples.subList(0, samples.size() / 2));
@@ -71,7 +71,7 @@ public abstract class VariantStatisticsManagerMultiFilesTest extends VariantStor
 
         Map<String, Set<String>> cohorts = new HashMap<>();
         Map<String, Integer> cohortIds = new HashMap<>();
-        cohorts.put("ALL", studyConfiguration.getSampleIds().keySet());
+        cohorts.put("ALL", new HashSet<>(samples));
         cohorts.put("cohort1", cohort1);
         cohorts.put("cohort2", cohort2);
         cohortIds.put("ALL", 1);
@@ -79,9 +79,9 @@ public abstract class VariantStatisticsManagerMultiFilesTest extends VariantStor
         cohortIds.put("cohort2", 11);
 
         //Calculate stats
-        stats(vsm, options, studyConfiguration, cohorts, cohortIds, dbAdaptor, outputUri.resolve("cohort1.cohort2.stats"));
+        stats(vsm, options, studyMetadata, cohorts, cohortIds, dbAdaptor, outputUri.resolve("cohort1.cohort2.stats"));
 
-        checkCohorts(dbAdaptor, studyConfiguration);
+        checkCohorts(dbAdaptor, studyMetadata);
     }
 
 }

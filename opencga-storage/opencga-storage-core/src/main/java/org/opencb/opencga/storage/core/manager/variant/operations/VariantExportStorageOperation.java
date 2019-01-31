@@ -34,7 +34,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.models.StudyInfo;
 import org.opencb.opencga.storage.core.manager.variant.metadata.CatalogVariantMetadataFactory;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -189,7 +189,7 @@ public class VariantExportStorageOperation extends StorageOperation {
             ObjectMap options = variantStorageEngine.getOptions();
             VariantMetadata metadata;
             StudyConfiguration studyConfiguration;
-            try (StudyConfigurationManager scm = variantStorageEngine.getStudyConfigurationManager()) {
+            try (VariantStorageMetadataManager scm = variantStorageEngine.getMetadataManager()) {
                 metadata = variantMetadataImporter.importMetaData(inputUri, scm);
                 studyConfiguration = scm.getStudyConfiguration(((int) studyInfo.getStudyUid()), null).first();
             }
@@ -260,7 +260,7 @@ public class VariantExportStorageOperation extends StorageOperation {
                     } else {
                         description = "Cohort data imported from " + source;
                     }
-                    Cohort cohort = catalogManager.getCohortManager().create(studyConfiguration.getStudyName(), cohortName, Study
+                    Cohort cohort = catalogManager.getCohortManager().create(studyConfiguration.getName(), cohortName, Study
                             .Type.COLLECTION, description, newSampleList, null, Collections.emptyMap(), sessionId).first();
                     newCohortIds.put(cohortName, (int) cohort.getUid());
                     newCohorts.put((int) cohort.getUid(), newSampleList.stream().map(Sample::getUid).map(Long::intValue)

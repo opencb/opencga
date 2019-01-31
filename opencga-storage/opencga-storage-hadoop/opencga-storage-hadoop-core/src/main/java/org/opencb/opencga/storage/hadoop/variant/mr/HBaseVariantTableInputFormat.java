@@ -11,7 +11,8 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
@@ -56,11 +57,13 @@ public class HBaseVariantTableInputFormat extends AbstractVariantsTableInputForm
         }
 //            configuration.forEach(entry -> System.out.println(entry.getKey() + " = " + entry.getValue()));
         VariantTableHelper helper = new VariantTableHelper(configuration);
-        VariantQueryUtils.SelectVariantElements selectVariantElements;
-        try (StudyConfigurationManager scm = new StudyConfigurationManager(new HBaseVariantStorageMetadataDBAdaptorFactory(helper))) {
+        VariantQueryFields selectVariantElements;
+
+        HBaseVariantStorageMetadataDBAdaptorFactory dbAdaptorFactory = new HBaseVariantStorageMetadataDBAdaptorFactory(helper);
+        try (VariantStorageMetadataManager scm = new VariantStorageMetadataManager(dbAdaptorFactory)) {
             Query query = getQueryFromConfig(configuration);
             QueryOptions queryOptions = getQueryOptionsFromConfig(configuration);
-            selectVariantElements = VariantQueryUtils.parseSelectElements(query, queryOptions, scm);
+            selectVariantElements = VariantQueryUtils.parseVariantQueryFields(query, queryOptions, scm);
         }
 
         converter = HBaseToVariantConverter.fromResult(helper).configure(configuration).setSelectVariantElements(selectVariantElements);
