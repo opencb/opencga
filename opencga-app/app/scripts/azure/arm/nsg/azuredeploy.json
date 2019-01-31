@@ -126,6 +126,20 @@
                             "priority": 3101,
                             "direction": "Inbound"
                         }
+                    },
+                    {
+                        "name": "mongo_in",
+                        "properties": {
+                            "description": "Allow all inbound MongoDB traffic",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "27017",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 3103,
+                            "direction": "Inbound"
+                        }
                     }
                 ]
             }
