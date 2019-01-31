@@ -26,6 +26,10 @@ variable "opencga_image" {}
 variable "opencga_init_image" {}
 
 variable init_cmd {}
+variable "opencga_admin_password" {
+  
+}
+
 
 resource "azurerm_resource_group" "opencga" {
   name     = "${var.resource_group_name}"
@@ -33,7 +37,7 @@ resource "azurerm_resource_group" "opencga" {
 }
 
 locals {
-  daemon_start_cmd = "docker run --mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions -e OPENCGA_PASS=${var.openCgaAdminPassword} ${var.opencga_image})"
+  daemon_start_cmd = "docker run --mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions -e OPENCGA_PASS=${var.opencga_admin_password} ${var.opencga_image})"
 }
 
 data "template_file" "cloud_init" {
@@ -70,7 +74,7 @@ resource "azurerm_network_interface" "daemon" {
   ip_configuration {
     name                          = "ipconfig"
     subnet_id                     = "${var.virtual_network_subnet_id}"
-    private_ip_address_allocation = "Static"
+    private_ip_address_allocation = "Dynamic"
   }
 }
 

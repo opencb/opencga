@@ -85,7 +85,7 @@ output "batch_account_name" {
 
 }
 
-output "batch_pool_id" {
+output "batch_account_pool_id" {
   value = "${azurerm_template_deployment.batchpool.outputs["batchPoolId"]}"
 }
 

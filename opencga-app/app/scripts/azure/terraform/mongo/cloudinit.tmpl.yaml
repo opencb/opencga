@@ -2,21 +2,21 @@
 package_upgrade: true
 package_reboot_if_required: true
 runcmd:
-- VM_INDEX=${index} CLUSTER_SIZE=${size} CERT_EMAIL=${email} MONGODB_USERNAME=${username} MONGODB_PASSWORD=${password} APP_DNS_NAME=${fqdn} /bin/bash /opt/installmongodb.sh'
+- 'VM_INDEX=${index} CLUSTER_SIZE=${size} CERT_EMAIL=${email} MONGODB_USERNAME=${username} MONGODB_PASSWORD=${password} APP_DNS_NAME=${fqdn} /bin/bash /opt/installmongodb.sh'
 
 write_files:
  -  encoding: gzip
     content: !!binary |
         ${post_deploy_script}
     path: /opt/installmongodb.sh
-    permissions: \"0744\"
+    permissions: "0744"
  -  encoding: gzip
     content: !!binary |
         ${renew_mongo_cert_script}
     path: /opt/renew_mongo_cert.sh
-    permissions: \"0744\"
+    permissions: "0744"
  -  encoding: gzip
     content: !!binary |
         ${cloud_init_check_script}
     path: /opt/cloudinitcheck.sh
-    permissions: \"0744\"
+    permissions: "0744"

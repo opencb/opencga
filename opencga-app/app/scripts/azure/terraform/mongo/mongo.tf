@@ -10,10 +10,6 @@ variable "resource_group_name" {
   type = "string"
 }
 
-variable "mount_args" {
-  type = "string"
-}
-
 variable "ssh_key_data" {
   type = "string"
 }
@@ -22,10 +18,20 @@ variable "admin_username" {
   type = "string"
 }
 
-variable "cluster_size" {}
+variable "cluster_size" {
+  description = "The number of mongo nodes to deploy"
+}
+variable "email_address" { 
+  description = "Used by Lets Encrypt to get SSL certs for Mongo"
+}
+
+locals {
+  resource_prefix = "mongo"
+}
+
 
 resource "azurerm_resource_group" "opencga" {
-  name     = "${var.resource_group_name}-mongo"
+  name     = "${var.resource_group_name}"
   location = "${var.location}"
 }
 
@@ -36,9 +42,9 @@ resource "random_string" "dns_name" {
   }
 
   length  = 12
-  upper   = true
-  special = true
-  number  = true
+  upper   = false
+  special = false
+  number  = false
 }
 
 resource "random_string" "password" {
@@ -56,8 +62,9 @@ resource "random_string" "password" {
 resource "azurerm_public_ip" "mongo" {
   count = "${var.cluster_size}"
 
-  name              = "mongopip-${count.index}"
-  domain_name_label = "${random_string.dns_name.result}"
+  name              = "${local.resource_prefix}-pip-${count.index}"
+  domain_name_label = "${random_string.dns_name.result}-${count.index}"
+  allocation_method = "Dynamic"
 
   location            = "${var.location}"
   resource_group_name = "${var.resource_group_name}"
@@ -65,15 +72,15 @@ resource "azurerm_public_ip" "mongo" {
 
 resource "azurerm_network_interface" "mongo" {
   count               = "${var.cluster_size}"
-  name                = "mongo-nic-${count.index}"
+
+  name                = "${local.resource_prefix}-nic-${count.index}"
   location            = "${azurerm_resource_group.opencga.location}"
   resource_group_name = "${azurerm_resource_group.opencga.name}"
 
   ip_configuration {
     name                          = "ipconfig"
     subnet_id                     = "${var.virtual_network_subnet_id}"
-    private_ip_address_allocation = "Static"
-    internal_dns_name_label       = "mongoreplica-${count.index}"
+    private_ip_address_allocation = "Dynamic"
     public_ip_address_id          = "${element(azurerm_public_ip.mongo.*.id, count.index)}"
   }
 }
@@ -90,7 +97,7 @@ data "template_file" "cloud_init" {
     size                    = "${var.cluster_size}"
     email                   = "${var.email_address}"
     fqdn                    = "${element(azurerm_public_ip.mongo.*.fqdn, count.index)}"
-    usename                 = "${var.admin_username}"
+    username                 = "${var.admin_username}"
     password                = "${random_string.password.result}"
   }
 }
@@ -106,14 +113,14 @@ data "template_cloudinit_config" "config" {
   part {
     filename     = "init.cfg"
     content_type = "text/cloud-config"
-    content      = "${data.template_file.cloud_init.rendered}"
+    content      = "${element(data.template_file.cloud_init.*.rendered, count.index)}"
   }
 }
 
 resource "azurerm_virtual_machine" "mongo" {
   count = "${var.cluster_size}"
 
-  name                  = "mongo-vm-${count.index}"
+  name                  = "${local.resource_prefix}-vm-${count.index}"
   location              = "${azurerm_resource_group.opencga.location}"
   resource_group_name   = "${azurerm_resource_group.opencga.name}"
   network_interface_ids = ["${element(azurerm_network_interface.mongo.*.id, count.index)}"]
@@ -127,16 +134,16 @@ resource "azurerm_virtual_machine" "mongo" {
   }
 
   storage_os_disk {
-    name              = "mongoosdisk"
+    name              = "${local.resource_prefix}-osdisk-${count.index}"
     caching           = "ReadWrite"
     create_option     = "FromImage"
     managed_disk_type = "Standard_LRS"
   }
 
   os_profile {
-    computer_name  = "mongo-vm-${count.index}"
+    computer_name  = "mongovm${count.index}"
     admin_username = "${var.admin_username}"
-    custom_data    = "${data.template_cloudinit_config.config.rendered}"
+    custom_data    = "${element(data.template_cloudinit_config.config.*.rendered, count.index)}"
   }
 
   os_profile_linux_config {
@@ -169,4 +176,12 @@ resource "azurerm_virtual_machine_extension" "mongo" {
 
 output "replica_dns_names" {
   value = ["${azurerm_public_ip.mongo.*.fqdn}"]
+}
+
+output "mongo_password" {
+  value = "${random_string.password.result}"
+}
+
+output "mongo_username" {
+  value = "${var.admin_username}"
 }
