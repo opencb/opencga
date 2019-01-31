@@ -466,6 +466,7 @@
                 "avere",
                 "azurefiles",
                 "vnet",
+                "hdinsight",
                 "loganalytics",
                 "[parameters('rgPrefix')]",
                 "azureBatch"
