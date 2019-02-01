@@ -2,7 +2,6 @@ package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.io.compress.Compression;
-import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDataWriter;
@@ -11,11 +10,8 @@ import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.*;
-import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConverter.toGenotypeColumn;
-import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConverter.toGenotypeCountColumn;
 
 /**
  * Created on 14/05/18.
@@ -28,13 +24,15 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
     private final List<Integer> sampleIds;
     private final byte[] family;
     // Map from IndexChunk -> List (following sampleIds order) of Map<Genotype, StringBuilder>
-    private final Map<IndexChunk, List<Map<String, Set<Variant>>>> buffer = new LinkedHashMap<>();
+    private final Map<IndexChunk, List<Map<String, SortedSet<Variant>>>> buffer = new LinkedHashMap<>();
     private final HashSet<String> genotypes = new HashSet<>();
+    private final VariantsToSampleIndexConverter converter;
 
     public SampleIndexDBLoader(HBaseManager hBaseManager, String tableName, List<Integer> sampleIds, byte[] family) {
         super(hBaseManager, tableName);
         this.sampleIds = sampleIds;
         this.family = family;
+        converter = new VariantsToSampleIndexConverter(family);
     }
 
     private class IndexChunk {
@@ -98,7 +96,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
                     genotypes.add(gt);
                     Set<Variant> variantsList = buffer
                             .computeIfAbsent(indexChunk, k -> {
-                                List<Map<String, Set<Variant>>> list = new ArrayList<>(sampleIds.size());
+                                List<Map<String, SortedSet<Variant>>> list = new ArrayList<>(sampleIds.size());
                                 for (int i = 0; i < sampleIds.size(); i++) {
                                     list.add(new HashMap<>());
                                 }
@@ -155,19 +153,14 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
 
         while (buffer.size() > remain) {
             IndexChunk indexChunk = buffer.keySet().iterator().next();
-            List<Map<String, Set<Variant>>> sampleList = buffer.remove(indexChunk);
-            Iterator<Integer> sampleIterator = sampleIds.iterator();
-            for (Map<String, Set<Variant>> gtsMap : sampleList) {
+            List<Map<String, SortedSet<Variant>>> sampleList = buffer.remove(indexChunk);
+            ListIterator<Integer> sampleIterator = sampleIds.listIterator();
+            for (Map<String, SortedSet<Variant>> gtsMap : sampleList) {
+                int sampleIdx = sampleIterator.nextIndex();
                 Integer sampleId = sampleIterator.next();
 
                 byte[] rk = SampleIndexConverter.toRowKey(sampleId, indexChunk.chromosome, indexChunk.position);
-                Put put = new Put(rk);
-
-                for (Map.Entry<String, Set<Variant>> gtsEntry : gtsMap.entrySet()) {
-                    String variants = gtsEntry.getValue().stream().map(Variant::toString).collect(Collectors.joining(","));
-                    put.addColumn(family, toGenotypeColumn(gtsEntry.getKey()), Bytes.toBytes(variants));
-                    put.addColumn(family, toGenotypeCountColumn(gtsEntry.getKey()), Bytes.toBytes(gtsEntry.getValue().size()));
-                }
+                Put put = converter.convert(rk, gtsMap, sampleIdx);
                 if (!put.isEmpty()) {
                     puts.add(put);
                 }

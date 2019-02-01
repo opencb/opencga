@@ -356,6 +356,13 @@ public class SampleIndexDBAdaptor {
         return scan;
     }
 
+    public static String maskToString(byte b) {
+        String str = Integer.toBinaryString(b);
+        if (str.length() > 8) {
+            str = str.substring(str.length() - 8);
+        }
+        return StringUtils.leftPad(str, 8, '0');
+    }
 
     private int toSampleId(int studyId, String sample) {
         StudyMetadata sc = metadataManager.getStudyMetadata(studyId);

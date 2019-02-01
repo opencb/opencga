@@ -53,12 +53,12 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParse
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 
 import java.io.*;
@@ -402,7 +402,7 @@ public class VariantHbaseTestUtils {
 
             try (PrintStream out = new PrintStream(new FileOutputStream(outDir.resolve("annotation_index.txt").toFile()))) {
                 annotationIndexDBAdaptor.iterator().forEachRemaining(pair -> {
-                    out.println(pair.getKey() + " -> " + AnnotationIndexConverter.maskToString(pair.getValue()));
+                    out.println(pair.getKey() + " -> " + SampleIndexDBAdaptor.maskToString(pair.getValue()));
                 });
             }
         }
@@ -444,10 +444,10 @@ public class VariantHbaseTestUtils {
                             byte[] value = CellUtil.cloneValue(cell);
                             if (s.startsWith("_C_")) {
                                 map.put(s, String.valueOf(Bytes.toInt(value)));
-                            } else if (s.startsWith("_A_")) {
+                            } else if (s.startsWith("_A_") || s.startsWith("_F_")) {
                                 StringBuilder sb = new StringBuilder();
                                 for (byte b : value) {
-                                    sb.append(AnnotationIndexConverter.maskToString(b));
+                                    sb.append(SampleIndexDBAdaptor.maskToString(b));
                                     sb.append(" - ");
                                 }
                                 map.put(s, sb.toString());

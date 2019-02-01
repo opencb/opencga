@@ -1,7 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.annotation;
 
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
@@ -107,14 +106,6 @@ public class AnnotationIndexConverter {
         Cell cell = result.getColumnLatestCell(COLUMN_FMAILY, VALUE_COLUMN);
         byte[] value = CellUtil.cloneValue(cell);
         return Pair.of(variant, value[0]);
-    }
-
-    public static String maskToString(byte b) {
-        String str = Integer.toBinaryString(b);
-        if (str.length() > 8) {
-            str = str.substring(str.length() - 8);
-        }
-        return StringUtils.leftPad(str, 8, '0');
     }
 
     public byte[] convert(List<VariantAnnotation> list) {

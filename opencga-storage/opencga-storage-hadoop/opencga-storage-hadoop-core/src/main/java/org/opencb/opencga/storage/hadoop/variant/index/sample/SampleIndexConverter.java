@@ -38,6 +38,8 @@ public class SampleIndexConverter implements Converter<Result, Collection<Varian
     private static final String GENOTYPE_COUNT_PREFIX = META_PREFIX + "C_";
     private static final String ANNOTATION_PREFIX = META_PREFIX + "A_";
     private static final byte[] ANNOTATION_PREFIX_BYTES = Bytes.toBytes(ANNOTATION_PREFIX);
+    private static final String FILE_PREFIX = META_PREFIX + "F_";
+    private static final byte[] FILE_PREFIX_BYTES = Bytes.toBytes(FILE_PREFIX);
 
     // Region filter
     private final Region regionFilter;
@@ -118,6 +120,10 @@ public class SampleIndexConverter implements Converter<Result, Collection<Varian
 
     public static byte[] toAnnotationColumn(String genotype) {
         return Bytes.toBytes(ANNOTATION_PREFIX + genotype);
+    }
+
+    public static byte[] toFileColumn(String genotype) {
+        return Bytes.toBytes(FILE_PREFIX + genotype);
     }
 
     public static Pair<String, String> parsePendingColumn(byte[] column) {

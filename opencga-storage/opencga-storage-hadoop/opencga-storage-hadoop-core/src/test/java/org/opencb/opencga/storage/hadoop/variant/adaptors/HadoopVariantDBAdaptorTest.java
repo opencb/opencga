@@ -36,6 +36,7 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
 
 import java.util.ArrayList;
@@ -285,7 +286,7 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
 
         System.out.println("----------------------------------------------------------");
         System.out.println("query = " + annotationQuery.toJson());
-        System.out.println("maskToString(annotationMask) = " + AnnotationIndexConverter.maskToString(annotationMask));
+        System.out.println("maskToString(annotationMask) = " + SampleIndexDBAdaptor.maskToString(annotationMask));
         System.out.println("Query ONLY_INDEX = " + onlyIndex);
         System.out.println("Query NO_INDEX = " + onlyDBAdaptor);
         System.out.println("Query INDEX = " + indexAndDBAdaptor);
