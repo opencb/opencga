@@ -56,7 +56,11 @@
            
         ],
         "azurebatch/azuredeploy.json": [
-            
+            {
+                "message": "Value is not accepted. Valid values: \"applications\".",
+                "jsonPath": "resources.*",
+                "reason": "Incorrect schema match"
+            }
         ],
         "azurefiles/azuredeploy.json": [
             {
@@ -80,7 +84,7 @@
             },
             {
                 "message": "Value is not accepted. Valid values: \"applications\".",
-                "jsonPath": "resources.1.resources.0.type",
+                "jsonPath": "resources.*",
                 "reason": "Incorrect schema match"
             }
         ],
