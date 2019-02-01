@@ -35,7 +35,13 @@
                 "message": "String does not match the pattern of \"^[-\\w\\._\\(\\)]+$\".",
                 "jsonPath": "resources.*",
                 "reason": "Schema matching ARM function against regex for name"
+            },
+            {
+                "message": "String does not match the pattern of \"^[-\\w\\._\\(\\)]+$\".",
+                "jsonPath": "resources.*",
+                "reason": "Schema matching ARM function against regex for name"
             }
+
         ],
         "azuredeploy.json": [
             {
@@ -77,6 +83,11 @@
                 "message": "Incorrect type. Expected \"object\".",
                 "jsonPath": "resources.0.properties.storageProfile.storageaccounts.0",
                 "reason": "Schema validation fails as value is an ARM function"
+            },
+            {
+                "message": "Value is not accepted. Valid values: \"applications\".",
+                "jsonPath": "resources.1.resources.0.type",
+                "reason": "Incorrect schema match"
             }
         ],
         "mongodb/azuredeploy.json": [
@@ -147,6 +158,11 @@
             {
                 "message": "Value is not accepted. Valid values: \"Microsoft.Network/expressRouteCircuits\".",
                 "jsonPath": "resources.1.type",
+                "reason": "Incorrect schema match"
+            },
+            {
+                "message": "Value is not accepted. Valid values: \"peerings\".",
+                "jsonPath": "resources.1.resources.0.type",
                 "reason": "Incorrect schema match"
             }
         ],
