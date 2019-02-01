@@ -31,6 +31,41 @@ installDeps () {
     sleep 15
 }
 
+
+scanForNewDisks() {
+    # Looks for unpartitioned disks
+    DEVS=($(ls -1 /dev/sd*|egrep -v "[0-9]$"))
+    for DEV in "${DEVS[@]}";
+    do
+        isPartitioned "${DEV}"
+        if [ ${?} -eq 0 ];
+        then
+            # found unpartitioned disk
+            echo "found unpartitioned disk ${DEV}"
+            formatAndMountDisk "${DEV}"
+        fi
+    done
+}
+
+isPartitioned() {
+    OUTPUT=$(partx -s ${1} 2>&1)
+    if [[ $OUTPUT == *"failed to read partition table"* ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+formatAndMountDisk() {
+    #partitions primary linux partition on new disk
+    echo 'type=83' | sudo sfdisk ${1}
+    mkfs -t ext4 ${1}1
+    mkdir /datadrive
+    mount ${1}1 /datadrive
+    fs_uuid=$(blkid -o value -s UUID ${1}1)
+    echo "UUID=${fs_uuid}   /datadrive   ext4   defaults,nofail   1   2" >> /etc/fstab
+}
+
 generateCertificate() {
     sed -i -e 's/# server_names_hash_bucket_size 64/server_names_hash_bucket_size 128/g' /etc/nginx/nginx.conf
     certbot --nginx -d ${APP_DNS_NAME} -m ${CERT_EMAIL} --agree-tos -q
@@ -43,6 +78,8 @@ generateCertificate() {
 
 configureMongoDB() {
     mongo admin --eval 'db.createUser({user: "'${MONGODB_USERNAME}'",pwd: "'${MONGODB_PASSWORD}'",roles: ["root"]})'
+    mkdir /datadrive/mongodb
+    sed -i -e '/dbPath/ s/: .*/: \/datadrive\/mongodb /' /etc/mongod.conf
     sed -i '/#security/csecurity:\n  authorization: "enabled"\n  keyFile: \/opt\/mongodb.key\n' /etc/mongod.conf
     sed -i '/#replication/creplication:\n  replSetName: rs0\n' /etc/mongod.conf
     sed -i -e '/bindIp/ s/: .*/: ::,0.0.0.0\n  ssl:\n    mode: allowSSL\n    PEMKeyFile: \/etc\/ssl\/mongo.pem\n    CAFile: \/etc\/ssl\/ca.pem\n    allowConnectionsWithoutCertificates: true /' /etc/mongod.conf
@@ -102,6 +139,7 @@ createReplicaSet() {
 
 #install flow
 installDeps
+scanForNewDisks
 generateCertificate
 configureMongoDB
 
