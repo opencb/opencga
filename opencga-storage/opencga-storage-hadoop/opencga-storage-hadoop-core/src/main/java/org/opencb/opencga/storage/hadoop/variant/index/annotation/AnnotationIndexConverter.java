@@ -1,7 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.index.annotation;
 
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
@@ -36,7 +36,8 @@ public class AnnotationIndexConverter {
     public static final double POP_FREQ_THRESHOLD_01 = 0.01;
     // 0.01 con all_of las no ALL
 //    public static final double POP_FREQ_THRESHOLD_005 = 0.005;
-    public static final Set<String> LOF_SET = new HashSet<>();
+    public static final Set<String> LOF_SET = new HashSet<>(); // LOF does not include missense_variant
+    public static final Set<String> LOF_SET_MISSENSE = new HashSet<>();
     public static final Set<String> PROTEIN_CODING_BIOTYPE_SET = new HashSet<>();
     public static final Set<String> POP_FREQ_ANY_001_SET = new HashSet<>();
     public static final Set<String> POP_FREQ_ALL_01_SET = new HashSet<>();
@@ -44,7 +45,7 @@ public class AnnotationIndexConverter {
     public static final byte PROTEIN_CODING_MASK      = (byte) (1 << 0);
     public static final byte POP_FREQ_ANY_001_MASK    = (byte) (1 << 1);
     public static final byte POP_FREQ_ALL_01_MASK     = (byte) (1 << 2);
-    public static final byte UNUSED_3_MASK            = (byte) (1 << 3);
+    public static final byte LOF_MISSENSE_MASK        = (byte) (1 << 3);
     public static final byte LOF_MASK                 = (byte) (1 << 4);
     public static final byte CLINICAL_MASK            = (byte) (1 << 5);
     public static final byte NON_SNV_MASK             = (byte) (1 << 6);
@@ -64,10 +65,12 @@ public class AnnotationIndexConverter {
         LOF_SET.add(VariantAnnotationUtils.SPLICE_DONOR_VARIANT);
         LOF_SET.add(VariantAnnotationUtils.TRANSCRIPT_ABLATION);
         LOF_SET.add(VariantAnnotationUtils.TRANSCRIPT_AMPLIFICATION);
-        LOF_SET.add(VariantAnnotationUtils.MISSENSE_VARIANT);
         LOF_SET.add(VariantAnnotationUtils.INITIATOR_CODON_VARIANT);
         LOF_SET.add(VariantAnnotationUtils.SPLICE_REGION_VARIANT);
         LOF_SET.add(VariantAnnotationUtils.INCOMPLETE_TERMINAL_CODON_VARIANT);
+
+        LOF_SET_MISSENSE.addAll(LOF_SET);
+        LOF_SET_MISSENSE.add(VariantAnnotationUtils.MISSENSE_VARIANT);
 
         PROTEIN_CODING_BIOTYPE_SET.add(VariantAnnotationUtils.IG_C_GENE);
         PROTEIN_CODING_BIOTYPE_SET.add(VariantAnnotationUtils.IG_D_GENE);
@@ -143,7 +146,10 @@ public class AnnotationIndexConverter {
                     String soName = sequenceOntologyTerm.getName();
                     if (LOF_SET.contains(soName)) {
                         b |= LOF_MASK;
+                        b |= LOF_MISSENSE_MASK;
                         break;
+                    } else if (VariantAnnotationUtils.MISSENSE_VARIANT.equals(soName)) {
+                        b |= LOF_MISSENSE_MASK;
                     }
                 }
             }

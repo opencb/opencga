@@ -156,6 +156,8 @@ public class SampleIndexQueryParser {
                     .collect(Collectors.toList());
             if (LOF_SET.containsAll(cts)) {
                 b |= LOF_MASK;
+            } else if (LOF_SET_MISSENSE.containsAll(cts)) {
+                b |= LOF_MISSENSE_MASK;
             }
         }
 
