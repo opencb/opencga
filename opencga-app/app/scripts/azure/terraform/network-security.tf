@@ -56,7 +56,7 @@ resource "azurerm_network_security_rule" "allow-mongo-in" {
 
 resource "azurerm_network_security_rule" "allow-ssh-in" {
   name                        = "allow-ssh-in"
-  priority                    = 3100
+  priority                    = 3200
   direction                   = "Inbound"
   access                      = "Allow"
   protocol                    = "*"
@@ -70,7 +70,7 @@ resource "azurerm_network_security_rule" "allow-ssh-in" {
 
 resource "azurerm_network_security_rule" "allow-all-outbound-hdinsight" {
   name                        = "allow-all-outbound-hdinsight"
-  priority                    = 3100
+  priority                    = 3300
   direction                   = "outbound"
   access                      = "Allow"
   protocol                    = "*"
