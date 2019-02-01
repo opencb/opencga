@@ -95,7 +95,7 @@ public class CatalogStorageMetadataSynchronizer {
     public void synchronizeCatalogFromStorage(StudyMetadata study, String sessionId)
             throws CatalogException {
 
-        logger.info("Updating StudyConfiguration " + study.getId());
+        logger.info("Updating study " + study.getId());
 
         //Check if cohort ALL has been modified
         String defaultCohortName = StudyEntry.DEFAULT_COHORT;
@@ -250,7 +250,7 @@ public class CatalogStorageMetadataSynchronizer {
                     logger.info("File \"{}\" change status from {} to {}", file.getName(),
                             FileIndex.IndexStatus.READY, newStatus);
                     catalogManager.getFileManager()
-                            .updateFileIndexStatus(file, newStatus, "Not indexed, regarding StudyConfiguration", sessionId);
+                            .updateFileIndexStatus(file, newStatus, "Not indexed, regarding Storage Metadata", sessionId);
                 }
             }
         }

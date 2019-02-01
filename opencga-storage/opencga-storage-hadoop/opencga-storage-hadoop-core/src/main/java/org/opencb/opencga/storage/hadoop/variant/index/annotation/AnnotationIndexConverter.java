@@ -8,8 +8,10 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantBuilder;
-import org.opencb.biodata.models.variant.avro.*;
+import org.opencb.biodata.models.variant.avro.ConsequenceType;
+import org.opencb.biodata.models.variant.avro.PopulationFrequency;
+import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 
@@ -25,8 +27,6 @@ import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.Variant
  * Created by jacobo on 04/01/19.
  */
 public class AnnotationIndexConverter {
-
-    public static final byte EMPTY_ANNOTATION_MASK = 0;
 
     public static final String GNOMAD_GENOMES = "GNOMAD_GENOMES";
     public static final String K_GENOMES = "1kG_phase3";
@@ -47,7 +47,7 @@ public class AnnotationIndexConverter {
     public static final byte LOF_MISSENSE_MASK        = (byte) (1 << 3);
     public static final byte LOF_MASK                 = (byte) (1 << 4);
     public static final byte CLINICAL_MASK            = (byte) (1 << 5);
-    public static final byte NON_SNV_MASK             = (byte) (1 << 6);
+    public static final byte UNUSED_6_MASK            = (byte) (1 << 6);
     public static final byte UNUSED_7_MASK            = (byte) (1 << 7);
 
     protected static final byte[] COLUMN_FMAILY = Bytes.toBytes("0");
@@ -123,10 +123,10 @@ public class AnnotationIndexConverter {
     public byte convert(VariantAnnotation variantAnnotation) {
         byte b = 0;
 
-        VariantType type = VariantBuilder.inferType(variantAnnotation.getReference(), variantAnnotation.getAlternate());
-        if (!type.equals(VariantType.SNV) && !type.equals(VariantType.SNP)) {
-            b |= NON_SNV_MASK;
-        }
+//        VariantType type = VariantBuilder.inferType(variantAnnotation.getReference(), variantAnnotation.getAlternate());
+//        if (!type.equals(VariantType.SNV) && !type.equals(VariantType.SNP)) {
+//            b |= UNUSED_6_MASK;
+//        }
 
         if (variantAnnotation.getConsequenceTypes() != null) {
             for (ConsequenceType ct : variantAnnotation.getConsequenceTypes()) {

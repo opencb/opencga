@@ -11,6 +11,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQuery.SingleSampleIndexQuery;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -27,20 +28,20 @@ public class SingleSampleIndexVariantDBIterator extends VariantDBIterator {
     private final Iterator<Variant> iterator;
     protected int count = 0;
 
-    public SingleSampleIndexVariantDBIterator(Table table, List<Region> regions, Integer studyId, String sample, List<String> gts,
-                                              byte annotationMask, SampleIndexDBAdaptor dbAdaptor) {
-        if (CollectionUtils.isEmpty(regions)) {
+    public SingleSampleIndexVariantDBIterator(Table table, SingleSampleIndexQuery query, SampleIndexDBAdaptor dbAdaptor) {
+        List<Region> regions;
+        if (CollectionUtils.isEmpty(query.getRegions())) {
             // If no regions are defined, get a list of one null element to initialize the stream.
             regions = Collections.singletonList(null);
         } else {
-            regions = VariantQueryUtils.mergeRegions(regions);
+            regions = VariantQueryUtils.mergeRegions(query.getRegions());
         }
 
         Iterator<Iterator<Variant>> iterators = regions.stream()
                 .map(region -> {
                     // One scan per region
-                    Scan scan = dbAdaptor.parse(region, studyId, sample, gts, annotationMask, false);
-                    SampleIndexConverter converter = new SampleIndexConverter(region, annotationMask);
+                    Scan scan = dbAdaptor.parse(query, region, false);
+                    SampleIndexConverter converter = new SampleIndexConverter(query, region);
                     try {
                         ResultScanner scanner = table.getScanner(scan);
                         addCloseable(scanner);

@@ -310,7 +310,8 @@ public class HadoopVariantDBAdaptorMultiFileTest extends VariantDBAdaptorMultiFi
 
         for (List<Region> regions : regionLists) {
             StopWatch stopWatch = StopWatch.createStarted();
-            long actualCount = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor().count(regions, "S_1", "NA12877", Arrays.asList("0/1", "1/1"));
+            long actualCount = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor()
+                    .count(regions, "S_1", "NA12877", Arrays.asList("0/1", "1/1"));
             Query query = new Query(VariantQueryParam.STUDY.key(), "S_1")
                     .append(VariantQueryParam.SAMPLE.key(), "NA12877");
             if (regions != null) {
@@ -325,8 +326,6 @@ public class HadoopVariantDBAdaptorMultiFileTest extends VariantDBAdaptorMultiFi
             System.out.println("-----------------------------------");
             assertEquals(expectedCount, actualCount);
         }
-
-
     }
 
 

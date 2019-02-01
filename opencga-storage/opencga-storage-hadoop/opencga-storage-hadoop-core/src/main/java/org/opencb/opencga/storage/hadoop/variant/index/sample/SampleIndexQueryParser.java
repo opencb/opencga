@@ -132,22 +132,46 @@ public class SampleIndexQueryParser {
         }
         String study = defaultStudy.getName();
 
+        byte[] fileMask = parseFileMask(query);
         byte annotationMask = parseAnnotationMask(query);
 
-        return new SampleIndexQuery(regions, study, samplesMap, annotationMask, queryOperation);
+        return new SampleIndexQuery(regions, study, samplesMap, fileMask[0], fileMask[1], annotationMask, queryOperation);
     }
 
+    protected static byte[] parseFileMask(Query query) {
+        byte fileIndexMask = 0;
+        byte fileIndex = 0;
+
+        if (isValidParam(query, TYPE)) {
+            List<String> types = new ArrayList<>(query.getAsStringList(VariantQueryParam.TYPE.key()));
+            if (!types.isEmpty()) {
+
+                boolean snv = types.remove(VariantType.SNV.toString());
+                snv |= types.remove(VariantType.SNP.toString());
+                boolean indel = !types.isEmpty(); // Other nonSNV values
+
+                if (snv && !indel) { // Pure SNV
+                    fileIndexMask |= VariantsToSampleIndexConverter.SNV_MASK;
+                    fileIndex |= VariantsToSampleIndexConverter.SNV_MASK;
+                } else if (indel && !snv) {
+                    fileIndexMask |= VariantsToSampleIndexConverter.SNV_MASK;
+                } // else ignore mixed SNV and INDEL filters
+            }
+        }
+
+        return new byte[]{fileIndexMask, fileIndex};
+    }
 
     protected static byte parseAnnotationMask(Query query) {
         // TODO: Allow skip using annotation mask
 
         byte b = 0;
-        if (isValidParam(query, TYPE)) {
-            List<String> types = query.getAsStringList(VariantQueryParam.TYPE.key());
-            if (!types.isEmpty() && !types.contains(VariantType.SNV.toString()) && !types.contains(VariantType.SNP.toString())) {
-                b |= NON_SNV_MASK;
-            }
-        }
+//        if (isValidParam(query, TYPE)) {
+//            List<String> types = query.getAsStringList(VariantQueryParam.TYPE.key());
+//            if (!types.isEmpty() && !types.contains(VariantType.SNV.toString()) && !types.contains(VariantType.SNP.toString())) {
+//                b |= UNUSED_6_MASK;
+//            }
+//        }
 
         if (isValidParam(query, ANNOT_CONSEQUENCE_TYPE)) {
             List<String> cts = query.getAsStringList(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key());

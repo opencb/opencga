@@ -35,12 +35,11 @@ import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBItera
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
-import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -253,6 +252,12 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
 
 
     @Test
+    public void testQueryFileIndex() throws Exception {
+        testQueryFileIndex(new Query(TYPE.key(), "SNV"));
+        testQueryFileIndex(new Query(TYPE.key(), "INDEL"));
+    }
+
+    @Test
     public void testQueryAnnotationIndex() throws Exception {
         testQueryAnnotationIndex(new Query(ANNOT_BIOTYPE.key(), "protein_coding"));
         testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant"));
@@ -263,6 +268,14 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     }
 
     public void testQueryAnnotationIndex(Query annotationQuery) throws Exception {
+        assertNotEquals(IndexUtils.EMPTY_MASK, testQueryIndex(annotationQuery).getAnnotationIndexMask());
+    }
+
+    public void testQueryFileIndex(Query annotationQuery) throws Exception {
+        assertNotEquals(IndexUtils.EMPTY_MASK, testQueryIndex(annotationQuery).getFileIndexMask());
+    }
+
+    public SampleIndexQuery testQueryIndex(Query annotationQuery) throws Exception {
         Query query = new Query()
                 .append(STUDY.key(), STUDY_NAME)
                 .append(SAMPLE.key(), "NA19600");
@@ -277,8 +290,9 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
         int onlyDBAdaptor = queryResult.getNumResults();
 
         // Query SampleIndex
-        byte annotationMask = SampleIndexQueryParser.parseSampleIndexQuery(query, variantStorageEngine.getMetadataManager()).getAnnotationMask();
-        int onlyIndex = (int) ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor().count(null, STUDY_NAME, "NA19600", Collections.emptyList(), annotationMask);
+        SampleIndexQuery indexQuery = SampleIndexQueryParser.parseSampleIndexQuery(query, variantStorageEngine.getMetadataManager());
+        int onlyIndex = (int) ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor()
+                .count(indexQuery, "NA19600");
 
         // Query SampleIndex+DBAdaptor
         queryResult = variantStorageEngine.get(query, new QueryOptions());
@@ -286,7 +300,9 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
 
         System.out.println("----------------------------------------------------------");
         System.out.println("query = " + annotationQuery.toJson());
-        System.out.println("maskToString(annotationMask) = " + SampleIndexDBAdaptor.maskToString(annotationMask));
+        System.out.println("maskToString(annotationMask) = " + IndexUtils.maskToString(indexQuery.getAnnotationIndexMask()));
+        System.out.println("maskToString(fileIndex) = " + IndexUtils.maskToString(indexQuery.getFileIndex()));
+        System.out.println("maskToString(fileIndexMask) = " + IndexUtils.maskToString(indexQuery.getFileIndexMask()));
         System.out.println("Query ONLY_INDEX = " + onlyIndex);
         System.out.println("Query NO_INDEX = " + onlyDBAdaptor);
         System.out.println("Query INDEX = " + indexAndDBAdaptor);
@@ -294,7 +310,7 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
         assertEquals(onlyDBAdaptor, indexAndDBAdaptor);
         assertThat(queryResult, numResults(lte(onlyIndex)));
         assertThat(queryResult, numResults(gt(0)));
-        assertNotEquals(AnnotationIndexConverter.EMPTY_ANNOTATION_MASK, annotationMask);
+        return indexQuery;
     }
 
 

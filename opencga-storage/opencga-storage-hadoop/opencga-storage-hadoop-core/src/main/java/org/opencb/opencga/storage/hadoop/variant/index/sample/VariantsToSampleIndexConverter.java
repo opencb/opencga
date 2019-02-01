@@ -58,7 +58,7 @@ public class VariantsToSampleIndexConverter {
 
             put.addColumn(family, toGenotypeColumn(gt), Bytes.toBytes(variantsStr));
             put.addColumn(family, toGenotypeCountColumn(gt), Bytes.toBytes(variants.size()));
-            put.addColumn(family, toFileColumn(gt), fileMask);
+            put.addColumn(family, toFileIndexColumn(gt), fileMask);
         }
 
 

@@ -980,9 +980,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                     long totalCount;
                     if (sampleIndexQuery.getSamplesMap().size() == 1) {
                         Map.Entry<String, List<String>> entry = sampleIndexQuery.getSamplesMap().entrySet().iterator().next();
-                        totalCount = sampleIndexDBAdaptor.count(
-                                sampleIndexQuery.getRegions(), sampleIndexQuery.getStudy(), entry.getKey(), entry.getValue(),
-                                sampleIndexQuery.getAnnotationMask());
+                        totalCount = sampleIndexDBAdaptor.count(sampleIndexQuery, entry.getKey());
                     } else {
                         Iterators.getLast(variants);
                         totalCount = variants.getCount();

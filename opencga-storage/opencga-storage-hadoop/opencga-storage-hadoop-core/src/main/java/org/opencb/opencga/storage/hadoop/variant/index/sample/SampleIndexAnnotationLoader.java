@@ -177,7 +177,7 @@ public class SampleIndexAnnotationLoader {
 //                            throw new IllegalStateException(msg);
             }
 
-            put.addColumn(family, SampleIndexConverter.toAnnotationColumn(gt), annotations);
+            put.addColumn(family, SampleIndexConverter.toAnnotationIndexColumn(gt), annotations);
         }
         return put;
     }
