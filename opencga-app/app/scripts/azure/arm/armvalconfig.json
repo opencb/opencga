@@ -43,14 +43,9 @@
                 "jsonPath": ".*",
                 "reason": "ARM Language support doesn't handle nested objects"
             },
-            {
-                "message": "String does not match the pattern of \"^[-\\w\\._\\(\\)]+$\".",
-                "jsonPath": "resources.10.resourceGroup",
-                "reason": "Schema matching ARM function against regex for name"
-            },
               {
-                "message": "String does not match the pattern of \"^[-\\w\\._\\(\\)]+$\".",
-                "jsonPath": "resources.11.resourceGroup",
+                "message": "String does not match the pattern of *",
+                "jsonPath": "resources.*",
                 "reason": "Schema matching ARM function against regex for name"
             }
            
