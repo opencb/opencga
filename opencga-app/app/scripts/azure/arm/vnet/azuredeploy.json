@@ -1,10 +1,8 @@
 {
     "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
-    "parameters": {
-    },
-    "variables": {
-    },
+    "parameters": {},
+    "variables": {},
     "resources": [
         {
             "apiVersion": "2018-08-01",
@@ -29,8 +27,8 @@
                                     "service": "Microsoft.Storage"
                                 }
                             ],
-                            "networkSecurityGroup" : {
-                                "id" : "[resourceId('Microsoft.Network/networkSecurityGroups', 'nsg-default')]"
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', 'nsg-default')]"
                             }
                         },
                         "type": "Microsoft.Network/virtualNetworks/subnets"
@@ -46,8 +44,8 @@
                                     "service": "Microsoft.Storage"
                                 }
                             ],
-                            "networkSecurityGroup" : {
-                                "id" : "[resourceId('Microsoft.Network/networkSecurityGroups', 'nsg-averecluster')]"
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', 'nsg-averecluster')]"
                             }
                         },
                         "type": "Microsoft.Network/virtualNetworks/subnets"
@@ -59,8 +57,8 @@
                             "ipConfigurations": [],
                             "delegations": [],
                             "serviceEndpoints": [],
-                            "networkSecurityGroup" : {
-                                "id" : "[resourceId('Microsoft.Network/networkSecurityGroups', 'nsg-solr')]"
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', 'nsg-solr')]"
                             }
                         },
                         "type": "Microsoft.Network/virtualNetworks/subnets"
@@ -72,8 +70,34 @@
                             "ipConfigurations": [],
                             "delegations": [],
                             "serviceEndpoints": [],
-                            "networkSecurityGroup" : {
-                                "id" : "[resourceId('Microsoft.Network/networkSecurityGroups', 'nsg-mongodb')]"
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', 'nsg-mongodb')]"
+                            }
+                        },
+                        "type": "Microsoft.Network/virtualNetworks/subnets"
+                    },
+                    {
+                        "name": "daemon",
+                        "properties": {
+                            "addressPrefix": "10.0.4.0/24",
+                            "ipConfigurations": [],
+                            "delegations": [],
+                            "serviceEndpoints": [],
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', 'nsg-daemon')]"
+                            }
+                        },
+                        "type": "Microsoft.Network/virtualNetworks/subnets"
+                    },
+                    {
+                        "name": "hdinsight",
+                        "properties": {
+                            "addressPrefix": "10.0.5.0/24",
+                            "ipConfigurations": [],
+                            "delegations": [],
+                            "serviceEndpoints": [],
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', 'nsg-hdinsight')]"
                             }
                         },
                         "type": "Microsoft.Network/virtualNetworks/subnets"
@@ -104,7 +128,7 @@
         },
         "hdinsightSubnetId": {
             "type": "string",
-            "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', 'vnet')).subnets[0].id]"
+            "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', 'vnet')).subnets[5].id]"
         },
         "avereClusterSubnetId": {
             "type": "string",
@@ -117,6 +141,10 @@
         "mongoSubnetId": {
             "type": "string",
             "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', 'vnet')).subnets[3].id]"
+        },
+        "daemonSubnetId" : {
+            "type" : "string",
+            "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', 'vnet')).subnets[4].id]"
         }
     }
 }

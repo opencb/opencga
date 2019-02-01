@@ -41,20 +41,6 @@
                         }
                     },
                     {
-                        "name": "ssh_in",
-                        "properties": {
-                            "description": "Allow all SSH traffic",
-                            "protocol": "*",
-                            "sourcePortRange": "*",
-                            "destinationPortRange": "22",
-                            "sourceAddressPrefix": "Internet",
-                            "destinationAddressPrefix": "*",
-                            "access": "Allow",
-                            "priority": 3102,
-                            "direction": "Inbound"
-                        }
-                    },
-                    {
                         "name" : "outbound_all",
                         "properties" : {
                             "description": "Allow all outbound traffic.",
@@ -79,6 +65,41 @@
             "tags": {},
             "properties": {
                 "securityRules": []
+            }
+        },
+        {
+            "name": "nsg-hdinsight",
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2018-08-01",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "properties": {
+                "securityRules": []
+            }
+        },
+        {
+            "name": "nsg-daemon",
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2018-08-01",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "ssh_in",
+                        "properties": {
+                            "description": "Allow all SSH traffic",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "22",
+                            "sourceAddressPrefix": "Internet",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 3100,
+                            "direction": "Inbound"
+                        }
+                    }
+                ]
             }
         },
         {
