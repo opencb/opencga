@@ -120,7 +120,12 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         CatalogManager catalogManager = new CatalogManager(configuration);
         String token = catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
 
-        catalogManager.getProjectManager().exportReleases(commandOptions.project, commandOptions.release, commandOptions.outputDir, token);
+        if (StringUtils.isNotEmpty(commandOptions.project)) {
+            catalogManager.getProjectManager().exportReleases(commandOptions.project, commandOptions.release, commandOptions.outputDir, token);
+        } else if (StringUtils.isNotEmpty(commandOptions.study) && StringUtils.isNotEmpty(commandOptions.inputFile)) {
+            catalogManager.getProjectManager().exportByFileNames(commandOptions.study, Paths.get(commandOptions.outputDir).toFile(),
+                    Paths.get(commandOptions.inputFile).toFile(), token);
+        }
     }
 
     private void importDatabase() throws CatalogException, IOException {
