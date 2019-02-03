@@ -21,16 +21,16 @@ public class PersistentResultScanner extends AbstractClientScanner {
     private final String tableName;
     private ResultScanner scanner;
     private byte[] lastRow = null;
-    private static final Logger logger = LoggerFactory.getLogger(PersistentResultScanner.class);
+    private static Logger logger = LoggerFactory.getLogger(PersistentResultScanner.class);
 
-    public static ResultScanner getScanner(HBaseManager hBaseManager, Scan scan, String tableName) throws IOException {
+    public static ResultScanner getScanner(HBaseManager hBaseManager, String tableName, Scan scan) throws IOException {
         if (isValid(scan) != null) {
             return hBaseManager.act(tableName, (Table table) -> table.getScanner(scan));
         }
         return new PersistentResultScanner(hBaseManager, scan, tableName);
     }
 
-    private PersistentResultScanner(HBaseManager hBaseManager, Scan scan, String tableName) throws IOException {
+    PersistentResultScanner(HBaseManager hBaseManager, Scan scan, String tableName) throws IOException {
         this.scanner = null;
         this.hBaseManager = hBaseManager;
         this.scan = new Scan(scan); // Copy scan, as it can me modified.
@@ -40,14 +40,14 @@ public class PersistentResultScanner extends AbstractClientScanner {
         obtainNewScanner();
     }
 
-    private static void checkValid(Scan scan) {
+    private void checkValid(Scan scan) {
         String msg = isValid(scan);
         if (msg != null) {
             throw new IllegalArgumentException(msg);
         }
     }
 
-    private static String isValid(Scan scan) {
+    static String isValid(Scan scan) {
         if (scan.isReversed()) {
             return "Can not use a " + PersistentResultScanner.class.getName() + " with reversed results";
         }
