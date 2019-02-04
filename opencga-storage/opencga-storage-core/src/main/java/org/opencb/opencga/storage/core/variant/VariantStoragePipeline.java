@@ -147,7 +147,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                     existingStudyConfiguration.setAggregationStr(options.getString(Options.AGGREGATED_TYPE.key(),
                             Options.AGGREGATED_TYPE.defaultValue().toString()));
                 }
-                setFileId(scm.registerFile(existingStudyConfiguration, fileName));
+                setFileId(scm.registerFile(existingStudyConfiguration, input.getPath()));
                 return existingStudyConfiguration;
             });
         }
@@ -156,20 +156,16 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         return input;
     }
 
-    protected VariantFileMetadata buildVariantFileMetadata(Path input) throws StorageEngineException {
-        Integer fileId;
+    protected VariantFileMetadata createEmptyVariantFileMetadata(Path input) {
+        VariantFileMetadata fileMetadata = VariantReaderUtils.createEmptyVariantFileMetadata(input);
+        int fileId;
         if (options.getBoolean(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(), Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION
                 .defaultValue())) {
             fileId = -1;
         } else {
             fileId = getFileId();
         }
-//        Aggregation aggregation = options.get(Options.AGGREGATED_TYPE.key(), Aggregation.class, Options
-//                .AGGREGATED_TYPE.defaultValue());
-        String fileName = input.getFileName().toString();
-//        Type type = options.get(Options.STUDY_TYPE.key(), Type.class,
-//                Options.STUDY_TYPE.defaultValue());
-        return new VariantFileMetadata(fileId.toString(), fileName);
+        return fileMetadata.setId(Integer.toString(fileId));
     }
 
     /**
@@ -203,13 +199,14 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         boolean stdout = options.getBoolean(STDOUT.key(), STDOUT.defaultValue());
 
         // Create empty VariantFileMetadata
-        VariantFileMetadata metadataTemplate = buildVariantFileMetadata(input);
+        VariantFileMetadata metadataTemplate = createEmptyVariantFileMetadata(input);
         // Read VariantFileMetadata
         final VariantFileMetadata metadata = VariantReaderUtils.readVariantFileMetadata(input, metadataTemplate, stdin);
 
 
         VariantFileHeader variantMetadata = metadata.getHeader();
-        String fileName = metadata.getPath();
+        String filePath = metadata.getPath();
+        String fileName = Paths.get(filePath).getFileName().toString();
         String studyId = String.valueOf(getStudyId());
         boolean generateReferenceBlocks = options.getBoolean(Options.GVCF.key(), false);
 
@@ -498,8 +495,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
          *     fileId was already in the studyConfiguration.indexedFiles
          */
 
-        String fileName = fileMetadata.getPath();
-        int fileId = getStudyConfigurationManager().registerFile(studyConfiguration, fileName);
+        int fileId = getStudyConfigurationManager().registerFile(studyConfiguration, fileMetadata.getPath());
         getStudyConfigurationManager().registerFileSamples(studyConfiguration, fileId, fileMetadata, options);
         setFileId(fileId);
 

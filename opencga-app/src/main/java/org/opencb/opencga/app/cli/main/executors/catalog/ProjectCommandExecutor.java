@@ -81,24 +81,28 @@ public class ProjectCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<Project> create() throws CatalogException, IOException {
         logger.debug("Creating a new project");
 
-        ObjectMap params = new ObjectMap();
-        // First we populate the organism information using the client configuration
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.NAME.key(), projectsCommandOptions.createCommandOptions.name);
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ID.key(), projectsCommandOptions.createCommandOptions.id);
-        params.putIfNotEmpty("alias", projectsCommandOptions.createCommandOptions.alias);
-
         ProjectCommandOptions.CreateCommandOptions commandOptions = projectsCommandOptions.createCommandOptions;
-        Project.Organism organism = clientConfiguration.getOrganism();
-        organism.setAssembly(StringUtils.isNotEmpty(commandOptions.assembly) ? commandOptions.assembly : organism.getAssembly());
-        organism.setCommonName(StringUtils.isNotEmpty(commandOptions.commonName) ? commandOptions.commonName : organism.getCommonName());
-        organism.setScientificName(StringUtils.isNotEmpty(commandOptions.scientificName)
-                ? commandOptions.scientificName : organism.getScientificName());
-        organism.setTaxonomyCode(StringUtils.isNotEmpty(commandOptions.taxonomyCode)
-                ? Integer.parseInt(commandOptions.taxonomyCode) : organism.getTaxonomyCode());
-        params.put(ProjectDBAdaptor.QueryParams.ORGANISM.key(), organism);
 
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.DESCRIPTION.key(), projectsCommandOptions.createCommandOptions.description);
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANIZATION.key(), projectsCommandOptions.createCommandOptions.organization);
+        ObjectMap params;
+        if (StringUtils.isNotEmpty(commandOptions.json)) {
+            params = loadFile(commandOptions.json);
+            // Fill organism with the information from the client configuration if it is not defined in the JSON
+            params.computeIfAbsent(ProjectDBAdaptor.QueryParams.ORGANISM.key(), k -> clientConfiguration.getOrganism());
+        } else {
+            Project.Organism organism = clientConfiguration.getOrganism();
+            organism.setAssembly(StringUtils.isNotEmpty(commandOptions.assembly) ? commandOptions.assembly : organism.getAssembly());
+            organism.setCommonName(StringUtils.isNotEmpty(commandOptions.commonName) ? commandOptions.commonName : organism.getCommonName());
+            organism.setScientificName(StringUtils.isNotEmpty(commandOptions.scientificName)
+                    ? commandOptions.scientificName : organism.getScientificName());
+            organism.setTaxonomyCode(StringUtils.isNotEmpty(commandOptions.taxonomyCode)
+                    ? Integer.parseInt(commandOptions.taxonomyCode) : organism.getTaxonomyCode());
+            params = new ObjectMap(ProjectDBAdaptor.QueryParams.ORGANISM.key(), organism);
+            params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.NAME.key(), projectsCommandOptions.createCommandOptions.name);
+            params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.DESCRIPTION.key(), projectsCommandOptions.createCommandOptions.description);
+            params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANIZATION.key(), projectsCommandOptions.createCommandOptions.organization);
+            params.putIfNotEmpty("alias", projectsCommandOptions.createCommandOptions.alias);
+        }
+        params.put(ProjectDBAdaptor.QueryParams.ID.key(), commandOptions.id);
 
         return openCGAClient.getProjectClient().create(params);
     }
@@ -139,15 +143,22 @@ public class ProjectCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<Project> update() throws CatalogException, IOException {
         logger.debug("Updating project");
 
-        ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.NAME.key(), projectsCommandOptions.updateCommandOptions.name);
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.DESCRIPTION.key(), projectsCommandOptions.updateCommandOptions.description);
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANIZATION.key(), projectsCommandOptions.updateCommandOptions.organization);
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ATTRIBUTES.key(), projectsCommandOptions.updateCommandOptions.attributes);
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key(),
-                projectsCommandOptions.updateCommandOptions.commonName);
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key(),
-                projectsCommandOptions.updateCommandOptions.taxonomyCode);
+        ProjectCommandOptions.UpdateCommandOptions commandOptions = projectsCommandOptions.updateCommandOptions;
+
+        ObjectMap params;
+        if (StringUtils.isNotEmpty(commandOptions.json)) {
+            params = loadFile(commandOptions.json);
+        } else {
+            params = new ObjectMap();
+            params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.NAME.key(), projectsCommandOptions.updateCommandOptions.name);
+            params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.DESCRIPTION.key(), projectsCommandOptions.updateCommandOptions.description);
+            params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANIZATION.key(), projectsCommandOptions.updateCommandOptions.organization);
+            params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ATTRIBUTES.key(), projectsCommandOptions.updateCommandOptions.attributes);
+            params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key(),
+                    projectsCommandOptions.updateCommandOptions.commonName);
+            params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key(),
+                    projectsCommandOptions.updateCommandOptions.taxonomyCode);
+        }
 
         return openCGAClient.getProjectClient().update(projectsCommandOptions.updateCommandOptions.project, null, params);
     }

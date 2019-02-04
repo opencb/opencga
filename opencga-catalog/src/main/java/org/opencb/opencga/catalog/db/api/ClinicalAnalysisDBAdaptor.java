@@ -52,6 +52,8 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
         PRIORITY("priority", TEXT, ""),
+        ASSIGNED("assigned", TEXT_ARRAY, ""),
+        FLAGS("flags", TEXT_ARRAY, ""),
         RELEASE("release", INTEGER, ""),
 
         FAMILY("family", TEXT_ARRAY, ""),

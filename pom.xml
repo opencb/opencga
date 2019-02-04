@@ -43,8 +43,9 @@
         <biodata.version>1.4.3-SNAPSHOT</biodata.version>
         <cellbase.version>4.6.2-SNAPSHOT</cellbase.version>
         <hpg-bigdata.version>1.0.0-beta4</hpg-bigdata.version>
+        <bionet.version>0.2.0-SNAPSHOT</bionet.version>
         <jackson.version>2.9.7</jackson.version>
-        <jersey.version>2.23</jersey.version>
+        <jersey.version>2.25.1</jersey.version>
         <avro.version>1.7.7</avro.version>
         <protobuf>3.5.1</protobuf>
         <grpc>1.9.1</grpc>
@@ -384,6 +385,11 @@
                 <groupId>org.opencb.hpg-bigdata</groupId>
                 <artifactId>hpg-bigdata-tools</artifactId>
                 <version>${hpg-bigdata.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.bionetdb</groupId>
+                <artifactId>bionetdb-core</artifactId>
+                <version>${bionet.version}</version>
             </dependency>
 
             <!-- General dependencies -->

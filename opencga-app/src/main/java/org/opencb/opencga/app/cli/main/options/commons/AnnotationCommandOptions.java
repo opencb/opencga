@@ -20,11 +20,13 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 
 /**
  * Created by pfurio on 27/07/16.
  */
 public class AnnotationCommandOptions {
+    protected static final String DEPRECATED = "[DEPRECATED] ";
 
     private GeneralCliOptions.CommonCommandOptions commonCommandOptions;
 
@@ -47,7 +49,8 @@ public class AnnotationCommandOptions {
         public String id;
     }
 
-    @Parameters(commandNames = {"annotation-sets-create"}, commandDescription = "Create a new annotation set")
+    @Deprecated
+    @Parameters(commandNames = {"annotation-sets-create"}, commandDescription = DEPRECATED + "Use 'create' or 'update'")
     public class AnnotationSetsCreateCommandOptions extends BaseCommandOptions {
         @Parameter(names = {"--variable-set-id"}, description = "Variable set id", required = true, arity = 1)
         public String variableSetId;
@@ -59,7 +62,8 @@ public class AnnotationCommandOptions {
         public String annotations;
     }
 
-    @Parameters(commandNames = {"annotation-sets-search"}, commandDescription = "Search annotation sets from the resource")
+    @Deprecated
+    @Parameters(commandNames = {"annotation-sets-search"}, commandDescription = DEPRECATED + "Use 'search'")
     public class AnnotationSetsSearchCommandOptions extends BaseCommandOptions {
 
         @Parameter(names = {"--variable-set"}, description = "Variable set id or name", arity = 1)
@@ -69,7 +73,9 @@ public class AnnotationCommandOptions {
         public String annotation;
     }
 
-    @Parameters(commandNames = {"annotation-sets-delete"}, commandDescription = "Remove an entire annotation set or just some annotations")
+    @Deprecated
+    @Parameters(commandNames = {"annotation-sets-delete"}, commandDescription = DEPRECATED + "Use 'update' to remove an entire annotation "
+            + "set and 'annotation-sets-update' to remove some annotations")
     public class AnnotationSetsDeleteCommandOptions extends BaseCommandOptions {
 
         @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name", required = true, arity = 1)
@@ -80,7 +86,8 @@ public class AnnotationCommandOptions {
         public String annotations;
     }
 
-    @Parameters(commandNames = {"annotation-sets"}, commandDescription = "Retrieve all the annotation sets from the resource")
+    @Deprecated
+    @Parameters(commandNames = {"annotation-sets"}, commandDescription = DEPRECATED + "Use 'search'")
     public class AnnotationSetsInfoCommandOptions extends BaseCommandOptions {
 
         @Parameter(names = {"--name"}, description = "Annotation set name. If present, it will only fetch the required "
@@ -91,12 +98,29 @@ public class AnnotationCommandOptions {
     @Parameters(commandNames = {"annotation-sets-update"}, commandDescription = "Update the value of some annotations")
     public class AnnotationSetsUpdateCommandOptions extends BaseCommandOptions {
 
-        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name", required = true, arity = 1)
         public String annotationSetName;
 
-        @Parameter(names = {"--annotations"}, description = "Json file containing the annotations to be updated", required = true,
-                arity = 1)
+        @Parameter(names = {"--annotation-set-name"}, description = DEPRECATED + "Use --annotation-set", arity = 1)
+        public void setAnnotationSetName(String value) {
+            this.annotationSetName = value;
+        }
+
+        @Parameter(names = {"--annotation-set"}, description = "Annotation set name", required = true, arity = 1)
+        public void setAnnotationSet(String annotationSetName) {
+            this.annotationSetName = annotationSetName;
+        }
+
+        @Parameter(names = {"--annotations"}, description = "Json containing the map of annotations when the action is ADD, SET or "
+                + "REPLACE, a json with only the key 'remove' containing the comma separated variables to be removed as a value when the "
+                + "action is REMOVE or a json with only the key 'reset' containing the comma separated variables that will be set to the "
+                + "default value when the action is RESET", required = true, arity = 1)
         public String annotations;
+
+        @Parameter(names = {"--action"}, description = "Action to be performed: ADD to add new annotations; REPLACE to replace the value "
+                + "of an already existing annotation; SET to set the new list of annotations removing any possible old annotations; REMOVE "
+                + "to remove some annotations; RESET to set some annotations to the default value configured in the corresponding "
+                + "variables of the VariableSet if any.", arity = 1)
+        public ParamUtils.CompleteUpdateAction action;
     }
 
     public AnnotationSetsCreateCommandOptions getCreateCommandOptions() {
