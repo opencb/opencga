@@ -2,24 +2,6 @@
     "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
-        "_artifactsLocation": {
-            "type": "string",
-            "metadata": {
-                "description": ""
-            }
-        },
-        "_artifactsLocationSasToken": {
-            "type": "string",
-            "metadata": {
-                "description": ""
-            }
-        },
-        "mountArgs": {
-            "type": "string",
-            "metadata": {
-                "description": "Arguments passed to the mount.py script."
-            }
-        },
         "virtualNetworkSubnetId": {
             "type": "string",
             "metadata": {
@@ -60,15 +42,12 @@
         "poolId": {
             "type": "string",
             "defaultValue": "defaultpool"
-        }, 
-        "dockerImagesToCache": {
-            "type": "array"
         },
-        "LogAnalyticsWorkspaceResourceID": {
-            "type": "string",
-            "metadata": {
-                "description": "Log Analytics Workspace Resource ID"
-            }
+        "storageAccountId": {
+            "type": "string"
+        },
+        "startupCmd": {
+            "type": "string"
         }
     },
     "variables": {
@@ -87,48 +66,10 @@
             },
             "properties": {
                 "autoStorage": {
-                    "storageAccountId": "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+                    "storageAccountId": "[parameters('storageAccountId')]"
                 }
-            },
-            "resources": [
-                {
-                    "type": "providers/diagnosticSettings",
-                    "name": "[concat('Microsoft.Insights/', variables('batchAccountName'))]",
-                    "dependsOn": [
-                        "[resourceId('Microsoft.Batch/batchAccounts', variables('batchAccountName'))]"
-                    ],
-                    "apiVersion": "2017-05-01-preview",
-                    "properties": {
-                      "name": "[variables('batchAccountName')]",
-                      "workspaceId": "[parameters('LogAnalyticsWorkspaceResourceID')]",
-                      "logs": [ 
-                        {
-                          "category": "ServiceLog",
-                          "enabled": true,
-                          "retentionPolicy": {
-                            "days": 0,
-                            "enabled": false
-                          }
-                        }
-                      ],
-                      "metrics": [
-                        {
-                          "category": "AllMetrics",
-                          "enabled": true,
-                          "retentionPolicy": {
-                            "enabled": false,
-                            "days": 0
-                          }
-                        }
-                      ]
-                    }
-                  }
-            ],
-            "dependsOn": [
-                "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
-            ]
+            }
         },
-        
         {
             "comments": "This creates a pool of VMs in Azure Batch which support container workloads. It runs a startup task to mount the shared storage before accepting tasks.",
             "type": "Microsoft.Batch/batchAccounts/pools",
@@ -145,7 +86,7 @@
                     "nodeFillType": "Spread"
                 },
                 "startTask": {
-                    "commandLine": "[concat('/bin/bash -c \"curl -fsSL ', parameters('_artifactsLocation'), '/avere/mount.py', parameters('_artifactsLocationSasToken'), ' | python3 - ', parameters('mountArgs'), '\"')]",
+                    "commandLine": "[parameters('startupCmd')]",
                     "userIdentity": {
                         "autoUser": {
                             "elevationLevel": "Admin",
@@ -158,7 +99,6 @@
                 "deploymentConfiguration": {
                     "virtualMachineConfiguration": {
                         "containerConfiguration": {
-                            "containerImageNames": "[parameters('dockerImagesToCache')]",
                             "type": "DockerCompatible"
                         },
                         "imageReference": {
@@ -171,9 +111,8 @@
                     }
                 },
                 "scaleSettings": {
-                    "autoScale": {
-                        "evaluationInterval": "PT5M",
-                        "formula": "[concat('startingNumberOfVMs = 1;maxNumberofVMs = ', parameters('maxNodeCount'), ';pendingTaskSamplePercent = $PendingTasks.GetSamplePercent(160 * TimeInterval_Second);pendingTaskSamples = pendingTaskSamplePercent < 70 ? startingNumberOfVMs : avg($PendingTasks.GetSample(160 * TimeInterval_Second));$TargetDedicatedNodes=max(1,min(maxNumberofVMs, pendingTaskSamples));')]"
+                    "fixedScale": {
+                        "targetDedicatedNodes": 1
                     }
                 }
             },
