@@ -351,7 +351,7 @@ public class InterpretationWSService extends AnalysisWSService {
             Map<String, List<File>> fileMap = new HashMap<>();
             if (files != null) {
                 for (Map.Entry<String, List<String>> entry : files.entrySet()) {
-                    List<File> fileList = entry.getValue().stream().map(fileId -> new File().setPath(fileId)).collect(Collectors.toList());
+                    List<File> fileList = entry.getValue().stream().map(fileId -> new File().setId(fileId)).collect(Collectors.toList());
                     fileMap.put(entry.getKey(), fileList);
                 }
             }
