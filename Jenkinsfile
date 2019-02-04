@@ -6,7 +6,7 @@ pipeline {
                 timeout(time: 5, unit: 'MINUTES')
             }
             steps {
-                    sh 'cd opencga-app/app/scripts/azure/arm && npm install armval && node node_modules/.bin/armval "**/azuredeploy.json" && rm -rf node_modules && rm -rf package-lock.json'
+                sh 'cd opencga-app/app/scripts/azure/arm && npx --ignore-existing armval "**/azuredeploy.json"'
             }
         }
 
