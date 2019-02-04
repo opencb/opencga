@@ -329,15 +329,15 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
     }
 
     @Override
-    public URI load(URI input) throws IOException, StorageEngineException {
+    public URI load(URI input) throws StorageEngineException {
         int studyId = getStudyId();
         int fileId = getFileId();
 
         ArchiveTableHelper.setChunkSize(conf, getOptions().getInt(ARCHIVE_CHUNK_SIZE, DEFAULT_ARCHIVE_CHUNK_SIZE));
         ArchiveTableHelper.setStudyId(conf, studyId);
 
-        Set<Integer> loadedFiles = dbAdaptor.getVariantFileMetadataDBAdaptor().getLoadedFiles(studyId);
-        if (!loadedFiles.contains(fileId)) {
+        FileMetadata fileMetadata = getMetadataManager().getFileMetadata(studyId, fileId);
+        if (!fileMetadata.isIndexed()) {
             load(input, studyId, fileId);
         } else {
             logger.info("File {} already loaded. Skip this step!",
@@ -363,15 +363,10 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
     public URI postLoad(URI input, URI output) throws StorageEngineException {
         VariantStorageMetadataManager scm = getMetadataManager();
 
-        try {
-            int studyId = getStudyId();
-            VariantFileMetadata fileMetadata = readVariantFileMetadata(input);
-            fileMetadata.setId(String.valueOf(getFileId()));
-            scm.updateVariantFileMetadata(studyId, fileMetadata);
-            dbAdaptor.getVariantFileMetadataDBAdaptor().updateLoadedFilesSummary(studyId, Collections.singletonList(getFileId()));
-        } catch (IOException e) {
-            throw new StorageEngineException("Error storing VariantFileMetadata for file " + getFileId(), e);
-        }
+        int studyId = getStudyId();
+        VariantFileMetadata fileMetadata = readVariantFileMetadata(input);
+        fileMetadata.setId(String.valueOf(getFileId()));
+        scm.updateVariantFileMetadata(studyId, fileMetadata);
 
         registerLoadedFiles(Collections.singletonList(getFileId()));
 

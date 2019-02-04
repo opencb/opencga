@@ -35,7 +35,6 @@ class HBaseVariantMetadataUtils {
     private static final byte[] VALUE_COLUMN = Bytes.toBytes("value");
     private static final byte[] TYPE_COLUMN = Bytes.toBytes("type");
     private static final byte[] LOCK_COLUMN = Bytes.toBytes("lock");
-    private static final byte[] STATUS_COLUMN = Bytes.toBytes("status");
 
     static final String COUNTER_PREFIX = "COUNTER_";
     static final byte[] COUNTER_PREFIX_BYTES = Bytes.toBytes(COUNTER_PREFIX);
@@ -175,10 +174,6 @@ class HBaseVariantMetadataUtils {
 
     static byte[] getValueColumn() {
         return VALUE_COLUMN;
-    }
-
-    static byte[] getStatusColumn() {
-        return STATUS_COLUMN;
     }
 
     static byte[] getCounterColumn(Integer studyId, String idType) {

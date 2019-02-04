@@ -111,7 +111,6 @@ public class HBaseProjectMetadataDBAdaptor extends AbstractHBaseDBAdaptor implem
                 Put put = new Put(getProjectRowKey());
                 put.addColumn(family, getValueColumn(), objectMapper.writeValueAsBytes(projectMetadata));
                 put.addColumn(family, getTypeColumn(), Type.PROJECT.bytes());
-                put.addColumn(family, getStatusColumn(), Status.READY.bytes());
                 if (updateCounters) {
                     for (Map.Entry<String, Integer> entry : projectMetadata.getCounters().entrySet()) {
                         put.addColumn(family, Bytes.toBytes(entry.getKey()), Bytes.toBytes(entry.getValue().longValue()));
