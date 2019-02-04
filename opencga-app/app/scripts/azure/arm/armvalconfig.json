@@ -22,19 +22,58 @@
                 "reason": "Schema Error"
             },
             {
-                "message": "Value is not accepted. Valid values: \"20*",
-                "jsonPath": "resources.*",
-                "reason": "Get rid of all scema version errors as schema cannot be relied on"
+                "message": ".*",
+                "resource": {
+                    "type": "Microsoft.Resources/resourceGroups",
+                    "apiVersion": "2018-05-01",
+                    "name": ".*"
+                },
+                "reason": "Resource group global deployment schema invalid"
             },
             {
-                "message": "Value is not accepted. Valid values: \"Microsoft.*",
-                "jsonPath": "resources.*",
-                "reason": "Get rid of all incorrect schema matches as schema cannot be relied on"
+                "message": ".*",
+                "resource": {
+                    "type": "Microsoft.Resources/deployments",
+                    "apiVersion": "2018-05-01",
+                    "name": ".*"
+                },
+                "reason": "Global deployment schema invalid"
             },
             {
-                "message": "String does not match the pattern of \"^[-\\w\\._\\(\\)]+$\".",
-                "jsonPath": "resources.*",
-                "reason": "Schema matching ARM function against regex for name"
+                "message": ".*",
+                "resource": {
+                    "apiVersion": "2017-04-26-preview",
+                    "type": "Microsoft.OperationalInsights/workspaces",
+                    "name": "[parameters('WorkspaceName')]"
+                },
+                "reason": "Log Analytics Schema invalid"
+            },
+            {
+                "message": ".*",
+                "resource": {
+                    "type": "providers/diagnosticSettings",
+                    "name": ".*",
+                    "apiVersion": "2017-05-01-preview"
+                },
+                "reason": "Diagnostics sub-resource schema invalid"
+            },
+            {
+                "message": ".*",
+                "resource": {
+                    "apiVersion": "2015-11-01-preview",
+                    "name": ".*",
+                    "type": "Microsoft.OperationsManagement/solutions"
+                },
+                "reason": "Solutions schema invalid"
+            }, 
+            {
+                "message": ".*",
+                "resource": {
+                    "name": ".*",
+                    "type": "Microsoft.ContainerInstance/containerGroups",
+                    "apiVersion": "2018-10-01"
+                },
+                "reason": "Container instance schema invalid"
             }
         ],
         "azuredeploy.json": [
@@ -42,18 +81,16 @@
                 "message": "Property \".*\" is not a defined property of.*'selectedSize'.*",
                 "jsonPath": ".*",
                 "reason": "ARM Language support doesn't handle nested objects"
-            },
-              {
-                "message": "String does not match the pattern of *",
-                "jsonPath": "resources.*",
-                "reason": "Schema matching ARM function against regex for name"
             }
-           
         ],
         "azurebatch/azuredeploy.json": [
             {
-                "message": "Value is not accepted. Valid values: \"applications\".",
-                "jsonPath": "resources.*",
+                "message": "Value is not accepted.*",
+                "resource": {
+                    "type": "Microsoft.Batch/batchAccounts/pools",
+                    "name": ".*",
+                    "apiVersion": "2018-12-01"
+                },
                 "reason": "Incorrect schema match"
             }
         ],
@@ -124,30 +161,9 @@
                 "message": ".*",
                 "jsonPath": "resources.2",
                 "reason": "Incorrect schema match for VMSS"
-            },
-            {
-                "message": "Value is not accepted. Valid values: \"Microsoft.Resources/deployments\".",
-                "reason": "Incorrect schema",
-                "jsonPath": "resources.2.type"
-           
-            },
-            {
-            "message": "Value is not accepted. Valid values: \"2015-01-01\".",
-            "reason": "Incorrect schema",
-            "jsonPath": "resources.1.apiVersion"
             }
         ],
         "daemonvm/azuredeploy.json": [
-            {
-                "message": ".*",
-                "jsonPath": "variables.cloud-init.*",
-                "reason": "Validation fails when attempting to validate inline cloudinit"
-            },
-            {
-                "message": "Value is not accepted. Valid values: \"2017-06-01\".",
-                "jsonPath": "resources.0.apiVersion",
-                "reason": "Incorrect schema"
-            },
             {
                 "message": "Value is not accepted. Valid values: \"Microsoft.Network/expressRouteCircuits\".",
                 "jsonPath": "resources.1.type",
@@ -158,27 +174,6 @@
                 "jsonPath": "resources.1.resources.0.type",
                 "reason": "Incorrect schema match"
             }
-        ],
-        "loganalytics/azuredeploy.json": [
-            {
-                "message": "Missing property \"kind\".",
-                "jsonPath": "resources.0.resources.*",
-                "reason": "Incorrect schema"
-            },
-            {
-                "message": "Value is not accepted. Valid values: \"dataSources\".",
-                "jsonPath": "resources.0.resources.*",
-                "reason": "Incorrect schema"
-            },
-            {
-
-
-                "message": "Value is not accepted. Valid values: \"2015-11-01-preview\".",
-                "jsonPath": "resources.0.apiVersion",
-                "reason": "Incorrect schema"
-
-            }
-
         ]
     }
 }
