@@ -142,6 +142,7 @@ public class FamilyCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(FamilyDBAdaptor.QueryParams.STUDY.key(), resolveStudy(familyCommandOptions.infoCommandOptions.study));
         params.putIfNotNull(QueryOptions.INCLUDE, familyCommandOptions.infoCommandOptions.dataModelOptions.include);
         params.putIfNotNull(QueryOptions.EXCLUDE, familyCommandOptions.infoCommandOptions.dataModelOptions.exclude);
+        params.put("flattenAnnotations", familyCommandOptions.searchCommandOptions.flattenAnnotations);
         return openCGAClient.getFamilyClient().get(familyCommandOptions.infoCommandOptions.family, params);
     }
 
@@ -156,6 +157,7 @@ public class FamilyCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotEmpty(FamilyDBAdaptor.QueryParams.ANNOTATION.key(), familyCommandOptions.searchCommandOptions.annotation);
         query.putIfNotNull(FamilyDBAdaptor.QueryParams.MEMBERS_PARENTAL_CONSANGUINITY.key(),
                 familyCommandOptions.searchCommandOptions.parentalConsanguinity);
+        query.put("flattenAnnotations", familyCommandOptions.searchCommandOptions.flattenAnnotations);
         query.putAll(familyCommandOptions.searchCommandOptions.commonOptions.params);
 
         if (familyCommandOptions.searchCommandOptions.numericOptions.count) {

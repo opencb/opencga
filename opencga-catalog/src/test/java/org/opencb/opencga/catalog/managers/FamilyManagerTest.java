@@ -24,6 +24,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.biodata.models.pedigree.Multiples;
@@ -35,15 +36,14 @@ import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.Account;
-import org.opencb.opencga.core.models.Family;
-import org.opencb.opencga.core.models.Individual;
-import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -233,6 +233,43 @@ public class FamilyManagerTest extends GenericTest {
                 Collections.emptyList(), Collections.emptyMap());
 
         return familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
+    }
+
+    @Test
+    public void updateFamilyDisordersWhenIndividualDisorderIsUpdated() throws CatalogException {
+        QueryResult<Family> family = createDummyFamily("family");
+        assertEquals(0, family.first().getDisorders().size());
+
+        List<Disorder> disorderList = Arrays.asList(new Disorder().setId("disorder"));
+        ObjectMap params = new ObjectMap(IndividualDBAdaptor.UpdateParams.DISORDERS.key(), disorderList);
+
+        catalogManager.getIndividualManager().update(STUDY, "child1", params, new QueryOptions(), sessionIdUser);
+        QueryResult<Individual> child1 = catalogManager.getIndividualManager().get(STUDY, "child1", QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, child1.first().getDisorders().size());
+
+        family = catalogManager.getFamilyManager().get(STUDY, "family", QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, family.first().getDisorders().size());
+
+        disorderList = Collections.emptyList();
+        params = new ObjectMap(IndividualDBAdaptor.UpdateParams.DISORDERS.key(), disorderList);
+        catalogManager.getIndividualManager().update(STUDY, "child1", params, new QueryOptions(), sessionIdUser);
+        child1 = catalogManager.getIndividualManager().get(STUDY, "child1", QueryOptions.empty(), sessionIdUser);
+        assertEquals(0, child1.first().getDisorders().size());
+
+        family = catalogManager.getFamilyManager().get(STUDY, "family", QueryOptions.empty(), sessionIdUser);
+        assertEquals(0, family.first().getDisorders().size());
+
+        // Now we will update increasing the version. No changes should be produced in the family
+        disorderList = Arrays.asList(new Disorder().setId("disorder"));
+        params = new ObjectMap(IndividualDBAdaptor.UpdateParams.DISORDERS.key(), disorderList);
+
+        catalogManager.getIndividualManager().update(STUDY, "child1", params, new QueryOptions(Constants.INCREMENT_VERSION, true), sessionIdUser);
+        child1 = catalogManager.getIndividualManager().get(STUDY, "child1", QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, child1.first().getDisorders().size());
+        assertEquals(2, child1.first().getVersion());
+
+        family = catalogManager.getFamilyManager().get(STUDY, "family", QueryOptions.empty(), sessionIdUser);
+        assertEquals(0, family.first().getDisorders().size());
     }
 
     @Test

@@ -25,6 +25,8 @@ import org.opencb.opencga.app.cli.GeneralCliOptions.DataModelOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.NumericOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.StudyOption;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
+import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.File;
 
 import java.util.List;
@@ -60,6 +62,8 @@ public class FileCommandOptions {
     public FileAclCommandOptions.AclsCommandOptions aclsCommandOptions;
     public FileAclCommandOptions.AclsUpdateCommandOptions aclsUpdateCommandOptions;
 
+    public AnnotationCommandOptions.AnnotationSetsUpdateCommandOptions annotationUpdateCommandOptions;
+
     public JCommander jCommander;
     public CommonCommandOptions commonCommandOptions;
     public DataModelOptions commonDataModelOptions;
@@ -94,6 +98,9 @@ public class FileCommandOptions {
         this.groupByCommandOptions = new GroupByCommandOptions();
         this.statsCommandOptions = new StatsCommandOptions();
 //        this.variantsCommandOptions = new VariantsCommandOptions();
+
+        AnnotationCommandOptions annotationCommandOptions = new AnnotationCommandOptions(commonCommandOptions);
+        this.annotationUpdateCommandOptions = annotationCommandOptions.getUpdateCommandOptions();
 
         FileAclCommandOptions aclCommandOptions = new FileAclCommandOptions(commonCommandOptions);
         this.aclsCommandOptions = aclCommandOptions.getAclsCommandOptions();
@@ -170,6 +177,10 @@ public class FileCommandOptions {
 
         @Parameter(names = {"--no-lazy"}, description = "Obtain the entire related job and experiment objects", arity = 0)
         public boolean noLazy;
+
+        @Parameter(names = {"--flatten-annotations"}, description = "Flag indicating whether nested annotations should be returned flattened",
+                arity = 0)
+        public boolean flattenAnnotations;
     }
 
     @Parameters(commandNames = {"download"}, commandDescription = "Download file")
@@ -253,6 +264,14 @@ public class FileCommandOptions {
 
         @Parameter(names = {"--no-lazy"}, description = "Obtain the entire related job and experiment objects", arity = 0)
         public boolean noLazy;
+
+        @Parameter(names = {"--annotation"}, description = "Annotation filters. Example: age>30;gender=FEMALE. For more information, " +
+                "please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0", arity = 1)
+        public String annotation;
+
+        @Parameter(names = {"--flatten-annotations"}, description = "Flag indicating whether nested annotations should be returned flattened",
+                arity = 0)
+        public boolean flattenAnnotations;
 
     }
 
@@ -410,6 +429,10 @@ public class FileCommandOptions {
 
         @Parameter(names = {"--path"}, description = "Path", required = false, arity = 1)
         public String path;
+
+        @Parameter(names = {"--annotation-sets-action"}, description = "Action to be performed if the array of annotationSets is being updated. (ADD, SET, REMOVE)",
+                arity = 1)
+        public ParamUtils.UpdateAction annotationSetsAction;
 
     }
 

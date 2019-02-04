@@ -17,6 +17,8 @@
 package org.opencb.opencga.core.models;
 
 import org.opencb.biodata.models.clinical.interpretation.Comment;
+import org.opencb.biodata.models.commons.Disorder;
+import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.Arrays;
 import java.util.List;
@@ -43,7 +45,9 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     private Family family;
     private List<Interpretation> interpretations;
 
+    private Assigned assigned;
     private Priority priority;
+    private List<String> flags;
 
     private String creationDate;
     private String modificationDate;
@@ -59,7 +63,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     }
 
     public enum Type {
-        SINGLE, DUO, TRIO, FAMILY, AUTO, MULTISAMPLE
+        SINGLE, FAMILY, CANCER, COHORT, AUTOCOMPARATIVE
     }
 
     // Todo: Think about a better place to have this enum
@@ -70,22 +74,78 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         REMOVE
     }
 
+    public static class Assigned {
+        private String assignee;
+        private String assignedBy;
+        private String date;
+
+        public Assigned() {
+            this(null, null);
+        }
+
+        public Assigned(String assignee, String assignedBy) {
+            this.assignee = assignee;
+            this.assignedBy = assignedBy;
+            this.date = TimeUtils.getTime();
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("Assigned{");
+            sb.append("assignee='").append(assignee).append('\'');
+            sb.append(", assignedBy='").append(assignedBy).append('\'');
+            sb.append(", date='").append(date).append('\'');
+            sb.append('}');
+            return sb.toString();
+        }
+
+        public String getAssignee() {
+            return assignee;
+        }
+
+        public Assigned setAssignee(String assignee) {
+            this.assignee = assignee;
+            return this;
+        }
+
+        public String getAssignedBy() {
+            return assignedBy;
+        }
+
+        public Assigned setAssignedBy(String assignedBy) {
+            this.assignedBy = assignedBy;
+            return this;
+        }
+
+        public String getDate() {
+            return date;
+        }
+
+        public Assigned setDate(String date) {
+            this.date = date;
+            return this;
+        }
+    }
+
     public static class ClinicalStatus extends Status {
 
-        public static final String WAIT = "WAIT";
-        public static final String REJECTED = "REJECTED";
+        public static final String INCOMPLETE = "INCOMPLETE";
+        public static final String READY_FOR_VALIDATION = "READY_FOR_VALIDATION";
         public static final String READY_FOR_INTERPRETATION = "READY_FOR_INTERPRETATION";
         public static final String INTERPRETATION_IN_PROGRESS = "INTERPRETATION_IN_PROGRESS";
-        public static final String INTERPRETED = "INTERPRETED";
-        public static final String PENDING_REVIEW = "PENDING_REVIEW";
+//        public static final String INTERPRETED = "INTERPRETED";
+        public static final String READY_FOR_INTEPRETATION_REVIEW = "READY_FOR_INTEPRETATION_REVIEW";
+        public static final String INTERPRETATION_REVIEW_IN_PROGRESS = "INTERPRETATION_REVIEW_IN_PROGRESS";
         public static final String READY_FOR_REPORT = "READY_FOR_REPORT";
         public static final String REPORT_IN_PROGRESS = "REPORT_IN_PROGRESS";
         public static final String DONE = "DONE";
-        public static final String REVIEW = "REVIEW";
+        public static final String REVIEW_IN_PROGRESS = "REVIEW_IN_PROGRESS";
         public static final String CLOSED = "CLOSED";
+        public static final String REJECTED = "REJECTED";
 
-        public static final List<String> STATUS_LIST = Arrays.asList(READY, DELETED, WAIT, REJECTED, READY_FOR_INTERPRETATION,
-                INTERPRETATION_IN_PROGRESS, INTERPRETED, PENDING_REVIEW, READY_FOR_REPORT, REPORT_IN_PROGRESS, DONE, REVIEW, CLOSED);
+        public static final List<String> STATUS_LIST = Arrays.asList(INCOMPLETE, READY, DELETED, READY_FOR_VALIDATION,
+                READY_FOR_INTERPRETATION, INTERPRETATION_IN_PROGRESS, READY_FOR_INTEPRETATION_REVIEW, INTERPRETATION_REVIEW_IN_PROGRESS,
+                READY_FOR_REPORT, REPORT_IN_PROGRESS, DONE, REVIEW_IN_PROGRESS, CLOSED, REJECTED);
 
         public ClinicalStatus(String status, String message) {
             if (isValid(status)) {
@@ -100,13 +160,14 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         }
 
         public ClinicalStatus() {
-            this(WAIT, "");
+            this(READY_FOR_INTERPRETATION, "");
         }
 
         public static boolean isValid(String status) {
             if (Status.isValid(status)) {
                 return true;
             }
+
             if (STATUS_LIST.contains(status)) {
                 return true;
             }
@@ -117,9 +178,10 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     public ClinicalAnalysis() {
     }
 
-    public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, Map<String, List<File>> files,
-                            Individual proband, Family family, List<Interpretation> interpretations, Priority priority, String creationDate,
-                            String dueDate, List<Comment> comments, ClinicalStatus status, int release, Map<String, Object> attributes) {
+    public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, Map<String, List<File>> files, Individual proband,
+                            Family family, List<Interpretation> interpretations, Priority priority, Assigned assigned, List<String> flags,
+                            String creationDate, String dueDate, List<Comment> comments, ClinicalStatus status, int release,
+                            Map<String, Object> attributes) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -129,6 +191,8 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         this.family = family;
         this.interpretations = interpretations;
         this.priority = priority;
+        this.flags = flags;
+        this.assigned = assigned;
         this.creationDate = creationDate;
         this.dueDate = dueDate;
         this.comments = comments;
@@ -149,7 +213,9 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         sb.append(", proband=").append(proband);
         sb.append(", family=").append(family);
         sb.append(", interpretations=").append(interpretations);
+        sb.append(", assigned=").append(assigned);
         sb.append(", priority=").append(priority);
+        sb.append(", flags=").append(flags);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", dueDate='").append(dueDate).append('\'');
@@ -263,12 +329,30 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
+    public Assigned getAssigned() {
+        return assigned;
+    }
+
+    public ClinicalAnalysis setAssigned(Assigned assigned) {
+        this.assigned = assigned;
+        return this;
+    }
+
     public Priority getPriority() {
         return priority;
     }
 
     public ClinicalAnalysis setPriority(Priority priority) {
         this.priority = priority;
+        return this;
+    }
+
+    public List<String> getFlags() {
+        return flags;
+    }
+
+    public ClinicalAnalysis setFlags(List<String> flags) {
+        this.flags = flags;
         return this;
     }
 

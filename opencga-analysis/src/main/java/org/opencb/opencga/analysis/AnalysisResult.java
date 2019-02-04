@@ -16,15 +16,35 @@
 
 package org.opencb.opencga.analysis;
 
+import java.util.Map;
+
 public class AnalysisResult<T> {
 
-    private int time;
-    private String status;
+    protected T result;
 
-    T result;
+    protected int time;
+    protected String status;
+    protected Map<String, Object> attributes;
 
     public AnalysisResult(T result) {
         this.result = result;
+    }
+
+    public AnalysisResult(T result, int time, Map<String, Object> attributes) {
+        this.result = result;
+        this.time = time;
+        this.attributes = attributes;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("AnalysisResult{");
+        sb.append("result=").append(result);
+        sb.append(", time=").append(time);
+        sb.append(", status='").append(status).append('\'');
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
+        return sb.toString();
     }
 
     public int getTime() {
@@ -51,6 +71,15 @@ public class AnalysisResult<T> {
 
     public AnalysisResult<T> setResult(T result) {
         this.result = result;
+        return this;
+    }
+
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
+    public AnalysisResult<T> setAttributes(Map<String, Object> attributes) {
+        this.attributes = attributes;
         return this;
     }
 }

@@ -1964,6 +1964,10 @@ public class FileManager extends AnnotationSetManager<File> {
             throw new CatalogException("Cannot send to index. No files could be found to be indexed.");
         }
 
+        if (!params.containsKey("study") && !params.containsKey("studyId")) {
+            params.put("study", resource.getStudy().getFqn());
+        }
+
         String fileIds = fileIdList.stream().map(File::getId).collect(Collectors.joining(","));
         params.put("file", fileIds);
         List<File> outputList = outDir.getUid() > 0 ? Arrays.asList(outDir) : Collections.emptyList();

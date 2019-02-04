@@ -23,13 +23,12 @@ public class RandomQueryTest {
             RandomQueries randomQueries = objectMapper.readValue(inputStream, RandomQueries.class);
 
             assertEquals(randomQueries.getRegions().get(0).getChromosome() , "1");
-            assertEquals(randomQueries.getRegions().get(0).getStart(), 10000);
+            assertEquals(randomQueries.getRegions().get(0).getStart(), 1);
             assertEquals(randomQueries.getRegions().get(0).getEnd(), 249250621);
-            assertEquals(randomQueries.getGene().get(0),"ZNF566");
+            assertEquals(randomQueries.getGene().get(0),"DKFZP434A062");
             assertEquals(randomQueries.getType().size(), 2);
             assertEquals(randomQueries.getQual().getOperators().size(), 1);
             assertEquals(randomQueries.getProteinSubstitution().get(0).getOperators().size(),2);
         }
     }
-
 }

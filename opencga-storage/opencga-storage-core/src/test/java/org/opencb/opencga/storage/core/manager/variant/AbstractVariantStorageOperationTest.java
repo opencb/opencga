@@ -163,6 +163,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
     @After
     public void tearDown() throws Exception {
         DummyStudyConfigurationAdaptor.writeAndClear(opencga.getOpencgaHome());
+        DummyVariantFileMetadataDBAdaptor.writeAndClear(opencga.getOpencgaHome());
         DummyProjectMetadataAdaptor.writeAndClear(opencga.getOpencgaHome());
     }
 

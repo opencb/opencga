@@ -775,8 +775,10 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             expectedCount += writeResult.getOverlappedVariants();
         }
 
+        String filePath = fileMetadata.getPath();
+        String fileName = Paths.get(filePath).getFileName().toString();
         logger.info("============================================================");
-        logger.info("Check loaded file '" + fileMetadata.getPath() + "' (" + fileId + ')');
+        logger.info("Check loaded file '" + fileName + "' (" + fileId + ')');
         if (expectedSkippedVariants != writeResult.getSkippedVariants()) {
             logger.error("Wrong number of skipped variants. Expected " + expectedSkippedVariants + " and got " + writeResult
                     .getSkippedVariants());

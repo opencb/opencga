@@ -134,6 +134,9 @@ public abstract class MonitorParentDaemon implements Runnable {
 
     void buildCommandLine(Map<String, String> params, StringBuilder commandLine, Set<String> knownParams) {
         for (Map.Entry<String, String> param : params.entrySet()) {
+            if (param.getKey().equals("sid")) {
+                continue;
+            }
             commandLine.append(' ');
             if (knownParams == null || knownParams.contains(param.getKey())) {
                 if (!("false").equalsIgnoreCase(param.getValue())) {

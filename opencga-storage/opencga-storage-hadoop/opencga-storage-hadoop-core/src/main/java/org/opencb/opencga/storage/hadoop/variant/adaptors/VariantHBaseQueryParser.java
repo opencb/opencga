@@ -149,6 +149,9 @@ public class VariantHBaseQueryParser {
             }
             otherParams.remove(GENOTYPE);
         }
+        if (otherParams.contains(ANNOTATION_EXISTS) && query.getBoolean(ANNOTATION_EXISTS.key())) {
+            messages.add("Filter " + ANNOTATION_EXISTS.key() + "=true not supported");
+        }
 
         if (messages.isEmpty() && otherParams.isEmpty()) {
             return Collections.emptySet();

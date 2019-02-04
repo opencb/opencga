@@ -51,37 +51,51 @@ public final class ReportedVariantQueryParam implements QueryParam {
     // ---------- Clinical Analysis (aka CA)
 
     public static final String CA_ID_DESCR = "List of clinical analysis IDs";
-    public static final ReportedVariantQueryParam CA_ID = new ReportedVariantQueryParam("intClinicalAnalysisId", TEXT_ARRAY,
+    public static final ReportedVariantQueryParam CA_ID = new ReportedVariantQueryParam("caId", TEXT_ARRAY,
             CA_ID_DESCR);
 
     public static final String CA_NAME_DESCR = "List of clinical analysis names";
-    public static final ReportedVariantQueryParam CA_NAME = new ReportedVariantQueryParam("caName", TEXT_ARRAY, CA_NAME_DESCR);
+    public static final ReportedVariantQueryParam CA_NAME = new ReportedVariantQueryParam("caName", TEXT_ARRAY,
+            CA_NAME_DESCR);
 
     public static final String CA_DESCRIPTION_DESCR = "Clinical analysis description";
-    public static final ReportedVariantQueryParam CA_DESCRIPTION = new ReportedVariantQueryParam("caDescription", TEXT_ARRAY,
-            CA_DESCRIPTION_DESCR);
+    public static final ReportedVariantQueryParam CA_DESCRIPTION = new ReportedVariantQueryParam("caDescription",
+            TEXT_ARRAY, CA_DESCRIPTION_DESCR);
 
-    public static final String CA_DISEASE_DESCR = "List of clinical analysis diseases";
-    public static final ReportedVariantQueryParam CA_DISEASE = new ReportedVariantQueryParam("caDisease", TEXT_ARRAY, CA_DISEASE_DESCR);
+    public static final String CA_DISORDER_DESCR = "List of clinical analysis disorders";
+    public static final ReportedVariantQueryParam CA_DISORDER = new ReportedVariantQueryParam("caDisorderId",
+            TEXT_ARRAY, CA_DISORDER_DESCR);
 
     public static final String CA_FILE_DESCR = "List of clinical analysis files";
-    public static final ReportedVariantQueryParam CA_FILE = new ReportedVariantQueryParam("caFiles", TEXT_ARRAY, CA_FILE_DESCR);
+    public static final ReportedVariantQueryParam CA_FILE = new ReportedVariantQueryParam("caFiles", TEXT_ARRAY,
+            CA_FILE_DESCR);
 
     public static final String CA_PROBAND_ID_DESCR = "List of proband IDs";
-    public static final ReportedVariantQueryParam CA_PROBAND_ID = new ReportedVariantQueryParam("caProbandId", TEXT_ARRAY,
-            CA_PROBAND_ID_DESCR);
+    public static final ReportedVariantQueryParam CA_PROBAND_ID = new ReportedVariantQueryParam("caProbandId",
+            TEXT_ARRAY, CA_PROBAND_ID_DESCR);
+
+    public static final String CA_PROBAND_DISORDERS_DESCR = "List of proband disorders";
+    public static final ReportedVariantQueryParam CA_PROBAND_DISORDERS = new ReportedVariantQueryParam("caProbandDisorders",
+            TEXT_ARRAY, CA_PROBAND_DISORDERS_DESCR);
+
+    public static final String CA_PROBAND_PHENOTYPES_DESCR = "List of proband phenotypes";
+    public static final ReportedVariantQueryParam CA_PROBAND_PHENOTYPES = new ReportedVariantQueryParam("caProbandPhenotypes",
+            TEXT_ARRAY, CA_PROBAND_PHENOTYPES_DESCR);
 
     public static final String CA_FAMILY_ID_DESCR = "List of family IDs";
     public static final ReportedVariantQueryParam CA_FAMILY_ID = new ReportedVariantQueryParam("caFamilyId", TEXT_ARRAY,
             CA_FAMILY_ID_DESCR);
 
-    public static final String CA_FAMILY_PHENOTYPE_NAMES_DESCR = "List of clinical analysis family phenotype names";
-    public static final ReportedVariantQueryParam CA_FAMILY_PHENOTYPE_NAMES = new ReportedVariantQueryParam("caFamilyPhenotypeNames",
-            TEXT_ARRAY, CA_FAMILY_PHENOTYPE_NAMES_DESCR);
-
     public static final String CA_FAMILY_MEMBER_IDS_DESCR = "List of clinical analysis family member IDs";
     public static final ReportedVariantQueryParam CA_FAMILY_MEMBER_IDS = new ReportedVariantQueryParam("caFamilyMemberIds", TEXT_ARRAY,
             CA_FAMILY_MEMBER_IDS_DESCR);
+
+    public static final String CA_COMMENTS_DESCR = "List of clinical analysis comments";
+    public static final ReportedVariantQueryParam CA_COMMENTS = new ReportedVariantQueryParam("caComments", TEXT_ARRAY,
+            CA_COMMENTS_DESCR);
+
+    public static final String CA_INFO_DESCR = "";
+    public static final ReportedVariantQueryParam CA_INFO = new ReportedVariantQueryParam("caInfo", TEXT_ARRAY, CA_INFO_DESCR);
 
     // ---------- Interpretation (aka INT)
 
@@ -100,9 +114,9 @@ public final class ReportedVariantQueryParam implements QueryParam {
     public static final ReportedVariantQueryParam INT_ANALYST_NAME = new ReportedVariantQueryParam("intAnalystName", TEXT_ARRAY,
             INT_ANALYST_NAME_DESCR);
 
-    public static final String INT_PANEL_NAMES_DESCR = "List of interpretation panel names";
-    public static final ReportedVariantQueryParam INT_PANEL_NAMES = new ReportedVariantQueryParam("intPanelNames", TEXT_ARRAY,
-            INT_PANEL_NAMES_DESCR);
+    public static final String INT_PANELS_DESCR = "List of interpretation panels";
+    public static final ReportedVariantQueryParam INT_PANELS = new ReportedVariantQueryParam("intPanels", TEXT_ARRAY,
+            INT_PANELS_DESCR);
 
     public static final String INT_INFO_DESCR = "";
     public static final ReportedVariantQueryParam INT_INFO = new ReportedVariantQueryParam("intInfo", TEXT_ARRAY, INT_INFO_DESCR);

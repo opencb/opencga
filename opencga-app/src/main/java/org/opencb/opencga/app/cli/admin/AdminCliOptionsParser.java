@@ -390,13 +390,18 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         @ParametersDelegate
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
-        @Parameter(names = {"--project"}, description = "Project to be exported (owner@projectAlias or projectId)", required = true,
-                arity = 1)
+        @Parameter(names = {"--project"}, description = "Project to be exported (owner@projectAlias or projectId)", arity = 1)
         public String project;
 
         @Parameter(names = {"--release"}, description = "Release number up to which the data will be exported. If not provided, all the " +
                 "data belonging to the project will be exported.", arity = 1)
         public int release = Integer.MAX_VALUE;
+
+        @Parameter(names = {"--study"}, description = "Study belonging to the set of files and related data to be exported", arity = 1)
+        public String study;
+
+        @Parameter(names = {"--input-file"}, description = "File containing a list of VCF files to be exported (one per line)", arity = 1)
+        public String inputFile;
 
         @Parameter(names = {"--output-dir"}, description = "Output directory where the data will be exported to.", arity = 1,
                 required = true)
@@ -551,7 +556,8 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         @Parameter(names = {"--to"}, description = "Group in a study that will be synchronised", arity = 1)
         public String to;
 
-        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where the list of users will be associated to.", required = true, arity = 1)
+        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where the list of users will be associated to.",
+                required = true, arity = 1)
         public String study;
 
         @Parameter(names = {"--auth-origin"}, description = "Authentication id (as defined in the catalog configuration file) of the origin"
