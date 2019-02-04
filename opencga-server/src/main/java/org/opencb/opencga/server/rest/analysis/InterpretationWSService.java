@@ -189,7 +189,7 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiParam(value = "Study [[user@]project:]{study} where study and project can be either the id or alias.")
             @QueryParam("study") String studyStr,
             @ApiParam(value = "Clinical analysis type") @QueryParam("type") ClinicalAnalysis.Type type,
-            @ApiParam(value = "Priority") @QueryParam("priority") String priority,
+            @ApiParam(value = "Priority") @QueryParam("priority") ClinicalAnalysis.Priority priority,
             @ApiParam(value = "Clinical analysis status") @QueryParam("status") String status,
             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
             @QueryParam("creationDate") String creationDate,
@@ -197,14 +197,14 @@ public class InterpretationWSService extends AnalysisWSService {
             @QueryParam("modificationDate") String modificationDate,
             @ApiParam(value = "Due date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)") @QueryParam("dueDate") String dueDate,
             @ApiParam(value = "Description") @QueryParam("description") String description,
-            @ApiParam(value = "Germline") @QueryParam("germline") String germline,
-            @ApiParam(value = "Somatic") @QueryParam("somatic") String somatic,
-            @ApiParam(value = "Family") @QueryParam("family") String family,
-            @ApiParam(value = "Proband") @QueryParam("proband") String proband,
-            @ApiParam(value = "Sample") @QueryParam("sample") String sample,
+            @ApiParam(value = "Family id") @QueryParam("family") String family,
+            @ApiParam(value = "Proband id") @QueryParam("proband") String proband,
+            @ApiParam(value = "Proband sample") @QueryParam("sample") String sample,
+            @ApiParam(value = "Clinical analyst assignee") @QueryParam("analystAssignee") String assignee,
+            @ApiParam(value = "Disorder id or name") @QueryParam("disorder") String disorder,
+            @ApiParam(value = "Flags") @QueryParam("flags") String flags,
             @ApiParam(value = "Release value") @QueryParam("release") String release,
-            @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)") @QueryParam("attributes") String attributes,
-            @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)") @QueryParam("nattributes") String nattributes) {
+            @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)") @QueryParam("attributes") String attributes) {
         try {
             query.remove("study");
 
@@ -311,6 +311,10 @@ public class InterpretationWSService extends AnalysisWSService {
         public List<ProbandParam> members;
     }
 
+    private static class ClinicalAnalystParam {
+        public String assignee;
+    }
+
     private static class ClinicalAnalysisParameters {
         public String id;
         @Deprecated
@@ -324,7 +328,7 @@ public class InterpretationWSService extends AnalysisWSService {
 
         public ProbandParam proband;
         public FamilyParam family;
-        public String assignee;
+        public ClinicalAnalystParam analyst;
         public ClinicalAnalysis.ClinicalStatus status;
         public List<ClinicalInterpretationParameters> interpretations;
 
@@ -379,8 +383,9 @@ public class InterpretationWSService extends AnalysisWSService {
                             .map(ClinicalInterpretationParameters::toClinicalInterpretation).collect(Collectors.toList())
                             : new ArrayList<>();
             String clinicalId = StringUtils.isEmpty(id) ? name : id;
+            String assignee = analyst != null ? analyst.assignee : "";
             return new ClinicalAnalysis(clinicalId, description, type, disorder, fileMap, individual, f,
-                    interpretationList, priority, new ClinicalAnalysis.Assigned(assignee, ""), flags, null, dueDate, comments,
+                    interpretationList, priority, new ClinicalAnalysis.ClinicalAnalyst(assignee, ""), flags, null, dueDate, comments,
                     status, 1, attributes).setName(name);
         }
     }
