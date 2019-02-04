@@ -1,5 +1,6 @@
 package org.opencb.opencga.analysis.clinical;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.clinical.interpretation.*;
@@ -13,6 +14,8 @@ import org.opencb.biodata.models.core.Transcript;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.tools.clinical.DefaultReportedVariantCreator;
+import org.opencb.biodata.tools.clinical.ReportedVariantCreator;
+import org.opencb.biodata.tools.clinical.TeamReportedVariantCreator;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
@@ -121,7 +124,6 @@ public class CustomAnalysis extends FamilyAnalysis {
                 files = clinicalAnalysis.getFiles();
             }
 
-            // If disease is not provided, then take it from clinical analysis
             if (clinicalAnalysis.getDisorder() != null) {
                 query.put("familyPhenotype", clinicalAnalysis.getDisorder().getId());
             }
@@ -160,12 +162,22 @@ public class CustomAnalysis extends FamilyAnalysis {
         VariantQueryResult<Variant> variantQueryResult = variantStorageManager.get(query, queryOptions, token);
 
         // Create reported variants and events
-        List<DiseasePanel> biodataDiseasePanels = diseasePanels.stream().map(Panel::getDiseasePanel).collect(Collectors.toList());
         List<ReportedVariant> reportedVariants = null;
-        if (ListUtils.isNotEmpty(variantQueryResult.getResult())) {
-            DefaultReportedVariantCreator creator = new DefaultReportedVariantCreator(biodataDiseasePanels, findings, phenotype, moi, null);
+        List<DiseasePanel> biodataDiseasePanels = null;
+        // Sanity check
+        if(CollectionUtils.isNotEmpty(variantQueryResult.getResult())) {
+            ReportedVariantCreator creator;
+            if (CollectionUtils.isNotEmpty(diseasePanels)) {
+                // Team reported variant creator
+                biodataDiseasePanels = diseasePanels.stream().map(Panel::getDiseasePanel).collect(Collectors.toList());
+                creator = new TeamReportedVariantCreator(biodataDiseasePanels, findings, phenotype, moi, null);
+            } else {
+                // Default reported variant creator
+                creator = new DefaultReportedVariantCreator(phenotype, moi, null);
+            }
             reportedVariants = creator.create(variantQueryResult.getResult());
         }
+
 
         // Low coverage support
         List<ReportedLowCoverage> reportedLowCoverages = new ArrayList<>();
@@ -215,20 +227,14 @@ public class CustomAnalysis extends FamilyAnalysis {
         // Create Interpretation
         Interpretation interpretation = new Interpretation()
                 .setId(CUSTOM_ANALYSIS_NAME + SEPARATOR + TimeUtils.getTimeMillis())
+                .setReportedVariants(reportedVariants)
+                .setReportedLowCoverages(reportedLowCoverages)
                 .setAnalyst(new Analyst(userId, userQueryResult.first().getEmail(), userQueryResult.first().getOrganization()))
                 .setClinicalAnalysisId(clinicalAnalysisId)
                 .setCreationDate(TimeUtils.getTime())
                 .setPanels(biodataDiseasePanels)
                 .setFilters(query)
                 .setSoftware(new Software().setName(CUSTOM_ANALYSIS_NAME));
-
-        if (ListUtils.isNotEmpty(reportedVariants)) {
-            interpretation.setReportedVariants(reportedVariants);
-        }
-
-        if (ListUtils.isNotEmpty(reportedLowCoverages)) {
-            interpretation.setReportedLowCoverages(reportedLowCoverages);
-        }
 
         // Return interpretation result
         return new InterpretationResult(
