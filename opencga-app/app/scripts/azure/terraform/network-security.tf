@@ -84,36 +84,36 @@ resource "azurerm_network_security_rule" "allow-all-outbound-hdinsight" {
 
 
 resource "azurerm_subnet_network_security_group_association" "web" {
-    subnet_id                   = "${azurerm_subnet.web.name}"
-    network_security_group_id   = "${azurerm_network_security_group.nsg-web.name}"
+    subnet_id                   = "${azurerm_subnet.web.id}"
+    network_security_group_id   = "${azurerm_network_security_group.nsg-web.id}"
 }
 
 resource "azurerm_subnet_network_security_group_association" "hdinsight" {
-    subnet_id                   = "${azurerm_subnet.hdinsight.name}"
-    network_security_group_id   = "${azurerm_network_security_group.nsg-hdinsight.name}"
+    subnet_id                   = "${azurerm_subnet.hdinsight.id}"
+    network_security_group_id   = "${azurerm_network_security_group.nsg-hdinsight.id}"
 }
 
 resource "azurerm_subnet_network_security_group_association" "mongo" {
-    subnet_id                   = "${azurerm_subnet.mongo.name}"
-    network_security_group_id   = "${azurerm_network_security_group.nsg-mongo.name}"
+    subnet_id                   = "${azurerm_subnet.mongo.id}"
+    network_security_group_id   = "${azurerm_network_security_group.nsg-mongo.id}"
 }
 
 resource "azurerm_subnet_network_security_group_association" "solr" {
-    subnet_id                   = "${azurerm_subnet.solr.name}"
-    network_security_group_id   = "${azurerm_network_security_group.nsg-solr.name}"
+    subnet_id                   = "${azurerm_subnet.solr.id}"
+    network_security_group_id   = "${azurerm_network_security_group.nsg-solr.id}"
 }
 
 resource "azurerm_subnet_network_security_group_association" "batch" {
-    subnet_id                   = "${azurerm_subnet.batch.name}"
-    network_security_group_id   = "${azurerm_network_security_group.nsg-batch.name}"
+    subnet_id                   = "${azurerm_subnet.batch.id}"
+    network_security_group_id   = "${azurerm_network_security_group.nsg-batch.id}"
 }
 
 resource "azurerm_subnet_network_security_group_association" "avere" {
-    subnet_id                   = "${azurerm_subnet.avere.name}"
-    network_security_group_id   = "${azurerm_network_security_group.nsg-avere.name}"
+    subnet_id                   = "${azurerm_subnet.avere.id}"
+    network_security_group_id   = "${azurerm_network_security_group.nsg-avere.id}"
 }
 
 resource "azurerm_subnet_network_security_group_association" "daemonvm" {
-    subnet_id                   = "${azurerm_subnet.daemonvm.name}"
-    network_security_group_id   = "${azurerm_network_security_group.nsg-daemonvm.name}"
+    subnet_id                   = "${azurerm_subnet.daemonvm.id}"
+    network_security_group_id   = "${azurerm_network_security_group.nsg-daemonvm.id}"
 }
