@@ -34,25 +34,19 @@ installDeps () {
 
 scanForNewDisks() {
     # Looks for unpartitioned disks
-    DEVS=($(ls -1 /dev/sd*|egrep -v "[0-9]$"))
+    DEVS=($(fdisk -l 2>/dev/null | egrep -o '(/dev/[^:]*):' | egrep -o '([^:]*)'))
+
     for DEV in "${DEVS[@]}";
     do
-        isPartitioned "${DEV}"
-        if [ ${?} -eq 0 ];
-        then
-            # found unpartitioned disk
-            echo "found unpartitioned disk ${DEV}"
-            formatAndMountDisk "${DEV}"
-        fi
+        isPartitioned ${DEV}
     done
 }
 
 isPartitioned() {
     OUTPUT=$(partx -s ${1} 2>&1)
     if [[ $OUTPUT == *"failed to read partition table"* ]]; then
-        return 0
-    else
-        return 1
+        # found unpartitioned disk
+        formatAndMountDisk "${DEV}"
     fi
 }
 
@@ -72,14 +66,18 @@ generateCertificate() {
     nginx -t && nginx -s reload
     cat /etc/letsencrypt/live/${APP_DNS_NAME}/privkey.pem /etc/letsencrypt/live/${APP_DNS_NAME}/cert.pem > /etc/ssl/mongo.pem
     cat /etc/letsencrypt/live/${APP_DNS_NAME}/chain.pem >> /etc/ssl/ca.pem
+
+    #configure mongodb to use /datadrive for storage
+    mkdir /datadrive/mongodb
+    chmod 777 -R /datadrive
+    sed -i -e '/dbPath/ s/: .*/: \/datadrive\/mongodb /' /etc/mongod.conf
+
     systemctl restart mongod
     sleep 10
 }
 
 configureMongoDB() {
     mongo admin --eval 'db.createUser({user: "'${MONGODB_USERNAME}'",pwd: "'${MONGODB_PASSWORD}'",roles: ["root"]})'
-    mkdir /datadrive/mongodb
-    sed -i -e '/dbPath/ s/: .*/: \/datadrive\/mongodb /' /etc/mongod.conf
     sed -i '/#security/csecurity:\n  authorization: "enabled"\n  keyFile: \/opt\/mongodb.key\n' /etc/mongod.conf
     sed -i '/#replication/creplication:\n  replSetName: rs0\n' /etc/mongod.conf
     sed -i -e '/bindIp/ s/: .*/: ::,0.0.0.0\n  ssl:\n    mode: allowSSL\n    PEMKeyFile: \/etc\/ssl\/mongo.pem\n    CAFile: \/etc\/ssl\/ca.pem\n    allowConnectionsWithoutCertificates: true /' /etc/mongod.conf
@@ -143,15 +141,18 @@ scanForNewDisks
 generateCertificate
 configureMongoDB
 
-# only for primary mongodb instance
-if [ $VM_INDEX -eq 0 ]
+# only configure replicasets when clusterSize > 1
+if [ $CLUSTER_SIZE -gt 1 ]
 then
-    generateMongoKeyFile
+    if [ $VM_INDEX -eq 0 ]
+    then
+        generateMongoKeyFile
 
-    #waiting for other mongodb instances to be successfully configured
-    sleep 120
+        #waiting for other mongodb instances to be successfully configured
+        sleep 120
 
-    createReplicaSet
-else
-    configureSlaveNodes
+        createReplicaSet
+    else
+        configureSlaveNodes
+    fi
 fi
