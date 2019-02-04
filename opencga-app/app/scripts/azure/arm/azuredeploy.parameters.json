@@ -26,9 +26,6 @@
         "sshAdminKeyData": {
             "value": ""
         },
-        "nfsStorageOption": {
-            "value": ""
-        },
         "mongoDBPassword": {
             "value": ""
         },
