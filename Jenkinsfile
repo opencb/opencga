@@ -39,6 +39,9 @@ pipeline {
         }
 
         stage ('Publish Docker Images') {
+             options {
+                    timeout(time: 10, unit: 'MINUTES')
+             }
              steps {
                 script {
                    def images = ["opencga", "opencga-app", "opencga-daemon", "opencga-init", "opencga-batch", "iva"]
@@ -51,6 +54,15 @@ pipeline {
                    }
                 }
              }
+        }
+
+        stage ('Clean Docker Images') {
+            options {
+                timeout(time: 10, unit: 'MINUTES')
+            }
+            steps {
+                sh 'docker system prune --force'
+            }
         }
 
         stage ('Quick Test') {
