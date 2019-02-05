@@ -3,10 +3,9 @@ variable "opencga_image" {}
 variable "iva_image" {}
 variable "opencga_init_image" {}
 variable "batch_container_image" {}
-
 variable "catalog_secret_key" {}
-
 variable "opencga_admin_password" {}
+variable "ssh_pub_key" {}
 
 variable "lets_encrypt_email_address" {
   description = "This is the email address used when obtaining SSL certs for the solution. This should be a valid email for the solution admin."
@@ -63,7 +62,7 @@ module "mongo" {
 
   virtual_network_subnet_id = "${azurerm_subnet.mongo.id}"
   admin_username            = "opencga"
-  ssh_key_data              = "${file("~/.ssh/id_rsa.pub")}"
+  ssh_key_data              = "${var.ssh_pub_key}"
 
   email_address = "${var.lets_encrypt_email_address}"
   cluster_size  = 3
@@ -96,7 +95,7 @@ module "webservers" {
   mount_args = "azurefiles ${module.azurefiles.storage_account_name},${module.azurefiles.share_name},${module.azurefiles.storage_key}"
 
   admin_username = "opencga"
-  ssh_key_data   = "${file("~/.ssh/id_rsa.pub")}"
+  ssh_key_data   = "${var.ssh_pub_key}"
 
   opencga_image = "${var.opencga_image}"
   iva_image     = "${var.iva_image}"
@@ -168,7 +167,7 @@ module "daemonvm" {
   mount_args = "azurefiles ${module.azurefiles.storage_account_name},${module.azurefiles.share_name},${module.azurefiles.storage_key}"
 
   admin_username = "opencga"
-  ssh_key_data   = "${file("~/.ssh/id_rsa.pub")}"
+  ssh_key_data   = "${var.ssh_pub_key}"
 
   opencga_image          = "${var.opencga_image}"
   opencga_init_image     = "${var.opencga_init_image}"
