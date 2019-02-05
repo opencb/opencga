@@ -78,9 +78,9 @@
         },
         "batchInsightsDownloadURL":{
             "type": "string",
-            "defaultValue": "https://github.com/Azure/batch-insights/releases/download/v1.1.1/batch-insights.exe",
+            "defaultValue": "https://github.com/Azure/batch-insights/releases/download/v1.1.1/batch-insights",
             "metadata": {
-                "description": "Applciation Insights ID"
+                "description": "Batch Insights download URL"
             }
         }
         
@@ -92,9 +92,24 @@
     },
     "resources": [
         {
+            "comments": "This is the storage account used by Azure Batch for file processing/storage",
+            "type": "Microsoft.Storage/storageAccounts",
+            "name": "[variables('storageAccountname')]",
+            "apiVersion": "2016-01-01",
+            "location": "[parameters('location')]",
+            "sku": {
+                "name": "[parameters('storageAccountsku')]"
+            },
+            "kind": "Storage",
+            "tags": {
+                "ObjectName": "[variables('storageAccountName')]"
+            },
+            "properties": {}
+        },
+        {
             "type": "Microsoft.Batch/batchAccounts",
             "name": "[variables('batchAccountName')]",
-            "apiVersion": "2015-12-01",
+            "apiVersion": "2018-12-01",
             "location": "[parameters('location')]",
             "tags": {
                 "ObjectName": "[variables('batchAccountName')]"
@@ -159,7 +174,7 @@
                     "nodeFillType": "Spread"
                 },
                 "startTask": {
-                    "commandLine": "[concat('/bin/bash -c \"curl -fsSL ', parameters('_artifactsLocation'), '/avere/mount.py', parameters('_artifactsLocationSasToken'), ' | python3 - ', parameters('mountArgs'), '\" && /bin/bash -c \"wget  -O - https://raw.githubusercontent.com/Azure/batch-insights/master/scripts/run-linux.sh | bash\"')]",
+                    "commandLine": "[concat('/bin/bash -c \"curl -fsSL ', parameters('_artifactsLocation'), '/avere/mount.py', parameters('_artifactsLocationSasToken'), ' | python3 - ', parameters('mountArgs'), '  && echo $BATCH_INSIGHTS_DOWNLOAD_URL &&  wget  -O - https://raw.githubusercontent.com/Azure/batch-insights/master/scripts/run-linux.sh | bash \"')]",
                     "userIdentity": {
                         "autoUser": {
                             "elevationLevel": "Admin",
@@ -175,7 +190,7 @@
 
                         },
                         {
-                            "name": "APP_INSIGHTS_APP_ID",
+                            "name": "APP_INSIGHTS_INSTRUMENTATION_KEY",
                             "value": "[parameters('appInsightsAppId')]"
 
                         }

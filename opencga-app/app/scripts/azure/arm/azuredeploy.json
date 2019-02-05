@@ -428,7 +428,11 @@
                     },
                     "LogAnalyticsWorkspaceResourceID": {
                         "value": "[reference('loganalytics').outputs.logAnalyticsWorkspaceResourceID.value]"
-                    }
+                    },
+                    
+                   "appInsightsAppId":{
+                        "value": "[reference('appinsights').outputs.appId.value]"
+                   } 
                 }
             }
         },
@@ -568,9 +572,6 @@
                    },
                    "LogAnalyticsWorkspaceResourceID":{
                         "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceResourceID.value]"
-                   } ,
-                   "appInsightsAppId":{
-                        "value": "[reference('app-insights').outputs.appId.value]"
                    } 
                 }
             }
