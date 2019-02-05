@@ -47,7 +47,7 @@ public class DummyProjectMetadataAdaptor implements ProjectMetadataAdaptor {
 
     @Override
     public synchronized QueryResult updateProjectMetadata(ProjectMetadata projectMetadata, boolean updateCounters) {
-        this.projectMetadata = projectMetadata;
+        projectMetadata = projectMetadata;
         return new QueryResult<>();
     }
 

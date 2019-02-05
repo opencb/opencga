@@ -495,8 +495,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             throws StorageEngineException, IOException {
         VariantStatisticsManager statisticsManager = newVariantStatisticsManager();
 
-        VariantStorageMetadataManager scm = getMetadataManager();
-        scm.registerCohorts(study, cohorts);
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
+        metadataManager.registerCohorts(study, cohorts);
 
         statisticsManager.calculateStatistics(study, new ArrayList<>(cohorts.keySet()), options);
     }

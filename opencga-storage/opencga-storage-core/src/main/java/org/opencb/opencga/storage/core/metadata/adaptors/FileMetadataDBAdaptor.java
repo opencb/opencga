@@ -74,11 +74,11 @@ public interface FileMetadataDBAdaptor extends AutoCloseable {
 
     Integer getFileId(int studyId, String fileName);
 
+    LinkedHashSet<Integer> getIndexedFiles(int studyId);
+
     default void addIndexedFiles(int studyId, List<Integer> fileIds) {}
 
     default void removeIndexedFiles(int studyId, Collection<Integer> fileIds) {};
-
-    LinkedHashSet<Integer> getIndexedFiles(int studyId);
 
     default QueryResult<Long> count() {
         return count(new Query());
