@@ -69,7 +69,21 @@
             "metadata": {
                 "description": "Log Analytics Workspace Resource ID"
             }
+        },
+        "appInsightsAppId":{
+            "type": "string",
+            "metadata": {
+                "description": "Applciation Insights ID"
+            }
+        },
+        "batchInsightsDownloadURL":{
+            "type": "string",
+            "defaultValue": "https://github.com/Azure/batch-insights/releases/download/v1.1.1/batch-insights.exe",
+            "metadata": {
+                "description": "Applciation Insights ID"
+            }
         }
+        
     },
     "variables": {
         "storageAccountName": "[concat('batch', uniqueString(resourceGroup().id))]",
@@ -145,7 +159,7 @@
                     "nodeFillType": "Spread"
                 },
                 "startTask": {
-                    "commandLine": "[concat('/bin/bash -c \"curl -fsSL ', parameters('_artifactsLocation'), '/avere/mount.py', parameters('_artifactsLocationSasToken'), ' | python3 - ', parameters('mountArgs'), '\"')]",
+                    "commandLine": "[concat('/bin/bash -c \"curl -fsSL ', parameters('_artifactsLocation'), '/avere/mount.py', parameters('_artifactsLocationSasToken'), ' | python3 - ', parameters('mountArgs'), '\" && /bin/bash -c \"wget  -O - https://raw.githubusercontent.com/Azure/batch-insights/master/scripts/run-linux.sh | bash\"')]",
                     "userIdentity": {
                         "autoUser": {
                             "elevationLevel": "Admin",
@@ -153,7 +167,20 @@
                         }
                     },
                     "waitForSuccess": true,
-                    "maxTaskRetryCount": 0
+                    "maxTaskRetryCount": 0,
+                    "environmentSettings":[
+                        {
+                            "name": "BATCH_INSIGHTS_DOWNLOAD_URL",
+                            "value": "[parameters('batchInsightsDownloadURL')]"
+
+                        },
+                        {
+                            "name": "APP_INSIGHTS_APP_ID",
+                            "value": "[parameters('appInsightsAppId')]"
+
+                        }
+
+                    ]   
                 },
                 "deploymentConfiguration": {
                     "virtualMachineConfiguration": {

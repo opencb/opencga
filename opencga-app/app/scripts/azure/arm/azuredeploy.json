@@ -393,7 +393,8 @@
                 "[parameters('rgPrefix')]",
                 "avere",
                 "azurefiles",
-                "vnet"
+                "vnet",
+                "appinsights"
             ],
             "properties": {
                 "mode": "Incremental",
@@ -567,6 +568,9 @@
                    },
                    "LogAnalyticsWorkspaceResourceID":{
                         "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceResourceID.value]"
+                   } ,
+                   "appInsightsAppId":{
+                        "value": "[reference('app-insights').outputs.appId.value]"
                    } 
                 }
             }
