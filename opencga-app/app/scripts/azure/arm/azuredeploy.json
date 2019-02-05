@@ -684,6 +684,26 @@
                     }
                 }
             }
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "resourceGroup": "[concat(parameters('rgPrefix'),'-mongodb')]",
+            "apiVersion": "2018-05-01",
+            "name": "mongodb",
+            "dependsOn": [
+                "vnet",
+                "[parameters('rgPrefix')]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/appinsights/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                   
+                }
+            }
         }
     ],
     "outputs": {}
