@@ -40,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
@@ -971,19 +972,41 @@ public class StudyConfigurationManager implements AutoCloseable {
      * fileId was already in the studyConfiguration.indexedFiles
      *
      * @param studyConfiguration Study Configuration
-     * @param fileName  File name
+     * @param filePath  File path
      * @return fileId related to that file.
      * @throws StorageEngineException if the file is not valid for being loaded
      */
-    public int registerFile(StudyConfiguration studyConfiguration, String fileName) throws StorageEngineException {
+    public int registerFile(StudyConfiguration studyConfiguration, String filePath) throws StorageEngineException {
+        String fileName = Paths.get(filePath).getFileName().toString();
         Map<Integer, String> idFiles = studyConfiguration.getFileIds().inverse();
         int fileId;
 
         if (studyConfiguration.getFileIds().containsKey(fileName)) {
             fileId = studyConfiguration.getFileIds().get(fileName);
+            if (studyConfiguration.getIndexedFiles().contains(fileId)) {
+                throw StorageEngineException.alreadyLoaded(fileId, fileName);
+            }
+            // The file is not loaded. Check if it's being loaded.
+            if (!studyConfiguration.getFilePaths().inverse().get(fileId).equals(filePath)) {
+                // Only register if the file is being loaded. Otherwise, replace the filePath
+                for (int i = studyConfiguration.getBatches().size() - 1; i >= 0; i--) {
+                    BatchFileOperation batch = studyConfiguration.getBatches().get(i);
+                    if (batch.getFileIds().contains(fileId)) {
+                        if (batch.getType().equals(BatchFileOperation.Type.REMOVE)) {
+                            // If the file was removed. Can be replaced.
+                            break;
+                        } else {
+                            throw StorageEngineException.unableToExecute("Already registered with a different path", fileId, fileName);
+                        }
+                    }
+                }
+                // Replace filePath
+                studyConfiguration.getFilePaths().forcePut(filePath, fileId);
+            }
         } else {
             fileId = newFileId(studyConfiguration);
             studyConfiguration.getFileIds().put(fileName, fileId);
+            studyConfiguration.getFilePaths().put(filePath, fileId);
         }
 
         if (studyConfiguration.getFileIds().containsKey(fileName)) {
@@ -1002,9 +1025,6 @@ public class StudyConfigurationManager implements AutoCloseable {
             }
         }
 
-        if (studyConfiguration.getIndexedFiles().contains(fileId)) {
-            throw StorageEngineException.alreadyLoaded(fileId, fileName);
-        }
         return fileId;
     }
 

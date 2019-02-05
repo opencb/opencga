@@ -17,6 +17,7 @@
 package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecutor;
@@ -123,15 +124,23 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<Sample> create() throws CatalogException, IOException {
         logger.debug("Creating sample");
 
-        ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(SampleDBAdaptor.QueryParams.DESCRIPTION.key(), samplesCommandOptions.createCommandOptions.description);
-        params.putIfNotEmpty(SampleDBAdaptor.QueryParams.TYPE.key(), samplesCommandOptions.createCommandOptions.type);
-        params.putIfNotEmpty(SampleDBAdaptor.QueryParams.SOURCE.key(), samplesCommandOptions.createCommandOptions.source);
-        params.putIfNotEmpty(SampleDBAdaptor.QueryParams.ID.key(), samplesCommandOptions.createCommandOptions.name);
-        params.put(SampleDBAdaptor.QueryParams.SOMATIC.key(), samplesCommandOptions.createCommandOptions.somatic);
+        SampleCommandOptions.CreateCommandOptions commandOptions = samplesCommandOptions.createCommandOptions;
 
-        return openCGAClient.getSampleClient().create(samplesCommandOptions.createCommandOptions.study,
-                samplesCommandOptions.createCommandOptions.individual, params);
+        ObjectMap params;
+        if (StringUtils.isNotEmpty(commandOptions.json)) {
+            params = loadFile(commandOptions.json);
+        } else {
+            params = new ObjectMap();
+            params.putIfNotEmpty(SampleDBAdaptor.QueryParams.DESCRIPTION.key(), commandOptions.description);
+            params.putIfNotEmpty(SampleDBAdaptor.QueryParams.NAME.key(), commandOptions.name);
+            params.putIfNotEmpty(SampleDBAdaptor.QueryParams.TYPE.key(), commandOptions.type);
+            params.putIfNotEmpty(SampleDBAdaptor.QueryParams.SOURCE.key(), commandOptions.source);
+            params.putIfNotEmpty(SampleDBAdaptor.QueryParams.ID.key(), commandOptions.name);
+            params.putIfNotEmpty(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), commandOptions.individual);
+            params.put(SampleDBAdaptor.QueryParams.SOMATIC.key(), commandOptions.somatic);
+        }
+
+        return openCGAClient.getSampleClient().create(commandOptions.study, commandOptions.id, params);
     }
 
     private QueryResponse<Sample> load() throws CatalogException, IOException {
@@ -151,6 +160,7 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotNull(SampleDBAdaptor.QueryParams.STUDY.key(), resolveStudy(samplesCommandOptions.infoCommandOptions.study));
         params.putIfNotEmpty(QueryOptions.INCLUDE, samplesCommandOptions.infoCommandOptions.dataModelOptions.include);
         params.putIfNotEmpty(QueryOptions.EXCLUDE, samplesCommandOptions.infoCommandOptions.dataModelOptions.exclude);
+        params.put("flattenAnnotations", samplesCommandOptions.searchCommandOptions.flattenAnnotations);
         if (samplesCommandOptions.infoCommandOptions.noLazy) {
             params.put("lazy", false);
         }
@@ -168,6 +178,7 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotNull(SampleDBAdaptor.QueryParams.SOMATIC.key(), samplesCommandOptions.searchCommandOptions.somatic);
         query.putIfNotEmpty(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), samplesCommandOptions.searchCommandOptions.individual);
         query.putIfNotEmpty(SampleDBAdaptor.QueryParams.ANNOTATION.key(), samplesCommandOptions.searchCommandOptions.annotation);
+        query.put("flattenAnnotations", samplesCommandOptions.searchCommandOptions.flattenAnnotations);
         query.putAll(samplesCommandOptions.searchCommandOptions.commonOptions.params);
 
         if (samplesCommandOptions.searchCommandOptions.numericOptions.count) {
@@ -186,15 +197,23 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<Sample> update() throws CatalogException, IOException {
         logger.debug("Updating samples");
 
-        ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(SampleDBAdaptor.QueryParams.ID.key(), samplesCommandOptions.updateCommandOptions.name);
-        params.putIfNotEmpty(SampleDBAdaptor.QueryParams.DESCRIPTION.key(), samplesCommandOptions.updateCommandOptions.description);
-        params.putIfNotEmpty(SampleDBAdaptor.QueryParams.SOURCE.key(), samplesCommandOptions.updateCommandOptions.source);
-        params.putIfNotEmpty(SampleDBAdaptor.QueryParams.TYPE.key(), samplesCommandOptions.updateCommandOptions.type);
-        params.putIfNotEmpty(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), samplesCommandOptions.updateCommandOptions.individual);
-        params.putIfNotNull(SampleDBAdaptor.QueryParams.SOMATIC.key(), samplesCommandOptions.updateCommandOptions.somatic);
-        return openCGAClient.getSampleClient().update(samplesCommandOptions.updateCommandOptions.sample,
-                samplesCommandOptions.updateCommandOptions.study, params);
+        SampleCommandOptions.UpdateCommandOptions commandOptions = samplesCommandOptions.updateCommandOptions;
+
+        ObjectMap params;
+        if (StringUtils.isNotEmpty(commandOptions.json)) {
+            params = loadFile(commandOptions.json);
+        } else {
+            params = new ObjectMap();
+            params.putIfNotEmpty(SampleDBAdaptor.QueryParams.NAME.key(), commandOptions.name);
+            params.putIfNotEmpty(SampleDBAdaptor.QueryParams.DESCRIPTION.key(), commandOptions.description);
+            params.putIfNotEmpty(SampleDBAdaptor.QueryParams.SOURCE.key(), commandOptions.source);
+            params.putIfNotEmpty(SampleDBAdaptor.QueryParams.TYPE.key(), commandOptions.type);
+            params.putIfNotEmpty(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), commandOptions.individual);
+            params.putIfNotNull(SampleDBAdaptor.QueryParams.SOMATIC.key(), commandOptions.somatic);
+        }
+
+        return openCGAClient.getSampleClient().update(commandOptions.study, commandOptions.sample,
+                commandOptions.annotationSetsAction.name(), params);
     }
 
     private QueryResponse<Sample> delete() throws CatalogException, IOException {

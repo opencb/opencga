@@ -758,6 +758,15 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         QueryResult<Individual> queryResult = individualDBAdaptor.update(individual.getUid(), parameters, variableSetList, options);
         auditManager.recordUpdate(AuditRecord.Resource.individual, individual.getUid(), userId, parameters, null, null);
 
+        if (!options.getBoolean(Constants.INCREMENT_VERSION)) {
+            // Check if user is updating the list of disorders and/or phenotypes
+            if (parameters.containsKey(FamilyDBAdaptor.UpdateParams.DISORDERS.key())
+                    || parameters.containsKey(FamilyDBAdaptor.UpdateParams.PHENOTYPES.key())) {
+                // Update the final list of disorders and phenotypes from family
+                catalogManager.getFamilyManager().updatePhenotypesAndDisorders(study, individual);
+            }
+        }
+
         return queryResult;
     }
 

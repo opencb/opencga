@@ -63,29 +63,20 @@
         }, 
         "dockerImagesToCache": {
             "type": "array"
+        },
+        "LogAnalyticsWorkspaceResourceID": {
+            "type": "string",
+            "metadata": {
+                "description": "Log Analytics Workspace Resource ID"
+            }
         }
     },
     "variables": {
         "storageAccountName": "[concat('batch', uniqueString(resourceGroup().id))]",
         "batchAccountName": "[concat('batch', uniqueString(resourceGroup().id))]",
-        "batchEndpoint": "[concat('https://', variables('batchAccountName'), '.' , parameters('location'), '.batch.azure.com')]",
+        "batchEndpoint": "[concat('https://', variables('batchAccountName'), '.' , parameters('location'), '.batch.azure.com')]"
     },
     "resources": [
-        {
-            "comments": "This is the storage account used by Azure Batch for file processing/storage",
-            "type": "Microsoft.Storage/storageAccounts",
-            "name": "[variables('storageAccountname')]",
-            "apiVersion": "2016-01-01",
-            "location": "[parameters('location')]",
-            "sku": {
-                "name": "[parameters('storageAccountsku')]"
-            },
-            "kind": "Storage",
-            "tags": {
-                "ObjectName": "[variables('storageAccountName')]"
-            },
-            "properties": {}
-        },
         {
             "type": "Microsoft.Batch/batchAccounts",
             "name": "[variables('batchAccountName')]",
@@ -99,10 +90,45 @@
                     "storageAccountId": "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
                 }
             },
+            "resources": [
+                {
+                    "type": "providers/diagnosticSettings",
+                    "name": "[concat('Microsoft.Insights/', variables('batchAccountName'))]",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Batch/batchAccounts', variables('batchAccountName'))]"
+                    ],
+                    "apiVersion": "2017-05-01-preview",
+                    "properties": {
+                      "name": "[variables('batchAccountName')]",
+                      "workspaceId": "[parameters('LogAnalyticsWorkspaceResourceID')]",
+                      "logs": [ 
+                        {
+                          "category": "ServiceLog",
+                          "enabled": true,
+                          "retentionPolicy": {
+                            "days": 0,
+                            "enabled": false
+                          }
+                        }
+                      ],
+                      "metrics": [
+                        {
+                          "category": "AllMetrics",
+                          "enabled": true,
+                          "retentionPolicy": {
+                            "enabled": false,
+                            "days": 0
+                          }
+                        }
+                      ]
+                    }
+                  }
+            ],
             "dependsOn": [
                 "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
             ]
         },
+        
         {
             "comments": "This creates a pool of VMs in Azure Batch which support container workloads. It runs a startup task to mount the shared storage before accepting tasks.",
             "type": "Microsoft.Batch/batchAccounts/pools",
@@ -147,7 +173,7 @@
                 "scaleSettings": {
                     "autoScale": {
                         "evaluationInterval": "PT5M",
-                        "formula": "[concat('startingNumberOfVMs = 0;maxNumberofVMs = ', parameters('maxNodeCount'), ';pendingTaskSamplePercent = $PendingTasks.GetSamplePercent(160 * TimeInterval_Second);pendingTaskSamples = pendingTaskSamplePercent < 70 ? startingNumberOfVMs : avg($PendingTasks.GetSample(160 * TimeInterval_Second));$TargetDedicatedNodes=min(maxNumberofVMs, pendingTaskSamples);')]"
+                        "formula": "[concat('startingNumberOfVMs = 1;maxNumberofVMs = ', parameters('maxNodeCount'), ';pendingTaskSamplePercent = $PendingTasks.GetSamplePercent(160 * TimeInterval_Second);pendingTaskSamples = pendingTaskSamplePercent < 70 ? startingNumberOfVMs : avg($PendingTasks.GetSample(160 * TimeInterval_Second));$TargetDedicatedNodes=max(1,min(maxNumberofVMs, pendingTaskSamples));')]"
                     }
                 }
             },

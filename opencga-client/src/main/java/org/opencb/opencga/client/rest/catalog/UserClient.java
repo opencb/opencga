@@ -43,12 +43,7 @@ public class UserClient extends CatalogClient<User, User> {
     }
 
     public QueryResponse<User> create(String user, String password, ObjectMap params) throws IOException {
-        //TODO TEST
-        if (params.containsKey("method") && params.get("method").equals("GET")) {
-            params = addParamsToObjectMap(params, "userId", user, "password", password);
-                return execute(USERS_URL, "create", params, GET, User.class);
-        }
-        params = addParamsToObjectMap(params, "userId", user, "password", password);
+        params = addParamsToObjectMap(params, "id", user, "password", password);
         ObjectMapper mapper = new ObjectMapper();
         String json = mapper.writeValueAsString(params);
         ObjectMap p = new ObjectMap("body", json);

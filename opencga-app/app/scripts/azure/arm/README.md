@@ -20,38 +20,45 @@ The sizes are:
 
 Here are the properties that are defined for each t-shirt size:
 
-Component | Property | Small | Medium | Large
--- | -- | -- | -- | --
-Avere | use-azure | FALSE | TRUE | TRUE
-  | node-quantity | n/a | 3 | 12
-  | ssd-per-node | n/a | 4 | 4
-  | ssd-size | n/a | 256GB | 1TB
-  | node-size | n/a | D16 | E32
-  |   |   |   |  
-Solr | vm-size | E54v3 | E8v3 | E16v3
-  | vm-quantity | 1 | 2 | 4
-  | disk-type | SSD | SSD | SSD
-  |   |   |   |  
-Batch | node-size | low-priority | F8v2 | F8v2
-  | max-nodes | 5 | 16 | 1000
-  | jobs-per-node | 1 | 1 | 1
-  | disk-type | SSD | SSD | SSD
-  |   |   |   |  
-MongoDB | node-quanity | 1 | 3 | 5
-  | node-size | D2v2 | E8v3 | E16v3
-  | disk-type | E10 | P20 | P20
-  |   |   |   |  
-HDInsights | head-node-quanity | 1 | 2 | 2
-  | head-node-size | D4v2 | D4v2 | D4v2
-  | worker-node-quanity | 2 | 20 | 50
-  | worker-node-size | A6 | D5v2 | D14v2
-  |   |   |   |  
-Daemon | node-size | A4 | F8v2 | F8v2
-  | disk-type | HDD | HDD | HDD
-  |   |   |   |  
-Web Servers | node-quantity | 1 | 2 | 4
-  | node-size | D2sv3 | D4sv3 | D4sv3
-  | disk-type | HDD | HDD | HDD
+| Component   | Property            | Small        | Medium | Large  |
+| ----------- | ------------------- | ------------ | ------ | ------ |
+| Avere       |
+|             | use-azure           | FALSE        | TRUE   | TRUE   |
+|             | node-quantity       | n/a          | 3      | 12     |
+|             | ssd-per-node        | n/a          | 4      | 4      |
+|             | node-cache-size     | n/a          | 1024GB | 4096TB |
+|             | node-size           | n/a          | D16    | E32    |
+|             |                     |              |
+| Solr        |
+|             | vm-size             | E4v3         | E8v3   | E16v3  |
+|             | vm-quantity         | 1            | 2      | 4      |
+|             | disk-type           | SSD          | SSD    | SSD    |
+|             |                     |              |
+| Batch       |
+|             | node-size           | low-priority | F8v2   | F8v2   |
+|             | max-nodes           | 5            | 16     | 1000   |
+|             | jobs-per-node       | 1            | 1      | 1      |
+|             | disk-type           | SSD          | SSD    | SSD    |
+|             |                     |              |
+| MongoDB     |
+|             | node-quanity        | 1            | 3      | 5      |
+|             | node-size           | D2v2         | E8v3   | E16v3  |
+|             | disk-type           | E10          | P20    | P20    |
+|             |                     |              |
+| HDInsights  |
+|             | head-node-quanity   | 1            | 2      | 2      |
+|             | head-node-size      | D4v2         | D4v2   | D4v2   |
+|             | worker-node-quanity | 2            | 20     | 50     |
+|             | worker-node-size    | D3v2         | D5v2   | D14v2  |
+|             |                     |              |
+| Daemon      |
+|             | node-size           | DS2v2        | F8v2   | F8v2   |
+|             | disk-type           | HDD          | HDD    | HDD    |
+|             |                     |              |        |
+| Web Servers |
+|             | node-quantity       | 1            | 2      | 4      |
+|             | node-size           | D2sv3        | D4sv3  | D4sv3  |
+|             | disk-type           | HDD          | HDD    | HDD    |
 
 ## Additional Notes
 

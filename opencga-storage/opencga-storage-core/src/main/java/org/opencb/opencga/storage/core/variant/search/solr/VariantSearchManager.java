@@ -75,7 +75,7 @@ public class VariantSearchManager {
 
     private Logger logger;
 
-    public static final String CONF_SET = "OpenCGAConfSet-1.4.x";
+    public static final String CONF_SET = "OpenCGAConfSet-1.4.0";
     public static final String SEARCH_ENGINE_ID = "solr";
     public static final String USE_SEARCH_INDEX = "useSearchIndex";
     public static final int DEFAULT_INSERT_BATCH_SIZE = 10000;
@@ -160,6 +160,28 @@ public class VariantSearchManager {
             return solrManager.existsCollection(collectionName);
         } catch (SolrException e) {
             throw new VariantSearchException("Error asking if Solr collection '" + collectionName + "' exists", e);
+        }
+    }
+
+    /**
+     * Insert a list of variants into the given Solr collection.
+     *
+     * @param collection Solr collection where to insert
+     * @param variants List of variants to insert
+     * @throws IOException   IOException
+     * @throws SolrServerException SolrServerException
+     */
+    public void insert(String collection, List<Variant> variants) throws IOException, SolrServerException {
+        if (variants != null && CollectionUtils.isNotEmpty(variants)) {
+            List<VariantSearchModel> variantSearchModels = variantSearchToVariantConverter.convertListToStorageType(variants);
+
+            if (!variantSearchModels.isEmpty()) {
+                UpdateResponse updateResponse;
+                updateResponse = solrManager.getSolrClient().addBeans(collection, variantSearchModels);
+                if (updateResponse.getStatus() == 0) {
+                    solrManager.getSolrClient().commit(collection);
+                }
+            }
         }
     }
 
@@ -521,32 +543,9 @@ public class VariantSearchManager {
         solrManager.close();
     }
 
-
-
     /*-------------------------------------
      *  P R I V A T E    M E T H O D S
      -------------------------------------*/
-
-    /**
-     * Insert a list of variants into Solr.
-     *
-     * @param variants List of variants to insert
-     * @throws IOException   IOException
-     * @throws SolrException SolrException
-     */
-    private void insert(String collection, List<Variant> variants) throws IOException, SolrServerException {
-        if (variants != null && CollectionUtils.isNotEmpty(variants)) {
-            List<VariantSearchModel> variantSearchModels = variantSearchToVariantConverter.convertListToStorageType(variants);
-
-            if (!variantSearchModels.isEmpty()) {
-                UpdateResponse updateResponse;
-                updateResponse = solrManager.getSolrClient().addBeans(collection, variantSearchModels);
-                if (updateResponse.getStatus() == 0) {
-                    solrManager.getSolrClient().commit(collection);
-                }
-            }
-        }
-    }
 
     /**
      * Load a JSON file into the Solr core/collection.

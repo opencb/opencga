@@ -40,6 +40,8 @@ import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAn
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 
+import java.net.URI;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
 
@@ -83,6 +85,13 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
                     () -> dbAdaptor.newAnnotationLoader(new QueryOptions(params))
                             .setProgressLogger(progressLogger), null, config);
         }
+    }
+
+    @Override
+    public URI createAnnotation(Path outDir, String fileName, Query query, ObjectMap params) throws VariantAnnotatorException {
+        // Do not allow FILE filter when annotating.
+        query.remove(VariantQueryParam.FILE.key());
+        return super.createAnnotation(outDir, fileName, query, params);
     }
 
     @Override

@@ -21,6 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecutor;
+import org.opencb.opencga.app.cli.main.executors.catalog.commons.AnnotationCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.FileCommandOptions;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -44,11 +45,13 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
 
     private FileCommandOptions filesCommandOptions;
     private AclCommandExecutor<File, FileAclEntry> aclCommandExecutor;
+    private AnnotationCommandExecutor<File, FileAclEntry> annotationCommandExecutor;
 
     public FileCommandExecutor(FileCommandOptions filesCommandOptions) {
         super(filesCommandOptions.commonCommandOptions);
         this.filesCommandOptions = filesCommandOptions;
         this.aclCommandExecutor = new AclCommandExecutor<>();
+        this.annotationCommandExecutor = new AnnotationCommandExecutor<>();
     }
 
 
@@ -119,6 +122,10 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
             case "group-by":
                 queryResponse = groupBy();
                 break;
+            case "annotation-sets-update":
+                queryResponse = annotationCommandExecutor.updateAnnotationSet(filesCommandOptions.annotationUpdateCommandOptions,
+                        openCGAClient.getFileClient());
+                break;
 //            case "variants":
 //                queryResponse = variants();
 //                break;
@@ -155,6 +162,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.STUDY.key(), resolveStudy(filesCommandOptions.infoCommandOptions.study));
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, filesCommandOptions.infoCommandOptions.dataModelOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, filesCommandOptions.infoCommandOptions.dataModelOptions.exclude);
+        queryOptions.put("flattenAnnotations", filesCommandOptions.searchCommandOptions.flattenAnnotations);
         queryOptions.put("lazy", !filesCommandOptions.infoCommandOptions.noLazy);
         return openCGAClient.getFileClient().get(filesCommandOptions.infoCommandOptions.files, queryOptions);
     }
@@ -200,6 +208,8 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotEmpty(FileDBAdaptor.QueryParams.JOB_UID.key(), filesCommandOptions.searchCommandOptions.jobId);
         query.putIfNotEmpty(FileDBAdaptor.QueryParams.ATTRIBUTES.key(), filesCommandOptions.searchCommandOptions.attributes);
         query.putIfNotEmpty(FileDBAdaptor.QueryParams.NATTRIBUTES.key(), filesCommandOptions.searchCommandOptions.nattributes);
+        query.putIfNotEmpty(FileDBAdaptor.QueryParams.ANNOTATION.key(), filesCommandOptions.searchCommandOptions.annotation);
+        query.put("flattenAnnotations", filesCommandOptions.searchCommandOptions.flattenAnnotations);
         query.putAll(filesCommandOptions.searchCommandOptions.commonOptions.params);
 
         if (filesCommandOptions.searchCommandOptions.numericOptions.count) {
@@ -295,6 +305,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.JOB_UID.key(), filesCommandOptions.updateCommandOptions.jobId);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.PATH.key(), filesCommandOptions.updateCommandOptions.path);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.NAME.key(), filesCommandOptions.updateCommandOptions.name);
+        params.putIfNotNull("annotationSetsAction", filesCommandOptions.updateCommandOptions.annotationSetsAction);
         return openCGAClient.getFileClient().update(filesCommandOptions.updateCommandOptions.file,
                 resolveStudy(filesCommandOptions.updateCommandOptions.study), params);
     }

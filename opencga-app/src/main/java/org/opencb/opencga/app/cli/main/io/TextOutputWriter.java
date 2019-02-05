@@ -19,16 +19,16 @@ package org.opencb.opencga.app.cli.main.io;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.acls.permissions.AbstractAclEntry;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.core.common.IOUtils.*;
+import static org.opencb.opencga.core.common.IOUtils.humanReadableByteCount;
 
 /**
  * Created by pfurio on 28/11/16.
@@ -168,7 +168,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                                         StringUtils.defaultIfEmpty(study.getId(), "-"), StringUtils.defaultIfEmpty(study.getName(), "-"),
                                         study.getType(), StringUtils.defaultIfEmpty(study.getDescription(), "-"),
                                         study.getGroups() == null ? ""
-                                                : study.getGroups().stream().map(Group::getName).collect(Collectors.joining(",")),
+                                                : study.getGroups().stream().map(Group::getId).collect(Collectors.joining(",")),
                                         study.getSize()));
 
                                 if (study.getGroups() != null && study.getGroups().size() > 0) {
@@ -242,8 +242,11 @@ public class TextOutputWriter extends AbstractOutputWriter {
     }
 
     private void printGroup(Group group, StringBuilder sb, String prefix) {
-        sb.append(String.format("%s%s\t%s\n", prefix, StringUtils.defaultIfEmpty(group.getName(), "-"),
-                StringUtils.join(group.getUserIds(), ", ")));
+        sb.append(String.format("%s%s\t%s\n", prefix, group.getId(), StringUtils.join(group.getUserIds(), ", ")));
+    }
+
+    private void printACL(AbstractAclEntry aclEntry, StringBuilder sb, String prefix) {
+        sb.append(String.format("%s%s\t%s\n", prefix, aclEntry.getMember(), aclEntry.getPermissions().toString()));
     }
 
     private void printFiles(List<QueryResult<File>> queryResultList) {

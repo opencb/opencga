@@ -31,6 +31,7 @@ import java.io.IOException;
  */
 public class AnnotationCommandExecutor<T,U> {
 
+    @Deprecated
     public QueryResponse<AnnotationSet> createAnnotationSet(
             AnnotationCommandOptions.AnnotationSetsCreateCommandOptions createCommandOptions, AnnotationClient<T,U> client)
             throws IOException {
@@ -42,6 +43,7 @@ public class AnnotationCommandExecutor<T,U> {
                 createCommandOptions.annotationSetName, obj);
     }
 
+    @Deprecated
     public QueryResponse<AnnotationSet> getAnnotationSet(AnnotationCommandOptions.AnnotationSetsInfoCommandOptions infoCommandOptions,
                                      AnnotationClient<T,U> client) throws IOException {
 
@@ -51,6 +53,7 @@ public class AnnotationCommandExecutor<T,U> {
         return client.getAnnotationSets(infoCommandOptions.id, params);
     }
 
+    @Deprecated
     public QueryResponse<AnnotationSet> searchAnnotationSets(
             AnnotationCommandOptions.AnnotationSetsSearchCommandOptions searchCommandOptions, AnnotationClient<T,U> client)
             throws IOException {
@@ -61,6 +64,7 @@ public class AnnotationCommandExecutor<T,U> {
         return client.searchAnnotationSets(searchCommandOptions.id, params);
     }
 
+    @Deprecated
     public QueryResponse<AnnotationSet> deleteAnnotationSet(
             AnnotationCommandOptions.AnnotationSetsDeleteCommandOptions deleteCommandOptions, AnnotationClient<T,U> client)
             throws IOException {
@@ -76,6 +80,7 @@ public class AnnotationCommandExecutor<T,U> {
 
         ObjectMapper mapper = new ObjectMapper();
         ObjectMap obj = mapper.readValue(new File(updateCommandOptions.annotations), ObjectMap.class);
+        obj.putIfNotNull("action", updateCommandOptions.action);
         obj.putIfNotNull("study", updateCommandOptions.study);
 
         return client.updateAnnotationSet(updateCommandOptions.id, updateCommandOptions.annotationSetName, obj);

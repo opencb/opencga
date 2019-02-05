@@ -78,9 +78,10 @@ public class SolrQueryParser {
         includeMap.put("studies", "studies,stats_*");
         includeMap.put("studies.stats", "studies,stats_*");
 
-        includeMap.put("annotation", "genes,soAcc,geneToSoAcc,biotypes,sift,siftDesc,polyphen,polyphenDesc,popFreq_*,xrefs,"
-                + "phastCons,phylop,gerp,caddRaw,caddScaled,traits");
-        includeMap.put("annotation.consequenceTypes", "genes,soAcc,geneToSoAcc,biotypes,sift,siftDesc,polyphen,polyphenDesc");
+        includeMap.put("annotation", "genes,soAcc,geneToSoAcc,biotypes,sift,siftDesc,polyphen,polyphenDesc,popFreq_*,"
+                + "xrefs,phastCons,phylop,gerp,caddRaw,caddScaled,traits,other");
+        includeMap.put("annotation.consequenceTypes", "genes,soAcc,geneToSoAcc,biotypes,sift,siftDesc,polyphen,"
+                + "polyphenDesc,other");
         includeMap.put("annotation.populationFrequencies", "popFreq_*");
         includeMap.put("annotation.xrefs", "xrefs");
         includeMap.put("annotation.conservation", "phastCons,phylop,gerp");
@@ -368,9 +369,9 @@ public class SolrQueryParser {
         if (StringUtils.isNotEmpty(query.getString(key))) {
             String[] clinSig = query.getString(key).split("[,;]");
             StringBuilder sb = new StringBuilder();
-            sb.append("(").append("traits: \"cs:").append(clinSig[0]).append("\"");
+            sb.append("(").append("traits:*cs\\:").append(clinSig[0]).append("*");
             for (int i = 1; i < clinSig.length; i++) {
-                sb.append(" OR ").append("traits: \"cs:").append(clinSig[i]).append("\"");
+                sb.append(" OR ").append("traits:*cs\\:").append(clinSig[i]).append("*");
             }
             sb.append(")");
             filterList.add(sb.toString());
@@ -1308,7 +1309,7 @@ public class SolrQueryParser {
             // Empty list means NONE sample!
             return solrFields;
         }
-        solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + "*" + VariantSearchUtils.FIELD_SEPARATOR + "format");
+
         if (incSamples == null) {
             // null means ALL samples
             if (query.getBoolean(VariantQueryParam.INCLUDE_GENOTYPE.key())) {
@@ -1316,14 +1317,18 @@ public class SolrQueryParser {
                 if (incStudies == null) {
                     // null means ALL studies: include genotype for all studies and samples
                     solrFields.add("gt" + VariantSearchUtils.FIELD_SEPARATOR + "*");
-                    solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + "*" + VariantSearchUtils.FIELD_SEPARATOR
-                            + "sampleName");
+                    solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + "*"
+                            + VariantSearchUtils.FIELD_SEPARATOR + "sampleName");
+                    solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + "*"
+                            + VariantSearchUtils.FIELD_SEPARATOR + "format");
                 } else {
                     // Include genotype for the specified studies and all samples
                     for (String incStudy: incStudies) {
                         solrFields.add("gt" + VariantSearchUtils.FIELD_SEPARATOR + incStudy + VariantSearchUtils.FIELD_SEPARATOR + "*");
-                        solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + incStudy + VariantSearchUtils.FIELD_SEPARATOR
-                                + "sampleName");
+                        solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + incStudy
+                                + VariantSearchUtils.FIELD_SEPARATOR + "sampleName");
+                        solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + incStudy
+                                + VariantSearchUtils.FIELD_SEPARATOR + "format");
                     }
                 }
             } else {
@@ -1334,8 +1339,8 @@ public class SolrQueryParser {
                 } else {
                     // Include sample format for the specified studies and samples
                     for (String incStudy: incStudies) {
-                        solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + incStudy + VariantSearchUtils.FIELD_SEPARATOR
-                                + "*");
+                        solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + incStudy
+                                + VariantSearchUtils.FIELD_SEPARATOR + "*");
                     }
                 }
             }
@@ -1345,16 +1350,21 @@ public class SolrQueryParser {
                 // Genotype
                 if (incStudies == null) {
                     // null means ALL studies: include genotype for all studies and the specified samples
+                    solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + "*"
+                            + VariantSearchUtils.FIELD_SEPARATOR + "sampleName");
+                    solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + "*"
+                            + VariantSearchUtils.FIELD_SEPARATOR + "format");
                     for (String incSample: incSamples) {
-                        solrFields.add("gt" + VariantSearchUtils.FIELD_SEPARATOR + "*" + VariantSearchUtils.FIELD_SEPARATOR + incSample);
-                        solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + "*" + VariantSearchUtils.FIELD_SEPARATOR
-                                + "sampleName");
+                        solrFields.add("gt" + VariantSearchUtils.FIELD_SEPARATOR + "*"
+                                + VariantSearchUtils.FIELD_SEPARATOR + incSample);
                     }
                 } else {
                     // Include genotype for the specified studies and samples
                     for (String incStudy: incStudies) {
                         solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + incStudy
                                 + VariantSearchUtils.FIELD_SEPARATOR + "sampleName");
+                        solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + incStudy
+                                + VariantSearchUtils.FIELD_SEPARATOR + "format");
                         for (String incSample: incSamples) {
                             solrFields.add("gt" + VariantSearchUtils.FIELD_SEPARATOR + incStudy + VariantSearchUtils.FIELD_SEPARATOR
                                     + incSample);
@@ -1365,6 +1375,10 @@ public class SolrQueryParser {
                 // Sample format
                 if (incStudies == null) {
                     // null means ALL studies: include sample format for all studies and the specified samples
+                    solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + "*"
+                            + VariantSearchUtils.FIELD_SEPARATOR + "sampleName");
+                    solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + "*"
+                            + VariantSearchUtils.FIELD_SEPARATOR + "format");
                     for (String incSample: incSamples) {
                         solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + "*" + VariantSearchUtils.FIELD_SEPARATOR
                                 + incSample);
@@ -1374,6 +1388,8 @@ public class SolrQueryParser {
                     for (String incStudy: incStudies) {
                         solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + incStudy
                                 + VariantSearchUtils.FIELD_SEPARATOR + "sampleName");
+                        solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + incStudy
+                                + VariantSearchUtils.FIELD_SEPARATOR + "format");
                         for (String incSample: incSamples) {
                             solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + incStudy
                                     + VariantSearchUtils.FIELD_SEPARATOR + incSample);
