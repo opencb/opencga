@@ -18,6 +18,7 @@
             "location": "[resourceGroup().location]",
             "tags": {
             },
+            "kind": "other",
             "properties": {
                 "applicationId": "[parameters('name')]",
                 "Application_Type":"other"
