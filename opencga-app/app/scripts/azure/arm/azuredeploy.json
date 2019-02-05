@@ -907,9 +907,9 @@
         },
         {
             "type": "Microsoft.Resources/deployments",
-            "resourceGroup": "[concat(parameters('rgPrefix'),'-mongodb')]",
+            "resourceGroup": "[concat(parameters('rgPrefix'))]",
             "apiVersion": "2018-05-01",
-            "name": "mongodb",
+            "name": "appinsights",
             "dependsOn": [
                 "vnet",
                 "[parameters('rgPrefix')]"
