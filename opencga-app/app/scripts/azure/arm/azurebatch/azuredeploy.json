@@ -76,6 +76,12 @@
                 "description": "Applciation Insights ID"
             }
         },
+        "appInsightsInstrumentationKey":{
+            "type": "string",
+            "metadata": {
+                "description": "Applciation Insights Instrumentation Key"
+            }
+        },
         "batchInsightsDownloadURL":{
             "type": "string",
             "defaultValue": "https://github.com/Azure/batch-insights/releases/download/v1.1.1/batch-insights",
@@ -191,6 +197,11 @@
                         },
                         {
                             "name": "APP_INSIGHTS_INSTRUMENTATION_KEY",
+                            "value": "[parameters('appInsightsInstrumentationKey')]"
+
+                        },
+                        {
+                            "name": "APP_INSIGHTS_APP_ID",
                             "value": "[parameters('appInsightsAppId')]"
 
                         }

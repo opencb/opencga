@@ -429,9 +429,11 @@
                     "LogAnalyticsWorkspaceResourceID": {
                         "value": "[reference('loganalytics').outputs.logAnalyticsWorkspaceResourceID.value]"
                     },
-                    
-                   "appInsightsAppId":{
+                    "appInsightsAppId":{
                         "value": "[reference('appinsights').outputs.appId.value]"
+                   }, 
+                   "appInsightsInstrumentationKey":{
+                        "value": "[reference('appinsights').outputs.instrumentationKey.value]"
                    } 
                 }
             }
