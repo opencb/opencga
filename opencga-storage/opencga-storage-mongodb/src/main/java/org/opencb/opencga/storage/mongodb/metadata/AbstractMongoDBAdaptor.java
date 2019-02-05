@@ -13,10 +13,14 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.metadata.models.Locked;
+import org.opencb.opencga.storage.mongodb.utils.MongoLock;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 
 import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
@@ -31,14 +35,18 @@ public class AbstractMongoDBAdaptor<T> {
     protected final MongoDataStore db;
     protected final MongoDBCollection collection;
     protected final GenericDocumentComplexConverter<T> converter;
+    private final MongoLock mongoLock;
+    private final String collectionName;
 
     protected static final String SEPARATOR = "_";
 
     public AbstractMongoDBAdaptor(MongoDataStore db, String collectionName, Class<T> clazz) {
         this.db = db;
-        this.collection = getCollection(collectionName);
+        this.collectionName = collectionName;
+        this.collection = getCollection(this.collectionName);
         converter = new GenericDocumentComplexConverter<>(clazz);
         converter.getObjectMapper().configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
+        mongoLock = new MongoLock(collection, "_lock");
     }
 
     protected MongoDBCollection getCollection(String collectionName) {
@@ -97,5 +105,25 @@ public class AbstractMongoDBAdaptor<T> {
     protected static Bson buildQuery(int studyId, String name) {
         return and(eq("studyId", studyId), eq("name", name)
         );
+    }
+
+    public Locked lock(int studyId, int resourceId, long lockDuration, long timeout) throws StorageEngineException {
+        long lock = lock(buildPrivateId(studyId, resourceId), lockDuration, timeout);
+        return () -> unLock(buildPrivateId(studyId, resourceId), lock);
+    }
+
+    public long lock(Object id, long lockDuration, long timeout) throws StorageEngineException {
+        try {
+            return mongoLock.lock(id, lockDuration, timeout);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new StorageEngineException("Unable to lock " + id + " from " + collectionName, e);
+        } catch (TimeoutException e) {
+            throw new StorageEngineException("Unable to lock " + id + " from " + collectionName, e);
+        }
+    }
+
+    public void unLock(Object id, long lockId) {
+        mongoLock.unlock(id, lockId);
     }
 }

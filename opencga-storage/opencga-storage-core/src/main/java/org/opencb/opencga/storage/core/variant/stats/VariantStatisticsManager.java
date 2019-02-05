@@ -107,7 +107,8 @@ public abstract class VariantStatisticsManager {
 
         TaskMetadata.Status status = error ? TaskMetadata.Status.ERROR : TaskMetadata.Status.READY;
         for (String cohortName : cohorts) {
-            metadataManager.updateCohortMetadata(studyMetadata.getId(), cohortName,
+            Integer cohortId = metadataManager.getCohortId(studyMetadata.getId(), cohortName);
+            metadataManager.updateCohortMetadata(studyMetadata.getId(), cohortId,
                     cohort -> cohort.setStatsStatus(status));
         }
     }
@@ -120,19 +121,21 @@ public abstract class VariantStatisticsManager {
 //                continue;
 //            }
             int studyId = studyMetadata.getId();
-            CohortMetadata cohort = metadataManager.getCohortMetadata(studyId, cohortName);
-            if (cohort.isInvalid()) {
+            Integer cohortId = metadataManager.getCohortId(studyMetadata.getId(), cohortName);
+            metadataManager.updateCohortMetadata(studyId, cohortId, cohort -> {
+                if (cohort.isInvalid()) {
 //                throw new IOException("Cohort \"" + cohortName + "\" stats already calculated and INVALID");
-                LoggerFactory.getLogger(VariantStatisticsManager.class)
-                        .debug("Cohort \"" + cohortName + "\" stats calculated and INVALID. Set as calculated");
-            }
-            if (cohort.isStatsReady()) {
-                if (!updateStats) {
-                    throw new StorageEngineException("Cohort \"" + cohortName + "\" stats already calculated");
+                    LoggerFactory.getLogger(VariantStatisticsManager.class)
+                            .debug("Cohort \"" + cohortName + "\" stats calculated and INVALID. Set as calculated");
                 }
-            }
-            cohort.setStatsStatus(TaskMetadata.Status.RUNNING);
-            metadataManager.updateCohortMetadata(studyId, cohort);
+                if (cohort.isStatsReady()) {
+                    if (!updateStats) {
+                        throw new StorageEngineException("Cohort \"" + cohortName + "\" stats already calculated");
+                    }
+                }
+                cohort.setStatsStatus(TaskMetadata.Status.RUNNING);
+                return cohort;
+            });
         }
     }
 

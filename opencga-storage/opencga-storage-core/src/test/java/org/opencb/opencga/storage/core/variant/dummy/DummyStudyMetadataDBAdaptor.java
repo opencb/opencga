@@ -21,11 +21,9 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.adaptors.CohortMetadataDBAdaptor;
-import org.opencb.opencga.storage.core.metadata.adaptors.SampleMetadataDBAdaptor;
-import org.opencb.opencga.storage.core.metadata.adaptors.StudyMetadataDBAdaptor;
-import org.opencb.opencga.storage.core.metadata.adaptors.TaskMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.metadata.adaptors.*;
 import org.opencb.opencga.storage.core.metadata.models.*;
 
 import java.io.FileOutputStream;
@@ -36,7 +34,6 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -102,11 +99,30 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor, Samp
     }
 
     @Override
-    public synchronized long lockStudy(int studyId, long lockDuration, long timeout, String lockName) throws InterruptedException, TimeoutException {
+    public Locked lock(int studyId, long lockDuration, long timeout, String lockName) throws StorageEngineException {
         if (!LOCK_STUDIES.containsKey(studyId)) {
             LOCK_STUDIES.put(studyId, new ReentrantLock());
         }
-        LOCK_STUDIES.get(studyId).tryLock(timeout, TimeUnit.MILLISECONDS);
+        try {
+            LOCK_STUDIES.get(studyId).tryLock(timeout, TimeUnit.MILLISECONDS);
+            return LOCK_STUDIES.get(studyId)::unlock;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new StorageEngineException("", e);
+        }
+    }
+
+    @Override
+    public synchronized long lockStudy(int studyId, long lockDuration, long timeout, String lockName) throws StorageEngineException {
+        if (!LOCK_STUDIES.containsKey(studyId)) {
+            LOCK_STUDIES.put(studyId, new ReentrantLock());
+        }
+        try {
+            LOCK_STUDIES.get(studyId).tryLock(timeout, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new StorageEngineException("", e);
+        }
 
         return studyId;
     }
@@ -149,6 +165,11 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor, Samp
                 .map(SampleMetadata::getId)
                 .findFirst()
                 .orElse(null);
+    }
+
+    @Override
+    public Locked lock(int studyId, int id, long lockDuration, long timeout) {
+        return () -> {};
     }
 
     @Override

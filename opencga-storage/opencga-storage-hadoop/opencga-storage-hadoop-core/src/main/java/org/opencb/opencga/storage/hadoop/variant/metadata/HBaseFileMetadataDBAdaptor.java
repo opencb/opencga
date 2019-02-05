@@ -33,6 +33,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.adaptors.FileMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.metadata.models.Locked;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
@@ -71,7 +72,6 @@ public class HBaseFileMetadataDBAdaptor extends AbstractHBaseDBAdaptor implement
     public HBaseFileMetadataDBAdaptor(HBaseManager hBaseManager, String metaTableName, Configuration configuration) {
         super(hBaseManager, metaTableName, configuration);
     }
-
 
     @Override
     public LinkedHashSet<Integer> getIndexedFiles(int studyId) {
@@ -229,6 +229,11 @@ public class HBaseFileMetadataDBAdaptor extends AbstractHBaseDBAdaptor implement
         } catch (Exception e) {
             throw new IOException(e);
         }
+    }
+
+    @Override
+    public Locked lock(int studyId, int id, long lockDuration, long timeout) throws StorageEngineException {
+        return lock(getFileMetadataRowKey(studyId, id), lockDuration, timeout);
     }
 
 }

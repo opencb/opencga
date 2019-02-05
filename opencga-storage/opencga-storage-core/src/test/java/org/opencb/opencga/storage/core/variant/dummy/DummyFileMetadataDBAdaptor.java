@@ -12,6 +12,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.adaptors.FileMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
+import org.opencb.opencga.storage.core.metadata.models.Locked;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -126,5 +127,10 @@ public class DummyFileMetadataDBAdaptor implements FileMetadataDBAdaptor {
     @Override
     public void close() throws IOException {
 
+    }
+
+    @Override
+    public Locked lock(int studyId, int id, long lockDuration, long timeout) throws StorageEngineException {
+        return () -> { };
     }
 }

@@ -98,7 +98,7 @@ public class CellBaseDirectVariantAnnotator extends AbstractCellBaseVariantAnnot
         try {
             queryResultList = variantAnnotationCalculator.getAnnotationByVariantList(variants, queryOptions);
         } catch (InterruptedException e) {
-            Thread.interrupted();
+            Thread.currentThread().interrupt();
             throw new VariantAnnotatorException("Unable to calculate annotation", e);
         } catch (ExecutionException e) {
             throw new VariantAnnotatorException("Unable to calculate annotation", e);

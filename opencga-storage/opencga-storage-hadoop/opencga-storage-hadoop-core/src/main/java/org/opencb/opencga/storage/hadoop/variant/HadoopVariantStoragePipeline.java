@@ -395,11 +395,16 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
             try {
                 lock = metadataManager.lockStudy(studyId, lockDuration,
                         TimeUnit.SECONDS.toMillis(5), GenomeHelper.PHOENIX_LOCK_COLUMN);
-            } catch (TimeoutException e) {
-                int timeout = 10;
-                logger.info("Waiting to get Lock over HBase table {} up to {} minutes ...", metaTableName, timeout);
-                lock = metadataManager.lockStudy(studyId, lockDuration,
-                        TimeUnit.MINUTES.toMillis(timeout), GenomeHelper.PHOENIX_LOCK_COLUMN);
+            } catch (StorageEngineException e) {
+                Throwable cause = e.getCause();
+                if (cause instanceof TimeoutException) {
+                    int timeout = 10;
+                    logger.info("Waiting to get Lock over HBase table {} up to {} minutes ...", metaTableName, timeout);
+                    lock = metadataManager.lockStudy(studyId, lockDuration,
+                            TimeUnit.MINUTES.toMillis(timeout), GenomeHelper.PHOENIX_LOCK_COLUMN);
+                } else {
+                    throw e;
+                }
             }
             logger.debug("Winning lock {}", lock);
 
@@ -439,10 +444,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
             } catch (SQLException e) {
                 throw new StorageEngineException("Unable to register samples in Phoenix", e);
             }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new StorageEngineException("Error locking table to modify Phoenix columns!", e);
-        } catch (TimeoutException e) {
+        } catch (StorageEngineException e) {
             throw new StorageEngineException("Error locking table to modify Phoenix columns!", e);
         } finally {
             try {
@@ -472,13 +474,14 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
                 phoenixHelper.createVariantIndexes(jdbcConnection, variantsTableName);
             } catch (SQLException e) {
                 throw new StorageEngineException("Unable to create Phoenix Indexes", e);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new StorageEngineException("Unable to create Phoenix Indexes", e);
-            } catch (TimeoutException e) {
-                // Indices are been created by another instance. Don't need to create twice.
-                logger.info("Unable to get lock to create PHOENIX INDICES. Already been created by another instance. "
-                        + "Skip create indexes!");
+            } catch (StorageEngineException e) {
+                if (e.getCause() instanceof TimeoutException) {
+                    // Indices are been created by another instance. Don't need to create twice.
+                    logger.info("Unable to get lock to create PHOENIX INDICES. Already been created by another instance. "
+                            + "Skip create indexes!");
+                } else {
+                    throw new StorageEngineException("Unable to create Phoenix Indexes", e);
+                }
             } finally {
                 if (lock != null) {
                     metadataManager.unLockStudy(studyId, lock, PHOENIX_INDEX_LOCK_COLUMN);

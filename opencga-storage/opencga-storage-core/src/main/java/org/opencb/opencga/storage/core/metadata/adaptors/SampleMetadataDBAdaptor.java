@@ -2,6 +2,8 @@ package org.opencb.opencga.storage.core.metadata.adaptors;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.metadata.models.Locked;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 
 import java.util.*;
@@ -42,4 +44,5 @@ public interface SampleMetadataDBAdaptor {
 
     Integer getSampleId(int studyId, String sampleName);
 
+    Locked lock(int studyId, int id, long lockDuration, long timeout) throws StorageEngineException;
 }

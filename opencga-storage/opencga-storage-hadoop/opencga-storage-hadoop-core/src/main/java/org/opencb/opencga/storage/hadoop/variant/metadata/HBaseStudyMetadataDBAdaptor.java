@@ -28,10 +28,11 @@ import org.apache.hadoop.util.StopWatch;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.CompressionUtils;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.adaptors.StudyMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.metadata.models.Locked;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.hadoop.utils.HBaseLock;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.slf4j.Logger;
@@ -43,7 +44,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.zip.DataFormatException;
 
 import static org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantMetadataUtils.*;
@@ -57,7 +57,6 @@ public class HBaseStudyMetadataDBAdaptor extends AbstractHBaseDBAdaptor implemen
 
     private static Logger logger = LoggerFactory.getLogger(HBaseStudyMetadataDBAdaptor.class);
 
-    private final HBaseLock lock;
 
     public HBaseStudyMetadataDBAdaptor(VariantTableHelper helper) {
         this(null, helper.getMetaTableAsString(), helper.getConf());
@@ -65,7 +64,6 @@ public class HBaseStudyMetadataDBAdaptor extends AbstractHBaseDBAdaptor implemen
 
     public HBaseStudyMetadataDBAdaptor(HBaseManager hBaseManager, String metaTableName, Configuration configuration) {
         super(hBaseManager, metaTableName, configuration);
-        lock = new HBaseLock(this.hBaseManager, this.tableName, family, null);
     }
 
 
@@ -88,27 +86,24 @@ public class HBaseStudyMetadataDBAdaptor extends AbstractHBaseDBAdaptor implemen
     }
 
     @Override
-    public long lockStudy(int studyId, long lockDuration, long timeout, String lockName) throws InterruptedException, TimeoutException {
+    public Locked lock(int studyId, long lockDuration, long timeout, String lockName) throws StorageEngineException {
+        byte[] column = StringUtils.isEmpty(lockName) ? getLockColumn() : Bytes.toBytes(lockName);
+        return lock(getStudyConfigurationRowKey(studyId), column, lockDuration, timeout);
+    }
+
+    @Override
+    public long lockStudy(int studyId, long lockDuration, long timeout, String lockName) throws StorageEngineException {
         return lockStudy(studyId, lockDuration, timeout, StringUtils.isEmpty(lockName) ? getLockColumn() : Bytes.toBytes(lockName));
     }
 
-    private long lockStudy(int studyId, long lockDuration, long timeout, byte[] lockName) throws InterruptedException, TimeoutException {
-        try {
-            ensureTableExists();
-            return lock.lock(getStudyConfigurationRowKey(studyId), lockName, lockDuration, timeout);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+    private long lockStudy(int studyId, long lockDuration, long timeout, byte[] lockName) throws StorageEngineException {
+        return lockToken(getStudyConfigurationRowKey(studyId), lockName, lockDuration, timeout);
     }
 
     @Override
     public void unLockStudy(int studyId, long lockToken, String lockName) {
-        try {
-            byte[] column = StringUtils.isEmpty(lockName) ? getLockColumn() : Bytes.toBytes(lockName);
-            lock.unlock(getStudyConfigurationRowKey(studyId), column, lockToken);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        byte[] column = StringUtils.isEmpty(lockName) ? getLockColumn() : Bytes.toBytes(lockName);
+        unLock(getStudyConfigurationRowKey(studyId), column, lockToken);
     }
 
     @Override

@@ -27,6 +27,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
+import org.opencb.opencga.storage.core.metadata.models.Locked;
 
 import java.io.IOException;
 import java.util.*;
@@ -124,4 +125,5 @@ public interface FileMetadataDBAdaptor extends AutoCloseable {
 
     void close() throws IOException;
 
+    Locked lock(int studyId, int id, long lockDuration, long timeout) throws StorageEngineException;
 }
