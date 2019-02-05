@@ -14,7 +14,12 @@ variable "mount_args" {
   type = "string"
 }
 
+variable "create_resource_group" {
+  default = true
+}
+
 resource "azurerm_resource_group" "batch" {
+  count    = "${var.create_resource_group}"
   name     = "${var.resource_group_name}"
   location = "${var.location}"
 }
@@ -50,8 +55,8 @@ resource "random_string" "batch_name" {
 
 resource "azurerm_storage_account" "storage" {
   name                     = "${random_string.storage_name.result}"
-  resource_group_name      = "${azurerm_resource_group.batch.name}"
-  location                 = "${azurerm_resource_group.batch.location}"
+  resource_group_name      = "${var.create_resource_group ? join("", azurerm_resource_group.batch.*.name) : var.resource_group_name}"
+  location                 = "${var.location}"
   account_tier             = "Standard"
   account_replication_type = "LRS"
 }
@@ -77,12 +82,10 @@ resource "azurerm_template_deployment" "batchpool" {
 
 output "batch_account_endpoint" {
   value = "${azurerm_template_deployment.batchpool.outputs["batchEndpoint"]}"
-
 }
 
 output "batch_account_name" {
   value = "${azurerm_template_deployment.batchpool.outputs["batchAccountName"]}"
-
 }
 
 output "batch_account_pool_id" {

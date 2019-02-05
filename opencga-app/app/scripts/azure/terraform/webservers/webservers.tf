@@ -26,23 +26,28 @@ variable "opencga_image" {}
 variable "iva_image" {}
 variable "dns_prefix" {}
 
+variable "create_resource_group" {
+  default = true
+}
+
 resource "azurerm_resource_group" "batch" {
+  count    = "${var.create_resource_group}"
   name     = "${var.resource_group_name}"
   location = "${var.location}"
 }
 
 resource "azurerm_public_ip" "ip" {
   name                = "webservers-publicip"
-  location            = "${azurerm_resource_group.batch.location}"
-  resource_group_name = "${azurerm_resource_group.batch.name}"
+  location            = "${var.location}"
+  resource_group_name = "${var.create_resource_group ? join("", azurerm_resource_group.batch.*.name) : var.resource_group_name}"
   allocation_method   = "Static"
   domain_name_label   = "${var.dns_prefix}"
 }
 
 resource "azurerm_lb" "lb" {
   name                = "webservers-loadbalancer"
-  location            = "${azurerm_resource_group.batch.location}"
-  resource_group_name = "${azurerm_resource_group.batch.name}"
+  location            = "${var.location}"
+  resource_group_name = "${var.create_resource_group ? join("", azurerm_resource_group.batch.*.name) : var.resource_group_name}"
 
   frontend_ip_configuration {
     name                 = "PublicIPAddress"
@@ -51,14 +56,14 @@ resource "azurerm_lb" "lb" {
 }
 
 resource "azurerm_lb_backend_address_pool" "bpepool" {
-  resource_group_name = "${azurerm_resource_group.batch.name}"
+  resource_group_name = "${var.create_resource_group ? join("", azurerm_resource_group.batch.*.name) : var.resource_group_name}"
   loadbalancer_id     = "${azurerm_lb.lb.id}"
   name                = "BackEndAddressPool"
 }
 
 resource "azurerm_lb_nat_pool" "lbnatpool" {
   count                          = 3
-  resource_group_name            = "${azurerm_resource_group.batch.name}"
+  resource_group_name            = "${var.create_resource_group ? join("", azurerm_resource_group.batch.*.name) : var.resource_group_name}"
   name                           = "ssh"
   loadbalancer_id                = "${azurerm_lb.lb.id}"
   protocol                       = "Tcp"
@@ -69,7 +74,7 @@ resource "azurerm_lb_nat_pool" "lbnatpool" {
 }
 
 resource "azurerm_lb_probe" "probe" {
-  resource_group_name = "${azurerm_resource_group.batch.name}"
+  resource_group_name = "${var.create_resource_group ? join("", azurerm_resource_group.batch.*.name) : var.resource_group_name}"
   loadbalancer_id     = "${azurerm_lb.lb.id}"
   name                = "http-probe"
   request_path        = "/opencga/webservices/rest/v1/meta/status"
@@ -78,7 +83,7 @@ resource "azurerm_lb_probe" "probe" {
 }
 
 resource "azurerm_lb_rule" "webservices" {
-  resource_group_name            = "${azurerm_resource_group.batch.name}"
+  resource_group_name            = "${var.create_resource_group ? join("", azurerm_resource_group.batch.*.name) : var.resource_group_name}"
   loadbalancer_id                = "${azurerm_lb.lb.id}"
   name                           = "opencgawebservices"
   protocol                       = "Tcp"
@@ -118,8 +123,8 @@ data "template_cloudinit_config" "config" {
 
 resource "azurerm_virtual_machine_scale_set" "webservers" {
   name                = "opencga-webservers"
-  location            = "${azurerm_resource_group.batch.location}"
-  resource_group_name = "${azurerm_resource_group.batch.name}"
+  location            = "${var.location}"
+  resource_group_name = "${var.create_resource_group ? join("", azurerm_resource_group.batch.*.name) : var.resource_group_name}"
 
   # automatic rolling upgrade
   automatic_os_upgrade = true

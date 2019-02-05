@@ -38,9 +38,9 @@
     "variables": {
         "containerInstanceName": "[concat(resourceGroup().name, '-aci')]",
         "identityName": "[concat(resourceGroup().name, '-identity')]",
-        "roleAssignmentId": "[guid(concat(resourceGroup().name, 'owner'))]",
-        "ownerRoleGuid": "8e3af657-a8ff-443c-a75c-2fe8c4bcb635",
-        "roleDefinitionId": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', variables('ownerRoleGuid'))]"
+        "roleAssignmentId": "[guid(concat(resourceGroup().name, 'contributor'))]",
+        "contributorRoleGuid": "b24988ac-6180-42a0-ab88-20f7382dd24c",
+        "roleDefinitionId": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', variables('contributorRoleGuid'))]"
     },
     "resources": [
         {
@@ -159,12 +159,16 @@
                                     "value": "[parameters('letsEncryptEmailAddress')]"
                                 },
                                 {
-                                    "name": "TF_VAR_lets_resource_group_prefix",
+                                    "name": "TF_VAR_resource_group_prefix",
                                     "value": "[resourceGroup().name]"
                                 },
                                 {
                                     "name": "TF_VAR_ssh_pub_key",
                                     "value": "[parameters('sshPubKeyData')]"
+                                },
+                                {
+                                    "name": "TF_VAR_existing_resource_group",
+                                    "value": true
                                 }
                             ],
                             "command": [

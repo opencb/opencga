@@ -6,11 +6,12 @@ variable "batch_container_image" {}
 variable "catalog_secret_key" {}
 variable "opencga_admin_password" {}
 variable "ssh_pub_key" {}
-
+variable "existing_resource_group" {
+  default = false
+}
 variable "lets_encrypt_email_address" {
   description = "This is the email address used when obtaining SSL certs for the solution. This should be a valid email for the solution admin."
 }
-
 variable "resource_group_prefix" {
   default = "opencga"
 }
@@ -21,7 +22,16 @@ provider "azurerm" {
   version = "=1.21.0"
 }
 
+locals {
+  hdinsight_resource_group_name = "${var.existing_resource_group ? var.resource_group_prefix : format("%s-%s", var.resource_group_prefix,"hdinsight")}"
+  storage_resource_group_name = "${var.existing_resource_group ? var.resource_group_prefix : format("%s-%s", var.resource_group_prefix,"storage")}"
+  batch_resource_group_name = "${var.existing_resource_group ? var.resource_group_prefix : format("%s-%s", var.resource_group_prefix,"batch")}"
+  mongo_resource_group_name = "${var.existing_resource_group ? var.resource_group_prefix : format("%s-%s", var.resource_group_prefix,"mongo")}"
+  web_resource_group_name = "${var.existing_resource_group ? var.resource_group_prefix : format("%s-%s", var.resource_group_prefix,"web")}"
+}
+
 resource "azurerm_resource_group" "opencga" {
+  count = "${var.existing_resource_group ? 0 : 1}"
   name     = "${var.resource_group_prefix}"
   location = "${var.location}"
 }
@@ -33,21 +43,24 @@ module "hdinsight" {
   virtual_network_subnet_id = "${azurerm_subnet.hdinsight.id}"
 
   location            = "${var.location}"
-  resource_group_name = "${var.resource_group_prefix}-hdinsight"
+  resource_group_name = "${local.hdinsight_resource_group_name}"
+  create_resource_group = "${var.existing_resource_group ? 0 : 1}"
 }
 
 module "azurefiles" {
   source = "./azurefiles"
 
   location            = "${var.location}"
-  resource_group_name = "${var.resource_group_prefix}-storage"
+  resource_group_name = "${local.storage_resource_group_name}"
+  create_resource_group = "${var.existing_resource_group ? 0 : 1}"
 }
 
 module "azurebatch" {
   source = "./azurebatch"
 
   location            = "${var.location}"
-  resource_group_name = "${var.resource_group_prefix}-batch"
+  resource_group_name = "${local.batch_resource_group_name}"
+  create_resource_group = "${var.existing_resource_group ? 0 : 1}"
 
   virtual_network_subnet_id = "${azurerm_subnet.batch.id}"
 
@@ -58,7 +71,8 @@ module "mongo" {
   source = "./mongo"
 
   location            = "${var.location}"
-  resource_group_name = "${var.resource_group_prefix}-mongo"
+  resource_group_name = "${local.mongo_resource_group_name}"
+  create_resource_group = "${var.existing_resource_group ? 0 : 1}"
 
   virtual_network_subnet_id = "${azurerm_subnet.mongo.id}"
   admin_username            = "opencga"
@@ -71,7 +85,7 @@ module "mongo" {
 resource "random_string" "webservers_dns_prefix" {
   keepers = {
     # Generate a new id each time we switch to a new resource group
-    group_name = "${var.resource_group_prefix}-web"
+    group_name = "${local.web_resource_group_name}"
   }
 
   length  = 8
@@ -88,7 +102,8 @@ module "webservers" {
   source = "./webservers"
 
   location            = "${var.location}"
-  resource_group_name = "${var.resource_group_prefix}-web"
+  resource_group_name = "${local.web_resource_group_name}"
+  create_resource_group = "${var.existing_resource_group ? 0 : 1}"
 
   virtual_network_subnet_id = "${azurerm_subnet.web.id}"
 
@@ -161,6 +176,7 @@ module "daemonvm" {
 
   location            = "${var.location}"
   resource_group_name = "${var.resource_group_prefix}"
+  create_resource_group = "${var.existing_resource_group ? 0 : 1}"
 
   virtual_network_subnet_id = "${azurerm_subnet.daemonvm.id}"
 

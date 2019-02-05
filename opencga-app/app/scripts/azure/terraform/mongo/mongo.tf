@@ -21,16 +21,21 @@ variable "admin_username" {
 variable "cluster_size" {
   description = "The number of mongo nodes to deploy"
 }
-variable "email_address" { 
+
+variable "email_address" {
   description = "Used by Lets Encrypt to get SSL certs for Mongo"
+}
+
+variable "create_resource_group" {
+  default = true
 }
 
 locals {
   resource_prefix = "mongo"
 }
 
-
 resource "azurerm_resource_group" "opencga" {
+  count    = "${var.create_resource_group}"
   name     = "${var.resource_group_name}"
   location = "${var.location}"
 }
@@ -71,11 +76,11 @@ resource "azurerm_public_ip" "mongo" {
 }
 
 resource "azurerm_network_interface" "mongo" {
-  count               = "${var.cluster_size}"
+  count = "${var.cluster_size}"
 
   name                = "${local.resource_prefix}-nic-${count.index}"
-  location            = "${azurerm_resource_group.opencga.location}"
-  resource_group_name = "${azurerm_resource_group.opencga.name}"
+  location            = "${var.location}"
+  resource_group_name = "${var.create_resource_group ? join("", azurerm_resource_group.opencga.*.name) : var.resource_group_name}"
 
   ip_configuration {
     name                          = "ipconfig"
@@ -97,7 +102,7 @@ data "template_file" "cloud_init" {
     size                    = "${var.cluster_size}"
     email                   = "${var.email_address}"
     fqdn                    = "${element(azurerm_public_ip.mongo.*.fqdn, count.index)}"
-    username                 = "${var.admin_username}"
+    username                = "${var.admin_username}"
     password                = "${random_string.password.result}"
   }
 }
@@ -121,8 +126,8 @@ resource "azurerm_virtual_machine" "mongo" {
   count = "${var.cluster_size}"
 
   name                  = "${local.resource_prefix}-vm-${count.index}"
-  location              = "${azurerm_resource_group.opencga.location}"
-  resource_group_name   = "${azurerm_resource_group.opencga.name}"
+  location              = "${var.location}"
+  resource_group_name   = "${var.create_resource_group ? join("", azurerm_resource_group.opencga.*.name) : var.resource_group_name}"
   network_interface_ids = ["${element(azurerm_network_interface.mongo.*.id, count.index)}"]
   vm_size               = "Standard_DS1_v2"
 
@@ -160,8 +165,8 @@ resource "azurerm_virtual_machine_extension" "mongo" {
   count = "${var.cluster_size}"
 
   name                 = "check-cloud-init"
-  location             = "${azurerm_resource_group.opencga.location}"
-  resource_group_name  = "${azurerm_resource_group.opencga.name}"
+  location             = "${var.location}"
+  resource_group_name  = "${var.create_resource_group ? join("", azurerm_resource_group.opencga.*.name) : var.resource_group_name}"
   virtual_machine_name = "${element(azurerm_virtual_machine.mongo.*.name, count.index)}"
   publisher            = "Microsoft.Azure.Extensions"
   type                 = "CustomScript"
