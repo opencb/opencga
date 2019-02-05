@@ -1,43 +1,43 @@
 resource "azurerm_network_security_group" "nsg-web" {
   name                = "nsg-opencga"
   location            = "${var.location}"
-  resource_group_name = "${var.resource_group_prefix}" 
+  resource_group_name = "${azurerm_resource_group.opencga.name}" 
 }
 
 resource "azurerm_network_security_group" "nsg-hdinsight" {
   name                = "nsg-opencga"
   location            = "${var.location}"
-  resource_group_name = "${var.resource_group_prefix}" 
+  resource_group_name = "${azurerm_resource_group.opencga.name}" 
 }
 
 resource "azurerm_network_security_group" "nsg-mongo" {
   name                = "nsg-opencga"
   location            = "${var.location}"
-  resource_group_name = "${var.resource_group_prefix}" 
+  resource_group_name = "${azurerm_resource_group.opencga.name}" 
 }
 
 resource "azurerm_network_security_group" "nsg-solr" {
   name                = "nsg-opencga"
   location            = "${var.location}"
-  resource_group_name = "${var.resource_group_prefix}" 
+  resource_group_name = "${azurerm_resource_group.opencga.name}" 
 }
 
 resource "azurerm_network_security_group" "nsg-batch" {
   name                = "nsg-opencga"
   location            = "${var.location}"
-  resource_group_name = "${var.resource_group_prefix}" 
+  resource_group_name = "${azurerm_resource_group.opencga.name}" 
 }
 
 resource "azurerm_network_security_group" "nsg-avere" {
   name                = "nsg-opencga"
   location            = "${var.location}"
-  resource_group_name = "${var.resource_group_prefix}" 
+  resource_group_name = "${azurerm_resource_group.opencga.name}" 
 }
 
 resource "azurerm_network_security_group" "nsg-daemonvm" {
   name                = "nsg-opencga"
   location            = "${var.location}"
-  resource_group_name = "${var.resource_group_prefix}" 
+  resource_group_name = "${azurerm_resource_group.opencga.name}" 
 }
 
 resource "azurerm_network_security_rule" "allow-mongo-in" {
@@ -50,7 +50,7 @@ resource "azurerm_network_security_rule" "allow-mongo-in" {
   destination_port_range      = "27017"
   source_address_prefix       = "*"
   destination_address_prefix  = "*"
-  resource_group_name         = "${var.resource_group_prefix}"
+  resource_group_name         = "${azurerm_resource_group.opencga.name}"
   network_security_group_name = "${azurerm_network_security_group.nsg-mongo.name}"
 }
 
@@ -64,7 +64,7 @@ resource "azurerm_network_security_rule" "allow-ssh-in" {
   destination_port_range      = "22"
   source_address_prefix       = "*"
   destination_address_prefix  = "*"
-  resource_group_name         = "${var.resource_group_prefix}"
+  resource_group_name         = "${azurerm_resource_group.opencga.name}"
   network_security_group_name = "${azurerm_network_security_group.nsg-daemonvm.name}"
 }
 
@@ -78,7 +78,7 @@ resource "azurerm_network_security_rule" "allow-all-outbound-hdinsight" {
   destination_port_range      = "*"
   source_address_prefix       = "*"
   destination_address_prefix  = "*"
-  resource_group_name         = "${var.resource_group_prefix}"
+  resource_group_name         = "${azurerm_resource_group.opencga.name}"
   network_security_group_name = "${azurerm_network_security_group.nsg-hdinsight.name}"
 }
 
