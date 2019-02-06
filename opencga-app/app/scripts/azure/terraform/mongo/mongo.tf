@@ -67,7 +67,7 @@ resource "azurerm_public_ip" "mongo" {
   allocation_method = "Dynamic"
 
   location            = "${var.location}"
-  resource_group_name = "${var.resource_group_name}"
+  resource_group_name = "${azurerm_resource_group.opencga.name}"
 }
 
 resource "azurerm_network_interface" "mongo" {
