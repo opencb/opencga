@@ -31,7 +31,6 @@ import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
@@ -313,34 +312,29 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         SelectVariantElements selectElements = VariantQueryUtils.parseSelectElements(query, options, getStudyConfigurationManager());
         List<Scan> scans = hbaseQueryParser.parseQueryMultiRegion(selectElements, query, options);
 
-        try {
-            Table table = getConnection().getTable(TableName.valueOf(variantTable));
-            Iterator<Iterator<Result>> iterators = scans.stream().map(scan -> {
-                try {
-                    return table.getScanner(scan).iterator();
-                } catch (IOException e) {
-                    throw VariantQueryException.internalException(e);
-                }
-            }).iterator();
-            long ts = getStudyConfigurationManager().getProjectMetadata().first().getAttributes()
-                    .getLong(SEARCH_INDEX_LAST_TIMESTAMP.key());
-            HBaseToVariantAnnotationConverter converter = new HBaseToVariantAnnotationConverter(genomeHelper, ts)
-                    .setAnnotationIds(getStudyConfigurationManager().getProjectMetadata().first().getAnnotation())
-                    .setIncludeFields(selectElements.getFields());
-            converter.setAnnotationColumn(annotationColumn, name);
-            Iterator<Result> iterator = Iterators.concat(iterators);
-            int skip = options.getInt(QueryOptions.SKIP);
-            if (skip > 0) {
-                Iterators.advance(iterator, skip);
+        Iterator<Iterator<Result>> iterators = scans.stream().map(scan -> {
+            try {
+                return hBaseManager.getScanner(variantTable, scan).iterator();
+            } catch (IOException e) {
+                throw VariantQueryException.internalException(e);
             }
-            int limit = options.getInt(QueryOptions.LIMIT);
-            if (limit > 0) {
-                iterator = Iterators.limit(iterator, limit);
-            }
-            return Iterators.transform(iterator, converter::convert);
-        } catch (IOException e) {
-            throw VariantQueryException.internalException(e);
+        }).iterator();
+        long ts = getStudyConfigurationManager().getProjectMetadata().first().getAttributes()
+                .getLong(SEARCH_INDEX_LAST_TIMESTAMP.key());
+        HBaseToVariantAnnotationConverter converter = new HBaseToVariantAnnotationConverter(genomeHelper, ts)
+                .setAnnotationIds(getStudyConfigurationManager().getProjectMetadata().first().getAnnotation())
+                .setIncludeFields(selectElements.getFields());
+        converter.setAnnotationColumn(annotationColumn, name);
+        Iterator<Result> iterator = Iterators.concat(iterators);
+        int skip = options.getInt(QueryOptions.SKIP);
+        if (skip > 0) {
+            Iterators.advance(iterator, skip);
         }
+        int limit = options.getInt(QueryOptions.LIMIT);
+        if (limit > 0) {
+            iterator = Iterators.limit(iterator, limit);
+        }
+        return Iterators.transform(iterator, converter::convert);
     }
 
     @Override
@@ -442,7 +436,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             SelectVariantElements selectElements = VariantQueryUtils.parseSelectElements(query, options, studyConfigurationManager.get());
             List<Scan> scans = hbaseQueryParser.parseQueryMultiRegion(selectElements, query, options);
             try {
-                Table table = getConnection().getTable(TableName.valueOf(variantTable));
                 String unknownGenotype = null;
                 if (isValidParam(query, UNKNOWN_GENOTYPE)) {
                     unknownGenotype = query.getString(UNKNOWN_GENOTYPE.key());
@@ -450,7 +443,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 List<String> formats = getIncludeFormats(query);
                 Iterator<ResultScanner> resScans = scans.stream().map(scan -> {
                     try {
-                        return table.getScanner(scan);
+                        return hBaseManager.getScanner(variantTable, scan);
                     } catch (IOException e) {
                         throw VariantQueryException.internalException(e);
                     }

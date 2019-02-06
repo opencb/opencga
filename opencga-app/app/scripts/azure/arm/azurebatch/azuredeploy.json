@@ -63,12 +63,38 @@
         }, 
         "dockerImagesToCache": {
             "type": "array"
+        },
+        "LogAnalyticsWorkspaceResourceID": {
+            "type": "string",
+            "metadata": {
+                "description": "Log Analytics Workspace Resource ID"
+            }
+        },
+        "appInsightsAppId":{
+            "type": "string",
+            "metadata": {
+                "description": "Applciation Insights ID"
+            }
+        },
+        "appInsightsInstrumentationKey":{
+            "type": "string",
+            "metadata": {
+                "description": "Applciation Insights Instrumentation Key"
+            }
+        },
+        "batchInsightsDownloadURL":{
+            "type": "string",
+            "defaultValue": "https://github.com/Azure/batch-insights/releases/download/v1.1.1/batch-insights",
+            "metadata": {
+                "description": "Batch Insights download URL"
+            }
         }
+        
     },
     "variables": {
         "storageAccountName": "[concat('batch', uniqueString(resourceGroup().id))]",
         "batchAccountName": "[concat('batch', uniqueString(resourceGroup().id))]",
-        "batchEndpoint": "[concat('https://', variables('batchAccountName'), '.' , parameters('location'), '.batch.azure.com')]",
+        "batchEndpoint": "[concat('https://', variables('batchAccountName'), '.' , parameters('location'), '.batch.azure.com')]"
     },
     "resources": [
         {
@@ -89,7 +115,7 @@
         {
             "type": "Microsoft.Batch/batchAccounts",
             "name": "[variables('batchAccountName')]",
-            "apiVersion": "2015-12-01",
+            "apiVersion": "2018-12-01",
             "location": "[parameters('location')]",
             "tags": {
                 "ObjectName": "[variables('batchAccountName')]"
@@ -99,10 +125,45 @@
                     "storageAccountId": "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
                 }
             },
+            "resources": [
+                {
+                    "type": "providers/diagnosticSettings",
+                    "name": "[concat('Microsoft.Insights/', variables('batchAccountName'))]",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Batch/batchAccounts', variables('batchAccountName'))]"
+                    ],
+                    "apiVersion": "2017-05-01-preview",
+                    "properties": {
+                      "name": "[variables('batchAccountName')]",
+                      "workspaceId": "[parameters('LogAnalyticsWorkspaceResourceID')]",
+                      "logs": [ 
+                        {
+                          "category": "ServiceLog",
+                          "enabled": true,
+                          "retentionPolicy": {
+                            "days": 0,
+                            "enabled": false
+                          }
+                        }
+                      ],
+                      "metrics": [
+                        {
+                          "category": "AllMetrics",
+                          "enabled": true,
+                          "retentionPolicy": {
+                            "enabled": false,
+                            "days": 0
+                          }
+                        }
+                      ]
+                    }
+                  }
+            ],
             "dependsOn": [
                 "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
             ]
         },
+        
         {
             "comments": "This creates a pool of VMs in Azure Batch which support container workloads. It runs a startup task to mount the shared storage before accepting tasks.",
             "type": "Microsoft.Batch/batchAccounts/pools",
@@ -119,7 +180,7 @@
                     "nodeFillType": "Spread"
                 },
                 "startTask": {
-                    "commandLine": "[concat('/bin/bash -c \"curl -fsSL ', parameters('_artifactsLocation'), '/avere/mount.py', parameters('_artifactsLocationSasToken'), ' | python3 - ', parameters('mountArgs'), '\"')]",
+                    "commandLine": "[concat('/bin/bash -c \"curl -fsSL ', parameters('_artifactsLocation'), '/avere/mount.py', parameters('_artifactsLocationSasToken'), ' | python3 - ', parameters('mountArgs'), '  && echo $BATCH_INSIGHTS_DOWNLOAD_URL &&  wget  -O - https://raw.githubusercontent.com/Azure/batch-insights/master/scripts/run-linux.sh | bash \"')]",
                     "userIdentity": {
                         "autoUser": {
                             "elevationLevel": "Admin",
@@ -127,7 +188,21 @@
                         }
                     },
                     "waitForSuccess": true,
-                    "maxTaskRetryCount": 0
+                    "maxTaskRetryCount": 0,
+                    "environmentSettings":[
+                        {
+                            "name": "BATCH_INSIGHTS_DOWNLOAD_URL",
+                            "value": "[parameters('batchInsightsDownloadURL')]"
+                        },
+                        {
+                            "name": "APP_INSIGHTS_INSTRUMENTATION_KEY",
+                            "value": "[parameters('appInsightsInstrumentationKey')]"
+                        },
+                        {
+                            "name": "APP_INSIGHTS_APP_ID",
+                            "value": "[parameters('appInsightsAppId')]"
+                        }
+                    ]   
                 },
                 "deploymentConfiguration": {
                     "virtualMachineConfiguration": {

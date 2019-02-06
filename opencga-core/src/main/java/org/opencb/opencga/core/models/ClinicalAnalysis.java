@@ -45,7 +45,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     private Family family;
     private List<Interpretation> interpretations;
 
-    private Assigned assigned;
+    private ClinicalAnalyst analyst;
     private Priority priority;
     private List<String> flags;
 
@@ -74,16 +74,16 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         REMOVE
     }
 
-    public static class Assigned {
-        private String assignee;
+    public static class ClinicalAnalyst {
         private String assignedBy;
+        private String assignee;
         private String date;
 
-        public Assigned() {
-            this(null, null);
+        public ClinicalAnalyst() {
+            this("", "");
         }
 
-        public Assigned(String assignee, String assignedBy) {
+        public ClinicalAnalyst(String assignee, String assignedBy) {
             this.assignee = assignee;
             this.assignedBy = assignedBy;
             this.date = TimeUtils.getTime();
@@ -91,7 +91,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
         @Override
         public String toString() {
-            final StringBuilder sb = new StringBuilder("Assigned{");
+            final StringBuilder sb = new StringBuilder("ClinicalAnalyst{");
             sb.append("assignee='").append(assignee).append('\'');
             sb.append(", assignedBy='").append(assignedBy).append('\'');
             sb.append(", date='").append(date).append('\'');
@@ -103,7 +103,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
             return assignee;
         }
 
-        public Assigned setAssignee(String assignee) {
+        public ClinicalAnalyst setAssignee(String assignee) {
             this.assignee = assignee;
             return this;
         }
@@ -112,7 +112,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
             return assignedBy;
         }
 
-        public Assigned setAssignedBy(String assignedBy) {
+        public ClinicalAnalyst setAssignedBy(String assignedBy) {
             this.assignedBy = assignedBy;
             return this;
         }
@@ -121,7 +121,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
             return date;
         }
 
-        public Assigned setDate(String date) {
+        public ClinicalAnalyst setDate(String date) {
             this.date = date;
             return this;
         }
@@ -179,7 +179,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     }
 
     public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, Map<String, List<File>> files, Individual proband,
-                            Family family, List<Interpretation> interpretations, Priority priority, Assigned assigned, List<String> flags,
+                            Family family, List<Interpretation> interpretations, Priority priority, ClinicalAnalyst analyst, List<String> flags,
                             String creationDate, String dueDate, List<Comment> comments, ClinicalStatus status, int release,
                             Map<String, Object> attributes) {
         this.id = id;
@@ -192,7 +192,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         this.interpretations = interpretations;
         this.priority = priority;
         this.flags = flags;
-        this.assigned = assigned;
+        this.analyst = analyst;
         this.creationDate = creationDate;
         this.dueDate = dueDate;
         this.comments = comments;
@@ -213,7 +213,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         sb.append(", proband=").append(proband);
         sb.append(", family=").append(family);
         sb.append(", interpretations=").append(interpretations);
-        sb.append(", assigned=").append(assigned);
+        sb.append(", analyst=").append(analyst);
         sb.append(", priority=").append(priority);
         sb.append(", flags=").append(flags);
         sb.append(", creationDate='").append(creationDate).append('\'');
@@ -329,12 +329,12 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
-    public Assigned getAssigned() {
-        return assigned;
+    public ClinicalAnalyst getAnalyst() {
+        return analyst;
     }
 
-    public ClinicalAnalysis setAssigned(Assigned assigned) {
-        this.assigned = assigned;
+    public ClinicalAnalysis setAnalyst(ClinicalAnalyst analyst) {
+        this.analyst = analyst;
         return this;
     }
 

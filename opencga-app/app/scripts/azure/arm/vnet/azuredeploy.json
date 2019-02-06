@@ -65,6 +65,16 @@
                             "serviceEndpoints": []
                         },
                         "type": "Microsoft.Network/virtualNetworks/subnets"
+                    },
+                    {
+                        "name": "appgw",
+                        "properties": {
+                            "addressPrefix": "10.0.10.0/24",
+                            "ipConfigurations": [],
+                            "delegations": [],
+                            "serviceEndpoints": []
+                        },
+                        "type": "Microsoft.Network/virtualNetworks/subnets"
                     }
                 ],
                 "virtualNetworkPeerings": [],
@@ -105,6 +115,10 @@
         "mongoSubnetId": {
             "type": "string",
             "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', 'vnet')).subnets[3].id]"
+        },
+        "appgwSubnetId": {
+            "type": "string",
+            "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', 'vnet')).subnets[4].id]"
         }
     }
 }

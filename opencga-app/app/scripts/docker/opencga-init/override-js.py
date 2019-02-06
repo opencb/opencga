@@ -2,7 +2,7 @@ import argparse
 import sys
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--iva-config-path", help="path to iva config.js file", default="/opt/opencga/conf/iva/config.js")
+parser.add_argument("--iva-config-path", help="path to iva config.js file", default="/opt/opencga/ivaconf/config.js")
 parser.add_argument("--cellbase-hosts", required=True)
 parser.add_argument("--rest-host", required=True)
 parser.add_argument("--save", help="save update to source configuration files (default: false)", default=False, action='store_true')

@@ -244,12 +244,26 @@ public class IndexDaemon extends MonitorParentDaemon {
     private void queuePreparedIndex(Job job) {
         // Create the temporal output directory.
         Path path = getJobTemporaryFolder(job.getUid(), tempJobFolder);
-        try {
-            catalogIOManager.createDirectory(path.toUri());
-        } catch (CatalogIOException e) {
-            logger.warn("Could not create the temporal output directory " + path + " to run the job", e);
-            return;
-            // TODO: Maximum attemps ... -> Error !
+
+        if (catalogIOManager.isDirectory(path.toUri())) {
+            try {
+                if (catalogIOManager.listFiles(path.toUri()).size() > 0) {
+                    logger.warn("Job temporal output directory " + path + " is not empty.");
+                    return;
+                }
+            } catch (CatalogIOException e) {
+                logger.warn("Could not access the temporal output directory " + path + " to run the job", e);
+                return;
+            }
+            logger.info("Empty temporal output directory " + path + " already exist");
+        } else {
+            try {
+                catalogIOManager.createDirectory(path.toUri());
+            } catch (CatalogIOException e) {
+                logger.warn("Could not create the temporal output directory " + path + " to run the job", e);
+                return;
+                // TODO: Maximum attemps ... -> Error !
+            }
         }
 
         // Define where the stdout and stderr will be stored

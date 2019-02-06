@@ -3,7 +3,6 @@ package org.opencb.opencga.analysis.clinical;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.Interpretation;
 import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
@@ -12,7 +11,7 @@ import org.opencb.biodata.models.commons.Analyst;
 import org.opencb.biodata.models.commons.OntologyTerm;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.commons.Software;
-import org.opencb.biodata.tools.clinical.DefaultReportedVariantCreator;
+import org.opencb.biodata.tools.clinical.TeamReportedVariantCreator;
 import org.opencb.bionetdb.core.BioNetDbManager;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
@@ -131,11 +130,11 @@ public class XQueryAnalysis extends FamilyAnalysis {
         List<ReportedVariant> reportedVariants = null;
         int numResults = 0;
         if (CollectionUtils.isNotEmpty(variantContainer.getComplexVariantList())) {
-            DefaultReportedVariantCreator creator = new DefaultReportedVariantCreator(biodataDiseasePanels, null, phenotype, null, null);
+            TeamReportedVariantCreator creator = new TeamReportedVariantCreator(biodataDiseasePanels, null, phenotype, null, null);
             reportedVariants = creator.create(variantContainer.getComplexVariantList());
         }
         if (CollectionUtils.isNotEmpty(variantContainer.getReactionVariantList())) {
-            DefaultReportedVariantCreator creator = new DefaultReportedVariantCreator(biodataDiseasePanels, null, phenotype, null, null);
+            TeamReportedVariantCreator creator = new TeamReportedVariantCreator(biodataDiseasePanels, null, phenotype, null, null);
             reportedVariants.addAll(creator.create(variantContainer.getReactionVariantList()));
         }
 

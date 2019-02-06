@@ -1,13 +1,12 @@
 pipeline {
     agent any
     stages {
-
-        stage ('Validate ARM Templates') {
+         stage ('Validate ARM Templates') {
             options {
                 timeout(time: 5, unit: 'MINUTES')
             }
             steps {
-                sh 'cd opencga-app/app/scripts/azure/arm && npm install armval && node node_modules/.bin/armval "**/azuredeploy.json" && rm -rf node_modules && rm -rf package-lock.json'
+                sh 'cd opencga-app/app/scripts/azure/arm && npx --ignore-existing armval "**/azuredeploy.json"'
             }
         }
 
@@ -39,6 +38,9 @@ pipeline {
         }
 
         stage ('Publish Docker Images') {
+             options {
+                    timeout(time: 10, unit: 'MINUTES')
+             }
              steps {
                 script {
                    def images = ["opencga", "opencga-app", "opencga-daemon", "opencga-init", "opencga-batch", "iva"]
@@ -51,6 +53,15 @@ pipeline {
                    }
                 }
              }
+        }
+
+        stage ('Clean Docker Images') {
+            options {
+                timeout(time: 10, unit: 'MINUTES')
+            }
+            steps {
+                sh 'docker system prune --force -a'
+            }
         }
 
         stage ('Quick Test') {
