@@ -18,31 +18,35 @@ package org.opencb.opencga.analysis.clinical;
 
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
+import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.clinical.interpretation.Interpretation;
-import org.opencb.biodata.models.clinical.interpretation.ReportedLowCoverage;
+import org.opencb.biodata.models.clinical.interpretation.*;
+import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
+import org.opencb.biodata.models.commons.Analyst;
 import org.opencb.biodata.models.commons.OntologyTerm;
 import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.commons.Software;
+import org.opencb.biodata.models.core.Exon;
+import org.opencb.biodata.models.core.Gene;
+import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.core.Transcript;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
+import org.opencb.biodata.tools.clinical.TieringReportedVariantCreator;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.cellbase.client.rest.CellBaseClient;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.analysis.AnalysisResult;
 import org.opencb.opencga.analysis.OpenCgaAnalysis;
 import org.opencb.opencga.analysis.exceptions.AnalysisException;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FamilyManager;
-import org.opencb.opencga.core.models.ClinicalAnalysis;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Individual;
-import org.opencb.opencga.core.models.Panel;
+import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.AlignmentStorageManager;
@@ -50,6 +54,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.ModeOfInheritance.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.NONE;
@@ -181,30 +186,6 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
         OntologyTerm disease = clinicalAnalysis.getDisorder();
         Phenotype phenotype = new Phenotype(disease.getId(), disease.getName(), disease.getSource(), Phenotype.Status.UNKNOWN);
 
-        if (config.getBoolean("lowRegionCoverage", false)) {
-            // Reported low coverage map
-            Set<String> lowCoverageByGeneDone = new HashSet<>();
-            List<ReportedLowCoverage> reportedLowCoverages = new ArrayList<>();
-
-
-            // Look for the bam file of the proband
-            QueryResult<File> fileQueryResult;
-            try {
-                fileQueryResult = catalogManager.getFileManager().get(studyStr, new Query()
-                                .append(FileDBAdaptor.QueryParams.SAMPLES.key(), clinicalAnalysis.getProband().getSamples().get(0).getId())
-                                .append(FileDBAdaptor.QueryParams.FORMAT.key(), File.Format.BAM),
-                        new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.UUID.key()), token);
-            } catch (CatalogException e) {
-                throw new AnalysisException(e.getMessage(), e);
-            }
-            if (fileQueryResult.getNumResults() > 1) {
-                throw new AnalysisException("More than one BAM file found for proband " + proband.getId() + " in clinical analysis "
-                        + clinicalAnalysisId);
-            }
-
-            String bamFileId = fileQueryResult.getNumResults() == 1 ? fileQueryResult.first().getUuid() : null;
-        }
-
         List<String> sampleList = new ArrayList<>();
         Map<String, Individual> individualMap = new HashMap<>();
         for (Individual member : clinicalAnalysis.getFamily().getMembers()) {
@@ -221,10 +202,6 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
         // Fill proband information to be able to navigate to the parents and their samples easily
         proband.setFather(individualMap.get(proband.getFather().getId()));
         proband.setMother(individualMap.get(proband.getMother().getId()));
-
-//        // Create instance of converter
-//        List<DiseasePanel> biodataDiseasPanelList = diseasePanels.stream().map(Panel::getDiseasePanel).collect(Collectors.toList());
-//        TieringReportedVariantCreator converter = new TieringReportedVariantCreator(biodataDiseasPanelList, )
 
         Query query = new Query(dominantQuery)
                 .append(VariantQueryParam.SAMPLE.key(), StringUtils.join(sampleList, ","))
@@ -316,29 +293,82 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
             checkCompoundHeterozygous(variant, proband, compoundHeterozygousMap);
         }
 
-        // TODO: Call to converter. Return interpretation
-//        String userId = catalogManager.getUserManager().getUserId(token);
-//        QueryResult<User> userQueryResult = catalogManager.getUserManager().get(userId, new QueryOptions(QueryOptions.INCLUDE,
-//                Arrays.asList(UserDBAdaptor.QueryParams.EMAIL.key(), UserDBAdaptor.QueryParams.ORGANIZATION.key())), token);
-//
-//        List<org.opencb.biodata.models.clinical.interpretation.DiseasePanel> biodataDiseasePanels =
-//                diseasePanels.stream().map(Panel::getDiseasePanel).collect(Collectors.toList());
-//
-//        // Create Interpretation
-//        Interpretation interpretation = new Interpretation()
-//                .setId("JT-PF-007")
-//                .setAnalyst(new Analyst(userId, userQueryResult.first().getEmail(), userQueryResult.first().getOrganization()))
-//                .setClinicalAnalysisId(clinicalAnalysisId)
-//                .setCreationDate(TimeUtils.getTime())
-//                .setPanels(biodataDiseasePanels)
-//                .setFilters(null) //TODO
-//                .setSoftware(new Software().setName("Tiering"))
-//                .setReportedVariants(new ArrayList<>(reportedVariantMap.values()))
-//                .setReportedLowCoverages(reportedLowCoverages);
+        // Create instance of reported variant creator to obtain reported variants
+        List<DiseasePanel> biodataDiseasPanelList = diseasePanels.stream().map(Panel::getDiseasePanel).collect(Collectors.toList());
+        TieringReportedVariantCreator creator = new TieringReportedVariantCreator(biodataDiseasPanelList, phenotype,
+                ClinicalProperty.Penetrance.COMPLETE);
+        List<ReportedVariant> reportedVariants;
+        try {
+            reportedVariants = creator.create(variantList, variantMoIMap);
+        } catch (InterpretationAnalysisException e) {
+            throw new AnalysisException(e.getMessage(), e);
+        }
 
-        // Return interpretation result
-//        return new AnalysisResult<>(interpretation);
-        return null;
+
+        String userId;
+        try {
+            userId = catalogManager.getUserManager().getUserId(token);
+        } catch (CatalogException e) {
+            throw new AnalysisException(e.getMessage(), e);
+        }
+
+        QueryResult<User> userQueryResult;
+        try {
+            userQueryResult = catalogManager.getUserManager().get(userId, new QueryOptions(QueryOptions.INCLUDE,
+                    Arrays.asList(UserDBAdaptor.QueryParams.EMAIL.key(), UserDBAdaptor.QueryParams.ORGANIZATION.key())), token);
+        } catch (CatalogException e) {
+            throw new AnalysisException(e.getMessage(), e);
+        }
+
+        List<ReportedLowCoverage> reportedLowCoverages = new ArrayList<>();
+        if (config.getBoolean("lowRegionCoverage", false)) {
+            // Reported low coverage map
+            Set<String> lowCoverageByGeneDone = new HashSet<>();
+
+
+            // Look for the bam file of the proband
+            QueryResult<File> fileQueryResult;
+            try {
+                fileQueryResult = catalogManager.getFileManager().get(studyStr, new Query()
+                                .append(FileDBAdaptor.QueryParams.SAMPLES.key(), clinicalAnalysis.getProband().getSamples().get(0).getId())
+                                .append(FileDBAdaptor.QueryParams.FORMAT.key(), File.Format.BAM),
+                        new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.UUID.key()), token);
+            } catch (CatalogException e) {
+                throw new AnalysisException(e.getMessage(), e);
+            }
+            if (fileQueryResult.getNumResults() > 1) {
+                throw new AnalysisException("More than one BAM file found for proband " + proband.getId() + " in clinical analysis "
+                        + clinicalAnalysisId);
+            }
+
+            String bamFileId = fileQueryResult.getNumResults() == 1 ? fileQueryResult.first().getUuid() : null;
+
+            if (bamFileId != null) {
+                for (Panel diseasePanel : diseasePanels) {
+                    for (DiseasePanel.GenePanel genePanel : diseasePanel.getDiseasePanel().getGenes()) {
+                        String geneName = genePanel.getId();
+                        if (!lowCoverageByGeneDone.contains(geneName)) {
+                            reportedLowCoverages.addAll(getReportedLowCoverages(geneName, bamFileId, maxCoverage));
+                            lowCoverageByGeneDone.add(geneName);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Create Interpretation
+        Interpretation interpretation = new Interpretation()
+                .setId("OpenCGA-Tiering-" + TimeUtils.getTime())
+                .setAnalyst(new Analyst(userId, userQueryResult.first().getEmail(), userQueryResult.first().getOrganization()))
+                .setClinicalAnalysisId(clinicalAnalysisId)
+                .setCreationDate(TimeUtils.getTime())
+                .setPanels(biodataDiseasPanelList)
+                .setFilters(null) //TODO
+                .setSoftware(new Software().setName("Tiering"))
+                .setReportedVariants(new ArrayList<>(reportedVariants))
+                .setReportedLowCoverages(reportedLowCoverages);
+
+        return new AnalysisResult<>(interpretation);
     }
 
     private void checkCompoundHeterozygous(Variant variant, Individual proband, Map<String, List<Variant>> compoundHeterozygousMap) {
@@ -432,32 +462,32 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
 //        variantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), token);
 //        generateReportedVariants(variantQueryResult, phenotype, diseasePanel, moi, penetrance, reportedVariantMap);
 //    }
-//
-//    private List<ReportedLowCoverage> getReportedLowCoverages(String geneName, String bamFileId, int maxCoverage) {
-//        List<ReportedLowCoverage> reportedLowCoverages = new ArrayList<>();
-//        try {
-//            // Get gene exons from CellBase
-//            QueryResponse<Gene> geneQueryResponse = cellBaseClient.getGeneClient().get(Collections.singletonList(geneName),
-//                    QueryOptions.empty());
-//            List<RegionCoverage> regionCoverages;
-//            for (Transcript transcript: geneQueryResponse.getResponse().get(0).first().getTranscripts()) {
-//                for (Exon exon: transcript.getExons()) {
-//                    regionCoverages = alignmentStorageManager.getLowCoverageRegions(studyStr, bamFileId,
-//                            new Region(exon.getChromosome(), exon.getStart(), exon.getEnd()), maxCoverage, token).getResult();
-//                    for (RegionCoverage regionCoverage: regionCoverages) {
-//                        ReportedLowCoverage reportedLowCoverage = new ReportedLowCoverage(regionCoverage)
-//                                .setGeneName(geneName)
-//                                .setId(exon.getId());
-//                        reportedLowCoverages.add(reportedLowCoverage);
-//                    }
-//                }
-//            }
-//        } catch (Exception e) {
-//            logger.error("Error getting low coverage regions for panel genes.", e.getMessage());
-//        }
-//        // And for that exon regions, get low coverage regions
-//        return reportedLowCoverages;
-//    }
+
+    private List<ReportedLowCoverage> getReportedLowCoverages(String geneName, String bamFileId, int maxCoverage) {
+        List<ReportedLowCoverage> reportedLowCoverages = new ArrayList<>();
+        try {
+            // Get gene exons from CellBase
+            QueryResponse<Gene> geneQueryResponse = cellBaseClient.getGeneClient().get(Collections.singletonList(geneName),
+                    QueryOptions.empty());
+            List<RegionCoverage> regionCoverages;
+            for (Transcript transcript: geneQueryResponse.getResponse().get(0).first().getTranscripts()) {
+                for (Exon exon: transcript.getExons()) {
+                    regionCoverages = alignmentStorageManager.getLowCoverageRegions(studyStr, bamFileId,
+                            new Region(exon.getChromosome(), exon.getStart(), exon.getEnd()), maxCoverage, token).getResult();
+                    for (RegionCoverage regionCoverage: regionCoverages) {
+                        ReportedLowCoverage reportedLowCoverage = new ReportedLowCoverage(regionCoverage)
+                                .setGeneName(geneName)
+                                .setId(exon.getId());
+                        reportedLowCoverages.add(reportedLowCoverage);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Error getting low coverage regions for panel genes.", e.getMessage());
+        }
+        // And for that exon regions, get low coverage regions
+        return reportedLowCoverages;
+    }
 
 //    private void putGenotypes(Map<String, List<String>> genotypes, Query query) {
 //        query.put(VariantQueryParam.GENOTYPE.key(),
