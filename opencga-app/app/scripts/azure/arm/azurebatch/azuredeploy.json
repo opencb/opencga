@@ -193,19 +193,15 @@
                         {
                             "name": "BATCH_INSIGHTS_DOWNLOAD_URL",
                             "value": "[parameters('batchInsightsDownloadURL')]"
-
                         },
                         {
                             "name": "APP_INSIGHTS_INSTRUMENTATION_KEY",
                             "value": "[parameters('appInsightsInstrumentationKey')]"
-
                         },
                         {
                             "name": "APP_INSIGHTS_APP_ID",
                             "value": "[parameters('appInsightsAppId')]"
-
                         }
-
                     ]   
                 },
                 "deploymentConfiguration": {
