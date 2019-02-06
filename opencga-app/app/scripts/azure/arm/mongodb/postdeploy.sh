@@ -44,7 +44,7 @@ scanForNewDisks() {
 
 isPartitioned() {
     OUTPUT=$(partx -s ${1} 2>&1)
-    if [[ $OUTPUT == *"failed to read partition table"* ]]; then
+    if [[ "$OUTPUT" == *"failed to read partition table"* ]]; then
         # found unpartitioned disk
         formatAndMountDisk "${DEV}"
     fi
@@ -52,7 +52,7 @@ isPartitioned() {
 
 formatAndMountDisk() {
     #partitions primary linux partition on new disk
-    echo 'type=83' | sudo sfdisk ${1}
+    echo 'type=83' | sfdisk ${1}
     mkfs -t ext4 ${1}1
     mkdir /datadrive
     mount ${1}1 /datadrive
@@ -142,9 +142,9 @@ generateCertificate
 configureMongoDB
 
 # only configure replicasets when clusterSize > 1
-if [ $CLUSTER_SIZE -gt 1 ]
+if [ "$CLUSTER_SIZE" -gt 1 ]
 then
-    if [ $VM_INDEX -eq 0 ]
+    if [ "$VM_INDEX" -eq 0 ]
     then
         generateMongoKeyFile
 
