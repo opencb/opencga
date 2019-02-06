@@ -17,7 +17,9 @@
 package org.opencb.opencga.analysis.clinical;
 
 import htsjdk.variant.vcf.VCFConstants;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.clinical.interpretation.Interpretation;
 import org.opencb.biodata.models.clinical.interpretation.*;
@@ -118,12 +120,10 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
     }
 
     @Override
-    public AnalysisResult<Interpretation> execute() throws AnalysisException {
-        // checks
+    public InterpretationResult execute() throws AnalysisException {
+        StopWatch watcher = StopWatch.createStarted();
 
-        // set defaults
-
-        // Check if clinicalAnalysisId exists
+        // Sanity check
         QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult;
         try {
             clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager()
@@ -365,10 +365,20 @@ public class TieringAnalysis extends OpenCgaAnalysis<Interpretation> {
                 .setPanels(biodataDiseasPanelList)
                 .setFilters(null) //TODO
                 .setSoftware(new Software().setName("Tiering"))
-                .setReportedVariants(new ArrayList<>(reportedVariants))
+                .setReportedVariants(reportedVariants)
                 .setReportedLowCoverages(reportedLowCoverages);
 
-        return new AnalysisResult<>(interpretation);
+        // Return interpretation result
+        int numResults = CollectionUtils.isEmpty(reportedVariants) ? 0 : reportedVariants.size();
+        return new InterpretationResult(
+                interpretation,
+                Math.toIntExact(watcher.getTime()),
+                new HashMap<>(),
+                Math.toIntExact(watcher.getTime()), // DB time
+                numResults,
+                numResults,
+                "", // warning message
+                ""); // error message
     }
 
     private void checkCompoundHeterozygous(Variant variant, Individual proband, Map<String, List<Variant>> compoundHeterozygousMap) {
