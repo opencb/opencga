@@ -52,13 +52,9 @@ import static org.opencb.biodata.models.clinical.interpretation.DiseasePanel.Var
 
 public class TeamAnalysis extends FamilyAnalysis {
 
-    public TeamAnalysis(String opencgaHome, String studyStr, String token, String clinicalAnalysisId, List<String> panelList, ObjectMap teamAnalysisOptions) {
-        super(opencgaHome, studyStr, token);
-
-        this.clinicalAnalysisId = clinicalAnalysisId;
-        this.diseasePanelIds = diseasePanelIds;
+    public TeamAnalysis(String opencgaHome, String studyStr, String token, String clinicalAnalysisId, List<String> diseasePanelIds, ObjectMap teamAnalysisOptions) {
+        super(opencgaHome, studyStr, token, clinicalAnalysisId, diseasePanelIds, teamAnalysisOptions);
     }
-
 
     @Override
     public InterpretationResult execute() throws Exception {

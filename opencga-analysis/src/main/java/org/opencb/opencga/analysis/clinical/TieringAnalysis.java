@@ -79,11 +79,6 @@ public class TieringAnalysis extends FamilyAnalysis {
                         + "SO:0001582,SO:0001889,SO:0001821,SO:0001822,SO:0001583,SO:0001630,SO:0001626");
     }
 
-
-    public TieringAnalysis(String opencgaHome, String studyStr, String token) {
-        this(opencgaHome, studyStr, token, null, null, null);
-    }
-
     public TieringAnalysis(String opencgaHome, String studyStr, String token, String clinicalAnalysisId,
                            List<String> diseasePanelIds, ObjectMap config) {
         super(opencgaHome, studyStr, token, clinicalAnalysisId, diseasePanelIds, config);
