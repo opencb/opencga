@@ -20,9 +20,15 @@ variable "state_storage_container_name" {}
 variable "state_storage_blob_name" {
   default = "terraform.tfstate"
 }
+variable "log_analytics_sku" {
+  default = "pergb2018"
+  description = "Sets the SKU to use for log analytics. See FAQ in README.md for details."
+}
+
 
 terraform {
-  backend "azurerm" {}
+  backend "azurerm" {
+  }
 }
 
 data "terraform_remote_state" "state" {
@@ -52,6 +58,14 @@ resource "azurerm_resource_group" "opencga" {
   count = "${var.existing_resource_group ? 0 : 1}"
   name     = "${var.resource_group_prefix}"
   location = "${var.location}"
+}
+
+module "loganalytics" {
+  source = "./loganalytics"
+
+  location            = "${var.location}"
+  resource_group_name = "${local.hdinsight_resource_group_name}"
+  log_analytics_sku = "${var.log_analytics_sku}"
 }
 
 module "hdinsight" {
@@ -195,7 +209,7 @@ module "daemonvm" {
   location            = "${var.location}"
   resource_group_name = "${var.resource_group_prefix}"
   create_resource_group = "${var.existing_resource_group ? 0 : 1}"
-
+  log_analytics_workspace_id = "${module.loganalytics.workspace_id}"
   virtual_network_subnet_id = "${azurerm_subnet.daemonvm.id}"
 
   mount_args = "azurefiles ${module.azurefiles.storage_account_name},${module.azurefiles.share_name},${module.azurefiles.storage_key}"

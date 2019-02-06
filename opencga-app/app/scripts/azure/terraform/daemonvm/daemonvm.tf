@@ -28,6 +28,9 @@ variable "opencga_init_image" {}
 variable init_cmd {}
 variable "opencga_admin_password" {}
 
+variable "log_analytics_workspace_id" {}
+
+
 variable "create_resource_group" {
   default = true
 }
@@ -74,6 +77,26 @@ resource "azurerm_public_ip" "daemon" {
 
   location            = "${var.location}"
   resource_group_name = "${azurerm_resource_group.opencga.name}"
+}
+
+
+data "azurerm_monitor_diagnostic_categories" "lookup" {
+  resource_id = "${azurerm_public_ip.daemon.id}"
+}
+
+resource "azurerm_monitor_diagnostic_setting" "nic" {
+  name               = "${azurerm_public_ip.daemon.name}"
+  target_resource_id = "${azurerm_public_ip.daemon.id}"
+
+  log_analytics_workspace_id = "${var.log_analytics_workspace_id}"
+
+  metric {
+    category = "AllMetrics"
+
+    retention_policy {
+      enabled = false
+    }
+  }
 }
 
 resource "azurerm_network_interface" "daemon" {
@@ -140,4 +163,13 @@ resource "azurerm_virtual_machine_extension" "daemon" {
         "commandToExecute": "/bin/bash -f /opt/cloudinitcheck.sh"
     }
     SETTINGS
+}
+
+
+output "logs" {
+  value = "${data.azurerm_monitor_diagnostic_categories.lookup.logs}"
+}
+
+output "metics" {
+  value = "${data.azurerm_monitor_diagnostic_categories.lookup.metrics}"
 }

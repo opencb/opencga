@@ -6,6 +6,9 @@ variable "resource_group_name" {
   type = "string"
 }
 
+variable "log_analytics_sku" {}
+
+
 resource "azurerm_resource_group" "opencga" {
   name     = "${var.resource_group_name}"
   location = "${var.location}"
@@ -16,8 +19,7 @@ resource "azurerm_log_analytics_workspace" "opencga" {
   name                = "acctest-01"
   location            = "${azurerm_resource_group.opencga.location}"
   resource_group_name = "${azurerm_resource_group.opencga.name}"
-  sku                 = "PerGB2018"
-  retention_in_days   = 30
+  sku                 = "${var.log_analytics_sku}"
 }
 
 resource "azurerm_log_analytics_solution" "servicemap" {
@@ -114,4 +116,16 @@ resource "azurerm_log_analytics_solution" "security" {
     publisher = "Microsoft"
     product   = "OMSGallery/Security"
   }
+}
+
+output "workspace_resource_id" {
+  value = "${azurerm_log_analytics_workspace.opencga.id}"
+}
+
+output "workspace_id" {
+    value = "${azurerm_log_analytics_workspace.opencga.workspace_id}"
+}
+
+output "workspace_key" {
+    value = "${azurerm_log_analytics_workspace.opencga.primary_shared_key}"
 }
