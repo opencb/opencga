@@ -72,7 +72,7 @@ resource "random_integer" "cluster_password_int" {
 
 resource "azurerm_template_deployment" "hdinsight" {
   name                = "hdinsight"
-  resource_group_name = "${var.resource_group_name}"
+  resource_group_name = "${azurerm_resource_group.hdinsight-rg.name}"
 
   # these key-value pairs are passed into the ARM Template's `parameters` block
   parameters {
