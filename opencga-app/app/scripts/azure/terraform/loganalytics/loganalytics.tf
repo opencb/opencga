@@ -1,0 +1,117 @@
+variable "location" {
+  type = "string"
+}
+
+variable "resource_group_name" {
+  type = "string"
+}
+
+resource "azurerm_resource_group" "opencga" {
+  name     = "${var.resource_group_name}"
+  location = "${var.location}"
+}
+
+
+resource "azurerm_log_analytics_workspace" "opencga" {
+  name                = "acctest-01"
+  location            = "${azurerm_resource_group.opencga.location}"
+  resource_group_name = "${azurerm_resource_group.opencga.name}"
+  sku                 = "PerGB2018"
+  retention_in_days   = 30
+}
+
+resource "azurerm_log_analytics_solution" "servicemap" {
+  solution_name         = "ServiceMap"
+  location              = "${azurerm_resource_group.opencga.location}"
+  resource_group_name   = "${azurerm_resource_group.opencga.name}"
+  workspace_resource_id = "${azurerm_log_analytics_workspace.opencga.id}"
+  workspace_name        = "${azurerm_log_analytics_workspace.opencga.name}"
+
+  plan {
+    publisher = "Microsoft"
+    product   = "OMSGallery/ServiceMap"
+  }
+}
+
+
+resource "azurerm_log_analytics_solution" "infra" {
+  solution_name         = "InfrastructureInsights"
+  location              = "${azurerm_resource_group.opencga.location}"
+  resource_group_name   = "${azurerm_resource_group.opencga.name}"
+  workspace_resource_id = "${azurerm_log_analytics_workspace.opencga.id}"
+  workspace_name        = "${azurerm_log_analytics_workspace.opencga.name}"
+
+  plan {
+    publisher = "Microsoft"
+    product   = "OMSGallery/InfrastructureInsights"
+  }
+}
+
+
+resource "azurerm_log_analytics_solution" "malware" {
+  solution_name         = "AntiMalware"
+  location              = "${azurerm_resource_group.opencga.location}"
+  resource_group_name   = "${azurerm_resource_group.opencga.name}"
+  workspace_resource_id = "${azurerm_log_analytics_workspace.opencga.id}"
+  workspace_name        = "${azurerm_log_analytics_workspace.opencga.name}"
+
+  plan {
+    publisher = "Microsoft"
+    product   = "OMSGallery/AntiMalware"
+  }
+}
+
+
+resource "azurerm_log_analytics_solution" "appgw" {
+  solution_name         = "AzureAppGatewayAnalytics"
+  location              = "${azurerm_resource_group.opencga.location}"
+  resource_group_name   = "${azurerm_resource_group.opencga.name}"
+  workspace_resource_id = "${azurerm_log_analytics_workspace.opencga.id}"
+  workspace_name        = "${azurerm_log_analytics_workspace.opencga.name}"
+
+  plan {
+    publisher = "Microsoft"
+    product   = "OMSGallery/AzureAppGatewayAnalytics"
+  }
+}
+
+resource "azurerm_log_analytics_solution" "containers" {
+  solution_name         = "Containers"
+  location              = "${azurerm_resource_group.opencga.location}"
+  resource_group_name   = "${azurerm_resource_group.opencga.name}"
+  workspace_resource_id = "${azurerm_log_analytics_workspace.opencga.id}"
+  workspace_name        = "${azurerm_log_analytics_workspace.opencga.name}"
+
+  plan {
+    publisher = "Microsoft"
+    product   = "OMSGallery/Containers"
+  }
+}
+
+
+resource "azurerm_log_analytics_solution" "hdinsight" {
+  solution_name         = "HDInsight"
+  location              = "${azurerm_resource_group.opencga.location}"
+  resource_group_name   = "${azurerm_resource_group.opencga.name}"
+  workspace_resource_id = "${azurerm_log_analytics_workspace.opencga.id}"
+  workspace_name        = "${azurerm_log_analytics_workspace.opencga.name}"
+
+  plan {
+    publisher = "Microsoft"
+    product   = "OMSGallery/HDInsight"
+  }
+}
+
+
+resource "azurerm_log_analytics_solution" "security" {
+  solution_name         = "Security"
+  location              = "${azurerm_resource_group.opencga.location}"
+  resource_group_name   = "${azurerm_resource_group.opencga.name}"
+  workspace_resource_id = "${azurerm_log_analytics_workspace.opencga.id}"
+  workspace_name        = "${azurerm_log_analytics_workspace.opencga.name}"
+
+  plan {
+    publisher = "Microsoft"
+    product   = "OMSGallery/Security"
+  }
+}
