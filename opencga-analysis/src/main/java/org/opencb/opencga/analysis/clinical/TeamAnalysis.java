@@ -113,6 +113,7 @@ public class TeamAnalysis extends FamilyAnalysis {
         // Step 1 - diagnostic variants
         Query query = new Query();
         QueryOptions queryOptions = QueryOptions.empty();
+        query.put(VariantQueryParam.STUDY.key(), studyStr);
         query.put(VariantQueryParam.ID.key(), StringUtils.join(diagnosticVariants, ","));
         query.put(VariantQueryParam.SAMPLE.key(), StringUtils.join(sampleList, ","));
         VariantQueryResult<Variant> queryResult = variantStorageManager.get(query, queryOptions, token);
