@@ -15,8 +15,21 @@ resource "azurerm_resource_group" "opencga" {
 }
 
 
+resource "random_string" "log_name" {
+  keepers = {
+    # Generate a new id each time we switch to a new resource group
+    group_name = "${var.resource_group_name}"
+  }
+
+  length  = 8
+  upper   = false
+  special = false
+  number  = false
+}
+
+
 resource "azurerm_log_analytics_workspace" "opencga" {
-  name                = "acctest-01"
+  name                = "${random_string.log_name.result}"
   location            = "${azurerm_resource_group.opencga.location}"
   resource_group_name = "${azurerm_resource_group.opencga.name}"
   sku                 = "${var.log_analytics_sku}"
