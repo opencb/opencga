@@ -143,15 +143,15 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         ParamUtils.checkAlias(clinicalAnalysis.getId(), "id");
         ParamUtils.checkObj(clinicalAnalysis.getType(), "type");
         ParamUtils.checkObj(clinicalAnalysis.getDueDate(), "dueDate");
-        if (clinicalAnalysis.getAssigned() != null && StringUtils.isNotEmpty(clinicalAnalysis.getAssigned().getAssignee())) {
+        if (clinicalAnalysis.getAnalyst() != null && StringUtils.isNotEmpty(clinicalAnalysis.getAnalyst().getAssignee())) {
             // We obtain the users with access to the study
             Set<String> users = new HashSet<>(catalogManager.getStudyManager().getGroup(studyStr, "members", sessionId).first()
                     .getUserIds());
-            if (!users.contains(clinicalAnalysis.getAssigned().getAssignee())) {
-                throw new CatalogException("Cannot assign clinical analysis to " + clinicalAnalysis.getAssigned().getAssignee()
+            if (!users.contains(clinicalAnalysis.getAnalyst().getAssignee())) {
+                throw new CatalogException("Cannot assign clinical analysis to " + clinicalAnalysis.getAnalyst().getAssignee()
                         + ". User not found or with no access to the study.");
             }
-            clinicalAnalysis.getAssigned().setAssignedBy(userId);
+            clinicalAnalysis.getAnalyst().setAssignedBy(userId);
         }
 
         if (TimeUtils.toDate(clinicalAnalysis.getDueDate()) == null) {
@@ -455,7 +455,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                         throw new CatalogException("Unrecognised due date. Accepted format is: yyyyMMddHHmmss");
                     }
                     break;
-                case ASSIGNED:
+                case ANALYST:
                     LinkedHashMap<String, Object> assigned = (LinkedHashMap<String, Object>) param.getValue();
                     // We obtain the users with access to the study
                     Set<String> users = new HashSet<>(catalogManager.getStudyManager().getGroup(studyStr, "members", sessionId).first()
@@ -585,23 +585,15 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             query.put(ClinicalAnalysisDBAdaptor.QueryParams.SAMPLE_UID.key(), sampleResource.getResource().getUid());
             query.remove("sample");
         }
+        if (query.containsKey("analystAssignee")) {
+            query.put(ClinicalAnalysisDBAdaptor.QueryParams.ANALYST_ASSIGNEE.key(), query.get("analystAssignee"));
+            query.remove("analystAssignee");
+        }
         if (query.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key())) {
             MyResource<Individual> probandResource = catalogManager.getIndividualManager()
                     .getUid(query.getString(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key()), study.getFqn(), sessionId);
             query.put(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND_UID.key(), probandResource.getResource().getUid());
             query.remove(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key());
-        }
-        if (query.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.GERMLINE.key())) {
-            MyResource<File> resource = catalogManager.getFileManager()
-                    .getUid(query.getString(ClinicalAnalysisDBAdaptor.QueryParams.GERMLINE.key()), study.getFqn(), sessionId);
-            query.put(ClinicalAnalysisDBAdaptor.QueryParams.GERMLINE_UID.key(), resource.getResource().getUid());
-            query.remove(ClinicalAnalysisDBAdaptor.QueryParams.GERMLINE.key());
-        }
-        if (query.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.SOMATIC.key())) {
-            MyResource<File> resource = catalogManager.getFileManager()
-                    .getUid(query.getString(ClinicalAnalysisDBAdaptor.QueryParams.SOMATIC.key()), study.getFqn(), sessionId);
-            query.put(ClinicalAnalysisDBAdaptor.QueryParams.SOMATIC_UID.key(), resource.getResource().getUid());
-            query.remove(ClinicalAnalysisDBAdaptor.QueryParams.SOMATIC.key());
         }
     }
 

@@ -173,8 +173,8 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
             params = new ObjectMap();
             params.putIfNotEmpty(StudyDBAdaptor.QueryParams.DESCRIPTION.key(), commandOptions.description);
             params.putIfNotNull(StudyDBAdaptor.QueryParams.TYPE.key(), Study.Type.valueOf(commandOptions.type));
-            params.putIfNotEmpty(StudyDBAdaptor.QueryParams.ALIAS.key(), commandOptions.name);
-            params.putIfNotEmpty(StudyDBAdaptor.QueryParams.NAME.key(), commandOptions.alias);
+            params.putIfNotEmpty(StudyDBAdaptor.QueryParams.ALIAS.key(), commandOptions.alias);
+            params.putIfNotEmpty(StudyDBAdaptor.QueryParams.NAME.key(), commandOptions.name);
         }
 
         return openCGAClient.getStudyClient().create(commandOptions.project, commandOptions.id, params);

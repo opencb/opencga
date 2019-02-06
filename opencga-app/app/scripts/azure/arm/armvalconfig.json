@@ -92,6 +92,15 @@
                     "apiVersion": "2018-12-01"
                 },
                 "reason": "Incorrect schema match"
+            },
+            {
+                "message": "Value is not accepted.*",
+                "resource": {
+                    "type": "Microsoft.Batch/batchAccounts",
+                    "name": ".*",
+                    "apiVersion": "2018-12-01"
+                },
+                "reason": "Incorrect schema match"
             }
         ],
         "azurefiles/azuredeploy.json": [
