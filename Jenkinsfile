@@ -30,7 +30,7 @@ pipeline {
 
         stage ('Docker Build') {
             options {
-                timeout(time: 10, unit: 'MINUTES')
+                timeout(time: 25, unit: 'MINUTES')
             }
             steps {
                 sh 'make -f opencga-app/app/scripts/docker/Makefile DOCKER_ORG="opencb"'
