@@ -24,20 +24,13 @@ $(error DOCKER_USERNAME is not set)
 endif
 endif
 
-# Check required variables are set for target login
-ifeq ($(MAKECMDGOALS), login)
-ifeq ($(DOCKER_PASSWORD),)
-$(error DOCKER_PASSWORD is not set)
-endif
-ifeq ($(DOCKER_USERNAME),)
-$(error DOCKER_USERNAME is not set)
-endif
-endif
-
 # Check required variables are set for target publish
 ifeq ($(MAKECMDGOALS), publish)
 ifeq ($(APP_NAME),)
 $(error APP_NAME is not set)
+endif
+ifeq ($(DOCKER_USERNAME),)
+$(error DOCKER_USERNAME is not set)
 endif
 endif
 
@@ -87,7 +80,7 @@ tag:
 # Logs in to a docker registry (Requires docker version >= 18.0.0)
 .PHONY: login
 login:
-	@echo $(DOCKER_PASSWORD) | docker login -u $(DOCKER_USERNAME) --password-stdin $(DOCKER_SERVER)
+	if [ -z $(DOCKER_PASSWORD) ]; then docker login; else @echo $(DOCKER_PASSWORD) | docker login -u $(DOCKER_USERNAME) --password-stdin $(DOCKER_SERVER); fi
 
 # Publishes a docker image to docker registry
 .PHONY: publish

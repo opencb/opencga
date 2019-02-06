@@ -28,16 +28,11 @@ ENV BATCH_MAX_CONCURRENT_JOBS=""
 ARG IVA_COMMIT_SHA="dce421b6933d540d9c511c72e63c0e85dff00667"
 
 # Install local dependencies
-RUN apk add --no-cache python3 && \
-    python3 -m ensurepip && \
-    rm -r /usr/lib/python*/ensurepip && \
+RUN apt-get update && apt-get install -y python3 python3-pip openssh-client git sshpass && \
     pip3 install --upgrade pip setuptools && \
-    if [ ! -e /usr/bin/pip ]; then ln -s pip3 /usr/bin/pip ; fi && \
-    if [[ ! -e /usr/bin/python ]]; then ln -sf /usr/bin/python3 /usr/bin/python; fi && \
-    rm -r /root/.cache
-RUN apk add --update --no-cache openssh \
-    sshpass \
-    git
+    rm -rf /var/lib/apt/lists/* && \
+    apt-get clean
+
 
 # Download and extract the IVA configuration into our local configuration.
 RUN git clone "https://github.com/opencb/iva.git" && \
