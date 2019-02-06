@@ -199,7 +199,7 @@ public class TieringAnalysis extends FamilyAnalysis {
         Map<String, List<Variant>> compoundHeterozygousMap = new HashMap<>();
 
         while (recessiveQueryResult.hasNext()) {
-            Variant variant = dominantQueryResult.next();
+            Variant variant = recessiveQueryResult.next();
 
             boolean recessiveMoI = true;
             boolean xRecessiveMoI = true;
