@@ -23,30 +23,26 @@ import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.Interpretation;
 import org.opencb.biodata.models.clinical.interpretation.ReportedLowCoverage;
 import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
-import org.opencb.biodata.models.commons.Analyst;
+import org.opencb.biodata.models.commons.OntologyTerm;
+import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.commons.Software;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.tools.clinical.TeamReportedVariantCreator;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.OpenCgaAnalysis;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.analysis.exceptions.AnalysisException;
-import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
-import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
+import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Panel;
-import org.opencb.opencga.core.models.User;
 import org.opencb.opencga.core.results.VariantQueryResult;
-import org.opencb.opencga.storage.core.StorageEngineFactory;
-import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -54,66 +50,7 @@ import java.util.stream.Collectors;
 import static org.opencb.biodata.models.clinical.interpretation.DiseasePanel.GenePanel;
 import static org.opencb.biodata.models.clinical.interpretation.DiseasePanel.VariantPanel;
 
-public class TeamAnalysis extends OpenCgaAnalysis<Interpretation> {
-
-    private ClinicalAnalysis clinicalAnalysis;
-
-    private String sessionId;
-    private String studyStr;
-
-    private String clinicalAnalysisId;
-    private List<String> diseasePanelIds;
-
-    private String disease;
-    private String family;
-    private List<String> subjects;
-    private String type;
-    private String panelId;
-    private String panelVersion;
-    private String saveId;
-    private String saveName;
-
-    // query
-    private Query query;
-
-    private Interpretation interpretation;
-
-//    public TeamAnalysis(String clnicalAnalysisId, String panelId, Query variantQuery, String sessionId) {
-//
-//    }
-
-    public TeamAnalysis(
-            String opencgaHome,
-            String sessionId,
-            String studyStr,
-            // specific parameters
-            String clinicalAnalysisId,
-            String disease,
-            String family,
-            List<String> subjects,
-            String type,
-            String panelId,
-            String panelVersion,
-            String saveId,
-            String saveName,
-            Query query
-    ) {
-        super(opencgaHome, studyStr, sessionId);
-        this.sessionId = sessionId;
-        this.studyStr = studyStr;
-        this.clinicalAnalysisId = clinicalAnalysisId;
-        this.disease = disease;
-        this.family = family;
-        // should deeply clone this one...
-        this.subjects = subjects;
-        this.type = type;
-        this.panelId = panelId;
-        this.panelVersion = panelVersion;
-        this.saveId = saveId;
-        this.saveName = saveName;
-        // ... and maybe these two, if not immutable
-        this.query = query;
-    }
+public class TeamAnalysis extends FamilyAnalysis {
 
     public TeamAnalysis(String opencgaHome, String studyStr, String token, String clinicalAnalysisId, List<String> panelList, ObjectMap teamAnalysisOptions) {
         super(opencgaHome, studyStr, token);
@@ -123,106 +60,102 @@ public class TeamAnalysis extends OpenCgaAnalysis<Interpretation> {
     }
 
 
-    private ClinicalAnalysis getClinicalAnalysis() throws CatalogException {
-        assert(null != catalogManager);
-        if (StringUtils.isNotEmpty(clinicalAnalysisId)) {
-            final ClinicalAnalysisManager clinicalAnalysisManager = catalogManager.getClinicalAnalysisManager();
-
-            // have to convert session
-            QueryResult<ClinicalAnalysis> clinicalAnalyses = clinicalAnalysisManager.get(
-                    studyStr,
-                    clinicalAnalysisId,
-                    QueryOptions.empty(),
-                    sessionId
-            );
-
-            clinicalAnalysis = clinicalAnalyses.first();
-            return clinicalAnalysis;
-        }
-        return null;
-    }
-
     @Override
     public InterpretationResult execute() throws Exception {
         StopWatch watcher = StopWatch.createStarted();
 
-        List<String> samples = new ArrayList<>();
-        List<VariantPanel> variants;
-
-        if (StringUtils.isNotEmpty(clinicalAnalysisId)) {
-            ClinicalAnalysis clinicalAnalysis = getClinicalAnalysis();
-            if (clinicalAnalysis.getProband() != null && clinicalAnalysis.getProband().getSamples() != null
-                    && !clinicalAnalysis.getProband().getSamples().isEmpty()) {
-                samples.add(getClinicalAnalysis().getProband().getSamples().get(0).getId());
-            }
-        }
-
-        // TODO throw a proper Exception
-        if (StringUtils.isEmpty(this.panelId)) {
-            logger.error("No disease panel provided");
-            return null;
-        }
-
-        // fetch disease panel
-        Query panelQuery = new Query();
-        panelQuery.put(PanelDBAdaptor.QueryParams.ID.key(), panelId);
-        panelQuery.put(PanelDBAdaptor.QueryParams.VERSION.key(), panelVersion);
-        QueryResult<Panel> panelResult = catalogManager.getPanelManager().get(studyStr, panelQuery, QueryOptions.empty(), sessionId);
-        Panel diseasePanel = panelResult.first();
-
-        // we create the variant strage manager
-        StorageEngineFactory storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
-        VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
-
-        // Step 1 - diagnostic variants
-        variants = diseasePanel.getDiseasePanel().getVariants();
-        Query variantQuery = new Query();
-        variantQuery.put(VariantQueryParam.ID.key(), StringUtils.join(variants, ","));
-        variantQuery.put(VariantQueryParam.SAMPLE.key(), StringUtils.join(samples, ","));
-
-        // Step 2 - VUS variants
-        VariantQueryResult<Variant> variantVariantQueryResult = variantManager.get(variantQuery, QueryOptions.empty(), sessionId);
-        List<String> geneIds = getGeneIdsFromPanel(diseasePanel);
-        if (variantVariantQueryResult.getNumResults() == 0) {
-            variantQuery = new Query();
-            query.put(VariantQueryParam.GENE.key(), StringUtils.join(geneIds, ","));
-            variantQuery.put(VariantQueryParam.SAMPLE.key(), StringUtils.join(samples, ","));
-            variantQuery.put(VariantQueryParam.ANNOT_BIOTYPE.key(), "protein_coding");
-            // ...
-
-            QueryOptions queryOptions = new QueryOptions();
-            queryOptions.put(QueryOptions.LIMIT, 1000);
-            variantVariantQueryResult = variantManager.get(variantQuery, queryOptions, sessionId);
-        }
-
-        // Step 3: findings
-
-        // User analyst management
-        String userId;
-        QueryResult<User> userQueryResult;
+        // Sanity check
+        QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult;
         try {
-            userId = catalogManager.getUserManager().getUserId(token);
-            userQueryResult = catalogManager.getUserManager().get(userId, new QueryOptions(QueryOptions.INCLUDE,
-                    Arrays.asList(UserDBAdaptor.QueryParams.EMAIL.key(), UserDBAdaptor.QueryParams.ORGANIZATION.key())), token);
+            clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager()
+                    .get(studyStr, clinicalAnalysisId, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             throw new AnalysisException(e.getMessage(), e);
         }
+        if (clinicalAnalysisQueryResult.getNumResults() == 0) {
+            throw new AnalysisException("Clinical analysis " + clinicalAnalysisId + " not found in study " + studyStr);
+        }
 
-        // TODO: reported variants
+        ClinicalAnalysis clinicalAnalysis = clinicalAnalysisQueryResult.first();
+
+        if (clinicalAnalysis.getFamily() == null || StringUtils.isEmpty(clinicalAnalysis.getFamily().getId())) {
+            throw new AnalysisException("Missing family in clinical analysis " + clinicalAnalysisId);
+        }
+
+        if (clinicalAnalysis.getProband() == null || StringUtils.isEmpty(clinicalAnalysis.getProband().getId())) {
+            throw new AnalysisException("Missing proband in clinical analysis " + clinicalAnalysisId);
+        }
+
+        Individual proband = clinicalAnalysis.getProband();
+        if (ListUtils.isEmpty(proband.getSamples())) {
+            throw new AnalysisException("Missing samples in proband " + proband.getId() + " in clinical analysis " + clinicalAnalysisId);
+        }
+
+        if (proband.getSamples().size() > 1) {
+            throw new AnalysisException("Found more than one sample for proband " + proband.getId() + " in clinical analysis "
+                    + clinicalAnalysisId);
+        }
+
+        // Disease panels management
+        List<DiseasePanel> biodataDiseasPanelList = null;
+        List<Panel> diseasePanels = getDiseasePanelsFromIds(diseasePanelIds);
+        if (CollectionUtils.isNotEmpty(diseasePanels)) {
+            biodataDiseasPanelList = diseasePanels.stream().map(Panel::getDiseasePanel).collect(Collectors.toList());
+        }
+
+        // Get sample names and update proband information (to be able to navigate to the parents and their samples easily)
+        List<String> sampleList = getSampleNames(clinicalAnalysis, proband);
+
+        // Get diagnostic variants from panels
+        List<VariantPanel> diagnosticVariants = new ArrayList<>();
+        for (Panel diseasePanel : diseasePanels) {
+            if (diseasePanel.getDiseasePanel() != null && CollectionUtils.isNotEmpty(diseasePanel.getDiseasePanel().getVariants())) {
+                diagnosticVariants.addAll(diseasePanel.getDiseasePanel().getVariants());
+            }
+        }
+
+        // Step 1 - diagnostic variants
+        Query query = new Query();
+        QueryOptions queryOptions = QueryOptions.empty();
+        query.put(VariantQueryParam.ID.key(), StringUtils.join(diagnosticVariants, ","));
+        query.put(VariantQueryParam.SAMPLE.key(), StringUtils.join(sampleList, ","));
+        VariantQueryResult<Variant> queryResult = variantStorageManager.get(query, queryOptions, token);
+
+        if (queryResult.getNumResults() == 0) {
+
+            // Step 2 - VUS variants
+            // Get genes from panels
+            List<String> geneIds = getGeneIdsFromDiseasePanels(diseasePanels);
+            query.remove(VariantQueryParam.ID.key());
+            query.put(VariantQueryParam.GENE.key(), StringUtils.join(geneIds, ","));
+            query.put(VariantQueryParam.ANNOT_BIOTYPE.key(), "protein_coding");
+            // ...
+
+            queryResult = variantStorageManager.get(query, queryOptions, token);
+
+            if (queryResult.getNumResults() == 0) {
+                // Step 3: findings
+            }
+        }
+
         List<ReportedVariant> reportedVariants = null;
+        if (queryResult.getNumResults() > 0) {
+            // Phenotype
+            OntologyTerm disease = clinicalAnalysis.getDisorder();
+            Phenotype phenotype = new Phenotype(disease.getId(), disease.getName(), disease.getSource(), Phenotype.Status.UNKNOWN);
 
-        // TODO: disease panels
-        List<Panel> diseasePanels = new ArrayList<>();
-        List<DiseasePanel> biodataDiseasPanelList = diseasePanels.stream().map(Panel::getDiseasePanel).collect(Collectors.toList());
+            TeamReportedVariantCreator creator = new TeamReportedVariantCreator(biodataDiseasPanelList, null, phenotype, null, null);
+            reportedVariants = creator.create(queryResult.getResult());
+        }
 
-        // TODO: reported low coverages
-        List<ReportedLowCoverage> reportedLowCoverages = new ArrayList<>();
+        // Reported low coverages management
+        List<ReportedLowCoverage> reportedLowCoverages = getReportedLowCoverage(clinicalAnalysis, diseasePanels);
 
 
         // Create Interpretation
         Interpretation interpretation = new Interpretation()
                 .setId("OpenCGA-TEAM-" + TimeUtils.getTime())
-                .setAnalyst(new Analyst(userId, userQueryResult.first().getEmail(), userQueryResult.first().getOrganization()))
+                .setAnalyst(getAnalyst(token))
                 .setClinicalAnalysisId(clinicalAnalysisId)
                 .setCreationDate(TimeUtils.getTime())
                 .setPanels(biodataDiseasPanelList)
@@ -244,21 +177,17 @@ public class TeamAnalysis extends OpenCgaAnalysis<Interpretation> {
                 ""); // error message
     }
 
-    private List<String> getGeneIdsFromPanel(Panel diseasePanel) throws CatalogException {
-        List<String> geneIds = new ArrayList<>(diseasePanel.getDiseasePanel().getGenes().size());
-        for (GenePanel gene : diseasePanel.getDiseasePanel().getGenes()) {
-            geneIds.add(gene.getId());
+    private List<String> getGeneIdsFromDiseasePanels(List<Panel> diseasePanels) throws CatalogException {
+        List<String> geneIds = new ArrayList<>();
+        if (CollectionUtils.isNotEmpty(diseasePanels)) {
+            for (Panel diseasePanel : diseasePanels) {
+                if (diseasePanel.getDiseasePanel() != null && CollectionUtils.isNotEmpty(diseasePanel.getDiseasePanel().getGenes())) {
+                    for (GenePanel gene : diseasePanel.getDiseasePanel().getGenes()) {
+                        geneIds.add(gene.getId());
+                    }
+                }
+            }
         }
         return geneIds;
-    }
-
-
-    public Interpretation getInterpretation() {
-        return interpretation;
-    }
-
-    public TeamAnalysis setInterpretation(Interpretation interpretation) {
-        this.interpretation = interpretation;
-        return this;
     }
 }

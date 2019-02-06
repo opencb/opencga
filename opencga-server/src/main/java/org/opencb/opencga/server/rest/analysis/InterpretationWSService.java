@@ -723,7 +723,7 @@ public class InterpretationWSService extends AnalysisWSService {
     public Response team(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                                     String studyStr,
                             @ApiParam(value = "Clinical Analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
-                            @ApiParam(value = "List of disease panel IDs") @QueryParam("panelIds") String panelIds) {
+                            @ApiParam(value = "Comma separated list of disease panel IDs") @QueryParam("panelIds") String panelIds) {
         try {
             // Get analysis options from query
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
@@ -757,7 +757,7 @@ public class InterpretationWSService extends AnalysisWSService {
     public Response tiering(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                                                     String studyStr,
                             @ApiParam(value = "Clinical Analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
-                            @ApiParam(value = "List of disease panel IDs") @QueryParam("panelIds") String panelIds) {
+                            @ApiParam(value = "Comma separated list of disease panel IDs") @QueryParam("panelIds") String panelIds) {
         try {
             // Get analysis options from query
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
