@@ -15,6 +15,24 @@ variable "lets_encrypt_email_address" {
 variable "resource_group_prefix" {
   default = "opencga"
 }
+variable "state_storage_account_name" {}
+variable "state_storage_container_name" {}
+variable "state_storage_blob_name" {
+  default = "terraform.tfstate"
+}
+
+terraform {
+  backend "azurerm" {}
+}
+
+data "terraform_remote_state" "state" {
+  backend = "azurerm"
+  config {
+    storage_account_name  = "${var.state_storage_account_name}"
+    container_name        = "${var.state_storage_container_name}"
+    key                   = "${var.state_storage_blob_name}"
+  }
+}
 
 // Pin to a version of the terraform provider to prevent breaking changes of future releases
 // work should be undertaken to update this from time-to-time to track the lastest release
