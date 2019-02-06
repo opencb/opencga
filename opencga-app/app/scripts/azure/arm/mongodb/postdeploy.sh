@@ -55,9 +55,9 @@ formatAndMountDisk() {
     echo 'type=83' | sfdisk ${1}
     mkfs -t ext4 ${1}1
     mkdir /datadrive
-    mount ${1}1 /datadrive
+    mount -o acl ${1}1 /datadrive
     fs_uuid=$(blkid -o value -s UUID ${1}1)
-    echo "UUID=${fs_uuid}   /datadrive   ext4   defaults,nofail   1   2" >> /etc/fstab
+    echo "UUID=${fs_uuid}   /datadrive   ext4   defaults,nofail,acl   1   2" >> /etc/fstab
 }
 
 generateCertificate() {
@@ -69,7 +69,7 @@ generateCertificate() {
 
     #configure mongodb to use /datadrive for storage
     mkdir /datadrive/mongodb
-    chmod 777 -R /datadrive
+    setfacl -R -m u:mongodb:rwx /datadrive/mongodb
     sed -i -e '/dbPath/ s/: .*/: \/datadrive\/mongodb /' /etc/mongod.conf
 
     systemctl restart mongod
@@ -141,18 +141,18 @@ scanForNewDisks
 generateCertificate
 configureMongoDB
 
-# only configure replicasets when clusterSize > 1
-if [ "$CLUSTER_SIZE" -gt 1 ]
+if [ "$VM_INDEX" -eq 0 ]
 then
-    if [ "$VM_INDEX" -eq 0 ]
-    then
-        generateMongoKeyFile
+    generateMongoKeyFile
 
+    if [ "$CLUSTER_SIZE" -gt 1 ]
+    then
         #waiting for other mongodb instances to be successfully configured
         sleep 120
 
         createReplicaSet
-    else
-        configureSlaveNodes
     fi
+else
+    configureSlaveNodes
 fi
+
