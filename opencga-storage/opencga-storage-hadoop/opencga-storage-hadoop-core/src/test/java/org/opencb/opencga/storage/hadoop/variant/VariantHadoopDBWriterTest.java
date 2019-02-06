@@ -113,7 +113,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         sm1.getVariantHeader().getComplexLines()
                 .add(new VariantFileHeaderComplexLine("FORMAT", "AD", "", "R", "Integer", Collections.emptyMap()));
 
-        metadataManager.updateStudyMetadata(sm1);
+        metadataManager.unsecureUpdateStudyMetadata(sm1);
 
 
         fileId1 = createNewFile(sm1);
@@ -127,7 +127,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         LinkedHashSet<Integer> sampleIds = new LinkedHashSet<>(NUM_SAMPLES);
         for (int samplePos = 0; samplePos < NUM_SAMPLES; samplePos++) {
             int sampleId = samplePos + 1 + (fileId - 1) * NUM_SAMPLES;
-            metadataManager.updateSampleMetadata(sc.getId(), new SampleMetadata(sc.getId(), sampleId, "S" + sampleId));
+            metadataManager.unsecureUpdateSampleMetadata(sc.getId(), new SampleMetadata(sc.getId(), sampleId, "S" + sampleId));
             sampleIds.add(sampleId);
         }
         metadataManager.updateFileMetadata(sc.getId(), fileId, f -> f.setSamples(sampleIds));
@@ -223,7 +223,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         String archiveTableName = engine.getArchiveTableName(sc.getId());
         sc.getAttributes().append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
         VariantStorageMetadataManager metadataManager = this.metadataManager;
-        metadataManager.updateStudyMetadata(sc);
+        metadataManager.unsecureUpdateStudyMetadata(sc);
         ArchiveTableHelper.createArchiveTableIfNeeded(dbAdaptor.getGenomeHelper(), archiveTableName);
         VariantTableHelper.createVariantTableIfNeeded(dbAdaptor.getGenomeHelper(), dbAdaptor.getVariantTable());
         metadataManager.lockAndUpdateProject(projectMetadata -> {
@@ -260,7 +260,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         ptr.run();
 
         // Mark files as indexed and register new samples in phoenix
-        metadataManager.updateStudyMetadata(sc);
+        metadataManager.unsecureUpdateStudyMetadata(sc);
         metadataManager.updateFileMetadata(sc.getId(), fileId, f->f.setIndexStatus(TaskMetadata.Status.READY));
         VariantPhoenixHelper phoenixHelper = new VariantPhoenixHelper(dbAdaptor.getGenomeHelper());
         phoenixHelper.registerNewStudy(dbAdaptor.getJdbcConnection(), dbAdaptor.getVariantTable(), sc.getId());

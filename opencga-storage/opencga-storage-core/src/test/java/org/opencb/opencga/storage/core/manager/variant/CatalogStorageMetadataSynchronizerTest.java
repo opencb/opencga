@@ -198,7 +198,7 @@ public class CatalogStorageMetadataSynchronizerTest {
         assertNotNull(nonIndexedFile);
         metadataManager.addIndexedFiles(sc.getId(), Collections.singletonList(metadataManager.getFileId(sc.getId(), nonIndexedFile.getName())));
 
-        studyConfigurationFactory.synchronizeCatalogFromStorage(sc, sessionId);
+        studyConfigurationFactory.synchronizeCatalogStudyFromStorage(sc, sessionId);
 
         nonIndexedFile = catalogManager.getFileManager().get(studyId, nonIndexedFile.getName(), null, sessionId).first();
         assertEquals(FileIndex.IndexStatus.READY, nonIndexedFile.getIndex().getStatus().getName());
@@ -206,10 +206,9 @@ public class CatalogStorageMetadataSynchronizerTest {
 
         nonIndexedFile = files.stream().filter(file -> !indexedFiles.contains(file.getName())).findFirst().orElse(null);
         assertNotNull(nonIndexedFile);
-        metadataManager.updateTask(sc.getId(), new TaskMetadata("LOAD", Collections.singletonList(metadataManager.getFileId(sc.getId(), nonIndexedFile.getName())), 1L, TaskMetadata.Type.LOAD)
-                .addStatus(TaskMetadata.Status.RUNNING));
+        metadataManager.addRunningTask(sc.getId(), "LOAD", Collections.singletonList(metadataManager.getFileId(sc.getId(), nonIndexedFile.getName())), false, TaskMetadata.Type.LOAD);
 
-        studyConfigurationFactory.synchronizeCatalogFromStorage(sc, sessionId);
+        studyConfigurationFactory.synchronizeCatalogStudyFromStorage(sc, sessionId);
 
         nonIndexedFile = catalogManager.getFileManager().get(studyId, nonIndexedFile.getName(), null, sessionId).first();
         assertEquals(FileIndex.IndexStatus.INDEXING, nonIndexedFile.getIndex().getStatus().getName());

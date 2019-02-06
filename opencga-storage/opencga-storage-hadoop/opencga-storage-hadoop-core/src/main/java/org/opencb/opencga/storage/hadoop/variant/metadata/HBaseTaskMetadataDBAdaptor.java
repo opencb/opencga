@@ -1,6 +1,8 @@
 package org.opencb.opencga.storage.hadoop.variant.metadata;
 
 import org.apache.hadoop.conf.Configuration;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.metadata.models.Locked;
 import org.opencb.opencga.storage.core.metadata.adaptors.TaskMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
@@ -42,6 +44,11 @@ public class HBaseTaskMetadataDBAdaptor extends AbstractHBaseDBAdaptor implement
                 deleteRow(getTaskStatusIndexRowKey(studyId, status, task.getId()));
             }
         }
+    }
+
+    @Override
+    public Locked lock(int studyId, int id, long lockDuration, long timeout) throws StorageEngineException {
+        return lock(getTaskRowKey(studyId, id), lockDuration, timeout);
     }
 
 }

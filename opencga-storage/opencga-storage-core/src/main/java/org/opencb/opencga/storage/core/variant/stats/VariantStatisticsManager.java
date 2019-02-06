@@ -88,12 +88,11 @@ public abstract class VariantStatisticsManager {
             VariantStorageMetadataManager metadataManager, StudyMetadata studyMetadata, Map<String, Set<String>> cohorts,
             boolean overwrite, boolean updateStats, ObjectMap options) throws StorageEngineException {
 
+        Collection<Integer> cohortIds = metadataManager.registerCohorts(studyMetadata.getName(), cohorts).values();
+        checkCohorts(metadataManager, studyMetadata, cohorts, overwrite, updateStats,
+                getAggregation(studyMetadata.getAggregation(), options));
+
         metadataManager.lockAndUpdate(studyMetadata.getName(), sm -> {
-
-            Collection<Integer> cohortIds = metadataManager.registerCohorts(studyMetadata.getName(), cohorts).values();
-
-            checkCohorts(metadataManager, sm, cohorts, overwrite, updateStats, getAggregation(sm.getAggregation(), options));
-
             for (Integer cohortId : cohortIds) {
                 metadataManager.updateCohortMetadata(studyMetadata.getId(), cohortId,
                         cohort -> cohort.setStatsStatus(TaskMetadata.Status.RUNNING));
@@ -108,7 +107,8 @@ public abstract class VariantStatisticsManager {
 
         TaskMetadata.Status status = error ? TaskMetadata.Status.ERROR : TaskMetadata.Status.READY;
         for (String cohortName : cohorts) {
-            metadataManager.updateCohortMetadata(studyMetadata.getId(), cohortName,
+            Integer cohortId = metadataManager.getCohortId(studyMetadata.getId(), cohortName);
+            metadataManager.updateCohortMetadata(studyMetadata.getId(), cohortId,
                     cohort -> cohort.setStatsStatus(status));
         }
     }
@@ -121,19 +121,21 @@ public abstract class VariantStatisticsManager {
 //                continue;
 //            }
             int studyId = studyMetadata.getId();
-            CohortMetadata cohort = metadataManager.getCohortMetadata(studyId, cohortName);
-            if (cohort.isInvalid()) {
+            Integer cohortId = metadataManager.getCohortId(studyMetadata.getId(), cohortName);
+            metadataManager.updateCohortMetadata(studyId, cohortId, cohort -> {
+                if (cohort.isInvalid()) {
 //                throw new IOException("Cohort \"" + cohortName + "\" stats already calculated and INVALID");
-                LoggerFactory.getLogger(VariantStatisticsManager.class)
-                        .debug("Cohort \"" + cohortName + "\" stats calculated and INVALID. Set as calculated");
-            }
-            if (cohort.isStatsReady()) {
-                if (!updateStats) {
-                    throw new StorageEngineException("Cohort \"" + cohortName + "\" stats already calculated");
+                    LoggerFactory.getLogger(VariantStatisticsManager.class)
+                            .debug("Cohort \"" + cohortName + "\" stats calculated and INVALID. Set as calculated");
                 }
-            }
-            cohort.setStatsStatus(TaskMetadata.Status.RUNNING);
-            metadataManager.updateCohortMetadata(studyId, cohort);
+                if (cohort.isStatsReady()) {
+                    if (!updateStats) {
+                        throw new StorageEngineException("Cohort \"" + cohortName + "\" stats already calculated");
+                    }
+                }
+                cohort.setStatsStatus(TaskMetadata.Status.RUNNING);
+                return cohort;
+            });
         }
     }
 

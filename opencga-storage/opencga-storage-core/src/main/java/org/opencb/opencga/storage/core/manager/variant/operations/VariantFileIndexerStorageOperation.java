@@ -157,25 +157,20 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             createDefaultCohortIfNeeded(study, sessionId);
         }
 
-        // Update Catalog from the study configuration BEFORE executing the index and fetching files from Catalog
-        updateCatalogFromStorageMetadata(sessionId, studyFQNByInputFileId, dataStore);
-
         List<File> inputFiles = new ArrayList<>();
-//        for (Long fileIdLong : fileIds) {
         for (FileInfo fileInfo : studyInfo.getFileInfos()) {
-//            long fileIdLong = fileInfo.getFileId();
             File inputFile = fileManager.get(studyInfo.getStudyFQN(), fileInfo.getPath(), FILE_GET_QUERY_OPTIONS, sessionId)
                     .first();
 
             if (inputFile.getType() == File.Type.FILE) {
-                inputFiles.add(inputFile);
+                // If is a transformed file, get the related VCF file
+                if (VariantReaderUtils.isTransformedVariants(inputFile.getName())) {
+                    inputFiles.add(getOriginalFromTransformed(studyFQNByInputFileId, inputFile, sessionId));
+                } else {
+                    inputFiles.add(inputFile);
+                }
             } else {
                 if (inputFile.getType() == File.Type.DIRECTORY) {
-//                    if (inputFile.getPath().isEmpty()) {
-//                        query = new Query(FileDBAdaptor.QueryParams.PATH.key(), "~^" + inputFile.getPath() + "*");
-//                    } else {
-//                        query = new Query();
-//                    }
                     query = new Query(FileDBAdaptor.QueryParams.DIRECTORY.key(), inputFile.getPath());
                     query.append(FileDBAdaptor.QueryParams.FORMAT.key(),
 //                            Arrays.asList(File.Format.VCF, File.Format.GVCF, File.Format.AVRO));
@@ -190,6 +185,9 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                 }
             }
         }
+
+        // Update Catalog from the storage metadata. This may change the index status of the inputFiles .
+        synchronizeCatalogFilesFromStorage(dataStore, studyFQNByInputFileId, inputFiles, sessionId, FILE_GET_QUERY_OPTIONS);
 
         // Check catalog path
         String catalogOutDirId = getCatalogOutdirId(studyFQNByInputFileId, options, sessionId);
@@ -307,7 +305,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             if (calculateStats && exception != null) {
                 updateDefaultCohortStatus(study, prevDefaultCohortStatus, sessionId);
             }
-            updateCatalogFromStorageMetadata(sessionId, study.getFqn(), dataStore);
+            synchronizeCatalogStudyFromStorage(dataStore, study.getFqn(), sessionId);
         }
 
         if (exception == null) {
@@ -630,7 +628,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 
         List<File> filteredFiles = new ArrayList<>(fileList.size());
         for (File file : fileList) {
-            if (file.getStatus().getName().equals(File.FileStatus.READY) && file.getFormat().equals(File.Format.VCF)) {
+            if (file.getStatus().getName().equals(File.FileStatus.READY) && isVcfFormat(file)) {
                 String indexStatus;
                 if (file.getIndex() != null && file.getIndex().getStatus() != null && file.getIndex().getStatus().getName() != null) {
                     indexStatus = file.getIndex().getStatus().getName();
@@ -660,6 +658,9 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                                 indexStatus);
                         break;
                 }
+            } else {
+                logger.warn("Skip file " + file.getName() + " with format " + file.getFormat() + " and status "
+                        + file.getStatus().getName());
             }
         }
         return filteredFiles;
@@ -713,7 +714,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                 file = getOriginalFromTransformed(studyFQN, file, sessionId);
             }
 
-            if (file.getFormat().equals(File.Format.VCF) || file.getFormat().equals(File.Format.GVCF)) {
+            if (isVcfFormat(file)) {
                 String status = file.getIndex() == null || file.getIndex().getStatus() == null ? FileIndex.IndexStatus.NONE
                         : file.getIndex().getStatus().getName();
                 switch (status) {

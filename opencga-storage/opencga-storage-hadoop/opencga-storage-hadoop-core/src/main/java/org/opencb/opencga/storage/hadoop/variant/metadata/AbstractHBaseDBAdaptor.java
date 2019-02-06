@@ -8,8 +8,12 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.metadata.models.Locked;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.IteratorWithClosable;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
+import org.opencb.opencga.storage.hadoop.utils.HBaseLock;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
@@ -22,6 +26,7 @@ import java.io.UncheckedIOException;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Objects;
+import java.util.concurrent.TimeoutException;
 
 import static org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantMetadataUtils.*;
 
@@ -36,6 +41,7 @@ public abstract class AbstractHBaseDBAdaptor {
 
     protected final HBaseManager hBaseManager;
     protected final ObjectMapper objectMapper;
+    private final HBaseLock lock;
     protected final String tableName;
     private Boolean tableExists = null; // unknown
     protected byte[] family;
@@ -58,6 +64,7 @@ public abstract class AbstractHBaseDBAdaptor {
             // Create a new instance of HBaseManager to close only if needed
             this.hBaseManager = new HBaseManager(hBaseManager);
         }
+        lock = new HBaseLock(this.hBaseManager, this.tableName, family, null);
     }
 
     protected void ensureTableExists() {
@@ -142,7 +149,7 @@ public abstract class AbstractHBaseDBAdaptor {
             return null;
         }
 
-//        logger.debug("Get {} {} from DB {}", clazz.getSimpleName(), id, tableName);
+//        logger.debug("Get {} {} from DB {}", clazz.getSimpleName(), Bytes.toString(rowKey), tableName);
         Get get = new Get(rowKey);
         get.addColumn(family, valueColumn);
 
@@ -151,7 +158,7 @@ public abstract class AbstractHBaseDBAdaptor {
                 get.setTimeRange(timeStamp + 1, Long.MAX_VALUE);
             } catch (IOException e) {
                 //This should not happen ever.
-                throw new IllegalArgumentException(e);
+                throw new UncheckedIOException(e);
             }
         }
 
@@ -207,6 +214,38 @@ public abstract class AbstractHBaseDBAdaptor {
             throw new UncheckedIOException(e);
         }
     }
+
+    protected Locked lock(byte[] rowKey, long lockDuration, long timeout) throws StorageEngineException {
+        return lock(rowKey, getLockColumn(), lockDuration, timeout);
+    }
+
+    protected Locked lock(byte[] rowKey, byte[] lockName, long lockDuration, long timeout) throws StorageEngineException {
+        long token = lockToken(rowKey, lockName, lockDuration, timeout);
+        return () -> unLock(rowKey, lockName, token);
+    }
+
+    protected long lockToken(byte[] rowKey, byte[] lockName, long lockDuration, long timeout) throws StorageEngineException {
+        try {
+            ensureTableExists();
+            return this.lock.lock(rowKey, lockName, lockDuration, timeout);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }  catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new StorageEngineException("Unable to lock " + Bytes.toString(rowKey), e);
+        } catch (TimeoutException e) {
+            throw new StorageEngineException("Unable to lock " + Bytes.toString(rowKey), e);
+        }
+    }
+
+    protected void unLock(byte[] rowKey, byte[] lockName, long token) {
+        try {
+            this.lock.unlock(rowKey, lockName, token);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
 
 
 }

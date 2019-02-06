@@ -26,14 +26,14 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.models.Locked;
 import org.opencb.opencga.storage.core.metadata.adaptors.StudyMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.mongodb.utils.MongoLock;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyConfigurationConverter;
 
 import java.util.*;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import static org.opencb.commons.datastore.mongodb.MongoDBCollection.UPSERT;
@@ -44,12 +44,10 @@ import static org.opencb.commons.datastore.mongodb.MongoDBCollection.UPSERT;
 public class MongoDBStudyMetadataDBAdaptor extends AbstractMongoDBAdaptor<StudyMetadata> implements StudyMetadataDBAdaptor {
 
     private final DocumentToStudyConfigurationConverter studyConfigurationConverter = new DocumentToStudyConfigurationConverter();
-    private final MongoLock mongoLock;
 
     public MongoDBStudyMetadataDBAdaptor(MongoDataStore db, String collectionName) {
         super(db, collectionName, StudyMetadata.class);
         collection.createIndex(new Document("name", 1), new ObjectMap(MongoDBCollection.UNIQUE, true));
-        mongoLock = new MongoLock(collection, "_lock");
     }
 
     @Override
@@ -63,12 +61,20 @@ public class MongoDBStudyMetadataDBAdaptor extends AbstractMongoDBAdaptor<StudyM
     }
 
     @Override
-    public long lockStudy(int studyId, long lockDuration, long timeout, String lockName) throws InterruptedException, TimeoutException {
+    public Locked lock(int studyId, long lockDuration, long timeout, String lockName) throws StorageEngineException {
         if (StringUtils.isNotEmpty(lockName)) {
             throw new UnsupportedOperationException("Unsupported lockStudy given a lockName");
         }
+        long lock = lock(studyId, lockDuration, timeout);
+        return () -> unLock(studyId, lock);
+    }
 
-        return mongoLock.lock(studyId, lockDuration, timeout);
+    @Override
+    public long lockStudy(int studyId, long lockDuration, long timeout, String lockName) throws StorageEngineException {
+        if (StringUtils.isNotEmpty(lockName)) {
+            throw new UnsupportedOperationException("Unsupported lockStudy given a lockName");
+        }
+        return lock(studyId, lockDuration, timeout);
     }
 
     @Override
@@ -76,7 +82,7 @@ public class MongoDBStudyMetadataDBAdaptor extends AbstractMongoDBAdaptor<StudyM
         if (StringUtils.isNotEmpty(lockName)) {
             throw new UnsupportedOperationException("Unsupported unlockStudy given a lockName");
         }
-        mongoLock.unlock(studyId, lockId);
+        unLock(studyId, lockId);
     }
 
     private QueryResult<StudyConfiguration> getStudyConfiguration(Integer studyId, String studyName, Long timeStamp,

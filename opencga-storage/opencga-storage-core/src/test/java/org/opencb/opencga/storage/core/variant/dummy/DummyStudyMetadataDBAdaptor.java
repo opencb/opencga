@@ -19,8 +19,10 @@ package org.opencb.opencga.storage.core.variant.dummy;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SequenceWriter;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.adaptors.CohortMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.metadata.adaptors.SampleMetadataDBAdaptor;
@@ -36,7 +38,6 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -102,11 +103,30 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor, Samp
     }
 
     @Override
-    public synchronized long lockStudy(int studyId, long lockDuration, long timeout, String lockName) throws InterruptedException, TimeoutException {
+    public Locked lock(int studyId, long lockDuration, long timeout, String lockName) throws StorageEngineException {
         if (!LOCK_STUDIES.containsKey(studyId)) {
             LOCK_STUDIES.put(studyId, new ReentrantLock());
         }
-        LOCK_STUDIES.get(studyId).tryLock(timeout, TimeUnit.MILLISECONDS);
+        try {
+            LOCK_STUDIES.get(studyId).tryLock(timeout, TimeUnit.MILLISECONDS);
+            return LOCK_STUDIES.get(studyId)::unlock;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new StorageEngineException("", e);
+        }
+    }
+
+    @Override
+    public synchronized long lockStudy(int studyId, long lockDuration, long timeout, String lockName) throws StorageEngineException {
+        if (!LOCK_STUDIES.containsKey(studyId)) {
+            LOCK_STUDIES.put(studyId, new ReentrantLock());
+        }
+        try {
+            LOCK_STUDIES.get(studyId).tryLock(timeout, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new StorageEngineException("", e);
+        }
 
         return studyId;
     }
@@ -149,6 +169,11 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor, Samp
                 .map(SampleMetadata::getId)
                 .findFirst()
                 .orElse(null);
+    }
+
+    @Override
+    public Locked lock(int studyId, int id, long lockDuration, long timeout) {
+        return () -> {};
     }
 
     @Override
@@ -201,13 +226,25 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor, Samp
 
     public static void writeAll(Path path) {
         ObjectMapper objectMapper = new ObjectMapper(new JsonFactory()).configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
-        String prefix = "storage_configuration_" + NUM_PRINTS.incrementAndGet() + "_";
-        for (StudyConfiguration studyConfiguration : DummyStudyMetadataDBAdaptor.STUDY_CONFIGURATIONS_BY_NAME.values()) {
-            try (OutputStream os = new FileOutputStream(path.resolve(prefix + studyConfiguration.getName() + ".json").toFile())) {
-                objectMapper.writerWithDefaultPrettyPrinter().writeValue(os, studyConfiguration);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
+        String prefix = "study_" + NUM_PRINTS.incrementAndGet() + "_";
+        try {
+            for (StudyMetadata sm : DummyStudyMetadataDBAdaptor.STUDY_METADATA_MAP.values()) {
+                try (OutputStream os = new FileOutputStream(path.resolve(prefix + sm.getName() + ".json").toFile())) {
+                    objectMapper.writerWithDefaultPrettyPrinter().writeValue(os, sm);
+                }
+                writeAll(path, objectMapper, prefix + "samples_", sm, SAMPLE_METADATA_MAP.getOrDefault(sm.getId(), Collections.emptyMap()).values());
+                writeAll(path, objectMapper, prefix + "cohort_", sm, COHORT_METADATA_MAP.getOrDefault(sm.getId(), Collections.emptyMap()).values());
+                writeAll(path, objectMapper, prefix + "task_", sm, TASK_METADATA_MAP.getOrDefault(sm.getId(), Collections.emptyMap()).values());
             }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    protected static void writeAll(Path path, ObjectMapper objectMapper, String prefix, StudyMetadata sm, Collection<?> values) throws IOException {
+        try (OutputStream os = new FileOutputStream(path.resolve(prefix + sm.getName() + ".json").toFile())) {
+            SequenceWriter sequenceWriter = objectMapper.writerWithDefaultPrettyPrinter().writeValues(os);
+            sequenceWriter.writeAll(values);
         }
     }
 

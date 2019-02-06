@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.storage.core.variant;
 
-import com.google.common.collect.BiMap;
 import htsjdk.variant.vcf.VCFConstants;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLineType;
@@ -655,12 +654,15 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
         // Update the cohort ALL. Invalidate if needed
         String defaultCohortName = StudyEntry.DEFAULT_COHORT;
-        BiMap<String, Integer> indexedSamples = metadataManager.getIndexedSamplesMap(studyId);
 
         // Register or update default cohort
-        metadataManager.registerCohorts(studyId, Collections.singletonMap(defaultCohortName, indexedSamples.keySet()));
+        Set<Integer> samples = new HashSet<>();
+        for (Integer fileId : fileIds) {
+            samples.addAll(metadataManager.getFileMetadata(studyId, fileId).getSamples());
+        }
+        metadataManager.addSamplesToCohort(studyId, defaultCohortName, samples);
 
-        logger.info("Add " + indexedSamples.size() + " loaded samples to Default Cohort \"" + defaultCohortName + '"');
+        logger.info("Add " + samples.size() + " loaded samples to Default Cohort \"" + defaultCohortName + '"');
     }
 
     @Override

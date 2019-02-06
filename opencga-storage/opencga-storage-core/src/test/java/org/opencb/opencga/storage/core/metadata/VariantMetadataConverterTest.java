@@ -43,24 +43,24 @@ public class VariantMetadataConverterTest {
         VariantFileMetadata fileMetadata = VariantReaderUtils.readVariantFileMetadata(Paths.get(uri), null);
         studyMetadata = new StudyMetadata(1, "study").addVariantFileHeader(fileMetadata.getHeader(), null);
 
-        metadataManager.updateStudyMetadata(studyMetadata);
-        metadataManager.updateSampleMetadata(1, new SampleMetadata(1, 1, "s1"));
-        metadataManager.updateSampleMetadata(1, new SampleMetadata(1, 2, "s2"));
-        metadataManager.updateSampleMetadata(1, new SampleMetadata(1, 3, "s3"));
-        metadataManager.updateSampleMetadata(1, new SampleMetadata(1, 4, "s4"));
-        metadataManager.updateSampleMetadata(1, new SampleMetadata(1, 5, "s5"));
-        metadataManager.updateSampleMetadata(1, new SampleMetadata(1, 6, "s6"));
-        metadataManager.updateSampleMetadata(1, new SampleMetadata(1, 7, "s7"));
+        metadataManager.unsecureUpdateStudyMetadata(studyMetadata);
+        metadataManager.unsecureUpdateSampleMetadata(1, new SampleMetadata(1, 1, "s1"));
+        metadataManager.unsecureUpdateSampleMetadata(1, new SampleMetadata(1, 2, "s2"));
+        metadataManager.unsecureUpdateSampleMetadata(1, new SampleMetadata(1, 3, "s3"));
+        metadataManager.unsecureUpdateSampleMetadata(1, new SampleMetadata(1, 4, "s4"));
+        metadataManager.unsecureUpdateSampleMetadata(1, new SampleMetadata(1, 5, "s5"));
+        metadataManager.unsecureUpdateSampleMetadata(1, new SampleMetadata(1, 6, "s6"));
+        metadataManager.unsecureUpdateSampleMetadata(1, new SampleMetadata(1, 7, "s7"));
 
-        metadataManager.updateFileMetadata(1, new FileMetadata(1, 10, "file1.vcf")
+        metadataManager.unsecureUpdateFileMetadata(1, new FileMetadata(1, 10, "file1.vcf")
                 .setSamples(new LinkedHashSet<>(Arrays.asList(1, 2, 3, 4)))
                 .setIndexStatus(TaskMetadata.Status.READY)
         );
-        metadataManager.updateFileMetadata(1, new FileMetadata(1, 11, "file2.vcf")
+        metadataManager.unsecureUpdateFileMetadata(1, new FileMetadata(1, 11, "file2.vcf")
                 .setSamples(new LinkedHashSet<>(Arrays.asList(4, 5, 6)))
                 .setIndexStatus(TaskMetadata.Status.READY)
         );
-        metadataManager.updateCohortMetadata(1, new CohortMetadata(1, 20, "ALL", Arrays.asList(1, 2, 3, 4, 5, 6))
+        metadataManager.unsecureUpdateCohortMetadata(1, new CohortMetadata(1, 20, "ALL", Arrays.asList(1, 2, 3, 4, 5, 6))
                 .setStatsStatus(TaskMetadata.Status.READY));
 
         variantMetadataConverter = new VariantMetadataConverter(metadataManager);

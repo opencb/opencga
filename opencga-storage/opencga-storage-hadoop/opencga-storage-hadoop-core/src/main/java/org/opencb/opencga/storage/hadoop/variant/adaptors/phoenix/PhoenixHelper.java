@@ -78,7 +78,7 @@ public class PhoenixHelper {
                 logger.debug("Sleeping " + millis + "ms");
                 Thread.sleep(millis);
             } catch (InterruptedException interruption) {
-                Thread.interrupted();
+                Thread.currentThread().interrupt();
             }
             return execute(con, sql, retry - 1);
         } catch (SQLException | RuntimeException e) {

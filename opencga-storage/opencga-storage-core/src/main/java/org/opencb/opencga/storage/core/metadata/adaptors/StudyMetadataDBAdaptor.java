@@ -18,13 +18,16 @@ package org.opencb.opencga.storage.core.metadata.adaptors;
 
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.models.*;
+import org.opencb.opencga.storage.core.metadata.models.Locked;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.TimeoutException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created on 30/03/17.
@@ -33,11 +36,15 @@ import java.util.concurrent.TimeoutException;
  */
 public interface StudyMetadataDBAdaptor extends AutoCloseable {
 
-    default long lockStudy(int studyId, long lockDuration, long timeout, String lockName) throws InterruptedException, TimeoutException {
+    Locked lock(int studyId, long lockDuration, long timeout, String lockName) throws StorageEngineException;
+
+    @Deprecated
+    default long lockStudy(int studyId, long lockDuration, long timeout, String lockName) throws StorageEngineException {
         LoggerFactory.getLogger(StudyMetadataDBAdaptor.class).warn("Ignoring lock");
         return 0;
     }
 
+    @Deprecated
     default void unLockStudy(int studyId, long lockId, String lockName) {
         LoggerFactory.getLogger(StudyMetadataDBAdaptor.class).warn("Ignoring unLock");
     }

@@ -70,7 +70,7 @@ public abstract class StudyResourceMetadata<T extends StudyResourceMetadata> {
     }
 
     public boolean isError(String statusName) {
-        return TaskMetadata.Status.READY.equals(getStatus(statusName));
+        return TaskMetadata.Status.ERROR.equals(getStatus(statusName));
     }
 
     public T setStatus(Map<String, TaskMetadata.Status> status) {

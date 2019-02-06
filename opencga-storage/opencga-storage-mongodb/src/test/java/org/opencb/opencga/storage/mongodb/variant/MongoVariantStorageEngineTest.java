@@ -99,13 +99,15 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
 
         StudyMetadata studyMetadata = newStudyMetadata();
         int fileId = metadataManager.registerFile(studyMetadata.getId(), UriUtils.fileName(smallInputUri));
-        TaskMetadata operation = new TaskMetadata(MongoDBVariantOptions.STAGE.key(),
-                Collections.singletonList(fileId), System.currentTimeMillis(), TaskMetadata.Type.OTHER);
-        operation.addStatus(new Date(System.currentTimeMillis() - 100), TaskMetadata.Status.RUNNING);
-        operation.addStatus(new Date(System.currentTimeMillis() - 50), TaskMetadata.Status.ERROR);
-        // Last status is ERROR
 
-        metadataManager.updateTask(studyMetadata.getId(), operation);
+        TaskMetadata task = metadataManager.addRunningTask(studyMetadata.getId(), MongoDBVariantOptions.STAGE.key(), Collections.singletonList(fileId));
+        metadataManager.updateTask(studyMetadata.getId(), task.getId(), t -> {
+            t.getStatus().clear();
+            t.addStatus(new Date(System.currentTimeMillis() - 100), TaskMetadata.Status.RUNNING);
+            t.addStatus(new Date(System.currentTimeMillis() - 50), TaskMetadata.Status.ERROR);
+            // Last status is ERROR
+            return t;
+        });
 
         System.out.println("----------------");
         System.out.println("|   RESUME     |");
@@ -126,13 +128,15 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
 
         StudyMetadata studyMetadata = newStudyMetadata();
         int fileId = metadataManager.registerFile(studyMetadata.getId(), UriUtils.fileName(smallInputUri));
-        TaskMetadata operation = new TaskMetadata(MongoDBVariantOptions.STAGE.key(),
-                Collections.singletonList(fileId), System.currentTimeMillis(), TaskMetadata.Type.OTHER);
-        operation.addStatus(new Date(System.currentTimeMillis() - 100), TaskMetadata.Status.RUNNING);
-        operation.addStatus(new Date(System.currentTimeMillis() - 50), TaskMetadata.Status.ERROR);
-        operation.addStatus(new Date(System.currentTimeMillis()), TaskMetadata.Status.RUNNING);
-        // Last status is RUNNING
-        metadataManager.updateTask(studyMetadata.getId(), operation);
+        TaskMetadata task = metadataManager.addRunningTask(studyMetadata.getId(), MongoDBVariantOptions.STAGE.key(), Collections.singletonList(fileId));
+        metadataManager.updateTask(studyMetadata.getId(), task.getId(), operation -> {
+            operation.getStatus().clear();
+            operation.addStatus(new Date(System.currentTimeMillis() - 100), TaskMetadata.Status.RUNNING);
+            operation.addStatus(new Date(System.currentTimeMillis() - 50), TaskMetadata.Status.ERROR);
+            operation.addStatus(new Date(System.currentTimeMillis()), TaskMetadata.Status.RUNNING);
+            // Last status is RUNNING
+            return operation;
+        });
 
         try {
             runDefaultETL(smallInputUri, variantStorageManager, studyMetadata, new ObjectMap()
@@ -141,7 +145,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         } catch (StorageEngineException e) {
             e.printStackTrace();
 //            MongoVariantStorageEngineException expected = MongoVariantStorageEngineException.fileBeingStagedException(FILE_ID, "variant-test-file.vcf.gz");
-            StorageEngineException expected = StorageEngineException.currentOperationInProgressException(operation);
+            StorageEngineException expected = StorageEngineException.currentOperationInProgressException(task);
             assertThat(e, instanceOf(StoragePipelineException.class));
             assertThat(e, hasCause(instanceOf(expected.getClass())));
             assertThat(e, hasCause(hasMessage(is(expected.getMessage()))));
@@ -188,11 +192,14 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
 
         TaskMetadata[] tasks = Iterators.toArray(metadataManager.taskIterator(studyMetadata.getId()), TaskMetadata.class);
         assertEquals(1, tasks.length);
-        assertEquals(TaskMetadata.Status.READY, tasks[0].currentStatus());
-        TreeMap<Date, TaskMetadata.Status> status = tasks[0].getStatus();
-        status.remove(status.lastKey(), TaskMetadata.Status.READY);
-        tasks[0].addStatus(TaskMetadata.Status.ERROR);
-        metadataManager.updateTask(studyMetadata.getId(), tasks[0]);
+
+        metadataManager.updateTask(studyMetadata.getId(), tasks[0].getId(), task -> {
+            assertEquals(TaskMetadata.Status.READY, task.currentStatus());
+            TreeMap<Date, TaskMetadata.Status> status = task.getStatus();
+            status.remove(status.lastKey(), TaskMetadata.Status.READY);
+            task.addStatus(TaskMetadata.Status.ERROR);
+            return task;
+        });
 
         // 2) Remove from files collection
         MongoDataStore dataStore = getMongoDataStoreManager(DB_NAME).get(DB_NAME);
@@ -740,15 +747,15 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
 
         // Copy the sampleIds from the first load
         StudyMetadata newStudyMetadata1 = new StudyMetadata(1, "s1");
-        metadataManager2.updateStudyMetadata(newStudyMetadata1);
-        metadataManager1.sampleMetadataIterator(studyMetadata1.getId()).forEachRemaining(s -> metadataManager2.updateSampleMetadata(newStudyMetadata1.getId(), s));
-        metadataManager1.fileMetadataIterator(studyMetadata1.getId()).forEachRemaining(s -> metadataManager2.updateFileMetadata(newStudyMetadata1.getId(), s));
+        metadataManager2.unsecureUpdateStudyMetadata(newStudyMetadata1);
+        metadataManager1.sampleMetadataIterator(studyMetadata1.getId()).forEachRemaining(s -> metadataManager2.unsecureUpdateSampleMetadata(newStudyMetadata1.getId(), s));
+        metadataManager1.fileMetadataIterator(studyMetadata1.getId()).forEachRemaining(s -> metadataManager2.unsecureUpdateFileMetadata(newStudyMetadata1.getId(), s));
 
         // Copy the sampleIds from the first load
         StudyMetadata newStudyMetadata2 = new StudyMetadata(2, "s2");
-        metadataManager2.updateStudyMetadata(newStudyMetadata2);
-        metadataManager1.sampleMetadataIterator(studyMetadata2.getId()).forEachRemaining(s -> metadataManager2.updateSampleMetadata(newStudyMetadata2.getId(), s));
-        metadataManager1.fileMetadataIterator(studyMetadata2.getId()).forEachRemaining(s -> metadataManager2.updateFileMetadata(newStudyMetadata2.getId(), s));
+        metadataManager2.unsecureUpdateStudyMetadata(newStudyMetadata2);
+        metadataManager1.sampleMetadataIterator(studyMetadata2.getId()).forEachRemaining(s -> metadataManager2.unsecureUpdateSampleMetadata(newStudyMetadata2.getId(), s));
+        metadataManager1.fileMetadataIterator(studyMetadata2.getId()).forEachRemaining(s -> metadataManager2.unsecureUpdateFileMetadata(newStudyMetadata2.getId(), s));
 
         runDefaultETL(file1, getVariantStorageEngine("2"), newStudyMetadata1, new ObjectMap()
 //                .append(VariantStorageEngine.Options.FILE_ID.key(), 1)
@@ -836,13 +843,13 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
 
         // Copy the sampleIds from the first load
         StudyMetadata newStudyMetadata1 = new StudyMetadata(1, "s1");
-        metadataManager2.updateStudyMetadata(newStudyMetadata1);
-        metadataManager1.sampleMetadataIterator(studyMetadata1.getId()).forEachRemaining(s -> metadataManager2.updateSampleMetadata(newStudyMetadata1.getId(), s));
+        metadataManager2.unsecureUpdateStudyMetadata(newStudyMetadata1);
+        metadataManager1.sampleMetadataIterator(studyMetadata1.getId()).forEachRemaining(s -> metadataManager2.unsecureUpdateSampleMetadata(newStudyMetadata1.getId(), s));
 
         // Copy the sampleIds from the first load
         StudyMetadata newStudyMetadata2 = new StudyMetadata(2, "s2");
-        metadataManager2.updateStudyMetadata(newStudyMetadata2);
-        metadataManager1.sampleMetadataIterator(studyMetadata2.getId()).forEachRemaining(s -> metadataManager2.updateSampleMetadata(newStudyMetadata2.getId(), s));
+        metadataManager2.unsecureUpdateStudyMetadata(newStudyMetadata2);
+        metadataManager1.sampleMetadataIterator(studyMetadata2.getId()).forEachRemaining(s -> metadataManager2.unsecureUpdateSampleMetadata(newStudyMetadata2.getId(), s));
 
         runDefaultETL(file3, getVariantStorageEngine("2"), newStudyMetadata1, new ObjectMap()
 //                .append(VariantStorageEngine.Options.FILE_ID.key(), 3)

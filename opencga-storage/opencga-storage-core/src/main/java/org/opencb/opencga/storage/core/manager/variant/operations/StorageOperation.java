@@ -110,7 +110,18 @@ public abstract class StorageOperation {
         return catalogOutDirId;
     }
 
-    public StudyMetadata updateCatalogFromStorageMetadata(String sessionId, String study, DataStore dataStore)
+    public StudyMetadata synchronizeCatalogStudyFromStorage(DataStore dataStore, String study, String sessionId)
+            throws IOException, CatalogException, StorageEngineException {
+        return synchronizeCatalog(dataStore, study, null, null, sessionId);
+    }
+
+    public StudyMetadata synchronizeCatalogFilesFromStorage(DataStore dataStore, String study, List<File> files, String sessionId,
+                                                            QueryOptions options)
+            throws IOException, CatalogException, StorageEngineException {
+        return synchronizeCatalog(dataStore, study, files, options, sessionId);
+    }
+
+    private StudyMetadata synchronizeCatalog(DataStore dataStore, String study, List<File> files, QueryOptions options, String sessionId)
             throws IOException, CatalogException, StorageEngineException {
 
         VariantStorageMetadataManager metadataManager = getVariantStorageEngine(dataStore).getMetadataManager();
@@ -120,7 +131,16 @@ public abstract class StorageOperation {
         StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
         if (studyMetadata != null) {
             // Update Catalog file and cohort status.
-            studyConfigurationFactory.synchronizeCatalogFromStorage(studyMetadata, sessionId);
+            if (files == null || files.isEmpty()) {
+                studyConfigurationFactory.synchronizeCatalogStudyFromStorage(studyMetadata, sessionId);
+            } else {
+                studyConfigurationFactory.synchronizeCatalogFilesFromStorage(studyMetadata, files, sessionId);
+                // Files can be updated. Update given files
+                for (int i = 0; i < files.size(); i++) {
+                    File file = files.get(i);
+                    files.set(i, catalogManager.getFileManager().get(study, file.getId(), options, sessionId).first());
+                }
+            }
         }
         return studyMetadata;
     }
@@ -332,5 +352,25 @@ public abstract class StorageOperation {
         return aggregation;
     }
 
+    public static boolean isVcfFormat(File file) {
+        File.Format format = file.getFormat();
+        if (isVcfFormat(format)) {
+            return true;
+        } else {
+            // Do not trust the file format. Defect format from URI
+            format = org.opencb.opencga.catalog.managers.FileUtils.detectFormat(file.getUri());
+            if (isVcfFormat(format)) {
+                // Overwrite temporary the format
+                file.setFormat(format);
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+
+    private static boolean isVcfFormat(File.Format format) {
+        return format.equals(File.Format.VCF) || format.equals(File.Format.BCF);
+    }
 
 }

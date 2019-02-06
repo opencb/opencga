@@ -55,7 +55,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.zip.GZIPInputStream;
 
@@ -137,9 +136,6 @@ public class ArchiveDriver extends Configured implements Tool {
         boolean succeed = job.waitForCompletion(true);
         Runtime.getRuntime().removeShutdownHook(hook);
 
-        try (HBaseFileMetadataDBAdaptor manager = new HBaseFileMetadataDBAdaptor(conf)) {
-            manager.updateLoadedFilesSummary(studyId, Collections.singletonList(fileId));
-        }
         return succeed ? 0 : 1;
     }
 

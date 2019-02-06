@@ -393,7 +393,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(studyMetadata.getId());
         System.out.println("StudyMetadata = " + studyMetadata);
 
-        Set<Integer> loadedFiles = dbAdaptor.getVariantFileMetadataDBAdaptor().getLoadedFiles(studyMetadata.getId());
+        Set<Integer> loadedFiles = dbAdaptor.getMetadataManager().getIndexedFiles(studyMetadata.getId());
         System.out.println("loadedFiles = " + loadedFiles);
         for (int fileId = 1; fileId <= 17; fileId++) {
             assertThat(loadedFiles, hasItem(fileId));

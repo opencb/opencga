@@ -495,8 +495,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             throws StorageEngineException, IOException {
         VariantStatisticsManager statisticsManager = newVariantStatisticsManager();
 
-        VariantStorageMetadataManager scm = getMetadataManager();
-        scm.registerCohorts(study, cohorts);
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
+        metadataManager.registerCohorts(study, cohorts);
 
         statisticsManager.calculateStatistics(study, new ArrayList<>(cohorts.keySet()), options);
     }
@@ -847,7 +847,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 }
 
                 // Restore default cohort with indexed samples
-                metadataManager.updateCohortMetadata(studyMetadata.getId(), StudyEntry.DEFAULT_COHORT,
+                Integer cohortId = metadataManager.getCohortId(studyMetadata.getId(), StudyEntry.DEFAULT_COHORT);
+                metadataManager.updateCohortMetadata(studyMetadata.getId(), cohortId,
                         defaultCohort -> defaultCohort.setSamples(metadataManager.getIndexedSamples(studyMetadata.getId())));
 
 

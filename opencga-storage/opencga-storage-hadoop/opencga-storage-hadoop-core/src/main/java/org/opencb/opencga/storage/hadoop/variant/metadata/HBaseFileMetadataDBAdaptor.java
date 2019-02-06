@@ -17,7 +17,6 @@
 package org.opencb.opencga.storage.hadoop.variant.metadata;
 
 import com.google.common.collect.Iterators;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.filter.BinaryComparator;
@@ -34,6 +33,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.adaptors.FileMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.metadata.models.Locked;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
@@ -72,7 +72,6 @@ public class HBaseFileMetadataDBAdaptor extends AbstractHBaseDBAdaptor implement
     public HBaseFileMetadataDBAdaptor(HBaseManager hBaseManager, String metaTableName, Configuration configuration) {
         super(hBaseManager, metaTableName, configuration);
     }
-
 
     @Override
     public LinkedHashSet<Integer> getIndexedFiles(int studyId) {
@@ -214,21 +213,6 @@ public class HBaseFileMetadataDBAdaptor extends AbstractHBaseDBAdaptor implement
         }
     }
 
-    public void updateLoadedFilesSummary(int studyId, List<Integer> newLoadedFiles) throws IOException {
-        ensureTableExists();
-
-        List<Put> puts = new ArrayList<>(newLoadedFiles.size());
-        for (Integer newLoadedFile : newLoadedFiles) {
-            Put put = new Put(getVariantFileMetadataRowKey(studyId, newLoadedFile));
-            put.addColumn(family, getTypeColumn(), Type.VARIANT_FILE_METADATA.bytes());
-            put.addColumn(family, getStatusColumn(), Status.READY.bytes());
-            puts.add(put);
-        }
-        hBaseManager.act(tableName, table -> {
-            table.put(puts);
-        });
-    }
-
     @Override
     public void delete(int study, int file) throws IOException {
         Delete delete = new Delete(getVariantFileMetadataRowKey(study, file));
@@ -247,27 +231,9 @@ public class HBaseFileMetadataDBAdaptor extends AbstractHBaseDBAdaptor implement
         }
     }
 
-    public Set<Integer> getLoadedFiles(int studyId) throws IOException {
-        if (!hBaseManager.tableExists(tableName)) {
-            return new HashSet<>();
-        } else {
-            return hBaseManager.act(tableName, table -> {
-                Set<Integer> set = new TreeSet<>();
-                Scan scan = new Scan();
-                scan.addColumn(family, getStatusColumn());
-                scan.addColumn(family, getTypeColumn());
-                scan.setRowPrefixFilter(getVariantFileMetadataRowKeyPrefix(studyId));
-                scan.setFilter(new FilterList(FilterList.Operator.MUST_PASS_ALL,
-                        new SingleColumnValueFilter(family, getStatusColumn(), CompareOp.EQUAL, Status.READY.bytes()),
-                        new SingleColumnValueFilter(family, getTypeColumn(), CompareOp.EQUAL, Type.VARIANT_FILE_METADATA.bytes())));
-                for (Result result : table.getScanner(scan)) {
-                    Pair<Integer, Integer> pair = parseVariantFileMetadataRowKey(result.getRow());
-                    Integer fileId = pair.getValue();
-                    set.add(fileId);
-                }
-                return set;
-            });
-        }
+    @Override
+    public Locked lock(int studyId, int id, long lockDuration, long timeout) throws StorageEngineException {
+        return lock(getFileMetadataRowKey(studyId, id), lockDuration, timeout);
     }
 
 }

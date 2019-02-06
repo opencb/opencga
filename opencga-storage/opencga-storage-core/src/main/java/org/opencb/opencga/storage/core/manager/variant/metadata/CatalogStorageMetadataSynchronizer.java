@@ -17,6 +17,9 @@
 
 package org.opencb.opencga.storage.core.manager.variant.metadata;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
+import org.apache.commons.collections.CollectionUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -29,6 +32,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.models.Cohort;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.FileIndex;
+import org.opencb.opencga.core.models.FileIndex.IndexStatus;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
@@ -55,13 +59,12 @@ public class CatalogStorageMetadataSynchronizer {
             FileDBAdaptor.QueryParams.INDEX.key(),
             FileDBAdaptor.QueryParams.STUDY_UID.key()));
     public static final Query INDEXED_FILES_QUERY = new Query()
-            .append(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY)
+            .append(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), IndexStatus.READY)
             .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT)
             .append(FileDBAdaptor.QueryParams.FORMAT.key(), Arrays.asList(File.Format.VCF.toString(), File.Format.GVCF.toString()));
 
-    public static final Query RUNNING_INDEX_FILES_QUERY = new Query(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), Arrays.asList(
-            FileIndex.IndexStatus.LOADING,
-            FileIndex.IndexStatus.INDEXING))
+    public static final Query RUNNING_INDEX_FILES_QUERY = new Query()
+            .append(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), Arrays.asList(IndexStatus.LOADING, IndexStatus.INDEXING))
             .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT)
             .append(FileDBAdaptor.QueryParams.FORMAT.key(), Arrays.asList(File.Format.VCF.toString(), File.Format.GVCF.toString()));
 
@@ -81,7 +84,25 @@ public class CatalogStorageMetadataSynchronizer {
     }
 
     /**
-     * Updates catalog metadata from storage study configuration.
+     * Updates catalog metadata from storage metadata.
+     *
+     * @param study                 StudyMetadata
+     * @param files                 Files to update
+     * @param sessionId             User session id
+     * @throws CatalogException     if there is an error with catalog
+     */
+    public void synchronizeCatalogFilesFromStorage(StudyMetadata study, List<File> files, String sessionId)
+            throws CatalogException {
+        logger.info("Synchronizing study " + study.getName());
+
+        if (files != null && files.isEmpty()) {
+            files = null;
+        }
+        synchronizeFiles(study, files, sessionId);
+    }
+
+    /**
+     * Updates catalog metadata from storage metadata.
      *
      * 1) Update cohort ALL
      * 2) Update cohort status (calculating / invalid)
@@ -92,10 +113,20 @@ public class CatalogStorageMetadataSynchronizer {
      * @param sessionId             User session id
      * @throws CatalogException     if there is an error with catalog
      */
-    public void synchronizeCatalogFromStorage(StudyMetadata study, String sessionId)
+    public void synchronizeCatalogStudyFromStorage(StudyMetadata study, String sessionId)
             throws CatalogException {
+        logger.info("Synchronizing study " + study.getName());
 
-        logger.info("Updating study " + study.getId());
+        synchronizeCohorts(study, sessionId);
+
+        synchronizeFiles(study, null, sessionId);
+    }
+
+    protected void synchronizeCohorts(StudyMetadata study, String sessionId) throws CatalogException {
+        Map<Integer, String> sampleNameMap = new HashMap<>();
+        metadataManager.sampleMetadataIterator(study.getId()).forEachRemaining(sampleMetadata -> {
+            sampleNameMap.put(sampleMetadata.getId(), sampleMetadata.getName());
+        });
 
         //Check if cohort ALL has been modified
         String defaultCohortName = StudyEntry.DEFAULT_COHORT;
@@ -103,7 +134,7 @@ public class CatalogStorageMetadataSynchronizer {
         if (defaultCohortStorage != null) {
             Set<String> cohortFromStorage = defaultCohortStorage.getSamples()
                     .stream()
-                    .map(s -> metadataManager.getSampleName(study.getId(), s))
+                    .map(sampleNameMap::get)
                     .collect(Collectors.toSet());
             Cohort defaultCohort = catalogManager.getCohortManager()
                     .get(study.getName(), defaultCohortName, null, sessionId).first();
@@ -143,7 +174,7 @@ public class CatalogStorageMetadataSynchronizer {
                     query, new QueryOptions(), sessionId)) {
                 while (iterator.hasNext()) {
                     Cohort cohort = iterator.next();
-                    CohortMetadata storageCohort = calculatedStats.get(cohort.getName());
+                    CohortMetadata storageCohort = calculatedStats.get(cohort.getId());
                     if (cohort.getStatus() != null && cohort.getStatus().getName().equals(Cohort.CohortStatus.INVALID)) {
                         if (cohort.getSamples().size() != storageCohort.getSamples().size()) {
                             // Skip this cohort. This cohort should remain as invalid
@@ -157,7 +188,8 @@ public class CatalogStorageMetadataSynchronizer {
                                 .collect(Collectors.toSet());
                         Set<String> cohortFromStorage = storageCohort.getSamples()
                                 .stream()
-                                .map(s -> metadataManager.getSampleName(study.getId(), s))
+//                                .map(s -> metadataManager.getSampleName(study.getId(), s))
+                                .map(sampleNameMap::get)
                                 .collect(Collectors.toSet());
                         if (!cohortFromCatalog.equals(cohortFromStorage)) {
                             // Skip this cohort. This cohort should remain as invalid
@@ -196,13 +228,37 @@ public class CatalogStorageMetadataSynchronizer {
                 }
             }
         }
+    }
 
-        LinkedHashSet<Integer> indexedFiles = metadataManager.getIndexedFiles(study.getId());
+    protected void synchronizeFiles(StudyMetadata study, List<File> files, String sessionId) throws CatalogException {
+        BiMap<Integer, String> fileNameMap = HashBiMap.create();
+        Map<Integer, String> filePathMap = new HashMap<>();
+        LinkedHashSet<Integer> indexedFiles;
+        if (CollectionUtils.isEmpty(files)) {
+            metadataManager.fileMetadataIterator(study.getId()).forEachRemaining(fileMetadata -> {
+                fileNameMap.put(fileMetadata.getId(), fileMetadata.getName());
+                filePathMap.put(fileMetadata.getId(), fileMetadata.getPath());
+            });
+            indexedFiles = metadataManager.getIndexedFiles(study.getId());
+        } else {
+            indexedFiles = new LinkedHashSet<>();
+            for (File file : files) {
+                FileMetadata fileMetadata = metadataManager.getFileMetadata(study.getId(), file.getName());
+                if (fileMetadata != null) {
+                    fileNameMap.put(fileMetadata.getId(), fileMetadata.getName());
+                    filePathMap.put(fileMetadata.getId(), fileMetadata.getPath());
+                    if (fileMetadata.isIndexed()) {
+                        indexedFiles.add(fileMetadata.getId());
+                    }
+                }
+            }
+        }
+
         if (!indexedFiles.isEmpty()) {
             List<String> list = new ArrayList<>();
             for (Integer fileId : indexedFiles) {
-                String path = metadataManager.getFileMetadata(study.getId(), fileId).getPath();
-                list.add(Paths.get(path).toUri().toString());
+                String path = filePathMap.get(fileId);
+                list.add(toUri(path));
             }
             Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), list);
 
@@ -214,17 +270,17 @@ public class CatalogStorageMetadataSynchronizer {
                     numFiles++;
                     File file = iterator.next();
                     String status = file.getIndex() == null || file.getIndex().getStatus() == null
-                            ? FileIndex.IndexStatus.NONE
+                            ? IndexStatus.NONE
                             : file.getIndex().getStatus().getName();
-                    if (!status.equals(FileIndex.IndexStatus.READY)) {
+                    if (!status.equals(IndexStatus.READY)) {
                         final FileIndex index;
                         index = file.getIndex() == null ? new FileIndex() : file.getIndex();
                         if (index.getStatus() == null) {
-                            index.setStatus(new FileIndex.IndexStatus());
+                            index.setStatus(new IndexStatus());
                         }
                         logger.debug("File \"{}\" change status from {} to {}", file.getName(),
-                                file.getIndex().getStatus().getName(), FileIndex.IndexStatus.READY);
-                        index.getStatus().setName(FileIndex.IndexStatus.READY);
+                                file.getIndex().getStatus().getName(), IndexStatus.READY);
+                        index.getStatus().setName(IndexStatus.READY);
                         catalogManager.getFileManager().setFileIndex(study.getName(), file.getPath(), index, sessionId);
                     }
                 }
@@ -235,20 +291,29 @@ public class CatalogStorageMetadataSynchronizer {
         }
 
         // Update READY files
+        Query indexedFilesQuery;
+        if (CollectionUtils.isEmpty(files)) {
+            indexedFilesQuery = INDEXED_FILES_QUERY;
+        } else {
+            List<String> catalogFileIds = files.stream()
+                    .map(File::getId)
+                    .collect(Collectors.toList());
+            indexedFilesQuery = new Query(INDEXED_FILES_QUERY).append(ID.key(), catalogFileIds);
+        }
         try (DBIterator<File> iterator = catalogManager.getFileManager()
-                .iterator(study.getName(), INDEXED_FILES_QUERY, INDEXED_FILES_QUERY_OPTIONS, sessionId)) {
+                .iterator(study.getName(), indexedFilesQuery, INDEXED_FILES_QUERY_OPTIONS, sessionId)) {
             while (iterator.hasNext()) {
                 File file = iterator.next();
-                FileMetadata fileMetadata = metadataManager.getFileMetadata(study.getId(), file.getName());
-                if (fileMetadata == null || !fileMetadata.isIndexed()) {
+                Integer fileId = fileNameMap.inverse().get(file.getName());
+                if (fileId == null || !indexedFiles.contains(fileId)) {
                     String newStatus;
                     if (hasTransformedFile(file.getIndex())) {
-                        newStatus = FileIndex.IndexStatus.TRANSFORMED;
+                        newStatus = IndexStatus.TRANSFORMED;
                     } else {
-                        newStatus = FileIndex.IndexStatus.NONE;
+                        newStatus = IndexStatus.NONE;
                     }
                     logger.info("File \"{}\" change status from {} to {}", file.getName(),
-                            FileIndex.IndexStatus.READY, newStatus);
+                            IndexStatus.READY, newStatus);
                     catalogManager.getFileManager()
                             .updateFileIndexStatus(file, newStatus, "Not indexed, regarding Storage Metadata", sessionId);
                 }
@@ -258,11 +323,26 @@ public class CatalogStorageMetadataSynchronizer {
         Set<String> loadingFilesRegardingCatalog = new HashSet<>();
 
         // Update ongoing files
+        Query runningIndexFilesQuery;
+        if (CollectionUtils.isEmpty(files)) {
+            runningIndexFilesQuery = RUNNING_INDEX_FILES_QUERY;
+        } else {
+            List<String> catalogFileIds = files.stream()
+                    .map(File::getId)
+                    .collect(Collectors.toList());
+            runningIndexFilesQuery = new Query(RUNNING_INDEX_FILES_QUERY).append(ID.key(), catalogFileIds);
+        }
         try (DBIterator<File> iterator = catalogManager.getFileManager()
-                .iterator(study.getName(), RUNNING_INDEX_FILES_QUERY, INDEXED_FILES_QUERY_OPTIONS, sessionId)) {
+                .iterator(study.getName(), runningIndexFilesQuery, INDEXED_FILES_QUERY_OPTIONS, sessionId)) {
             while (iterator.hasNext()) {
                 File file = iterator.next();
-                FileMetadata fileMetadata = metadataManager.getFileMetadata(study.getId(), file.getName());
+                Integer fileId = fileNameMap.inverse().get(file.getName());
+                FileMetadata fileMetadata;
+                if (fileId == null) {
+                    fileMetadata = null;
+                } else {
+                    fileMetadata = metadataManager.getFileMetadata(study.getId(), fileId);
+                }
 
                 // If last LOAD operation is ERROR or there is no LOAD operation
                 if (fileMetadata != null && fileMetadata.getIndexStatus().equals(TaskMetadata.Status.ERROR)) {
@@ -271,9 +351,9 @@ public class CatalogStorageMetadataSynchronizer {
                     String prevStatus = index.getStatus().getName();
                     String newStatus;
                     if (hasTransformedFile(index)) {
-                        newStatus = FileIndex.IndexStatus.TRANSFORMED;
+                        newStatus = IndexStatus.TRANSFORMED;
                     } else {
-                        newStatus = FileIndex.IndexStatus.NONE;
+                        newStatus = IndexStatus.NONE;
                     }
                     logger.info("File \"{}\" change status from {} to {}", file.getName(),
                             prevStatus, newStatus);
@@ -293,29 +373,41 @@ public class CatalogStorageMetadataSynchronizer {
                     && runningTask.currentStatus() != null
                     && runningTask.currentStatus().equals(TaskMetadata.Status.RUNNING)) {
                 for (Integer fileId : runningTask.getFileIds()) {
-                    String fileName = metadataManager.getFileName(study.getId(), fileId);
-                    if (!loadingFilesRegardingCatalog.contains(fileName)) {
-                        loadingFilesRegardingStorage.add(fileName);
+                    String filePath = filePathMap.get(fileId);
+                    if (filePath != null) {
+                        loadingFilesRegardingStorage.add(toUri(filePath));
                     }
                 }
             }
         }
 
-        try (DBIterator<File> iterator = catalogManager.getFileManager()
-                .iterator(study.getName(), new Query(NAME.key(), loadingFilesRegardingStorage),
-                        INDEXED_FILES_QUERY_OPTIONS, sessionId)) {
-            while (iterator.hasNext()) {
-                File file = iterator.next();
-                String newStatus;
-                if (hasTransformedFile(file.getIndex())) {
-                    newStatus = FileIndex.IndexStatus.LOADING;
-                } else {
-                    newStatus = FileIndex.IndexStatus.INDEXING;
+        if (!loadingFilesRegardingStorage.isEmpty()) {
+            try (DBIterator<File> iterator = catalogManager.getFileManager()
+                    .iterator(study.getName(), new Query(URI.key(), loadingFilesRegardingStorage),
+                            INDEXED_FILES_QUERY_OPTIONS, sessionId)) {
+                while (iterator.hasNext()) {
+                    File file = iterator.next();
+                    String newStatus;
+                    if (hasTransformedFile(file.getIndex())) {
+                        newStatus = IndexStatus.LOADING;
+                    } else {
+                        newStatus = IndexStatus.INDEXING;
+                    }
+                    catalogManager.getFileManager().updateFileIndexStatus(file, newStatus,
+                            "File is being loaded regarding Storage", sessionId);
                 }
-                catalogManager.getFileManager().updateFileIndexStatus(file, newStatus, "File is being loaded regarding Storage", sessionId);
             }
         }
+    }
 
+    private String toUri(String path) {
+        String uri;
+        if (path.startsWith("/")) {
+            uri = "file://" + path;
+        } else {
+            uri = Paths.get(path).toUri().toString();
+        }
+        return uri;
     }
 
     public boolean hasTransformedFile(FileIndex index) {
