@@ -41,8 +41,8 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.Variable;
+import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.slf4j.LoggerFactory;
 
@@ -278,21 +278,21 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         Document query = new Document()
                 .append(PRIVATE_UID, studyId)
-                .append(QueryParams.GROUP_NAME.key(), new Document("$ne", group.getName()));
+                .append(QueryParams.GROUP_ID.key(), new Document("$ne", group.getId()));
         Document update = new Document("$push", new Document(QueryParams.GROUPS.key(), getMongoDBDocument(group, "Group")));
 
         QueryResult<UpdateResult> queryResult = studyCollection.update(query, update, null);
 
         if (queryResult.first().getModifiedCount() != 1) {
-            QueryResult<Group> group1 = getGroup(studyId, group.getName(), Collections.emptyList());
+            QueryResult<Group> group1 = getGroup(studyId, group.getId(), Collections.emptyList());
             if (group1.getNumResults() > 0) {
-                throw new CatalogDBException("Unable to create the group " + group.getName() + ". Group already existed.");
+                throw new CatalogDBException("Unable to create the group " + group.getId() + ". Group already existed.");
             } else {
-                throw new CatalogDBException("Unable to create the group " + group.getName() + ".");
+                throw new CatalogDBException("Unable to create the group " + group.getId() + ".");
             }
         }
 
-        return endQuery("Create group", startTime, getGroup(studyId, group.getName(), Collections.emptyList()));
+        return endQuery("Create group", startTime, getGroup(studyId, group.getId(), Collections.emptyList()));
     }
 
     private long getDiskUsageByStudy(int studyId) {
@@ -335,7 +335,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             aggregation.add(Aggregates.match(Filters.in(QueryParams.GROUP_USER_IDS.key(), userIds)));
         }
         if (groupId != null && groupId.length() > 0) {
-            aggregation.add(Aggregates.match(Filters.eq(QueryParams.GROUP_NAME.key(), groupId)));
+            aggregation.add(Aggregates.match(Filters.eq(QueryParams.GROUP_ID.key(), groupId)));
         }
 
         QueryResult<Document> queryResult = studyCollection.aggregate(aggregation, null);
@@ -359,7 +359,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         Document query = new Document()
                 .append(PRIVATE_UID, studyId)
-                .append(QueryParams.GROUP_NAME.key(), groupId)
+                .append(QueryParams.GROUP_ID.key(), groupId)
                 .append("$isolated", 1);
         Document update = new Document("$set", new Document("groups.$.userIds", members));
         QueryResult<UpdateResult> queryResult = studyCollection.update(query, update, null);
@@ -377,7 +377,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         Document query = new Document()
                 .append(PRIVATE_UID, studyId)
-                .append(QueryParams.GROUP_NAME.key(), groupId)
+                .append(QueryParams.GROUP_ID.key(), groupId)
                 .append("$isolated", 1);
         Document update = new Document("$addToSet", new Document("groups.$.userIds", new Document("$each", members)));
         QueryResult<UpdateResult> queryResult = studyCollection.update(query, update, null);
@@ -395,7 +395,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         Document query = new Document()
                 .append(PRIVATE_UID, studyId)
-                .append(QueryParams.GROUP_NAME.key(), groupId)
+                .append(QueryParams.GROUP_ID.key(), groupId)
                 .append("$isolated", 1);
         Bson pull = Updates.pullAll("groups.$.userIds", members);
         QueryResult<UpdateResult> update = studyCollection.update(query, pull, null);
@@ -427,9 +427,9 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     public void deleteGroup(long studyId, String groupId) throws CatalogDBException {
         Bson queryBson = new Document()
                 .append(PRIVATE_UID, studyId)
-                .append(QueryParams.GROUP_NAME.key(), groupId)
+                .append(QueryParams.GROUP_ID.key(), groupId)
                 .append("$isolated", 1);
-        Document pull = new Document("$pull", new Document("groups", new Document("name", groupId)));
+        Document pull = new Document("$pull", new Document("groups", new Document("id", groupId)));
         QueryResult<UpdateResult> update = studyCollection.update(queryBson, pull, null);
 
         if (update.first().getModifiedCount() != 1) {
@@ -443,7 +443,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         Document query = new Document()
                 .append(PRIVATE_UID, studyId)
-                .append(QueryParams.GROUP_NAME.key(), groupId)
+                .append(QueryParams.GROUP_ID.key(), groupId)
                 .append("$isolated", 1);
         Document updates = new Document("$set", new Document("groups.$.syncedFrom", mongoDBDocument));
         studyCollection.update(query, updates, null);
@@ -1714,7 +1714,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                     case STATS:
                     case TYPE:
                     case GROUPS:
-                    case GROUP_NAME:
+                    case GROUP_ID:
                     case GROUP_USER_IDS:
                     case RELEASE:
                     case EXPERIMENT_ID:

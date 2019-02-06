@@ -26,9 +26,6 @@
         "sshAdminKeyData": {
             "value": ""
         },
-        "nfsStorageOption": {
-            "value": ""
-        },
         "mongoDBPassword": {
             "value": ""
         },
@@ -42,6 +39,9 @@
             "value": ""
         },
         "daemonContainerImage": {
+            "value": ""
+        },
+        "batchContainerImage": {
             "value": ""
         },
         "catalogSecretKey": {

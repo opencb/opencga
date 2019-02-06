@@ -66,8 +66,6 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(ClinicalAnalysisDBAdaptor.QueryParams.STUDY.key(), resolveStudy(commandOptions.study));
         params.putIfNotNull(ClinicalAnalysisDBAdaptor.QueryParams.TYPE.key(), commandOptions.type);
         params.putIfNotNull(ClinicalAnalysisDBAdaptor.QueryParams.STATUS.key(), commandOptions.status);
-        params.putIfNotNull(ClinicalAnalysisDBAdaptor.QueryParams.GERMLINE.key(), commandOptions.germline);
-        params.putIfNotNull(ClinicalAnalysisDBAdaptor.QueryParams.SOMATIC.key(), commandOptions.somatic);
         params.putIfNotNull(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(), commandOptions.family);
         params.putIfNotNull("proband", commandOptions.proband);
         params.putIfNotEmpty("sample", commandOptions.sample);
@@ -83,11 +81,17 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         Query query = new Query();
         query.putIfNotEmpty(ClinicalAnalysisDBAdaptor.QueryParams.STUDY.key(), resolveStudy(commandOptions.study));
-        query.putIfNotNull(ClinicalAnalysisDBAdaptor.QueryParams.TYPE.key(), commandOptions.type);
-        query.putIfNotNull(ClinicalAnalysisDBAdaptor.QueryParams.STATUS.key(), commandOptions.status);
-        query.putIfNotNull(ClinicalAnalysisDBAdaptor.QueryParams.GERMLINE.key(), commandOptions.germline);
-        query.putIfNotNull(ClinicalAnalysisDBAdaptor.QueryParams.SOMATIC.key(), commandOptions.somatic);
-        query.putIfNotNull(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(), commandOptions.family);
+        query.putIfNotEmpty(ClinicalAnalysisDBAdaptor.QueryParams.TYPE.key(), commandOptions.type);
+        query.putIfNotEmpty(ClinicalAnalysisDBAdaptor.QueryParams.STATUS.key(), commandOptions.status);
+        query.putIfNotEmpty(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(), commandOptions.family);
+        query.putIfNotNull(ClinicalAnalysisDBAdaptor.QueryParams.PRIORITY.key(), commandOptions.priority);
+        query.putIfNotEmpty(ClinicalAnalysisDBAdaptor.QueryParams.CREATION_DATE.key(), commandOptions.creationDate);
+        query.putIfNotEmpty(ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE.key(), commandOptions.modificationDate);
+        query.putIfNotEmpty(ClinicalAnalysisDBAdaptor.QueryParams.DUE_DATE.key(), commandOptions.dueDate);
+        query.putIfNotEmpty(ClinicalAnalysisDBAdaptor.QueryParams.DESCRIPTION.key(), commandOptions.description);
+        query.putIfNotEmpty(ClinicalAnalysisDBAdaptor.QueryParams.DISORDER.key(), commandOptions.disorder);
+        query.putIfNotEmpty(ClinicalAnalysisDBAdaptor.QueryParams.FLAGS.key(), commandOptions.flags);
+        query.putIfNotEmpty("analystAssignee", commandOptions.assignee);
         query.putIfNotNull("proband", commandOptions.proband);
         query.putIfNotEmpty("sample", commandOptions.sample);
         query.putAll(commandOptions.commonOptions.params);

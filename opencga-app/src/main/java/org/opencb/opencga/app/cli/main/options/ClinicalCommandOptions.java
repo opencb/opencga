@@ -6,6 +6,7 @@ import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
+import org.opencb.opencga.core.models.ClinicalAnalysis;
 
 @Parameters(commandNames = {"clinical"}, commandDescription = "Clinical analysis commands")
 public class ClinicalCommandOptions {
@@ -66,14 +67,23 @@ public class ClinicalCommandOptions {
         @Parameter(names = {"--type"}, description = "Clinical analysis type.", arity = 1)
         public String type;
 
+        @Parameter(names = {"--priority"}, description = "Priority.", arity = 1)
+        public ClinicalAnalysis.Priority priority;
+
         @Parameter(names = {"--status"}, description = "Status.", arity = 1)
         public String status;
 
-        @Parameter(names = {"--germline"}, description = "Germline file id", required = false, arity = 1)
-        public String germline;
+        @Parameter(names = {"--creation-date"}, description = "Creation date.", arity = 1)
+        public String creationDate;
 
-        @Parameter(names = {"--somatic"}, description = "Somatic file id", required = false, arity = 1)
-        public String somatic;
+        @Parameter(names = {"--modification-date"}, description = "Modification date.", arity = 1)
+        public String modificationDate;
+
+        @Parameter(names = {"--due-date"}, description = "Due date", required = false, arity = 1)
+        public String dueDate;
+
+        @Parameter(names = {"--description"}, description = "Description", required = false, arity = 1)
+        public String description;
 
         @Parameter(names = {"--family"}, description = "Family id", required = false, arity = 1)
         public String family;
@@ -81,8 +91,17 @@ public class ClinicalCommandOptions {
         @Parameter(names = {"--proband"}, description = "Proband id of the clinical analysis", required = false, arity = 1)
         public String proband;
 
-        @Parameter(names = {"--sample"}, description = "Sampe id", arity = 1)
+        @Parameter(names = {"--sample"}, description = "Proband sample id", arity = 1)
         public String sample;
+
+        @Parameter(names = {"--analyst-assignee"}, description = "Analyst assignee", arity = 1)
+        public String assignee;
+
+        @Parameter(names = {"--disorder"}, description = "Disorder id or name", arity = 1)
+        public String disorder;
+
+        @Parameter(names = {"--flags"}, description = "Flags", arity = 1)
+        public String flags;
 
     }
 
@@ -108,12 +127,6 @@ public class ClinicalCommandOptions {
 
         @Parameter(names = {"--status"}, description = "Status.", arity = 1)
         public String status;
-
-        @Parameter(names = {"--germline"}, description = "Germline file id", required = false, arity = 1)
-        public String germline;
-
-        @Parameter(names = {"--somatic"}, description = "Somatic file id", required = false, arity = 1)
-        public String somatic;
 
         @Parameter(names = {"--family"}, description = "Family id", required = false, arity = 1)
         public String family;

@@ -21,13 +21,13 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
-import org.opencb.opencga.catalog.monitor.daemons.AuthorizationDaemon;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.monitor.daemons.AuthorizationDaemon;
 import org.opencb.opencga.catalog.monitor.daemons.ExecutionDaemon;
 import org.opencb.opencga.catalog.monitor.daemons.FileDaemon;
 import org.opencb.opencga.catalog.monitor.daemons.IndexDaemon;
+import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,14 +74,15 @@ public class MonitorService {
 
         try {
             this.catalogManager = new CatalogManager(this.configuration);
-            String sessionId = this.catalogManager.getUserManager().getSystemTokenForUser("admin", password);
+            String expiringToken = this.catalogManager.getUserManager().login("admin", password);
+            String nonExpiringToken = this.catalogManager.getUserManager().getSystemTokenForUser("admin", expiringToken);
 
-            executionDaemon = new ExecutionDaemon(configuration.getMonitor().getExecutionDaemonInterval(), sessionId, catalogManager,
+            executionDaemon = new ExecutionDaemon(configuration.getMonitor().getExecutionDaemonInterval(), nonExpiringToken,
+                    catalogManager, appHome);
+            indexDaemon = new IndexDaemon(configuration.getMonitor().getExecutionDaemonInterval(), nonExpiringToken, catalogManager,
                     appHome);
-            indexDaemon = new IndexDaemon(configuration.getMonitor().getExecutionDaemonInterval(), sessionId, catalogManager, appHome);
-            fileDaemon = new FileDaemon(configuration.getMonitor().getFileDaemonInterval(), configuration.getMonitor().getDaysToRemove(),
-                    sessionId, catalogManager);
-            authorizationDaemon = new AuthorizationDaemon(10000, sessionId, catalogManager);
+            fileDaemon = new FileDaemon(configuration.getMonitor().getFileDaemonInterval(),
+                    configuration.getMonitor().getDaysToRemove(), nonExpiringToken, catalogManager);
 
             executionThread = new Thread(executionDaemon, "execution-thread");
             indexThread = new Thread(indexDaemon, "index-thread");

@@ -17,6 +17,8 @@
 package org.opencb.opencga.server.rest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.base.Splitter;
@@ -32,6 +34,7 @@ import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.opencga.analysis.clinical.InterpretationResult;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -53,8 +56,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.File;
 import java.io.FileInputStream;
@@ -64,7 +67,6 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 import static org.opencb.opencga.core.common.JacksonUtils.getExternalOpencgaObjectMapper;
 
 @ApplicationPath("/")
@@ -509,6 +511,33 @@ public class OpenCGAWSServer {
 
         Response response = createJsonResponse(queryResponse);
         logResponse(response.getStatusInfo(), queryResponse);
+        return response;
+    }
+
+    protected Response createAnalysisOkResponse(Object obj) {
+        Map<String, Object> queryResponseMap = new LinkedHashMap<>();
+        queryResponseMap.put("time", new Long(System.currentTimeMillis() - startTime).intValue());
+        queryResponseMap.put("apiVersion", apiVersion);
+        queryResponseMap.put("queryOptions", queryOptions);
+        queryResponseMap.put("response", Collections.singletonList(obj));
+
+        Response response;
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
+            objectMapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
+            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            objectMapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
+            objectMapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
+            ObjectWriter writer = objectMapper.writer();
+            response = buildResponse(Response.ok(writer.writeValueAsString(queryResponseMap), MediaType.APPLICATION_JSON_TYPE));
+//            logResponse(response.getStatusInfo(), queryResponseMap);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+            logger.error("Error parsing queryResponse object");
+            return createErrorResponse("", "Error parsing QueryResponse object:\n" + Arrays.toString(e.getStackTrace()));
+        }
+
         return response;
     }
 

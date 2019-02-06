@@ -31,7 +31,7 @@ import java.io.IOException;
 /**
  * Created by swaathi on 10/05/16.
  */
-public class FileClient extends CatalogClient<File, FileAclEntry> {
+public class FileClient extends AnnotationClient<File, FileAclEntry> {
 
     private static final String FILES_URL = "files";
 

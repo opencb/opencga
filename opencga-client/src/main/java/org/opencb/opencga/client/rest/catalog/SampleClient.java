@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.client.rest.catalog;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -25,7 +26,6 @@ import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
 
 /**
@@ -43,12 +43,24 @@ public class SampleClient extends AnnotationClient<Sample, SampleAclEntry> {
         this.aclClass = SampleAclEntry.class;
     }
 
-    public QueryResponse<Sample> create(String studyId, @Nullable String individual, ObjectMap bodyParams) throws IOException {
+    public QueryResponse<Sample> create(String studyId, String sampleId, ObjectMap bodyParams) throws IOException {
+        bodyParams.put("id", sampleId);
+
         ObjectMap params = new ObjectMap();
-        params.putIfNotNull(STUDY, studyId);
-        params.putIfNotNull("individual", individual);
         params.putIfNotNull("body", bodyParams);
+        params.putIfNotNull(STUDY, studyId);
+
         return execute(SAMPLES_URL, "create", params, POST, Sample.class);
+    }
+
+    public QueryResponse<Sample> update(String study, String id, String annotationSetAction, ObjectMap params) throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        String json = mapper.writeValueAsString(params);
+        ObjectMap p = new ObjectMap("body", json);
+        p.putIfNotEmpty("study", study);
+        p.putIfNotEmpty("annotationSetsAction", annotationSetAction);
+        logger.debug("Json in update client: " + json);
+        return execute(SAMPLES_URL, id, "update", p, POST, Sample.class);
     }
 
     public QueryResponse<Sample> loadFromPed(String studyId, ObjectMap params) throws IOException {

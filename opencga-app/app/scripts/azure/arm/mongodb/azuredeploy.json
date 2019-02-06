@@ -67,7 +67,14 @@
             "metadata": {
                 "description": "Subnet ID"
             }
+        },
+        "LogAnalyticsWorkspaceResourceID": {
+            "type": "string",
+            "metadata": {
+                "description": "Log Analytics Workspace Resource ID"
+            }
         }
+
     },
     "variables": {
         "vmName": "mongo-vm",
@@ -114,7 +121,34 @@
                         }
                     }
                 ]
-            }
+            },
+            "resources": [
+                {
+                    "type": "providers/diagnosticSettings",
+                    "name": "[concat('Microsoft.Insights/', concat(variables('nicName'), copyIndex()))]",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Network/networkInterfaces',concat(variables('nicName'), copyIndex()))]"
+                    ],
+                    "apiVersion": "2017-05-01-preview",
+                    "properties": {
+                      "name": "[concat(variables('nicName'), copyIndex())]",
+                      "workspaceId": "[parameters('LogAnalyticsWorkspaceResourceID')]",
+                      "logs": [ 
+                      
+                      ],
+                      "metrics": [
+                        {
+                          "category": "AllMetrics",
+                          "enabled": true,
+                          "retentionPolicy": {
+                            "enabled": false,
+                            "days": 0
+                          }
+                        }
+                      ]
+                    }
+                  }
+            ]
         },
         {
             "apiVersion": "2017-10-01",
@@ -153,7 +187,7 @@
                         "osType": "Linux",
                         "createOption": "FromImage",
                         "managedDisk": {
-                            "storageAccountType": "Standard_LRS"
+                            "storageAccountType": "StandardSSD_LRS"
                         }
                     },
                     "imageReference": {

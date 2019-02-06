@@ -13,4 +13,5 @@ RUN apk update && \
 
 COPY ${buildPath} /opt/opencga
 
-ENTRYPOINT [ "/bin/bash", "-c" ]
+
+ENTRYPOINT [ "/bin/bash" ]

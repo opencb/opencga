@@ -41,13 +41,13 @@ public class AzureBatchExecutor implements BatchExecutor {
         this.poolInformation = new PoolInformation().withPoolId(batchPoolId);
     }
 
-    public void submitAzureTask(Job job) throws IOException {
+    public void submitAzureTask(Job job, String token) throws IOException {
         String jobId = getOrCreateAzureJob(job.getType());
         TaskAddParameter taskToAdd = new TaskAddParameter();
         taskToAdd.withId(job.getId()).withCommandLine(job.getCommandLine()).withContainerSettings(
                 new TaskContainerSettings().withImageName(dockerImageName)
                         .withContainerRunOptions(dockerArgs));
-        taskToAdd.withId(job.getId()).withCommandLine(job.getCommandLine());
+        taskToAdd.withId(job.getId()).withCommandLine(getCommandLine(job, token));
         batchClient.taskOperations().createTask(jobId, taskToAdd);
     }
 
@@ -73,7 +73,7 @@ public class AzureBatchExecutor implements BatchExecutor {
 
     @Override
     public void execute(Job job, String token) throws Exception {
-        submitAzureTask(job);
+        submitAzureTask(job, token);
     }
 
     @Override

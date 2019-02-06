@@ -36,6 +36,8 @@ setMethod("studyClient", "OpencgaR", function(OpencgaR, study, action, params=NU
                                 action="summary", params=params, httpMethod="GET", ...),
            permissionRules=fetchOpenCGA(object=OpencgaR, category=category, categoryId=study, 
                                         action="permissionRules", params=params, httpMethod="GET", ...),
+           stats=fetchOpenCGA(object=OpencgaR, category=category, categoryId=study,
+                                        action="stats", params=params, httpMethod="GET", ...),
            variableSets=fetchOpenCGA(object=OpencgaR, category=category, categoryId=study, 
                                      action="variableSets", params=params, httpMethod="GET", ...),
            update=fetchOpenCGA(object=OpencgaR, category=category, categoryId=study, 

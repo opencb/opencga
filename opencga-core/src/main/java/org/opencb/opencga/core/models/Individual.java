@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.models;
 
+import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty.AffectationStatus;
 import org.opencb.biodata.models.pedigree.IndividualProperty.KaryotypicSex;

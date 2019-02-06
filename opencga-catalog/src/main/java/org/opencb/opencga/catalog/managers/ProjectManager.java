@@ -23,6 +23,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.CollectionUtils;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
@@ -39,8 +40,8 @@ import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
 
-import java.io.*;
 import java.io.File;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -53,6 +54,8 @@ import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class ProjectManager extends AbstractManager {
+
+    private String vcfFile;
 
     ProjectManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                    DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
@@ -581,6 +584,198 @@ public class ProjectManager extends AbstractManager {
                 Map<String, Object> file = objectMapper.readValue(line, Map.class);
                 jobDBAdaptor.nativeInsert(file, owner);
             }
+        }
+    }
+
+    public void exportByFileNames(String studyStr, File outputDir, File filePath, String token) throws CatalogException {
+        String userId = catalogManager.getUserManager().getUserId(token);
+        if (!"admin".equals(userId)) {
+            throw new CatalogAuthorizationException("Only admin of OpenCGA is authorised to export data");
+        }
+
+        if (!filePath.exists() || !filePath.isFile()) {
+            throw new CatalogException(filePath + " is not a valid file containing the file ids");
+        }
+
+        if (outputDir == null) {
+            throw new CatalogException("Missing output directory");
+        }
+        if (!outputDir.isDirectory()) {
+            throw new CatalogException("The output directory parameter seems not to contain a directory");
+        }
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        QueryOptions skipCount = new QueryOptions(QueryOptions.SKIP_COUNT, true);
+
+        // We obtain the owner of the study
+        QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get(studyStr,
+                new QueryOptions(QueryOptions.INCLUDE,
+                        Arrays.asList(StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.FQN.key(),
+                                StudyDBAdaptor.QueryParams.VARIABLE_SET.key())), token);
+
+        // Export the list of variable sets
+        List<Object> variableSetList = studyQueryResult.first().getVariableSets().stream().collect(Collectors.toList());
+        exportToFile(variableSetList, outputDir.toPath().resolve("variablesets.json").toFile(), objectMapper);
+
+        String owner = studyQueryResult.first().getFqn().split("@")[0];
+
+        String ownerToken = catalogManager.getUserManager().getSystemTokenForUser(owner, token);
+
+        try (BufferedReader buf = new BufferedReader(new FileReader(filePath))) {
+
+            while (true) {
+                String vcfFile = buf.readLine();
+                if (vcfFile != null) {
+
+                    List fileList = new ArrayList<>();
+                    List sampleList = null;
+                    List individualList = new ArrayList<>();
+                    List cohortList = null;
+
+                    Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), "file://" + vcfFile);
+                    QueryResult<org.opencb.opencga.core.models.File> fileQueryResult = catalogManager.getFileManager()
+                            .get(studyStr, query, skipCount, ownerToken);
+                    if (fileQueryResult.getNumResults() == 0) {
+                        logger.error("File " + vcfFile + " not found. Skipping...");
+                        continue;
+                    }
+                    // Add file information
+                    fileList.add(fileQueryResult.first());
+
+                    List<Sample> samples = fileQueryResult.first().getSamples();
+                    if (ListUtils.isNotEmpty(samples)) {
+                        List<Long> sampleUids = samples.stream().map(Sample::getUid).collect(Collectors.toList());
+
+                        // Look for the BAM and BIGWIG files associated to the samples (if any)
+                        query = new Query()
+                                .append(FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleUids)
+                                .append(FileDBAdaptor.QueryParams.FORMAT.key(), Arrays.asList(
+                                        org.opencb.opencga.core.models.File.Format.BAM,
+                                        org.opencb.opencga.core.models.File.Format.BAI,
+                                        // TODO: I think I will need to perform the query some other way to capture bigwigs...
+                                        org.opencb.opencga.core.models.File.Format.BIGWIG));
+
+                        QueryResult<org.opencb.opencga.core.models.File> otherFiles = catalogManager.getFileManager().get(studyStr, query,
+                                skipCount, ownerToken);
+                        if (otherFiles.getNumResults() > 0) {
+                            fileList.addAll(otherFiles.getResult());
+                        }
+
+                        // Look for the whole sample information
+                        query = new Query(SampleDBAdaptor.QueryParams.ID.key(), sampleUids);
+                        QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().get(studyStr, query, skipCount,
+                                ownerToken);
+                        if (sampleQueryResult.getNumResults() == 0 || sampleQueryResult.getNumResults() != sampleUids.size()) {
+                            logger.error("Unexpected error when looking for whole sample information. Could only find {} results. "
+                                    + "Samples ids {}", sampleQueryResult.getNumResults(), sampleUids);
+                            continue;
+                        }
+
+//                        for (Sample sample : sampleQueryResult.getResult()) {
+//                            QueryResult<ObjectMap> annotationSetAsMap = catalogManager.getSampleManager()
+//                                    .getAnnotationSetAsMap(String.valueOf(sample.getId()), studyStr, null, ownerToken);
+//                            // We store the annotationsets as map in the attributes field to avoid issues
+//                            sample.getAttributes().put("_annotationSets", annotationSetAsMap.getResult());
+//                        }
+                        sampleList = sampleQueryResult.getResult();
+
+
+                        // Get the list of individuals
+                        // Look for the whole sample information
+                        query = new Query(IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleUids);
+                        QueryResult<Individual> individualQueryResult = catalogManager.getIndividualManager().get(studyStr, query,
+                                skipCount, ownerToken);
+
+//                        for (Individual individual : individualQueryResult.getResult()) {
+//                            QueryResult<ObjectMap> annotationSetAsMap = catalogManager.getIndividualManager()
+//                                    .getAnnotationSetAsMap(String.valueOf(individual.getId()), studyStr, null, ownerToken);
+//                            // We store the annotationsets as map in the attributes field to avoid issues
+//                            individual.getAttributes().put("_annotationSets", annotationSetAsMap.getResult());
+//                        }
+                        individualList = individualQueryResult.getResult();
+
+
+                        if (individualQueryResult.getNumResults() == 0) {
+                            logger.info("No individuals found for samples '{}'", sampleUids);
+                        }
+
+                        // Look for the cohorts
+                        query = new Query()
+                                .append(CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleUids)
+                                .append(CohortDBAdaptor.QueryParams.NAME.key(), "!=ALL");
+                        QueryResult<Cohort> cohortQueryResult = catalogManager.getCohortManager().get(studyStr, query, skipCount,
+                                ownerToken);
+
+//                        for (Cohort cohort : cohortQueryResult.getResult()) {
+//                            QueryResult<ObjectMap> annotationSetAsMap = catalogManager.getCohortManager()
+//                                    .getAnnotationSetAsMap(String.valueOf(cohort.getId()), studyStr, null, ownerToken);
+//                            // We store the annotationsets as map in the attributes field to avoid issues
+//                            cohort.getAttributes().put("_annotationSets", annotationSetAsMap.getResult());
+//                        }
+                        cohortList = cohortQueryResult.getResult();
+
+                        if (cohortQueryResult.getNumResults() == 0) {
+                            logger.info("No cohorts found for samples {}", sampleUids);
+                        } else {
+                            cohortList = cohortQueryResult.getResult();
+                        }
+                    }
+
+                    // Create a directory where we will store all the information to be exported
+                    Path exportDir = outputDir.toPath().resolve(fileQueryResult.first().getName());
+                    if (Files.exists(exportDir)) {
+                        logger.warn("Replicated file found: {}", fileQueryResult.first().getName());
+
+                        int count = 1;
+                        exportDir = outputDir.toPath().resolve(fileQueryResult.first().getName() + count);
+                        while (Files.exists(exportDir)) {
+                            exportDir = outputDir.toPath().resolve(fileQueryResult.first().getName() + count++);
+                        }
+                    }
+                    Files.createDirectory(exportDir);
+
+                    logger.info("Exporting data from " + fileQueryResult.first().getName());
+                    exportToFile(fileList, exportDir.resolve("file.json").toFile(), objectMapper);
+                    exportToFile(sampleList, exportDir.resolve("sample.json").toFile(), objectMapper);
+                    exportToFile(individualList, exportDir.resolve("individual.json").toFile(), objectMapper);
+                    exportToFile(cohortList, exportDir.resolve("cohort.json").toFile(), objectMapper);
+
+                } else {
+                    break;
+                }
+            }
+
+        } catch (IOException e) {
+            logger.error("{}", e.getMessage(), e);
+        }
+    }
+
+    private void exportToFile(List<Object> dataList, File file, ObjectMapper objectMapper) throws CatalogException {
+        if (ListUtils.isEmpty(dataList)) {
+            return;
+        }
+
+        FileWriter fileWriter;
+        try {
+            fileWriter = new FileWriter(file);
+        } catch (IOException e) {
+            logger.error("Error creating fileWriter: {}", e.getMessage(), e);
+            throw new CatalogException("Error creating fileWriter: " + e.getMessage());
+        }
+
+        for (Object object : dataList) {
+            try {
+                fileWriter.write(objectMapper.writeValueAsString(object));
+                fileWriter.write("\n");
+            } catch (IOException e) {
+                logger.error("Error writing to file: {}", e.getMessage(), e);
+                throw new CatalogException("Error writing to file: " + e.getMessage());
+            }
+        }
+        try {
+            fileWriter.close();
+        } catch (IOException e) {
+            logger.error("Error closing FileWriter: {}", e.getMessage(), e);
         }
     }
 

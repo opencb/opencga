@@ -172,8 +172,7 @@ public abstract class AbstractManager {
         if (member.equals("*")) {
             return;
         } else if (member.startsWith("@")) {
-            QueryResult<Group> queryResult = studyDBAdaptor.getGroup(studyId, member,
-                    Collections.emptyList());
+            QueryResult<Group> queryResult = studyDBAdaptor.getGroup(studyId, member, Collections.emptyList());
             if (queryResult.getNumResults() == 0) {
                 throw CatalogDBException.idNotFound("Group", member);
             }

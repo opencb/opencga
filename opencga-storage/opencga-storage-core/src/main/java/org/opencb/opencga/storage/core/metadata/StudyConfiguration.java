@@ -49,6 +49,7 @@ public class StudyConfiguration {
     private String studyName;
 
     private BiMap<String, Integer> fileIds;
+    private BiMap<String, Integer> filePaths;
     private BiMap<String, Integer> sampleIds;
     private BiMap<String, Integer> cohortIds;
     private Map<Integer, Set<Integer>> cohorts;
@@ -90,6 +91,7 @@ public class StudyConfiguration {
         this.studyId = other.studyId;
         this.studyName = other.studyName;
         this.fileIds = HashBiMap.create(other.fileIds == null ? Collections.emptyMap() : other.fileIds);
+        this.filePaths = HashBiMap.create(other.filePaths == null ? Collections.emptyMap() : other.filePaths);
         this.sampleIds = HashBiMap.create(other.sampleIds == null ? Collections.emptyMap() : other.sampleIds);
         this.cohortIds = HashBiMap.create(other.cohortIds == null ? Collections.emptyMap() : other.cohortIds);
         this.cohorts = new HashMap<>(other.cohorts);
@@ -136,6 +138,7 @@ public class StudyConfiguration {
         this.studyId = studyId;
         this.studyName = studyName;
         this.fileIds = HashBiMap.create(fileIds == null ? Collections.emptyMap() : fileIds);
+        this.filePaths = HashBiMap.create();
         this.sampleIds = HashBiMap.create(sampleIds == null ? Collections.emptyMap() : sampleIds);
         this.cohortIds = HashBiMap.create(cohortIds == null ? Collections.emptyMap() : cohortIds);
         this.cohorts = cohorts == null ? new HashMap<>() : cohorts;
@@ -152,7 +155,6 @@ public class StudyConfiguration {
         this.variantHeader = VariantFileHeader.newBuilder().setVersion("").build();
         this.attributes = new ObjectMap();
     }
-
 
     @Deprecated
     public static StudyConfiguration read(Path path) throws IOException {
@@ -179,6 +181,7 @@ public class StudyConfiguration {
                 .append("studyId", studyId)
                 .append("studyName", studyName)
                 .append("fileIds", fileIds)
+                .append("filePaths", filePaths)
                 .append("sampleIds", sampleIds)
                 .append("cohortIds", cohortIds)
                 .append("cohorts", cohorts)
@@ -216,6 +219,14 @@ public class StudyConfiguration {
 
     public void setFileIds(Map<String, Integer> fileIds) {
         this.fileIds = fileIds == null ? null : HashBiMap.create(fileIds);
+    }
+
+    public BiMap<String, Integer> getFilePaths() {
+        return filePaths;
+    }
+
+    public void setFilePaths(Map<String, Integer> filePaths) {
+        this.filePaths = filePaths == null ? null : HashBiMap.create(filePaths);
     }
 
     public BiMap<String, Integer> getSampleIds() {
@@ -384,6 +395,7 @@ public class StudyConfiguration {
         return studyId == that.studyId
                 && Objects.equals(studyName, that.studyName)
                 && Objects.equals(fileIds, that.fileIds)
+                && Objects.equals(filePaths, that.filePaths)
                 && Objects.equals(sampleIds, that.sampleIds)
                 && Objects.equals(cohortIds, that.cohortIds)
                 && Objects.equals(cohorts, that.cohorts)
@@ -400,7 +412,7 @@ public class StudyConfiguration {
 
     @Override
     public int hashCode() {
-        return Objects.hash(studyId, studyName, fileIds, sampleIds, cohortIds, cohorts, indexedFiles, headers, samplesInFiles,
+        return Objects.hash(studyId, studyName, fileIds, filePaths, sampleIds, cohortIds, cohorts, indexedFiles, headers, samplesInFiles,
                 calculatedStats, invalidStats, batches, aggregation, timeStamp, attributes);
     }
 
