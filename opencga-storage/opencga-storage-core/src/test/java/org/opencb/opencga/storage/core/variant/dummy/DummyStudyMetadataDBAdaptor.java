@@ -19,11 +19,15 @@ package org.opencb.opencga.storage.core.variant.dummy;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SequenceWriter;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.adaptors.*;
+import org.opencb.opencga.storage.core.metadata.adaptors.CohortMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.metadata.adaptors.SampleMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.metadata.adaptors.StudyMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.metadata.adaptors.TaskMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.metadata.models.*;
 
 import java.io.FileOutputStream;
@@ -222,13 +226,25 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor, Samp
 
     public static void writeAll(Path path) {
         ObjectMapper objectMapper = new ObjectMapper(new JsonFactory()).configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
-        String prefix = "storage_configuration_" + NUM_PRINTS.incrementAndGet() + "_";
-        for (StudyConfiguration studyConfiguration : DummyStudyMetadataDBAdaptor.STUDY_CONFIGURATIONS_BY_NAME.values()) {
-            try (OutputStream os = new FileOutputStream(path.resolve(prefix + studyConfiguration.getName() + ".json").toFile())) {
-                objectMapper.writerWithDefaultPrettyPrinter().writeValue(os, studyConfiguration);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
+        String prefix = "study_" + NUM_PRINTS.incrementAndGet() + "_";
+        try {
+            for (StudyMetadata sm : DummyStudyMetadataDBAdaptor.STUDY_METADATA_MAP.values()) {
+                try (OutputStream os = new FileOutputStream(path.resolve(prefix + sm.getName() + ".json").toFile())) {
+                    objectMapper.writerWithDefaultPrettyPrinter().writeValue(os, sm);
+                }
+                writeAll(path, objectMapper, prefix + "samples_", sm, SAMPLE_METADATA_MAP.getOrDefault(sm.getId(), Collections.emptyMap()).values());
+                writeAll(path, objectMapper, prefix + "cohort_", sm, COHORT_METADATA_MAP.getOrDefault(sm.getId(), Collections.emptyMap()).values());
+                writeAll(path, objectMapper, prefix + "task_", sm, TASK_METADATA_MAP.getOrDefault(sm.getId(), Collections.emptyMap()).values());
             }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    protected static void writeAll(Path path, ObjectMapper objectMapper, String prefix, StudyMetadata sm, Collection<?> values) throws IOException {
+        try (OutputStream os = new FileOutputStream(path.resolve(prefix + sm.getName() + ".json").toFile())) {
+            SequenceWriter sequenceWriter = objectMapper.writerWithDefaultPrettyPrinter().writeValues(os);
+            sequenceWriter.writeAll(values);
         }
     }
 

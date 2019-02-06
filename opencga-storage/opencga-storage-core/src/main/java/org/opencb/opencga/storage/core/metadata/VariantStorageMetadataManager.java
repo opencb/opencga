@@ -830,7 +830,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         }
     }
 
-    private void unsecureUpdateCohortMetadata(int studyId, CohortMetadata cohort) {
+    protected void unsecureUpdateCohortMetadata(int studyId, CohortMetadata cohort) {
         cohort.setStudyId(studyId);
         cohortDBAdaptor.updateCohortMetadata(studyId, cohort, null);
     }

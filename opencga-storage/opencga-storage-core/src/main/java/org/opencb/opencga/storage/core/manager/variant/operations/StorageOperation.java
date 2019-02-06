@@ -110,7 +110,17 @@ public abstract class StorageOperation {
         return catalogOutDirId;
     }
 
-    public StudyMetadata updateCatalogFromStorageMetadata(String sessionId, String study, DataStore dataStore)
+    public StudyMetadata synchronizeCatalogStudyFromStorage(DataStore dataStore, String study, String sessionId)
+            throws IOException, CatalogException, StorageEngineException {
+        return synchronizeCatalog(dataStore, study, null, sessionId);
+    }
+
+    public StudyMetadata synchronizeCatalogFilesFromStorage(DataStore dataStore, String study, List<File> files, String sessionId)
+            throws IOException, CatalogException, StorageEngineException {
+        return synchronizeCatalog(dataStore, study, files, sessionId);
+    }
+
+    private StudyMetadata synchronizeCatalog(DataStore dataStore, String study, List<File> files, String sessionId)
             throws IOException, CatalogException, StorageEngineException {
 
         VariantStorageMetadataManager metadataManager = getVariantStorageEngine(dataStore).getMetadataManager();
@@ -120,7 +130,11 @@ public abstract class StorageOperation {
         StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
         if (studyMetadata != null) {
             // Update Catalog file and cohort status.
-            studyConfigurationFactory.synchronizeCatalogFromStorage(studyMetadata, sessionId);
+            if (files == null || files.isEmpty()) {
+                studyConfigurationFactory.synchronizeCatalogStudyFromStorage(studyMetadata, sessionId);
+            } else {
+                studyConfigurationFactory.synchronizeCatalogFilesFromStorage(studyMetadata, files, sessionId);
+            }
         }
         return studyMetadata;
     }

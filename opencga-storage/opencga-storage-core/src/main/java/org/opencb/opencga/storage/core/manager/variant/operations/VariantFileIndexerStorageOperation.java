@@ -157,25 +157,20 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             createDefaultCohortIfNeeded(study, sessionId);
         }
 
-        // Update Catalog from the study configuration BEFORE executing the index and fetching files from Catalog
-        updateCatalogFromStorageMetadata(sessionId, studyFQNByInputFileId, dataStore);
-
         List<File> inputFiles = new ArrayList<>();
-//        for (Long fileIdLong : fileIds) {
         for (FileInfo fileInfo : studyInfo.getFileInfos()) {
-//            long fileIdLong = fileInfo.getFileId();
             File inputFile = fileManager.get(studyInfo.getStudyFQN(), fileInfo.getPath(), FILE_GET_QUERY_OPTIONS, sessionId)
                     .first();
 
             if (inputFile.getType() == File.Type.FILE) {
-                inputFiles.add(inputFile);
+                // If is a transformed file, get the related VCF file
+                if (VariantReaderUtils.isTransformedVariants(inputFile.getName())) {
+                    inputFiles.add(getOriginalFromTransformed(studyFQNByInputFileId, inputFile, sessionId));
+                } else {
+                    inputFiles.add(inputFile);
+                }
             } else {
                 if (inputFile.getType() == File.Type.DIRECTORY) {
-//                    if (inputFile.getPath().isEmpty()) {
-//                        query = new Query(FileDBAdaptor.QueryParams.PATH.key(), "~^" + inputFile.getPath() + "*");
-//                    } else {
-//                        query = new Query();
-//                    }
                     query = new Query(FileDBAdaptor.QueryParams.DIRECTORY.key(), inputFile.getPath());
                     query.append(FileDBAdaptor.QueryParams.FORMAT.key(),
 //                            Arrays.asList(File.Format.VCF, File.Format.GVCF, File.Format.AVRO));
@@ -190,6 +185,9 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                 }
             }
         }
+
+        // Update Catalog from the study configuration BEFORE executing the index and fetching files from Catalog
+        synchronizeCatalogFilesFromStorage(dataStore, studyFQNByInputFileId, inputFiles, sessionId);
 
         // Check catalog path
         String catalogOutDirId = getCatalogOutdirId(studyFQNByInputFileId, options, sessionId);
@@ -307,7 +305,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             if (calculateStats && exception != null) {
                 updateDefaultCohortStatus(study, prevDefaultCohortStatus, sessionId);
             }
-            updateCatalogFromStorageMetadata(sessionId, study.getFqn(), dataStore);
+            synchronizeCatalogStudyFromStorage(dataStore, study.getFqn(), sessionId);
         }
 
         if (exception == null) {

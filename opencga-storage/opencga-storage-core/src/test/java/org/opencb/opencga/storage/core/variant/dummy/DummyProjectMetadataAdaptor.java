@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.adaptors.ProjectMetadataAdaptor;
 
 import java.io.FileOutputStream;
@@ -47,14 +46,14 @@ public class DummyProjectMetadataAdaptor implements ProjectMetadataAdaptor {
 
     @Override
     public synchronized QueryResult updateProjectMetadata(ProjectMetadata projectMetadata, boolean updateCounters) {
-        projectMetadata = projectMetadata;
+        DummyProjectMetadataAdaptor.projectMetadata = projectMetadata;
         return new QueryResult<>();
     }
 
     @Override
     public synchronized int generateId(Integer studyId, String idType) throws StorageEngineException {
         ProjectMetadata projectMetadata = getProjectMetadata().first();
-        Integer id = projectMetadata.getCounters().compute(idType + (studyId == null ? "" : ('_' + studyId)),
+        Integer id = projectMetadata.getCounters().compute(idType + (studyId == null ? "" : ("_" + studyId)),
                 (key, value) -> value == null ? 1 : value + 1);
         updateProjectMetadata(projectMetadata, true);
         return id;

@@ -93,7 +93,7 @@ public class DummyFileMetadataDBAdaptor implements FileMetadataDBAdaptor {
     public Integer getFileId(int studyId, String fileName) {
         return FILE_METADATA_MAP.getOrDefault(studyId, Collections.emptyMap()).values()
                 .stream()
-                .filter(f->f.getName().equals(fileName))
+                .filter(f -> f.getName().equals(fileName))
                 .map(FileMetadata::getId)
                 .findFirst()
                 .orElse(null);

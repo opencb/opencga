@@ -80,7 +80,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
         Aggregation aggregation = getAggregation(studyFqn, options, sessionId);
 
         DataStore dataStore = StorageOperation.getDataStore(catalogManager, studyFqn, File.Bioformat.VARIANT, sessionId);
-        StudyMetadata studyMetadata = updateCatalogFromStorageMetadata(sessionId, studyFqn, dataStore);
+        StudyMetadata studyMetadata = synchronizeCatalogStudyFromStorage(dataStore, studyFqn, sessionId);
 
         List<String> cohortIds = checkCohorts(study, aggregation, cohorts, options, sessionId);
         Map<String, List<String>> cohortsMap = checkCanCalculateCohorts(studyFqn, cohortIds, updateStats, resume, sessionId);
