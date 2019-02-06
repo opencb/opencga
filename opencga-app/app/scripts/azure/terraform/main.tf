@@ -3,17 +3,35 @@ variable "opencga_image" {}
 variable "iva_image" {}
 variable "opencga_init_image" {}
 variable "batch_container_image" {}
-
 variable "catalog_secret_key" {}
-
 variable "opencga_admin_password" {}
-
+variable "ssh_pub_key" {}
+variable "existing_resource_group" {
+  default = false
+}
 variable "lets_encrypt_email_address" {
   description = "This is the email address used when obtaining SSL certs for the solution. This should be a valid email for the solution admin."
 }
-
 variable "resource_group_prefix" {
   default = "opencga"
+}
+variable "state_storage_account_name" {}
+variable "state_storage_container_name" {}
+variable "state_storage_blob_name" {
+  default = "terraform.tfstate"
+}
+
+terraform {
+  backend "azurerm" {}
+}
+
+data "terraform_remote_state" "state" {
+  backend = "azurerm"
+  config {
+    storage_account_name  = "${var.state_storage_account_name}"
+    container_name        = "${var.state_storage_container_name}"
+    key                   = "${var.state_storage_blob_name}"
+  }
 }
 
 // Pin to a version of the terraform provider to prevent breaking changes of future releases
@@ -22,7 +40,16 @@ provider "azurerm" {
   version = "=1.21.0"
 }
 
+locals {
+  hdinsight_resource_group_name = "${var.existing_resource_group ? var.resource_group_prefix : format("%s-%s", var.resource_group_prefix,"hdinsight")}"
+  storage_resource_group_name = "${var.existing_resource_group ? var.resource_group_prefix : format("%s-%s", var.resource_group_prefix,"storage")}"
+  batch_resource_group_name = "${var.existing_resource_group ? var.resource_group_prefix : format("%s-%s", var.resource_group_prefix,"batch")}"
+  mongo_resource_group_name = "${var.existing_resource_group ? var.resource_group_prefix : format("%s-%s", var.resource_group_prefix,"mongo")}"
+  web_resource_group_name = "${var.existing_resource_group ? var.resource_group_prefix : format("%s-%s", var.resource_group_prefix,"web")}"
+}
+
 resource "azurerm_resource_group" "opencga" {
+  count = "${var.existing_resource_group ? 0 : 1}"
   name     = "${var.resource_group_prefix}"
   location = "${var.location}"
 }
@@ -34,21 +61,24 @@ module "hdinsight" {
   virtual_network_subnet_id = "${azurerm_subnet.hdinsight.id}"
 
   location            = "${var.location}"
-  resource_group_name = "${var.resource_group_prefix}-hdinsight"
+  resource_group_name = "${local.hdinsight_resource_group_name}"
+  create_resource_group = "${var.existing_resource_group ? 0 : 1}"
 }
 
 module "azurefiles" {
   source = "./azurefiles"
 
   location            = "${var.location}"
-  resource_group_name = "${var.resource_group_prefix}-storage"
+  resource_group_name = "${local.storage_resource_group_name}"
+  create_resource_group = "${var.existing_resource_group ? 0 : 1}"
 }
 
 module "azurebatch" {
   source = "./azurebatch"
 
   location            = "${var.location}"
-  resource_group_name = "${var.resource_group_prefix}-batch"
+  resource_group_name = "${local.batch_resource_group_name}"
+  create_resource_group = "${var.existing_resource_group ? 0 : 1}"
 
   virtual_network_subnet_id = "${azurerm_subnet.batch.id}"
 
@@ -59,11 +89,12 @@ module "mongo" {
   source = "./mongo"
 
   location            = "${var.location}"
-  resource_group_name = "${var.resource_group_prefix}-mongo"
+  resource_group_name = "${local.mongo_resource_group_name}"
+  create_resource_group = "${var.existing_resource_group ? 0 : 1}"
 
   virtual_network_subnet_id = "${azurerm_subnet.mongo.id}"
   admin_username            = "opencga"
-  ssh_key_data              = "${file("~/.ssh/id_rsa.pub")}"
+  ssh_key_data              = "${var.ssh_pub_key}"
 
   email_address = "${var.lets_encrypt_email_address}"
   cluster_size  = 3
@@ -72,7 +103,7 @@ module "mongo" {
 resource "random_string" "webservers_dns_prefix" {
   keepers = {
     # Generate a new id each time we switch to a new resource group
-    group_name = "${var.resource_group_prefix}-web"
+    group_name = "${local.web_resource_group_name}"
   }
 
   length  = 8
@@ -89,14 +120,15 @@ module "webservers" {
   source = "./webservers"
 
   location            = "${var.location}"
-  resource_group_name = "${var.resource_group_prefix}-web"
+  resource_group_name = "${local.web_resource_group_name}"
+  create_resource_group = "${var.existing_resource_group ? 0 : 1}"
 
   virtual_network_subnet_id = "${azurerm_subnet.web.id}"
 
   mount_args = "azurefiles ${module.azurefiles.storage_account_name},${module.azurefiles.share_name},${module.azurefiles.storage_key}"
 
   admin_username = "opencga"
-  ssh_key_data   = "${file("~/.ssh/id_rsa.pub")}"
+  ssh_key_data   = "${var.ssh_pub_key}"
 
   opencga_image = "${var.opencga_image}"
   iva_image     = "${var.iva_image}"
@@ -162,13 +194,14 @@ module "daemonvm" {
 
   location            = "${var.location}"
   resource_group_name = "${var.resource_group_prefix}"
+  create_resource_group = "${var.existing_resource_group ? 0 : 1}"
 
   virtual_network_subnet_id = "${azurerm_subnet.daemonvm.id}"
 
   mount_args = "azurefiles ${module.azurefiles.storage_account_name},${module.azurefiles.share_name},${module.azurefiles.storage_key}"
 
   admin_username = "opencga"
-  ssh_key_data   = "${file("~/.ssh/id_rsa.pub")}"
+  ssh_key_data   = "${var.ssh_pub_key}"
 
   opencga_image          = "${var.opencga_image}"
   opencga_init_image     = "${var.opencga_init_image}"

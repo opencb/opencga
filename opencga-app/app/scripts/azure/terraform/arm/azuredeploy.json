@@ -1,0 +1,226 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "deployContainerImage": {
+            "type": "string",
+            "defaultValue": "dotjson/aci-tf:test1"
+        },
+        "opencgaContainerImage": {
+            "type": "string",
+            "defaultValue": "opencb/opencga-app:c3824d5222c2d21620c281626d10f84f07434773"
+        },
+        "ivaContainerImage": {
+            "type": "string",
+            "defaultValue": "opencb/iva:c3824d5222c2d21620c281626d10f84f07434773"
+        },
+        "initContainerImage": {
+            "type": "string",
+            "defaultValue": "opencb/opencga-init:c3824d5222c2d21620c281626d10f84f07434773"
+        },
+        "batchContainerImage": {
+            "type": "string",
+            "defaultValue": "opencb/opencga-batch:c3824d5222c2d21620c281626d10f84f07434773"
+        },
+        "catalogSecretKey": {
+            "type": "string"
+        },
+        "adminPassword": {
+            "type": "string"
+        },
+        "letsEncryptEmailAddress": {
+            "type": "string"
+        },
+        "sshPubKeyData": {
+            "type": "string"
+        }
+    },
+    "variables": {
+        "storageAccountName": "[concat('tfstate', uniquestring(resourceGroup().id))]",
+        "storageContainerName": "terraform",
+        "tfstateBlobName": "terraform.tfstate",
+        "containerInstanceName": "[concat(resourceGroup().name, '-aci')]",
+        "identityName": "[concat(resourceGroup().name, '-identity')]",
+        "roleAssignmentId": "[guid(concat(resourceGroup().name, 'contributor'))]",
+        "contributorRoleGuid": "b24988ac-6180-42a0-ab88-20f7382dd24c",
+        "roleDefinitionId": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', variables('contributorRoleGuid'))]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+            "name": "[variables('identityName')]",
+            "apiVersion": "2015-08-31-preview",
+            "location": "[resourceGroup().location]"
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "name": "[variables('storageAccountName')]",
+            "location": "[resourceGroup().location]",
+            "apiVersion": "2018-07-01",
+            "dependsOn": [
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName'))]"
+            ],
+            "sku": {
+                "name": "Standard_LRS"
+            },
+            "kind": "StorageV2",
+            "properties": {}
+        },
+        {
+            "type": "Microsoft.Authorization/roleAssignments",
+            "apiVersion": "2017-05-01",
+            "name": "[variables('roleAssignmentId')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName'))]"
+            ],
+            "properties": {
+                "roleDefinitionId": "[variables('roleDefinitionId')]",
+                "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), '2015-08-31-preview').principalId]",
+                "scope": "[resourceGroup().id]"
+            }
+        },
+        {
+            "type": "Microsoft.ContainerInstance/containerGroups",
+            "apiVersion": "2018-10-01",
+            "name": "[variables('containerInstanceName')]",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName'))]",
+                "[resourceId('Microsoft.Authorization/roleAssignments', variables('roleAssignmentId'))]"
+            ],
+            "identity": {
+                "type": "UserAssigned",
+                "userAssignedIdentities": {
+                    "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName'))]": {}
+                }
+            },
+            "properties": {
+                "osType": "Linux",
+                "restartPolicy": "OnFailure",
+                "containers": [
+                    {
+                        "name": "terraform",
+                        "properties": {
+                            "image": "[parameters('deployContainerImage')]",
+                            "environmentVariables": [
+                                {
+                                    "name": "ARM_SKIP_CREDENTIALS_VALIDATION",
+                                    "value": true
+                                },
+                                {
+                                    "name": "ARM_SKIP_PROVIDER_REGISTRATION",
+                                    "value": true
+                                },
+                                {
+                                    "name": "ARM_USE_MSI",
+                                    "value": true
+                                },
+                                {
+                                    "name": "ARM_MSI_ENDPOINT",
+                                    "value": "http://169.254.169.254/metadata/identity/oauth2/token"
+                                },
+                                {
+                                    "name": "ARM_SUBSCRIPTION_ID",
+                                    "value": "[subscription().subscriptionId]"
+                                },
+                                {
+                                    "name": "ARM_TENANT_ID",
+                                    "value": "[subscription().tenantId]"
+                                },
+                                {
+                                    "name": "TF_VAR_location",
+                                    "value": "[resourceGroup().location]"
+                                },
+                                {
+                                    "name": "TF_VAR_opencga_image",
+                                    "value": "[parameters('opencgaContainerImage')]"
+                                },
+                                {
+                                    "name": "TF_VAR_iva_image",
+                                    "value": "[parameters('ivaContainerImage')]"
+                                },
+                                {
+                                    "name": "TF_VAR_opencga_init_image",
+                                    "value": "[parameters('initContainerImage')]"
+                                },
+                                {
+                                    "name": "TF_VAR_batch_container_image",
+                                    "value": "[parameters('batchContainerImage')]"
+                                },
+                                {
+                                    "name": "TF_VAR_catalog_secret_key",
+                                    "value": "[parameters('catalogSecretKey')]"
+                                },
+                                {
+                                    "name": "TF_VAR_opencga_admin_password",
+                                    "secureValue": "[parameters('adminPassword')]"
+                                },
+                                {
+                                    "name": "TF_VAR_lets_encrypt_email_address",
+                                    "value": "[parameters('letsEncryptEmailAddress')]"
+                                },
+                                {
+                                    "name": "TF_VAR_resource_group_prefix",
+                                    "value": "[resourceGroup().name]"
+                                },
+                                {
+                                    "name": "TF_VAR_ssh_pub_key",
+                                    "value": "[parameters('sshPubKeyData')]"
+                                },
+                                {
+                                    "name": "TF_VAR_existing_resource_group",
+                                    "value": true
+                                },
+                                {
+                                    "name": "ARM_IDENTITY",
+                                    "value": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName'))]"
+                                },
+                                {
+                                    "name": "TF_VAR_state_storage_container_name",
+                                    "value": "[variables('storageContainerName')]"
+                                },
+                                {
+                                    "name": "TF_VAR_state_storage_account_name",
+                                    "value": "[variables('storageAccountName')]"
+                                },
+                                {
+                                    "name": "TF_VAR_state_storage_account_key",
+                                    "secureValue": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value]"
+                                },
+                                {
+                                    "name": "TF_VAR_state_storage_blob_name",
+                                    "value": "[variables('tfstateBlobName')]"
+                                }
+                            ],
+                            "resources": {
+                                "requests": {
+                                    "cpu": 1,
+                                    "memoryInGB": 1
+                                }
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    ],
+    "outputs": {
+        "tfstateStorageAccountName": {
+            "type": "string",
+            "value": "[variables('storageAccountName')]"
+        },
+        "tfstateStorageAccountKey": {
+            "type": "securestring",
+            "value": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value]"
+        },
+        "tfstateContainerName": {
+            "type": "string",
+            "value": "[variables('storageContainerName')]"
+        },
+        "tfstateBlobName": {
+            "type": "string",
+            "value": "[variables('tfstateBlobName')]"
+        }
+    }
+}

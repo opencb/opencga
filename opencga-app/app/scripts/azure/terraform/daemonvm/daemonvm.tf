@@ -26,12 +26,14 @@ variable "opencga_image" {}
 variable "opencga_init_image" {}
 
 variable init_cmd {}
-variable "opencga_admin_password" {
-  
+variable "opencga_admin_password" {}
+
+variable "create_resource_group" {
+  default = true
 }
 
-
 resource "azurerm_resource_group" "opencga" {
+  count    = "${var.create_resource_group}"
   name     = "${var.resource_group_name}"
   location = "${var.location}"
 }
@@ -44,10 +46,10 @@ data "template_file" "cloud_init" {
   template = "${file("${path.module}/cloudinit.tmpl.yaml")}"
 
   vars {
-    mount_args       = "${var.mount_args}"
-    init_cmd         = "${var.init_cmd}"
-    daemon_start_cmd = "${local.daemon_start_cmd}"
-    mount_script     = "${base64gzip(file("${path.module}/../scripts/mount.py"))}"
+    mount_args              = "${var.mount_args}"
+    init_cmd                = "${var.init_cmd}"
+    daemon_start_cmd        = "${local.daemon_start_cmd}"
+    mount_script            = "${base64gzip(file("${path.module}/../scripts/mount.py"))}"
     cloud_init_check_script = "${base64gzip(file("${path.module}/../scripts/cloudinitcheck.sh"))}"
   }
 }
@@ -74,11 +76,10 @@ resource "azurerm_public_ip" "daemon" {
   resource_group_name = "${var.resource_group_name}"
 }
 
-
 resource "azurerm_network_interface" "daemon" {
   name                = "daemon-nic"
-  location            = "${azurerm_resource_group.opencga.location}"
-  resource_group_name = "${azurerm_resource_group.opencga.name}"
+  location            = "${var.location}"
+  resource_group_name = "${var.create_resource_group ? join("", azurerm_resource_group.opencga.*.name) : var.resource_group_name}"
 
   ip_configuration {
     name                          = "ipconfig"
@@ -90,8 +91,8 @@ resource "azurerm_network_interface" "daemon" {
 
 resource "azurerm_virtual_machine" "daemon" {
   name                  = "daemon-vm"
-  location              = "${azurerm_resource_group.opencga.location}"
-  resource_group_name   = "${azurerm_resource_group.opencga.name}"
+  location              = "${var.location}"
+  resource_group_name   = "${var.create_resource_group ? join("", azurerm_resource_group.opencga.*.name) : var.resource_group_name}"
   network_interface_ids = ["${azurerm_network_interface.daemon.id}"]
   vm_size               = "Standard_DS1_v2"
 
@@ -127,8 +128,8 @@ resource "azurerm_virtual_machine" "daemon" {
 
 resource "azurerm_virtual_machine_extension" "daemon" {
   name                 = "hostname"
-  location             = "${azurerm_resource_group.opencga.location}"
-  resource_group_name  = "${azurerm_resource_group.opencga.name}"
+  location             = "${var.location}"
+  resource_group_name  = "${var.create_resource_group ? join("", azurerm_resource_group.opencga.*.name) : var.resource_group_name}"
   virtual_machine_name = "${azurerm_virtual_machine.daemon.name}"
   publisher            = "Microsoft.Azure.Extensions"
   type                 = "CustomScript"

@@ -14,7 +14,12 @@ variable "resource_group_name" {
   type = "string"
 }
 
+variable "create_resource_group" {
+  default = true
+}
+
 resource "azurerm_resource_group" "hdinsight-rg" {
+  count    = "${var.create_resource_group}"
   name     = "${var.resource_group_name}"
   location = "${var.location}"
 }
