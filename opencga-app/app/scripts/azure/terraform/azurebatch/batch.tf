@@ -58,7 +58,7 @@ resource "azurerm_storage_account" "storage" {
 
 resource "azurerm_template_deployment" "batchpool" {
   name                = "batchpool"
-  resource_group_name = "${var.resource_group_name}"
+  resource_group_name = "${azurerm_resource_group.batch.name}"
 
   # these key-value pairs are passed into the ARM Template's `parameters` block
   parameters {
