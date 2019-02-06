@@ -6,4 +6,7 @@ VOLUME /opt/opencga/variants
 
 USER 1001:1001
 
-CMD ["-c" ,"echo ${OPENCGA_PASS} | /opt/opencga/bin/opencga-admin.sh catalog daemon --start"]
+HEALTHCHECK --interval=5m --timeout=3s \
+    CMD tail -n 200 /tmp/daemon.log | grep IndexDaemon: > /dev/null || killall java
+
+CMD ["-c" ,"echo ${OPENCGA_PASS} | /opt/opencga/bin/opencga-admin.sh catalog daemon --start --log-file /tmp/daemon.log"]
