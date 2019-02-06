@@ -186,8 +186,8 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             }
         }
 
-        // Update Catalog from the study configuration BEFORE executing the index and fetching files from Catalog
-        synchronizeCatalogFilesFromStorage(dataStore, studyFQNByInputFileId, inputFiles, sessionId);
+        // Update Catalog from the storage metadata. This may change the index status of the inputFiles .
+        synchronizeCatalogFilesFromStorage(dataStore, studyFQNByInputFileId, inputFiles, sessionId, FILE_GET_QUERY_OPTIONS);
 
         // Check catalog path
         String catalogOutDirId = getCatalogOutdirId(studyFQNByInputFileId, options, sessionId);
@@ -628,7 +628,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 
         List<File> filteredFiles = new ArrayList<>(fileList.size());
         for (File file : fileList) {
-            if (file.getStatus().getName().equals(File.FileStatus.READY) && file.getFormat().equals(File.Format.VCF)) {
+            if (file.getStatus().getName().equals(File.FileStatus.READY) && isVcfFormat(file)) {
                 String indexStatus;
                 if (file.getIndex() != null && file.getIndex().getStatus() != null && file.getIndex().getStatus().getName() != null) {
                     indexStatus = file.getIndex().getStatus().getName();
@@ -658,6 +658,9 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                                 indexStatus);
                         break;
                 }
+            } else {
+                logger.warn("Skip file " + file.getName() + " with format " + file.getFormat() + " and status "
+                        + file.getStatus().getName());
             }
         }
         return filteredFiles;
@@ -711,7 +714,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                 file = getOriginalFromTransformed(studyFQN, file, sessionId);
             }
 
-            if (file.getFormat().equals(File.Format.VCF) || file.getFormat().equals(File.Format.GVCF)) {
+            if (isVcfFormat(file)) {
                 String status = file.getIndex() == null || file.getIndex().getStatus() == null ? FileIndex.IndexStatus.NONE
                         : file.getIndex().getStatus().getName();
                 switch (status) {

@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.core.manager.variant.metadata;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import org.apache.commons.collections.CollectionUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -233,7 +234,7 @@ public class CatalogStorageMetadataSynchronizer {
         BiMap<Integer, String> fileNameMap = HashBiMap.create();
         Map<Integer, String> filePathMap = new HashMap<>();
         LinkedHashSet<Integer> indexedFiles;
-        if (files == null) {
+        if (CollectionUtils.isEmpty(files)) {
             metadataManager.fileMetadataIterator(study.getId()).forEachRemaining(fileMetadata -> {
                 fileNameMap.put(fileMetadata.getId(), fileMetadata.getName());
                 filePathMap.put(fileMetadata.getId(), fileMetadata.getPath());
@@ -291,7 +292,7 @@ public class CatalogStorageMetadataSynchronizer {
 
         // Update READY files
         Query indexedFilesQuery;
-        if (files == null) {
+        if (CollectionUtils.isEmpty(files)) {
             indexedFilesQuery = INDEXED_FILES_QUERY;
         } else {
             List<String> catalogFileIds = files.stream()
@@ -323,7 +324,7 @@ public class CatalogStorageMetadataSynchronizer {
 
         // Update ongoing files
         Query runningIndexFilesQuery;
-        if (files == null) {
+        if (CollectionUtils.isEmpty(files)) {
             runningIndexFilesQuery = RUNNING_INDEX_FILES_QUERY;
         } else {
             List<String> catalogFileIds = files.stream()
@@ -373,23 +374,28 @@ public class CatalogStorageMetadataSynchronizer {
                     && runningTask.currentStatus().equals(TaskMetadata.Status.RUNNING)) {
                 for (Integer fileId : runningTask.getFileIds()) {
                     String filePath = filePathMap.get(fileId);
-                    loadingFilesRegardingStorage.add(toUri(filePath));
+                    if (filePath != null) {
+                        loadingFilesRegardingStorage.add(toUri(filePath));
+                    }
                 }
             }
         }
 
-        try (DBIterator<File> iterator = catalogManager.getFileManager()
-                .iterator(study.getName(), new Query(URI.key(), loadingFilesRegardingStorage),
-                        INDEXED_FILES_QUERY_OPTIONS, sessionId)) {
-            while (iterator.hasNext()) {
-                File file = iterator.next();
-                String newStatus;
-                if (hasTransformedFile(file.getIndex())) {
-                    newStatus = IndexStatus.LOADING;
-                } else {
-                    newStatus = IndexStatus.INDEXING;
+        if (!loadingFilesRegardingStorage.isEmpty()) {
+            try (DBIterator<File> iterator = catalogManager.getFileManager()
+                    .iterator(study.getName(), new Query(URI.key(), loadingFilesRegardingStorage),
+                            INDEXED_FILES_QUERY_OPTIONS, sessionId)) {
+                while (iterator.hasNext()) {
+                    File file = iterator.next();
+                    String newStatus;
+                    if (hasTransformedFile(file.getIndex())) {
+                        newStatus = IndexStatus.LOADING;
+                    } else {
+                        newStatus = IndexStatus.INDEXING;
+                    }
+                    catalogManager.getFileManager().updateFileIndexStatus(file, newStatus,
+                            "File is being loaded regarding Storage", sessionId);
                 }
-                catalogManager.getFileManager().updateFileIndexStatus(file, newStatus, "File is being loaded regarding Storage", sessionId);
             }
         }
     }

@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.core.metadata.models;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 
 import java.util.LinkedHashSet;
@@ -72,5 +73,18 @@ public class FileMetadata extends StudyResourceMetadata<FileMetadata> {
 
     public FileMetadata setAnnotationStatus(TaskMetadata.Status annotationStatus) {
         return setStatus("annotation", annotationStatus);
+    }
+
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this)
+                .append("studyId", getStudyId())
+                .append("id", getId())
+                .append("name", getName())
+                .append("status", getStatus())
+                .append("path", path)
+                .append("samples", samples)
+                .append("variantFileMetadata", variantFileMetadata)
+                .toString();
     }
 }
