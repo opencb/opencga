@@ -134,11 +134,13 @@ public abstract class StorageOperation {
             if (files == null || files.isEmpty()) {
                 studyConfigurationFactory.synchronizeCatalogStudyFromStorage(studyMetadata, sessionId);
             } else {
-                studyConfigurationFactory.synchronizeCatalogFilesFromStorage(studyMetadata, files, sessionId);
-                // Files can be updated. Update given files
-                for (int i = 0; i < files.size(); i++) {
-                    File file = files.get(i);
-                    files.set(i, catalogManager.getFileManager().get(study, file.getId(), options, sessionId).first());
+                boolean modified = studyConfigurationFactory.synchronizeCatalogFilesFromStorage(studyMetadata, files, sessionId);
+                if (modified) {
+                    // Files updated. Reload files from catalog
+                    for (int i = 0; i < files.size(); i++) {
+                        File file = files.get(i);
+                        files.set(i, catalogManager.getFileManager().get(study, file.getId(), options, sessionId).first());
+                    }
                 }
             }
         }
