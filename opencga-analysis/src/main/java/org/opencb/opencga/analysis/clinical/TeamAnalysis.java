@@ -114,11 +114,16 @@ public class TeamAnalysis extends FamilyAnalysis {
             Phenotype phenotype = new Phenotype(disease.getId(), disease.getName(), disease.getSource(), Phenotype.Status.UNKNOWN);
 
             TeamReportedVariantCreator creator = new TeamReportedVariantCreator(biodataDiseasPanelList, null, phenotype, null, null);
+            creator.setIncludeNoTier(config.getBoolean("includeNoTier", true));
+
             reportedVariants = creator.create(queryResult.getResult());
         }
 
         // Reported low coverages management
-        List<ReportedLowCoverage> reportedLowCoverages = getReportedLowCoverage(clinicalAnalysis, diseasePanels);
+        List<ReportedLowCoverage> reportedLowCoverages = null;
+        if (config.getBoolean("includeLowCoverage", false)) {
+            reportedLowCoverages = getReportedLowCoverage(clinicalAnalysis, diseasePanels);
+        }
 
 
         // Create Interpretation

@@ -193,11 +193,14 @@ public class TieringAnalysis extends FamilyAnalysis {
             checkCompoundHeterozygous(variant, proband, compoundHeterozygousMap);
         }
 
+
+        List<ReportedVariant> reportedVariants;
+
         // Create instance of reported variant creator to obtain reported variants
         List<DiseasePanel> biodataDiseasPanelList = diseasePanels.stream().map(Panel::getDiseasePanel).collect(Collectors.toList());
         TieringReportedVariantCreator creator = new TieringReportedVariantCreator(biodataDiseasPanelList, phenotype,
                 ClinicalProperty.Penetrance.COMPLETE);
-        List<ReportedVariant> reportedVariants;
+        creator.setIncludeNoTier(config.getBoolean("includeNoTier", true));
         try {
             reportedVariants = creator.create(variantList, variantMoIMap);
         } catch (InterpretationAnalysisException e) {

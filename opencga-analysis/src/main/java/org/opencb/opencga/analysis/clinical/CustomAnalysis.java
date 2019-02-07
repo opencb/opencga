@@ -175,6 +175,7 @@ public class CustomAnalysis extends FamilyAnalysis {
                 // Default reported variant creator
                 creator = new DefaultReportedVariantCreator(phenotype, moi, null);
             }
+            creator.setIncludeNoTier(config.getBoolean("includeNoTier", true));
             reportedVariants = creator.create(variantQueryResult.getResult());
         }
 

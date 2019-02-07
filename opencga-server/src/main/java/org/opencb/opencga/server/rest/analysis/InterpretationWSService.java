@@ -719,6 +719,7 @@ public class InterpretationWSService extends AnalysisWSService {
             // Interpretation filters
             @ApiImplicitParam(name = "includeLowCoverage", value = "Include low coverage regions", dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = "maxLowCoverage", value = "Max. low coverage", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "includeNoTier", value = "Reported variants without tier", dataType = "boolean", paramType = "query"),
     })
     public Response team(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                                     String studyStr,
@@ -753,6 +754,7 @@ public class InterpretationWSService extends AnalysisWSService {
             // Interpretation filters
             @ApiImplicitParam(name = "includeLowCoverage", value = "Include low coverage regions", dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = "maxLowCoverage", value = "Max. low coverage", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "includeNoTier", value = "Reported variants without tier", dataType = "boolean", paramType = "query"),
     })
     public Response tiering(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                                                     String studyStr,
@@ -794,7 +796,7 @@ public class InterpretationWSService extends AnalysisWSService {
             // Interpretation filters
             @ApiImplicitParam(name = "includeLowCoverage", value = "Include low coverage regions", dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = "maxLowCoverage", value = "Max. low coverage", dataType = "integer", paramType = "query"),
-            //            @ApiImplicitParam(name = "disorder", value = "Disorder ID of the Individual or the Family", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "includeNoTier", value = "Reported variants without tier", dataType = "boolean", paramType = "query"),
 
             // Variant filters
             @ApiImplicitParam(name = "id", value = ID_DESCR, dataType = "string", paramType = "query"),
@@ -964,6 +966,7 @@ public class InterpretationWSService extends AnalysisWSService {
         if (queryOptions.containsKey("maxLowCoverage")) {
             analysisOptions.put("maxLowCoverage", queryOptions.getInt("maxLowCoverage"));
         }
+        analysisOptions.put("includeNoTier", queryOptions.getBoolean("includeNoTier", true));
         return analysisOptions;
     }
 }
