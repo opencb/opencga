@@ -54,6 +54,20 @@ resource "azurerm_network_security_rule" "allow-mongo-in" {
   network_security_group_name = "${azurerm_network_security_group.nsg-mongo.name}"
 }
 
+resource "azurerm_network_security_rule" "allow-http-in-mongo" {
+  name                        = "allow-http-inbound-mongo"
+  priority                    = 3200
+  direction                   = "inbound"
+  access                      = "Allow"
+  protocol                    = "*"
+  source_port_range           = "*"
+  destination_port_range      = "80"
+  source_address_prefix       = "*"
+  destination_address_prefix  = "*"
+  resource_group_name         = "${azurerm_resource_group.opencga.name}"
+  network_security_group_name = "${azurerm_network_security_group.nsg-mongo.name}"  
+}
+
 resource "azurerm_network_security_rule" "allow-ssh-in" {
   name                        = "allow-ssh-in"
   priority                    = 3200
@@ -82,6 +96,19 @@ resource "azurerm_network_security_rule" "allow-all-outbound-hdinsight" {
   network_security_group_name = "${azurerm_network_security_group.nsg-hdinsight.name}"
 }
 
+resource "azurerm_network_security_rule" "allow-http-inbound-hdinsight" {
+  name                        = "allow-http-inbound-hdinsight"
+  priority                    = 3200
+  direction                   = "inbound"
+  access                      = "Allow"
+  protocol                    = "*"
+  source_port_range           = "*"
+  destination_port_range      = "80"
+  source_address_prefix       = "*"
+  destination_address_prefix  = "*"
+  resource_group_name         = "${azurerm_resource_group.opencga.name}"
+  network_security_group_name = "${azurerm_network_security_group.nsg-hdinsight.name}"
+}
 
 resource "azurerm_subnet_network_security_group_association" "web" {
     subnet_id                   = "${azurerm_subnet.web.id}"
