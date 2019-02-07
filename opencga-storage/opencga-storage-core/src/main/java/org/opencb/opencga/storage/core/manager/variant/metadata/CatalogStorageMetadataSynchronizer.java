@@ -89,16 +89,18 @@ public class CatalogStorageMetadataSynchronizer {
      * @param study                 StudyMetadata
      * @param files                 Files to update
      * @param sessionId             User session id
+     * @return if there were modifications in catalog
      * @throws CatalogException     if there is an error with catalog
      */
-    public void synchronizeCatalogFilesFromStorage(StudyMetadata study, List<File> files, String sessionId)
+    public boolean synchronizeCatalogFilesFromStorage(StudyMetadata study, List<File> files, String sessionId)
             throws CatalogException {
         logger.info("Synchronizing study " + study.getName());
 
         if (files != null && files.isEmpty()) {
             files = null;
         }
-        synchronizeFiles(study, files, sessionId);
+
+        return synchronizeFiles(study, files, sessionId);
     }
 
     /**
@@ -111,18 +113,22 @@ public class CatalogStorageMetadataSynchronizer {
      *
      * @param study                 StudyMetadata
      * @param sessionId             User session id
+     * @return if there were modifications in catalog
      * @throws CatalogException     if there is an error with catalog
      */
-    public void synchronizeCatalogStudyFromStorage(StudyMetadata study, String sessionId)
+    public boolean synchronizeCatalogStudyFromStorage(StudyMetadata study, String sessionId)
             throws CatalogException {
         logger.info("Synchronizing study " + study.getName());
 
-        synchronizeCohorts(study, sessionId);
+        boolean modified = synchronizeCohorts(study, sessionId);
 
-        synchronizeFiles(study, null, sessionId);
+        modified |= synchronizeFiles(study, null, sessionId);
+
+        return modified;
     }
 
-    protected void synchronizeCohorts(StudyMetadata study, String sessionId) throws CatalogException {
+    protected boolean synchronizeCohorts(StudyMetadata study, String sessionId) throws CatalogException {
+        boolean modified = false;
         Map<Integer, String> sampleNameMap = new HashMap<>();
         metadataManager.sampleMetadataIterator(study.getId()).forEachRemaining(sampleMetadata -> {
             sampleNameMap.put(sampleMetadata.getId(), sampleMetadata.getName());
@@ -159,6 +165,7 @@ public class CatalogStorageMetadataSynchronizer {
                 catalogManager.getCohortManager().update(study.getName(), defaultCohortName,
                         new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(), cohortFromStorage),
                         true, null, sessionId);
+                modified = true;
             }
         }
 
@@ -202,6 +209,7 @@ public class CatalogStorageMetadataSynchronizer {
                                 cohort.getId(), cohort.getStats(), Cohort.CohortStatus.READY);
                         catalogManager.getCohortManager().setStatus(study.getName(), cohort.getId(),
                                 Cohort.CohortStatus.READY, "Update status from Storage", sessionId);
+                        modified = true;
                     }
                 }
             }
@@ -224,13 +232,16 @@ public class CatalogStorageMetadataSynchronizer {
                                 cohort.getId(), cohort.getStats(), Cohort.CohortStatus.INVALID);
                         catalogManager.getCohortManager().setStatus(study.getName(), cohort.getId(),
                                 Cohort.CohortStatus.INVALID, "Update status from Storage", sessionId);
+                        modified = true;
                     }
                 }
             }
         }
+        return modified;
     }
 
-    protected void synchronizeFiles(StudyMetadata study, List<File> files, String sessionId) throws CatalogException {
+    protected boolean synchronizeFiles(StudyMetadata study, List<File> files, String sessionId) throws CatalogException {
+        boolean modified = false;
         BiMap<Integer, String> fileNameMap = HashBiMap.create();
         Map<Integer, String> filePathMap = new HashMap<>();
         LinkedHashSet<Integer> indexedFiles;
@@ -281,7 +292,9 @@ public class CatalogStorageMetadataSynchronizer {
                         logger.debug("File \"{}\" change status from {} to {}", file.getName(),
                                 file.getIndex().getStatus().getName(), IndexStatus.READY);
                         index.getStatus().setName(IndexStatus.READY);
-                        catalogManager.getFileManager().setFileIndex(study.getName(), file.getPath(), index, sessionId);
+                        catalogManager.getFileManager()
+                                .updateFileIndexStatus(file, IndexStatus.READY, "Indexed, regarding Storage Metadata", sessionId);
+                        modified = true;
                     }
                 }
                 if (numFiles != indexedFiles.size()) {
@@ -316,6 +329,7 @@ public class CatalogStorageMetadataSynchronizer {
                             IndexStatus.READY, newStatus);
                     catalogManager.getFileManager()
                             .updateFileIndexStatus(file, newStatus, "Not indexed, regarding Storage Metadata", sessionId);
+                    modified = true;
                 }
             }
         }
@@ -360,6 +374,7 @@ public class CatalogStorageMetadataSynchronizer {
                     catalogManager.getFileManager().updateFileIndexStatus(file, newStatus,
                             "Error loading. Reset status to " + newStatus,
                             sessionId);
+                    modified = true;
                 } else {
                     loadingFilesRegardingCatalog.add(file.getName());
                 }
@@ -395,9 +410,11 @@ public class CatalogStorageMetadataSynchronizer {
                     }
                     catalogManager.getFileManager().updateFileIndexStatus(file, newStatus,
                             "File is being loaded regarding Storage", sessionId);
+                    modified = true;
                 }
             }
         }
+        return modified;
     }
 
     private String toUri(String path) {
