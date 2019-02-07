@@ -13,6 +13,7 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.core.Transcript;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.analysis.AnalysisResult;
 import org.opencb.opencga.analysis.OpenCgaAnalysis;
 import org.opencb.opencga.analysis.exceptions.AnalysisException;
@@ -60,9 +61,57 @@ public class FamilyAnalysis extends OpenCgaAnalysis<Interpretation> {
 
     @Override
     public AnalysisResult<Interpretation> execute() throws Exception {
-        // Never has to be called!!!
         return null;
     }
+
+
+    protected ClinicalAnalysis getClinicalAnalysis() throws AnalysisException {
+        QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult;
+        try {
+            clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager()
+                    .get(studyStr, clinicalAnalysisId, QueryOptions.empty(), token);
+        } catch (CatalogException e) {
+            throw new AnalysisException(e.getMessage(), e);
+        }
+        if (clinicalAnalysisQueryResult.getNumResults() == 0) {
+            throw new AnalysisException("Clinical analysis " + clinicalAnalysisId + " not found in study " + studyStr);
+        }
+
+        ClinicalAnalysis clinicalAnalysis = clinicalAnalysisQueryResult.first();
+
+        // Sanity checks
+        if (clinicalAnalysis.getFamily() == null || StringUtils.isEmpty(clinicalAnalysis.getFamily().getId())) {
+            throw new AnalysisException("Missing family in clinical analysis " + clinicalAnalysisId);
+        }
+
+        if (clinicalAnalysis.getProband() == null || StringUtils.isEmpty(clinicalAnalysis.getProband().getId())) {
+            throw new AnalysisException("Missing proband in clinical analysis " + clinicalAnalysisId);
+        }
+
+        return clinicalAnalysis;
+    }
+
+    protected Individual getProband(ClinicalAnalysis clinicalAnalysis) throws AnalysisException {
+        Individual proband = clinicalAnalysis.getProband();
+
+        String clinicalAnalysisId = clinicalAnalysis.getId();
+        // Sanity checks
+        if (proband == null) {
+            throw new AnalysisException("Missing proband in clinical analysis " + clinicalAnalysisId);
+        }
+
+        if (ListUtils.isEmpty(proband.getSamples())) {
+            throw new AnalysisException("Missing samples in proband " + proband.getId() + " in clinical analysis " + clinicalAnalysisId);
+        }
+
+        if (proband.getSamples().size() > 1) {
+            throw new AnalysisException("Found more than one sample for proband " + proband.getId() + " in clinical analysis "
+                    + clinicalAnalysisId);
+        }
+
+        return proband;
+    }
+
 
     protected List<String> getSampleNames(ClinicalAnalysis clinicalAnalysis) throws AnalysisException {
         return getSampleNames(clinicalAnalysis, null);

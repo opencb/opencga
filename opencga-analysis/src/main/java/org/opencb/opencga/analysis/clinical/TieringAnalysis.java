@@ -88,42 +88,14 @@ public class TieringAnalysis extends FamilyAnalysis {
     public InterpretationResult execute() throws AnalysisException {
         StopWatch watcher = StopWatch.createStarted();
 
-        // Sanity check
-        QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult;
-        try {
-            clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager()
-                    .get(studyStr, clinicalAnalysisId, QueryOptions.empty(), token);
-        } catch (CatalogException e) {
-            throw new AnalysisException(e.getMessage(), e);
-        }
-        if (clinicalAnalysisQueryResult.getNumResults() == 0) {
-            throw new AnalysisException("Clinical analysis " + clinicalAnalysisId + " not found in study " + studyStr);
-        }
-
-        ClinicalAnalysis clinicalAnalysis = clinicalAnalysisQueryResult.first();
-
-        if (clinicalAnalysis.getFamily() == null || StringUtils.isEmpty(clinicalAnalysis.getFamily().getId())) {
-            throw new AnalysisException("Missing family in clinical analysis " + clinicalAnalysisId);
-        }
-
-        if (clinicalAnalysis.getProband() == null || StringUtils.isEmpty(clinicalAnalysis.getProband().getId())) {
-            throw new AnalysisException("Missing proband in clinical analysis " + clinicalAnalysisId);
-        }
-
-        Individual proband = clinicalAnalysis.getProband();
-        if (ListUtils.isEmpty(proband.getSamples())) {
-            throw new AnalysisException("Missing samples in proband " + proband.getId() + " in clinical analysis " + clinicalAnalysisId);
-        }
-
-        if (proband.getSamples().size() > 1) {
-            throw new AnalysisException("Found more than one sample for proband " + proband.getId() + " in clinical analysis "
-                    + clinicalAnalysisId);
-        }
+        // Get and check clinical analysis and proband
+        ClinicalAnalysis clinicalAnalysis = getClinicalAnalysis();
+        Individual proband = getProband(clinicalAnalysis);
 
         // Get disease panels from IDs
         List<Panel> diseasePanels = getDiseasePanelsFromIds(diseasePanelIds);
 
-        // Check sample and proband exists
+        // Get pedigree and phenotype
         Pedigree pedigree = FamilyManager.getPedigreeFromFamily(clinicalAnalysis.getFamily());
         OntologyTerm disease = clinicalAnalysis.getDisorder();
         Phenotype phenotype = new Phenotype(disease.getId(), disease.getName(), disease.getSource(), Phenotype.Status.UNKNOWN);
