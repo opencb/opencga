@@ -30,16 +30,16 @@ import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.transform.DiscardDuplicatedVariantsResolver;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHBaseArchiveDataWriter;
-import org.opencb.opencga.storage.hadoop.variant.load.VariantHadoopDBWriter;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBLoader;
+import org.opencb.opencga.storage.hadoop.variant.load.VariantHadoopDBWriter;
 import org.opencb.opencga.storage.hadoop.variant.transform.VariantSliceReader;
 import org.opencb.opencga.storage.hadoop.variant.transform.VariantToVcfSliceConverterTask;
 import org.slf4j.Logger;
@@ -181,7 +181,8 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         } else {
             sampleIndexDBLoader = new SampleIndexDBLoader(dbAdaptor.getHBaseManager(),
                     dbAdaptor.getTableNameGenerator().getSampleIndexTableName(helper.getStudyId()), sampleIds,
-                    dbAdaptor.getGenomeHelper().getColumnFamily());
+                    dbAdaptor.getGenomeHelper().getColumnFamily(),
+                    getOptions());
         }
 
 //        ((TaskMetadata<VcfSlice, VcfSlice>) t -> t)
@@ -268,7 +269,8 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         } else {
             sampleIndexDBLoader = new SampleIndexDBLoader(dbAdaptor.getHBaseManager(),
                     dbAdaptor.getTableNameGenerator().getSampleIndexTableName(studyId), sampleIds,
-                    dbAdaptor.getGenomeHelper().getColumnFamily());
+                    dbAdaptor.getGenomeHelper().getColumnFamily(),
+                    getOptions());
         }
 
         // TaskMetadata
