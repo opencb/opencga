@@ -1,23 +1,23 @@
 resource "azurerm_network_security_group" "nsg-web" {
-  name                = "nsg-opencga"
+  name                = "nsg-opencga-web"
   location            = "${var.location}"
   resource_group_name = "${azurerm_resource_group.opencga.name}" 
 }
 
 resource "azurerm_network_security_group" "nsg-hdinsight" {
-  name                = "nsg-opencga"
+  name                = "nsg-opencga-hdinsight"
   location            = "${var.location}"
   resource_group_name = "${azurerm_resource_group.opencga.name}" 
 }
 
 resource "azurerm_network_security_group" "nsg-mongo" {
-  name                = "nsg-opencga"
+  name                = "nsg-opencga-mongo"
   location            = "${var.location}"
   resource_group_name = "${azurerm_resource_group.opencga.name}" 
 }
 
 resource "azurerm_network_security_group" "nsg-solr" {
-  name                = "nsg-opencga"
+  name                = "nsg-opencga-solr"
   location            = "${var.location}"
   resource_group_name = "${azurerm_resource_group.opencga.name}" 
 }
@@ -29,13 +29,13 @@ resource "azurerm_network_security_group" "nsg-batch" {
 }
 
 resource "azurerm_network_security_group" "nsg-avere" {
-  name                = "nsg-opencga"
+  name                = "nsg-opencga-avere"
   location            = "${var.location}"
   resource_group_name = "${azurerm_resource_group.opencga.name}" 
 }
 
 resource "azurerm_network_security_group" "nsg-daemonvm" {
-  name                = "nsg-opencga"
+  name                = "nsg-opencga-daemonvm"
   location            = "${var.location}"
   resource_group_name = "${azurerm_resource_group.opencga.name}" 
 }
