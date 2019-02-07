@@ -40,6 +40,34 @@ resource "azurerm_network_security_group" "nsg-daemonvm" {
   resource_group_name = "${azurerm_resource_group.opencga.name}" 
 }
 
+resource "azurerm_network_security_rule" "allow-http-in-web" {
+  name                        = "allow-http-in-web"
+  priority                    = 3100
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "*"
+  source_port_range           = "*"
+  destination_port_range      = "80"
+  source_address_prefix       = "*"
+  destination_address_prefix  = "*"
+  resource_group_name         = "${azurerm_resource_group.opencga.name}"
+  network_security_group_name = "${azurerm_network_security_group.nsg-web.name}"
+}
+
+resource "azurerm_network_security_rule" "allow-https-in-web" {
+  name                        = "allow-https-in-web"
+  priority                    = 3101
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "*"
+  source_port_range           = "*"
+  destination_port_range      = "443"
+  source_address_prefix       = "*"
+  destination_address_prefix  = "*"
+  resource_group_name         = "${azurerm_resource_group.opencga.name}"
+  network_security_group_name = "${azurerm_network_security_group.nsg-web.name}"
+}
+
 resource "azurerm_network_security_rule" "allow-mongo-in" {
   name                        = "allow-mongo-in"
   priority                    = 3100
