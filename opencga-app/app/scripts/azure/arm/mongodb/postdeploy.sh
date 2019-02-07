@@ -31,12 +31,47 @@ installDeps () {
     sleep 15
 }
 
+
+scanForNewDisks() {
+    # Looks for unpartitioned disks
+    DEVS=($(fdisk -l 2>/dev/null | egrep -o '(/dev/[^:]*):' | egrep -o '([^:]*)'))
+
+    for DEV in "${DEVS[@]}";
+    do
+        isPartitioned ${DEV}
+    done
+}
+
+isPartitioned() {
+    OUTPUT=$(partx -s ${1} 2>&1)
+    if [[ "$OUTPUT" == *"failed to read partition table"* ]]; then
+        # found unpartitioned disk
+        formatAndMountDisk "${DEV}"
+    fi
+}
+
+formatAndMountDisk() {
+    #partitions primary linux partition on new disk
+    echo 'type=83' | sfdisk ${1}
+    mkfs -t ext4 ${1}1
+    mkdir /datadrive
+    mount -o acl ${1}1 /datadrive
+    fs_uuid=$(blkid -o value -s UUID ${1}1)
+    echo "UUID=${fs_uuid}   /datadrive   ext4   defaults,nofail,acl   1   2" >> /etc/fstab
+}
+
 generateCertificate() {
     sed -i -e 's/# server_names_hash_bucket_size 64/server_names_hash_bucket_size 128/g' /etc/nginx/nginx.conf
     certbot --nginx -d ${APP_DNS_NAME} -m ${CERT_EMAIL} --agree-tos -q
     nginx -t && nginx -s reload
     cat /etc/letsencrypt/live/${APP_DNS_NAME}/privkey.pem /etc/letsencrypt/live/${APP_DNS_NAME}/cert.pem > /etc/ssl/mongo.pem
     cat /etc/letsencrypt/live/${APP_DNS_NAME}/chain.pem >> /etc/ssl/ca.pem
+
+    #configure mongodb to use /datadrive for storage
+    mkdir /datadrive/mongodb
+    setfacl -R -m u:mongodb:rwx /datadrive/mongodb
+    sed -i -e '/dbPath/ s/: .*/: \/datadrive\/mongodb /' /etc/mongod.conf
+
     systemctl restart mongod
     sleep 10
 }
@@ -102,18 +137,22 @@ createReplicaSet() {
 
 #install flow
 installDeps
+scanForNewDisks
 generateCertificate
 configureMongoDB
 
-# only for primary mongodb instance
-if [ $VM_INDEX -eq 0 ]
+if [ "$VM_INDEX" -eq 0 ]
 then
     generateMongoKeyFile
 
-    #waiting for other mongodb instances to be successfully configured
-    sleep 120
+    if [ "$CLUSTER_SIZE" -gt 1 ]
+    then
+        #waiting for other mongodb instances to be successfully configured
+        sleep 120
 
-    createReplicaSet
+        createReplicaSet
+    fi
 else
     configureSlaveNodes
 fi
+
