@@ -1615,11 +1615,11 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                                        Predicate<TaskMetadata> allowConcurrent)
             throws StorageEngineException {
 
-        TaskMetadata resumeOperation = null;
+        TaskMetadata resumeTask = null;
         Iterator<TaskMetadata> iterator = taskIterator(studyId);
         while (iterator.hasNext()) {
-            TaskMetadata operation = iterator.next();
-            TaskMetadata.Status currentStatus = operation.currentStatus();
+            TaskMetadata task = iterator.next();
+            TaskMetadata.Status currentStatus = task.currentStatus();
 
             switch (currentStatus) {
                 case READY:
@@ -1628,27 +1628,27 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 case DONE:
                 case RUNNING:
                     if (!resume) {
-                        if (operation.sameOperation(fileIds, type, jobOperationName)) {
-                            throw StorageEngineException.currentOperationInProgressException(operation);
+                        if (task.sameOperation(fileIds, type, jobOperationName)) {
+                            throw StorageEngineException.currentOperationInProgressException(task);
                         } else {
-                            if (allowConcurrent.test(operation)) {
+                            if (allowConcurrent.test(task)) {
                                 break;
                             } else {
-                                throw StorageEngineException.otherOperationInProgressException(operation, jobOperationName, fileIds);
+                                throw StorageEngineException.otherOperationInProgressException(task, jobOperationName, fileIds);
                             }
                         }
                     }
                     // DO NOT BREAK!. Resuming last loading, go to error case.
                 case ERROR:
-                    if (!operation.sameOperation(fileIds, type, jobOperationName)) {
-                        if (allowConcurrent.test(operation)) {
+                    if (!task.sameOperation(fileIds, type, jobOperationName)) {
+                        if (allowConcurrent.test(task)) {
                             break;
                         } else {
-                            throw StorageEngineException.otherOperationInProgressException(operation, jobOperationName, fileIds, resume);
+                            throw StorageEngineException.otherOperationInProgressException(task, jobOperationName, fileIds, resume);
                         }
                     } else {
-                        logger.info("Resuming last batch operation \"" + operation.getName() + "\" due to error.");
-                        resumeOperation = operation;
+                        logger.info("Resuming last batch operation \"" + task.getName() + "\" due to error.");
+                        resumeTask = task;
                     }
                     break;
                 default:
@@ -1656,26 +1656,27 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             }
         }
 
-        TaskMetadata operation;
-        if (resumeOperation == null) {
-            operation = new TaskMetadata(newTaskId(studyId), jobOperationName, fileIds, System.currentTimeMillis(), type);
-            unsecureUpdateTask(studyId, operation);
+        TaskMetadata task;
+        if (resumeTask == null) {
+            task = new TaskMetadata(newTaskId(studyId), jobOperationName, fileIds, System.currentTimeMillis(), type);
+            task.addStatus(Calendar.getInstance().getTime(), TaskMetadata.Status.RUNNING);
+            unsecureUpdateTask(studyId, task);
         } else {
-            operation = resumeOperation;
+            task = resumeTask;
 
-            if (!Objects.equals(operation.currentStatus(), TaskMetadata.Status.DONE)) {
-                TreeMap<Date, TaskMetadata.Status> status = operation.getStatus();
-                operation = updateTask(studyId, operation.getId(), task -> {
-                    if (!task.getStatus().equals(status)) {
-                        throw new StorageEngineException("Attempt to execute a concurrent modification of task " + task.getName()
-                                + " (" + task.getId() + ") ");
+            if (!Objects.equals(task.currentStatus(), TaskMetadata.Status.DONE)) {
+                TreeMap<Date, TaskMetadata.Status> status = task.getStatus();
+                task = updateTask(studyId, task.getId(), thisTask -> {
+                    if (!thisTask.getStatus().equals(status)) {
+                        throw new StorageEngineException("Attempt to execute a concurrent modification of task " + thisTask.getName()
+                                + " (" + thisTask.getId() + ") ");
                     } else {
-                        return task.addStatus(Calendar.getInstance().getTime(), TaskMetadata.Status.RUNNING);
+                        return thisTask.addStatus(Calendar.getInstance().getTime(), TaskMetadata.Status.RUNNING);
                     }
                 });
             }
         }
-        return operation;
+        return task;
     }
 
     @Override
