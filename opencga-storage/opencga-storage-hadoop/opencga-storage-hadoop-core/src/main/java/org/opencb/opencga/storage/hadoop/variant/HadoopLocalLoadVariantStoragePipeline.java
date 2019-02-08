@@ -339,7 +339,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
     }
 
     @Override
-    public void securePostLoad(List<Integer> fileIds, StudyMetadata studyMetadata) throws StorageEngineException {
+    protected void securePostLoad(List<Integer> fileIds, StudyMetadata studyMetadata) throws StorageEngineException {
         super.securePostLoad(fileIds, studyMetadata);
         getMetadataManager().setStatus(getStudyId(), taskId, TaskMetadata.Status.READY);
     }

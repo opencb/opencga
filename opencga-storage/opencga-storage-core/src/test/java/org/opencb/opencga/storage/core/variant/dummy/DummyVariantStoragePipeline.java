@@ -95,7 +95,7 @@ public class DummyVariantStoragePipeline extends VariantStoragePipeline {
     }
 
     @Override
-    public void securePostLoad(List<Integer> fileIds, StudyMetadata studyMetadata) throws StorageEngineException {
+    protected void securePostLoad(List<Integer> fileIds, StudyMetadata studyMetadata) throws StorageEngineException {
         super.securePostLoad(fileIds, studyMetadata);
         TaskMetadata.Status status = dbAdaptor.getMetadataManager()
                 .setStatus(studyMetadata.getId(), "load", fileIds, TaskMetadata.Status.READY);

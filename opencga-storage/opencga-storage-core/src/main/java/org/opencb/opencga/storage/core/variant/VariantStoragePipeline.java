@@ -640,17 +640,18 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         //Update StudyMetadata
         getMetadataManager().lockAndUpdate(getStudyId(), sm -> {
             securePostLoad(finalFileIds, sm);
+            finalSecurePostLoad(finalFileIds, sm);
             return sm;
         });
         return input;
     }
 
-    public void securePostLoad(List<Integer> fileIds, StudyMetadata studyMetadata) throws StorageEngineException {
-        VariantStorageMetadataManager metadataManager = getMetadataManager();
-        int studyId = getStudyId();
+    protected void securePostLoad(List<Integer> fileIds, StudyMetadata studyMetadata) throws StorageEngineException {
+    }
 
-        // Update indexed files
-        metadataManager.addIndexedFiles(studyId, fileIds);
+    private void finalSecurePostLoad(List<Integer> fileIds, StudyMetadata studyMetadata) throws StorageEngineException {
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
+        int studyId = studyMetadata.getId();
 
         // Update the cohort ALL. Invalidate if needed
         String defaultCohortName = StudyEntry.DEFAULT_COHORT;
@@ -663,6 +664,9 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         metadataManager.addSamplesToCohort(studyId, defaultCohortName, samples);
 
         logger.info("Add " + samples.size() + " loaded samples to Default Cohort \"" + defaultCohortName + '"');
+
+        // Update indexed files
+        metadataManager.addIndexedFiles(studyId, fileIds);
     }
 
     @Override

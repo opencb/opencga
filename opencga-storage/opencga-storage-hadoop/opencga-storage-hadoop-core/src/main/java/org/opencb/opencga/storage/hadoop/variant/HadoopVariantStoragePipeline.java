@@ -325,7 +325,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
     }
 
     @Override
-    public void securePostLoad(List<Integer> fileIds, StudyMetadata studyMetadata) throws StorageEngineException {
+    protected void securePostLoad(List<Integer> fileIds, StudyMetadata studyMetadata) throws StorageEngineException {
         super.securePostLoad(fileIds, studyMetadata);
         studyMetadata.getAttributes().put(MISSING_GENOTYPES_UPDATED, false);
     }

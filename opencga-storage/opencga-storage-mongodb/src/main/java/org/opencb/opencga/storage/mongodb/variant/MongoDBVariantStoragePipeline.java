@@ -700,7 +700,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     }
 
     @Override
-    public void securePostLoad(List<Integer> fileIds, StudyMetadata studyMetadata) throws StorageEngineException {
+    protected void securePostLoad(List<Integer> fileIds, StudyMetadata studyMetadata) throws StorageEngineException {
         super.securePostLoad(fileIds, studyMetadata);
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         TaskMetadata.Status status = metadataManager.setStatus(studyMetadata.getId(), currentTask.getId(), TaskMetadata.Status.READY);

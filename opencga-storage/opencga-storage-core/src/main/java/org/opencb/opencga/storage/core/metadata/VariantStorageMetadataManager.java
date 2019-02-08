@@ -675,6 +675,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         Set<Integer> samples = new HashSet<>();
         for (Integer fileId : fileIds) {
             updateFileMetadata(studyId, fileId, fileMetadata -> {
+                logger.info("Mark file " + fileMetadata.getName() + " as INDEXED");
                 samples.addAll(fileMetadata.getSamples());
                 return fileMetadata.setIndexStatus(TaskMetadata.Status.READY);
             });
