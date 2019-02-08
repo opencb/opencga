@@ -13,14 +13,14 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConverter.*;
+import static org.opencb.opencga.storage.hadoop.variant.index.sample.HBaseToSampleIndexConverter.*;
 
 /**
  * Created on 31/01/19.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class VariantsToSampleIndexConverter {
+public class SampleIndexToHBaseConverter {
 
     public static final double QUAL_THRESHOLD_20 = 20;
     public static final double QUAL_THRESHOLD_40 = 40;
@@ -36,7 +36,7 @@ public class VariantsToSampleIndexConverter {
     public static final byte UNUSED_6_MASK     = (byte) (1 << 6);
     public static final byte UNUSED_7_MASK     = (byte) (1 << 7);
 
-    public VariantsToSampleIndexConverter(byte[] family) {
+    public SampleIndexToHBaseConverter(byte[] family) {
         this.family = family;
     }
 
@@ -82,7 +82,7 @@ public class VariantsToSampleIndexConverter {
         String qualStr = file.getAttributes().get(StudyEntry.QUAL);
         double qual;
         try {
-            if (qualStr.isEmpty() || ".".equals(qualStr)) {
+            if (qualStr == null || qualStr.isEmpty() || ".".equals(qualStr)) {
                 qual = 0;
             } else {
                 qual = Double.parseDouble(qualStr);

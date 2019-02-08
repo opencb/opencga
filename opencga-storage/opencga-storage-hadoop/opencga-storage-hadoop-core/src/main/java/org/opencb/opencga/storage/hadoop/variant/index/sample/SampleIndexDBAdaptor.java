@@ -135,8 +135,8 @@ public class SampleIndexDBAdaptor {
         String tableName = tableNameGenerator.getSampleIndexTableName(study);
 
         return hBaseManager.act(tableName, table -> {
-            Get get = new Get(SampleIndexConverter.toRowKey(sample, chromosome, position));
-            SampleIndexConverter converter = new SampleIndexConverter();
+            Get get = new Get(HBaseToSampleIndexConverter.toRowKey(sample, chromosome, position));
+            HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter();
             try {
                 Result result = table.get(get);
                 if (result != null) {
@@ -156,8 +156,8 @@ public class SampleIndexDBAdaptor {
         return hBaseManager.act(tableName, table -> {
 
             Scan scan = new Scan();
-            scan.setRowPrefixFilter(SampleIndexConverter.toRowKey(sample));
-            SampleIndexConverter converter = new SampleIndexConverter();
+            scan.setRowPrefixFilter(HBaseToSampleIndexConverter.toRowKey(sample));
+            HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter();
             try {
                 ResultScanner scanner = table.getScanner(scan);
                 Iterator<Result> resultIterator = scanner.iterator();
@@ -203,7 +203,7 @@ public class SampleIndexDBAdaptor {
                     for (Region subRegion : subRegions) {
                         if (query.getAnnotationIndexMask() == EMPTY_MASK && query.getFileIndexMask() == EMPTY_MASK
                                 && (subRegion == null || startsAtBatch(subRegion) && endsAtBatch(subRegion))) {
-                            SampleIndexConverter converter = new SampleIndexConverter(query, subRegion);
+                            HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter(query, subRegion);
                             Scan scan = parse(query.forSample(sample, finalGts), subRegion, true);
                             try {
                                 ResultScanner scanner = table.getScanner(scan);
@@ -216,7 +216,7 @@ public class SampleIndexDBAdaptor {
                                 throw VariantQueryException.internalException(e);
                             }
                         } else {
-                            SampleIndexConverter converter = new SampleIndexConverter(query, subRegion);
+                            HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter(query, subRegion);
                             Scan scan = parse(query.forSample(sample, finalGts), subRegion, false);
                             try {
                                 ResultScanner scanner = table.getScanner(scan);
@@ -310,31 +310,31 @@ public class SampleIndexDBAdaptor {
         int studyId = toStudyId(query.getStudy());
         int sampleId = toSampleId(studyId, query.getSample());
         if (region != null) {
-            scan.setStartRow(SampleIndexConverter.toRowKey(sampleId, region.getChromosome(), region.getStart()));
-            scan.setStopRow(SampleIndexConverter.toRowKey(sampleId, region.getChromosome(),
+            scan.setStartRow(HBaseToSampleIndexConverter.toRowKey(sampleId, region.getChromosome(), region.getStart()));
+            scan.setStopRow(HBaseToSampleIndexConverter.toRowKey(sampleId, region.getChromosome(),
                     region.getEnd() + (region.getEnd() == Integer.MAX_VALUE ? 0 : SampleIndexDBLoader.BATCH_SIZE)));
         } else {
-            scan.setRowPrefixFilter(SampleIndexConverter.toRowKey(sampleId));
+            scan.setRowPrefixFilter(HBaseToSampleIndexConverter.toRowKey(sampleId));
         }
         for (String gt : query.getGenotypes()) {
             if (count) {
-                scan.addColumn(family, SampleIndexConverter.toGenotypeCountColumn(gt));
+                scan.addColumn(family, HBaseToSampleIndexConverter.toGenotypeCountColumn(gt));
             } else {
-                scan.addColumn(family, SampleIndexConverter.toGenotypeColumn(gt));
+                scan.addColumn(family, HBaseToSampleIndexConverter.toGenotypeColumn(gt));
                 if (query.getAnnotationIndexMask() != EMPTY_MASK) {
-                    scan.addColumn(family, SampleIndexConverter.toAnnotationIndexColumn(gt));
+                    scan.addColumn(family, HBaseToSampleIndexConverter.toAnnotationIndexColumn(gt));
                 }
                 if (query.getFileIndexMask() != EMPTY_MASK) {
-                    scan.addColumn(family, SampleIndexConverter.toFileIndexColumn(gt));
+                    scan.addColumn(family, HBaseToSampleIndexConverter.toFileIndexColumn(gt));
                 }
             }
         }
 
 
         logger.info("StartRow = " + Bytes.toStringBinary(scan.getStartRow()) + " == "
-                + SampleIndexConverter.rowKeyToString(scan.getStartRow()));
+                + HBaseToSampleIndexConverter.rowKeyToString(scan.getStartRow()));
         logger.info("StopRow = " + Bytes.toStringBinary(scan.getStopRow()) + " == "
-                + SampleIndexConverter.rowKeyToString(scan.getStopRow()));
+                + HBaseToSampleIndexConverter.rowKeyToString(scan.getStopRow()));
         logger.info("columns = " + scan.getFamilyMap().getOrDefault(family, Collections.emptyNavigableSet())
                 .stream().map(Bytes::toString).collect(Collectors.joining(",")));
         logger.info("MaxResultSize = " + scan.getMaxResultSize());

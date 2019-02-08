@@ -27,14 +27,14 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
     // Map from IndexChunk -> List (following sampleIds order) of Map<Genotype, StringBuilder>
     private final Map<IndexChunk, List<Map<String, SortedSet<Variant>>>> buffer = new LinkedHashMap<>();
     private final HashSet<String> genotypes = new HashSet<>();
-    private final VariantsToSampleIndexConverter converter;
+    private final SampleIndexToHBaseConverter converter;
     private final ObjectMap options;
 
     public SampleIndexDBLoader(HBaseManager hBaseManager, String tableName, List<Integer> sampleIds, byte[] family, ObjectMap options) {
         super(hBaseManager, tableName);
         this.sampleIds = sampleIds;
         this.family = family;
-        converter = new VariantsToSampleIndexConverter(family);
+        converter = new SampleIndexToHBaseConverter(family);
         this.options = options;
     }
 
@@ -77,7 +77,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
             int splits = files / preSplitSize;
             ArrayList<byte[]> preSplits = new ArrayList<>(splits);
             for (int i = 0; i < splits; i++) {
-                preSplits.add(SampleIndexConverter.toRowKey(i * preSplitSize));
+                preSplits.add(HBaseToSampleIndexConverter.toRowKey(i * preSplitSize));
             }
 
             hBaseManager.createTableIfNeeded(tableName, family, preSplits, Compression.getCompressionAlgorithmByName(
@@ -106,7 +106,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
                                 return list;
                             })
                             .get(sampleIdx)
-                            .computeIfAbsent(gt, k -> new TreeSet<>(SampleIndexConverter.INTRA_CHROMOSOME_VARIANT_COMPARATOR));
+                            .computeIfAbsent(gt, k -> new TreeSet<>(HBaseToSampleIndexConverter.INTRA_CHROMOSOME_VARIANT_COMPARATOR));
                     variantsList.add(variant);
                 }
                 sampleIdx++;
@@ -162,7 +162,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
                 int sampleIdx = sampleIterator.nextIndex();
                 Integer sampleId = sampleIterator.next();
 
-                byte[] rk = SampleIndexConverter.toRowKey(sampleId, indexChunk.chromosome, indexChunk.position);
+                byte[] rk = HBaseToSampleIndexConverter.toRowKey(sampleId, indexChunk.chromosome, indexChunk.position);
                 Put put = converter.convert(rk, gtsMap, sampleIdx);
                 if (!put.isEmpty()) {
                     puts.add(put);

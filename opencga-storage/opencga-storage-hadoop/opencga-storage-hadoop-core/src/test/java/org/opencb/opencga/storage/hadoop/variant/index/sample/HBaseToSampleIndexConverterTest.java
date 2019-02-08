@@ -7,14 +7,14 @@ import java.util.Arrays;
 
 import static org.apache.hadoop.hbase.CellUtil.createCell;
 import static org.apache.hadoop.hbase.util.Bytes.toBytes;
-import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConverter.splitValue;
+import static org.opencb.opencga.storage.hadoop.variant.index.sample.HBaseToSampleIndexConverter.splitValue;
 
 /**
  * Created on 01/02/19.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class SampleIndexConverterTest {
+public class HBaseToSampleIndexConverterTest {
 
     @Test
     public void splitValueTest() {

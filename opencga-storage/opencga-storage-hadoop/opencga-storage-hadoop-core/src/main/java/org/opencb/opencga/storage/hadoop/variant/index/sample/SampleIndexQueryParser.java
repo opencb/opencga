@@ -151,10 +151,10 @@ public class SampleIndexQueryParser {
                 boolean indel = !types.isEmpty(); // Other nonSNV values
 
                 if (snv && !indel) { // Pure SNV
-                    fileIndexMask |= VariantsToSampleIndexConverter.SNV_MASK;
-                    fileIndex |= VariantsToSampleIndexConverter.SNV_MASK;
+                    fileIndexMask |= SampleIndexToHBaseConverter.SNV_MASK;
+                    fileIndex |= SampleIndexToHBaseConverter.SNV_MASK;
                 } else if (indel && !snv) {
-                    fileIndexMask |= VariantsToSampleIndexConverter.SNV_MASK;
+                    fileIndexMask |= SampleIndexToHBaseConverter.SNV_MASK;
                 } // else ignore mixed SNV and INDEL filters
             }
         }

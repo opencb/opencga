@@ -76,7 +76,7 @@ public class SampleIndexAnnotationLoader {
             }
 
             // Ensure is sorted as expected
-            annotationMasks.sort(Comparator.comparing(Pair::getKey, SampleIndexConverter.INTRA_CHROMOSOME_VARIANT_COMPARATOR));
+            annotationMasks.sort(Comparator.comparing(Pair::getKey, HBaseToSampleIndexConverter.INTRA_CHROMOSOME_VARIANT_COMPARATOR));
 
             for (Integer sampleId : samples) {
                 Map<String, List<Variant>> map = sampleDBAdaptor.rawQuery(studyId, sampleId, chromosome, start);
@@ -138,7 +138,7 @@ public class SampleIndexAnnotationLoader {
 
     private Put annotate(String chromosome, int start, Integer sampleId,
                         Map<String, List<Variant>> sampleIndex, List<Pair<Variant, Byte>> annotationMasks) {
-        byte[] rk = SampleIndexConverter.toRowKey(sampleId, chromosome, start);
+        byte[] rk = HBaseToSampleIndexConverter.toRowKey(sampleId, chromosome, start);
         Put put = new Put(rk);
 
         for (Map.Entry<String, List<Variant>> entry : sampleIndex.entrySet()) {
@@ -177,7 +177,7 @@ public class SampleIndexAnnotationLoader {
 //                            throw new IllegalStateException(msg);
             }
 
-            put.addColumn(family, SampleIndexConverter.toAnnotationIndexColumn(gt), annotations);
+            put.addColumn(family, HBaseToSampleIndexConverter.toAnnotationIndexColumn(gt), annotations);
         }
         return put;
     }

@@ -58,7 +58,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationInde
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.HBaseToSampleIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 
 import java.io.*;
@@ -457,7 +457,7 @@ public class VariantHbaseTestUtils {
                         }
 
                         out.println("_______________________");
-                        out.println(SampleIndexConverter.rowKeyToString(result.getRow()));
+                        out.println(HBaseToSampleIndexConverter.rowKeyToString(result.getRow()));
                         for (Map.Entry<String, ?> entry : map.entrySet()) {
                             out.println("\t" + entry.getKey() + " = " + entry.getValue());
                         }

@@ -26,7 +26,7 @@ import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.testInd
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class SampleIndexConverter implements Converter<Result, Collection<Variant>> {
+public class HBaseToSampleIndexConverter implements Converter<Result, Collection<Variant>> {
 
     public static final Comparator<Variant> INTRA_CHROMOSOME_VARIANT_COMPARATOR = Comparator.comparing(Variant::getStart)
             .thenComparing(Variant::getEnd)
@@ -50,14 +50,14 @@ public class SampleIndexConverter implements Converter<Result, Collection<Varian
     private final byte fileIndexMask;
     private final byte fileIndex;
 
-    public SampleIndexConverter() {
+    public HBaseToSampleIndexConverter() {
         this.regionFilter = null;
         this.annotationIndexMask = IndexUtils.EMPTY_MASK;
         this.fileIndexMask = IndexUtils.EMPTY_MASK;
         this.fileIndex = IndexUtils.EMPTY_MASK;
     }
 
-    public SampleIndexConverter(SampleIndexQuery query, Region region) {
+    public HBaseToSampleIndexConverter(SampleIndexQuery query, Region region) {
         this.regionFilter = region;
         this.annotationIndexMask = query.getAnnotationIndexMask();
         this.fileIndexMask = query.getFileIndexMask();
@@ -274,7 +274,7 @@ public class SampleIndexConverter implements Converter<Result, Collection<Varian
         int count = 0;
         for (Cell cell : result.rawCells()) {
             String column = Bytes.toString(CellUtil.cloneQualifier(cell));
-            if (column.startsWith(SampleIndexConverter.GENOTYPE_COUNT_PREFIX)) {
+            if (column.startsWith(HBaseToSampleIndexConverter.GENOTYPE_COUNT_PREFIX)) {
                 count += Bytes.toInt(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
             }
         }

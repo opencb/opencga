@@ -11,7 +11,7 @@ import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.EMPTY_M
 import static org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser.parseAnnotationMask;
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser.parseFileMask;
-import static org.opencb.opencga.storage.hadoop.variant.index.sample.VariantsToSampleIndexConverter.SNV_MASK;
+import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexToHBaseConverter.SNV_MASK;
 
 /**
  * Created on 08/01/19.

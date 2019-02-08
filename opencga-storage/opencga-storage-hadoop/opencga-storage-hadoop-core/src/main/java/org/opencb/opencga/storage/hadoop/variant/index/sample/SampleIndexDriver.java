@@ -258,7 +258,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
 
                 if (SampleIndexDBLoader.validGenotype(gt)) {
                     ImmutableBytesWritable key = new ImmutableBytesWritable(
-                            SampleIndexConverter.toRowKey(sampleId, variant.getChromosome(), variant.getStart()));
+                            HBaseToSampleIndexConverter.toRowKey(sampleId, variant.getChromosome(), variant.getStart()));
                     GtVariantsWritable value = new GtVariantsWritable(gt, variant.toString());
                     context.write(key, value);
                     if (samplesToCount.contains(sampleId)) {

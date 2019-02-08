@@ -691,8 +691,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                     List<org.apache.hadoop.hbase.util.Pair<byte[], byte[]>> regions = new ArrayList<>();
                     for (Integer sampleId : sampleIds) {
                         regions.add(new org.apache.hadoop.hbase.util.Pair<>(
-                                SampleIndexConverter.toRowKey(sampleId),
-                                SampleIndexConverter.toRowKey(sampleId + 1)));
+                                HBaseToSampleIndexConverter.toRowKey(sampleId),
+                                HBaseToSampleIndexConverter.toRowKey(sampleId + 1)));
                     }
                     String[] deleteFromSampleIndexArgs = DeleteHBaseColumnDriver.buildArgs(sampleIndexTable, null, true, regions, options);
                     getMRExecutor().run(DeleteHBaseColumnDriver.class, deleteFromSampleIndexArgs, options,
