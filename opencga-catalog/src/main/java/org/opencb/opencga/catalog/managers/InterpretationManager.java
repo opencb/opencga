@@ -118,11 +118,12 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
         // Now, we add the interpretation to the clinical analysis
         ObjectMap parameters = new ObjectMap();
-        parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key(), Arrays.asList(interpretation));
+        parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key(), Collections.singletonList(queryResult.first()));
+        QueryOptions queryOptions = new QueryOptions();
         Map<String, Object> actionMap = new HashMap<>();
         actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key(), ParamUtils.UpdateAction.ADD.name());
-        parameters.put(Constants.ACTIONS, actionMap);
-        catalogManager.getClinicalAnalysisManager().update(resource.getStudy().getFqn(), clinicalAnalysisStr, parameters, null, sessionId);
+        queryOptions.put(Constants.ACTIONS, actionMap);
+        clinicalDBAdaptor.update(resource.getResource().getUid(), parameters, queryOptions);
 
         return queryResult;
     }
