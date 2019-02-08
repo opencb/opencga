@@ -22,6 +22,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.iterators.UnionMultiVari
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQuery.SingleSampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
@@ -338,9 +339,11 @@ public class SampleIndexDBAdaptor {
         logger.info("columns = " + scan.getFamilyMap().getOrDefault(family, Collections.emptyNavigableSet())
                 .stream().map(Bytes::toString).collect(Collectors.joining(",")));
         logger.info("MaxResultSize = " + scan.getMaxResultSize());
-        logger.info("Filters = " + scan.getFilter());
-        logger.info("Batch = " + scan.getBatch());
-        logger.info("Caching = " + scan.getCaching());
+//        logger.info("Filters = " + scan.getFilter());
+//        logger.info("Batch = " + scan.getBatch());
+//        logger.info("Caching = " + scan.getCaching());
+        logger.info("AnnotationIndex = " + IndexUtils.maskToString(query.getAnnotationIndexMask(), (byte) 0xFF));
+        logger.info("FileIndex       = " + IndexUtils.maskToString(query.getFileIndexMask(), query.getFileIndex()));
 
 //        try {
 //            System.out.println("scan = " + scan.toJSON() + " " + rowKeyToString(scan.getStartRow()) + " -> + "

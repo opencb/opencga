@@ -402,7 +402,7 @@ public class VariantHbaseTestUtils {
 
             try (PrintStream out = new PrintStream(new FileOutputStream(outDir.resolve("annotation_index.txt").toFile()))) {
                 annotationIndexDBAdaptor.iterator().forEachRemaining(pair -> {
-                    out.println(pair.getKey() + " -> " + IndexUtils.maskToString(pair.getValue()));
+                    out.println(pair.getKey() + " -> " + IndexUtils.byteToString(pair.getValue()));
                 });
             }
         }
@@ -447,7 +447,7 @@ public class VariantHbaseTestUtils {
                             } else if (s.startsWith("_A_") || s.startsWith("_F_")) {
                                 StringBuilder sb = new StringBuilder();
                                 for (byte b : value) {
-                                    sb.append(IndexUtils.maskToString(b));
+                                    sb.append(IndexUtils.byteToString(b));
                                     sb.append(" - ");
                                 }
                                 map.put(s, sb.toString());

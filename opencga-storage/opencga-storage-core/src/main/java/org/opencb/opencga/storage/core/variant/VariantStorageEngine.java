@@ -358,8 +358,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @throws IOException                  If there is any IO problem
      */
     public void annotate(Query query, ObjectMap params) throws VariantAnnotatorException, StorageEngineException, IOException {
-        VariantAnnotationManager annotationManager = newVariantAnnotationManager(params);
-        annotationManager.annotate(query, params);
+        // Merge with configuration
+        ObjectMap options = getMergedOptions(params);
+        VariantAnnotationManager annotationManager = newVariantAnnotationManager(options);
+        annotationManager.annotate(query, options);
     }
 
     /**
@@ -394,7 +396,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 annotationQuery.put(VariantQueryParam.STUDY.key(), Collections.singletonList(studyId));
                 annotationQuery.put(VariantQueryParam.FILE.key(), fileIds);
 
-                QueryOptions annotationOptions = new QueryOptions()
+                ObjectMap annotationOptions = new ObjectMap(options)
                         .append(DefaultVariantAnnotationManager.OUT_DIR, outdirUri.getPath())
                         .append(DefaultVariantAnnotationManager.FILE_NAME, dbName + "." + TimeUtils.getTime());
 
@@ -454,7 +456,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     protected final VariantAnnotationManager newVariantAnnotationManager(ObjectMap params)
             throws StorageEngineException, VariantAnnotatorException {
-        ProjectMetadata projectMetadata = getMetadataManager().getProjectMetadata(getMergedOptions(params));
+        ProjectMetadata projectMetadata = getMetadataManager().getProjectMetadata();
         VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(
                 configuration, getStorageEngineId(), projectMetadata, params);
         return newVariantAnnotationManager(annotator);

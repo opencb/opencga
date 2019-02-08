@@ -28,7 +28,6 @@ import org.opencb.commons.io.DataReader;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -48,12 +47,10 @@ import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexAnnotat
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Created on 23/11/16.
@@ -65,6 +62,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
     private final VariantHadoopDBAdaptor dbAdaptor;
     private final ObjectMap baseOptions;
     private final MRExecutor mrExecutor;
+    private Query query;
 
     public HadoopDefaultVariantAnnotationManager(VariantAnnotator variantAnnotator, VariantHadoopDBAdaptor dbAdaptor,
                                                  MRExecutor mrExecutor, ObjectMap options) {
@@ -72,6 +70,16 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
         this.mrExecutor = mrExecutor;
         this.dbAdaptor = dbAdaptor;
         baseOptions = options;
+    }
+
+    @Override
+    public void annotate(Query query, ObjectMap params) throws VariantAnnotatorException, IOException, StorageEngineException {
+        this.query = query == null ? new Query() : query;
+
+        // Do not allow FILE filter when annotating.
+        this.query.remove(VariantQueryParam.FILE.key());
+
+        super.annotate(this.query, params);
     }
 
     @Override
@@ -102,13 +110,6 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
     }
 
     @Override
-    public URI createAnnotation(Path outDir, String fileName, Query query, ObjectMap params) throws VariantAnnotatorException {
-        // Do not allow FILE filter when annotating.
-        query.remove(VariantQueryParam.FILE.key());
-        return super.createAnnotation(outDir, fileName, query, params);
-    }
-
-    @Override
     public void loadVariantAnnotation(URI uri, ObjectMap params) throws IOException, StorageEngineException {
         super.loadVariantAnnotation(uri, params);
 
@@ -119,16 +120,41 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
                 dbAdaptor.getTableNameGenerator(),
                 metadataManager);
 
-        // TODO: Do not update all samples
-        for (Integer studyId : metadataManager.getStudyIds(null)) {
-            StudyConfiguration sc = metadataManager.getStudyConfiguration(studyId, null).first();
+        List<Integer> studies = VariantQueryUtils.getIncludeStudies(query, null, metadataManager);
 
-            Set<Integer> indexedSamples = sc.getIndexedFiles()
-                    .stream()
-                    .flatMap(fileId -> sc.getSamplesInFiles().get(fileId).stream())
-                    .collect(Collectors.toSet());
-            if (!indexedSamples.isEmpty()) {
-                indexAnnotationLoader.updateSampleAnnotation(studyId, new ArrayList<>(indexedSamples));
+        List<String> samples = params.getAsStringList("sampleIndexAnnotation");
+
+        if (samples.size() == 1 && (samples.get(0).equals(VariantQueryUtils.NONE) || samples.get(0).equals("skip"))) {
+            // Nothing to do!
+            return;
+        } else if (samples.isEmpty() || samples.size() == 1 && samples.get(0).equals(VariantQueryUtils.ALL)) {
+            // Run on all pending samples
+            for (Integer studyId : studies) {
+                List<Integer> indexedSamples = metadataManager.getIndexedSamples(studyId);
+                if (!indexedSamples.isEmpty()) {
+                    indexAnnotationLoader.updateSampleAnnotation(studyId, indexedSamples);
+                }
+            }
+        } else if (samples.size() == 1 && samples.get(0).equals("force_all")) {
+            // Run on all indexed samples
+            for (Integer studyId : studies) {
+                List<Integer> indexedSamples = metadataManager.getIndexedSamples(studyId);
+                if (!indexedSamples.isEmpty()) {
+                    indexAnnotationLoader.updateSampleAnnotation(studyId, indexedSamples);
+                }
+            }
+        } else {
+            for (Integer studyId : studies) {
+                List<Integer> sampleIds = new ArrayList<>(samples.size());
+                for (String sample : samples) {
+                    Integer sampleId = metadataManager.getSampleId(studyId, sample);
+                    if (sampleId != null) {
+                        sampleIds.add(sampleId);
+                    }
+                }
+                if (!sampleIds.isEmpty()) {
+                    indexAnnotationLoader.updateSampleAnnotation(studyId, sampleIds);
+                }
             }
         }
     }

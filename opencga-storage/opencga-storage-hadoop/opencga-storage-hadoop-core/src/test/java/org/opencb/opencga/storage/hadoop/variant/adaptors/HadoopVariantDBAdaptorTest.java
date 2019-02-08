@@ -300,9 +300,9 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
 
         System.out.println("----------------------------------------------------------");
         System.out.println("query = " + annotationQuery.toJson());
-        System.out.println("maskToString(annotationMask) = " + IndexUtils.maskToString(indexQuery.getAnnotationIndexMask()));
-        System.out.println("maskToString(fileIndex) = " + IndexUtils.maskToString(indexQuery.getFileIndex()));
-        System.out.println("maskToString(fileIndexMask) = " + IndexUtils.maskToString(indexQuery.getFileIndexMask()));
+        System.out.println("maskToString(annotationMask) = " + IndexUtils.byteToString(indexQuery.getAnnotationIndexMask()));
+        System.out.println("maskToString(fileIndex) = " + IndexUtils.byteToString(indexQuery.getFileIndex()));
+        System.out.println("maskToString(fileIndexMask) = " + IndexUtils.byteToString(indexQuery.getFileIndexMask()));
         System.out.println("Query ONLY_INDEX = " + onlyIndex);
         System.out.println("Query NO_INDEX = " + onlyDBAdaptor);
         System.out.println("Query INDEX = " + indexAndDBAdaptor);

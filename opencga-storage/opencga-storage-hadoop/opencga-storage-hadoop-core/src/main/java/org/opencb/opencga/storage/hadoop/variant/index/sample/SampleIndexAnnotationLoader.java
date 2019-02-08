@@ -5,7 +5,10 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.BufferedMutator;
 import org.apache.hadoop.hbase.client.Put;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexDBAdaptor;
@@ -21,11 +24,13 @@ import java.util.*;
  */
 public class SampleIndexAnnotationLoader {
 
+    public static final String SAMPLE_INDEX_STATUS = "sampleIndex";
     private final HBaseManager hBaseManager;
     private final HBaseVariantTableNameGenerator tableNameGenerator;
     private final AnnotationIndexDBAdaptor annotationIndexDBAdaptor;
     private final SampleIndexDBAdaptor sampleDBAdaptor;
     private final byte[] family;
+    private final VariantStorageMetadataManager metadataManager;
     private Logger logger = LoggerFactory.getLogger(SampleIndexAnnotationLoader.class);
 
     public SampleIndexAnnotationLoader(GenomeHelper helper, HBaseManager hBaseManager, HBaseVariantTableNameGenerator tableNameGenerator,
@@ -33,11 +38,23 @@ public class SampleIndexAnnotationLoader {
         this.hBaseManager = hBaseManager;
         this.tableNameGenerator = tableNameGenerator;
         this.annotationIndexDBAdaptor = new AnnotationIndexDBAdaptor(hBaseManager, tableNameGenerator.getAnnotationIndexTableName());
-        this.sampleDBAdaptor = new SampleIndexDBAdaptor(helper, hBaseManager, tableNameGenerator, metadataManager);
+        this.metadataManager = metadataManager;
+        this.sampleDBAdaptor = new SampleIndexDBAdaptor(helper, hBaseManager, tableNameGenerator, this.metadataManager);
         family = helper.getColumnFamily();
     }
 
-    public void updateSampleAnnotation(int studyId, List<Integer> samples) throws IOException {
+    public void updateSampleAnnotation(int studyId, List<Integer> samples) throws IOException, StorageEngineException {
+        samples = new ArrayList<>(samples);
+        samples.removeIf(sampleId -> {
+            SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
+            if (!sampleMetadata.isAnnotated()) {
+                logger.info("Unable to update sample index from sample '" + sampleMetadata.getName() + "'");
+                return true;
+            } else {
+                return false;
+            }
+        });
+
         String sampleIndexTableName = tableNameGenerator.getSampleIndexTableName(studyId);
 
         BufferedMutator mutator = hBaseManager.getConnection().getBufferedMutator(TableName.valueOf(sampleIndexTableName));
@@ -90,9 +107,11 @@ public class SampleIndexAnnotationLoader {
         }
 
         mutator.close();
+
+        postAnnotationLoad(studyId, samples);
     }
 
-    public void updateSampleAnnotationMultiSampleIterator(int studyId, List<Integer> samples) throws IOException {
+    public void updateSampleAnnotationMultiSampleIterator(int studyId, List<Integer> samples) throws IOException, StorageEngineException {
         String sampleIndexTableName = tableNameGenerator.getSampleIndexTableName(studyId);
         Map<Integer, Iterator<Map<String, List<Variant>>>> sampleIterators = new HashMap<>(samples.size());
 
@@ -134,6 +153,8 @@ public class SampleIndexAnnotationLoader {
         } while (!sampleIterators.isEmpty());
 
         mutator.close();
+
+        postAnnotationLoad(studyId, samples);
     }
 
     private Put annotate(String chromosome, int start, Integer sampleId,
@@ -180,6 +201,15 @@ public class SampleIndexAnnotationLoader {
             put.addColumn(family, HBaseToSampleIndexConverter.toAnnotationIndexColumn(gt), annotations);
         }
         return put;
+    }
+
+    private void postAnnotationLoad(int studyId, List<Integer> samples) throws StorageEngineException {
+        for (Integer sampleId : samples) {
+            metadataManager.updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
+                sampleMetadata.setStatus(SAMPLE_INDEX_STATUS, TaskMetadata.Status.READY);
+                return sampleMetadata;
+            });
+        }
     }
 
     public boolean isAnnotatedGenotype(String gt) {
