@@ -1,5 +1,6 @@
 #!/bin/sh
 
+# Update hbase.client.keyvalue.maxsize in HBase
 sshpass -p "$HBASE_SSH_PASS" ssh -o StrictHostKeyChecking=no -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$HBASE_SSH_USER@$HBASE_SSH_DNS" "sudo sed -i '/<name>hbase.client.keyvalue.maxsize<\/name>/!b;n;c<value>0</value>' /etc/hbase/conf/hbase-site.xml"
 
 # copy conf files from hdinsight cluster (from /etc/hadoop/conf & /etc/hbase/conf) to opencga VM
@@ -8,6 +9,16 @@ echo "Fetching HDInsight configuration"
 sshpass -p "$HBASE_SSH_PASS" scp -o StrictHostKeyChecking=no -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r "$HBASE_SSH_USER@$HBASE_SSH_DNS":/etc/hadoop/conf/* /opt/opencga/conf/hadoop
 # same with /etc/hbase/conf, e.g.
 sshpass -p "$HBASE_SSH_PASS" scp -o StrictHostKeyChecking=no  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r "$HBASE_SSH_USER@$HBASE_SSH_DNS":/etc/hbase/conf/* /opt/opencga/conf/hadoop
+
+# Get the hadoop CLI binaries 
+# 1. Zip up the hadoop client (used by Batch and other tasks which make calls to the Hadoop CLI) - https://github.com/opencb/opencga/issues/1113
+mkdir -p /opt/opencga/conf/hadoop-client
+sshpass -p "$HBASE_SSH_PASS" ssh -o StrictHostKeyChecking=no -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$HBASE_SSH_USER@$HBASE_SSH_DNS" "cd /usr/hdp/current/ && tar zcvfh ~/hadoop-client.tar.gz hadoop-client/"
+sshpass -p "$HBASE_SSH_PASS" scp -o StrictHostKeyChecking=no  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r "$HBASE_SSH_USER@$HBASE_SSH_DNS":~/hadoop-client.tar.gz /opt/opencga/conf/
+
+# 2. Extract them
+cd /opt/opencga/conf/ && tar zxfv hadoop-client.tar.gz
+cd ..
 
 echo "Initialising configs"
 # Override Yaml configs
