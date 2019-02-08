@@ -8,6 +8,7 @@ import org.opencb.commons.io.DataWriter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Created on 31/01/18.
@@ -21,7 +22,7 @@ public abstract class AbstractHBaseDataWriter<T, M extends Mutation> implements 
     private BufferedMutator mutator;
 
     public AbstractHBaseDataWriter(HBaseManager hBaseManager, String tableName) {
-        this.hBaseManager = new HBaseManager(hBaseManager.getConf());
+        this.hBaseManager = new HBaseManager(Objects.requireNonNull(hBaseManager));
         this.tableName = tableName;
     }
 
