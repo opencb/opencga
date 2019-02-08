@@ -78,8 +78,8 @@ public abstract class VcfDataWriter<T> implements DataWriter<T> {
                 .flatMap(individual -> individual.getSamples().stream()).map(Sample::getId).collect(Collectors.toList());
 
         VCFHeader vcfHeader = new VariantStudyMetadataToVCFHeaderConverter().convert(metadata.getStudies().get(0), annotations);
-        variantContextWriter = VcfUtils.createVariantContextWriter(outputStream, vcfHeader.getSequenceDictionary(),
-                Options.ALLOW_MISSING_FIELDS_IN_HEADER);
+        // Warning: Calling to vcfHeader.getSequenceDictionary() may fail if any contig has null length
+        variantContextWriter = VcfUtils.createVariantContextWriter(outputStream, null, Options.ALLOW_MISSING_FIELDS_IN_HEADER);
         variantContextWriter.writeHeader(vcfHeader);
         converter = newConverter(study, samples, annotations);
 

@@ -25,17 +25,11 @@ import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.StudyCommandOptions;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Job;
-import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.VariableSet;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
-import org.opencb.opencga.core.models.summaries.StudySummary;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -77,11 +71,8 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
             case "delete":
                 queryResponse = delete();
                 break;
-            case "summary":
-                queryResponse = summary();
-                break;
-            case "help":
-                queryResponse = help();
+            case "stats":
+                queryResponse = stats();
                 break;
             case "search":
                 queryResponse = search();
@@ -91,15 +82,6 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "resync-files":
                 queryResponse = resyncFiles();
-                break;
-            case "files":
-                queryResponse = files();
-                break;
-            case "samples":
-                queryResponse = samples();
-                break;
-            case "jobs":
-                queryResponse = jobs();
                 break;
             case "acl":
                 queryResponse = getAcl();
@@ -124,6 +106,15 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "admins-update":
                 queryResponse = adminsUpdate();
+                break;
+            case "variable-sets":
+                queryResponse = variableSets();
+                break;
+            case "variable-sets-update":
+                queryResponse = variableSetUpdate();
+                break;
+            case "variable-sets-variables-update":
+                queryResponse = variableSetVariableUpdate();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -173,17 +164,20 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<Study> create() throws CatalogException, IOException {
         logger.debug("Creating a new study");
 
-        String project = studiesCommandOptions.createCommandOptions.project;
-        String name = studiesCommandOptions.createCommandOptions.name;
-        String alias = studiesCommandOptions.createCommandOptions.alias;
-        String id = studiesCommandOptions.createCommandOptions.id;
+        StudyCommandOptions.CreateCommandOptions commandOptions = studiesCommandOptions.createCommandOptions;
 
-        ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(StudyDBAdaptor.QueryParams.DESCRIPTION.key(), studiesCommandOptions.createCommandOptions.description);
-        params.putIfNotNull(StudyDBAdaptor.QueryParams.TYPE.key(), Study.Type.valueOf(studiesCommandOptions.createCommandOptions.type));
-        params.putIfNotEmpty("alias", alias);
+        ObjectMap params;
+        if (StringUtils.isNotEmpty(commandOptions.json)) {
+            params = loadFile(commandOptions.json);
+        } else {
+            params = new ObjectMap();
+            params.putIfNotEmpty(StudyDBAdaptor.QueryParams.DESCRIPTION.key(), commandOptions.description);
+            params.putIfNotNull(StudyDBAdaptor.QueryParams.TYPE.key(), Study.Type.valueOf(commandOptions.type));
+            params.putIfNotEmpty(StudyDBAdaptor.QueryParams.ALIAS.key(), commandOptions.alias);
+            params.putIfNotEmpty(StudyDBAdaptor.QueryParams.NAME.key(), commandOptions.name);
+        }
 
-        return openCGAClient.getStudyClient().create(project, id, name, params);
+        return openCGAClient.getStudyClient().create(commandOptions.project, commandOptions.id, params);
     }
 
     private QueryResponse<Study> info() throws CatalogException, IOException {
@@ -199,15 +193,23 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<Study> update() throws CatalogException, IOException {
         logger.debug("Updating the study");
 
-        studiesCommandOptions.updateCommandOptions.study = getSingleValidStudy(studiesCommandOptions.updateCommandOptions.study);
+        StudyCommandOptions.UpdateCommandOptions commandOptions = studiesCommandOptions.updateCommandOptions;
 
-        ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(StudyDBAdaptor.QueryParams.NAME.key(), studiesCommandOptions.updateCommandOptions.name);
-        params.putIfNotEmpty(StudyDBAdaptor.QueryParams.TYPE.key(), studiesCommandOptions.updateCommandOptions.type);
-        params.putIfNotEmpty(StudyDBAdaptor.QueryParams.DESCRIPTION.key(), studiesCommandOptions.updateCommandOptions.description);
-        params.putIfNotEmpty(StudyDBAdaptor.QueryParams.STATS.key(), studiesCommandOptions.updateCommandOptions.stats);
-        params.putIfNotEmpty(StudyDBAdaptor.QueryParams.ATTRIBUTES.key(), studiesCommandOptions.updateCommandOptions.attributes);
-        return openCGAClient.getStudyClient().update(studiesCommandOptions.updateCommandOptions.study, null, params);
+        commandOptions.study = getSingleValidStudy(commandOptions.study);
+
+        ObjectMap params;
+        if (StringUtils.isNotEmpty(commandOptions.json)) {
+            params = loadFile(commandOptions.json);
+        } else {
+            params = new ObjectMap();
+            params.putIfNotEmpty(StudyDBAdaptor.QueryParams.NAME.key(), commandOptions.name);
+            params.putIfNotEmpty(StudyDBAdaptor.QueryParams.TYPE.key(), commandOptions.type);
+            params.putIfNotEmpty(StudyDBAdaptor.QueryParams.DESCRIPTION.key(), commandOptions.description);
+            params.putIfNotEmpty(StudyDBAdaptor.QueryParams.STATS.key(), commandOptions.stats);
+            params.putIfNotEmpty(StudyDBAdaptor.QueryParams.ATTRIBUTES.key(), commandOptions.attributes);
+        }
+
+        return openCGAClient.getStudyClient().update(commandOptions.study, null, params);
     }
 
     private QueryResponse<Study> delete() throws CatalogException, IOException {
@@ -218,20 +220,17 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
 
     /************************************************  Summary and help Commands  ***********************************************/
 
-    private QueryResponse<StudySummary> summary() throws CatalogException, IOException {
-        logger.debug("Doing summary with the general stats of a study");
+    private QueryResponse<ObjectMap> stats() throws CatalogException, IOException {
+        logger.debug("Study stats");
 
-        return openCGAClient.getStudyClient().getSummary(studiesCommandOptions.summaryCommandOptions.study, QueryOptions.empty());
-    }
+        Query query = new Query("default", studiesCommandOptions.statsCommandOptions.defaultStats);
+        query.putIfNotEmpty("individualFields", studiesCommandOptions.statsCommandOptions.individualFields);
+        query.putIfNotEmpty("sampleFields", studiesCommandOptions.statsCommandOptions.sampleFields);
+        query.putIfNotEmpty("cohortFields", studiesCommandOptions.statsCommandOptions.cohortFields);
+        query.putIfNotEmpty("familyFields", studiesCommandOptions.statsCommandOptions.familyFields);
+        query.putIfNotEmpty("fileFields", studiesCommandOptions.statsCommandOptions.fileFields);
 
-    private QueryResponse<Study> help() throws CatalogException, IOException {
-        logger.debug("Helping");
-        /*QueryOptions queryOptions = new QueryOptions();
-        QueryResponse<Study> study =
-                openCGAClient.getStudyClient().help(queryOptions);
-        System.out.println("Help: " + study);*/
-        System.out.println("PENDING");
-        return null;
+        return openCGAClient.getStudyClient().getStats(studiesCommandOptions.statsCommandOptions.study, query, QueryOptions.empty());
     }
 
     /************************************************  Search Commands  ***********************************************/
@@ -279,86 +278,6 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Scan the study folder to find changes.\n");
 
         return openCGAClient.getStudyClient().resyncFiles(studiesCommandOptions.resyncFilesCommandOptions.study, null);
-    }
-
-    private QueryResponse<File> files() throws CatalogException, IOException {
-        logger.debug("Listing files of a study [PENDING]");
-
-        studiesCommandOptions.filesCommandOptions.study = getSingleValidStudy(studiesCommandOptions.filesCommandOptions.study);
-
-        QueryOptions queryOptions = new QueryOptions();
-        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.UID.key(), studiesCommandOptions.filesCommandOptions.file);
-        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.NAME.key(), studiesCommandOptions.filesCommandOptions.name);
-        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.PATH.key(), studiesCommandOptions.filesCommandOptions.path);
-        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.TYPE.key(), studiesCommandOptions.filesCommandOptions.type);
-        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.BIOFORMAT.key(), studiesCommandOptions.filesCommandOptions.bioformat);
-        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.FORMAT.key(), studiesCommandOptions.filesCommandOptions.format);
-        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.STATUS.key(), studiesCommandOptions.filesCommandOptions.status);
-        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.DIRECTORY.key(), studiesCommandOptions.filesCommandOptions.directory);
-        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.CREATION_DATE.key(), studiesCommandOptions.filesCommandOptions.creationDate);
-        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key(),
-                studiesCommandOptions.filesCommandOptions.modificationDate);
-        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.DESCRIPTION.key(), studiesCommandOptions.filesCommandOptions.description);
-        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.SIZE.key(), studiesCommandOptions.filesCommandOptions.size);
-        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(), studiesCommandOptions.filesCommandOptions.sampleIds);
-        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.JOB_UID.key(), studiesCommandOptions.filesCommandOptions.jobId);
-        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.ATTRIBUTES.key(), studiesCommandOptions.filesCommandOptions.attributes);
-        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.NATTRIBUTES.key(), studiesCommandOptions.filesCommandOptions.nattributes);
-        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, studiesCommandOptions.filesCommandOptions.dataModelOptions.include);
-        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, studiesCommandOptions.filesCommandOptions.dataModelOptions.exclude);
-        queryOptions.put(QueryOptions.LIMIT, studiesCommandOptions.filesCommandOptions.numericOptions.limit);
-        queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.filesCommandOptions.numericOptions.skip);
-        queryOptions.put("count", studiesCommandOptions.filesCommandOptions.numericOptions.count);
-
-        return openCGAClient.getStudyClient().getFiles(studiesCommandOptions.filesCommandOptions.study, queryOptions);
-    }
-
-    private QueryResponse<Job> jobs() throws CatalogException, IOException {
-        logger.debug("Listing jobs of a study. [PENDING]");
-
-        studiesCommandOptions.jobsCommandOptions.study = getSingleValidStudy(studiesCommandOptions.jobsCommandOptions.study);
-
-        QueryOptions queryOptions = new QueryOptions();
-        queryOptions.putIfNotEmpty(JobDBAdaptor.QueryParams.NAME.key(), studiesCommandOptions.jobsCommandOptions.name);
-        queryOptions.putIfNotEmpty(JobDBAdaptor.QueryParams.TOOL_NAME.key(), studiesCommandOptions.jobsCommandOptions.toolName);
-        queryOptions.putIfNotEmpty(JobDBAdaptor.QueryParams.STATUS_NAME.key(), studiesCommandOptions.jobsCommandOptions.status);
-        queryOptions.putIfNotEmpty(JobDBAdaptor.QueryParams.USER_ID.key(), studiesCommandOptions.jobsCommandOptions.ownerId);
-        queryOptions.putIfNotEmpty(JobDBAdaptor.QueryParams.CREATION_DATE.key(), studiesCommandOptions.jobsCommandOptions.date);
-        /*if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.date)) {
-            queryOptions.put(CatalogJobDBAdaptor.QueryParams.CREATION_DATE.key(), studiesCommandOptions.jobsCommandOptions.date);
-        }*/
-        queryOptions.putIfNotEmpty(JobDBAdaptor.QueryParams.INPUT.key(), studiesCommandOptions.jobsCommandOptions.inputFiles);
-        queryOptions.putIfNotEmpty(JobDBAdaptor.QueryParams.OUTPUT.key(), studiesCommandOptions.jobsCommandOptions.outputFiles);
-
-        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, studiesCommandOptions.jobsCommandOptions.dataModelOptions.include);
-        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, studiesCommandOptions.jobsCommandOptions.dataModelOptions.exclude);
-        queryOptions.put(QueryOptions.LIMIT, studiesCommandOptions.jobsCommandOptions.numericOptions.limit);
-        queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.jobsCommandOptions.numericOptions.skip);
-        queryOptions.put("count", studiesCommandOptions.jobsCommandOptions.numericOptions.count);
-
-        return openCGAClient.getStudyClient().getJobs(studiesCommandOptions.jobsCommandOptions.study, queryOptions);
-    }
-
-
-    private QueryResponse<Sample> samples() throws CatalogException, IOException {
-        logger.debug("Listing samples of a study. [PENDING]");
-
-        studiesCommandOptions.samplesCommandOptions.study = getSingleValidStudy(studiesCommandOptions.samplesCommandOptions.study);
-
-        QueryOptions queryOptions = new QueryOptions();
-        queryOptions.putIfNotEmpty(SampleDBAdaptor.QueryParams.ID.key(), studiesCommandOptions.samplesCommandOptions.name);
-        queryOptions.putIfNotEmpty(SampleDBAdaptor.QueryParams.SOURCE.key(), studiesCommandOptions.samplesCommandOptions.source);
-        queryOptions.putIfNotEmpty(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key(), studiesCommandOptions.samplesCommandOptions.individual);
-
-        queryOptions.putIfNotEmpty(SampleDBAdaptor.QueryParams.ANNOTATION.key(), studiesCommandOptions.samplesCommandOptions.annotation);
-
-        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, studiesCommandOptions.samplesCommandOptions.dataModelOptions.include);
-        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, studiesCommandOptions.samplesCommandOptions.dataModelOptions.exclude);
-        queryOptions.put(QueryOptions.LIMIT, studiesCommandOptions.samplesCommandOptions.numericOptions.limit);
-        queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.samplesCommandOptions.numericOptions.skip);
-        queryOptions.put("count", studiesCommandOptions.samplesCommandOptions.numericOptions.count);
-
-        return openCGAClient.getStudyClient().getSamples(studiesCommandOptions.samplesCommandOptions.study, queryOptions);
     }
 
     /************************************************* Groups commands *********************************************************/
@@ -432,6 +351,50 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotNull("users", studiesCommandOptions.adminsGroupUpdateCommandOptions.users);
 
         return openCGAClient.getStudyClient().updateGroupAdmins(studiesCommandOptions.adminsGroupUpdateCommandOptions.study, params);
+    }
+
+    /************************************************* Variable set commands *********************************************************/
+
+    private QueryResponse<VariableSet> variableSets() throws CatalogException, IOException {
+        logger.debug("Get variable sets");
+        StudyCommandOptions.VariableSetsCommandOptions commandOptions = studiesCommandOptions.variableSetsCommandOptions;
+
+        commandOptions.study = getSingleValidStudy(commandOptions.study);
+
+        Query query = new Query();
+        query.putIfNotEmpty("id", commandOptions.variableSet);
+
+        return openCGAClient.getStudyClient().getVariableSets(commandOptions.study, query);
+    }
+
+    private QueryResponse<VariableSet> variableSetUpdate() throws CatalogException, IOException {
+        logger.debug("Update variable set");
+        StudyCommandOptions.VariableSetsUpdateCommandOptions commandOptions = studiesCommandOptions.variableSetsUpdateCommandOptions;
+
+        commandOptions.study = getSingleValidStudy(commandOptions.study);
+
+        Query query = new Query();
+        query.putIfNotNull("action", commandOptions.action);
+
+        // Load the variable set
+        ObjectMap variableSet = loadFile(commandOptions.variableSet);
+
+        return openCGAClient.getStudyClient().updateVariableSet(commandOptions.study, query, variableSet);
+    }
+
+    private QueryResponse<VariableSet> variableSetVariableUpdate() throws CatalogException, IOException {
+        logger.debug("Update variable");
+        StudyCommandOptions.VariablesUpdateCommandOptions commandOptions = studiesCommandOptions.variablesUpdateCommandOptions;
+
+        commandOptions.study = getSingleValidStudy(commandOptions.study);
+
+        Query query = new Query();
+        query.putIfNotNull("action", commandOptions.action);
+
+        // Load the variable
+        ObjectMap variable = loadFile(commandOptions.variable);
+
+        return openCGAClient.getStudyClient().updateVariableSetVariable(commandOptions.study, commandOptions.variableSet, query, variable);
     }
 
     /************************************************* Acl commands *********************************************************/

@@ -52,7 +52,8 @@ public class CatalogAuditManager implements AuditManager {
 
     public CatalogAuditManager(DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
         this.auditDBAdaptor = catalogDBAdaptorFactory.getCatalogAuditDbAdaptor();
-        this.authenticationManager = new CatalogAuthenticationManager(catalogDBAdaptorFactory, configuration);
+        this.authenticationManager = new CatalogAuthenticationManager(catalogDBAdaptorFactory, configuration.getEmail(),
+                configuration.getAdmin().getSecretKey(), configuration.getAuthentication().getExpiration());
     }
 
     /**

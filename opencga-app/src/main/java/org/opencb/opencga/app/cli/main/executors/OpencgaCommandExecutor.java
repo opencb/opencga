@@ -17,6 +17,7 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
@@ -27,12 +28,11 @@ import org.opencb.opencga.app.cli.main.io.*;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
+import org.opencb.opencga.core.common.JacksonUtils;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Date;
@@ -148,6 +148,25 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         }
     }
 
+    protected ObjectMap loadFile(String filePath) throws CatalogException {
+        File file = Paths.get(filePath).toFile();
+        if (!file.exists() || file.isDirectory()) {
+            throw new CatalogException("File " + filePath + " not found");
+        }
+        FileInputStream fileInputStream;
+        try {
+            fileInputStream = FileUtils.openInputStream(file);
+        } catch (IOException e) {
+            throw new CatalogException("Could not open file " + filePath + ". " + e.getMessage(), e);
+        }
+        ObjectMapper objectMapper = JacksonUtils.getUpdateObjectMapper();
+        try {
+            return objectMapper.readValue(fileInputStream, ObjectMap.class);
+        } catch (IOException e) {
+            throw new CatalogException("Could not parse file " + filePath + ". Is it a valid JSON file?. "
+                    + e.getMessage(), e);
+        }
+    }
 
     protected String resolveStudy(String study) {
         if (StringUtils.isEmpty(study)) {

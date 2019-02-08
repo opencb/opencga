@@ -16,7 +16,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.InterpretationConverter;
-import org.opencb.opencga.catalog.db.mongodb.iterators.ClinicalAnalysisMongoDBIterator;
+import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -364,8 +364,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     @Override
     public DBIterator<Interpretation> iterator(Query query, QueryOptions options) throws CatalogDBException {
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
-        return new ClinicalAnalysisMongoDBIterator(mongoCursor, interpretationConverter, dbAdaptorFactory, query.getLong(PRIVATE_STUDY_ID),
-                null, options);
+        return new MongoDBIterator<>(mongoCursor, interpretationConverter);
     }
 
     @Override
@@ -374,8 +373,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         queryOptions.put(NATIVE_QUERY, true);
 
         MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions);
-        return new ClinicalAnalysisMongoDBIterator(mongoCursor, null, dbAdaptorFactory, query.getLong(PRIVATE_STUDY_ID), null,
-                options);
+        return new MongoDBIterator(mongoCursor);
     }
 
     @Override

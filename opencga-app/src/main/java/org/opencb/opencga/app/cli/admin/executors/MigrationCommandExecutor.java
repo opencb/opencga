@@ -132,7 +132,8 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             // We get a non-expiring token
-            String sessionId = catalogManager.getUserManager().getSystemTokenForUser("admin", options.commonOptions.adminPassword);
+            String token = catalogManager.getUserManager().login("admin", options.commonOptions.adminPassword);
+            String nonExpiringToken = catalogManager.getUserManager().getSystemTokenForUser("admin", token);
 
             // Catalog
             if (!skipCatalogJS) {
@@ -183,8 +184,8 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
             }
 
             if (!skipStorage) {
-                new NewProjectMetadataMigration(storageConfiguration, catalogManager, options).migrate(sessionId);
-                new AddFilePathToStudyConfigurationMigration(storageConfiguration, catalogManager).migrate(sessionId);
+                new NewProjectMetadataMigration(storageConfiguration, catalogManager, options).migrate(nonExpiringToken);
+                new AddFilePathToStudyConfigurationMigration(storageConfiguration, catalogManager).migrate(nonExpiringToken);
             }
 
         }

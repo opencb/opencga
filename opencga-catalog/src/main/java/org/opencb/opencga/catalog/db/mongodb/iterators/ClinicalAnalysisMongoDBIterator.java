@@ -20,6 +20,7 @@ import java.util.*;
 
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.NATIVE_QUERY;
 
+@Deprecated
 public class ClinicalAnalysisMongoDBIterator<E> extends MongoDBIterator<E>  {
 
     private long studyUid;
@@ -61,8 +62,6 @@ public class ClinicalAnalysisMongoDBIterator<E> extends MongoDBIterator<E>  {
         this.individualQueryOptions = createInnerQueryOptions(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key(), false);
 
         this.fileDBAdaptor = dbAdaptorFactory.getCatalogFileDBAdaptor();
-        this.somaticQueryOptions = createInnerQueryOptions(ClinicalAnalysisDBAdaptor.QueryParams.SOMATIC.key(), true);
-        this.germlineQueryOptions = createInnerQueryOptions(ClinicalAnalysisDBAdaptor.QueryParams.GERMLINE.key(), true);
 
         this.clinicalAnalysisListBuffer= new LinkedList<>();
         this.logger = LoggerFactory.getLogger(ClinicalAnalysisMongoDBIterator.class);
@@ -120,20 +119,6 @@ public class ClinicalAnalysisMongoDBIterator<E> extends MongoDBIterator<E>  {
             if (family != null && !options.getBoolean(NATIVE_QUERY)
                     && !options.getBoolean(NATIVE_QUERY + "_" + ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key())) {
                 familySet.add(((Document) family).getLong(UID));
-            }
-
-            // Extract the somatic uid
-            Object somatic = clinicalDocument.get(ClinicalAnalysisDBAdaptor.QueryParams.SOMATIC.key());
-            if (somatic != null && !options.getBoolean(NATIVE_QUERY)
-                    && !options.getBoolean(NATIVE_QUERY + "_" + ClinicalAnalysisDBAdaptor.QueryParams.SOMATIC.key())) {
-                somaticSet.add(((Document) somatic).getLong(UID));
-            }
-
-            // Extract the germline uid
-            Object germline = clinicalDocument.get(ClinicalAnalysisDBAdaptor.QueryParams.GERMLINE.key());
-            if (germline != null && !options.getBoolean(NATIVE_QUERY)
-                    && !options.getBoolean(NATIVE_QUERY + "_" + ClinicalAnalysisDBAdaptor.QueryParams.GERMLINE.key())) {
-                germlineSet.add(((Document) germline).getLong(UID));
             }
         }
 
@@ -267,16 +252,6 @@ public class ClinicalAnalysisMongoDBIterator<E> extends MongoDBIterator<E>  {
                 Document sourceFamily = (Document) clinicalAnalysis.get(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key());
                 if (sourceFamily != null && familyMap.containsKey(sourceFamily.getLong(UID))) {
                     clinicalAnalysis.put(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(), familyMap.get(sourceFamily.getLong(UID)));
-                }
-
-                Document sourceSomatic = (Document) clinicalAnalysis.get(ClinicalAnalysisDBAdaptor.QueryParams.SOMATIC.key());
-                if (sourceSomatic != null && fileMap.containsKey(sourceSomatic.getLong(UID))) {
-                    clinicalAnalysis.put(ClinicalAnalysisDBAdaptor.QueryParams.SOMATIC.key(), fileMap.get(sourceSomatic.getLong(UID)));
-                }
-
-                Document sourceGermline = (Document) clinicalAnalysis.get(ClinicalAnalysisDBAdaptor.QueryParams.GERMLINE.key());
-                if (sourceGermline != null && fileMap.containsKey(sourceGermline.getLong(UID))) {
-                    clinicalAnalysis.put(ClinicalAnalysisDBAdaptor.QueryParams.GERMLINE.key(), fileMap.get(sourceGermline.getLong(UID)));
                 }
             });
         }

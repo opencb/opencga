@@ -72,13 +72,13 @@ catalog:
 authentication:
   expiration: 1000
 #LDAP configuration example
-  authenticationOrigins:
-  - id: ldap            # Any id
-    type: LDAP          # At the moment, we only support LDAP
-    host: ldap://localhost:9000
-    options:
-      usersSearch: dc=ge,dc=co,dc=uk # Base search to look for the users
-      groupsSearch: ou=general,ou=groups,dc=ge,dc=co,dc=uk # Base search to look for the groups
+#  authenticationOrigins:
+#  - id: ldap            # Any id
+#    type: LDAP          # At the moment, we only support LDAP
+#    host: ldap://localhost:9000
+#    options:
+#      usersSearch: dc=ge,dc=co,dc=uk # Base search to look for the users
+#      groupsSearch: ou=general,ou=groups,dc=ge,dc=co,dc=uk # Base search to look for the groups
 
 server:
   rest:

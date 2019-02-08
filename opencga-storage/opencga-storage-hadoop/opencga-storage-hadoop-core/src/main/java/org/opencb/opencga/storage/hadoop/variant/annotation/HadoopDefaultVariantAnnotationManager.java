@@ -40,14 +40,15 @@ import org.opencb.opencga.storage.hadoop.utils.CopyHBaseColumnDriver;
 import org.opencb.opencga.storage.hadoop.utils.DeleteHBaseColumnDriver;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexDBLoader;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexAnnotationLoader;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
@@ -101,6 +102,13 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
     }
 
     @Override
+    public URI createAnnotation(Path outDir, String fileName, Query query, ObjectMap params) throws VariantAnnotatorException {
+        // Do not allow FILE filter when annotating.
+        query.remove(VariantQueryParam.FILE.key());
+        return super.createAnnotation(outDir, fileName, query, params);
+    }
+
+    @Override
     public void loadVariantAnnotation(URI uri, ObjectMap params) throws IOException, StorageEngineException {
         super.loadVariantAnnotation(uri, params);
 
@@ -123,7 +131,6 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
                 indexAnnotationLoader.updateSampleAnnotation(studyId, new ArrayList<>(indexedSamples));
             }
         }
-
     }
 
     @Override

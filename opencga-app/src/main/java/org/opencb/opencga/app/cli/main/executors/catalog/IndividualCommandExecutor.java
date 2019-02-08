@@ -166,6 +166,7 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), resolveStudy(individualsCommandOptions.infoCommandOptions.study));
         params.putIfNotNull(QueryOptions.INCLUDE, individualsCommandOptions.infoCommandOptions.dataModelOptions.include);
         params.putIfNotNull(QueryOptions.EXCLUDE, individualsCommandOptions.infoCommandOptions.dataModelOptions.exclude);
+        params.put("flattenAnnotations", individualsCommandOptions.searchCommandOptions.flattenAnnotations);
         return openCGAClient.getIndividualClient().get(individualsCommandOptions.infoCommandOptions.individual, params);
     }
 
@@ -194,8 +195,8 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(), individualsCommandOptions.searchCommandOptions.lifeStatus);
         query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(),
                 individualsCommandOptions.searchCommandOptions.affectationStatus);
-        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ANNOTATION.key(),
-                individualsCommandOptions.searchCommandOptions.annotation);
+        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ANNOTATION.key(), individualsCommandOptions.searchCommandOptions.annotation);
+        query.put("flattenAnnotations", individualsCommandOptions.searchCommandOptions.flattenAnnotations);
         query.putAll(individualsCommandOptions.searchCommandOptions.commonOptions.params);
 
         if (individualsCommandOptions.searchCommandOptions.numericOptions.count) {
@@ -245,6 +246,7 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
                 individualsCommandOptions.updateCommandOptions.lifeStatus);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(),
                 individualsCommandOptions.updateCommandOptions.affectationStatus);
+        params.putIfNotNull("annotationSetsAction", individualsCommandOptions.updateCommandOptions.annotationSetsAction);
 
         return openCGAClient.getIndividualClient().update(individualsCommandOptions.updateCommandOptions.individual,
                 resolveStudy(individualsCommandOptions.updateCommandOptions.study), params);

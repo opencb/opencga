@@ -26,7 +26,12 @@ import java.util.List;
 public class Group {
 
     /**
-     * Group name, unique in the belonging study.
+     * Group id, unique in the belonging study.
+     */
+    private String id;
+
+    /**
+     * Group name.
      */
     private String name;
 
@@ -43,11 +48,12 @@ public class Group {
     public Group() {
     }
 
-    public Group(String name, List<String> userIds) {
-        this(name, userIds, null);
+    public Group(String id, List<String> userIds) {
+        this(id, id, userIds, null);
     }
 
-    public Group(String name, List<String> userIds, Sync syncedFrom) {
+    public Group(String id, String name, List<String> userIds, Sync syncedFrom) {
+        this.id = id;
         this.name = name;
         this.userIds = userIds;
         this.syncedFrom = syncedFrom;
@@ -56,11 +62,21 @@ public class Group {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Group{");
-        sb.append("name='").append(name).append('\'');
+        sb.append("id='").append(id).append('\'');
+        sb.append(", name='").append(name).append('\'');
         sb.append(", userIds=").append(userIds);
         sb.append(", syncedFrom=").append(syncedFrom);
         sb.append('}');
         return sb.toString();
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public Group setId(String id) {
+        this.id = id;
+        return this;
     }
 
     public String getName() {

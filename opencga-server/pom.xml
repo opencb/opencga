@@ -58,7 +58,7 @@
         <dependency>
             <groupId>io.swagger</groupId>
             <artifactId>swagger-jersey2-jaxrs</artifactId>
-            <version>1.5.9</version>
+            <version>1.5.21</version>
         </dependency>
         <dependency>
             <groupId>javax.servlet</groupId>
@@ -82,6 +82,13 @@
             <groupId>io.grpc</groupId>
             <artifactId>grpc-all</artifactId>
             <version>${grpc}</version>
+            <!--<exclusions>-->
+                <!--&lt;!&ndash; The version used by GRPC is much lower than the one used by the Azure library &ndash;&gt;-->
+                <!--<exclusion>-->
+                    <!--<groupId>com.squareup.okio</groupId>-->
+                    <!--<artifactId>okio</artifactId>-->
+                <!--</exclusion>-->
+            <!--</exclusions>-->
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
@@ -99,6 +106,10 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-analysis</artifactId>
         </dependency>
     </dependencies>
 
