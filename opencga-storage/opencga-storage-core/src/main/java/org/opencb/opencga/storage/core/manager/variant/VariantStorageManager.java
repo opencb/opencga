@@ -31,6 +31,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
+import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -54,6 +55,7 @@ import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.variant.BeaconResponse;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
@@ -67,6 +69,7 @@ import java.util.stream.Collectors;
 import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
 import static org.opencb.commons.datastore.core.QueryOptions.empty;
 import static org.opencb.opencga.catalog.db.api.StudyDBAdaptor.QueryParams.FQN;
+import static org.opencb.opencga.catalog.stats.solr.CatalogSolrManager.COHORT_CONF_SET;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.addDefaultLimit;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.getDefaultLimit;
@@ -91,17 +94,16 @@ public class VariantStorageManager extends StorageManager {
 
     /**
      * Loads the given file into an empty study.
-     *
+     * <p>
      * The input file should have, in the same directory, a metadata file, with the same name ended with
      * {@link org.opencb.opencga.storage.core.variant.io.VariantExporter#METADATA_FILE_EXTENSION}
      *
-     *
-     * @param inputUri      Variants input file in avro format.
-     * @param study         Study where to load the variants
-     * @param sessionId     User's session id
-     * @throws CatalogException if there is any error with Catalog
-     * @throws IOException      if there is any I/O error
-     * @throws StorageEngineException  if there si any error loading the variants
+     * @param inputUri  Variants input file in avro format.
+     * @param study     Study where to load the variants
+     * @param sessionId User's session id
+     * @throws CatalogException       if there is any error with Catalog
+     * @throws IOException            if there is any I/O error
+     * @throws StorageEngineException if there si any error loading the variants
      */
     public void importData(URI inputUri, String study, String sessionId)
             throws CatalogException, IOException, StorageEngineException {
@@ -114,14 +116,15 @@ public class VariantStorageManager extends StorageManager {
 
     /**
      * Exports the result of the given query and the associated metadata.
-     * @param outputFile    Optional output file. If null or empty, will print into the Standard output. Won't export any metadata.
-     * @param outputFormat  Output format.
-     * @param study         Study to export
-     * @param sessionId     User's session id
-     * @return              List of generated files
-     * @throws CatalogException if there is any error with Catalog
-     * @throws IOException  If there is any IO error
-     * @throws StorageEngineException  If there is any error exporting variants
+     *
+     * @param outputFile   Optional output file. If null or empty, will print into the Standard output. Won't export any metadata.
+     * @param outputFormat Output format.
+     * @param study        Study to export
+     * @param sessionId    User's session id
+     * @return List of generated files
+     * @throws CatalogException       if there is any error with Catalog
+     * @throws IOException            If there is any IO error
+     * @throws StorageEngineException If there is any error exporting variants
      */
     public List<URI> exportData(String outputFile, VariantOutputFormat outputFormat, String study, String sessionId)
             throws StorageEngineException, CatalogException, IOException {
@@ -132,15 +135,16 @@ public class VariantStorageManager extends StorageManager {
 
     /**
      * Exports the result of the given query and the associated metadata.
-     * @param outputFile    Optional output file. If null or empty, will print into the Standard output. Won't export any metadata.
-     * @param outputFormat  Variant Output format.
-     * @param query         Query with the variants to export
-     * @param queryOptions  Query options
-     * @param sessionId     User's session id
-     * @return              List of generated files
-     * @throws CatalogException if there is any error with Catalog
-     * @throws IOException  If there is any IO error
-     * @throws StorageEngineException  If there is any error exporting variants
+     *
+     * @param outputFile   Optional output file. If null or empty, will print into the Standard output. Won't export any metadata.
+     * @param outputFormat Variant Output format.
+     * @param query        Query with the variants to export
+     * @param queryOptions Query options
+     * @param sessionId    User's session id
+     * @return List of generated files
+     * @throws CatalogException       if there is any error with Catalog
+     * @throws IOException            If there is any IO error
+     * @throws StorageEngineException If there is any error exporting variants
      */
     public List<URI> exportData(String outputFile, VariantOutputFormat outputFormat, Query query, QueryOptions queryOptions,
                                 String sessionId)
@@ -495,6 +499,22 @@ public class VariantStorageManager extends StorageManager {
         }
     }
 
+    public boolean isSolrAvailable() {
+        try {
+            SolrManager solrManager = storageEngineFactory.getVariantStorageEngine().getVariantSearchManager().getSolrManager();
+            if (solrManager.getMode().equalsIgnoreCase("cloud")) {
+                solrManager.createCollection("test", COHORT_CONF_SET);
+            } else {
+                solrManager.createCore("test", COHORT_CONF_SET);
+            }
+            solrManager.remove("test");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+
     // Permission related methods
 
     private interface VariantReadOperation<R> {
@@ -512,6 +532,7 @@ public class VariantStorageManager extends StorageManager {
         checkSamplesPermissions(query, queryOptions, variantStorageEngine.getStudyConfigurationManager(), sessionId);
         return supplier.apply(variantStorageEngine);
     }
+
     private <R> R secure(Query facetedQuery, Query query, QueryOptions queryOptions,
                          String sessionId, VariantReadOperation<R> supplier)
             throws CatalogException, StorageEngineException, IOException {

@@ -39,7 +39,7 @@ pipeline {
 
         stage ('Publish Docker Images') {
              options {
-                    timeout(time: 10, unit: 'MINUTES')
+                    timeout(time: 20, unit: 'MINUTES')
              }
              steps {
                 script {

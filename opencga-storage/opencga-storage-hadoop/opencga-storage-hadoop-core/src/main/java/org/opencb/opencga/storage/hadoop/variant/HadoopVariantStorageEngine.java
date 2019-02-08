@@ -1218,6 +1218,18 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         }
     }
 
+    @Override
+    public void testConnection() throws StorageEngineException {
+        try {
+            //TODO: can we use varianTable name safely ?
+            // hBaseManager.createTableIfNeeded(getVariantTableName(), Bytes.toBytes("0"), Algorithm.NONE);
+            hBaseManager.createTableIfNeeded("status_table", Bytes.toBytes("0"), Algorithm.NONE);
+        } catch (IOException e) {
+            logger.error("Connection to database '{}' failed", dbName);
+            throw new StorageEngineException("HBase Database connection test failed");
+        }
+    }
+
     /**
      * Created on 23/04/18.
      *
