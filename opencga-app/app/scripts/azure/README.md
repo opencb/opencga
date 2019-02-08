@@ -32,7 +32,7 @@ If you want to leverage OpenCGA's more performant Hadoop backend instead of Mong
 
 
 ## Setup resources
-After successfully deploying the resources, they have to be  configured
+After successfully deploying the resources, they have to be configured
 
 ### OpenCGA Virtual Machine
 SSH into your machine (replace username and IP address)
@@ -45,7 +45,6 @@ Install the latest updates
 ```
 sudo apt-get update
 sudo apt-get upgrade -y
-sudo apt-get install software-properties-common -y
 ```
 
 Install Java SDK
@@ -80,7 +79,7 @@ sudo ./solr-6.6.5/bin/install_solr_service.sh ./solr-6.6.5.tgz
 
 Clone OpenCGA
 ```
-git clone -b master https://github.com/opencb/opencga.git
+git clone -b azure https://github.com/opencb/opencga.git
 cd opencga/
 ```
 
@@ -91,7 +90,7 @@ mvn clean install -DskipTests
 
 **Option 2: Build OpenCGA with Hadoop**
 ```
-mvn clean install -DskipTests -Dstorage-hadoop -Popencga-storage-hadoop-deps -Phdp-2.6.0 -DOPENCGA.STORAGE.DEFAULT_ENGINE=hadoop
+mvn clean install -DskipTests -Dstorage-hadoop -Popencga-storage-hadoop-deps -Phdp-2.6.5 -DOPENCGA.STORAGE.DEFAULT_ENGINE=hadoop
 ```
 
 Move OpenCGA to `/opt/opencga`
@@ -116,14 +115,14 @@ sudo service tomcat8 start #start tomcat
 
 Copy OpenCGA build to Tomcat server
 ```
-sudo cp /opt/opencga/opencga*.war /var/lib/tomcat8/webapps
+sudo cp /opt/opencga/opencga*.war /var/lib/tomcat8/webapps/opencga.war
 sudo chown -R tomcat8 /opt/opencga/ #give tomcat8 user ownership of opencga folder
 sudo chmod -R 777 /opt/opencga/ #necessary to write in sessions folder
 ```
 
-If you chose Hadoop as a backend, configure Tomcat to use this configuration (replace `opencga-1.4.0-rc2.xml` with the exact name of your `.war` file placed in `/var/lib/tomcat8/webapps`)
+If you chose Hadoop as a backend, configure Tomcat to use this configuration:
 ```
-sudo -- sh -c 'echo "<Context>\n\t<Resources>\n\t\t<PostResources className=\"org.apache.catalina.webresources.DirResourceSet\" webAppMount=\"/WEB-INF/classes\" base=\"/opt/opencga/conf/hadoop\" />\n\t</Resources>\n</Context>" >> /var/lib/tomcat8/conf/Catalina/localhost/opencga-1.4.0-rc2.xml'
+sudo -- sh -c 'echo "<Context>\n\t<Resources>\n\t\t<PostResources className=\"org.apache.catalina.webresources.DirResourceSet\" webAppMount=\"/WEB-INF/classes\" base=\"/opt/opencga/conf/hadoop\" />\n\t</Resources>\n</Context>" >> /var/lib/tomcat8/conf/Catalina/localhost/opencga.xml'
 ```
 
 Reboot VM to load your configuration
@@ -147,30 +146,6 @@ Copy required Hadoop and HBase configuration files to the OpenCGA Virtual Machin
 sudo scp -r /etc/hadoop/conf/* azure@139.349.12.49:/opt/opencga/conf/hadoop
 sudo scp -r /etc/hbase/conf/* azure@139.349.12.49:/opt/opencga/conf/hadoop
 ```
-
-### Azure DataLake dependencies (optional)
-If you both use Hadoop and Azure DataLake for storage and  you are using OpenCGA 1.4.0-rc2 or lower, azure datalake dependencies need to be manually added to the OpenCGA VM.
-
-SSH into your OpenCGA VM (change username and IP address)
-```
-ssh azure@139.349.12.49
-```
-
-Copy dependencies to `/opt/deps` (replace `opencga-ssh.azurehdinsight.net` with your cluster's instance)
-```
-sudo mkdir /opt/deps
-cd /opt/deps
-sudo wget http://repo.hortonworks.com/content/repositories/releases/org/apache/hadoop/hadoop-azure-datalake/2.7.3.2.6.0.3-8/hadoop-azure-datalake-2.7.3.2.6.0.3-8.jar
-sudo scp sshuser@opencga-ssh.azurehdinsight.net:/usr/lib/hdinsight-datalake/azure-data-lake-store* /opt/deps
-sudo scp sshuser@opencga-ssh.azurehdinsight.net:/usr/lib/hdinsight-datalake/adls2-oauth2-token-provider* /opt/deps
-```
-
-Add dependencies to the classpath
-```
-sudo -- sh -c 'echo "CLASSPATH_PREFIX=\"/opt/deps/*\"" >> /etc/environment'
-source /etc/environment
-```
-
 
 ## Testing
 Once everything is successfully setup, you are able to test the configuration.
