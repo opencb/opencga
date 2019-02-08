@@ -110,8 +110,11 @@ public class VariantMetadataConverter {
         // We don't want to export those values at the aggregated header.
         // Copy the header and remove unknown attributes
         VariantFileHeader studyHeader = studyMetadata.getVariantHeader();
-        List<VariantFileHeaderSimpleLine> headerSimpleLines = new ArrayList<>(studyHeader.getSimpleLines().size());
-        studyHeader.getSimpleLines().forEach(line -> {
+        List<VariantFileHeaderSimpleLine> simpleLines = studyHeader.getSimpleLines() == null
+                ? Collections.emptyList()
+                : studyHeader.getSimpleLines();
+        List<VariantFileHeaderSimpleLine> headerSimpleLines = new ArrayList<>(simpleLines.size());
+        simpleLines.forEach(line -> {
             if (!StudyMetadata.UNKNOWN_HEADER_ATTRIBUTE.equals(line.getValue())) {
                 headerSimpleLines.add(line);
             }

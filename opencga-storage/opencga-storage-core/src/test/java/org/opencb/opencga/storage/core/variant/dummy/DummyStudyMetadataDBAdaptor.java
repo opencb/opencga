@@ -62,12 +62,12 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor, Samp
 
     @Override
     public List<String> getStudyNames(QueryOptions options) {
-        return new ArrayList<>(STUDY_CONFIGURATIONS_BY_NAME.keySet());
+        return STUDY_METADATA_MAP.values().stream().map(StudyMetadata::getName).collect(Collectors.toList());
     }
 
     @Override
     public List<Integer> getStudyIds(QueryOptions options) {
-        return new ArrayList<>(STUDY_CONFIGURATIONS_BY_ID.keySet());
+        return new ArrayList<>(STUDY_METADATA_MAP.keySet());
     }
 
     @Override
