@@ -45,6 +45,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
@@ -1505,17 +1506,19 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         }
     }
 
-    public TaskMetadata.Status setStatus(int studyId, int taskId, TaskMetadata.Status status) {
-        return setStatus(studyId, getTask(studyId, taskId), status);
+    public TaskMetadata.Status setStatus(int studyId, int taskId, TaskMetadata.Status status) throws StorageEngineException {
+        AtomicReference<TaskMetadata.Status> previousStatus = new AtomicReference<>();
+        updateTask(studyId, taskId, task -> {
+            previousStatus.set(task.currentStatus());
+            task.addStatus(Calendar.getInstance().getTime(), status);
+            return task;
+        });
+        return previousStatus.get();
     }
 
     @Deprecated
     public TaskMetadata.Status setStatus(int studyId, String taskName, List<Integer> fileIds, TaskMetadata.Status status) {
         TaskMetadata task = getTask(studyId, taskName, fileIds);
-        return setStatus(studyId, task, status);
-    }
-
-    private TaskMetadata.Status setStatus(int studyId, TaskMetadata task, TaskMetadata.Status status) {
         TaskMetadata.Status previousStatus = task.currentStatus();
         task.addStatus(Calendar.getInstance().getTime(), status);
         unsecureUpdateTask(studyId, task);
@@ -1523,9 +1526,9 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return previousStatus;
     }
 
+    @Deprecated
     public TaskMetadata.Status atomicSetStatus(int studyId, TaskMetadata.Status status, String operationName,
-                                               List<Integer> files)
-            throws StorageEngineException {
+                                               List<Integer> files) throws StorageEngineException {
         return setStatus(studyId, operationName, files, status);
     }
 
@@ -1613,7 +1616,6 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             throws StorageEngineException {
 
         TaskMetadata resumeOperation = null;
-        boolean updateOperation = false;
         Iterator<TaskMetadata> iterator = taskIterator(studyId);
         while (iterator.hasNext()) {
             TaskMetadata operation = iterator.next();
@@ -1657,17 +1659,21 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         TaskMetadata operation;
         if (resumeOperation == null) {
             operation = new TaskMetadata(newTaskId(studyId), jobOperationName, fileIds, System.currentTimeMillis(), type);
-            updateOperation = true;
+            unsecureUpdateTask(studyId, operation);
         } else {
             operation = resumeOperation;
-        }
 
-        if (!Objects.equals(operation.currentStatus(), TaskMetadata.Status.DONE)) {
-            operation.addStatus(Calendar.getInstance().getTime(), TaskMetadata.Status.RUNNING);
-            updateOperation = true;
-        }
-        if (updateOperation) {
-            unsecureUpdateTask(studyId, operation);
+            if (!Objects.equals(operation.currentStatus(), TaskMetadata.Status.DONE)) {
+                TreeMap<Date, TaskMetadata.Status> status = operation.getStatus();
+                operation = updateTask(studyId, operation.getId(), task -> {
+                    if (!task.getStatus().equals(status)) {
+                        throw new StorageEngineException("Attempt to execute a concurrent modification of task " + task.getName()
+                                + " (" + task.getId() + ") ");
+                    } else {
+                        return task.addStatus(Calendar.getInstance().getTime(), TaskMetadata.Status.RUNNING);
+                    }
+                });
+            }
         }
         return operation;
     }

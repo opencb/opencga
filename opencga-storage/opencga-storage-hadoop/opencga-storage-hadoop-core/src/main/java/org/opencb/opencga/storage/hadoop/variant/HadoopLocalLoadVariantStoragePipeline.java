@@ -124,6 +124,12 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
     @Override
     protected void load(URI inputUri, int studyId, int fileId) throws StorageEngineException {
 
+        if (getMetadataManager().getTask(studyId, taskId).currentStatus().equals(TaskMetadata.Status.DONE)) {
+            logger.info("File {} already loaded. Skip this step!",
+                    Paths.get(inputUri.getPath()).getFileName().toString());
+            return;
+        }
+
         Thread hook = newShutdownHook(OPERATION_NAME, Collections.singletonList(fileId));
         try {
             Runtime.getRuntime().addShutdownHook(hook);
@@ -161,6 +167,8 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
             long end = System.currentTimeMillis();
             logger.info("end - start = " + (end - start) / 1000.0 + "s");
 
+            // Mark file as DONE
+            getMetadataManager().setStatus(getStudyId(), taskId, TaskMetadata.Status.DONE);
         } finally {
             Runtime.getRuntime().removeShutdownHook(hook);
         }

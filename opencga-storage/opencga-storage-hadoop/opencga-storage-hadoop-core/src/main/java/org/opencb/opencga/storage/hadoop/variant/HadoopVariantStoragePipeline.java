@@ -363,12 +363,12 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
 
     @Override
     public URI postLoad(URI input, URI output) throws StorageEngineException {
-        VariantStorageMetadataManager scm = getMetadataManager();
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
 
         int studyId = getStudyId();
         VariantFileMetadata fileMetadata = readVariantFileMetadata(input);
         fileMetadata.setId(String.valueOf(getFileId()));
-        scm.updateVariantFileMetadata(studyId, fileMetadata);
+        metadataManager.updateVariantFileMetadata(studyId, fileMetadata);
 
         registerLoadedFiles(Collections.singletonList(getFileId()));
 
