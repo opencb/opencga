@@ -154,6 +154,65 @@ sudo scp -r /etc/hbase/conf/* azure@139.349.12.49:/opt/opencga/conf/hadoop
 ```
 
 ## Testing
-Once everything is successfully setup, you are able to test the configuration.
+Once everything is successfully setup, you are able to test the configuration. A basic test scenario is decribed below. For full details check out the [OpenCGA documentation](http://docs.opencb.org/display/opencga/Getting+Started+in+5+minutes).
 
-Follow [this](http://docs.opencb.org/display/opencga/Getting+Started+in+5+minutes) guide to test your setup.
+
+Install catalog (remember password for later use)
+```
+sudo /opt/opencga/bin/opencga-admin.sh catalog install --secret-key SeCrEtKeY
+```
+
+Start daemon (for debugging) in a seperate terminal and keep it open
+```
+sudo /opt/opencga/bin/opencga-admin.sh catalog daemon --start
+```
+
+Create a new user (in a different terminal)
+```
+sudo /opt/opencga/bin/opencga-admin.sh users create -u bart --email test@gel.ac.uk --name "John Doe" --user-password testpwd
+```
+
+Login to get a session token (replace bart with your newly created user)
+```
+sudo /opt/opencga/bin/opencga.sh users login -u bart
+```
+
+Create sample project
+```
+sudo /opt/opencga/bin/opencga.sh projects create --id reference_grch37 -n "Reference studies GRCh37" --organism-scientific-name "Homo sapiens" --organism-assembly "GRCh37"
+```
+
+If you run into a permissions error, make sure to change the permissions on the `/opt/opencga` folder once again
+```
+sudo chmod -R 777 /opt/opencga/
+```
+
+Create sample study within your project
+```
+sudo /opt/opencga/bin/opencga.sh studies create --id 1kG_phase3 -n "1000 Genomes Project - Phase 3" --project reference_grch37
+```
+
+Get sample VCF genome file
+```
+wget ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr22.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz
+```
+
+Link VCF genome file to your newly created study
+```
+sudo /opt/opencga/bin/opencga.sh files link -i ALL.chr22.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz -s 1kG_phase3
+```
+
+Transform file (view progress in separate daemon terminal)
+```
+sudo /opt/opencga/bin/opencga.sh variant index --file ALL.chr22.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz --transform -o outDir
+```
+
+Load file (view progress in separate daemon terminal), won't start until previous transform step is completed
+```
+sudo /opt/opencga/bin/opencga.sh variant index --file ALL.chr22.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz --load -o outDir
+```
+
+Perform query on successfully indexed file
+```
+sudo /opt/opencga/bin/opencga-analysis.sh variant query --sample HG00096 --limit 100
+```
