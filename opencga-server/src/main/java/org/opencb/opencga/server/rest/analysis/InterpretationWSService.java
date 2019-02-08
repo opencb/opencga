@@ -15,6 +15,8 @@ import org.opencb.biodata.models.commons.Software;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.analysis.clinical.CustomAnalysis;
 import org.opencb.opencga.analysis.clinical.InterpretationResult;
+import org.opencb.opencga.analysis.clinical.TeamAnalysis;
+import org.opencb.opencga.analysis.clinical.TieringAnalysis;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
@@ -712,38 +714,72 @@ public class InterpretationWSService extends AnalysisWSService {
 
     @GET
     @Path("/interpretation/tools/team")
-    @ApiOperation(value = "TEAM interpretation analysis (PENDING)", position = 14, response = QueryResponse.class)
-    public Response team(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
-                         @ApiParam(value = "Clinical Analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
-                         @ApiParam(value = "Disease (HPO term)") @QueryParam("disease") String disease,
-                         @ApiParam(value = "Family ID") @QueryParam("familyId") String familyId,
-                         @ApiParam(value = "Proband ID, if family exist this must be a family member") @QueryParam("probandId") String probandId,
-//                         @ApiParam(value = "Clinical analysis type, e.g. DUO, TRIO, ...") @QueryParam("type") String type,
-                         @ApiParam(value = "Panel ID") @QueryParam("panelId") String panelId,
-                         @ApiParam(value = "Panel version") @QueryParam("panelVersion") String panelVersion,
-                         @ApiParam(value = "Save interpretation in Catalog") @QueryParam("save") boolean save,
-                         @ApiParam(value = "ID of the stored interpretation") @QueryParam("interpretationId") String interpretationId,
-                         @ApiParam(value = "Description of the stored interpretation") @QueryParam("description") String description) {
+    @ApiOperation(value = "TEAM interpretation analysis", position = 14, response = QueryResponse.class)
+    @ApiImplicitParams({
+            // Interpretation filters
+            @ApiImplicitParam(name = "includeLowCoverage", value = "Include low coverage regions", dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = "maxLowCoverage", value = "Max. low coverage", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "includeNoTier", value = "Reported variants without tier", dataType = "boolean", paramType = "query"),
+    })
+    public Response team(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
+                                    String studyStr,
+                            @ApiParam(value = "Clinical Analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
+                            @ApiParam(value = "Comma separated list of disease panel IDs") @QueryParam("panelIds") String panelIds) {
+        try {
+            // Get analysis options from query
+            QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
+            ObjectMap teamAnalysisOptions = getAnalysisOptions(queryOptions);
 
-        return Response.ok().build();
+            String dataDir = configuration.getDataDir();
+            String opencgaHome = Paths.get(dataDir).getParent().toString();
+
+            List<String> panelList = null;
+            if (StringUtils.isNotEmpty(panelIds)) {
+                panelList = Arrays.asList(panelIds.split(","));
+            }
+
+            // Execute TEAM analysis
+            TeamAnalysis teamAnalysis = new TeamAnalysis(opencgaHome, studyStr, sessionId, clinicalAnalysisId, panelList, teamAnalysisOptions);
+            InterpretationResult interpretationResult = teamAnalysis.execute();
+            return createAnalysisOkResponse(interpretationResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
     }
 
     @GET
     @Path("/interpretation/tools/tiering")
     @ApiOperation(value = "GEL Tiering interpretation analysis (PENDING)", position = 14, response = QueryResponse.class)
-    public Response tiering(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
+    @ApiImplicitParams({
+            // Interpretation filters
+            @ApiImplicitParam(name = "includeLowCoverage", value = "Include low coverage regions", dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = "maxLowCoverage", value = "Max. low coverage", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "includeNoTier", value = "Reported variants without tier", dataType = "boolean", paramType = "query"),
+    })
+    public Response tiering(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
+                                                    String studyStr,
                             @ApiParam(value = "Clinical Analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
-                            @ApiParam(value = "Disease (HPO term)") @QueryParam("disease") String disease,
-                            @ApiParam(value = "Family ID") @QueryParam("familyId") String familyId,
-                            @ApiParam(value = "Proband ID, if family exist this must be a family member") @QueryParam("probandId") String probandId,
-//                         @ApiParam(value = "Clinical analysis type, e.g. DUO, TRIO, ...") @QueryParam("type") String type,
-                            @ApiParam(value = "Panel ID") @QueryParam("panelId") String panelId,
-                            @ApiParam(value = "Panel version") @QueryParam("panelVersion") String panelVersion,
-                            @ApiParam(value = "Save interpretation in Catalog") @QueryParam("save") boolean save,
-                            @ApiParam(value = "ID of the stored interpretation") @QueryParam("interpretationId") String interpretationId,
-                            @ApiParam(value = "Description of the stored interpretation") @QueryParam("description") String description) {
+                            @ApiParam(value = "Comma separated list of disease panel IDs") @QueryParam("panelIds") String panelIds) {
+        try {
+            // Get analysis options from query
+            QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
+            ObjectMap tieringAnalysisOptions = getAnalysisOptions(queryOptions);
 
-        return Response.ok().build();
+            String dataDir = configuration.getDataDir();
+            String opencgaHome = Paths.get(dataDir).getParent().toString();
+
+            List<String> panelList = null;
+            if (StringUtils.isNotEmpty(panelIds)) {
+                panelList = Arrays.asList(panelIds.split(","));
+            }
+
+            // Execute tiering analysis
+            TieringAnalysis tieringAnalysis = new TieringAnalysis(opencgaHome, studyStr, sessionId, clinicalAnalysisId, panelList, tieringAnalysisOptions);
+            InterpretationResult interpretationResult = tieringAnalysis.execute();
+            return createAnalysisOkResponse(interpretationResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
     }
 
     @GET
@@ -760,7 +796,7 @@ public class InterpretationWSService extends AnalysisWSService {
             // Interpretation filters
             @ApiImplicitParam(name = "includeLowCoverage", value = "Include low coverage regions", dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = "maxLowCoverage", value = "Max. low coverage", dataType = "integer", paramType = "query"),
-            //            @ApiImplicitParam(name = "disorder", value = "Disorder ID of the Individual or the Family", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "includeNoTier", value = "Reported variants without tier", dataType = "boolean", paramType = "query"),
 
             // Variant filters
             @ApiImplicitParam(name = "id", value = ID_DESCR, dataType = "string", paramType = "query"),
@@ -834,19 +870,12 @@ public class InterpretationWSService extends AnalysisWSService {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             Query query = getVariantQuery(queryOptions);
-            ObjectMap customAnalysisOptions = new ObjectMap(queryOptions);
-            if (queryOptions.containsKey("includeLowCoverage")) {
-                customAnalysisOptions.put("includeLowCoverage", queryOptions.getBoolean("includeLowCoverage"));
-            }
-            if (queryOptions.containsKey("maxLowCoverage")) {
-                customAnalysisOptions.put("maxLowCoverage", queryOptions.getInt("maxLowCoverage"));
-            }
-
+            ObjectMap customAnalysisOptions = getAnalysisOptions(queryOptions);
 
             String dataDir = configuration.getDataDir();
             String opencgaHome = Paths.get(dataDir).getParent().toString();
-//            System.out.println("opencgaHome = " + opencgaHome);
 
+            // Execute custom analysis
             // TODO, pass the findings to the custom analysis for tier3
             CustomAnalysis customAnalysis = new CustomAnalysis(query, null, studyStr, opencgaHome, customAnalysisOptions, sessionId);
             InterpretationResult interpretationResult = customAnalysis.execute();
@@ -926,5 +955,18 @@ public class InterpretationWSService extends AnalysisWSService {
             }
             return query;
         }
+    }
+
+    private ObjectMap getAnalysisOptions(QueryOptions queryOptions) {
+        // Get all query options
+        ObjectMap analysisOptions = new ObjectMap(queryOptions);
+        if (queryOptions.containsKey("includeLowCoverage")) {
+            analysisOptions.put("includeLowCoverage", queryOptions.getBoolean("includeLowCoverage"));
+        }
+        if (queryOptions.containsKey("maxLowCoverage")) {
+            analysisOptions.put("maxLowCoverage", queryOptions.getInt("maxLowCoverage"));
+        }
+        analysisOptions.put("includeNoTier", queryOptions.getBoolean("includeNoTier", true));
+        return analysisOptions;
     }
 }

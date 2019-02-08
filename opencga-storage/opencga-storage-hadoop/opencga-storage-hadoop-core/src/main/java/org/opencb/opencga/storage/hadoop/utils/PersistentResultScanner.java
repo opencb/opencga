@@ -19,24 +19,19 @@ public class PersistentResultScanner extends AbstractClientScanner {
     private final HBaseManager hBaseManager;
     private final Scan scan;
     private final String tableName;
-    private ResultScanner scanner;
+    protected ResultScanner scanner; // test purposes
+    private int scanners = 0;
     private byte[] lastRow = null;
+    private boolean empty = false;
     private static Logger logger = LoggerFactory.getLogger(PersistentResultScanner.class);
-
-    public static ResultScanner getScanner(HBaseManager hBaseManager, String tableName, Scan scan) throws IOException {
-        if (isValid(scan) != null) {
-            return hBaseManager.act(tableName, (Table table) -> table.getScanner(scan));
-        }
-        return new PersistentResultScanner(hBaseManager, scan, tableName);
-    }
 
     PersistentResultScanner(HBaseManager hBaseManager, Scan scan, String tableName) throws IOException {
         this.scanner = null;
         this.hBaseManager = hBaseManager;
-        this.scan = new Scan(scan); // Copy scan, as it can me modified.
+        this.scan = scan == null ? new Scan() : new Scan(scan); // Copy scan, as it can me modified.
         this.tableName = tableName;
-        checkValid(scan);
-        initScanMetrics(scan);
+        checkValid(this.scan);
+        initScanMetrics(this.scan);
         obtainNewScanner();
     }
 
@@ -48,6 +43,9 @@ public class PersistentResultScanner extends AbstractClientScanner {
     }
 
     static String isValid(Scan scan) {
+        if (scan == null) {
+            return null;
+        }
         if (scan.isReversed()) {
             return "Can not use a " + PersistentResultScanner.class.getName() + " with reversed results";
         }
@@ -65,9 +63,17 @@ public class PersistentResultScanner extends AbstractClientScanner {
     private Result next(boolean retry) throws IOException {
         try {
             Result result = scanner.next();
-            lastRow = result.getRow();
+            if (result == null) {
+                lastRow = null;
+                empty = true;
+            } else {
+                lastRow = result.getRow();
+            }
             return result;
-        } catch (UnknownScannerException e) {
+        } catch (ScannerTimeoutException | UnknownScannerException e) {
+            if (empty) {
+                return null;
+            }
             if (retry) {
                 logger.info("Renew lost HBase scanner: {}", e.getMessage());
                 logger.debug("Ignore HBase UnknownScannerException", e);
@@ -87,6 +93,7 @@ public class PersistentResultScanner extends AbstractClientScanner {
         scanner = hBaseManager.act(tableName, table -> {
             return table.getScanner(scan);
         });
+        scanners++;
         if (scanner instanceof AbstractClientScanner) {
             mergeScanMetrics();
         }
@@ -124,5 +131,9 @@ public class PersistentResultScanner extends AbstractClientScanner {
         } else {
             return false;
         }
+    }
+
+    public int getScannersCount() {
+        return scanners;
     }
 }
