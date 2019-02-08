@@ -19,9 +19,14 @@ package org.opencb.opencga.server.rest;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exception.VersionException;
+import org.opencb.opencga.core.results.VariantQueryResult;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
@@ -91,5 +96,37 @@ public class MetaWSServer extends OpenCGAWSServer {
         return createOkResponse(queryResult);
     }
 
+    @GET
+    @Path("storage/status")
+    @ApiOperation(httpMethod = "GET", value = "Variant Storage status.")
+    public Response variantQueryStatus() {
 
+        QueryResult queryResult = new QueryResult();
+
+        try {
+            storageEngineFactory.getVariantStorageEngine().testConnection();
+            queryResult.setResult(Arrays.asList(storageEngineFactory.getVariantStorageEngine().getStorageEngineId(), "OK"));
+        } catch (Exception e) {
+            return createErrorResponse("ERROR", "Not able to connect with Storage :" + e.toString());
+        }
+        return createOkResponse(queryResult);
+    }
+
+    @GET
+    @Path("solr/status")
+    @ApiOperation(httpMethod = "GET", value = "Solr status.")
+    public Response solrStatus() {
+        QueryResult queryResult = new QueryResult();
+
+        if (storageEngineFactory.getStorageConfiguration().getSearch().isActive()) {
+            if (variantManager.isSolrAvailable()) {
+                queryResult.setResult(Arrays.asList("solr", "OK"));
+            } else {
+                return createErrorResponse("ERROR", "unable to connect with solr!");
+            }
+        } else {
+            return createErrorResponse("ERROR", "solr is not active in storage configuration!");
+        }
+        return createOkResponse(queryResult);
+    }
 }
