@@ -57,6 +57,18 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
         return isReady("index");
     }
 
+    public boolean isAnnotated() {
+        return TaskMetadata.Status.READY.equals(getAnnotationStatus());
+    }
+
+    public TaskMetadata.Status getAnnotationStatus() {
+        return getStatus("annotation");
+    }
+
+    public SampleMetadata setAnnotationStatus(TaskMetadata.Status annotationStatus) {
+        return setStatus("annotation", annotationStatus);
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this)

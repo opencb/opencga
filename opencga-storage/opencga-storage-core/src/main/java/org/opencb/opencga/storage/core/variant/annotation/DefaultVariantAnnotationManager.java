@@ -37,12 +37,17 @@ import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.io.avro.AvroDataReader;
 import org.opencb.commons.io.avro.AvroDataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
+import org.opencb.commons.run.Task;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.db.VariantAnnotationDBWriter;
@@ -85,6 +90,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
     protected VariantAnnotator variantAnnotator;
     private final AtomicLong numAnnotationsToLoad = new AtomicLong(0);
     protected static Logger logger = LoggerFactory.getLogger(DefaultVariantAnnotationManager.class);
+    protected Map<Integer, List<Integer>> filesToBeAnnotated = new HashMap<>();
 
     public DefaultVariantAnnotationManager(VariantAnnotator variantAnnotator, VariantDBAdaptor dbAdaptor) {
         Objects.requireNonNull(variantAnnotator);
@@ -107,6 +113,8 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
         if (!overwrite) {
             query.put(VariantQueryParam.ANNOTATION_EXISTS.key(), false);
         }
+
+        preAnnotate(query, doCreate, doLoad);
 
         URI annotationFile;
         if (doCreate) {
@@ -189,7 +197,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                     return dbAdaptor.count(query).first();
                 }, 200);
             }
-            ParallelTaskRunner.TaskWithException<Variant, VariantAnnotation, VariantAnnotatorException> annotationTask = variantList -> {
+            Task<Variant, VariantAnnotation> annotationTask = variantList -> {
                 List<VariantAnnotation> variantAnnotationList;
                 long start = System.currentTimeMillis();
                 logger.debug("Annotating batch of {} genomic variants.", variantList.size());
@@ -239,16 +247,16 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
 
 
     public void loadAnnotation(URI uri, ObjectMap params) throws IOException, StorageEngineException {
-        Path path = Paths.get(uri);
-        String fileName = path.getFileName().toString().toLowerCase();
-        if (isCustomAnnotation(fileName)) {
+        if (isCustomAnnotation(uri)) {
             loadCustomAnnotation(uri, params);
         } else {
             loadVariantAnnotation(uri, params);
         }
     }
 
-    protected boolean isCustomAnnotation(String fileName) {
+    protected boolean isCustomAnnotation(URI uri) {
+        Path path = Paths.get(uri);
+        String fileName = path.getFileName().toString().toLowerCase();
         return !VariantReaderUtils.isAvro(fileName) && !VariantReaderUtils.isJson(fileName);
     }
 
@@ -281,6 +289,8 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
             throw new StorageEngineException("Error loading variant annotation", e);
         }
 
+        postLoadAnnotation();
+
     }
 
     protected ParallelTaskRunner<VariantAnnotation, ?> buildLoadAnnotationParallelTaskRunner(
@@ -307,6 +317,107 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
 
     protected VariantAnnotationDBWriter newVariantAnnotationDBWriter(VariantDBAdaptor dbAdaptor, QueryOptions options) {
         return new VariantAnnotationDBWriter(dbAdaptor, options, null);
+    }
+
+    /**
+     * Populates the list of {@link #filesToBeAnnotated}.
+     *
+     * Determine if this query is going to annotate all the variants from the database.
+     * If so, list all the currently indexed files. These will be marked as "annotated" once the annotation is loaded.
+     *
+     * @see #postLoadAnnotation()
+     * @param query            Query for creating the annotation.
+     * @param doCreate         if creating the annotation
+     * @param doLoad           if loading the annotation
+     */
+    protected void preAnnotate(Query query, boolean doCreate, boolean doLoad) {
+        if (!doCreate || !doLoad) {
+            // Do not continue if loading an external annotation file, or not loading it.
+            return;
+        }
+
+        VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
+        boolean annotateAll;
+        Set<VariantQueryParam> params = VariantQueryUtils.validParams(query);
+        Set<String> filesFilter = Collections.emptySet();
+
+        params.removeAll(VariantQueryUtils.MODIFIER_QUERY_PARAMS);
+        params.removeAll(Arrays.asList(VariantQueryParam.ANNOTATION_EXISTS, VariantQueryParam.STUDY));
+
+        if (params.isEmpty()) {
+            // There are no invalid filters.
+            annotateAll = true;
+        } else if (params.size() == 1 && params.contains(VariantQueryParam.FILE)) {
+            // Annotating some files entirely
+            filesFilter = new HashSet<>(query.getAsStringList(VariantQueryParam.FILE.key()));
+
+            annotateAll = true;
+            for (String file : filesFilter) {
+                if (VariantQueryUtils.isNegated(file) || file.contains(VariantQueryUtils.AND)) {
+                    // Invalid file filter
+                    annotateAll = false;
+                    break;
+                }
+            }
+        } else {
+            // There are filters like REGION. With this filter we can not guarantee that all the variants from any file will be annotated
+            annotateAll = false;
+        }
+
+        if (annotateAll) {
+            List<Integer> studies = VariantQueryUtils.getIncludeStudies(query, null, metadataManager);
+            for (Integer studyId : studies) {
+                List<Integer> files = new LinkedList<>();
+                if (!filesFilter.isEmpty()) {
+                    for (String file : filesFilter) {
+                        FileMetadata fileMetadata = metadataManager.getFileMetadata(studyId, file);
+                        if (fileMetadata != null && fileMetadata.isIndexed() && !fileMetadata.isAnnotated()) {
+                            files.add(fileMetadata.getId());
+                        }
+                    }
+                } else {
+                    metadataManager.fileMetadataIterator(studyId).forEachRemaining(fileMetadata -> {
+                        if (fileMetadata.isIndexed() && !fileMetadata.isAnnotated()) {
+                            files.add(fileMetadata.getId());
+                        }
+                    });
+                }
+                filesToBeAnnotated.put(studyId, files);
+            }
+        }
+    }
+
+    /**
+     * Mark all {@link #filesToBeAnnotated} as annotated.
+     *
+     * @see #preAnnotate
+     * @throws StorageEngineException on error writing the metadata
+     */
+    protected void postLoadAnnotation() throws StorageEngineException {
+        if (filesToBeAnnotated != null) {
+            VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
+
+            for (Map.Entry<Integer, List<Integer>> entry : filesToBeAnnotated.entrySet()) {
+                Integer studyId = entry.getKey();
+                List<Integer> fileIds = entry.getValue();
+                Set<Integer> sampleIds = new HashSet<>();
+
+                for (Integer file : fileIds) {
+                    metadataManager.updateFileMetadata(studyId, file, fileMetadata -> {
+                        sampleIds.addAll(fileMetadata.getSamples());
+                        fileMetadata.setAnnotationStatus(TaskMetadata.Status.READY);
+                        return fileMetadata;
+                    });
+                }
+
+                for (Integer sampleId : sampleIds) {
+                    metadataManager.updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
+                        sampleMetadata.setAnnotationStatus(TaskMetadata.Status.READY);
+                        return sampleMetadata;
+                    });
+                }
+            }
+        }
     }
 
     /**

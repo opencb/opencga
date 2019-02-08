@@ -67,6 +67,10 @@ public class FileMetadata extends StudyResourceMetadata<FileMetadata> {
         return setStatus("index", indexStatus);
     }
 
+    public boolean isAnnotated() {
+        return TaskMetadata.Status.READY.equals(getAnnotationStatus());
+    }
+
     public TaskMetadata.Status getAnnotationStatus() {
         return getStatus("annotation");
     }
