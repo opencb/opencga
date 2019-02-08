@@ -99,6 +99,12 @@ sudo mkdir /opt/opencga
 sudo cp -r ~/opencga/build/* /opt/opencga
 ```
 
+Increase memory heap space for tomcat to avoid running out of memory
+```
+printf '#!/bin/sh\nexport CATALINA_OPTS="$CATALINA_OPTS -Xmx1024m"\nexport CATALINA_OPTS="$CATALINA_OPTS -Xms512m"' | sudo tee -a /usr/share/tomcat8/bin/setenv.sh
+```
+
+
 Create OpenCGA user and group to run Tomcat server
 ```
 sudo service tomcat8 stop #stop tomcat to make changes
