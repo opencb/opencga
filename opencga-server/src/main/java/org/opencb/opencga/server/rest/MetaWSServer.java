@@ -128,7 +128,6 @@ public class MetaWSServer extends OpenCGAWSServer {
             }
         } else {
             results.add("Solr: solr is not active in storage configuration!");
-            error = true;
         }
 
         queryResult.setResult(results);
