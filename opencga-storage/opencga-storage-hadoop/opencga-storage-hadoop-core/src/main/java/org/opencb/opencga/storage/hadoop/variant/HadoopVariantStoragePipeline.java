@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.collect.BiMap;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.conf.Configuration;
@@ -37,6 +38,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
@@ -52,12 +54,12 @@ import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.exceptions.StorageHadoopException;
 import org.opencb.opencga.storage.hadoop.utils.HBaseLock;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHbaseTransformTask;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.transform.VariantSliceReader;
 import org.opencb.opencga.storage.hadoop.variant.transform.VariantToVcfSliceConverterTask;
 import org.slf4j.Logger;
@@ -398,15 +400,20 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
             } catch (StorageEngineException e) {
                 Throwable cause = e.getCause();
                 if (cause instanceof TimeoutException) {
-                    int timeout = 10;
+                    int timeout = 30;
+                    StopWatch stopWatch = StopWatch.createStarted();
                     logger.info("Waiting to get Lock over HBase table {} up to {} minutes ...", metaTableName, timeout);
                     lock = metadataManager.lockStudy(studyId, lockDuration,
                             TimeUnit.MINUTES.toMillis(timeout), GenomeHelper.PHOENIX_LOCK_COLUMN);
+                    stopWatch.stop();
+                    if (stopWatch.getTime(TimeUnit.MINUTES) > 3) {
+                        logger.warn("Slow HBase lock: " + TimeUtils.durationToString(stopWatch));
+                    }
                 } else {
                     throw e;
                 }
             }
-            logger.debug("Winning lock {}", lock);
+            StopWatch stopWatch = StopWatch.createStarted();
 
             try {
                 phoenixHelper.registerNewStudy(jdbcConnection, variantsTableName, studyId);
@@ -443,6 +450,15 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
 
             } catch (SQLException e) {
                 throw new StorageEngineException("Unable to register samples in Phoenix", e);
+            }
+
+            stopWatch.stop();
+            String msg = "Added new columns to Phoenix in " + TimeUtils.durationToString(stopWatch);
+            if (stopWatch.getTime(TimeUnit.SECONDS) < 10) {
+                logger.info(msg);
+            } else {
+                logger.warn("Slow phoenix response");
+                logger.warn(msg);
             }
         } catch (StorageEngineException e) {
             throw new StorageEngineException("Error locking table to modify Phoenix columns!", e);
