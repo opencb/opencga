@@ -46,7 +46,8 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.catalog.db.api.FileDBAdaptor.QueryParams.*;
+import static org.opencb.opencga.catalog.db.api.FileDBAdaptor.QueryParams.ID;
+import static org.opencb.opencga.catalog.db.api.FileDBAdaptor.QueryParams.URI;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -272,10 +273,8 @@ public class CatalogStorageMetadataSynchronizer {
                 list.add(toUri(path));
             }
             Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), list);
-
-            try (DBIterator<File> iterator = catalogManager.getFileManager().iterator(study.getName(),
-                    query,
-                    new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(NAME.key(), PATH.key(), INDEX.key())), sessionId)) {
+            try (DBIterator<File> iterator = catalogManager.getFileManager()
+                    .iterator(study.getName(), query, INDEXED_FILES_QUERY_OPTIONS, sessionId)) {
                 int numFiles = 0;
                 while (iterator.hasNext()) {
                     numFiles++;
