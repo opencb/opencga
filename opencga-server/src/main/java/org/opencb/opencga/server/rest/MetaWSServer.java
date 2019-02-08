@@ -89,19 +89,19 @@ public class MetaWSServer extends OpenCGAWSServer {
         QueryResult queryResult = new QueryResult();
         queryResult.setId("Status");
         queryResult.setDbTime(0);
-        List<String> results = new ArrayList<>();
+        HashMap<String, String> results = new HashMap<>();
         String storageEngineId;
         boolean error = false;
 
         try {
             if (catalogManager.getDatabaseStatus()) {
-                results.add("CatalogMongoDB: OK");
+                results.put("CatalogMongoDB", "OK");
             } else {
-                results.add("CatalogMongoDB: KO");
+                results.put("CatalogMongoDB", "KO");
                 error = true;
             }
         } catch (Exception e) {
-            results.add("CatalogMongoDB: KO");
+            results.put("CatalogMongoDB", "KO");
             error = true;
         }
 
@@ -113,24 +113,24 @@ public class MetaWSServer extends OpenCGAWSServer {
 
         try {
             storageEngineFactory.getVariantStorageEngine().testConnection();
-            results.add("VariantStorage " + storageEngineId + ": OK");
+            results.put("VariantStorage " + storageEngineId, "OK");
         } catch (Exception e) {
-            results.add("VariantStorage " + storageEngineId + ": KO");
+            results.put("VariantStorage " + storageEngineId, "KO");
             error = true;
         }
 
         if (storageEngineFactory.getStorageConfiguration().getSearch().isActive()) {
             if (variantManager.isSolrAvailable()) {
-                results.add("Solr: OK");
+                results.put("Solr", "OK");
             } else {
-                results.add("Solr: unable to connect with solr!");
+                results.put("Solr", "unable to connect with solr!");
                 error = true;
             }
         } else {
-            results.add("Solr: solr is not active in storage configuration!");
+            results.put("Solr", "solr is not active in storage configuration!");
         }
 
-        queryResult.setResult(results);
+        queryResult.setResult(Arrays.asList(results));
         if (error) {
             return createErrorResponse("Error", queryResult);
         }
