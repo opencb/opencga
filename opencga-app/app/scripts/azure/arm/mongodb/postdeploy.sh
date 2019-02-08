@@ -78,13 +78,23 @@ generateCertificate() {
 
 configureMongoDB() {
     mongo admin --eval 'db.createUser({user: "'${MONGODB_USERNAME}'",pwd: "'${MONGODB_PASSWORD}'",roles: ["root"]})'
-    sed -i '/#security/csecurity:\n  authorization: "enabled"\n  keyFile: \/opt\/mongodb.key\n' /etc/mongod.conf
-    sed -i '/#replication/creplication:\n  replSetName: rs0\n' /etc/mongod.conf
+    sed -i '/#security/csecurity:\n  authorization: "enabled"\n' /etc/mongod.conf
     sed -i -e '/bindIp/ s/: .*/: ::,0.0.0.0\n  ssl:\n    mode: allowSSL\n    PEMKeyFile: \/etc\/ssl\/mongo.pem\n    CAFile: \/etc\/ssl\/ca.pem\n    allowConnectionsWithoutCertificates: true /' /etc/mongod.conf
 
     #add cronjob to renew certificate
     crontab -l | { cat; echo "0 0 1 * * /opt/renew_mongo_cert.sh ${APP_DNS_NAME}"; } | crontab -
+
+    systemctl restart mongod
 }
+
+configureMongoReplication() {
+    sed -i '/authorization: "enabled"/!b;n;c\  keyFile: \/opt\/mongodb.key\n' /etc/mongod.conf
+    sed -i '/#replication/creplication:\n  replSetName: rs0\n' /etc/mongod.conf
+
+    systemctl restart mongod
+    sleep 10
+}
+
 
 generateMongoKeyFile() {
     echo "generating keyfile on primary node"
@@ -141,18 +151,17 @@ scanForNewDisks
 generateCertificate
 configureMongoDB
 
-if [ "$VM_INDEX" -eq 0 ]
+if [ "$CLUSTER_SIZE" -gt 1 ]
 then
-    generateMongoKeyFile
+    configureMongoReplication
 
-    if [ "$CLUSTER_SIZE" -gt 1 ]
+    if [ "$VM_INDEX" -eq 0 ]
     then
-        #waiting for other mongodb instances to be successfully configured
+        generateMongoKeyFile
         sleep 120
-
         createReplicaSet
+    else
+        configureSlaveNodes
     fi
-else
-    configureSlaveNodes
 fi
 
