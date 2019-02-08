@@ -908,7 +908,13 @@
                     },
                    "LogAnalyticsWorkspaceResourceID":{
                         "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceResourceID.value]"
-                   } 
+                   },
+                   "LogAnalyticsWorkspaceID": {
+                    "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceID.value]"
+                },
+                "LogAnalyticsWorkspaceKey": {
+                    "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceKey.value]"
+               }
                 }
             }
         },
