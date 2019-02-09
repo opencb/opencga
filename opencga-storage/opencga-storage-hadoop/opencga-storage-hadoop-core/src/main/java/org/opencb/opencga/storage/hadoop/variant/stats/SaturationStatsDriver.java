@@ -76,7 +76,7 @@ public class SaturationStatsDriver extends AbstractVariantsTableDriver {
     @Override
     protected Job setupJob(Job job, String archiveTable, String variantTable) throws IOException {
         VariantStorageMetadataManager metadataManager = getMetadataManager();
-        StudyMetadata sm = metadataManager.getStudyConfiguration(getStudyId(), null).first();
+        StudyMetadata sm = metadataManager.getStudyMetadata(getStudyId());
 
         Scan scan = new Scan();
         scan.setCaching(caching);
@@ -85,9 +85,11 @@ public class SaturationStatsDriver extends AbstractVariantsTableDriver {
             VariantHBaseQueryParser.addRegionFilter(scan, new Region(region));
         }
         int numSamples = 0;
+        int maxSampleId = 0;
         for (Integer sampleId : metadataManager.getIndexedSamples(sm.getId())) {
             scan.addColumn(getHelper().getColumnFamily(), VariantPhoenixHelper.buildSampleColumnKey(sm.getId(), sampleId));
             numSamples++;
+            maxSampleId = Math.max(maxSampleId, sampleId);
         }
         scan.addColumn(getHelper().getColumnFamily(), VariantPhoenixHelper.VariantColumn.TYPE.bytes());
 
@@ -96,6 +98,9 @@ public class SaturationStatsDriver extends AbstractVariantsTableDriver {
                 new FilterList(FilterList.Operator.MUST_PASS_ALL,
                         new FilterList(FilterList.Operator.MUST_PASS_ONE,
                                 new ValueFilter(CompareFilter.CompareOp.EQUAL, new BinaryPrefixComparator(Bytes.toBytes("0/1"))),
+                                new ValueFilter(CompareFilter.CompareOp.EQUAL, new BinaryPrefixComparator(Bytes.toBytes("0|1"))),
+                                new ValueFilter(CompareFilter.CompareOp.EQUAL, new BinaryPrefixComparator(Bytes.toBytes("./1"))),
+                                new ValueFilter(CompareFilter.CompareOp.EQUAL, new BinaryPrefixComparator(Bytes.toBytes(".|1"))),
                                 new ValueFilter(CompareFilter.CompareOp.EQUAL, new BinaryPrefixComparator(Bytes.toBytes("1"))),
                                 // Include TYPE, so we can count variants not in any sample
                                 new QualifierFilter(CompareFilter.CompareOp.EQUAL,
@@ -107,7 +112,9 @@ public class SaturationStatsDriver extends AbstractVariantsTableDriver {
 
         LOG.info("scan = " + scan.toString(10));
 
-        int numBatches = (int) Math.ceil((float) numSamples / batchSize) + 1;
+        int numBatches = (int) Math.ceil((float) maxSampleId / batchSize) + 1;
+        LOG.info("Num samples: " + numSamples);
+        LOG.info("Max sample Id: " + maxSampleId);
         LOG.info("Batch size: " + batchSize);
         LOG.info("Num batches: " + numBatches);
 

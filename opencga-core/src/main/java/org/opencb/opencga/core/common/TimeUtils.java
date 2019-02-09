@@ -62,7 +62,7 @@ public class TimeUtils {
     }
 
     public static String durationToString(long durationInMillis) {
-        long durationInSeconds = durationInMillis / 1000;
+        long durationInSeconds = Math.round(durationInMillis / 1000.0);
         long h = durationInSeconds / 3600;
         long m = (durationInSeconds % 3600) / 60;
         long s = durationInSeconds % 60;
