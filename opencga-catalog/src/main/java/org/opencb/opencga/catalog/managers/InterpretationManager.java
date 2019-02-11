@@ -89,7 +89,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     public QueryResult<Interpretation> create(String studyStr, Interpretation entry, QueryOptions options, String sessionId)
             throws CatalogException {
         if (StringUtils.isEmpty(entry.getInterpretation().getClinicalAnalysisId())) {
-            throw new IllegalArgumentException("Please call to create passing a clinical analysis");
+            throw new IllegalArgumentException("Please call to create passing a clinical analysis id");
         }
         return create(studyStr, entry.getInterpretation().getClinicalAnalysisId(), entry, options, sessionId);
     }
@@ -105,6 +105,8 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         ParamUtils.checkObj(interpretation, "clinicalAnalysis");
         ParamUtils.checkAlias(interpretation.getInterpretation().getId(), "id");
+
+        interpretation.getInterpretation().setClinicalAnalysisId(resource.getResource().getId());
 
         interpretation.getInterpretation().setCreationDate(TimeUtils.getTime());
         interpretation.getInterpretation().setDescription(

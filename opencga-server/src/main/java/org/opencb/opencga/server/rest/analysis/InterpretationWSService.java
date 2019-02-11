@@ -137,8 +137,7 @@ public class InterpretationWSService extends AnalysisWSService {
             if (interpretationAction == ParamUtils.BasicUpdateAction.ADD) {
                 Interpretation interpretation = params.toClinicalInterpretation();
                 interpretation.getInterpretation().setClinicalAnalysisId(clinicalAnalysisStr);
-                return createOkResponse(catalogInterpretationManager.create(studyStr, params.toClinicalInterpretation(), queryOptions,
-                        sessionId));
+                return createOkResponse(catalogInterpretationManager.create(studyStr, clinicalAnalysisStr, interpretation, queryOptions, sessionId));
             } else {
                 // TODO: Implement delete interpretation
                 return createErrorResponse(new NotImplementedException("Delete still not supported"));
