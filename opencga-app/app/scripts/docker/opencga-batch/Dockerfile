@@ -6,14 +6,16 @@ VOLUME /opt/opencga/variants
 
 # Install all the Hortonworks Data Platform stuff we need
 # hadoop etc
-RUN wget https://private-repo-1.hortonworks.com/HDP/ubuntu16/2.x/updates/2.6.5.3007-3/hdp.list -O /etc/apt/sources.list.d/hdp.list && apt-get updates
-RUN apt-get install zookeeper hadoop hadoop-hdfs libhdfs0 hadoop-yarn hadoop-mapreduce hadoop-client openssl \
- hbase \
- libsnappy1 libsnappy-dev liblzo2-2 liblzo2-dev hadooplzo phoenix \
+COPY ./opencga-app/app/scripts/docker/opencga-batch/hdp-azure.pub /tmp/
+RUN apt-key add /tmp/hdp-azure.pub
+RUN apt-get update && apt-get install apt-transport-https ca-certificates -y
+RUN wget https://private-repo-1.hortonworks.com/HDP/ubuntu16/2.x/updates/2.6.5.3007-3/hdp.list -O /etc/apt/sources.list.d/hdp.list && apt-get update
+RUN apt-get install zookeeper hadoop hadoop-hdfs libhdfs0 hadoop-yarn hadoop-mapreduce hadoop-client openssl hbase \
+ libsnappy1 liblzo2-2 liblzo2-dev phoenix -y
 
-# # Copy hadoop setup script into the container
-# COPY ./opencga-app/app/scripts/docker/opencga-batch /tmp/
-# # This ensures that the script will run every time a new bash session is started
-# RUN chmod +x /tmp/setup-hadoop.sh && echo ". /tmp/setup-hadoop.sh" >> /etc/bash.bashrc
+ # Node removed - libsnappy-dev as causes an issue
+
+# Check hadoop is now on path
+RUN hadoop
 
 USER 1001:1001
