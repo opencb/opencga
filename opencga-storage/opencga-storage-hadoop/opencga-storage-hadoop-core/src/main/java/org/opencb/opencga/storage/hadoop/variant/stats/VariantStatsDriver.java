@@ -18,6 +18,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Collection;
 
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.STATS_DEFAULT_GENOTYPE;
+
 /**
  * Created on 15/11/17.
  *
@@ -91,7 +93,7 @@ public class VariantStatsDriver extends AbstractVariantsTableDriver {
             VariantMapReduceUtil.initVariantMapperJobFromHBase(job, variantTableName, scan, VariantStatsMapper.class);
         }
         VariantMapReduceUtil.configureVariantConverter(job.getConfiguration(), false, true, true,
-                VariantStatisticsManager.UNKNOWN_GENOTYPE);
+                options.getString(STATS_DEFAULT_GENOTYPE.key(), STATS_DEFAULT_GENOTYPE.defaultValue()));
 
         // output
         VariantMapReduceUtil.setOutputHBaseTable(job, variantTableName);

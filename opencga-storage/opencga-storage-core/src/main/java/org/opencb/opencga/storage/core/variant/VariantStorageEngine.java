@@ -183,6 +183,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         CALCULATE_STATS("calculateStats", false),          //Calculate stats on the postLoad step
         OVERWRITE_STATS("overwriteStats", false),          //Overwrite stats already present
         UPDATE_STATS("updateStats", false),                //Calculate missing stats
+        STATS_DEFAULT_GENOTYPE("stats.default-genotype", "0/0"), // Default genotype to be used for calculating stats.
+
         ANNOTATE("annotate", false),
         INDEX_SEARCH("indexSearch", false),
 

@@ -94,7 +94,7 @@ public class MongoDBVariantStatisticsManager extends DefaultVariantStatisticsMan
             List<Task<Document, String>> tasks = new ArrayList<>(numTasks);
             ProgressLogger progressLogger = buildCreateStatsProgressLogger(variantDBAdaptor, readerQuery, options);
             for (int i = 0; i < numTasks; i++) {
-                tasks.add(new MongoDBVariantStatsCalculator(studyMetadata, cohortsMetadata, "./.")
+                tasks.add(new MongoDBVariantStatsCalculator(studyMetadata, cohortsMetadata, getUnknownGenotype(options))
                         .then((Task<VariantStatsWrapper, VariantStatsWrapper>) batch -> {
                             progressLogger.increment(batch.size(), () -> ", up to position "
                                     + batch.get(batch.size() - 1).getChromosome()

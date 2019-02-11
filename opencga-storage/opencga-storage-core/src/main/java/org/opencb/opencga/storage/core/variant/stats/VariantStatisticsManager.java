@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.STATS_DEFAULT_GENOTYPE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.AND;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.NOT;
 
@@ -46,7 +47,6 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils
  */
 public abstract class VariantStatisticsManager {
 
-    public static final String UNKNOWN_GENOTYPE = ".";
     private static Logger logger = LoggerFactory.getLogger(VariantStatisticsManager.class);
 
     /**
@@ -261,8 +261,13 @@ public abstract class VariantStatisticsManager {
 
         readerQuery.put(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleIds);
         readerQuery.append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true);
-        readerQuery.append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), UNKNOWN_GENOTYPE);
+        readerQuery.append(VariantQueryParam.UNKNOWN_GENOTYPE.key(),
+                getUnknownGenotype(options));
         return readerQuery;
+    }
+
+    protected static String getUnknownGenotype(ObjectMap options) {
+        return options.getString(STATS_DEFAULT_GENOTYPE.key(), STATS_DEFAULT_GENOTYPE.defaultValue());
     }
 
     public static Properties getAggregationMappingProperties(QueryOptions options) {
