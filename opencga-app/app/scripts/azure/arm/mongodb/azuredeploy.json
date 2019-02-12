@@ -68,13 +68,24 @@
                 "description": "Subnet ID"
             }
         },
+        "LogAnalyticsWorkspaceID": {
+            "type": "string",
+            "metadata": {
+                "description": "Log Analytics Workspace ID"
+            }
+        },
+        "logAnalyticsWorkSpaceKey":{
+            "type": "string",
+            "metadata": {
+                "description": "Log Analytics Workspace Key"
+            }
+        },
         "LogAnalyticsWorkspaceResourceID": {
             "type": "string",
             "metadata": {
                 "description": "Log Analytics Workspace Resource ID"
             }
         }
-
     },
     "variables": {
         "vmName": "mongo-vm",
@@ -91,6 +102,34 @@
                    "fqdn": "[concat(variables('dnsPrefix'),copyIndex('dnsNames'),'.',parameters('location'),'.cloudapp.azure.com')]"
                 }
             }
+        ],
+        "logAnalyticsAgent": "[concat('docker run --privileged -d -v /var/run/docker.sock:/var/run/docker.sock -v /var/log:/var/log -v /var/lib/docker/containers:/var/lib/docker/containers -e WSID=',parameters('logAnalyticsWorkSpaceID'),' -e KEY=',parameters('logAnalyticsWorkSpaceKey'),' -p 127.0.0.1:25225:25225 -p 127.0.0.1:25224:25224/udp --name=omsagent -h=`hostname` --restart=always microsoft/oms')]",
+        "fqdn": "[concat(variables('dnsPrefix'),'#VM_INDEX#','.',parameters('location'),'.cloudapp.azure.com')]",
+        "cloudInit": [
+            "#cloud-config",
+            "",
+            "package_upgrade: true",
+            "package_reboot_if_required: true",
+            "",
+            "write_files:",
+            "- encoding: gzip",
+            "  path: /opt/installmongodb.sh",
+            "  permissions: \"0744\"",
+            "  content: !!binary |",
+            "    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",
+            "",
+            "- encoding: gzip",
+            "  content: !!binary |",
+            "    H4sIAPYFNlwCA5WRz0rEMBDG73mKsduDijW7Fw/CHoRF8OCfV0jS6TaYJiUZuyzqu5uYLhtFBS8JzMz3+z5mFidcasulCD1jAQkaZGwBG+y0RZiE10IaDGzzeH9z97CuV6nr0eIOFHpi6ZGOcin1lBtkkhpBGAgMUkCr/H4k6HQkQec8DM5uXZqOLu1htHsxRvVC2/PLEQcWebF6G4vr+tQEaCbgSIoXRC686vWEvKpzvop/hcAbkNAGGgurM4aqd1DVR3D1PcLo9fSM+zLAUyz9J0CJ+MM+YatyX+TyVj6tlSB4LYJeFKr3REXMWUIw/CiLuHRCr7c9FYvOyH5wLVwtlz8JY7KdzcOtvJ7/Xxx8zCE8zTcM6CetcNYemuwDY5zi9FcCAAA=",
+            "  path: /opt/renew_mongo_cert.sh",
+            "  permissions: \"0744\"",
+            "",
+            "runcmd:",
+            "- export DEBIAN_FRONTEND='noninteractive'",
+            "- curl -fsSL https://get.docker.com/ | sh",
+            "- curl -fsSL https://get.docker.com/gpg | sudo apt-key add -",
+            "[concat('- ', variables('logAnalyticsAgent'))]",
+            "[concat('- VM_INDEX=#VM_INDEX# CLUSTER_SIZE=', parameters('clusterSize'), ' CERT_EMAIL=', parameters('certificateEmail'),' MONGODB_USERNAME=', parameters('mongoDBUsername'),' MONGODB_PASSWORD=', parameters('mongoDBPassword'),' APP_DNS_NAME=', variables('fqdn'), ' /bin/bash /opt/installmongodb.sh')]"
         ]
     },
     "resources": [
@@ -213,7 +252,7 @@
                 },
                 "osProfile": {
                     "computerName": "[concat(variables('vmName'), copyIndex())]",
-                    "customData": "[base64('#cloud-config\n\nwrite_files:\n -  encoding: gzip\n    content: !!binary |\n        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\n    path: /opt/installmongodb.sh\n    permissions: \"0744\"\n -  encoding: gzip\n    content: !!binary |\n        H4sIAPYFNlwCA5WRz0rEMBDG73mKsduDijW7Fw/CHoRF8OCfV0jS6TaYJiUZuyzqu5uYLhtFBS8JzMz3+z5mFidcasulCD1jAQkaZGwBG+y0RZiE10IaDGzzeH9z97CuV6nr0eIOFHpi6ZGOcin1lBtkkhpBGAgMUkCr/H4k6HQkQec8DM5uXZqOLu1htHsxRvVC2/PLEQcWebF6G4vr+tQEaCbgSIoXRC686vWEvKpzvop/hcAbkNAGGgurM4aqd1DVR3D1PcLo9fSM+zLAUyz9J0CJ+MM+YatyX+TyVj6tlSB4LYJeFKr3REXMWUIw/CiLuHRCr7c9FYvOyH5wLVwtlz8JY7KdzcOtvJ7/Xxx8zCE8zTcM6CetcNYemuwDY5zi9FcCAAA=\n    path: /opt/renew_mongo_cert.sh\n    permissions: \"0744\"\n\n')]",
+                    "customData": "[base64(replace(replace(replace(replace(string(variables('cloudInit')),'#VM_INDEX#',string(copyIndex())),'\",\"','\n'),'[\"',''),'\"]',''))]",
                     "linuxConfiguration": {
                         "disablePasswordAuthentication": true,
                         "ssh": {
@@ -230,31 +269,6 @@
                 }
             },
             "tags": {}
-        },
-        {
-            "type": "Microsoft.Compute/virtualMachines/extensions",
-            "name": "[concat(variables('vmName'), copyIndex(), '/configureagent')]",
-            "apiVersion": "2017-12-01",
-            "location": "[parameters('location')]",
-            "dependsOn": [
-                "[concat('Microsoft.Compute/virtualMachines/', variables('vmName'), copyIndex())]"
-            ],
-            "copy": {
-                "name": "mongo-rs-ca",
-                "count": "[parameters('clusterSize')]"
-            },
-            "properties": {
-                "publisher": "Microsoft.Azure.Extensions",
-                "type": "CustomScript",
-                "typeHandlerVersion": "2.0",
-                "autoUpgradeMinorVersion": true,
-                "settings": {
-                    "timestamp": 4
-                },
-                "protectedSettings": {
-                    "commandToExecute": "[concat(' VM_INDEX=', copyIndex(), ' CLUSTER_SIZE=', parameters('clusterSize'), ' CERT_EMAIL=', parameters('certificateEmail'),' MONGODB_USERNAME=', parameters('mongoDBUsername'),' MONGODB_PASSWORD=', parameters('mongoDBPassword'),' APP_DNS_NAME=', reference(resourceId('Microsoft.Network/publicIPAddresses',concat(variables('publicIPAddressName'),copyIndex())),'2017-10-01').dnsSettings.fqdn, ' /bin/bash /opt/installmongodb.sh')]"
-                }
-            }
         }
     ],
     "outputs": {

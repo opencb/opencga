@@ -147,7 +147,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
     @Deprecated
     protected MongoDBAdaptorFactory(List<DataStoreServerAddress> dataStoreServerAddressList, MongoDBConfiguration configuration,
-                                 String database) throws CatalogDBException {
+                                    String database) throws CatalogDBException {
 //        super(LoggerFactory.getLogger(CatalogMongoDBAdaptor.class));
         this.mongoManager = new MongoDataStoreManager(dataStoreServerAddressList);
         this.configuration = configuration;
@@ -195,7 +195,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         MongoDataStore mongoDataStore = mongoManager.get(database, this.configuration);
         if (!mongoDataStore.getCollectionNames().isEmpty()) {
             throw new CatalogException("Database " + database + " already exists with the following collections: "
-                + StringUtils.join(mongoDataStore.getCollectionNames()) + ".\nPlease, remove the database or choose a different one.");
+                    + StringUtils.join(mongoDataStore.getCollectionNames()) + ".\nPlease, remove the database or choose a different one.");
         }
         COLLECTIONS_LIST.forEach(mongoDataStore::createCollection);
         metaDBAdaptor.createIndexes();
@@ -208,14 +208,14 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     }
 
     @Override
-    public ObjectMap getDatabaseStatus() {
+    public boolean getDatabaseStatus() {
         Document dbStatus = mongoManager.get(database, this.configuration).getServerStatus();
         try {
             ObjectMap map = new ObjectMap(getDefaultObjectMapper().writeValueAsString(dbStatus));
-            return new ObjectMap("ok", map.getInt("ok", 0) > 0);
+            return map.getInt("ok", 0) > 0;
         } catch (JsonProcessingException e) {
             logger.error(e.getMessage(), e);
-            return new ObjectMap();
+            return false;
         }
     }
 

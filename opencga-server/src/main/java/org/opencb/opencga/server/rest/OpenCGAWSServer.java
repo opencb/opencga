@@ -475,7 +475,23 @@ public class OpenCGAWSServer {
         logResponse(response.getStatusInfo(), queryResponse);
         return response;
     }
-    
+
+    protected Response createErrorResponse(String errorMessage, QueryResult result) {
+
+        QueryResponse<ObjectMap> queryResponse = new QueryResponse<>();
+        queryResponse.setApiVersion(apiVersion);
+        queryResponse.setQueryOptions(queryOptions);
+        queryResponse.setError(errorMessage);
+
+        result.setWarningMsg("Future errors will ONLY be shown in the QueryResponse body");
+        result.setErrorMsg("DEPRECATED: " + errorMessage);
+        queryResponse.setResponse(Arrays.asList(result));
+
+        Response response = Response.fromResponse(createJsonResponse(queryResponse)).status(Response.Status.INTERNAL_SERVER_ERROR).build();
+        logResponse(response.getStatusInfo(), queryResponse);
+        return response;
+    }
+
     protected Response createErrorResponse(String method, String errorMessage) {
         try {
             return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(new ObjectMap("error", errorMessage)),
@@ -483,6 +499,7 @@ public class OpenCGAWSServer {
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
+
         return buildResponse(Response.ok("{\"error\":\"Error parsing json error\"}", MediaType.APPLICATION_JSON_TYPE));
     }
 

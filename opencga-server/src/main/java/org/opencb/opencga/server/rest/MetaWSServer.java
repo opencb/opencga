@@ -19,9 +19,14 @@ package org.opencb.opencga.server.rest;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exception.VersionException;
+import org.opencb.opencga.core.results.VariantQueryResult;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
@@ -32,10 +37,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by pfurio on 05/05/17.
@@ -87,9 +89,51 @@ public class MetaWSServer extends OpenCGAWSServer {
         QueryResult queryResult = new QueryResult();
         queryResult.setId("Status");
         queryResult.setDbTime(0);
-        queryResult.setResult(Arrays.asList(catalogManager.getDatabaseStatus()));
+        HashMap<String, String> results = new HashMap<>();
+        String storageEngineId;
+        boolean error = false;
+
+        try {
+            if (catalogManager.getDatabaseStatus()) {
+                results.put("CatalogMongoDB", "OK");
+            } else {
+                results.put("CatalogMongoDB", "KO");
+                error = true;
+            }
+        } catch (Exception e) {
+            results.put("CatalogMongoDB", "KO");
+            error = true;
+        }
+
+        try {
+            storageEngineId = storageEngineFactory.getVariantStorageEngine().getStorageEngineId();
+        } catch (Exception e) {
+            return createErrorResponse("No storageEngineId is set in configuration", queryResult);
+        }
+
+        try {
+            storageEngineFactory.getVariantStorageEngine().testConnection();
+            results.put("VariantStorage " + storageEngineId, "OK");
+        } catch (Exception e) {
+            results.put("VariantStorage " + storageEngineId, "KO");
+            error = true;
+        }
+
+        if (storageEngineFactory.getStorageConfiguration().getSearch().isActive()) {
+            if (variantManager.isSolrAvailable()) {
+                results.put("Solr", "OK");
+            } else {
+                results.put("Solr", "unable to connect with solr!");
+                error = true;
+            }
+        } else {
+            results.put("Solr", "solr is not active in storage configuration!");
+        }
+
+        queryResult.setResult(Arrays.asList(results));
+        if (error) {
+            return createErrorResponse("Error", queryResult);
+        }
         return createOkResponse(queryResult);
     }
-
-
 }
