@@ -59,6 +59,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 
 import java.io.IOException;
 import java.net.URI;
@@ -69,7 +70,6 @@ import java.util.stream.Collectors;
 import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
 import static org.opencb.commons.datastore.core.QueryOptions.empty;
 import static org.opencb.opencga.catalog.db.api.StudyDBAdaptor.QueryParams.FQN;
-import static org.opencb.opencga.catalog.stats.solr.CatalogSolrManager.COHORT_CONF_SET;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.addDefaultLimit;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.getDefaultLimit;
@@ -500,17 +500,27 @@ public class VariantStorageManager extends StorageManager {
     }
 
     public boolean isSolrAvailable() {
+        SolrManager solrManager = null;
         try {
-            SolrManager solrManager = storageEngineFactory.getVariantStorageEngine().getVariantSearchManager().getSolrManager();
-            if (solrManager.getMode().equalsIgnoreCase("cloud")) {
-                solrManager.createCollection("test", COHORT_CONF_SET);
-            } else {
-                solrManager.createCore("test", COHORT_CONF_SET);
-            }
-            solrManager.remove("test");
+            solrManager = new SolrManager(
+                    storageConfiguration.getSearch().getHosts(),
+                    storageConfiguration.getSearch().getMode(),
+                    storageConfiguration.getSearch().getTimeout());
+            String collectionName = "test_connection";
+            solrManager.create(collectionName, VariantSearchManager.CONF_SET);
+            solrManager.remove(collectionName);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.warn("Ignore exception checking if Solr is available", e);
             return false;
+        } finally {
+            if (solrManager != null) {
+                try {
+                    solrManager.close();
+                } catch (IOException e) {
+                    logger.warn("Ignore exception closing Solr", e);
+                    return false;
+                }
+            }
         }
         return true;
     }

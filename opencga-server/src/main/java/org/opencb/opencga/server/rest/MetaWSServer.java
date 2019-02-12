@@ -18,15 +18,9 @@ package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-
-import org.opencb.biodata.models.variant.Variant;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.results.VariantQueryResult;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
@@ -37,7 +31,10 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by pfurio on 05/05/17.
