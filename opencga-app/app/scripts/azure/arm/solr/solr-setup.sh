@@ -17,7 +17,7 @@ DOCKER_NAME=opencga-solr-${SOLR_VERSION}
 # Create docker
 
 # Add OpenCGA Configuration Set 
-tar zxfv OpenCGAConfSet-1.4.tar.gz
+tar zxfv OpenCGAConfSet-1.4.0.tar.gz
 
 # create a directory to store the server/solr directory
 mkdir /opt/solr-volume
