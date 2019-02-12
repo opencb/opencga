@@ -13,6 +13,8 @@ RUN wget https://private-repo-1.hortonworks.com/HDP/ubuntu16/2.x/updates/2.6.5.3
 RUN apt-get install zookeeper hadoop hadoop-hdfs libhdfs0 hadoop-yarn hadoop-mapreduce hadoop-client openssl hbase \
  libsnappy1 liblzo2-2 liblzo2-dev phoenix -y
 
+RUN apt-get install openjdk-8-jdk -y
+
  # Node removed - libsnappy-dev as causes an issue
 
 # Check hadoop is now on path

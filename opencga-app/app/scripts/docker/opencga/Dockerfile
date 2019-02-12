@@ -10,11 +10,12 @@ RUN apt-get update && apt-get install -y software-properties-common && \
     apt-get clean
 
 ARG buildPath="./build"
-
-WORKDIR /opt/opencga
+ENV JAVA_HOME="/usr/lib/jvm/java-8-oracle"
 ENV BASEDIR=/opt/opencga
 
-RUN adduser -u 1001 opencga
+WORKDIR /opt/opencga
+
+RUN adduser --disabled-password --gecos "" -u 1001 opencga
 
 COPY ${buildPath} /opt/opencga
 
