@@ -5,7 +5,10 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.biodata.models.clinical.interpretation.Comment;
+import org.opencb.biodata.models.commons.Analyst;
 import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.commons.Software;
 import org.opencb.biodata.models.pedigree.Multiples;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -112,7 +115,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
         if (createFamily) {
             clinicalAnalysis.setFamily(new Family().setId("family")
-                .setMembers(Arrays.asList(new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2"))))));
+                    .setMembers(Arrays.asList(new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2"))))));
         }
 
         return catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
@@ -140,6 +143,38 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
         assertEquals(catalogManager.getSampleManager().getUid("sample2", STUDY, sessionIdUser).getResource().getUid(),
                 dummyEnvironment.first().getProband().getSamples().get(0).getUid());
+    }
+
+    @Test
+    public void createInterpretationTest() throws CatalogException {
+        QueryResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true);
+
+        org.opencb.biodata.models.clinical.interpretation.Interpretation i =
+                new org.opencb.biodata.models.clinical.interpretation.Interpretation()
+                        .setId("interpretationId")
+                        .setDescription("description")
+                        .setClinicalAnalysisId(dummyEnvironment.first().getId())
+                        .setSoftware(new Software("name", "version", "repo", "commit", "web", Collections.emptyMap()))
+                        .setAnalyst(new Analyst("user2", "mail@mail.com", "company"))
+                        .setComments(Collections.singletonList(new Comment("author", "type", "comment 1", "date")))
+                        .setReportedVariants(Collections.emptyList());
+        Interpretation interpretation = new Interpretation().setInterpretation(i);
+
+        QueryResult<Interpretation> interpretationQueryResult = catalogManager.getInterpretationManager()
+                .create(STUDY, dummyEnvironment.first().getId(), interpretation, QueryOptions.empty(), sessionIdUser);
+        System.out.println(interpretationQueryResult.first());
+
+        QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager().get(STUDY,
+                dummyEnvironment.first().getId(), QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, clinicalAnalysisQueryResult.first().getInterpretations().size());
+        assertEquals("interpretationId", clinicalAnalysisQueryResult.first().getInterpretations().get(0).getInterpretation().getId());
+        assertEquals("description", clinicalAnalysisQueryResult.first().getInterpretations().get(0).getInterpretation().getDescription());
+
+        clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager().get(STUDY,
+                dummyEnvironment.first().getId(), new QueryOptions(QueryOptions.INCLUDE, "interpretations.interpretation.id"), sessionIdUser);
+        assertEquals(1, clinicalAnalysisQueryResult.first().getInterpretations().size());
+        assertEquals("interpretationId", clinicalAnalysisQueryResult.first().getInterpretations().get(0).getInterpretation().getId());
+        assertEquals(null, clinicalAnalysisQueryResult.first().getInterpretations().get(0).getInterpretation().getDescription());
     }
 
     @Test

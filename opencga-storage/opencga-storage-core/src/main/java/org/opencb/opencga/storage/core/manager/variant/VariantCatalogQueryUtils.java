@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.core.manager.variant;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.opencb.biodata.models.clinical.interpretation.DiseasePanel.GenePanel;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -31,16 +32,15 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.AbstractManager;
-import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.managers.FamilyManager;
-import org.opencb.opencga.catalog.managers.ResourceManager;
+import org.opencb.opencga.catalog.managers.*;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.manager.CatalogUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -87,6 +87,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
     private final GenotypeFilterValidator genotypeFilterValidator;
     private final CohortFilterValidator cohortFilterValidator;
     //    public static final QueryParam SAMPLE_FILTER_GENOTYPE = QueryParam.create("sampleFilterGenotype", "", QueryParam.Type.TEXT_ARRAY);
+    protected static Logger logger = LoggerFactory.getLogger(VariantCatalogQueryUtils.class);
 
     public VariantCatalogQueryUtils(CatalogManager catalogManager) {
         super(catalogManager);
@@ -420,15 +421,13 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         }
 
         if (isValidParam(query, PANEL)) {
-            String panelId = query.getString(PANEL.key());
-            if (StringUtils.isEmpty(defaultStudyStr)) {
-                throw VariantQueryException.missingStudyFor("panel", panelId, null);
-            }
-            Panel panel = catalogManager.getPanelManager().get(defaultStudyStr, panelId, null, sessionId).first();
-
-            List<String> geneNames = new ArrayList<>(panel.getDiseasePanel().getGenes().size());
-            for (org.opencb.biodata.models.clinical.interpretation.DiseasePanel.GenePanel genePanel : panel.getDiseasePanel().getGenes()) {
-                geneNames.add(genePanel.getName());
+            Set<String> geneNames = new HashSet<>();
+            List<String> panels = query.getAsStringList(PANEL.key());
+            for (String panelId : panels) {
+                Panel panel = getPanel(defaultStudyStr, panelId, sessionId);
+                for (GenePanel genePanel : panel.getDiseasePanel().getGenes()) {
+                    geneNames.add(genePanel.getName());
+                }
             }
 
             if (isValidParam(query, GENE)) {
@@ -439,6 +438,30 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         }
 
         return query;
+    }
+
+    /**
+     * Get the panel from catalog. If the panel is not found in the study, or the study is null, search through the global panels.
+     *
+     * @param studyId   StudyId
+     * @param panelId   PanelId
+     * @param sessionId users sessionId
+     * @return The panel
+     * @throws CatalogException if the panel does not exist, or the user does not have permissions to see it.
+     */
+    protected Panel getPanel(String studyId, String panelId, String sessionId) throws CatalogException {
+        Panel panel = null;
+        if (StringUtils.isNotEmpty(studyId)) {
+            try {
+                panel = catalogManager.getPanelManager().get(studyId, panelId, null, sessionId).first();
+            } catch (CatalogException e) {
+                logger.debug("Ignore Panel not found", e);
+            }
+        }
+        if (panel == null) {
+            panel = catalogManager.getPanelManager().get(PanelManager.INSTALLATION_PANELS, panelId, null, sessionId).first();
+        }
+        return panel;
     }
 
     public String getDefaultStudyId(Collection<String> studies) throws CatalogException {
