@@ -17,7 +17,7 @@ DOCKER_NAME=opencga-solr-${SOLR_VERSION}
 # Create docker
 
 # Add OpenCGA Configuration Set 
-tar zxfv OpenCGAConfSet_1.4.x.tar.gz
+tar zxfv OpenCGAConfSet-1.4.tar.gz
 
 # create a directory to store the server/solr directory
 mkdir /opt/solr-volume
@@ -29,7 +29,7 @@ sudo chown 8983:8983 /opt/solr-volume
 docker run --rm -v /opt/solr-volume:/target solr:${SOLR_VERSION} cp -r server/solr /target/
 
 # copy configset to volume ready to mount
-cp -r OpenCGAConfSet /opt/solr-volume/solr/configsets/OpenCGAConfSet-1.4.x
+cp -r OpenCGAConfSet /opt/solr-volume/solr/configsets/OpenCGAConfSet-1.4.0
 
 # get script
 docker run  --rm  solr:${SOLR_VERSION}  cat /opt/solr/bin/solr.in.sh > /opt/solr.in.sh
@@ -79,4 +79,4 @@ until $(curl --output /dev/null --silent --head --fail  "http://$(hostname):8983
     sleep 5
 done
 
-docker exec ${DOCKER_NAME} /opt/solr/bin/solr zk upconfig -n OpenCGAConfSet-1.4.x -d /opt/solr/server/solr/configsets/OpenCGAConfSet-1.4.x $ZK_CLI
+docker exec ${DOCKER_NAME} /opt/solr/bin/solr zk upconfig -n OpenCGAConfSet-1.4.0 -d /opt/solr/server/solr/configsets/OpenCGAConfSet-1.4.0 $ZK_CLI
