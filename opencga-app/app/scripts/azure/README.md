@@ -32,7 +32,7 @@ If you want to leverage OpenCGA's more performant Hadoop backend instead of Mong
 
 
 ## Setup resources
-After successfully deploying the resources, they have to be  configured
+After successfully deploying the resources, they have to be configured
 
 ### OpenCGA Virtual Machine
 SSH into your machine (replace username and IP address)
@@ -45,7 +45,6 @@ Install the latest updates
 ```
 sudo apt-get update
 sudo apt-get upgrade -y
-sudo apt-get install software-properties-common -y
 ```
 
 Install Java SDK
@@ -80,7 +79,7 @@ sudo ./solr-6.6.5/bin/install_solr_service.sh ./solr-6.6.5.tgz
 
 Clone OpenCGA
 ```
-git clone -b master https://github.com/opencb/opencga.git
+git clone -b azure https://github.com/opencb/opencga.git
 cd opencga/
 ```
 
@@ -91,7 +90,7 @@ mvn clean install -DskipTests
 
 **Option 2: Build OpenCGA with Hadoop**
 ```
-mvn clean install -DskipTests -Dstorage-hadoop -Popencga-storage-hadoop-deps -Phdp-2.6.0 -DOPENCGA.STORAGE.DEFAULT_ENGINE=hadoop
+mvn clean install -DskipTests -Dstorage-hadoop -Popencga-storage-hadoop-deps -Phdp-2.6.5 -DOPENCGA.STORAGE.DEFAULT_ENGINE=hadoop
 ```
 
 Move OpenCGA to `/opt/opencga`
@@ -99,6 +98,12 @@ Move OpenCGA to `/opt/opencga`
 sudo mkdir /opt/opencga
 sudo cp -r ~/opencga/build/* /opt/opencga
 ```
+
+Increase memory heap space for tomcat to avoid running out of memory
+```
+printf '#!/bin/sh\nexport CATALINA_OPTS="$CATALINA_OPTS -Xmx1024m"\nexport CATALINA_OPTS="$CATALINA_OPTS -Xms512m"' | sudo tee -a /usr/share/tomcat8/bin/setenv.sh
+```
+
 
 Create OpenCGA user and group to run Tomcat server
 ```
@@ -116,14 +121,14 @@ sudo service tomcat8 start #start tomcat
 
 Copy OpenCGA build to Tomcat server
 ```
-sudo cp /opt/opencga/opencga*.war /var/lib/tomcat8/webapps
+sudo cp /opt/opencga/opencga*.war /var/lib/tomcat8/webapps/opencga.war
 sudo chown -R tomcat8 /opt/opencga/ #give tomcat8 user ownership of opencga folder
 sudo chmod -R 777 /opt/opencga/ #necessary to write in sessions folder
 ```
 
-If you chose Hadoop as a backend, configure Tomcat to use this configuration (replace `opencga-1.4.0-rc2.xml` with the exact name of your `.war` file placed in `/var/lib/tomcat8/webapps`)
+If you chose Hadoop as a backend, configure Tomcat to use this configuration:
 ```
-sudo -- sh -c 'echo "<Context>\n\t<Resources>\n\t\t<PostResources className=\"org.apache.catalina.webresources.DirResourceSet\" webAppMount=\"/WEB-INF/classes\" base=\"/opt/opencga/conf/hadoop\" />\n\t</Resources>\n</Context>" >> /var/lib/tomcat8/conf/Catalina/localhost/opencga-1.4.0-rc2.xml'
+sudo -- sh -c 'echo "<Context>\n\t<Resources>\n\t\t<PostResources className=\"org.apache.catalina.webresources.DirResourceSet\" webAppMount=\"/WEB-INF/classes\" base=\"/opt/opencga/conf/hadoop\" />\n\t</Resources>\n</Context>" >> /var/lib/tomcat8/conf/Catalina/localhost/opencga.xml'
 ```
 
 Reboot VM to load your configuration
@@ -148,31 +153,66 @@ sudo scp -r /etc/hadoop/conf/* azure@139.349.12.49:/opt/opencga/conf/hadoop
 sudo scp -r /etc/hbase/conf/* azure@139.349.12.49:/opt/opencga/conf/hadoop
 ```
 
-### Azure DataLake dependencies (optional)
-If you both use Hadoop and Azure DataLake for storage and  you are using OpenCGA 1.4.0-rc2 or lower, azure datalake dependencies need to be manually added to the OpenCGA VM.
-
-SSH into your OpenCGA VM (change username and IP address)
-```
-ssh azure@139.349.12.49
-```
-
-Copy dependencies to `/opt/deps` (replace `opencga-ssh.azurehdinsight.net` with your cluster's instance)
-```
-sudo mkdir /opt/deps
-cd /opt/deps
-sudo wget http://repo.hortonworks.com/content/repositories/releases/org/apache/hadoop/hadoop-azure-datalake/2.7.3.2.6.0.3-8/hadoop-azure-datalake-2.7.3.2.6.0.3-8.jar
-sudo scp sshuser@opencga-ssh.azurehdinsight.net:/usr/lib/hdinsight-datalake/azure-data-lake-store* /opt/deps
-sudo scp sshuser@opencga-ssh.azurehdinsight.net:/usr/lib/hdinsight-datalake/adls2-oauth2-token-provider* /opt/deps
-```
-
-Add dependencies to the classpath
-```
-sudo -- sh -c 'echo "CLASSPATH_PREFIX=\"/opt/deps/*\"" >> /etc/environment'
-source /etc/environment
-```
-
-
 ## Testing
-Once everything is successfully setup, you are able to test the configuration.
+Once everything is successfully setup, you are able to test the configuration. A basic test scenario is decribed below. For full details check out the [OpenCGA documentation](http://docs.opencb.org/display/opencga/Getting+Started+in+5+minutes).
 
-Follow [this](http://docs.opencb.org/display/opencga/Getting+Started+in+5+minutes) guide to test your setup.
+
+Install catalog (remember password for later use)
+```
+sudo /opt/opencga/bin/opencga-admin.sh catalog install --secret-key SeCrEtKeY
+```
+
+Start daemon (for debugging) in a seperate terminal and keep it open
+```
+sudo /opt/opencga/bin/opencga-admin.sh catalog daemon --start
+```
+
+Create a new user (in a different terminal)
+```
+sudo /opt/opencga/bin/opencga-admin.sh users create -u bart --email test@gel.ac.uk --name "John Doe" --user-password testpwd
+```
+
+Login to get a session token (replace bart with your newly created user)
+```
+sudo /opt/opencga/bin/opencga.sh users login -u bart
+```
+
+Create sample project
+```
+sudo /opt/opencga/bin/opencga.sh projects create --id reference_grch37 -n "Reference studies GRCh37" --organism-scientific-name "Homo sapiens" --organism-assembly "GRCh37"
+```
+
+If you run into a permissions error, make sure to change the permissions on the `/opt/opencga` folder once again
+```
+sudo chmod -R 777 /opt/opencga/
+```
+
+Create sample study within your project
+```
+sudo /opt/opencga/bin/opencga.sh studies create --id 1kG_phase3 -n "1000 Genomes Project - Phase 3" --project reference_grch37
+```
+
+Get sample VCF genome file
+```
+wget ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr22.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz
+```
+
+Link VCF genome file to your newly created study
+```
+sudo /opt/opencga/bin/opencga.sh files link -i ALL.chr22.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz -s 1kG_phase3
+```
+
+Transform file (view progress in separate daemon terminal)
+```
+sudo /opt/opencga/bin/opencga.sh variant index --file ALL.chr22.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz --transform -o outDir
+```
+
+Load file (view progress in separate daemon terminal), won't start until previous transform step is completed
+```
+sudo /opt/opencga/bin/opencga.sh variant index --file ALL.chr22.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz --load -o outDir
+```
+
+Perform query on successfully indexed file
+```
+sudo /opt/opencga/bin/opencga-analysis.sh variant query --sample HG00096 --limit 100
+```
