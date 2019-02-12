@@ -188,8 +188,8 @@ public class InterpretationWSService extends AnalysisWSService {
     public Response search(
             @ApiParam(value = "Study [[user@]project:]{study} where study and project can be either the id or alias.")
             @QueryParam("study") String studyStr,
-            @ApiParam(value = "Clinical analysis type") @QueryParam("type") ClinicalAnalysis.Type type,
-            @ApiParam(value = "Priority") @QueryParam("priority") ClinicalAnalysis.Priority priority,
+            @ApiParam(value = "Clinical analysis type") @QueryParam("type") String type,
+            @ApiParam(value = "Priority") @QueryParam("priority") String priority,
             @ApiParam(value = "Clinical analysis status") @QueryParam("status") String status,
             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
             @QueryParam("creationDate") String creationDate,
