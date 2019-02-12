@@ -25,6 +25,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HConstants;
+import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.io.compress.Compression.Algorithm;
@@ -949,7 +950,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
      * @param inputQuery Query
      * @param options    Options
      * @param iterator   Shall the resulting object be an iterator instead of a QueryResult
-     * @return           QueryResult or Iterator with the variants that matches the query
+     * @return QueryResult or Iterator with the variants that matches the query
      * @throws StorageEngineException StorageEngineException
      */
     private Object getOrIteratorSampleIndexIntersect(Query inputQuery, QueryOptions options, boolean iterator)
@@ -1218,6 +1219,16 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         }
     }
 
+    @Override
+    public void testConnection() throws StorageEngineException {
+        try {
+            HBaseAdmin.checkHBaseAvailable(getHadoopConfiguration());
+        } catch (Exception e) {
+            logger.error("Connection to database '{}' failed", dbName);
+            throw new StorageEngineException("HBase Database connection test failed");
+        }
+    }
+
     /**
      * Created on 23/04/18.
      *
@@ -1236,7 +1247,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         @Override
         protected void map(ImmutableBytesWritable key, Result result, Context context) throws IOException, InterruptedException {
             super.map(key, result, context);
-    //        context.write(key, HadoopVariantSearchIndexUtils.addUnknownSyncStatus(new Put(result.getRow()), columnFamily));
+            //        context.write(key, HadoopVariantSearchIndexUtils.addUnknownSyncStatus(new Put(result.getRow()), columnFamily));
         }
     }
 }
