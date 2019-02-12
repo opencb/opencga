@@ -54,7 +54,7 @@ public class TimeUtils {
     }
 
     public static String durationToString(StopWatch stopWatch) {
-        return durationToString(stopWatch.getTime(TimeUnit.MILLISECONDS));
+        return durationToString(stopWatch.getTime());
     }
 
     public static String durationToString(long duration, TimeUnit timeUnit) {
