@@ -29,7 +29,7 @@ sudo chown 8983:8983 /opt/solr-volume
 docker run --rm -v /opt/solr-volume:/target solr:${SOLR_VERSION} cp -r server/solr /target/
 
 # copy configset to volume ready to mount
-cp -r OpenCGAConfSet /opt/solr-volume/solr/configsets/OpenCGAConfSet-1.4.0
+cp -r OpenCGAConfSet-1.4.0 /opt/solr-volume/solr/configsets/OpenCGAConfSet-1.4.0
 
 # get script
 docker run  --rm  solr:${SOLR_VERSION}  cat /opt/solr/bin/solr.in.sh > /opt/solr.in.sh
